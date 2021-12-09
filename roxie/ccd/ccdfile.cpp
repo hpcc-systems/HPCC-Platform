@@ -1710,15 +1710,21 @@ public:
                 dlfn.clearForeign();
 
             bool defaultDirPerPart = false;
-            const char *defaultDir = nullptr;
+            StringBuffer defaultDir;
 #ifdef _CONTAINERIZED
-            IFileDescriptor &fileDesc = pdesc->queryOwner();
-            defaultDir = fileDesc.queryDefaultDir();
-            FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(fileDesc.queryProperties().getPropInt("@flags"));
-            if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
-                defaultDirPerPart = true;
+            if (!dlfn.isExternal())
+            {
+                IFileDescriptor &fileDesc = pdesc->queryOwner();
+                StringBuffer planeName;
+                fileDesc.getClusterGroupName(0, planeName);
+                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+                defaultDir.append(plane->queryPrefix());
+                FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(fileDesc.queryProperties().getPropInt("@flags"));
+                if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
+                    defaultDirPerPart = true;
+            }
 #endif
-            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir, defaultDirPerPart);
+            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir.str(), defaultDirPerPart);
         }
         Owned<ILazyFileIO> ret;
         try
