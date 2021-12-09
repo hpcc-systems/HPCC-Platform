@@ -30,7 +30,9 @@ using roxiemem::IDataBufferManager;
 
 Owned<IDataBufferManager> dbm;
 
-unsigned numThreads = 20;
+static unsigned numThreads = 20;
+static unsigned packetsPerThread = 0;
+static bool sendFlowWithData = false;
 
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
@@ -40,17 +42,29 @@ udpsim:
   dropRequestReceivedPackets: 0
   dropRequestToSendPackets: 0
   dropRequestToSendMorePackets: 0
+  dropSendStartPackets: 0
   dropSendCompletedPackets: 0
   help: false
   numThreads: 20
   outputconfig: false
+  packetsPerThread: 10000
+  sendFlowWithData: false
+  udpResendLostPackets: true
+  udpFlowAckTimeout: 2
+  updDataSendTimeout: 20
+  udpRequestTimeout: 20
+  udpPermitTimeout: 50
+  udpResendTimeout: 40
+  udpMaxPermitDeadTimeouts: 5
+  udpRequestDeadTimeout: 1000
+  udpMaxPendingPermits: 10
+  udpMaxClientPercent: 200
+  udpAssumeSequential: false
+  udpAllowAsyncPermits: true
   udpTraceLevel: 1
   udpTraceTimeouts: true
-  udpResendLostPackets: true
-  udpRequestToSendTimeout: 1000
-  udpRequestToSendAckTimeout: 1000
-  udpMaxPendingPermits: 1
   udpTraceFlow: false
+  udpAdjustThreadPriorities: true
 )!!";
 
 bool isNumeric(const char *str)
@@ -132,16 +146,28 @@ void initOptions(int argc, const char **argv)
     udpDropFlowPackets[flowType::request_received] = options->getPropInt("@dropRequestReceivedPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::request_to_send] = options->getPropInt("@dropRequestToSendPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::request_to_send_more] = options->getPropInt("@dropRequestToSendMorePackets", 0);  // drop 1 in N
+    udpDropFlowPackets[flowType::send_start] = options->getPropInt("@dropSendStartPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::send_completed] = options->getPropInt("@dropSendCompletedPackets", 0);  // drop 1 in N
 #endif
     numThreads = options->getPropInt("@numThreads", 0);
     udpTraceLevel = options->getPropInt("@udpTraceLevel", 1);
     udpTraceTimeouts = options->getPropBool("@udpTraceTimeouts", true);
     udpResendLostPackets = options->getPropBool("@udpResendLostPackets", true);
-    udpRequestToSendTimeout = options->getPropInt("@udpRequestToSendTimeout", 1000);
-    udpRequestToSendAckTimeout = options->getPropInt("@udpRequestToSendAckTimeout", 1000);
+
+    udpPermitTimeout = options->getPropInt("@udpPermitTimeout", udpPermitTimeout);
+    udpRequestTimeout = options->getPropInt("@udpRequestTimeout", udpRequestTimeout);
+    udpFlowAckTimeout = options->getPropInt("@udpFlowAckTimeout", udpFlowAckTimeout);
+    updDataSendTimeout = options->getPropInt("@udpDataSendTimeout", updDataSendTimeout);
+    udpResendTimeout = options->getPropInt("@udpResendTimeout", udpResendTimeout);
+    udpMaxPermitDeadTimeouts = options->getPropInt("@udpMaxPermitDeadTimeouts", udpMaxPermitDeadTimeouts);
+    udpRequestDeadTimeout = options->getPropInt("@udpRequestDeadTimeout", udpRequestDeadTimeout);
+
+    udpAssumeSequential = options->getPropBool("@udpAssumeSequential", udpAssumeSequential);
+    udpAllowAsyncPermits = options->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
     udpMaxPendingPermits = options->getPropInt("@udpMaxPendingPermits", 1);
     udpTraceFlow = options->getPropBool("@udpTraceFlow", false);
+    udpAdjustThreadPriorities = options->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
+    packetsPerThread = options->getPropInt("@packetsPerThread");
 
     isUdpTestMode = true;
     roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
@@ -150,23 +176,23 @@ void initOptions(int argc, const char **argv)
 
 void simulateTraffic()
 {
-    constexpr unsigned numReceiveSlots = 100;
-    constexpr unsigned maxSlotsPerClient = 100;
-    constexpr unsigned maxSendQueueSize = 100;
+    //If a single permit allowed then grant that client all permits, otherwise allocate a share of twice the potential number of slots
+    const unsigned numReceiveSlots = 100;
+    const unsigned maxSendQueueSize = 100;
     try
     {
         myNode.setIp(IpAddress("1.2.3.4"));
-        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, maxSlotsPerClient, false);
+        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, false);
         unsigned begin = msTick();
-        printf("Start test\n");
         asyncFor(numThreads, numThreads, [maxSendQueueSize](unsigned i)
         {
             unsigned header = 0;
+            const unsigned serverFlowPort = sendFlowWithData ? CCD_DATA_PORT : CCD_SERVER_FLOW_PORT;
             IpAddress pretendIP(VStringBuffer("8.8.8.%d", i));
             // Note - this is assuming we send flow on the data port (that option defaults true in roxie too)
-            Owned<ISendManager> sm = createSendManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, false);
+            Owned<ISendManager> sm = createSendManager(serverFlowPort, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, false);
             Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
-            for (unsigned j = 0; j < 10000; j++)
+            for (unsigned j = 0; j < packetsPerThread; j++)
             {
                 void *buf = mp->getBuffer(500, false);
                 memset(buf, i, 500);
@@ -178,7 +204,7 @@ void simulateTraffic()
             while(!sm->allDone())
                 Sleep(50);
         });
-        printf("End test %u\n", msTick() - begin);
+        printf("UdpSim test took %ums\n", msTick() - begin);
     }
     catch (IException * e)
     {

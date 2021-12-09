@@ -2848,7 +2848,7 @@ public:
     {
         unsigned udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
         unsigned udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
-        unsigned udpMaxSlotsPerClient = topology->getPropInt("@udpMaxSlotsPerClient", 0x7fffffff);
+
         if (topology->getPropInt("@sendMaxRate", 0))
         {
             unsigned sendMaxRate = topology->getPropInt("@sendMaxRate");
@@ -2857,15 +2857,11 @@ public:
             throttledPacketSendManager.setown(new RoxieThrottledPacketSender(*bucket, maxPacketSize));
         }
 
-        if (udpMaxSlotsPerClient > udpQueueSize)
-            udpMaxSlotsPerClient = udpQueueSize;
-        if (udpResendLostPackets && udpMaxSlotsPerClient > TRACKER_BITS)
-            udpMaxSlotsPerClient = TRACKER_BITS;
         unsigned serverFlowPort = topology->getPropInt("@serverFlowPort", CCD_SERVER_FLOW_PORT);
         bool sendFlowOnDataPort = topology->getPropBool("@sendFlowOnDataPort", true);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
-        receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, udpQueueSize, udpMaxSlotsPerClient, encryptionInTransit));
+        receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, udpQueueSize, encryptionInTransit));
         sendManager.setown(createSendManager(sendFlowOnDataPort ? dataPort : serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), bucket, encryptionInTransit));
     }
 

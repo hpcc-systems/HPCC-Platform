@@ -66,9 +66,9 @@ private:
     sequence_t base = 0;                           // Sequence number of first packet represented in the array
     sequence_t hwm = (sequence_t) -1;              // Sequence number of highest sequence number ever seen
     unsigned __int64 seen[TRACKER_DWORDS] = {0};  // bitmask representing whether we have seen (base+n)
-    void dump() const;
 
 public:
+    void dump() const;
     // Note that we have seen this packet, and return indicating whether we had already seen it
     bool noteSeen(UdpPacketHeader &hdr);
     const PacketTracker copy() const;
@@ -200,9 +200,25 @@ public:
 #define HANDLE_PRAGMA_PACK_PUSH_POP
 #endif
 
+
+
 class flowType {
 public:
-    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more, max_flow_cmd };
+    enum flowCmd : unsigned short
+    {
+    //The first items in the flow command are also used as states in the receiver code:  It might be clearer if the states used a differemt enum
+        send_completed,         // all data sent (and no data to potentially be resent).
+        request_to_send,        // request permit to send some data.
+        ok_to_send,             // permit has been granted.
+
+    // The following messages
+        request_received,       // acknowledge request to send from the sender
+        send_start,             // about to send data - indicate how many packets are actually going to be sent
+        request_to_send_more,   // equivalent to send_completed followed by a request_to_send
+
+    // A marker for the number of flow commands:
+        max_flow_cmd
+    };
     static const char *name(flowCmd m)
     {
         switch (m)
@@ -210,6 +226,7 @@ public:
         case ok_to_send: return "ok_to_send";
         case request_received: return "request_received";
         case request_to_send: return "request_to_send";
+        case send_start: return "send_start";
         case send_completed: return "send_completed";
         case request_to_send_more: return "request_to_send_more";
         default:
@@ -218,11 +235,6 @@ public:
         }
     };
 
-};
-
-class sniffType {
-public:
-    enum sniffCmd : unsigned short { busy, idle };
 };
 
 #pragma pack(push,1)
@@ -238,17 +250,12 @@ struct UdpPermitToSendMsg
 struct UdpRequestToSendMsg
 {
     flowType::flowCmd cmd;
-    unsigned short packets;
+    unsigned short packets;   // Number about to send (send_start), or just sent (request_to_send_more or send_completed). Not used (0) for request_to_send
     sequence_t sendSeq;
     sequence_t flowSeq;
     ServerIdentifier sourceNode;
 };
 
-struct sniff_msg
-{
-    sniffType::sniffCmd cmd;
-    ServerIdentifier nodeIp;
-};
 #pragma pack(pop)
 
 int check_max_socket_read_buffer(int size);
@@ -270,6 +277,7 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 #ifdef _DEBUG
 #define TEST_DROPPED_PACKETS
 #endif
+#define TEST_DROPPED_PACKETS
 
 #ifdef TEST_DROPPED_PACKETS
 extern UDPLIB_API bool udpDropDataPackets;

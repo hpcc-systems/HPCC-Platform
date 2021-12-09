@@ -183,7 +183,7 @@ public:
             rcvMgr.setown(createAeronReceiveManager(myEP, false));
         }
         else
-            rcvMgr.setown(createReceiveManager(7000, 7001, 7002, udpQueueSize, maxPacketsPerSender, false));
+            rcvMgr.setown(createReceiveManager(7000, 7001, 7002, udpQueueSize, false));
         Owned<roxiemem::IRowManager> rowMgr = roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), NULL, false);
         Owned<IMessageCollator> collator = rcvMgr->createMessageCollator(rowMgr, 1);
         unsigned lastReport = 0;
@@ -641,7 +641,7 @@ int main(int argc, char * argv[] )
     DBGLOG("%s",cmdline.str());
 //  queryLogMsgManager()->enterQueueingMode();
 //  queryLogMsgManager()->setQueueDroppingLimit(512, 32);
-    udpRequestToSendTimeout = 5000;
+    //udpRequestToSendTimeout = 5000;
     for (c = 1; c < argc; c++)
     {
         const char *ip = argv[c];
@@ -660,7 +660,7 @@ int main(int argc, char * argv[] )
                 c++;
                 if (c==argc || !isdigit(*argv[c]))
                     usage();
-                udpRequestToSendTimeout = atoi(argv[c]);
+                udpRequestTimeout = atoi(argv[c]);
             }
             else if (strcmp(ip, "--jumboFrames")==0)
             {
@@ -825,7 +825,6 @@ void usage(char *err = NULL)
     fprintf(stderr, " [-destB IP]          : Sets the sender second destination ip address to IP <default no sec dest>\n");
     fprintf(stderr, " [-multiCast IP]      : Sets the sniffer multicast ip address to IP <default %s>\n", multiCast);
     fprintf(stderr, " [-udpTimeout msec]   : Sets the sender udpRequestToSendTimeout value  <default %i>\n", udpRequestToSendTimeout);
-    fprintf(stderr, " [-udpMaxTimeouts val]: Sets the sender udpMaxRetryTimedoutReqs value <default %i>\n", udpMaxRetryTimedoutReqs);
     fprintf(stderr, " [-udpNumQs val]      : Sets the sender's number of output queues <default %i>\n", udpNumQs);
     fprintf(stderr, " [-udpQsPriority val] : Sets the sender's output queues priority udpQsPriority <default %i>\n", udpOutQsPriority);
     fprintf(stderr, " [-packerHdrSize val] : Sets the packers header size (like RoxieHeader) <default %i>\n", packerHdrSize);
@@ -857,8 +856,6 @@ int main(int argc, char * argv[] )
     progName = argv[0];
     destA = myIndex = addRoxieNode(GetCachedHostName());
 
-    udpRequestToSendTimeout = 5000;
-    udpMaxRetryTimedoutReqs = 3;
     udpOutQsPriority = 5;
     udpTraceLevel = 1;
 
@@ -916,19 +913,7 @@ int main(int argc, char * argv[] )
             {
                 if (++i < argc) 
                 {
-                    udpRequestToSendTimeout = atoi(argv[i]);
-                }
-                else 
-                {
-                    sprintf(errBuff,"Missing value after \"%s\"", argv[i-1]);
-                    usage(errBuff);
-                }
-            }
-            else if(stricmp(argv[i]+1,"udpMaxTimeouts")==0)
-            {
-                if (++i < argc) 
-                {
-                    udpMaxRetryTimedoutReqs = atoi(argv[i]);
+                    udpRequestTimeout = atoi(argv[i]);
                 }
                 else 
                 {
@@ -1135,7 +1120,7 @@ int main(int argc, char * argv[] )
 
     if (modeType & RCV_MODE_BIT) 
     {
-        rcvMgr = createReceiveManager(7000, 7001, 7002, 7003, multiCast, 100, 0x7fffffff);
+        rcvMgr = createReceiveManager(7000, 7001, 7002, 100, false);
         rowMgr = createRowManager(0, NULL, queryDummyContextLogger(), NULL, false);
         msgCollA = rcvMgr->createMessageCollator(rowMgr, 100);
         if (destB)
