@@ -2,12 +2,14 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import * as domClass from "dojo/dom-class";
-import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPWorkunit from "src/ESPWorkunit";
+import * as WsWorkunits from "src/WsWorkunits";
+import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
@@ -78,6 +80,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
     const [Grid, selection, refreshTable, copyButtons] = useGrid({
@@ -105,21 +108,33 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             },
             Wuid: {
                 label: nlsHPCC.WUID, width: 180,
-                formatter: function (Wuid) {
+                formatter: function (Wuid, row) {
                     const wu = ESPWorkunit.Get(Wuid);
-                    return `${wu.getStateImageHTML()}&nbsp;<a href='#/workunits/${Wuid}' class='dgrid-row-url''>${Wuid}</a>`;
+                    return `${wu.getStateImageHTML()}&nbsp;<a href='#/workunits/${Wuid}'>${Wuid}</a>`;
                 }
             },
             Owner: { label: nlsHPCC.Owner, width: 90 },
-            Jobname: { label: nlsHPCC.JobName, width: 500 },
-            Cluster: { label: nlsHPCC.Cluster, width: 90 },
-            RoxieCluster: { label: nlsHPCC.RoxieCluster, width: 99 },
-            State: { label: nlsHPCC.State, width: 90 },
+            Jobname: { label: nlsHPCC.JobName, width: 350 },
+            Cluster: { label: nlsHPCC.Cluster, width: 60 },
+            RoxieCluster: { label: nlsHPCC.RoxieCluster, width: 90 },
+            State: { label: nlsHPCC.State, width: 60 },
             TotalClusterTime: {
-                label: nlsHPCC.TotalClusterTime, width: 117,
+                label: nlsHPCC.TotalClusterTime, width: 115,
                 renderCell: function (object, value, node) {
                     domClass.add(node, "justify-right");
                     node.innerText = value;
+                }
+            },
+            ExecuteCost: {
+                label: nlsHPCC.ExecuteCost, width: 100,
+                formatter: function (cost, row) {
+                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                }
+            },
+            FileAccessCost: {
+                label: nlsHPCC.FileAccessCost, width: 100,
+                formatter: function (cost, row) {
+                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
                 }
             }
         }
