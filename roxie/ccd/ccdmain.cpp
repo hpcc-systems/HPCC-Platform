@@ -29,7 +29,7 @@
 #include <jencrypt.hpp>
 #include "jutil.hpp"
 #include "jsecrets.hpp"
-#include <udptopo.hpp>
+#include "udptopo.hpp"
 
 #include "rtlformat.hpp"
 
@@ -43,6 +43,7 @@
 #include "ccdlistener.hpp"
 #include "ccdsnmp.hpp"
 #include "thorplugin.hpp"
+#include "udpsha.hpp"
 
 #if defined (__linux__)
 #include <sys/syscall.h>
@@ -997,6 +998,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpResendAllMissingPackets = topology->getPropBool("@udpResendAllMissingPackets", udpResendAllMissingPackets);
         udpAdjustThreadPriorities = topology->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
         udpAllowAsyncPermits = topology->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
+
+        unsigned __int64 networkSpeed = topology->getPropInt64("@udpNetworkSpeed", 10 * U64C(0x40000000));   // only used to sanity check the different udp
+        unsigned udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
+        sanityCheckUdpSettings(udpQueueSize, numChannels, networkSpeed);
 
         int ttlTmp = topology->getPropInt("@multicastTTL", 1);
         if (ttlTmp < 0)

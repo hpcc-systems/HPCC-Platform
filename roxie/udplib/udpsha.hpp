@@ -270,6 +270,10 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 {
     return (udpTraceLevel >= level);
 }
+
+extern UDPLIB_API void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __uint64 networkSpeedBitsPerSecond);
+
+
 #define SOCKET_SIMULATION
 #define SOCKET_SIMULATION_UDP
 

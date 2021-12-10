@@ -48,6 +48,7 @@ udpsim:
   numThreads: 20
   outputconfig: false
   packetsPerThread: 10000
+  sanityCheckUdpSettings: true
   sendFlowWithData: false
   udpResendLostPackets: true
   udpFlowAckTimeout: 2
@@ -56,7 +57,7 @@ udpsim:
   udpPermitTimeout: 50
   udpResendTimeout: 40
   udpMaxPermitDeadTimeouts: 5
-  udpRequestDeadTimeout: 1000
+  udpRequestDeadTimeout: 10000
   udpMaxPendingPermits: 10
   udpMaxClientPercent: 200
   udpAssumeSequential: false
@@ -170,8 +171,15 @@ void initOptions(int argc, const char **argv)
     packetsPerThread = options->getPropInt("@packetsPerThread");
 
     isUdpTestMode = true;
-    roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
+    roxiemem::setTotalMemoryLimit(false, true, false, 20*1024*1024, 0, NULL, NULL);
     dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
+
+    if (options->getPropBool("sanityCheckUdpSettings", true))
+    {
+        unsigned __int64 networkSpeed = options->getPropInt64("@udpNetworkSpeed", 10 * U64C(0x40000000));
+        unsigned numReceiveSlots = 100;
+        sanityCheckUdpSettings(numReceiveSlots, numThreads, networkSpeed);
+    }
 }
 
 void simulateTraffic()
@@ -216,7 +224,7 @@ int main(int argc, const char **argv)
 {
     InitModuleObjects();
     strdup("Make sure leak checking is working");
-    queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
+    queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread|MSGFIELD_prefix);
     initOptions(argc, argv);
     simulateTraffic();
     ExitModuleObjects();

@@ -475,6 +475,72 @@ void PacketTracker::dump() const
     DBGLOG("PacketTracker base=%" SEQF "u, hwm=%" SEQF "u, seen[0]=%" I64F "x", base, hwm, seen[0]);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __uint64 networkSpeedBitsPerSecond)
+{
+    unsigned maxDataPacketSize = 0x2000;    // assume jumbo frames roxiemem::DATA_ALIGNMENT_SIZE;
+    __uint64 bytesPerSecond = networkSpeedBitsPerSecond / 10;
+
+    unsigned __int64 minPacketTimeNs = (maxDataPacketSize * U64C(1000000000)) / bytesPerSecond;
+    unsigned __int64 minLatencyNs = 50000;
+    unsigned maxSlotsPerClient = (udpMaxPendingPermits == 1) ? receiveQueueSize : (udpMaxClientPercent * receiveQueueSize) / (udpMaxPendingPermits * 100);
+    unsigned __int64 minTimeForAllPackets = receiveQueueSize * minPacketTimeNs;
+    //The data for a permit may arrive after the data from all the other senders => need to take the entire queue into account
+    unsigned __int64 minTimeForPermitPackets = minTimeForAllPackets;
+
+    auto trace = [](const char * title, unsigned value, unsigned __int64 minValue, unsigned maxFactor)
+    {
+        DBGLOG("%s: %u [%u..%u]  us: %u [%u..%u]", title, value, (unsigned)(minValue/1000000), (unsigned)(minValue*maxFactor/1000000),
+                                                          value*1000, (unsigned)(minValue/1000), (unsigned)(minValue*maxFactor/1000));
+    };
+
+    //MORE: Allow the udpReceiverSize to be defined and finish implementing the following, with some comments to describe the thinking
+    // All in milliseconds
+    if (udpTraceTimeouts || udpTraceLevel >= 1)
+    {
+        DBGLOG("udpAssumeSequential: %s", boolToStr(udpAssumeSequential));
+        DBGLOG("udpResendLostPackets: %s", boolToStr(udpResendLostPackets));
+        DBGLOG("udpResendAllMissingPackets: %s", boolToStr(udpResendAllMissingPackets));
+        DBGLOG("udpAdjustThreadPriorities: %s", boolToStr(udpAdjustThreadPriorities));
+        DBGLOG("udpAllowAsyncPermits: %s", boolToStr(udpAllowAsyncPermits));
+        trace("udpFlowAckTimeout", udpFlowAckTimeout, minLatencyNs*2, 20);
+        trace("updDataSendTimeout", updDataSendTimeout, minTimeForAllPackets, 10);
+        trace("udpPermitTimeout", udpPermitTimeout, 2 * minLatencyNs + minTimeForPermitPackets, 10);
+        trace("udpRequestTimeout", udpRequestTimeout, (2 * minLatencyNs + minTimeForPermitPackets) * 2 / 5, 10);
+        trace("udpResendTimeout", udpResendTimeout, minTimeForAllPackets, 10);
+        DBGLOG("udpMaxPendingPermits: %u [%u..%u]", udpMaxPendingPermits, udpMaxPendingPermits, udpMaxPendingPermits);
+        DBGLOG("udpMaxClientPercent: %u [%u..%u]", udpMaxClientPercent, 100, 500);
+        DBGLOG("udpMaxPermitDeadTimeouts: %u [%u..%u]", udpMaxPermitDeadTimeouts, 2, 10);
+        DBGLOG("udpRequestDeadTimeout: %u [%u..%u]", udpRequestDeadTimeout, 10000, 120000);
+    }
+
+    // Some sanity checks
+    if (!udpResendLostPackets)
+        WARNLOG("udpResendLostPackets is currently disabled - only viable on a very reliable network");
+    if (udpAllowAsyncPermits)
+    {
+        if (udpResendTimeout == 0)
+            ERRLOG("udpResendTimeout of 0 should not be used if udpAllowAsyncPermits=true");
+    }
+    else
+    {
+        if (udpResendTimeout != 0)
+            WARNLOG("udpResendTimeout of 0 is recommended if udpAllowAsyncPermits=false");
+    }
+    if (udpFlowAckTimeout * 10 > udpRequestTimeout)
+        WARNLOG("udpFlowAckTimeout should be significantly smaller than udpRequestTimeout");
+    if (udpRequestTimeout >= udpPermitTimeout)
+        WARNLOG("udpRequestTimeout should be lower than udpPermitTimeout, otherwise dropped ok_to_send will not be spotted early enough");
+    if (udpMaxPendingPermits == 1)
+        WARNLOG("udpMaxPendingPermits=1: only one sender can send at a time");
+    if (udpMaxClientPercent < 100)
+        ERRLOG("udpMaxClientPercent should be >= 100");
+    else if (maxSlotsPerClient * udpMaxClientPercent / 100 > receiveQueueSize)
+        ERRLOG("udpMaxClientPercent is too large to be meaningful > all slots are allocated to the first sender");
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 

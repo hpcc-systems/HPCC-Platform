@@ -262,16 +262,17 @@ public:
     std::atomic<unsigned> packetsQueued = { 0 };
     std::atomic<sequence_t> nextSendSequence = {0};
     std::atomic<sequence_t> activeFlowSequence = {0};
-    std::atomic<sequence_t> activePermitSeq{0};
+    std::atomic<sequence_t> activePermitSeq{0};         // Used to prevent a request to send once a permit has been received
     CriticalSection activeCrit;
 
     unsigned nextFlowSequence()
     {
-        //Only called within a critical section, so could probably use a non-atomic increment
-        //ensure that a flowSeq of 0 is never returned.
-        unsigned seq = ++activeFlowSequence;
+        //This function is only called within a critical section, so use a non-atomic increment
+        //Also ensure that a flowSeq of 0 is never returned so it can be used as a null value in the receiver
+        unsigned seq = activeFlowSequence+1;
         if (seq == 0)
-            seq = ++activeFlowSequence;
+            seq++;
+        activeFlowSequence = seq;
         return seq;
     }
     bool hasDataToSend() const
