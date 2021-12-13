@@ -4,10 +4,12 @@ import * as domClass from "dojo/dom-class";
 import * as put from "put-selector/put";
 import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
+import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
@@ -74,6 +76,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
     const [Grid, selection, refreshTable, copyButtons] = useGrid({
@@ -160,7 +163,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     node.innerText = Utility.valueCleanUp(value);
                 },
             },
-            Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 }
+            Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
+            Cost: {
+                label: nlsHPCC.Cost, width: 100,
+                formatter: function (cost, row) {
+                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                }
+            }
         }
     });
 
