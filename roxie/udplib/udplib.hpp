@@ -218,6 +218,8 @@ extern UDPLIB_API unsigned udpResendTimeout;
 extern UDPLIB_API bool udpResendLostPackets;
 extern UDPLIB_API unsigned udpMaxPendingPermits;
 extern UDPLIB_API unsigned udpMaxClientPercent;
+extern UDPLIB_API unsigned udpMinSlotsPerSender;
+
 extern UDPLIB_API bool udpAssumeSequential;
 extern UDPLIB_API bool udpResendAllMissingPackets;
 extern UDPLIB_API unsigned udpStatsReportInterval;

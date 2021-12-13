@@ -60,6 +60,7 @@ udpsim:
   udpRequestDeadTimeout: 10000
   udpMaxPendingPermits: 10
   udpMaxClientPercent: 200
+  udpMinSlotsPerSender: 1
   udpAssumeSequential: false
   udpAllowAsyncPermits: true
   udpTraceLevel: 1
@@ -166,6 +167,8 @@ void initOptions(int argc, const char **argv)
     udpAssumeSequential = options->getPropBool("@udpAssumeSequential", udpAssumeSequential);
     udpAllowAsyncPermits = options->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
     udpMaxPendingPermits = options->getPropInt("@udpMaxPendingPermits", 1);
+    udpMinSlotsPerSender = options->getPropInt("@udpMinSlotsPerSender", udpMinSlotsPerSender);
+
     udpTraceFlow = options->getPropBool("@udpTraceFlow", false);
     udpAdjustThreadPriorities = options->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
     packetsPerThread = options->getPropInt("@packetsPerThread");

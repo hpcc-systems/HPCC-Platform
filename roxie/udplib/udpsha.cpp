@@ -66,6 +66,7 @@ unsigned udpResendTimeout = 20;         // [sender+receiver] How long should ela
 
 unsigned udpMaxPendingPermits = 10;     // This seems like a reasonable compromise - each sender will be able to send up to 20% of the input queue each request.
 unsigned udpMaxClientPercent = 200;     // What percentage of (queueSize/maxPendingPermits) should be granted to each sender.
+unsigned udpMinSlotsPerSender = 1;         // The smallest number of slots to assign to a sender
 bool udpResendAllMissingPackets = true; // If set do not limit the number of missing packets sent to the size of the permit.
 bool udpResendLostPackets = true;
 bool udpAssumeSequential = false;
@@ -513,6 +514,7 @@ void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __ui
         DBGLOG("udpMaxClientPercent: %u [%u..%u]", udpMaxClientPercent, 100, 500);
         DBGLOG("udpMaxPermitDeadTimeouts: %u [%u..%u]", udpMaxPermitDeadTimeouts, 2, 10);
         DBGLOG("udpRequestDeadTimeout: %u [%u..%u]", udpRequestDeadTimeout, 10000, 120000);
+        DBGLOG("udpMinSlotsPerSender: %u [%u..%u]", udpMinSlotsPerSender, 1, 5);
     }
 
     // Some sanity checks
@@ -538,6 +540,8 @@ void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __ui
         ERRLOG("udpMaxClientPercent should be >= 100");
     else if (maxSlotsPerClient * udpMaxClientPercent / 100 > receiveQueueSize)
         ERRLOG("udpMaxClientPercent is too large to be meaningful > all slots are allocated to the first sender");
+    if (udpMinSlotsPerSender > 10)
+        ERRLOG("udpMinSlotsPerSender of %u is higher than recommended", udpMinSlotsPerSender);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

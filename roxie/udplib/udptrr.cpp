@@ -230,6 +230,9 @@ Other udp settings
   to be initially granted (on the assumption that many senders will then update the actual number in use with a
   smaller number).
 
+* udpMinSlotsPerSender
+  The smallest number of slots to assign to a sender, defaults to 1.  Could increase to prevent lots of small permits being granted.
+
 * udpAssumeSequential
   If the sender has received a later sequence data packet, then resend a non-received packet - regardless of the udpResendTimeout
 
@@ -853,7 +856,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         const unsigned flow_port;
         const unsigned maxSlotsPerSender;
         const unsigned maxPermits;                  // Must be provided in the constructor
-        const unsigned minSlotsPerSender = 1;       // Could increase to prevent lots of small permits being granted
         std::atomic<bool> running = { false };
         SenderList pendingRequests;     // List of senders requesting permission to send
         PermitList pendingPermits;      // List of active permits
@@ -1110,7 +1112,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 if (pendingPermits.length()>=udpMaxPendingPermits)
                     break;
 
-                if (slots < minSlotsPerSender)
+                if (slots < udpMinSlotsPerSender)
                 {
                     //The number of slots may increase if (a) data is read off the input queue, or (b) a send_start adjusts the number of permits
                     //(b) will result on a read on this thread so no need to adjust timeout.
