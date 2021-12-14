@@ -23,6 +23,7 @@ limitations under the License.
 
 #include "dautils.hpp"
 #include "espStoreShare.hpp"
+#include "eclwatch_errorlist.hpp"
 
 static StringBuffer g_wsstoreBuildVersion;
 

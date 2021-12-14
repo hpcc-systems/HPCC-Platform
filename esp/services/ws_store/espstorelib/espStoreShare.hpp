@@ -21,6 +21,7 @@
 #define _ESPSTORESHARE_HPP__
 
 #include "SecureUser.hpp"
+#include "eclwatch_errorlist.hpp"
 
 interface IEspStore : extends IInterface
 {
