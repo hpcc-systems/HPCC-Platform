@@ -86,13 +86,9 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
 static IEspTpMachine * createHostTpMachine(const char * hostname, const char *path)
 {
     Owned<IEspTpMachine> machine = createTpMachine();
-    IpAddress ipAddr;
-    ipAddr.ipset(hostname);
-    StringBuffer localHost;
-    ipAddr.getIpText(localHost);
-    machine->setName(localHost.str());
-    machine->setNetaddress(localHost.str());
-    machine->setConfigNetaddress(hostname);
+    machine->setName(hostname);
+    machine->setNetaddress(hostname);
+    machine->setConfigNetaddress(hostname); //May be used by legacy ECLWatch. Leave it for now.
     machine->setDirectory(path);
     machine->setOS(getPathSepChar(path) == '/' ? MachineOsLinux : MachineOsW2K);
     return machine.getClear();
@@ -396,33 +392,6 @@ void CTpWrapper::getTpSparkThors(double clientVersion, const char* name, IArrayO
     UNIMPLEMENTED_X("CONTAINERIZED(CTpWrapper::getTpSparkThors)");
 }
 
-void CTpWrapper::appendTpMachine(double clientVersion, IConstEnvironment* constEnv, IConstInstanceInfo& instanceInfo, IArrayOf<IConstTpMachine>& machines)
-{
-    SCMStringBuffer name, networkAddress, description, directory;
-    Owned<IConstMachineInfo> machineInfo = instanceInfo.getMachine();
-    machineInfo->getName(name);
-    machineInfo->getNetAddress(networkAddress);
-    instanceInfo.getDirectory(directory);
-
-    Owned<IEspTpMachine> machine = createTpMachine();
-    machine->setName(name.str());
-
-    if (networkAddress.length() > 0)
-    {
-        IpAddress ipAddr;
-        ipAddr.ipset(networkAddress.str());
-
-        StringBuffer networkAddressStr;
-        ipAddr.getIpText(networkAddressStr);
-        machine->setNetaddress(networkAddressStr);
-    }
-    machine->setPort(instanceInfo.getPort());
-    machine->setOS(machineInfo->getOS());
-    machine->setDirectory(directory.str());
-    machine->setType(eqSparkThorProcess);
-    machines.append(*machine.getLink());
-}
-
 IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type, IConstMachineInfo* machineInfo)
 {
     if (!machineInfo)
@@ -465,7 +434,6 @@ IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type,
     }
     return machine.getClear();
 }
-
 
 void CTpWrapper::setAttPath(StringBuffer& Path,const char* PathToAppend,const char* AttName,const char* AttValue,StringBuffer& returnStr)
 {
