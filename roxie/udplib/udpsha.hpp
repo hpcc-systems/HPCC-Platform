@@ -90,27 +90,34 @@ class queue_t
     DataBuffer *head = nullptr;      // We add at tail and remove from head
     DataBuffer *tail = nullptr;
 
-    unsigned count = 0;
+    RelaxedAtomic<unsigned> count{0};       // always updated inside a critical section, only atomic to guarantee it can be read outside the crit sec.
     unsigned limit = 0;
     
     CriticalSection c_region;
     InterruptableSemaphore data_avail;
-    Semaphore       free_sl;              // Signalled when (a) someone is waiting for it and (b) count changes from >= limit to < limit
-    unsigned        signal_free_sl = 0;   // Number of people waiting in free_sl. Only updated within critical section
+    Semaphore       free_sl;                // Signalled when (a) someone is waiting for it and (b) count changes from >= limit to < limit
+    unsigned        signal_free_sl = 0;     // Number of people waiting in free_sl. Only updated within critical section
     
 public: 
     void interrupt();
-    void pushOwn(DataBuffer *buffer);
+    void pushOwn(DataBuffer *buffer);       // Non blocking enqueue (used by receiver)
+    void pushOwnWait(DataBuffer *buffer);   // Blocking enqueue (used by the sender)
     DataBuffer *pop(bool block);
     bool dataQueued(const void *key, PKT_CMP_FUN pkCmpFn);
     unsigned removeData(const void *key, PKT_CMP_FUN pkCmpFn);
-    unsigned available();                // non-blocking
-    int  free_slots();                   // block if no free slots
-    void set_queue_size(unsigned limit); //must be called immediately after constructor if default constructor is used
+    unsigned available() const              // non-blocking, no critical section
+    {
+        unsigned num = count.load();
+        return likely(num < limit) ? limit - num : 0;
+    }
+    void set_queue_size(unsigned limit);    //must be called immediately after constructor if default constructor is used
     queue_t(unsigned int queue_size);
     queue_t() {};
     ~queue_t();
     inline int capacity() const { return limit; }
+
+protected:
+    void doEnqueue(DataBuffer *buf); // internal function to add the item to the queue, but not signal
 };
 
 
