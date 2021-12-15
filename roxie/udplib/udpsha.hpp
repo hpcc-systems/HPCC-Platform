@@ -285,6 +285,9 @@ extern unsigned flowPacketsSent[flowType::max_flow_cmd];
 
 extern UDPLIB_API bool isUdpTestMode;
 extern UDPLIB_API bool udpTestUseUdpSockets;
+extern UDPLIB_API bool udpTestSocketJitter;
+extern UDPLIB_API unsigned udpTestSocketDelay;
+extern UDPLIB_API bool udpTestVariableDelay;
 
 class CSocketSimulator : public CInterfaceOf<ISocket>
 {
@@ -381,6 +384,7 @@ class CSimulatedQueueReadSocket : public CSocketSimulator
     Semaphore avail;
 
     void writeSimulatedPacket(void const* buf, size32_t size);
+    void writeOwnSimulatedPacket(void const* buf, size32_t size);
     static std::map<SocketEndpoint, CSimulatedQueueReadSocket *> allReaders;
     static CriticalSection allReadersCrit;
 
@@ -402,13 +406,22 @@ public:
 
 class CSimulatedQueueWriteSocket : public CSocketSimulator
 {
-    CSimulatedQueueWriteSocket( const SocketEndpoint &ep) : destEp(ep) {}
+    CSimulatedQueueWriteSocket(const SocketEndpoint &ep);
+    ~CSimulatedQueueWriteSocket();
     const SocketEndpoint destEp;
+    CriticalSection crit;
+    std::queue<unsigned> dueTimes;
+    std::queue<unsigned> packetSizes;
+    std::queue<const void *> packets;
+    unsigned delay = 0;
+    bool jitter = false;
 public:
     static CSimulatedQueueWriteSocket*  udp_connect( const SocketEndpoint &ep);
     virtual size32_t write(void const* buf, size32_t size) override;
     virtual void set_send_buffer_size(size32_t sz) override {};
     virtual void close() override {};
+
+    unsigned writeDelayed(unsigned now);
 };
 
 
