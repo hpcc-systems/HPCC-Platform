@@ -410,14 +410,18 @@ bool CDALIKVStore::fetch(const char * storename, const char * ns, const char * k
     {
         xpath.appendf("/%s", key);
         if(!storetree->hasProp(xpath.str()))
-            throw makeStringExceptionV(MSGAUD_user, -1, "DALI Keystore fetch: invalid key '%s' detected!", key);
-
-        value.set(storetree->queryProp(xpath.str()));
+        {
+            throw makeStringExceptionV(ECLWATCH_INVALID_QUERY_KEY, "DALI Keystore fetch: invalid key '%s' detected!", key);
+        }
+        else
+        {
+            value.set(storetree->queryProp(xpath.str()));
+        }
 
         return value.str();
     }
     else
-        throw MakeStringException(-1, "DALI Keystore fetch: Namespace not provided!");
+        throw makeStringException(-1, "DALI Keystore fetch: Key not provided!");
 
     return true;
 }

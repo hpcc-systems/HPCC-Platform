@@ -114,7 +114,7 @@ ESPrequest FetchRequest
 
 ESPresponse [exceptions_inline] FetchResponse
 {
-    string Value;
+    [nil_remove] string Value;
 };
 
 ESPrequest FetchAllRequest

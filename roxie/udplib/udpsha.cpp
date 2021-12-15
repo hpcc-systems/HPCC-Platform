@@ -678,6 +678,7 @@ fake read socket that
 
 #ifdef SOCKET_SIMULATION
 bool isUdpTestMode = false;
+bool udpTestUseUdpSockets = true;
 
 CSimulatedQueueWriteSocket* CSimulatedQueueWriteSocket::udp_connect(const SocketEndpoint &ep)
 {
@@ -800,10 +801,15 @@ unsigned getMappedSocketPort(const SocketEndpoint & ep)
 
 CSimulatedUdpReadSocket::CSimulatedUdpReadSocket(const SocketEndpoint &_me)
 {
-    unsigned port = getMappedSocketPort(_me);
+    port = getMappedSocketPort(_me);
     if (connected[port-basePort].exchange(true))
         throw makeStringException(0, "Two ip/ports mapped to the same port - improve the hash (or change maxPorts)!");
     realSocket.setown(ISocket::udp_create(port));
+}
+
+CSimulatedUdpReadSocket::~CSimulatedUdpReadSocket()
+{
+    connected[port-basePort].exchange(false);
 }
 
 size32_t CSimulatedUdpReadSocket::get_receive_buffer_size() { return realSocket->get_receive_buffer_size(); }

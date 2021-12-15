@@ -29,6 +29,20 @@
 #include "dautils.hpp"
 #include "dameta.hpp"
 
+void CTpWrapper::appendTpMachine(double clientVersion, IConstEnvironment* constEnv, IConstInstanceInfo& instanceInfo, IArrayOf<IConstTpMachine>& machines)
+{
+    SCMStringBuffer name, networkAddress, description, directory;
+    Owned<IEspTpMachine> machine = createTpMachine();
+    Owned<IConstMachineInfo> machineInfo = instanceInfo.getMachine();
+    machine->setName(machineInfo->getName(name).str());
+    machine->setOS(machineInfo->getOS());
+    machine->setNetaddress(machineInfo->getNetAddress(networkAddress).str());
+    machine->setDirectory(instanceInfo.getDirectory(directory).str());
+    machine->setPort(instanceInfo.getPort());
+    machine->setType(eqSparkThorProcess); //for now, the appendTpMachine is only used for SparkThor.
+    machines.append(*machine.getLink());
+}
+
 extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu)
 {
     StringBuffer sashaAddress;

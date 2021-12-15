@@ -419,7 +419,7 @@ EXPORT Store(STRING username = '',
                     TRANSFORM
                         (
                             RECORDOF(LEFT),
-                            SELF.was_found := NOT EXISTS(LEFT.exceptions.exceptions),
+                            SELF.was_found := LEFT.value != '' AND NOT EXISTS(LEFT.exceptions.exceptions),
                             SELF := LEFT
                         )
                 );

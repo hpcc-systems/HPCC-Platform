@@ -583,8 +583,16 @@ public:
 #ifdef SOCKET_SIMULATION
                 if (isUdpTestMode)
                 {
-                    send_flow_socket = CSimulatedWriteSocket::udp_connect(sendFlowEp);
-                    data_socket = CSimulatedWriteSocket::udp_connect(dataEp);
+                    if (udpTestUseUdpSockets)
+                    {
+                        send_flow_socket = CSimulatedUdpWriteSocket::udp_connect(sendFlowEp);
+                        data_socket = CSimulatedUdpWriteSocket::udp_connect(dataEp);
+                    }
+                    else
+                    {
+                        send_flow_socket = CSimulatedQueueWriteSocket::udp_connect(sendFlowEp);
+                        data_socket = CSimulatedQueueWriteSocket::udp_connect(dataEp);
+                    }
                 }
                 else
 #endif
@@ -666,8 +674,11 @@ class CSendManager : implements ISendManager, public CInterface
 
         ~StartedThread()
         {
-            running = false;
-            join();
+            if (running)
+            {
+                running = false;
+                join();
+            }
         }
 
         virtual void start()
@@ -779,7 +790,12 @@ class CSendManager : implements ISendManager, public CInterface
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
 #ifdef SOCKET_SIMULATION
             if (isUdpTestMode)
-                flow_socket.setown(CSimulatedReadSocket::udp_create(SocketEndpoint(receive_port, parent.myIP)));
+            {
+                if (udpTestUseUdpSockets)
+                    flow_socket.setown(CSimulatedUdpReadSocket::udp_create(SocketEndpoint(receive_port, parent.myIP)));
+                else
+                    flow_socket.setown(CSimulatedQueueReadSocket::udp_create(SocketEndpoint(receive_port, parent.myIP)));
+            }
             else
 #endif
                 flow_socket.setown(ISocket::udp_create(receive_port));

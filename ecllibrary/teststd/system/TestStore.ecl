@@ -15,17 +15,23 @@ EXPORT TestStore := MODULE
     SHARED KEY_1 := 'some_key';
     SHARED VALUE_1 := 'fubar';
 
+    SHARED KEY_2 := 'another_key';
+    SHARED VALUE_2 := '';
+
     SHARED kvStore := Std.System.Store(USER_NAME, USER_PW, ESP);
     SHARED namedKVStore := kvStore.WithNamespace(STORE_NAMESPACE, STORE_NAME);
 
     SHARED createStoreRes := kvStore.CreateStore(STORE_NAME);
     SHARED listStoresRes := kvStore.ListStores();
     SHARED listNamespacesRes := kvStore.ListNamespaces(STORE_NAME);
+    SHARED setKeyEmptyValueRes := namedKVStore.SetKeyValue(KEY_2, VALUE_2);
+    SHARED getKeyEmptyValueRes := namedKVStore.GetKeyValue(KEY_2);
     SHARED setKeyValueRes := namedKVStore.SetKeyValue(KEY_1, VALUE_1);
     SHARED getKeyValueRes := namedKVStore.GetKeyValue(KEY_1);
     SHARED getAllKeyValuesRes := namedKVStore.GetAllKeyValues();
     SHARED getAllKeysRes := namedKVStore.GetAllKeys();
     SHARED deleteKeyValueRes := namedKVStore.DeleteKeyValue(KEY_1);
+    SHARED deleteKeyValue2Res := namedKVStore.DeleteKeyValue(KEY_2);
     SHARED deleteNamespaceRes := namedKVStore.DeleteNamespace();
 
     // Using SEQUENTIAL to reuse the above definitions in a stateful manner
@@ -40,12 +46,19 @@ EXPORT TestStore := MODULE
             // Set a new key/value
             ASSERT(setKeyValueRes.succeeded);
 
+            // Set a new key/value (empty)
+            ASSERT(setKeyEmptyValueRes.succeeded);
+
             // Ensure our namespace exists
             ASSERT(EXISTS(listNamespacesRes.namespaces(namespace = STORE_NAMESPACE)));
 
             // Fetch value for a key
             ASSERT(getKeyValueRes.was_found = TRUE);
             ASSERT(getKeyValueRes.value = VALUE_1);
+
+            // Fetch empty string value for a key
+            ASSERT(getKeyEmptyValueRes.was_found = FALSE);
+            ASSERT(getKeyEmptyValueRes.value = VALUE_2);
 
             // Fetch all key/values in a namespace
             ASSERT(getAllKeysRes.namespace = STORE_NAMESPACE);
@@ -55,6 +68,9 @@ EXPORT TestStore := MODULE
 
             // Delete a key/value
             ASSERT(deleteKeyValueRes.succeeded);
+
+            // Delete another key/value
+            ASSERT(deleteKeyValue2Res.succeeded);
 
             // Ensure our namespace still exists
             ASSERT(EXISTS(listNamespacesRes.namespaces(namespace = STORE_NAMESPACE)));

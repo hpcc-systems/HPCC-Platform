@@ -132,7 +132,10 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             SocketEndpoint ep(port, dest);
 #ifdef SOCKET_SIMULATION
             if (isUdpTestMode)
-                flowSocket = CSimulatedWriteSocket::udp_connect(ep);
+                if (udpTestUseUdpSockets)
+                    flowSocket = CSimulatedUdpWriteSocket::udp_connect(ep);
+                else
+                    flowSocket = CSimulatedQueueWriteSocket::udp_connect(ep);
             else
 #endif
                 flowSocket = ISocket::udp_connect(ep);
@@ -426,7 +429,10 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
 #ifdef SOCKET_SIMULATION
             if (isUdpTestMode)
-                flow_socket.setown(CSimulatedReadSocket::udp_create(SocketEndpoint(flow_port, myNode.getIpAddress())));
+                if (udpTestUseUdpSockets)
+                    flow_socket.setown(CSimulatedUdpReadSocket::udp_create(SocketEndpoint(flow_port, myNode.getIpAddress())));
+                else
+                    flow_socket.setown(CSimulatedQueueReadSocket::udp_create(SocketEndpoint(flow_port, myNode.getIpAddress())));
             else
 #endif
                 flow_socket.setown(ISocket::udp_create(flow_port));
@@ -619,8 +625,16 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 #ifdef SOCKET_SIMULATION
             if (isUdpTestMode)
             {
-                receive_socket = CSimulatedReadSocket::udp_create(SocketEndpoint(parent.data_port, myNode.getIpAddress()));
-                selfFlowSocket = CSimulatedWriteSocket::udp_connect(SocketEndpoint(parent.receive_flow_port, myNode.getIpAddress()));
+                if (udpTestUseUdpSockets)
+                {
+                    receive_socket = CSimulatedUdpReadSocket::udp_create(SocketEndpoint(parent.data_port, myNode.getIpAddress()));
+                    selfFlowSocket = CSimulatedUdpWriteSocket::udp_connect(SocketEndpoint(parent.receive_flow_port, myNode.getIpAddress()));
+                }
+                else
+                {
+                    receive_socket = CSimulatedQueueReadSocket::udp_create(SocketEndpoint(parent.data_port, myNode.getIpAddress()));
+                    selfFlowSocket = CSimulatedQueueWriteSocket::udp_connect(SocketEndpoint(parent.receive_flow_port, myNode.getIpAddress()));
+                }
            }
             else
 #endif
