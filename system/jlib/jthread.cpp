@@ -2212,7 +2212,14 @@ public:
         if (_title)
         {
             title.set(_title);
-            PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d", title.get(), prog.get(),(int)hasinput, (int)hasoutput, stderrbufsize);
+            StringBuffer envText;
+            ForEachItemIn(idx, env)
+            {
+                const auto & cur = env.item(idx);
+                envText.append(" ").append(cur);
+            }
+
+            PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d [%s]", title.get(), prog.get(),(int)hasinput, (int)hasoutput, stderrbufsize, envText.str());
         }
         CheckAllowedProgram(prog,allowedprogs);
         retcode = 0;

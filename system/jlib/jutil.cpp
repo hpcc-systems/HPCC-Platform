@@ -1912,10 +1912,10 @@ static const char *findExtension(const char *fn)
 
 unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input)
 {
-    return runExternalCommand(cmd, output, error, cmd, input, ".");
+    return runExternalCommand(cmd, output, error, cmd, input, ".", nullptr);
 }
 
-unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd)
+unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd, const EnvironmentVector * optEnvironment)
 {
     try
     {
@@ -1923,6 +1923,11 @@ unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffe
             cwd = ".";
 
         Owned<IPipeProcess> pipe = createPipeProcess();
+        if (optEnvironment)
+        {
+            for (const auto & cur : *optEnvironment)
+                pipe->setenv(cur.first.c_str(), cur.second.c_str());
+        }
         int ret = START_FAILURE;
         if (pipe->run(title, cmd, cwd, input != NULL, true, true, 1024*1024))
         {

@@ -77,6 +77,9 @@
         "codeVerify": {
           "$ref": "#/definitions/secrets"
         },
+        "git": {
+          "$ref": "#/definitions/secrets"
+        },
         "system": {
           "$ref": "#/definitions/secrets"
         }
@@ -941,6 +944,10 @@
         "options": {
           "type": "array",
           "items": { "$ref": "#/definitions/compileOption" }
+        },
+        "gitUsername": {
+          "type": "string",
+          "description": "The username to use for all remote repository access"
         },
         "resources": {
           "$ref": "#/definitions/resources"

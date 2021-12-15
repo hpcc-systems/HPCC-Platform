@@ -275,6 +275,9 @@ secrets:
   system: {}
     ## Category for secrets published to all components for system level useage
 
+  git: {}
+    ## Category to provide passwords for eclccserver to access private git repos
+
 ## The vaults section mirrors the secret section but leverages vault for the storage of secrets.
 ## There is an additional category for vaults named "ecl-user".  In the future "ecl-user" vault
 ## secrets will be readable directly from ECL code.  Other secret categories are read internally
@@ -442,6 +445,9 @@ eclccserver:
   #- name: globalAutoHoist
   #  value: false
   #  cluster: name   # optional cluster this is applied to
+
+  # used to configure the authentication for git when using the option to compile from a repo.  Also requires an associated secret.
+  #gitUsername: <git-service-account>
 
   ## The following resources apply to child compile pods when useChildProcesses=false, otherwise they apply to eclccserver pod.
   #resources:

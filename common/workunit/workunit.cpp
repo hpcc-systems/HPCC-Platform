@@ -14312,7 +14312,7 @@ static void runKubectlCommand(const char *title, const char *cmd, const char *in
     StringBuffer _output, error;
     if (!output)
         output = &_output;
-    unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".");
+    unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".", nullptr);
     if (output->length())
         MLOG(MCExtraneousInfo, unknownJob, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
     if (error.length())

@@ -27,6 +27,7 @@
 #include <algorithm> 
 #include <iterator>
 #include <functional>
+#include <vector>
 
 #if defined (__APPLE__)
 #include <mach/mach_time.h>
@@ -308,8 +309,9 @@ inline constexpr bool isContainerized() { return false; }
 #define arraysize(T) (sizeof(T)/sizeof(*T))
 #endif
 
+using EnvironmentVector = std::vector<std::pair<std::string, std::string>>;
 extern jlib_decl unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input);
-extern jlib_decl unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd);
+extern jlib_decl unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd, const EnvironmentVector * optEnvironment);
 
 extern jlib_decl unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right);
 
