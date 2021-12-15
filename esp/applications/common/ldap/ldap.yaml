@@ -20,4 +20,6 @@ ldap:
   workunitsBasedn: ou=workunits,ou=ecl
   ldapAdminSecretKey: "ldapadmincredskey"
   ldapAdminVaultId: ""
+  hpccAdminSecretKey: ""
+  hpccAdminVaultId: ""
   checkScopeScans: true

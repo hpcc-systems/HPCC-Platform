@@ -277,6 +277,9 @@ private:
     bool                 m_sysuser_specified;
     StringBuffer         m_sysuser_dn;
 
+    StringBuffer         m_HPCCAdminUser_username;
+    StringBuffer         m_HPCCAdminUser_password;
+
     int                  m_maxConnections;
     
     StringBuffer         m_sdfieldname;
@@ -360,19 +363,19 @@ public:
         //  - Hardcoded : systemCommonName, systemPassword (legacy environment.xml)
         //------------------------------------------------
 
-        StringBuffer systemUserSecretKey;
-        cfg->getProp(".//@ldapAdminSecretKey", systemUserSecretKey);//vault/secrets LDAP username key
-        if (!systemUserSecretKey.isEmpty())
+        StringBuffer adminUserSecretKey;
+        cfg->getProp(".//@ldapAdminSecretKey", adminUserSecretKey);//vault/secrets LDAP username key
+        if (!adminUserSecretKey.isEmpty())
         {
             StringBuffer vaultId;
             cfg->getProp(".//@ldapAdminVaultId", vaultId);//optional HashiCorp vault ID
 
-            DBGLOG("Retrieving LDAP Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", systemUserSecretKey.str());
+            DBGLOG("Retrieving LDAP Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", adminUserSecretKey.str());
             Owned<IPropertyTree> secretTree;
-            if (!isEmptyString(vaultId.str()))
-                secretTree.setown(getVaultSecret("authn", vaultId, systemUserSecretKey.str(), nullptr));
+            if (!vaultId.isEmpty())
+                secretTree.setown(getVaultSecret("authn", vaultId, adminUserSecretKey.str(), nullptr));
             else
-                secretTree.setown(getSecret("authn", systemUserSecretKey.str()));
+                secretTree.setown(getSecret("authn", adminUserSecretKey.str()));
             if (!secretTree)
                 throw MakeStringException(-1, "Error retrieving LDAP Admin username/password");
 
@@ -442,6 +445,32 @@ public:
         if(rc != LDAP_SUCCESS)
         {
             throw MakeStringException(-1, "getServerInfo error - %s", ldap_err2string(rc));
+        }
+
+        //------------------------------------------------
+        //Get optional HPCC Admin account username
+        // Can be specified as
+        //  - Kubernetes secret : lookup key value hpccAdminSecretKey
+        //  - Vault secret : lookup key value hpccAdminVaultId, hpccAdminSecretKey
+        //------------------------------------------------
+        cfg->getProp(".//@hpccAdminSecretKey", adminUserSecretKey.clear());//vault/secrets HPCC Admin username key
+        if (!adminUserSecretKey.isEmpty())
+        {
+            StringBuffer vaultId;
+            cfg->getProp(".//@hpccAdminVaultId", vaultId);//optional HashiCorp vault ID
+
+            DBGLOG("Retrieving optional HPCC Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", adminUserSecretKey.str());
+            Owned<IPropertyTree> secretTree;
+            if (!vaultId.isEmpty())
+                secretTree.setown(getVaultSecret("authn", vaultId, adminUserSecretKey.str(), nullptr));
+            else
+                secretTree.setown(getSecret("authn", adminUserSecretKey.str()));
+            if (secretTree)
+            {
+                getSecretKeyValue(m_HPCCAdminUser_username, secretTree, "username");
+                getSecretKeyValue(m_HPCCAdminUser_password, secretTree, "password");
+                DBGLOG("Retrieved HPCC Admin username %s", m_HPCCAdminUser_username.str());
+            }
         }
 
         const char* basedn = cfg->queryProp(".//@commonBasedn");
@@ -748,6 +777,16 @@ public:
     virtual bool sysuserSpecified()
     {
         return m_sysuser_specified;
+    }
+
+    virtual const char* getHPCCAdminUser_username()
+    {
+        return m_HPCCAdminUser_username.str();
+    }
+
+    virtual const char* getHPCCAdminUser_password()
+    {
+        return m_HPCCAdminUser_password.str();
     }
 
     virtual int getMaxConnections()
@@ -1561,6 +1600,18 @@ public:
     virtual void init(IPermissionProcessor* pp)
     {
         m_pp = pp;
+
+        //Isolate optional HPCC Admin group name
+        StringBuffer adminGroupName;
+        if (!isEmptyString(m_ldapconfig->getAdminGroupDN()))
+        {
+            const char * p = strchr(m_ldapconfig->getAdminGroupDN(), '=');
+            if (p)
+            {
+                adminGroupName.append(++p);
+                adminGroupName.replace(',', (char)0);
+            }
+        }
         static bool createdOU = false;
         CriticalBlock block(lcCrit);
         if (!createdOU)
@@ -1593,7 +1644,57 @@ public:
 
             createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
             createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+
+            //Create the HPCC Administrators group and admin user
+            if (!adminGroupName.isEmpty())
+            {
+                //Create HPCC admin group
+                bool groupExisted = organizationalUnitExists(m_ldapconfig->getAdminGroupDN());
+                if (!groupExisted)
+                {
+                    DBGLOG("Adding HPCC Admin group %s", adminGroupName.str());
+                    try { addGroup(adminGroupName.str(), nullptr, "HPCC Administrators"); }
+                    catch(...) {}//group may already exist, so just move on
+
+                    //Create HPCC Admin user
+                    const char * pUser = m_ldapconfig->getHPCCAdminUser_username();
+                    if (pUser)
+                    {
+                        DBGLOG("Creating HPCC Admin user %s", pUser);
+                        Owned<ISecUser> user = new CLdapSecUser(pUser, nullptr);
+                        user->credentials().setPassword(m_ldapconfig->getHPCCAdminUser_password());
+                        try { addUser(*user.get()); }
+                        catch(...) {}//user may already exist, so just move on
+
+                        //Add HPCC Admin user to admin group
+                        DBGLOG("Adding HPCC Admin user %s to HPCC Admin group %s", pUser, adminGroupName.str());
+                        try { changeUserGroup("add", pUser, adminGroupName); }
+                        catch(...) {}//user may already be in group so just move on
+                    }
+                    else
+                        DBGLOG("HPCC Admin user not specified in configuration (hpccAdminSecretKey)");
+                }
+            }
             createdOU = true;
+        }
+
+        //Set ECLWatch permissions for HPCC admin group
+        if (!adminGroupName.isEmpty())
+        {
+            //SmcAccess OU attribute is not created until later in
+            // startup, so this action must be delayed until here
+            CPermissionAction action;
+            action.m_action = "update";
+            action.m_basedn = m_ldapconfig->getResourceBasedn(RT_DEFAULT);
+            action.m_rname = "SmcAccess";
+            action.m_rtype = RT_SERVICE;
+            action.m_account_name = adminGroupName;
+            action.m_account_type = GROUP_ACT;
+            action.m_allows = SecAccess_Full;
+            action.m_denies = 0;
+            DBGLOG("Setting permissions for HPCC Admin group %s", adminGroupName.str());
+            try { changePermission(action); }
+            catch(...) {}//nothing to do here, so just move on
         }
     }
 
