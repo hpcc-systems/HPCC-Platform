@@ -264,7 +264,6 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
     return (udpTraceLevel >= level);
 }
 #define SOCKET_SIMULATION
-#define SOCKET_SIMULATION_UDP
 
 #ifdef SOCKET_SIMULATION
 #ifdef _DEBUG
@@ -278,6 +277,7 @@ extern unsigned flowPacketsSent[flowType::max_flow_cmd];
 #endif
 
 extern UDPLIB_API bool isUdpTestMode;
+extern UDPLIB_API bool udpTestUseUdpSockets;
 
 class CSocketSimulator : public CInterfaceOf<ISocket>
 {
@@ -412,11 +412,14 @@ class CSimulatedUdpSocket : public CSocketSimulator
 protected:
     Owned<ISocket> realSocket;
 };
+
 class CSimulatedUdpReadSocket : public CSimulatedUdpSocket
 {
     CSimulatedUdpReadSocket(const SocketEndpoint &_me);
+    ~CSimulatedUdpReadSocket();
 
 public:
+    unsigned port;
     static CSimulatedUdpReadSocket* udp_create(const SocketEndpoint &_me);
 
     virtual size32_t get_receive_buffer_size() override;
@@ -438,13 +441,6 @@ public:
     virtual void close() override;
 };
 
-#ifdef SOCKET_SIMULATION_UDP
-using CSimulatedWriteSocket = CSimulatedUdpWriteSocket;
-using CSimulatedReadSocket = CSimulatedUdpReadSocket;
-#else
-using CSimulatedWriteSocket = CSimulatedQueueWriteSocket;
-using CSimulatedReadSocket = CSimulatedQueueReadSocket;
-#endif
 
 #endif
 
