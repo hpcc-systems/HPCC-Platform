@@ -1,7 +1,28 @@
 ## This folder contains lightweight Elastic Stack deployment chart and HPCC Systems preferred values
 
+<table>
+  <thead>
+    <tr>
+      <td align="left">
+        :zap: <b>Note:</b> Elastic Stack components have been reported to be affected by the high-severity vulnerability (CVE-2021-44228) impacting multiple versions of the Apache Log4j 2 utility
+      </td>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td>
+        <ul>
+          <li>Users of elastic4hpcclogs are strongly encouraged to update to chart version 1.2.0 which references Elastic Stack 7.16.1</li>
+          <li>Learn more about Elastic's response to the vulnerability: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476</li>
+        </ul>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 This chart describes a local, minimal Elastic Stack instance for HPCC Systems component log processing.
-Once successfully deployed, HPCC component logs produced within the same namespace should be automatically index
+Once successfully deployed, HPCC component logs produced within the same namespace should be automatically indexed
 on the Elastic Search end-point. Users can query those logs by issuing Elastic Search RESTful API queries, or via
 the Kibana UI (after creating a simple index pattern).
 
