@@ -56,6 +56,9 @@ udpsim:
   udpRequestToSendTimeout: 1000
   udpRequestToSendAckTimeout: 1000
   udpMaxPendingPermits: 1
+  udpTestSocketDelay: 0
+  udpTestSocketJitter: false
+  udpTestVariableDelay: false
   udpTraceFlow: false
   useQueue: false
 )!!";
@@ -154,6 +157,24 @@ void initOptions(int argc, const char **argv)
     udpTraceFlow = options->getPropBool("@udpTraceFlow", false);
     packetsPerThread = options->getPropInt("@packetsPerThread");
     udpTestUseUdpSockets = !options->getPropBool("@useQueue");
+    udpTestSocketDelay = options->getPropInt("@udpTestSocketDelay", 0);
+    udpTestSocketJitter = options->getPropBool("@udpTestSocketJitter");
+    udpTestVariableDelay = options->getPropBool("@udpTestVariableDelay");
+    if (udpTestSocketJitter && !udpTestSocketDelay)
+    {
+        printf("udpTestSocketDelay requires udpTestSocketDelay to be set - setting to 1\n");
+        udpTestSocketDelay = 1;
+    }
+    if (udpTestVariableDelay && !udpTestSocketDelay)
+    {
+        printf("udpTestVariableDelay requires udpTestSocketDelay to be set - setting to 1\n");
+        udpTestSocketDelay = 1;
+    }
+    if (udpTestSocketDelay && udpTestUseUdpSockets)
+    {
+        printf("udpTestSocketDelay requires queue mode (--useQueue=1) - setting it on\n");
+        udpTestUseUdpSockets = false;
+    }
 
     isUdpTestMode = true;
     roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);

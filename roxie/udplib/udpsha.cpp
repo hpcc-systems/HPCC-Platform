@@ -682,22 +682,137 @@ fake read socket that
 #ifdef SOCKET_SIMULATION
 bool isUdpTestMode = false;
 bool udpTestUseUdpSockets = true;
+bool udpTestSocketJitter = false;
+unsigned udpTestSocketDelay = 0;
+bool udpTestVariableDelay = false;
+
+
+static CriticalSection allWriteSocketsCrit;
+static ICopyArrayOf<CSimulatedQueueWriteSocket> allWriteSockets;
+
+class DelayedSocketWriter : public Thread
+{
+public:
+    virtual int run() override
+    {
+        while (running)
+        {
+            unsigned shortestDelay = udpTestSocketDelay;
+            unsigned now = msTick();
+            {
+                CriticalBlock b(allWriteSocketsCrit);
+                ForEachItemIn(idx, allWriteSockets)
+                {
+                    CSimulatedQueueWriteSocket &ws = allWriteSockets.item(idx);
+                    shortestDelay = std::min(shortestDelay, ws.writeDelayed(now));
+                }
+            }
+            MilliSleep(shortestDelay);
+        }
+        return 0;
+    }
+    virtual void start()
+    {
+        running = true;
+        Thread::start();
+    }
+    void stop()
+    {
+        running = false;
+        join();
+    }
+private:
+    std::atomic<bool> running = { false };
+} delayedWriter;
+
+CSimulatedQueueWriteSocket::CSimulatedQueueWriteSocket(const SocketEndpoint &ep) : destEp(ep), delay(udpTestSocketDelay), jitter(udpTestSocketJitter)
+{
+    if (delay)
+    {
+        CriticalBlock b(allWriteSocketsCrit);
+        if (!allWriteSockets.length())
+            delayedWriter.start();
+        allWriteSockets.append(*this);
+    }
+}
+
+CSimulatedQueueWriteSocket::~CSimulatedQueueWriteSocket()
+{
+    if (delay)
+    {
+        CriticalBlock b(allWriteSocketsCrit);
+        allWriteSockets.zap(*this);
+        if (!allWriteSockets.length())
+            delayedWriter.stop();
+    }
+}
 
 CSimulatedQueueWriteSocket* CSimulatedQueueWriteSocket::udp_connect(const SocketEndpoint &ep)
 {
     return new CSimulatedQueueWriteSocket(ep);
 }
 
+unsigned CSimulatedQueueWriteSocket::writeDelayed(unsigned now)
+{
+    CriticalBlock b(crit);
+    while (dueTimes.size())
+    {
+        int delay = dueTimes.front() - now;
+        if (delay > 0)
+            return delay;
+        unsigned jitteredSize = 0;
+        const void *jitteredBuff = nullptr;
+        if (jitter && dueTimes.size()>1 && rand() % 100 == 0)
+        {
+            jitteredSize = packetSizes.front();
+            jitteredBuff = packets.front();
+            dueTimes.pop();
+            packets.pop();
+            packetSizes.pop();
+        }
+        CriticalBlock b(CSimulatedQueueReadSocket::allReadersCrit);
+        CSimulatedQueueReadSocket *dest = CSimulatedQueueReadSocket::connectSimulatedSocket(destEp);
+        if (dest)
+        {
+            dest->writeOwnSimulatedPacket(packets.front(), packetSizes.front());
+            if (jitteredBuff)
+                dest->writeOwnSimulatedPacket(jitteredBuff, jitteredSize);
+        }
+        else
+        {
+            StringBuffer s;
+            free((void *) packets.front());
+            if (jitteredBuff)
+                free((void *) jitteredBuff);
+            DBGLOG("Write to disconnected socket %s", destEp.getUrlStr(s).str());
+        }
+        dueTimes.pop();
+        packets.pop();
+        packetSizes.pop();
+    }
+    return (unsigned) -1;
+}
+
 size32_t CSimulatedQueueWriteSocket::write(void const* buf, size32_t size)
 {
-    CriticalBlock b(CSimulatedQueueReadSocket::allReadersCrit);
-    CSimulatedQueueReadSocket *dest = CSimulatedQueueReadSocket::connectSimulatedSocket(destEp);
-    if (dest)
-        dest->writeSimulatedPacket(buf, size);
+    if (delay)
+    {
+        CriticalBlock b(crit);
+        packetSizes.push(size);
+        packets.push(memcpy(malloc(size), buf, size));
+        dueTimes.push(msTick() + delay * (udpTestVariableDelay && size>200 ? 1 : 3));
+    }
     else
     {
-        StringBuffer s;
-        DBGLOG("Write to disconnected socket %s", destEp.getUrlStr(s).str());
+        CriticalBlock b(CSimulatedQueueReadSocket::allReadersCrit);
+        CSimulatedQueueReadSocket *dest = CSimulatedQueueReadSocket::connectSimulatedSocket(destEp);
+        if (dest)
+            dest->writeSimulatedPacket(buf, size);
+        else
+        {
+            StringBuffer s;
+            DBGLOG("Write to disconnected socket %s", destEp.getUrlStr(s).str());
+        }
     }
     return size;
 }
@@ -743,6 +858,24 @@ void CSimulatedQueueReadSocket::writeSimulatedPacket(void const* buf, size32_t s
         }
         packetSizes.push(size);
         packets.push(memcpy(malloc(size), buf, size));
+        used += size;
+    }
+//    StringBuffer s; DBGLOG("Signalling available data on %s", me.getUrlStr(s).str());
+    avail.signal();
+}
+
+void CSimulatedQueueReadSocket::writeOwnSimulatedPacket(void const* buf, size32_t size)
+{
+    {
+        CriticalBlock b(crit);
+        if (size+used > max)
+        {
+            DBGLOG("Lost packet");
+            free((void *) buf);
+            return;
+        }
+        packetSizes.push(size);
+        packets.push(buf);
         used += size;
     }
 //    StringBuffer s; DBGLOG("Signalling available data on %s", me.getUrlStr(s).str());
