@@ -1204,11 +1204,12 @@ class CComponentStatistics
 
 //--------------------------------------------------------------------------------------------------------------------
 
+static std::unordered_map<unsigned, const StatisticsMapping *> allStatsMappings;
+
 static int compareUnsigned(unsigned const * left, unsigned const * right)
 {
     return (*left < *right) ? -1 : (*left > *right) ? +1 : 0;
 }
-
 
 void StatisticsMapping::createMappings()
 {
@@ -1216,6 +1217,7 @@ void StatisticsMapping::createMappings()
     indexToKind.sort(compareUnsigned);
 
     //Provide mappings to all statistics to map them to the "unknown" bin by default
+    kindToIndex.ensureCapacity(StMax);
     for (unsigned i=0; i < StMax; i++)
         kindToIndex.append(numStatistics());
 
@@ -1224,6 +1226,34 @@ void StatisticsMapping::createMappings()
         unsigned kind = indexToKind.item(i2);
         kindToIndex.replace(i2, kind);
     }
+
+    const unsigned * kinds = indexToKind.getArray();
+    hashcode = hashc((const byte *)kinds, indexToKind.ordinality() * sizeof(unsigned), 0x811C9DC5);
+
+    //All StatisticsMapping objects are assumed to be static, and never destroyed.
+    const StatisticsMapping * existing = allStatsMappings[hashcode];
+    if (existing)
+    {
+        //Another mapping object hashes to the same code - we need to re-implement the hash function so it can be used to deserialized nested mappings...
+        //Throw a c++ standard exception because this will almost certainly be called from the static initializers, so will not be caught
+        if (!equals(*existing))
+            throw std::runtime_error("Need to reimplement the hash function for the statistic mappings");
+    }
+    else
+        allStatsMappings[hashcode] = this;
+}
+
+bool StatisticsMapping::equals(const StatisticsMapping & other)
+{
+    if (numStatistics() != other.numStatistics())
+        return false;
+
+    ForEachItemIn(i, indexToKind)
+    {
+        if (indexToKind.item(i) != other.indexToKind.item(i))
+            return false;
+    }
+    return true;
 }
 
 const StatisticsMapping allStatistics(StKindAll);
@@ -1232,6 +1262,17 @@ const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDisk
 const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles});
 const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles});
+
+const StatisticsMapping * queryStatsMapping(const StatsScopeId & scope, unsigned hashcode)
+{
+    const StatisticsMapping * match = allStatsMappings[hashcode];
+    if (match)
+        return match;
+
+    StringBuffer scopeText;
+    scope.getScopeText(scopeText);
+    throw makeStringExceptionV(0, "No Stats mapping found for scope '%s' hashcode %u", scopeText.str(), hashcode);
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -2855,6 +2896,7 @@ void CNestedRuntimeStatisticCollection::set(const CNestedRuntimeStatisticCollect
 bool CNestedRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 {
     scope.serialize(out);
+    out.append(stats->queryMapping().getUniqueHash());
     return stats->serialize(out);
 }
 
@@ -2925,10 +2967,12 @@ void CNestedRuntimeStatisticMap::deserialize(MemoryBuffer& in)
     for (unsigned i=0; i < numItems; i++)
     {
         StatsScopeId scope;
+        unsigned mappingCode;
         scope.deserialize(in, currentStatisticsVersion);
+        in.read(mappingCode);
 
         //Use allStatistics as the default mapping if it hasn't already been added.
-        CNestedRuntimeStatisticCollection & child = addNested(scope, allStatistics);
+        CNestedRuntimeStatisticCollection & child = addNested(scope, *queryStatsMapping(scope, mappingCode));
         child.deserialize(in);
     }
 }
@@ -2940,10 +2984,12 @@ void CNestedRuntimeStatisticMap::deserializeMerge(MemoryBuffer& in)
     for (unsigned i=0; i < numItems; i++)
     {
         StatsScopeId scope;
+        unsigned mappingCode;
         scope.deserialize(in, currentStatisticsVersion);
+        in.read(mappingCode);
 
         //Use allStatistics as the default mapping if it hasn't already been added.
-        CNestedRuntimeStatisticCollection & child = addNested(scope, allStatistics);
+        CNestedRuntimeStatisticCollection & child = addNested(scope, *queryStatsMapping(scope, mappingCode));
         child.deserializeMerge(in);
     }
 }
