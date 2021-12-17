@@ -131,26 +131,38 @@ private:
 // Check for aborts of the workunit as it is compiling
 //------------------------------------------------------------------------------------------------------------------
 
+static bool useChildProcesses = false;      // Use k8s jobs for compile tasks
+static unsigned childProcessTimeLimit = 0;  // If using k8s jobs to compile, try a child process first but abort if it takes longer than this time (seconds)
+
 class AbortWaiter : public Thread
 {
 public:
-    AbortWaiter(IPipeProcess *_pipe, IConstWorkUnit *_wu)
-        : Thread("EclccCompileThread::AbortWaiter"), pipe(_pipe), wu(_wu)
+    AbortWaiter(IConstWorkUnit *_wu, unsigned _timeLimit)
+        : Thread("EclccCompileThread::AbortWaiter"), wu(_wu), timeLimit(_timeLimit)
     {
     }
 
     virtual int run()
     {
         wu->subscribe(SubscribeOptionAbort);
+        unsigned start = msTick();
+        timedOut = false;
         try
         {
             for (;;)
             {
-                if (sem.wait(2000))
+                if (sem.wait(1000))
                     break;
-                if (wu->aborting())
+                timedOut = (timeLimit && (msTick() - start >= timeLimit*1000));
+                if (timedOut || wu->aborting())
                 {
-                    pipe->abort();
+                    CriticalBlock b(crit);
+                    DBGLOG("Aborting compilation");
+                    ForEachItemIn(idx, pipes)
+                    {
+                        IPipeProcess *pipe = pipes.item(idx);
+                        pipe->abort();
+                    }
                     break;
                 }
             }
@@ -162,15 +174,47 @@ public:
         return 0;
     }
 
-    void stop()
+    bool stop()
     {
         sem.interrupt(NULL);
         join();
+        return timedOut;
+    }
+
+    void addPipe(IPipeProcess *pipe)
+    {
+        CriticalBlock b(crit);
+        pipes.append(LINK(pipe));
+        if (timedOut)
+            pipe->abort();
+    }
+    void removePipe(IPipeProcess *pipe)
+    {
+        CriticalBlock b(crit);
+        pipes.zap(pipe);
     }
 private:
-    IPipeProcess *pipe;
+    CriticalSection crit;
+    unsigned timeLimit = 0;
+    bool timedOut = false;
+    IPointerArrayOf<IPipeProcess> pipes;
     IConstWorkUnit *wu;
     InterruptableSemaphore sem;
+};
+
+class AbortPipeWaiter
+{
+    AbortWaiter &waiter;
+    IPipeProcess *pipe;
+public:
+    AbortPipeWaiter(AbortWaiter &_waiter, IPipeProcess *_pipe) : waiter(_waiter), pipe(_pipe)
+    {
+        waiter.addPipe(pipe);
+    }
+    ~AbortPipeWaiter()
+    {
+        waiter.removePipe(pipe);
+    }
 };
 
 //------------------------------------------------------------------------------------------------------------------
@@ -301,7 +345,43 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         }
     }
 
-    unsigned executeLine(const char *line, StringBuffer &output, bool alreadyFailed)
+    unsigned doRunCompileCommand(AbortWaiter &abortWaiter, StringBuffer &output, const char *cmd)
+    {
+        try
+        {
+            Owned<IPipeProcess> pipe = createPipeProcess();
+            AbortPipeWaiter aborter(abortWaiter, pipe);
+            int ret = START_FAILURE;
+            if (pipe->run(nullptr, cmd, ".", false, true, true, 1024*1024))
+            {
+                char buf[1024];
+                while (true)
+                {
+                    size32_t read = pipe->read(sizeof(buf), buf);
+                    if (!read)
+                        break;
+                    output.append(read, buf);
+                }
+                ret = pipe->wait();
+                while (true)
+                {
+                    size32_t read = pipe->readError(sizeof(buf), buf);
+                    if (!read)
+                        break;
+                    output.append(read, buf);
+                }
+            }
+            return ret;
+        }
+        catch (IException *E)
+        {
+            E->Release();
+            output.clear();
+            return START_FAILURE;
+        }
+    }
+
+    unsigned executeLine(AbortWaiter &abortWaiter, const char *line, StringBuffer &output, bool alreadyFailed)
     {
         if (isEmptyString(line))
             return 0;
@@ -326,14 +406,15 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         else if (!alreadyFailed)
         {
             DBGLOG("Executing %s", line);
-            unsigned retcode = runExternalCommand(nullptr, output, output, line, nullptr, nullptr);
+            unsigned retcode = doRunCompileCommand(abortWaiter, output, line);
             if (retcode)
                 DBGLOG("Error: retcode=%u executing %s", retcode, line);
             return retcode;
         }
         return 0;
     }
-    unsigned doCompileCpp(const char *wuid, unsigned maxThreads)
+
+    unsigned doCompileCpp(AbortWaiter &abortWaiter, const char *wuid, unsigned maxThreads)
     {
         RelaxedAtomic<unsigned> numFailed = { 0 };
         if (!maxThreads)
@@ -364,12 +445,12 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 lineIdx++;
             CriticalSection crit;
             DBGLOG("Compiling %u files, %u at once", lineIdx-firstCompile, maxThreads);
-            asyncFor(lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output](unsigned i)
+            asyncFor(lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output, &abortWaiter](unsigned i)
             {
                 try
                 {
                     StringBuffer loutput;
-                    if (executeLine(lines.item(i+firstCompile), loutput, (numFailed != 0)))
+                    if (executeLine(abortWaiter, lines.item(i+firstCompile), loutput, (numFailed != 0)))
                         numFailed++;
                     CriticalBlock b(crit);
                     output.append(loutput);
@@ -384,7 +465,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         while (lines.isItem(lineIdx))
         {
             const char *line = lines.item(lineIdx);
-            unsigned retcode = executeLine(line, output, (numFailed != 0));
+            unsigned retcode = executeLine(abortWaiter, line, output, (numFailed != 0));
             if (retcode)
                 numFailed++;
             lineIdx++;
@@ -428,8 +509,9 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
     }
 #endif
 
-    bool compile(const char *wuid, const char *target, const char *targetCluster)
+    bool compile(const char *wuid, const char *target, const char *targetCluster, bool &timedOut)
     {
+        timedOut = false;
         Owned<IConstWUQuery> query = workunit->getQuery();
         if (!query)
         {
@@ -541,13 +623,15 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         try
         {
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
-            Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
+            AbortWaiter abortWaiter(workunit, childProcessTimeLimit);
+            AbortPipeWaiter aborter(abortWaiter, pipe);
+
             eclccCmd.insert(0, eclccProgName);
             cycle_t startCompile = get_cycles_now();
             if (!pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true))
                 throw makeStringExceptionV(999, "Failed to run eclcc command %s", eclccCmd.str());
             errorReader->start();
-            abortWaiter->start();
+            abortWaiter.start();
             try
             {
                 pipe->write(eclQuery.s.length(), eclQuery.s.str());
@@ -560,12 +644,11 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             }
             unsigned retcode = pipe->wait();
             errorReader->join();
-            abortWaiter->stop();
             if (retcode == 0 && compileCppSeparately)
             {
                 cycle_t startCompileCpp = get_cycles_now();
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile:compile c++", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
-                retcode = doCompileCpp(wuid, workunit->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads));
+                retcode = doCompileCpp(abortWaiter, wuid, workunit->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads));
                 unsigned __int64 elapsed_compilecpp = cycle_to_nanosec(get_cycles_now() - startCompileCpp);
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed_compilecpp, 1, 0, StatsMergeReplace);
             }
@@ -574,65 +657,68 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 unsigned __int64 elapsed_compile = cycle_to_nanosec(get_cycles_now() - startCompile);
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StTimeElapsed, NULL, elapsed_compile, 1, 0, StatsMergeReplace);
             }
-            if (retcode == 0)
+            timedOut = abortWaiter.stop();
+            if (!timedOut)
             {
-                StringBuffer realdllname, dllurl;
-                realdllname.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
-
-                StringBuffer realdllfilename;
-                realdllfilename.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
-
-                StringBuffer wuXML;
-                if (!getWorkunitXMLFromFile(realdllfilename, wuXML))
-                    throw makeStringException(999, "Failed to extract workunit from query dll");
-
-                Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
-                queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, false, true);
-                workunit->setIsClone(false);
-                const char *jobname = embeddedWU->queryJobName();
-                if (jobname && *jobname) //let ECL win naming job during initial compile
-                    workunit->setJobName(jobname);
-                if (!workunit->getDebugValueBool("obfuscateOutput", false))
+                if (retcode == 0 && !timedOut)
                 {
+                    StringBuffer realdllname, dllurl;
+                    realdllname.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
+
+                    StringBuffer realdllfilename;
+                    realdllfilename.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
+
+                    StringBuffer wuXML;
+                    if (!getWorkunitXMLFromFile(realdllfilename, wuXML))
+                        throw makeStringException(999, "Failed to extract workunit from query dll");
+
+                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
+                    queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, false, true);
+                    workunit->setIsClone(false);
+                    const char *jobname = embeddedWU->queryJobName();
+                    if (jobname && *jobname) //let ECL win naming job during initial compile
+                        workunit->setJobName(jobname);
+                    if (!workunit->getDebugValueBool("obfuscateOutput", false))
+                    {
+                        Owned<IWUQuery> query = workunit->updateQuery();
+                        if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))  // MORE - if what was submitted was an archive, this is probably pointless?
+                            query->setQueryText(wuXML.str());
+                        else
+                            query->setQueryText(eclQuery.s.str());
+                    }
+
+                    createUNCFilename(realdllfilename.str(), dllurl);
+                    unsigned crc = crc_file(realdllfilename.str());
                     Owned<IWUQuery> query = workunit->updateQuery();
-                    if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))  // MORE - if what was submitted was an archive, this is probably pointless?
-                        query->setQueryText(wuXML.str());
-                    else
-                        query->setQueryText(eclQuery.s.str());
+#ifndef _CONTAINERIZED
+                    associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
+#endif
+                    associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
+#ifdef _CONTAINERIZED
+                    removeGeneratedFiles(wuid);
+#endif
+                    queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
+                }
+                else
+                {
+#ifndef _CONTAINERIZED
+                    Owned<IWUQuery> query = workunit->updateQuery();
+                    associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
+#endif
                 }
 
-                createUNCFilename(realdllfilename.str(), dllurl);
-                unsigned crc = crc_file(realdllfilename.str());
-                Owned<IWUQuery> query = workunit->updateQuery();
-#ifndef _CONTAINERIZED
-                associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
-#endif
-                associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
-#ifdef _CONTAINERIZED
-                removeGeneratedFiles(wuid);
-#endif
-                queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
+                if (compileCppSeparately)
+                {
+                    //Files need to be added after the workunit has been cloned - otherwise they are overwritten
+                    Owned<IWUQuery> query = workunit->updateQuery();
+                    VStringBuffer ccfileName("%s.cc", wuid);
+                    VStringBuffer cclogfileName("%s.cc.log", wuid);
+                    if (checkFileExists(cclogfileName))
+                        associateLocalFile(query, FileTypeLog, cclogfileName, "CPP log", 0);
+                    if (saveTemps && checkFileExists(ccfileName))
+                        associateLocalFile(query, FileTypeLog, ccfileName, "compile actions log", 0);
+                }
             }
-            else
-            {
-#ifndef _CONTAINERIZED
-                Owned<IWUQuery> query = workunit->updateQuery();
-                associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
-#endif
-            }
-
-            if (compileCppSeparately)
-            {
-                //Files need to be added after the workunit has been cloned - otherwise they are overwritten
-                Owned<IWUQuery> query = workunit->updateQuery();
-                VStringBuffer ccfileName("%s.cc", wuid);
-                VStringBuffer cclogfileName("%s.cc.log", wuid);
-                if (checkFileExists(cclogfileName))
-                    associateLocalFile(query, FileTypeLog, cclogfileName, "CPP log", 0);
-                if (saveTemps && checkFileExists(ccfileName))
-                    associateLocalFile(query, FileTypeLog, ccfileName, "compile actions log", 0);
-            }
-
             workunit->commit();
             return (retcode == 0);
         }
@@ -664,41 +750,49 @@ public:
     {
         wuid.set((const char *) param);
     }
+
+#ifdef _CONTAINERIZED
+    void compileViaK8sJob()
+    {
+        Owned<IException> error;
+        try
+        {
+            runK8sJob("compile", wuid, wuid);
+        }
+        catch (IException *E)
+        {
+            error.setown(E);
+        }
+        if (error)
+        {
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            workunit.setown(factory->updateWorkUnit(wuid.get()));
+            if (workunit)
+            {
+                if (workunit->aborting())
+                    workunit->setState(WUStateAborted);
+                else if (workunit->getState()!=WUStateAborted)
+                {
+                    StringBuffer msg;
+                    error->errorMessage(msg);
+                    addExceptionToWorkunit(workunit, SeverityError, "eclccserver", error->errorCode(), msg.str(), NULL, 0, 0, 0);
+                    workunit->setState(WUStateFailed);
+                }
+            }
+            workunit->commit();
+            workunit.clear();
+        }
+    }
+#endif
+
     virtual void threadmain() override
     {
         DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IPropertyTree> config = getComponentConfig();
 #ifdef _CONTAINERIZED
-        if (!config->getPropBool("@useChildProcesses", false) && !config->hasProp("@workunit"))
+        if (!useChildProcesses && !childProcessTimeLimit && !config->hasProp("@workunit"))
         {
-            Owned<IException> error;
-            try
-            {
-                runK8sJob("compile", wuid, wuid);
-            }
-            catch (IException *E)
-            {
-                error.setown(E);
-            }
-            if (error)
-            {
-                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                workunit.setown(factory->updateWorkUnit(wuid.get()));
-                if (workunit)
-                {
-                    if (workunit->aborting())
-                        workunit->setState(WUStateAborted);
-                    else if (workunit->getState()!=WUStateAborted)
-                    {
-                        StringBuffer msg;
-                        error->errorMessage(msg);
-                        addExceptionToWorkunit(workunit, SeverityError, "eclccserver", error->errorCode(), msg.str(), NULL, 0, 0, 0);
-                        workunit->setState(WUStateFailed);
-                    }
-                }
-                workunit->commit();
-                workunit.clear();
-            }
+            compileViaK8sJob();
             return;
         }
 #endif
@@ -746,7 +840,17 @@ public:
         bool ok = false;
         try
         {
-            ok = compile(wuid, platformName, clusterName.str());
+            bool timedOut = false;
+            ok = compile(wuid, platformName, clusterName.str(), timedOut);
+#ifdef _CONTAINERIZED
+            if (timedOut)
+            {
+                workunit.clear();
+                DBGLOG("Workunit %s local compilation timed out, launching k8s job", wuid.get());
+                compileViaK8sJob();
+                return;
+            }
+#endif
         }
         catch (IException * e)
         {
@@ -1211,8 +1315,9 @@ int main(int argc, const char *argv[])
 #ifdef _CONTAINERIZED
             queryCodeSigner().initForContainer();
 
-            bool useChildProcesses = globals->getPropInt("@useChildProcesses", false);
+            useChildProcesses = globals->getPropInt("@useChildProcesses", false);
             unsigned maxThreads = globals->getPropInt("@maxActive", 4);
+            childProcessTimeLimit = useChildProcesses ? 0 : globals->getPropInt("@childProcessTimeLimit", 10);
 #else
             // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
             // still accept the old name if the new one is not present.
