@@ -807,8 +807,7 @@ class CSendManager : implements ISendManager, public CInterface
         ~send_receive_flow() 
         {
             running = false;
-            if (flow_socket)
-                flow_socket->shutdownNoThrow();
+            shutdownAndCloseNoThrow(flow_socket);
             join();
         }
         

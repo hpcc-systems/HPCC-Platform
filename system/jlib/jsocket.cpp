@@ -5545,15 +5545,7 @@ CSingletonSocketConnection::CSingletonSocketConnection(SocketEndpoint &_ep)
 
 CSingletonSocketConnection::~CSingletonSocketConnection()
 {
-    try {
-        if (sock)
-            sock->close();
-    }
-    catch (IException *e) {
-        if (e->errorCode()!=JSOCKERR_graceful_close)
-            EXCLOG(e,"CSingletonSocketConnection close");
-        e->Release();
-    }
+    shutdownAndCloseNoThrow(sock);
 }
 
 void CSingletonSocketConnection::set_keep_alive(bool keepalive)
@@ -7104,6 +7096,22 @@ public:
 IAllowListHandler *createAllowListHandler(AllowListPopulateFunction populateFunc, AllowListFormatFunction roleFormatFunc)
 {
     return new CAllowListHandler(populateFunc, roleFormatFunc);
+}
+
+extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket)
+{
+    if (!optSocket)
+        return;
+
+    optSocket->shutdownNoThrow();
+    try
+    {
+        optSocket->close();
+    }
+    catch (IException * e)
+    {
+        e->Release();
+    }
 }
 
 static_assert(sizeof(IpAddress) == 16, "check size of IpAddress");

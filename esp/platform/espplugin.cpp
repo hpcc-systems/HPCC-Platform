@@ -112,8 +112,7 @@ int CEspServiceThread::run()
 
    DBGLOG("Closing Socket(%d)", m_socket->OShandle());
 
-   m_socket->shutdown();
-   m_socket->close();
+   shutdownAndCloseNoThrow(m_socket);
 
    Release();
    return 0;

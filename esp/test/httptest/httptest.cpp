@@ -886,10 +886,8 @@ int COneServerHttpProxyThread::start()
         if(httptest_tracelevel > 5)
             fprintf(m_ofile, ">>sent the response back to %s:%d:\n", peername, port);
 
-        socket2->shutdown();
-        socket2->close();
-        m_client->shutdown();
-        m_client->close();
+        shutdownAndCloseNoThrow(socket2);
+        shutdownAndCloseNoThrow(m_client);
     }
     catch(IException *excpt)
     {
@@ -1092,10 +1090,8 @@ int CHttpProxyThread::run()
             //m_client->write(respbuf.str(), respbuf.length());
             fflush(m_ofile);
 
-            m_remotesocket->shutdown();
-            m_remotesocket->close();
-            m_client->shutdown();
-            m_client->close();
+            shutdownAndCloseNoThrow(m_remotesocket);
+            shutdownAndCloseNoThrow(m_client);
         }
     }
     catch(IException *excpt)

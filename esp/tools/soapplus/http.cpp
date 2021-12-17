@@ -1826,8 +1826,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
 
         if(!isPersist || iter >= numReq - 1)
         {
-            socket->shutdown();
-            socket->close();
+            shutdownAndCloseNoThrow(socket);
         }
 
         unsigned end1 = msTick();

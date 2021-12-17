@@ -369,7 +369,7 @@ public:
         CriticalBlock critblock(critsect);
         if (datasock ) {
             try {
-                datasock->shutdown();
+                datasock->shutdownNoThrow();
                 datasock->close();
             }
             catch (IJSOCK_Exception *e)

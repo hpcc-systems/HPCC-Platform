@@ -2059,15 +2059,7 @@ public:
 
     virtual ~CSingletonSecureSocketConnection()
     {
-        try {
-            if (sock)
-                sock->close();
-        }
-        catch (IException *e) {
-            if (e->errorCode()!=JSOCKERR_graceful_close)
-                EXCLOG(e,"CSingletonSocketConnection close");
-            e->Release();
-        }
+        shutdownAndCloseNoThrow(sock);
     }
 
     bool connect(unsigned timeoutms) override

@@ -274,24 +274,7 @@ public:
 
     virtual void cleanupSocket(ISocket *sock)
     {
-        if (!sock)
-            return;
-        try
-        {
-            sock->shutdown();
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
-        try
-        {
-            sock->close();
-        }
-        catch (IException *e)
-        {
-            e->Release();
-        }
+        shutdownAndCloseNoThrow(sock);
     }
 
     virtual int run()
