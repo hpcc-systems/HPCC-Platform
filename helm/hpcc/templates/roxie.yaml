@@ -253,6 +253,7 @@ spec:
       serviceAccountName: "hpcc-default"
       initContainers:
       {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      terminationGracePeriodSeconds: {{ add ($roxie.agentQueryReleaseDelaySeconds | default 60) 30 }}
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -288,6 +289,10 @@ spec:
           containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["testsocket", ".", "control:closedown"]        
 {{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" $roxie.serverResources) | indent 8 }}
@@ -359,6 +364,7 @@ spec:
       serviceAccountName: "hpcc-default"
       initContainers:
       {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      terminationGracePeriodSeconds: {{ add ($roxie.agentQueryReleaseDelaySeconds | default 60) 30 }}
       containers:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
@@ -396,6 +402,10 @@ spec:
           containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["testsocket", ".", "control:closedown"]
 {{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}

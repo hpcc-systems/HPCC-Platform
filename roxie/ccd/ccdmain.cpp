@@ -299,11 +299,14 @@ public:
     }
 } waiter;
 
+static Semaphore closedDown;
+
 void closedown()
 {
+    waiter.onAbort();
+    closedDown.wait();
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
-    waiter.onAbort();
 }
 
 void getAccessList(const char *aclName, const IPropertyTree *topology, IPropertyTree *aclInfo)
@@ -1467,6 +1470,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         DBGLOG("Roxie closing down");
         shuttingDown = true;
+        stopTopoThread();
+        ::Release(globalPackageSetManager);
+        globalPackageSetManager = NULL;
         if (pingInterval)
             stopPingTimer();
         setSEHtoExceptionHandler(NULL);
@@ -1477,11 +1483,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         packetDiscarder->stop();
         packetDiscarder.clear();
-        stopTopoThread();
         ROQ->stop();
         ROQ->join();
         ROQ->Release();
         ROQ = NULL;
+        stopDelayedReleaser();
+        closedDown.signal();
     }
     catch (IException *E)
     {
@@ -1496,9 +1503,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
-    ::Release(globalPackageSetManager);
-    globalPackageSetManager = NULL;
-    stopDelayedReleaser();
     cleanupPlugins();
     unloadHpccProtocolPlugin();
     closeMulticastSockets();
