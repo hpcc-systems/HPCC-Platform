@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,35 +14,22 @@
 #    limitations under the License.
 ################################################################################
 
+# Component: azure
 
-# Component: gitfile
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for git repository direct reading hook
+#    Cmake Input File for azure support libraries
 #####################################################
 
-project( gitfile )
 
-include (libgit2.cmake)
+project( libgit2helper )
 
-set (    SRCS
-         gitfile.cpp
-         gitfile.hpp
-    )
+remove_definitions(-fvisibility=hidden)
 
-include_directories (
-         ${HPCC_SOURCE_DIR}/system/include
-         ${HPCC_SOURCE_DIR}/system/jlib
-         ${HPCC_SOURCE_DIR}/common/remote/hooks/git/libgit2/include
-    )
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libgit2 ${CMAKE_CURRENT_BINARY_DIR}/libgit2 EXCLUDE_FROM_ALL)
 
-ADD_DEFINITIONS( -D_USRDLL -DGITFILE_EXPORTS )
-
-HPCC_ADD_LIBRARY( gitfile SHARED ${SRCS}  )
-install ( TARGETS gitfile DESTINATION filehooks )
-
-target_link_libraries ( gitfile
-    jlib
-    git2
-    )
+#Install the libraries that were created by the git2 sub project into the appropriate location
+install(TARGETS git2
+    LIBRARY DESTINATION ${LIB_DIR}
+)
