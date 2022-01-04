@@ -1,0 +1,27 @@
+<Dataset name='pow_0'>
+ <Row><pow0>1.0</pow0></Row>
+</Dataset>
+<Dataset name='pow_1'>
+ <Row><pow1>1.123456</pow1></Row>
+</Dataset>
+<Dataset name='pow_2'>
+ <Row><pow2>1.262153383936</pow2></Row>
+</Dataset>
+<Dataset name='pow_3'>
+ <Row><pow3>1.417973792103203</pow3></Row>
+</Dataset>
+<Dataset name='pow_4'>
+ <Row><pow4>1.593031164581096</pow4></Row>
+</Dataset>
+<Dataset name='pow_n1'>
+ <Row><pow_n1>0.8901105161216817</pow_n1></Row>
+</Dataset>
+<Dataset name='pow_n2'>
+ <Row><pow_n2>0.7922967309104065</pow_n2></Row>
+</Dataset>
+<Dataset name='pow_n3'>
+ <Row><pow_n3>0.7052316520721831</pow_n3></Row>
+</Dataset>
+<Dataset name='pow_n4'>
+ <Row><pow_n4>0.6277341098113171</pow_n4></Row>
+</Dataset>
