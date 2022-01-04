@@ -7511,7 +7511,7 @@ void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHq
     __int64 rightIntVal = value->getIntValue();
     __int64 absExp = abs(rightIntVal);
 
-    const uint MAX_EXP_INLINE_VALUE = 3;
+    const unsigned int MAX_EXP_INLINE_VALUE = 3;
     if (absExp > MAX_EXP_INLINE_VALUE)
     {
         doBuildExprSysFunc(ctx, expr, tgt, powerId);
@@ -7529,29 +7529,36 @@ void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHq
     {
         tgt.expr.setown(createConstant(left->queryType()->castFrom(1.0)));
     }
-    else if (rightIntVal == 1)
-    {
-        tgt.expr.setown(LINK(leftBound.expr));
-    }
     else
     {
-        LINK(leftBound.expr);
-
-        IHqlExpression* outExpr = leftBound.expr;
+        OwnedHqlExpr outExpr = LINK(leftBound.expr);
         for (int i = 1; i < absExp; i++)
         {
-            outExpr = createValue(no_mul, LINK(realType), outExpr, LINK(leftBound.expr));
+            outExpr.setown(createValue(no_mul, LINK(realType), outExpr.getClear(), LINK(leftBound.expr)));
         }
 
-        tgt.expr.setown(outExpr);
+        tgt.expr.setown(outExpr.getClear());
 
         if (rightIntVal < 0)
         {
-            tgt.expr.setown(createValue(no_div, LINK(realType), createConstant(1.0), LINK(tgt.expr)));
-        }
+            OwnedHqlExpr numerator = createConstant(tgt.expr->queryType()->castFrom(1.0));
+            IHqlExpression* divisor = tgt.expr.get();
+            OwnedHqlExpr pureExpr = createValue(no_div, left->getType(), numerator.getClear(), LINK(divisor));
 
-        OwnedHqlExpr cond = createBoolExpr(no_ne, LINK(leftBound.expr), getZero());
-        tgt.expr.setown(createValue(no_if, leftBound.expr->getType(), LINK(cond), LINK(tgt.expr), getZero()));
+            CHqlBoundTarget tempTarget;
+            createTempFor(ctx, expr, tempTarget);
+
+            IValue * zero = left->queryType()->castFrom(false, 0);
+            OwnedHqlExpr eZero = createConstant(zero);
+
+            BuildCtx subctx(ctx);
+            IHqlStmt * stmt = subctx.addFilter(leftBound.expr);
+            assignBound(subctx, tempTarget, pureExpr);
+            subctx.selectElse(stmt);
+            doBuildDivideByZero(subctx, &tempTarget, eZero, NULL);
+
+            tgt.setFromTarget(tempTarget);
+        }
     }
 }
 
