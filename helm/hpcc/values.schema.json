@@ -1105,6 +1105,10 @@
         "certificate": {
           "type": "string",
           "description": "Name of the secret which contains the TLS certificate.  Custom configuration instead of using, or overriding cert-manager certificate."
+        },
+        "bindingInfo": {
+          "description": "Customizable binding options",
+          "type": "object"
         }
       }
     },

@@ -195,6 +195,11 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
     Owned<IPropertyTreeIterator> features = appAuth->getElements(featuresPath);
     ForEach(*features)
         legacyAuthenticate->addPropTree("Feature", LINK(&features->query()));
+
+    VStringBuffer settingsPath("resource_map/%s/Setting", service);
+    Owned<IPropertyTreeIterator> settings = appAuth->getElements(settingsPath);
+    ForEach(*settings)
+        legacyAuthenticate->addPropTree("Setting", LINK(&settings->query()));
 }
 
 void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
@@ -214,6 +219,14 @@ void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *servi
         if (authenticate)
             bindAuthResources(authenticate, app, service, auth);
     }
+
+    // bindingInfo has sub-elements named for services like 'esdl' or 'eclwatch'.
+    // The elements under each service section are merged into the bindingEntry
+    // for matching services.
+    xpath.setf("bindingInfo/%s", service);
+    IPTree *branch = app->queryBranch(xpath.str());
+    if (branch)
+        mergePTree(bindingEntry, branch);
 }
 
 static void mergeServicePTree(IPropertyTree *target, IPropertyTree *toMerge)
