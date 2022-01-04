@@ -1,17 +1,17 @@
 <Dataset name='pow_0'>
- <Row><pow0>1.0</pow0></Row>
+ <Row><pow_0>1.0</pow_0></Row>
 </Dataset>
 <Dataset name='pow_1'>
- <Row><pow1>1.123456</pow1></Row>
+ <Row><pow_1>1.123456</pow_1></Row>
 </Dataset>
 <Dataset name='pow_2'>
- <Row><pow2>1.262153383936</pow2></Row>
+ <Row><pow_2>1.262153383936</pow_2></Row>
 </Dataset>
 <Dataset name='pow_3'>
- <Row><pow3>1.417973792103203</pow3></Row>
+ <Row><pow_3>1.417973792103203</pow_3></Row>
 </Dataset>
 <Dataset name='pow_4'>
- <Row><pow4>1.593031164581096</pow4></Row>
+ <Row><pow_4>1.593031164581096</pow_4></Row>
 </Dataset>
 <Dataset name='pow_n1'>
  <Row><pow_n1>0.8901105161216817</pow_n1></Row>
