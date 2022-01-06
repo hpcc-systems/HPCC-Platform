@@ -1574,14 +1574,14 @@ IHqlExpression * HqlCppTranslator::declareLinkedRowExpr(BuildCtx & ctx, IHqlExpr
 
 BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember)
 {
-    assertex(expr->isDatarow());
+    assertex(expr->isDatarow() || resolveSelectorDataset(ctx, expr));
     OwnedHqlExpr boundRow = declareLinkedRowExpr(ctx, expr->queryRecord(), isMember);
     return createBoundRow(expr, boundRow);
 }
 
 BoundRow * HqlCppTranslator::declareStaticRow(BuildCtx & ctx, IHqlExpression * expr)
 {
-    assertex(expr->isDatarow());
+    assertex(expr->isDatarow() || resolveSelectorDataset(ctx, expr));
 
     IHqlExpression * record = expr->queryRecord();
     unsigned maxRecordSize = getMaxRecordSize(record);
@@ -1609,7 +1609,7 @@ BoundRow * HqlCppTranslator::declareStaticRow(BuildCtx & ctx, IHqlExpression * e
 
 BoundRow * HqlCppTranslator::declareTempRow(BuildCtx & ctx, BuildCtx & codectx, IHqlExpression * expr)
 {
-    assertex(expr->isDatarow());
+    assertex(expr->isDatarow() || resolveSelectorDataset(ctx, expr));
     IHqlExpression * record = expr->queryRecord();
 
     //if maxRecordSize is too large, and cannot store it in a class, then allocate a pointer to it dynamically.
