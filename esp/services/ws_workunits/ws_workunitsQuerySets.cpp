@@ -77,13 +77,13 @@ void ensureInputString(const char* input, bool lowerCase, StringBuffer& inputStr
         inputStr.toLowerCase();
 }
 
-static IClientWsWorkunits *ensureWsWorkunitsClient(IClientWsWorkunits *ws, IEspContext *ctx, const char *netAddress)
+static IClientWsWorkunits *ensureWsWorkunitsClient(IClientWsWorkunits *ws, IEspContext *ctx, const char *netAddress, bool useSSL)
 {
     if (ws)
         return LINK(ws);
     StringBuffer url;
     if (netAddress && *netAddress)
-        url.appendf("http://%s%s/WsWorkunits", netAddress, (!strchr(netAddress, ':')) ? ":8010" : "");
+        url.appendf("%s://%s%s/WsWorkunits", useSSL ? "https" : "http", netAddress, (!strchr(netAddress, ':')) ? ":8010" : "");
     else
     {
         if (!ctx)
@@ -91,7 +91,7 @@ static IClientWsWorkunits *ensureWsWorkunitsClient(IClientWsWorkunits *ws, IEspC
         StringBuffer ip;
         short port = 0;
         ctx->getServAddress(ip, port);
-        url.appendf("http://%s:%d/WsWorkunits", ip.str(), port);
+        url.appendf("%s://%s:%d/WsWorkunits", useSSL ? "https" : "http", ip.str(), port);
     }
     Owned<IClientWsWorkunits> cws = createWsWorkunitsClient();
     cws->addServiceUrl(url);
@@ -100,9 +100,9 @@ static IClientWsWorkunits *ensureWsWorkunitsClient(IClientWsWorkunits *ws, IEspC
     return cws.getClear();
 }
 
-IClientWUQuerySetDetailsResponse *fetchQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *target, const char *queryid)
+IClientWUQuerySetDetailsResponse *fetchQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *target, const char *queryid, bool useSSL)
 {
-    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress);
+    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress, useSSL);
 
     //using existing WUQuerysetDetails rather than extending WUQueryDetails, to support copying query meta data from prior releases
     Owned<IClientWUQuerySetDetailsRequest> reqQueryInfo = ws->createWUQuerysetDetailsRequest();
@@ -113,9 +113,9 @@ IClientWUQuerySetDetailsResponse *fetchQueryDetails(IClientWsWorkunits *_ws, IEs
     return ws->WUQuerysetDetails(reqQueryInfo);
 }
 
-void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer)
+void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, bool useSSL)
 {
-    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress);
+    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress, useSSL);
     Owned<IClientWULogFileRequest> req = ws->createWUFileRequest();
     if (queryset && *queryset)
         req->setQuerySet(queryset);
@@ -143,11 +143,11 @@ void fetchRemoteWorkunit(IClientWsWorkunits *_ws, IEspContext *ctx, const char *
         ep.getUrlStr(daliServer);
 }
 
-void fetchRemoteWorkunitAndQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, Owned<IClientWUQuerySetDetailsResponse> &respQueryInfo)
+void fetchRemoteWorkunitAndQueryDetails(IClientWsWorkunits *_ws, IEspContext *ctx, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, Owned<IClientWUQuerySetDetailsResponse> &respQueryInfo, bool useSSL)
 {
-    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress);
-    fetchRemoteWorkunit(ws, ctx, netAddress, queryset, query, wuid, name, xml, dllname, dll, daliServer);
-    respQueryInfo.setown(fetchQueryDetails(ws, ctx, netAddress, queryset, query));
+    Owned<IClientWsWorkunits> ws = ensureWsWorkunitsClient(_ws, ctx, netAddress, useSSL);
+    fetchRemoteWorkunit(ws, ctx, netAddress, queryset, query, wuid, name, xml, dllname, dll, daliServer, useSSL);
+    respQueryInfo.setown(fetchQueryDetails(ws, ctx, netAddress, queryset, query, useSSL));
 }
 
 void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const char *logicalname, const char *cluster, bool isRoxie, bool supercopy)
@@ -2584,12 +2584,12 @@ bool splitQueryPath(const char *path, StringBuffer &netAddress, StringBuffer &qu
     return true;
 }
 
-IPropertyTree *fetchRemoteQuerySetInfo(IEspContext *context, const char *srcAddress, const char *srcTarget)
+IPropertyTree *fetchRemoteQuerySetInfo(IEspContext *context, const char *srcAddress, const char *srcTarget, bool useSSL)
 {
     if (!srcAddress || !*srcAddress || !srcTarget || !*srcTarget)
         return NULL;
 
-    VStringBuffer url("http://%s%s/WsWorkunits/WUQuerysetDetails.xml?ver_=1.51&QuerySetName=%s&FilterType=All", srcAddress, (!strchr(srcAddress, ':')) ? ":8010" : "", srcTarget);
+    VStringBuffer url("%s://%s%s/WsWorkunits/WUQuerysetDetails.xml?ver_=1.51&QuerySetName=%s&FilterType=All", useSSL ? "https" : "http", srcAddress, (!strchr(srcAddress, ':')) ? ":8010" : "", srcTarget);
 
     Owned<IHttpClientContext> httpCtx = getHttpClientContext();
     Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
@@ -2614,11 +2614,11 @@ IPropertyTree *fetchRemoteQuerySetInfo(IEspContext *context, const char *srcAddr
 class QueryCloner
 {
 public:
-    QueryCloner(IEspContext *_context, const char *address, const char *source, const char *_target) :
-        context(_context), target(_target), srcAddress(address)
+    QueryCloner(IEspContext *_context, const char *address, const char *source, const char *_target, bool _useSSL) :
+        context(_context), target(_target), srcAddress(address), useSSL(_useSSL)
     {
         if (srcAddress.length())
-            srcQuerySet.setown(fetchRemoteQuerySetInfo(context, srcAddress, source));
+            srcQuerySet.setown(fetchRemoteQuerySetInfo(context, srcAddress, source, useSSL));
         else
             srcQuerySet.setown(getQueryRegistry(source, true));
         if (!srcQuerySet)
@@ -2660,7 +2660,7 @@ public:
         StringBuffer dllname;
         StringBuffer fetchedName;
         StringBuffer remoteDfs;
-        fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs);
+        fetchRemoteWorkunit(NULL, context, srcAddress.str(), NULL, NULL, wuid, fetchedName, xml, dllname, dll, remoteDfs, useSSL);
         deploySharedObject(*context, wuid, dllname, target, queryName, dll, queryDirectory, xml.str());
 
         SCMStringBuffer existingQueryId;
@@ -2868,6 +2868,7 @@ private:
     StringAttr process;
     StringAttr queryDirectory;
     bool cloneFilesEnabled = false;
+    bool useSSL = false;
     unsigned updateFlags = 0;
 
 public:
@@ -2897,7 +2898,7 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
 
     DBGLOG("%s copying queryset %s from %s target %s", context.queryUserId(), target, srcAddress.str(), srcTarget.str());
 
-    QueryCloner cloner(&context, srcAddress, srcTarget, target);
+    QueryCloner cloner(&context, srcAddress, srcTarget, target, req.getSourceSSL());
     cloner.setQueryDirectory(queryDirectory);
 
     SCMStringBuffer process;
@@ -2972,7 +2973,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         MemoryBuffer dll;
         StringBuffer dllname;
         StringBuffer queryName;
-        fetchRemoteWorkunitAndQueryDetails(NULL, &context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll, remoteIP, sourceQueryInfoResp);
+        fetchRemoteWorkunitAndQueryDetails(NULL, &context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll, remoteIP, sourceQueryInfoResp, req.getSourceSSL());
         if (sourceQueryInfoResp && sourceQueryInfoResp->getQuerysetQueries().ordinality())
             srcInfo = &sourceQueryInfoResp->getQuerysetQueries().item(0);
         if (srcInfo)
@@ -2985,7 +2986,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     {
         //Could get the atributes without soap call, but this creates a common data structure shared with fetching remote query info
         //Get query attributes before resolveQueryAlias, to avoid deadlock
-        sourceQueryInfoResp.setown(fetchQueryDetails(NULL, &context, NULL, srcQuerySet, srcQuery));
+        sourceQueryInfoResp.setown(fetchQueryDetails(NULL, &context, NULL, srcQuerySet, srcQuery, req.getSourceSSL()));
         if (sourceQueryInfoResp && sourceQueryInfoResp->getQuerysetQueries().ordinality())
             srcInfo = &sourceQueryInfoResp->getQuerysetQueries().item(0);
 
