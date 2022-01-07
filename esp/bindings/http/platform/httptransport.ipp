@@ -68,6 +68,8 @@ protected:
     StringBuffer m_content;
     StringBuffer m_header;
     OwnedIFileIOStream m_content_stream;
+    Linked<IPropertyTree> m_content_ptree;
+    bool m_addXMLHeaderToContent = false, m_addXMLStylesheetToContent = false;
     StringAttr   m_version;
     StringAttr   m_host;
     int          m_port;
@@ -139,6 +141,7 @@ public:
     virtual void setownContent(char* content);
     virtual void setownContent(unsigned len, char* content);
     virtual void setContent(IFileIOStream* stream);
+    virtual void setContent(IPropertyTree* ptree, bool addXMLHeaderToContent = false, bool addXMLStylesheetToContent = false);
     //virtual void appendContent(const char* content);
     virtual StringBuffer& getContentType(StringBuffer& contenttype);
     virtual void setContentType(const char* contenttype);
