@@ -522,7 +522,7 @@ class ECLFile:
                 logger.debug("%3d. Line" + str(lineIndex) +":" + line,  self.taskId )
                 lineIndex += 1
 
-            logger.debug("%3d. missingLines: %d, addedLines: %d" % (missingLines, addedLines))
+            logger.debug("%3d. missingLines: %d, addedLines: %d" % (self.taskId, missingLines,  addedLines))
             logger.debug("%3d. diffLines: " + diffLines,  self.taskId )
             if len(diffLines) > 0:
                 self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
