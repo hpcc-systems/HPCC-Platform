@@ -84,8 +84,12 @@ jobs:
                     if issue.fields.assignee is None:
                         jira.assign_issue(issue, user)
                     issue.update(fields={'customfield_10010': pull_url})
-                    transitions = jira.transitions(issue)
-                    jira.transition_issue(issue, '291')   # Attach Pull Request
+                    issue = jira.issue(issue_name)
+                    try:
+                      transitions = jira.transitions(issue)
+                      jira.transition_issue(issue, '291')   # Attach Pull Request
+                    except:
+                      status += 'Failed to set to merge pending: transitions=%s' % transitions
                     status += 'Jira updated'
                 print('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": "%s" }\'' % ( comments_url, github_token, status ))
                 os.system('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": "%s" }\'' % ( comments_url, github_token, status ))
