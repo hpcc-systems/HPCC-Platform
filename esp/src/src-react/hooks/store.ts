@@ -2,7 +2,7 @@ import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { globalKeyValStore, IKeyValStore, userKeyValStore } from "src/KeyValStore";
 
-function useStore(store: IKeyValStore, key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
+function useStore(store: IKeyValStore, key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void, reset: () => void] {
 
     const [value, setValue] = React.useState<string>();
 
@@ -31,16 +31,24 @@ function useStore(store: IKeyValStore, key: string, defaultValue?: string, monit
         };
     });
 
-    return [value, extSetValue];
+    const reset = useConst(() => {
+        return () => {
+            store.delete(key, monitor).then(() => {
+                setValue(defaultValue);
+            });
+        };
+    });
+
+    return [value, extSetValue, reset];
 }
 
-export function useUserStore(key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
+export function useUserStore(key: string, defaultValue?: string, monitor: boolean = false) {
 
     const store = useConst(() => userKeyValStore());
     return useStore(store, key, defaultValue, monitor);
 }
 
-export function useGlobalStore(key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
+export function useGlobalStore(key: string, defaultValue?: string, monitor: boolean = false) {
 
     const store = useConst(() => globalKeyValStore());
     return useStore(store, key, defaultValue, monitor);

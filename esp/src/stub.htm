@@ -2,11 +2,22 @@
 <html>
 
 <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="robots" content="noindex">
     <title>ECL Watch</title>
     <script src="/esp/files/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
+    <link rel="stylesheet" href="/esp/files/dist/font-awesome/css/font-awesome.min.css">
+    <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
+    <style>
+        body {
+            padding: 0px;
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
     <script>
         //  Polyfills  ---
         if (typeof Object.assign !== 'function') {
@@ -61,9 +72,6 @@
             });
         }
     </script>
-    <link rel="stylesheet" href="/esp/files/dist/font-awesome/css/font-awesome.min.css">
-    <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
-    <script type="text/javascript" src="/esp/files/dist/stub.eclwatch.js" charset="utf-8"></script>
     <script type="text/javascript">
         getAuthType();
         function getAuthType() {
@@ -108,12 +116,12 @@
     </script>
 </head>
 
-<body class="flat" style="overflow:hidden">
+<body class="flat">
     <!-- overlay -->
     <div id="SessionLock"></div>
-    <div id="loadingOverlay" class="loadingOverlay pageOverlay">
-    </div>
+    <div id="loadingOverlay" class="loadingOverlay pageOverlay"></div>
     <!-- application -->
+    <script type="text/javascript" src="/esp/files/dist/stub.eclwatch.js" charset="utf-8"></script>
 </body>
 
 </html>

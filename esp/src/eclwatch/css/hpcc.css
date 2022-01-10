@@ -351,39 +351,47 @@ hr.dashedLine {
     padding-bottom:10px;
 }
 
-@media screen and (max-width: 1920px){
-    .flat .hpccTitlebar {
-        height:50px;
-    }
-
-    #BannerEnvironmentText{
-        width:25%;
-        display: none;
-        margin-top:10px;
-        border:solid 1px white;
-    }
-
-    .flat .envrionmentText {
-        width: 25%;
-    }
+#teaser {
+    display: inline;
 }
 
-@media screen and (max-width: 1400px){
-    .flat .envrionmentText {
-        display: none;
-    }
+#teaserSeperator {
+    display: inline;
 }
 
-@media screen and (max-width: 1040px){
-    #userAccount {
-        display: none;
-    }
-
+@media screen and (max-width: 1100px){
     #MonitorStatus {
         display: none;
     }
 
-    .seperator {
+    #MonitorStatusSeperator {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 1024px){
+    #userAccount {
+        display: none;
+    }
+
+    #userAccountSeperator {
+        display: none;
+    }
+
+}
+
+@media screen and (max-width: 920px){
+    #teaser {
+        display: none;
+    }
+
+    #teaserSeperator {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 790px){
+    #search-form {
         display: none;
     }
 }

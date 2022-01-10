@@ -10,6 +10,7 @@ define([
 
     "src/Utility",
     "src/Session",
+    "src/KeyValStore",
     "hpcc/LockDialogWidget",
 
     "dojox/html/entities",
@@ -20,10 +21,22 @@ define([
     "css!hpcc/css/hpcc.css"
 
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
-    Utility, Session, LockDialogWidget,
+    Utility, Session, KeyValStore, LockDialogWidget,
     entities, Toaster) {
 
     Session.initSession();
+
+    const store = KeyValStore.userKeyValStore();
+    store.get("ModernMode", false).then(modernMode => {
+        if (modernMode === String(true)) {
+            window.location.replace("/esp/files/index.html");
+        } else {
+            ready(function () {
+                parseUrl();
+                initUI();
+            });
+        }
+    });
 
     function startLoading(targetNode) {
         domStyle.set(dom.byId("loadingOverlay"), "display", "block");
@@ -134,9 +147,4 @@ define([
             fullPath: location.origin + "/esp/files"
         };
     }
-
-    ready(function () {
-        parseUrl();
-        initUI();
-    });
 });

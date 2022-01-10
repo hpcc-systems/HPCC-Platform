@@ -13,6 +13,7 @@ import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore } from "../hooks/store";
 import * as Utility from "src/Utility";
 import { TitlebarConfig } from "./forms/TitlebarConfig";
+import { ComingSoon } from "./controls/ComingSoon";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
@@ -25,13 +26,13 @@ const personaStyles = {
     }
 };
 
-const toolbarThemeDefaults = { active: "false", text: "", color: "#2196F3" };
-
 interface DevTitleProps {
 }
 
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
+    const theme = useTheme();
+    const toolbarThemeDefaults = { active: "false", text: "", color: theme.palette.themeLight };
 
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
@@ -39,9 +40,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
-    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active);
-    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text);
-    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color);
+    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
+    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
+    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
 
     const [showBannerConfig, setShowBannerConfig] = React.useState(false);
     const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
@@ -70,8 +71,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const advMenuProps = React.useMemo(() => {
         return {
             items: [
-                { key: "legacy", text: nlsHPCC.OpenLegacyECLWatch, href: "/esp/files/stub.htm" },
-                { key: "divider_0", itemType: ContextualMenuItemType.Divider },
                 { key: "banner", text: nlsHPCC.SetBanner, onClick: () => setShowBannerConfig(true) },
                 { key: "toolbar", text: nlsHPCC.SetToolbar, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
@@ -117,8 +116,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             directionalHintFixed: true
         };
     }, [currentUser?.username]);
-
-    const theme = useTheme();
 
     const btnStyles = mergeStyleSets({
         errorsWarnings: {
@@ -175,6 +172,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             <Persona {...personaProps} onClick={() => setShowMyAccount(true)} styles={personaStyles} />
                         </Stack.Item>
                     }
+                    <Stack.Item align="center" >
+                        <ComingSoon defaultValue style={{ color: titlebarColor !== toolbarThemeDefaults.color ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
+                    </Stack.Item>
                     <Stack.Item align="center">
                         <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: log.length > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
                             <span className={btnStyles.errorsWarningsCount}>{`(${log.length})`}</span>
@@ -200,6 +200,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         <About show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
         <TitlebarConfig
+            toolbarThemeDefaults={toolbarThemeDefaults}
             showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig}
             showEnvironmentTitle={showEnvironmentTitle} setShowEnvironmentTitle={setShowEnvironmentTitle}
             environmentTitle={environmentTitle} setEnvironmentTitle={setEnvironmentTitle}
