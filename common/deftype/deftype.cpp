@@ -47,15 +47,17 @@ static IAtom * emptyAtom;
 static CriticalSection * typeCS;
 static TypeCache * globalTypeCache;
 
-static CBoolTypeInfo *btt = NULL;
-static CBlobTypeInfo *bltt = NULL;
-static CVoidTypeInfo *vtt = NULL;
-static CNullTypeInfo *ntt = NULL;
-static CRecordTypeInfo *rtt = NULL;
-static CAnyTypeInfo *anytt = NULL;
-static CPatternTypeInfo *patt = NULL;
-static CTokenTypeInfo *tokentt = NULL;
-static CFeatureTypeInfo *featurett = NULL;
+static std::atomic<CBoolTypeInfo*> btt(nullptr);
+static std::atomic<CBlobTypeInfo*> bltt(nullptr);
+static std::atomic<CVoidTypeInfo*> vtt(nullptr);
+static std::atomic<CNullTypeInfo*> ntt(nullptr);
+static std::atomic<CRecordTypeInfo*> rtt(nullptr);
+static std::atomic<CPatternTypeInfo*> patt(nullptr);
+static std::atomic<CTokenTypeInfo*> tokentt(nullptr);
+static std::atomic<CFeatureTypeInfo*> featurett(nullptr);
+static std::atomic<CEventTypeInfo*> ett(nullptr);
+static std::atomic<CAnyTypeInfo*> anytt(nullptr);
+
 static CStringTypeToTypeMap * stt;
 static CStringTypeToTypeMap * datatt;
 static CStringTypeToTypeMap * vstt;
@@ -63,15 +65,16 @@ static CStringTypeToTypeMap * qstt;
 static CUnicodeTypeToTypeMap * utt;
 static CUnicodeTypeToTypeMap * vutt;
 static CUnicodeTypeToTypeMap * u8tt;
-static CIntTypeInfo *itt[2][8];
-static CSwapIntTypeInfo *sitt[2][8];
+
+static std::atomic<CIntTypeInfo*> itt[2][8] = {};
+static std::atomic<CSwapIntTypeInfo*> sitt[2][8] = {};
+static std::atomic<CRealTypeInfo*> realtt[10] = {};
+static std::atomic<CBitfieldTypeInfo*> bftt[64][8] = {};
+static std::atomic<CCharTypeInfo*> ctt[2] = {};
+
 static TypeToTypeMap * pitt;
-static CRealTypeInfo *realtt[10];
-static CBitfieldTypeInfo *bftt[64][8];
-static CCharTypeInfo * ctt[2];
 static TypeToTypeMap * setTT;
 
-static CEventTypeInfo *ett = NULL;
 
 //charssets and collation...
 static ICharsetInfo * dataCharset;
@@ -1427,7 +1430,6 @@ bool CModifierTypeInfo::equals(const CTypeInfo & _other) const
     return (baseType == other.baseType) && (kind == other.kind) && (extra == other.extra);
 }
 
-
 //===========================================================================
 
 extern DEFTYPE_API ITypeInfo *makeStringType(unsigned len, ICharsetInfo * charset, ICollationInfo * collation)
@@ -1623,12 +1625,9 @@ extern DEFTYPE_API ITypeInfo *makeIntType(int len, bool isSigned)
     if (len <= 0 || len > 8)
         return NULL;
 
-    CriticalBlock procedure(*typeCS);
-    CIntTypeInfo *ret = itt[isSigned][len-1];
-    if (ret==NULL)
-        ret = itt[isSigned][len-1] = new CIntTypeInfo(len, isSigned);
-    ::Link(ret);
-    return ret;
+    ITypeInfo* type = querySingleton(itt[isSigned][len-1], *typeCS, [=]{ return new CIntTypeInfo(len, isSigned); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeSwapIntType(int len, bool isSigned)
@@ -1637,12 +1636,9 @@ extern DEFTYPE_API ITypeInfo *makeSwapIntType(int len, bool isSigned)
     if (len <= 0 || len > 8)
         return NULL;
 
-    CriticalBlock procedure(*typeCS);
-    CIntTypeInfo *ret = sitt[isSigned][len-1];
-    if (ret==NULL)
-        ret = sitt[isSigned][len-1] = new CSwapIntTypeInfo(len, isSigned);
-    ::Link(ret);
-    return ret;
+    ITypeInfo* type = querySingleton(sitt[isSigned][len-1], *typeCS, [=]{ return new CSwapIntTypeInfo(len, isSigned);} );
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makePackedIntType(ITypeInfo * basetype)
@@ -1672,12 +1668,9 @@ extern DEFTYPE_API ITypeInfo *makeRealType(int len)
     if (len != 4 && len != 8)
         return NULL;
 
-    CriticalBlock procedure(*typeCS);
-    CRealTypeInfo *ret = realtt[len-1];
-    if (ret==NULL)
-        ret = realtt[len-1] = new CRealTypeInfo(len);
-    ::Link(ret);
-    return ret;
+    ITypeInfo* type = querySingleton(realtt[len-1], *typeCS, [=]{ return new CRealTypeInfo(len); });
+    ::LINK(type);
+    return type;
 }
 
 /* Precondition: len>0 && len>64 */
@@ -1687,7 +1680,6 @@ extern DEFTYPE_API ITypeInfo *makeBitfieldType(int len, ITypeInfo * basetype)
     if (len <= 0 || len > 64)
         return NULL;
 
-    CriticalBlock procedure(*typeCS);
     if (basetype)
     {
         assertex(basetype->getTypeCode() == type_int);
@@ -1695,113 +1687,88 @@ extern DEFTYPE_API ITypeInfo *makeBitfieldType(int len, ITypeInfo * basetype)
     else
         basetype = getPromotedBitfieldType(len);
 
-    unsigned baseSize=basetype->getSize();
-    CBitfieldTypeInfo *ret = bftt[len-1][baseSize-1];
-    if (ret==NULL)
-        ret = bftt[len-1][baseSize-1] = new CBitfieldTypeInfo(len, basetype);
-    else
-        ::Release(basetype);
-    ::Link(ret);
-    return ret;
+    unsigned baseSize = basetype->getSize();
+
+    ITypeInfo* type = querySingleton(bftt[len-1][baseSize-1], *typeCS, [=]{ return new CBitfieldTypeInfo(len, basetype); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeBoolType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!btt)
-        btt = new CBoolTypeInfo();
-    ::Link(btt);
-    return btt;
+    ITypeInfo* type = querySingleton(btt, *typeCS, []{ return new CBoolTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeBlobType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!bltt)
-        bltt = new CBlobTypeInfo();
-    ::Link(bltt);
-    return bltt;
+    ITypeInfo* type = querySingleton(bltt, *typeCS, []{ return new CBlobTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeVoidType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!vtt)
-        vtt = new CVoidTypeInfo();
-    ::Link(vtt);
-    return vtt;
+    ITypeInfo* type = querySingleton(vtt, *typeCS, []{ return new CVoidTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeNullType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!ntt)
-        ntt = new CNullTypeInfo();
-    ::Link(ntt);
-    return ntt;
+    ITypeInfo* type = querySingleton(ntt, *typeCS, []{ return new CNullTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeRecordType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!rtt)
-        rtt = new CRecordTypeInfo();
-    ::Link(rtt);
-    return rtt;
+    ITypeInfo* type = querySingleton(rtt, *typeCS, []{ return new CRecordTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makePatternType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!patt)
-        patt = new CPatternTypeInfo();
-    ::Link(patt);
-    return patt;
+    ITypeInfo* type = querySingleton(patt, *typeCS, []{ return new CPatternTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeTokenType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!tokentt)
-        tokentt = new CTokenTypeInfo();
-    ::Link(tokentt);
-    return tokentt;
+    ITypeInfo* type = querySingleton(tokentt, *typeCS, []{ return new CTokenTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeFeatureType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!featurett)
-        featurett = new CFeatureTypeInfo();
-    ::Link(featurett);
-    return featurett;
+    ITypeInfo* type = querySingleton(featurett, *typeCS, []{ return new CFeatureTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeEventType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!ett)
-        ett = new CEventTypeInfo();
-    ::Link(ett);
-    return ett;
+    ITypeInfo* type = querySingleton(ett, *typeCS, []{ return new CEventTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeAnyType()
 {
-    CriticalBlock procedure(*typeCS);
-    if (!anytt)
-        anytt = new CAnyTypeInfo();
-    ::Link(anytt);
-    return anytt;
+    ITypeInfo* type = querySingleton(anytt, *typeCS, []{ return new CAnyTypeInfo(); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeCharType(bool caseSensitive)
 {
-    CriticalBlock procedure(*typeCS);
-    if (!ctt[caseSensitive])
-        ctt[caseSensitive] = new CCharTypeInfo(caseSensitive);
-    ::Link(ctt[caseSensitive]);
-    return ctt[caseSensitive];
+    ITypeInfo* type = querySingleton(ctt[caseSensitive], *typeCS, [=]{ return new CCharTypeInfo(caseSensitive); });
+    ::LINK(type);
+    return type;
 }
 
 extern DEFTYPE_API ITypeInfo *makeSetType(ITypeInfo *basetype)
@@ -1995,6 +1962,16 @@ inline void ReleaseAndClear(T * & ptr)
     {
         ptr->Release();
         ptr = NULL;
+    }
+}
+
+template <class T>
+inline void ReleaseAndClear(std::atomic<T*>& atomicPtr)
+{
+    T* ptr = atomicPtr.exchange(nullptr);
+    if (ptr)
+    {
+        ptr->Release();
     }
 }
 
