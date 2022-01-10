@@ -253,7 +253,7 @@ public:
 #endif
         const char * defaultGitPrefix = getenv("ECLCC_DEFAULT_GITPREFIX");
         if (isEmptyString(defaultGitPrefix))
-            defaultGitPrefix = "git+ssh://github.com/";
+            defaultGitPrefix = "https://github.com/";
         optDefaultGitPrefix.set(defaultGitPrefix);
     }
     ~EclCC()

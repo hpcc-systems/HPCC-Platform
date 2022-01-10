@@ -601,6 +601,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -platform=%s", target);
         eclccCmd.appendf(" --component=%s", queryStatisticsComponentName());
+        eclccCmd.appendf(" --fetchrepos=1 --updaterepos=1");  // Default these options on in eclccserver (can be overridden in debug options)
 
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)

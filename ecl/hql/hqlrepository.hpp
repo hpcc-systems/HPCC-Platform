@@ -69,7 +69,7 @@ protected:
     IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive);
     IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
 
-    unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd);
+    unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials);
 
 private:
     using DependencyInfo = std::pair<std::string, Shared<IEclPackage>>;

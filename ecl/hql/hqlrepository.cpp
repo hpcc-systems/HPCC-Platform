@@ -629,7 +629,7 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
             {
                 if (options.updateRepos)
                 {
-                    unsigned retCode = runGitCommand(nullptr, "fetch origin", repoPath);
+                    unsigned retCode = runGitCommand(nullptr, "fetch origin", repoPath, true);
                     if (retCode != 0)
                         DBGLOG("Failed to download the latest version of %s", defaultUrl);
                 }
@@ -645,7 +645,7 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
                         throw makeStringExceptionV(99, "Failed to create directory %s'", options.eclRepoPath.str());
 
                     VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
-                    unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath);
+                    unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
                     if (retCode != 0)
                         throw makeStringExceptionV(99, "Failed to clone dependency '%s'", defaultUrl);
                     ok = true;
@@ -662,7 +662,7 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
             // Check for a sha/tag and map it to a version.  If that does not work see if it is a branch.
             VStringBuffer params("rev-parse --short %s", version.str());
             StringBuffer sha;
-            unsigned retCode = runGitCommand(&sha, params, repoPath);
+            unsigned retCode = runGitCommand(&sha, params, repoPath, false);
             if (retCode == 0)
             {
                 if (requireSHA)
@@ -682,7 +682,7 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
 
                 //Check for a branch origin/<version>
                 params.clear().appendf("rev-parse --short origin/%s", version.str());
-                unsigned retCode = runGitCommand(&sha.clear(), params, repoPath);
+                unsigned retCode = runGitCommand(&sha.clear(), params, repoPath, false);
                 if (retCode == 0)
                     version.set(sha);
             }
@@ -740,16 +740,26 @@ void EclRepositoryManager::kill()
     allSources.kill();
 }
 
-unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *args, const char * cwd)
+unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *args, const char * cwd, bool needCredentials)
 {
     StringBuffer tempOutput;
     if (!output)
         output= &tempOutput;
 
+    EnvironmentVector env;
+    //If fetching from git and the username is specified then use the script file to provide the username/password
+    if (needCredentials && getenv("HPCC_GIT_USERNAME"))
+    {
+        StringBuffer scriptPath;
+        getPackageFolder(scriptPath);
+        addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
+        env.emplace_back("GIT_ASKPASS", scriptPath);
+    }
+
     const char * cmd = "git";
     VStringBuffer runcmd("%s %s", cmd, args);
     StringBuffer error;
-    unsigned ret = runExternalCommand(cmd, *output, error, runcmd, nullptr, cwd);
+    unsigned ret = runExternalCommand(cmd, *output, error, runcmd, nullptr, cwd, &env);
     if (options.optVerbose)
     {
         if (ret > 0)
