@@ -66,26 +66,8 @@ module.exports = function (env) {
         module: {
             rules: [
                 {
-                    test: /\.(png|jpg|gif)$/,
-                    use: [
-                        {
-                            loader: "url-loader",
-                            options: {
-                                limit: 100000
-                            }
-                        }
-                    ]
-                }, {
                     test: /\.css$/,
                     use: ["style-loader", "css-loader"]
-                }, {
-                    test: /.(ttf|otf|eot|svg|woff(2)?)(\?[a-z0-9]+)?$/,
-                    use: [{
-                        loader: "file-loader",
-                        options: {
-                            name: "[name].[ext]"
-                        }
-                    }]
                 }, {
                     test: /\.js$/,
                     use: ["source-map-loader"],

@@ -3,6 +3,7 @@ import * as ReactDOM from "react-dom";
 import { initializeIcons } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { initSession } from "src/Session";
+import { userKeyValStore } from "src/KeyValStore";
 import { ECLWatchLogger } from "./hooks/logging";
 
 import "css!dijit-themes/flat/flat.css";
@@ -32,13 +33,21 @@ dojoConfig.disableLegacyHashing = true;
 
 initSession();
 
-import("./components/Frame").then(_ => {
-    try {
-        ReactDOM.render(
-            <_.DevFrame />,
-            document.getElementById("placeholder")
-        );
-    } catch (e) {
-        logger.error(e);
+const store = userKeyValStore();
+store.get("ModernMode", false).then(modernMode => {
+    if (modernMode === String(false)) {
+        window.location.replace("/esp/files/stub.htm");
+    } else {
+        import("./components/Frame").then(_ => {
+            try {
+                ReactDOM.render(
+                    <_.DevFrame />,
+                    document.getElementById("placeholder")
+                );
+                document.getElementById("loadingOverlay").remove();
+            } catch (e) {
+                logger.error(e);
+            }
+        });
     }
 });

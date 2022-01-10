@@ -52,7 +52,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
     const refreshData = React.useCallback(() => {
         WsDFUXref.DFUXRefMessages({ request: { Cluster: name } })
             .then(({ DFUXRefMessagesQueryResponse }) => {
-                const { Error = [], Warning = [] } = DFUXRefMessagesQueryResponse?.DFUXRefMessagesQueryResult;
+                const { Error = [], Warning = [] } = DFUXRefMessagesQueryResponse?.DFUXRefMessagesQueryResult ?? {};
                 const rows = [];
                 Warning.map((item, idx) => {
                     rows.push({

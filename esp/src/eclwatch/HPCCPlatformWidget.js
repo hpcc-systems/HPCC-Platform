@@ -23,6 +23,7 @@ define([
     "@hpcc-js/codemirror",
     "src/react/index",
     "src-react/components/About",
+    "src-react/components/controls/ComingSoon",
 
     "hpcc/_TabContainerWidget",
     "src/ESPRequest",
@@ -62,7 +63,7 @@ define([
 ], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
-    CodeMirror, srcReact, AboutModule,
+    CodeMirror, srcReact, AboutModule, ComingSoonModule,
     _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme, Utility,
     template) {
 
@@ -124,14 +125,16 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             domStyle.set(dom.byId(this.id + "StackController_stub_Plugins").parentNode.parentNode, {
-                visibility: "hidden"
+                display: "none"
             });
             domStyle.set(dom.byId(this.id + "StackController_stub_ErrWarn").parentNode.parentNode, {
-                visibility: "hidden"
+                display: "none"
             });
             domStyle.set(dom.byId(this.id + "StackController_stub_Config").parentNode.parentNode, {
-                visibility: "hidden"
+                display: "none"
             });
+            var teaserNode = dom.byId(this.id + "teaser");
+            srcReact.render(ComingSoonModule.ComingSoon, { style: { color: "white" } }, teaserNode);
         },
 
         //  Implementation  ---
@@ -227,7 +230,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("TpGetServicePluginsResponse.Plugins.Plugin", response) && response.TpGetServicePluginsResponse.Plugins.Plugin.length) {
                     domStyle.set(dom.byId(context.id + "StackController_stub_Plugins").parentNode.parentNode, {
-                        visibility: "visible"
+                        display: "inline"
                     });
                 }
             });
@@ -426,10 +429,6 @@ define([
                 });
             }
             this.stackContainer.selectChild(this.widget._Config);
-        },
-
-        _onOpenModernECLWatch: function (evt) {
-            window.location.href = "/esp/files/index.html";
         },
 
         _onOpenErrWarn: function (evt) {
