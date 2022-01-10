@@ -150,49 +150,17 @@ interface ISendManager : extends IInterface
     virtual bool allDone() = 0;
 };
 
-extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int queue_size, unsigned maxSlotsPerSender, bool encrypted);
+extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int queue_size, bool encrypted);
 extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, const IpAddress &myIP, TokenBucket *rateLimiter, bool encryptionInTransit);
 
 extern UDPLIB_API void setAeronProperties(const IPropertyTree *config);
 extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep, bool encrypted);
 extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP, bool encrypted);
-
-extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
-
-extern UDPLIB_API bool udpTraceFlow;
-extern UDPLIB_API bool udpTraceTimeouts;
-
-extern UDPLIB_API unsigned udpTraceLevel;
-extern UDPLIB_API unsigned udpOutQsPriority;
-extern UDPLIB_API void queryMemoryPoolStats(StringBuffer &memStats);
-
-extern UDPLIB_API unsigned multicastTTL;
-
 #if defined( __linux__) || defined(__APPLE__)
 extern UDPLIB_API void setLinuxThreadPriority(int level);
 #endif
-
-extern UDPLIB_API unsigned udpFlowSocketsSize;
-extern UDPLIB_API unsigned udpLocalWriteSocketSize;
-extern UDPLIB_API unsigned udpMaxRetryTimedoutReqs;
-extern UDPLIB_API unsigned udpRequestToSendTimeout;
-extern UDPLIB_API unsigned udpRequestToSendAckTimeout;
-
+extern UDPLIB_API void queryMemoryPoolStats(StringBuffer &memStats);
 extern UDPLIB_API void stopAeronDriver();
-
-extern UDPLIB_API bool udpResendLostPackets;
-extern UDPLIB_API unsigned udpResendTimeout;  // in millseconds
-extern UDPLIB_API unsigned udpMaxPendingPermits;
-extern UDPLIB_API bool udpAssumeSequential;
-extern UDPLIB_API unsigned udpStatsReportInterval;
-extern UDPLIB_API RelaxedAtomic<unsigned> packetsResent;
-extern UDPLIB_API RelaxedAtomic<unsigned> packetsOOO;
-extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsSent;
-extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsReceived;
-extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsReceived;
-extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsSent;
-extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsReceived;
-extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsSent;
 
 interface IRoxieQueryPacket;
 class RoxiePacketHeader;
@@ -223,5 +191,54 @@ interface IRoxieOutputQueueManager : public IInterface
 };
 
 extern UDPLIB_API IRoxieOutputQueueManager *ROQ;
+
+//This following might be clearer if they were grouped into an options structure and a metrics structure
+
+// -- Options for controlling the UDP layer --------------------------------------------------------------------------
+// These are documented in detail at the head of udptrr.cpp
+
+extern UDPLIB_API bool udpTraceFlow;
+extern UDPLIB_API bool udpTraceTimeouts;
+extern UDPLIB_API unsigned udpTraceLevel;
+extern UDPLIB_API unsigned udpOutQsPriority;
+
+extern UDPLIB_API unsigned udpFlowSocketsSize;
+extern UDPLIB_API unsigned udpLocalWriteSocketSize;
+
+extern UDPLIB_API unsigned udpMaxPermitDeadTimeouts;    // How many permit grants are allowed to expire (with no flow message) until sender is assumed down
+extern UDPLIB_API unsigned udpRequestDeadTimeout;       // Timeout for sender getting no response to request to send before assuming that the receiver is dead
+
+// All in milliseconds
+extern UDPLIB_API unsigned udpFlowAckTimeout;
+extern UDPLIB_API unsigned updDataSendTimeout;
+extern UDPLIB_API unsigned udpRequestTimeout;
+extern UDPLIB_API unsigned udpPermitTimeout;
+extern UDPLIB_API unsigned udpResendTimeout;
+
+extern UDPLIB_API bool udpResendLostPackets;
+extern UDPLIB_API unsigned udpMaxPendingPermits;
+extern UDPLIB_API unsigned udpMaxClientPercent;
+extern UDPLIB_API unsigned udpMinSlotsPerSender;
+
+extern UDPLIB_API bool udpAssumeSequential;
+extern UDPLIB_API bool udpResendAllMissingPackets;
+extern UDPLIB_API unsigned udpStatsReportInterval;
+extern UDPLIB_API bool udpAdjustThreadPriorities;
+extern UDPLIB_API bool udpAllowAsyncPermits;
+
+//Should be in ccd
+extern UDPLIB_API unsigned multicastTTL;
+
+// -- Reported metrics --------------------------------------------------------------------------
+
+extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
+extern UDPLIB_API RelaxedAtomic<unsigned> packetsResent;
+extern UDPLIB_API RelaxedAtomic<unsigned> packetsOOO;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsSent;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsSent;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsSent;
 
 #endif

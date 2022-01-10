@@ -31,36 +31,59 @@ using roxiemem::IDataBufferManager;
 Owned<IDataBufferManager> dbm;
 
 static unsigned numThreads = 20;
+static unsigned numReceiveSlots = 100;
 static unsigned packetsPerThread = 0;
+static unsigned minWork = 0;
+static unsigned maxWork = 0;
+static unsigned optWorkFrequency = 0;
 static bool restartSender = false;
 static bool restartReceiver = false;
+static bool sendFlowWithData = false;
 
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 udpsim:
   dropDataPackets: false
+  dropDataPacketsPercent: 0
   dropOkToSendPackets: 0
   dropRequestReceivedPackets: 0
   dropRequestToSendPackets: 0
   dropRequestToSendMorePackets: 0
+  dropSendStartPackets: 0
   dropSendCompletedPackets: 0
   help: false
+  minWork: 0                # minimum amount of work
+  maxWork: 0                # maximum work per set of packets, if 0 use minWork
+  workFrequency: 5          # Do work once every 5 packets
   numThreads: 20
+  numReceiveSlots: 100
   outputconfig: false
   packetsPerThread: 10000
   restartReceiver: false
   restartSender: false
+  sanityCheckUdpSettings: true
+  sendFlowWithData: false
+  udpResendLostPackets: true
+  udpFlowAckTimeout: 2
+  updDataSendTimeout: 20
+  udpRequestTimeout: 20
+  udpPermitTimeout: 50
+  udpResendTimeout: 40
+  udpMaxPermitDeadTimeouts: 5
+  udpRequestDeadTimeout: 10000
+  udpMaxPendingPermits: 10
+  udpMaxClientPercent: 200
+  udpMinSlotsPerSender: 1
+  udpAssumeSequential: false
+  udpAllowAsyncPermits: true
   udpTraceLevel: 1
   udpTraceTimeouts: true
-  udpResendLostPackets: true
-  udpRequestToSendTimeout: 1000
-  udpRequestToSendAckTimeout: 1000
-  udpMaxPendingPermits: 1
   udpTestSocketDelay: 0
   udpTestSocketJitter: false
   udpTestVariableDelay: false
   udpTraceFlow: false
   useQueue: false
+  udpAdjustThreadPriorities: false
 )!!";
 
 bool isNumeric(const char *str)
@@ -138,24 +161,41 @@ void initOptions(int argc, const char **argv)
         usage();
 #ifdef TEST_DROPPED_PACKETS
     udpDropDataPackets = options->getPropBool("@dropDataPackets", false);
+    udpDropDataPacketsPercent = options->getPropInt("@dropDataPacketsPercent", 0);
     udpDropFlowPackets[flowType::ok_to_send] = options->getPropInt("@dropOkToSendPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::request_received] = options->getPropInt("@dropRequestReceivedPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::request_to_send] = options->getPropInt("@dropRequestToSendPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::request_to_send_more] = options->getPropInt("@dropRequestToSendMorePackets", 0);  // drop 1 in N
+    udpDropFlowPackets[flowType::send_start] = options->getPropInt("@dropSendStartPackets", 0);  // drop 1 in N
     udpDropFlowPackets[flowType::send_completed] = options->getPropInt("@dropSendCompletedPackets", 0);  // drop 1 in N
 #endif
     restartSender = options->getPropBool("@restartSender");
     restartReceiver = options->getPropBool("@restartReceiver");
 
+    minWork = options->getPropInt("@minWork", 0);
+    maxWork = options->getPropInt("@maxWork", 0);
+    optWorkFrequency = options->getPropInt("@workFrequency", 0);
+
     numThreads = options->getPropInt("@numThreads", 0);
     udpTraceLevel = options->getPropInt("@udpTraceLevel", 1);
     udpTraceTimeouts = options->getPropBool("@udpTraceTimeouts", true);
     udpResendLostPackets = options->getPropBool("@udpResendLostPackets", true);
-    udpRequestToSendTimeout = options->getPropInt("@udpRequestToSendTimeout", 1000);
-    udpRequestToSendAckTimeout = options->getPropInt("@udpRequestToSendAckTimeout", 1000);
+
+    udpPermitTimeout = options->getPropInt("@udpPermitTimeout", udpPermitTimeout);
+    udpRequestTimeout = options->getPropInt("@udpRequestTimeout", udpRequestTimeout);
+    udpFlowAckTimeout = options->getPropInt("@udpFlowAckTimeout", udpFlowAckTimeout);
+    updDataSendTimeout = options->getPropInt("@udpDataSendTimeout", updDataSendTimeout);
+    udpResendTimeout = options->getPropInt("@udpResendTimeout", udpResendTimeout);
+    udpMaxPermitDeadTimeouts = options->getPropInt("@udpMaxPermitDeadTimeouts", udpMaxPermitDeadTimeouts);
+    udpRequestDeadTimeout = options->getPropInt("@udpRequestDeadTimeout", udpRequestDeadTimeout);
+
+    udpAssumeSequential = options->getPropBool("@udpAssumeSequential", udpAssumeSequential);
+    udpAllowAsyncPermits = options->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
     udpMaxPendingPermits = options->getPropInt("@udpMaxPendingPermits", 1);
+    udpMinSlotsPerSender = options->getPropInt("@udpMinSlotsPerSender", udpMinSlotsPerSender);
+    udpMaxClientPercent = options->getPropInt("@udpMaxClientPercent", udpMaxClientPercent);
+
     udpTraceFlow = options->getPropBool("@udpTraceFlow", false);
-    packetsPerThread = options->getPropInt("@packetsPerThread");
     udpTestUseUdpSockets = !options->getPropBool("@useQueue");
     udpTestSocketDelay = options->getPropInt("@udpTestSocketDelay", 0);
     udpTestSocketJitter = options->getPropBool("@udpTestSocketJitter");
@@ -175,10 +215,19 @@ void initOptions(int argc, const char **argv)
         printf("udpTestSocketDelay requires queue mode (--useQueue=1) - setting it on\n");
         udpTestUseUdpSockets = false;
     }
+    udpAdjustThreadPriorities = options->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
+    packetsPerThread = options->getPropInt("@packetsPerThread");
+    numReceiveSlots = options->getPropInt("@numReceiveSlots");
 
     isUdpTestMode = true;
-    roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
+    roxiemem::setTotalMemoryLimit(false, true, false, 20*1024*1024, 0, NULL, NULL);
     dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
+
+    if (options->getPropBool("sanityCheckUdpSettings", true))
+    {
+        unsigned __int64 networkSpeed = options->getPropInt64("@udpNetworkSpeed", 10 * U64C(0x40000000));
+        sanityCheckUdpSettings(numReceiveSlots, numThreads, networkSpeed);
+    }
 }
 
 // How many times the simulated sender [i] should start
@@ -191,16 +240,15 @@ unsigned numStarts(unsigned i)
 
 void simulateTraffic()
 {
-    constexpr unsigned numReceiveSlots = 100;
-    constexpr unsigned maxSlotsPerClient = 100;
-    constexpr unsigned maxSendQueueSize = 100;
+    const unsigned maxSendQueueSize = 100;
     try
     {
         myNode.setIp(IpAddress("1.2.3.4"));
-        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, maxSlotsPerClient, false);
+        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, false);
         unsigned begin = msTick();
-        printf("Start test\n");
-        asyncFor(numThreads+1, numThreads+1, [maxSendQueueSize, numReceiveSlots, maxSlotsPerClient, &rm](unsigned i)
+        std::atomic<unsigned> workValue{0};
+
+        asyncFor(numThreads+1, numThreads+1, [&workValue, maxSendQueueSize, &rm](unsigned i)
         {
             if (!i)
             {
@@ -208,22 +256,43 @@ void simulateTraffic()
                 {
                     Sleep(100);
                     rm.clear();
-                    rm.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, maxSlotsPerClient, false));
+                    rm.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, false));
                 }
             }
             else
             {
                 unsigned header = 0;
+                const unsigned serverFlowPort = sendFlowWithData ? CCD_DATA_PORT : CCD_SERVER_FLOW_PORT;
                 unsigned myStarts = numStarts(i);
                 for (unsigned startNo = 0; startNo < myStarts; startNo++)
                 {
                     IpAddress pretendIP(VStringBuffer("8.8.8.%d", i));
                     // Note - this is assuming we send flow on the data port (that option defaults true in roxie too)
-                    Owned<ISendManager> sm = createSendManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, false);
+                    Owned<ISendManager> sm = createSendManager(serverFlowPort, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, false);
+                    Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
                     unsigned numPackets = packetsPerThread / myStarts;
                     for (unsigned j = 0; j < packetsPerThread; j++)
                     {
-                        Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
+                        if (minWork || maxWork)
+                        {
+                            if ((j % optWorkFrequency) == 0)
+                            {
+                                unsigned work = minWork;
+                                if (maxWork > minWork)
+                                {
+                                    //Add some variability in the amount of work required for each packet
+                                    unsigned extra = hashc((const byte *)&j, sizeof(j), i) % (maxWork - minWork);
+                                    work += extra;
+                                }
+
+                                unsigned tally = 0;
+                                for (unsigned iWork=0; iWork < work; iWork++)
+                                {
+                                    tally = hashc((const byte *)&iWork, sizeof(iWork), tally);
+                                }
+                                workValue += tally;
+                            }
+                        }
                         void *buf = mp->getBuffer(500, false);
                         memset(buf, i, 500);
                         mp->putBuffer(buf, 500, false);
@@ -253,7 +322,7 @@ int main(int argc, const char **argv)
 {
     InitModuleObjects();
     strdup("Make sure leak checking is working");
-    queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread);
+    queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread|MSGFIELD_prefix);
     initOptions(argc, argv);
     simulateTraffic();
     ExitModuleObjects();

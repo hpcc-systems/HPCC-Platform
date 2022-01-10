@@ -55,7 +55,7 @@ constexpr unsigned TRACKER_BITS=1024;      // Power of two recommended
 constexpr unsigned TRACKER_DWORDS=(TRACKER_BITS+63)/64;
 
 // Some more things we can consider:
-// 1. sendSeq gives us some insight into lost packets that might help is get inflight calcuation right (if it is still needed)
+// 1. sendSeq gives us some insight into lost packets that might help is get inflight calculation right (if it is still needed)
 // 2. If we can definitively declare that a packet is lost, we can fail that messageCollator earlier (and thus get the resend going earlier)
 // 3. Worth seeing why resend doesn't use same collator. We could skip sending (though would still need to calculate) the bit we already had...
 
@@ -65,10 +65,10 @@ class PacketTracker
 private:
     sequence_t base = 0;                           // Sequence number of first packet represented in the array
     sequence_t hwm = (sequence_t) -1;              // Sequence number of highest sequence number ever seen
-    unsigned __int64 seen[TRACKER_DWORDS] = {0};  // bitmask representing whether we have seen (base+n)
-    void dump() const;
+    unsigned __int64 seen[TRACKER_DWORDS] = {0};   // bitmask representing whether we have seen (base+n)
 
 public:
+    void dump() const;
     // Note that we have seen this packet, and return indicating whether we had already seen it
     bool noteSeen(UdpPacketHeader &hdr);
     const PacketTracker copy() const;
@@ -207,9 +207,25 @@ public:
 #define HANDLE_PRAGMA_PACK_PUSH_POP
 #endif
 
+
+
 class flowType {
 public:
-    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more, max_flow_cmd };
+    enum flowCmd : unsigned short
+    {
+    //Messages sent from receiver to sender
+        ok_to_send,             // permit has been granted.
+        request_received,       // acknowledge request to send from the sender
+
+    //messages sent from the sender to the receiver
+        request_to_send,        // request permit to send some data.
+        send_start,             // about to send data - indicate how many packets are actually going to be sent
+        send_completed,         // all data sent (and no data to potentially be resent).
+        request_to_send_more,   // equivalent to send_completed followed by a request_to_send (used if no async permits)
+
+    // A marker for the number of flow commands:
+        max_flow_cmd
+    };
     static const char *name(flowCmd m)
     {
         switch (m)
@@ -217,6 +233,7 @@ public:
         case ok_to_send: return "ok_to_send";
         case request_received: return "request_received";
         case request_to_send: return "request_to_send";
+        case send_start: return "send_start";
         case send_completed: return "send_completed";
         case request_to_send_more: return "request_to_send_more";
         default:
@@ -225,11 +242,6 @@ public:
         }
     };
 
-};
-
-class sniffType {
-public:
-    enum sniffCmd : unsigned short { busy, idle };
 };
 
 #pragma pack(push,1)
@@ -245,17 +257,12 @@ struct UdpPermitToSendMsg
 struct UdpRequestToSendMsg
 {
     flowType::flowCmd cmd;
-    unsigned short packets;
+    unsigned short packets;   // Number about to send (send_start), or just sent (request_to_send_more or send_completed). Not used (0) for request_to_send
     sequence_t sendSeq;
     sequence_t flowSeq;
     ServerIdentifier sourceNode;
 };
 
-struct sniff_msg
-{
-    sniffType::sniffCmd cmd;
-    ServerIdentifier nodeIp;
-};
 #pragma pack(pop)
 
 int check_max_socket_read_buffer(int size);
@@ -270,6 +277,10 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 {
     return (udpTraceLevel >= level);
 }
+
+extern UDPLIB_API void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __uint64 networkSpeedBitsPerSecond);
+
+
 #define SOCKET_SIMULATION
 
 #ifdef SOCKET_SIMULATION
@@ -279,6 +290,7 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 
 #ifdef TEST_DROPPED_PACKETS
 extern UDPLIB_API bool udpDropDataPackets;
+extern UDPLIB_API unsigned udpDropDataPacketsPercent;
 extern UDPLIB_API unsigned udpDropFlowPackets[flowType::max_flow_cmd];
 extern unsigned flowPacketsSent[flowType::max_flow_cmd];
 #endif

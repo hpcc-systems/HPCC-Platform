@@ -29,7 +29,7 @@
 #include <jencrypt.hpp>
 #include "jutil.hpp"
 #include "jsecrets.hpp"
-#include <udptopo.hpp>
+#include "udptopo.hpp"
 
 #include "rtlformat.hpp"
 
@@ -43,6 +43,7 @@
 #include "ccdlistener.hpp"
 #include "ccdsnmp.hpp"
 #include "thorplugin.hpp"
+#include "udpsha.hpp"
 
 #if defined (__linux__)
 #include <sys/syscall.h>
@@ -959,51 +960,53 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);
         udpOutQsPriority = topology->getPropInt("@udpOutQsPriority", 0);
 
-        // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
-        udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 0);
-        if (udpRequestToSendTimeout<=10)
-            udpRequestToSendTimeout *= 1000;
-        if (udpRequestToSendTimeout == 0)
+        //See the head of udptrr.cpp for details of the following options
+        udpPermitTimeout = topology->getPropInt("@udpPermitTimeout", udpPermitTimeout);
+        udpRequestTimeout = topology->getPropInt("@udpRequestTimeout", udpRequestTimeout);
+        udpFlowAckTimeout = topology->getPropInt("@udpFlowAckTimeout", udpFlowAckTimeout);
+        if (!udpFlowAckTimeout)
         {
-            if (slaTimeout)
-            {
-                udpRequestToSendTimeout = (slaTimeout*3) / 4;
-                if (udpRequestToSendTimeout < 10)
-                    udpRequestToSendTimeout = 10;
-            }
-            else
-                udpRequestToSendTimeout = 5000;
+            udpFlowAckTimeout = 5;
+            if (!localAgent)
+                DBGLOG("Bad or missing value for udpFlowAckTimeout - using %u", udpFlowAckTimeout);
         }
 
-        udpRequestToSendAckTimeout = topology->getPropInt("@udpRequestToSendAckTimeout", 100);
-        if (!udpRequestToSendAckTimeout)
+        udpMaxPermitDeadTimeouts = topology->getPropInt("@udpMaxPermitDeadTimeouts", udpMaxPermitDeadTimeouts);
+        udpRequestDeadTimeout = topology->getPropInt("@udpRequestDeadTimeout", udpRequestDeadTimeout);
+
+        if (!localAgent)
         {
-            udpRequestToSendAckTimeout = 100;
-            if (!localAgent)
-                DBGLOG("Bad or missing value for udpRequestToSendAckTimeout - using %u", udpRequestToSendAckTimeout);
+            if (!udpMaxPermitDeadTimeouts)
+                ERRLOG("Bad value for udpMaxPermitDeadTimeouts - using %u", udpMaxPermitDeadTimeouts);
+            if (!udpRequestDeadTimeout)
+                ERRLOG("Bad value for udpRequestDeadTimeout - using %u", udpRequestDeadTimeout);
         }
-        udpMaxRetryTimedoutReqs = topology->getPropInt("@udpMaxRetryTimedoutReqs", 0);
-#ifdef _CONTAINERIZED
-        if (!udpMaxRetryTimedoutReqs)   // 0 traditionally means retry forever - which is a really bad idea in cloud world where replacement node may have different IP
-        {
-            udpMaxRetryTimedoutReqs = 60000/udpRequestToSendAckTimeout;  // Give up after 1 minute
-            if (!localAgent)
-                DBGLOG("Bad or missing value for udpMaxRetryTimedoutReqs - using %u", udpMaxRetryTimedoutReqs);
-        }
-#endif
+
+        updDataSendTimeout = topology->getPropInt("@udpDataSendTimeout", updDataSendTimeout);
+        udpResendTimeout = topology->getPropInt("@udpResendTimeout", udpResendTimeout);
+        udpMaxClientPercent = topology->getPropInt("@udpMaxClientPercent", udpMaxClientPercent);
+
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
 
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
-        udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
-        udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
+        udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
+        udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
 #ifndef _CONTAINERIZED
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
 #endif
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
-        udpResendTimeout = topology->getPropInt("@udpResendTimeout", 10);  // milliseconds
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);
-        udpMaxPendingPermits = topology->getPropInt("@udpMaxPendingPermits", 1);
+        udpMaxPendingPermits = topology->getPropInt("@udpMaxPendingPermits", udpMaxPendingPermits);
+        udpResendAllMissingPackets = topology->getPropBool("@udpResendAllMissingPackets", udpResendAllMissingPackets);
+        udpAdjustThreadPriorities = topology->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
+        udpAllowAsyncPermits = topology->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
+        udpMinSlotsPerSender = topology->getPropInt("@udpMinSlotsPerSender", udpMinSlotsPerSender);
+
+        unsigned __int64 defaultNetworkSpeed = 10 * U64C(0x40000000); // 10Gb/s
+        unsigned __int64 networkSpeed = topology->getPropInt64("@udpNetworkSpeed", defaultNetworkSpeed);   // only used to sanity check the different udp options
+        unsigned udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
+        sanityCheckUdpSettings(udpQueueSize, numChannels, networkSpeed);
 
         int ttlTmp = topology->getPropInt("@multicastTTL", 1);
         if (ttlTmp < 0)
