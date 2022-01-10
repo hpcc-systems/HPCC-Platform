@@ -73,6 +73,7 @@ if(USE_NLP)
         consh
         words
         lite
+        ${ICU_LIBRARIES}
         ${EXAMPLE_PLUGIN_DEP_LIBRARIES})
 
     if(PLATFORM OR CLIENTTOOLS_ONLY)
