@@ -340,6 +340,11 @@
               "ingress": {
                 "$ref" : "#/definitions/ingress"
               },
+              "loadBalancerSourceRanges": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "A list of CIDR ranges that you would like to allow for access to the Service"
+              },
               "type": {
                 "type": "string"
               }
@@ -829,6 +834,11 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "loadBalancerSourceRanges": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "A list of CIDR ranges that you would like to allow for access to the Service"
         }
       }
     },

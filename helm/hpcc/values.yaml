@@ -89,6 +89,8 @@ global:
       type: LoadBalancer
       ingress:
       - {}
+      ## CIDRS allowed to access this service.
+      #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
       
       
 # For pod placement instruction and examples please reference docs/placements.md
@@ -476,6 +478,8 @@ esp:
     #- name: linkname
     #  description: "some description"
     #  url: "http://abc.com/def?g=1"
+    ## CIDRS allowed to access this service.
+    #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
   #resources:
   #  cpu: "1"
   #  memory: "2G"

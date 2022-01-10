@@ -960,6 +960,7 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
     {{- if hasKey $globalServiceInfo "labels" -}}{{- $_ := set $lvars "labels" (merge $lvars.labels $globalServiceInfo.labels) -}}{{- end -}}
     {{- if hasKey $globalServiceInfo "annotations" -}}{{- $_ := set $lvars "annotations" (merge $lvars.annotations $globalServiceInfo.annotations) -}}{{- end -}}
     {{- if hasKey $globalServiceInfo "ingress" -}}{{- $_ := set $lvars "ingress" $globalServiceInfo.ingress -}}{{- end -}}
+    {{- if hasKey $globalServiceInfo "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" $globalServiceInfo.loadBalancerSourceRanges -}}{{- end -}}
     {{- $_ := set $lvars "type" $globalServiceInfo.type -}}
    {{- else -}}
     {{- required (printf "Specified service visibility %s not found in global visibilities section" .service.visibility) nil -}}
@@ -969,6 +970,7 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
   {{- end -}}
  {{- end -}}
  {{- if hasKey .service "ingress" -}}{{- $_ := set $lvars "ingress" .service.ingress -}}{{- end -}}
+ {{- if hasKey .service "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" .service.loadBalancerSourceRanges -}}{{- end -}}
 {{- end }}
 apiVersion: v1
 kind: Service
@@ -991,6 +993,15 @@ spec:
   selector:
     server: {{ .selector | quote }}
   type: {{ $lvars.type }}
+{{- if $lvars.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- if ne $lvars.type "LoadBalancer" -}}
+   {{- $_ := fail (printf "loadBalanceSourceRanges invalid unless service type is LoadBalancer" ) -}}
+  {{- end -}} 
+  {{- range $cidr := $lvars.loadBalancerSourceRanges }}
+  - {{ $cidr }}
+  {{- end }}
+{{ end }}
 {{- if $lvars.ingress }} 
 ---
 apiVersion: networking.k8s.io/v1
