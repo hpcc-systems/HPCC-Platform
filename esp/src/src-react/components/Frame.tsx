@@ -11,10 +11,10 @@ import { MainNavigation, SubNavigation } from "./Menu";
 
 const logger = scopedLogger("../components/Frame.tsx");
 
-interface DevFrameProps {
+interface FrameProps {
 }
 
-export const DevFrame: React.FunctionComponent<DevFrameProps> = () => {
+export const Frame: React.FunctionComponent<FrameProps> = () => {
 
     const [location, setLocation] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
