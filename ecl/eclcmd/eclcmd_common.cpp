@@ -434,6 +434,8 @@ public:
             cmdLine.append(" --nostdinc");
         if (cmd.optDebug)
             cmdLine.append(" -g");
+        ForEachItemIn(i, cmd.extraOptions)
+            cmdLine.append(" ").append(cmd.extraOptions.item(i));
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
         appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
         if (cmd.optAttributePath.length())
@@ -685,6 +687,14 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
         return EclCmdOptionMatch;
+    //Process options which should be passed straight through to eclcc
+    StringBuffer temp;
+    if (iter.matchOptionText(temp, ECLOPT_FETCH_REPOS, true, false) || iter.matchOptionText(temp, ECLOPT_UPDATE_REPOS, true, false) ||
+        iter.matchOptionText(temp, ECLOPT_DEFAULT_GIT_PREFIX, true, false) || iter.matchOptionText(temp, ECLOPT_REPO_MAPPING, false, true))
+    {
+        extraOptions.append(temp);
+        return EclCmdOptionMatch;
+    }
     StringAttr target;
     if (iter.matchOption(target, ECLOPT_TARGET)||iter.matchOption(target, ECLOPT_TARGET_S))
     {
