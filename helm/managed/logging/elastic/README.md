@@ -4,7 +4,7 @@
   <thead>
     <tr>
       <td align="left">
-        :zap: <b>Note:</b> Elastic Stack components have been reported to be affected by the high-severity vulnerability (CVE-2021-44228) impacting multiple versions of the Apache Log4j 2 utility
+        :zap: <b>Note:</b> Elastic Stack components prior to 7.16.0 have been reported to be affected by the high-severity vulnerability (CVE-2021-44228) impacting multiple versions of the Apache Log4j 2 utility
       </td>
     </tr>
   </thead>
@@ -15,6 +15,14 @@
         <ul>
           <li>Users of elastic4hpcclogs are strongly encouraged to update to chart version 1.2.0 which references Elastic Stack 7.16.1</li>
           <li>Learn more about Elastic's response to the vulnerability: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <ul>
+          <li>elastic4hpcclogs chart version 1.2.1 references Elastic Stack 7.16.2 which includes Log4j 2.17.0 which reportedly fully mitigate CVE-2021-44228 and should mitigate false positives in vulnerability scanners.</li>
+          <li>Learn more about Elastic's 7.16.2 release and their response to the vulnerability: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476</li>
         </ul>
       </td>
     </tr>
