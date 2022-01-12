@@ -21,7 +21,7 @@
     <tr>
       <td>
         <ul>
-          <li>elastic4hpcclogs chart version 1.2.1 references Elastic Stack 7.16.2 which includes Log4j 2.17.0 which reportedly fully mitigate CVE-2021-44228 and should mitigate false positives in vulnerability scanners.</li>
+          <li>elastic4hpcclogs chart version 1.2.1 references Elastic Stack 7.16.2 (Log4j 2.17.0) which reportedly fully mitigates CVE-2021-44228 and should avoid false positives in vulnerability scanners.</li>
           <li>Learn more about Elastic's 7.16.2 release and their response to the vulnerability: https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476</li>
         </ul>
       </td>
