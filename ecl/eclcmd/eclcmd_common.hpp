@@ -54,6 +54,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SSL "--ssl"
 #define ECLOPT_SSL_S "-ssl"
 
+#define ECLOPT_SOURCE_SSL "--source-ssl"
+#define ECLOPT_SOURCE_NO_SSL "--source-no-ssl"
+
 #define ECLOPT_PORT "--port"
 #define ECLOPT_PORT_INI "eclWatchPort"
 #define ECLOPT_PORT_ENV "ECL_WATCH_PORT"
@@ -265,7 +268,7 @@ public:
         if (usesESP)
             fprintf(stdout,
                 "   -s, --server=<ip>      IP of server running ecl services (eclwatch)\n"
-                "   -ssl, --ssl            Use SSL to secure the connection to the server\n"
+                "   -ssl, --ssl            Use SSL to secure the connection to the server(s)\n"
                 "   --port=<port>          ECL services port\n"
                 "   -u, --username=<name>  Username for accessing ecl services\n"
                 "   -pw, --password=<pw>   Password for accessing ecl services\n"
