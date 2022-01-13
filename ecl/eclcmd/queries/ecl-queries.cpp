@@ -443,7 +443,12 @@ public:
                 continue;
             if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
                 continue;
+
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+                continue;
+            if (iter.matchFlag(optSourceSSL, ECLOPT_SOURCE_SSL))
+                continue;
+            if (iter.matchFlag(optSourceNoSSL, ECLOPT_SOURCE_NO_SSL))
                 continue;
             if (iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS)||iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS_S))
                 continue;
@@ -526,6 +531,15 @@ public:
         return true;
     }
 
+    inline bool useSSLForSource()
+    {
+        if (optSourceSSL)
+            return true;
+        if (optSourceNoSSL)
+            return false;
+        return optSSL; //default to whether we use SSL to call ESP
+    }
+
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
@@ -553,6 +567,9 @@ public:
         req->setNoReload(optNoReload);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
+
+        //default to same tcp/tls as our ESP connection, but can be changed using --source-ssl or --source-no-ssl
+        req->setSourceSSL(useSSLForSource());
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -596,6 +613,8 @@ public:
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
             "   <target>               Name of target cluster to copy the query to\n"
+            "   --source-ssl           Use SSL when connecting to source (default if --ssl is used)\n"
+            "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "                          (only required if remote environment version < 3.8)\n"
@@ -645,6 +664,8 @@ private:
     bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles;
     bool optAllowForeign;
+    bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
+    bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
 };
 
 class EclCmdQueriesCopyQueryset : public EclCmdCommon
@@ -675,6 +696,10 @@ public:
                 }
                 continue;
             }
+            if (iter.matchFlag(optSourceSSL, ECLOPT_SOURCE_SSL))
+                continue;
+            if (iter.matchFlag(optSourceNoSSL, ECLOPT_SOURCE_NO_SSL))
+                continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
             if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
@@ -713,6 +738,15 @@ public:
         return true;
     }
 
+    inline bool useSSLForSource()
+    {
+        if (optSourceSSL)
+            return true;
+        if (optSourceNoSSL)
+            return false;
+        return optSSL; //default to whether we use SSL to call ESP
+    }
+
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
@@ -732,6 +766,9 @@ public:
         req->setCopyFiles(!optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
+
+        //default to same tcp/tls as our ESP connection, but can be changed using --source-ssl or --source-no-ssl
+        req->setSourceSSL(useSSLForSource());
 
         Owned<IClientWUCopyQuerySetResponse> resp = client->WUCopyQuerySet(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -777,6 +814,8 @@ public:
             "   <source_target>        Name of local (or path to remote) target cluster to"
             "                          copy queries from\n"
             "   <destination_target>   Target cluster to copy queries to\n"
+            "   --source-ssl           Use SSL when connecting to source (default if --ssl is used)\n"
+            "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --all                  Copy both active and inactive queries\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
@@ -804,6 +843,8 @@ private:
     bool optDontCopyFiles;
     bool optAllowForeign;
     bool optAllQueries;
+    bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
+    bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
 };
 
 class EclCmdQueriesConfig : public EclCmdCommon
