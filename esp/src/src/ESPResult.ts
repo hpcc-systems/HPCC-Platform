@@ -476,7 +476,7 @@ class Result {
                             formatter(cell, row) {
                                 switch (typeof cell) {
                                     case "string":
-                                        return cell.replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+                                        return cell.replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
                                 }
                                 return cell;
                             }
