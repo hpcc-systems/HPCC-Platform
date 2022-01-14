@@ -20,11 +20,13 @@ import { WorkunitSummary } from "./WorkunitSummary";
 interface WorkunitDetailsProps {
     wuid: string;
     tab?: string;
+    selectionId?: string;
 }
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     wuid,
-    tab = "summary"
+    tab = "summary",
+    selectionId = ""
 }) => {
 
     const [workunit] = useWorkunit(wuid, true);
@@ -46,7 +48,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <SourceFiles wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" itemCount={workunit?.GraphCount} style={pivotItemStyle(size, 0)}>
-                <Metrics wuid={wuid} />
+                <Metrics wuid={wuid} selection={selectionId} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Workflows} itemKey="workflows" itemCount={workunit?.WorkflowCount} style={pivotItemStyle(size, 0)}>
                 <Workflows wuid={wuid} />
