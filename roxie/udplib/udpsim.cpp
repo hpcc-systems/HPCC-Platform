@@ -68,14 +68,14 @@ udpsim:
   updDataSendTimeout: 20
   udpRequestTimeout: 20
   udpPermitTimeout: 50
-  udpResendTimeout: 40
+  udpResendDelay: 0
   udpMaxPermitDeadTimeouts: 5
   udpRequestDeadTimeout: 10000
   udpMaxPendingPermits: 10
   udpMaxClientPercent: 200
   udpMinSlotsPerSender: 1
   udpAssumeSequential: false
-  udpAllowAsyncPermits: true
+  udpAllowAsyncPermits: false
   udpTraceLevel: 1
   udpTraceTimeouts: true
   udpTestSocketDelay: 0
@@ -185,7 +185,7 @@ void initOptions(int argc, const char **argv)
     udpRequestTimeout = options->getPropInt("@udpRequestTimeout", udpRequestTimeout);
     udpFlowAckTimeout = options->getPropInt("@udpFlowAckTimeout", udpFlowAckTimeout);
     updDataSendTimeout = options->getPropInt("@udpDataSendTimeout", updDataSendTimeout);
-    udpResendTimeout = options->getPropInt("@udpResendTimeout", udpResendTimeout);
+    udpResendDelay = options->getPropInt("@udpResendDelay", udpResendDelay);
     udpMaxPermitDeadTimeouts = options->getPropInt("@udpMaxPermitDeadTimeouts", udpMaxPermitDeadTimeouts);
     udpRequestDeadTimeout = options->getPropInt("@udpRequestDeadTimeout", udpRequestDeadTimeout);
 

@@ -60,7 +60,6 @@
                 defaultStripLeadingWhitespace="1"
                 description="Roxie cluster"
                 directory="${RUNTIME_PATH}/myroxie"
-                diskReadBufferSize="65536"
                 doIbytiDelay="true"
                 enableHeartBeat="true"
                 enableKeyDiff="true"

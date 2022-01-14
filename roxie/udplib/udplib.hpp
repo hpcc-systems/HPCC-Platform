@@ -213,7 +213,7 @@ extern UDPLIB_API unsigned udpFlowAckTimeout;
 extern UDPLIB_API unsigned updDataSendTimeout;
 extern UDPLIB_API unsigned udpRequestTimeout;
 extern UDPLIB_API unsigned udpPermitTimeout;
-extern UDPLIB_API unsigned udpResendTimeout;
+extern UDPLIB_API unsigned udpResendDelay;
 
 extern UDPLIB_API bool udpResendLostPackets;
 extern UDPLIB_API unsigned udpMaxPendingPermits;
