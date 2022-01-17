@@ -244,7 +244,6 @@ bool ArgvIterator::matchOptionText(StringBuffer & option, const char * name, boo
         return false;
     }
 
-    option.append(arg);
     //Boolean flags don't check the next argument, options do if there was no =...
     if (!isBoolFlag)
     {
@@ -252,7 +251,10 @@ bool ArgvIterator::matchOptionText(StringBuffer & option, const char * name, boo
             return false;
 
         next();
-        option.append("=").append(query());
+        option.append(arg).append(" ").append(query());
     }
+    else
+        option.append(arg);
+
     return true;
 }
