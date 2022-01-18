@@ -18,6 +18,25 @@ const defaultUIState = {
 
 const disabled = { disabled: true, style: { color: "grey" } };
 
+const searchResultUrl = (result) => {
+    let url = window.location.hash;
+    switch (result.Type) {
+        case "ECL Workunit":
+            url = "#/workunits/" + result._wuid;
+            break;
+        case "DFU Workunit":
+            url = "#/dfuworkunits/" + result._wuid;
+            break;
+        case "Logical File":
+            url = "#/files/" + result._nodeGroup + "/" + result._name;
+            break;
+        case "Query":
+            url = "#/queries/" + result._querySetId + "/" + result._id;
+            break;
+    }
+    return url;
+};
+
 interface SearchProps {
     searchText: string;
 }
@@ -52,15 +71,15 @@ export const Search: React.FunctionComponent<SearchProps> = ({
             col1: selector({ width: 27, selectorType: "checkbox" }),
             Type: {
                 label: nlsHPCC.What, width: 108, sortable: true,
-                formatter: function (type, idx) {
-                    return "<a href='#' onClick='return false;' rowIndex=" + idx + " class='" + "SearchTypeClick'>" + type + "</a>";
+                formatter: function (type, row) {
+                    return "<a href='" + searchResultUrl(row) + "'>" + type + "</a>";
                 }
             },
             Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
             Summary: {
                 label: nlsHPCC.Who, sortable: true,
-                formatter: function (summary) {
-                    return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + summary + "</a>";
+                formatter: function (summary, row) {
+                    return "<a href='" + searchResultUrl(row) + "'>" + summary + "</a>";
                 }
             }
         }
@@ -89,7 +108,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                     window.location.href = `#/workunits/${selection[0].Wuid}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${selection[i].Wuid}`, "_blank");
+                        window.open(searchResultUrl(selection[i]), "_blank");
                     }
                 }
             }
