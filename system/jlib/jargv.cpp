@@ -218,3 +218,43 @@ bool ArgvIterator::matchPathFlag(StringBuffer & option, const char * name)
 }
 
 
+bool ArgvIterator::matchOptionText(StringBuffer & option, const char * name, bool isBoolFlag, bool isShortOption)
+{
+    const char * arg = query();
+    size_t len = strlen(name);
+    if (memcmp(arg, name, len) != 0)
+        return false;
+
+    switch (arg[len])
+    {
+    case '+':
+    case '-':
+    case '=':
+        option.append(arg);
+        return true;
+    case '\0':
+        break;
+    default:
+        // -Ix or -I x
+        if (isShortOption)
+        {
+            option.append(arg);
+            return true;
+        }
+        return false;
+    }
+
+    //Boolean flags don't check the next argument, options do if there was no =...
+    if (!isBoolFlag)
+    {
+        if (!hasMore(1))
+            return false;
+
+        next();
+        option.append(arg).append(" ").append(query());
+    }
+    else
+        option.append(arg);
+
+    return true;
+}

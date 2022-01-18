@@ -193,6 +193,11 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DEBUG_DASH "-g"
 #define ECLOPT_FAST_SYNTAX "--fastsyntax"
 #define ECLOPT_NO_STD_INC "--nostdinc"
+#define ECLOPT_FETCH_REPOS "--fetchrepos"
+#define ECLOPT_UPDATE_REPOS "--updaterepos"
+#define ECLOPT_DEFAULT_GIT_PREFIX "--defaultgitprefix"
+
+#define ECLOPT_REPO_MAPPING "-R"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -355,6 +360,7 @@ public:
     bool optCheckDirty;
     bool optFastSyntax = false;
     bool optNoStdInc = false;
+    StringArray extraOptions;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon
