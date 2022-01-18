@@ -84,10 +84,6 @@ data:
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $eclccserverCmd)) | indent 12 }}
             env:
 {{ include "hpcc.mergeEnvironments" .env | indent 12 }}
-{{- if .me.gitUsername }}
-            - name: HPCC_GIT_USERNAME
-              value: {{ .me.gitUsername | quote }}
-{{- end }}
             workingDir: /tmp
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -110,12 +106,27 @@ data:
 {{- end }}
 {{- end -}}
 
+{{- define "hpcc.gatherGitEnvironment" -}}
+{{- $gitPlane := .me.gitPlane | default (include "hpcc.getDefaultGitPlane" .root) -}}
+{{- $result := dict "value" list -}}
+{{- if $gitPlane -}}
+{{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $gitPlane) -}}
+{{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $gitPlane) -}}
+{{- $_ := set $result "value" (list (dict "name" "ECLCC_ECLREPO_PATH" "value" $prefix)) -}}
+{{- end -}}
+{{- if .me.gitUsername -}}
+{{- $entry := list (dict "name" "HPCC_GIT_USERNAME" "value" .me.gitUsername) -}}
+{{- $_ := set $result "value" (concat (get $result "value") $entry) -}}
+{{- end -}}
+{{- toYaml $result -}}
+{{- end -}}
 
 {{ range $.Values.eclccserver -}}
 {{- if not .disabled -}}
-{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
+{{- $gitenv := get (fromYaml (include "hpcc.gatherGitEnvironment" (dict "root" $ "me" .))) "value" -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) $gitenv -}}
 {{- $secretsCategories := list "system" "codeVerify" "git" }}
-{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "dll") "secretsCategories" $secretsCategories "env" $env }}
+{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "dll" "git") "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap" "component" "eclccserver" "excludeKeys" "global,eclccserver.queues")) }}
 apiVersion: apps/v1
 kind: Deployment
@@ -160,10 +171,6 @@ spec:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ .name }}.sentinel"
- {{- if .gitUsername }}
-        - name: HPCC_GIT_USERNAME
-          value: {{ .gitUsername | quote }}
- {{- end }}
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if .useChildProcesses }}
