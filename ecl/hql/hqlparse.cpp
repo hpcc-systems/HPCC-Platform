@@ -620,19 +620,13 @@ void HqlLex::processEncrypted()
 }
 
 /* Return: true if more parameter(s) left. */
-bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* startLine, int* startCol)
+bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what)
 {
     unsigned parenDepth = 1;
-    if (startLine) *startLine = -1;
     attribute nextToken;
     for (;;)
     {
         int tok = yyLex(nextToken, LEXnone, 0);
-        if (startLine && *startLine == -1)
-        {
-            *startLine = nextToken.pos.lineno;
-            *startCol = nextToken.pos.column;
-        }
         switch(tok)
         {
         case '(':
@@ -688,13 +682,14 @@ void HqlLex::doSkipUntilEnd(attribute & returnToken, const char * forwhat)
 
 void HqlLex::doIf(attribute & returnToken, bool isElseIf)
 {
+    ECLlocation location = returnToken.pos;
     StringBuffer forwhat;
-    int line = returnToken.pos.lineno, col = returnToken.pos.column;
     forwhat.appendf("#IF(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); // MORE - make it fatal!
+
     StringBuffer curParam("(");
     if (getParameter(curParam, forwhat.str()))
     {
@@ -704,7 +699,7 @@ void HqlLex::doIf(attribute & returnToken, bool isElseIf)
             ;
     }
     curParam.append(')');
-    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),line,col);
+    Owned<IValue> value = parseConstExpression(location, curParam, queryTopXmlScope());
     if (value && !value->getBoolValue())
     {
         setHashEndFlags(0);
@@ -845,8 +840,7 @@ void HqlLex::doExpand(attribute & returnToken)
     }
 
     StringBuffer curParam("(");
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    if (getParameter(curParam,forwhat.str()))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
@@ -854,7 +848,7 @@ void HqlLex::doExpand(attribute & returnToken)
             ;
     }
     curParam.append(')');
-    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    Owned<IValue> value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         StringBuffer buf;
@@ -888,10 +882,9 @@ void HqlLex::doSet(attribute & returnToken, bool append)
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected");
         return;
     }
-    StringBuffer curParam("(");
 
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    StringBuffer curParam("(");
+    if (getParameter(curParam,forwhat.str()))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
@@ -899,7 +892,7 @@ void HqlLex::doSet(attribute & returnToken, bool append)
             ;
     }
     curParam.append(')');
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    IValue *value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         StringBuffer buf;
@@ -912,9 +905,7 @@ void HqlLex::doSet(attribute & returnToken, bool append)
 void HqlLex::doLine(attribute & returnToken)
 {
     StringBuffer forwhat;
-    int line = returnToken.pos.lineno, col = returnToken.pos.column;
     forwhat.appendf("LINE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
-
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
@@ -922,10 +913,10 @@ void HqlLex::doLine(attribute & returnToken)
         return;
     }
     StringBuffer curParam("(");
-    bool moreParams = getParameter(curParam, forwhat.str(), &line, &col);
+    bool moreParams = getParameter(curParam, forwhat.str());
     curParam.append(')');
 
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),line,col);
+    IValue *value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value && value->getTypeCode()==type_int)
     {
         returnToken.pos.lineno = yyLineNo = (int)value->getIntValue();
@@ -936,16 +927,18 @@ void HqlLex::doLine(attribute & returnToken)
 
     if (moreParams)
     {
-        int startLine, startCol;
-        if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+        ECLlocation extrapos;
+        getPosition(extrapos);
+
+        if (getParameter(curParam,forwhat.str()))
         {
-            reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
+            reportError(extrapos, ERR_OPERANDS_TOOMANY, "Too many operands");
             StringBuffer dummy;
             while (getParameter(dummy,forwhat.str()))
                 ;
         }
         curParam.append(')');
-        IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+        IValue *value = parseConstExpression(extrapos, curParam, queryTopXmlScope());
         if (value && value->getTypeCode()==type_string)
         {
             StringBuffer buf;
@@ -1033,8 +1026,7 @@ void HqlLex::doError(attribute & returnToken, bool isError)
         return;
     }
     StringBuffer curParam("(");
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    if (getParameter(curParam,forwhat.str()))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
@@ -1043,7 +1035,7 @@ void HqlLex::doError(attribute & returnToken, bool isError)
     }
     curParam.append(')');
     StringBuffer buf;
-    OwnedIValue value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    OwnedIValue value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         value->getStringValue(buf);
@@ -1139,8 +1131,7 @@ void HqlLex::doTrace(attribute & returnToken)
     }
     StringBuffer curParam("(");
 
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    if (getParameter(curParam,forwhat.str()))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
@@ -1148,7 +1139,7 @@ void HqlLex::doTrace(attribute & returnToken)
             ;
     }
     curParam.append(')');
-    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    Owned<IValue> value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         StringBuffer buf;
@@ -1166,7 +1157,6 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
 {
     //MTIME_SECTION(timer, "HqlLex::doFor")
 
-    int startLine = -1, startCol = 0;
     StringBuffer forwhat;
     forwhat.appendf("#FOR(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
@@ -1205,17 +1195,13 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
         pushText(get_yyText());
         returnToken.release();
     }
+    ECLlocation loopPos = returnToken.pos;
 
     // Now gather the tokens we are going to repeat...
     StringBuffer forBodyText;
     for (;;)
     {
         int tok = yyLex(returnToken, LEXnone,0);
-        if (startLine == -1)
-        {
-            startLine = returnToken.pos.lineno - 1;
-            startCol = returnToken.pos.column;
-        }
 
         if (tok == EOF)
         {
@@ -1231,6 +1217,7 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
     }
     ::Release(forLoop);
 
+    forLocation = loopPos;
     forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
         forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
@@ -1238,14 +1225,15 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
 
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
-        checkNextLoop(returnToken, true, startLine, startCol);
+        checkNextLoop(true);
 }
 
 void HqlLex::doLoop(attribute & returnToken)
 {
-    int startLine = -1, startCol = 0;
+    ECLlocation loopPos = returnToken.pos;
+
     StringBuffer forwhat;
-    forwhat.appendf("#LOOP(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    forwhat.appendf("#LOOP(%d,%d)",loopPos.lineno,loopPos.column);
 
 
     // Now gather the tokens we are going to repeat...
@@ -1256,11 +1244,6 @@ void HqlLex::doLoop(attribute & returnToken)
     for (;;)
     {
         int tok = yyLex(returnToken, LEXnone,0);
-        if (startLine == -1)
-        {
-            startLine = returnToken.pos.lineno-1;
-            startCol = returnToken.pos.column;
-        }
 
         if (tok == EOF)
         {
@@ -1281,12 +1264,13 @@ void HqlLex::doLoop(attribute & returnToken)
     }
 
     ::Release(forLoop);
+    forLocation = loopPos;
     forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
     forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
-        checkNextLoop(returnToken, true,startLine,startCol);
+        checkNextLoop(true);
 }
 
 void HqlLex::doGetDataType(attribute & returnToken)
@@ -1547,13 +1531,13 @@ void HqlLex::doIsValid(attribute & returnToken)
 }
 
 
-void HqlLex::checkNextLoop(const attribute & errpos, bool first, int startLine, int startCol)
+void HqlLex::checkNextLoop(bool first)
 {
     if (yyParser->checkAborting())
         return;
     if (loopTimes++ > MAX_LOOP_TIMES)
     {
-        reportError(errpos, ERR_TMPLT_LOOPEXCESSMAX,"The loop exceeded the limit: infinite loop is suspected");
+        reportError(forLocation, ERR_TMPLT_LOOPEXCESSMAX,"The loop exceeded the limit: infinite loop is suspected");
         return;
     }
     //printf("%d\r",loopTimes);
@@ -1567,14 +1551,14 @@ void HqlLex::checkNextLoop(const attribute & errpos, bool first, int startLine, 
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
 #endif
-            Owned<IValue> value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
+            Owned<IValue> value = parseConstExpression(forLocation, forFilter, subscope);
             filtered = !value || !value->getBoolValue();
         }
         else
             filtered = false;
         if (!filtered)
         {
-            pushText(forBody,startLine,startCol);
+            pushText(forBody,forLocation.lineno,forLocation.column);
             inmacro->xmlScope = LINK(subscope);
             return;
         }
@@ -1803,7 +1787,7 @@ IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int sta
 }
 
 
-IValue *HqlLex::foldConstExpression(const attribute & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::foldConstExpression(const ECLlocation & errpos, IHqlExpression * expr, IXmlScope *xmlScope)
 {
     OwnedIValue value;
     if (expr)
@@ -1840,22 +1824,22 @@ IValue *HqlLex::foldConstExpression(const attribute & errpos, IHqlExpression * e
     return value.getClear();
 }
 
-IValue *HqlLex::parseConstExpression(const attribute & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::parseConstExpression(const ECLlocation & errpos, StringBuffer &curParam, IXmlScope *xmlScope)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
-    OwnedHqlExpr expr = parseECL(curParam, xmlScope, startLine, startCol);
-    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
+    OwnedHqlExpr expr = parseECL(curParam, xmlScope, errpos.lineno, errpos.position);
+    return foldConstExpression(errpos, expr, xmlScope);
 }
 
-IValue *HqlLex::parseConstExpression(const attribute & errpos, IFileContents * text, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::parseConstExpression(const ECLlocation & errpos, IFileContents * text, IXmlScope *xmlScope)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
-    OwnedHqlExpr expr = parseECL(text, xmlScope, startLine, startCol);
-    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
+    OwnedHqlExpr expr = parseECL(text, xmlScope, errpos.lineno, errpos.position);
+    return foldConstExpression(errpos, expr, xmlScope);
 }
 
 int hexchar(char c)
@@ -1899,7 +1883,7 @@ void HqlLex::doMangle(attribute & returnToken, bool de)
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); // MORE - make it fatal!
 
-    int line = returnToken.pos.lineno, col = returnToken.pos.column;
+    ECLlocation pos = returnToken.pos;
     StringBuffer curParam("(");
     if (getParameter(curParam, de?"#DEMANGLE":"#MANGLE"))
     {
@@ -1909,7 +1893,7 @@ void HqlLex::doMangle(attribute & returnToken, bool de)
             ;
     }
     curParam.append(')');
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(), line, col);
+    IValue *value = parseConstExpression(pos, curParam, queryTopXmlScope());
     if (value)
     {
         const char *str = value->getStringValue(curParam.clear());
@@ -2184,6 +2168,17 @@ void HqlLex::reportError(const attribute & returnToken, int errNo, const char *f
     }
 }
 
+void HqlLex::reportError(const ECLlocation & pos, int errNo, const char *format, ...)
+{
+    if (yyParser)
+    {
+        va_list args;
+        va_start(args, format);
+        yyParser->reportErrorVa(errNo, pos, format, args);
+        va_end(args);
+    }
+}
+
 void HqlLex::reportWarning(WarnErrorCategory category, const attribute & returnToken, int warnNo, const char *format, ...)
 {
     if (yyParser)
@@ -2396,7 +2391,7 @@ int HqlLex::yyLex(attribute & returnToken, LexerFlags lookupFlags, const short *
             }
 
             if (forLoop)
-                checkNextLoop(returnToken, false,0,0);
+                checkNextLoop(false);
         }
 
         returnToken.clear();

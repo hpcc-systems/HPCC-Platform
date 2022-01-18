@@ -1229,6 +1229,7 @@ class HqlLex
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const attribute & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
+        void reportError(const ECLlocation & pos, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
         void reportWarning(WarnErrorCategory category, const attribute & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
 
         void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendFlags.append(0); }
@@ -1253,10 +1254,10 @@ class HqlLex
         void pushMacro(IHqlExpression *expr);
         void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);
-        bool getParameter(StringBuffer &curParam, const char* for_what, int* startLine=NULL, int* startCol=NULL);
-        IValue *foldConstExpression(const attribute & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol);
-        IValue *parseConstExpression(const attribute & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
-        IValue *parseConstExpression(const attribute & errpos, IFileContents * contents, IXmlScope *xmlScope, int line, int col);
+        bool getParameter(StringBuffer &curParam, const char* for_what);
+        IValue *foldConstExpression(const ECLlocation & errpos, IHqlExpression * expr, IXmlScope *xmlScope);
+        IValue *parseConstExpression(const ECLlocation & errpos, StringBuffer &curParam, IXmlScope *xmlScope);
+        IValue *parseConstExpression(const ECLlocation & errpos, IFileContents * contents, IXmlScope *xmlScope);
         IHqlExpression * parseECL(IFileContents * contents, IXmlScope *xmlScope, int startLine, int startCol);
         IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
         void setMacroParam(const attribute & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentName, unsigned& parmno,IProperties *macroParms);
@@ -1291,7 +1292,7 @@ class HqlLex
         void checkSignature(const attribute & dummyToken);
 
         void declareUniqueName(const char* name, const char * pattern);
-        void checkNextLoop(const attribute & errpos, bool first,int startLine,int startCol);
+        void checkNextLoop(bool first);
 
         bool getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* for_what, SharedHqlExpr & resolved);
 
@@ -1311,6 +1312,7 @@ private:
         IIterator *forLoop;
         IXmlScope *xmlScope;
         IHqlExpression *macroExpr;
+        ECLlocation forLocation;
         Owned<IFileContents> forBody;
         Owned<IFileContents> forFilter;
         IAtom * hashDollar = nullptr;
