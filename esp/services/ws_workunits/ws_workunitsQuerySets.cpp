@@ -1850,29 +1850,9 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
     return true;
 }
 
-bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesRequest &req, IEspWUQueryFilesResponse &resp)
+void addQueryFiles(IPropertyTree *queryTree, StringBuffer &queryid, IArrayOf<IEspFileUsedByQuery> &referencedFiles, IArrayOf<IEspQuerySuperFile> &referencedSuperFiles)
 {
-    const char *target = req.getTarget();
-    validateTargetName(target);
-
-    const char *query = req.getQueryId();
-    if (!query || !*query)
-        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not specified");
-    Owned<IPropertyTree> registeredQuery = resolveQueryAlias(target, query, true);
-    if (!registeredQuery)
-        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not found");
-    PROGLOG("WUQueryFiles: target %s, query %s", target, query);
-    StringAttr queryid(registeredQuery->queryProp("@id"));
-    registeredQuery.clear();
-
-    Owned<IPropertyTree> tree = filesInUse.getTree();
-    VStringBuffer xpath("%s/Query[@id='%s']", target, queryid.get());
-    IPropertyTree *queryTree = tree->queryPropTree(xpath);
-    if (!queryTree)
-       throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not found in file cache (%s)", xpath.str());
-
-    IArrayOf<IEspFileUsedByQuery> referencedFiles;
-    IArrayOf<IEspQuerySuperFile> referencedSuperFiles;
+    queryid.set(queryTree->queryProp("@id"));
     Owned<IPropertyTreeIterator> files = queryTree->getElements("File");
     ForEach(*files)
     {
@@ -1895,8 +1875,74 @@ bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesReques
             referencedFiles.append(*respFile.getClear());
         }
     }
-    resp.setFiles(referencedFiles);
-    resp.setSuperFiles(referencedSuperFiles);
+}
+
+void addQueriesFiles(IPropertyTreeIterator *queriesTrees, IArrayOf<IEspQueryFilesUsed> &queriesFiles)
+{
+    ForEach(*queriesTrees)
+    {
+        IPropertyTree &queryTree = queriesTrees->get();
+
+        StringBuffer id;
+        IArrayOf<IEspFileUsedByQuery> referencedFiles;
+        IArrayOf<IEspQuerySuperFile> referencedSuperFiles;
+        addQueryFiles(&queryTree, id, referencedFiles, referencedSuperFiles);
+
+        Owned<IEspQueryFilesUsed> queryFilesUsed = createQueryFilesUsed();
+        queryFilesUsed->setQueryId(id);
+        queryFilesUsed->setFiles(referencedFiles);
+        queryFilesUsed->setSuperFiles(referencedSuperFiles);
+        queriesFiles.append(*queryFilesUsed.getClear());
+    }
+}
+
+bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesRequest &req, IEspWUQueryFilesResponse &resp)
+{
+    const char *target = req.getTarget();
+    validateTargetName(target);
+
+    StringAttr queryid;
+    const char *query = req.getQueryId();
+    if (!query || !*query)
+    {
+        if (context.getClientVersion()<1.86)
+            throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not specified");
+        PROGLOG("WUQueryFiles: target %s, all queries", target);
+    }
+    else
+    {
+        Owned<IPropertyTree> registeredQuery = resolveQueryAlias(target, query, true);
+        if (!registeredQuery)
+            throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not found");
+        PROGLOG("WUQueryFiles: target %s, query %s", target, query);
+        queryid.set(registeredQuery->queryProp("@id"));
+    }
+
+    Owned<IPropertyTree> tree = filesInUse.getTree();
+    if (queryid.length())
+    {
+        VStringBuffer xpath("%s/Query[@id='%s']", target, queryid.get());
+        IPropertyTree *queryTree = tree->queryPropTree(xpath);
+        if (!queryTree)
+            throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not found in file cache (%s)", xpath.str());
+
+        IArrayOf<IEspFileUsedByQuery> referencedFiles;
+        IArrayOf<IEspQuerySuperFile> referencedSuperFiles;
+        StringBuffer id;
+        addQueryFiles(queryTree, id, referencedFiles, referencedSuperFiles);
+
+        resp.setFiles(referencedFiles);
+        resp.setSuperFiles(referencedSuperFiles);
+    }
+    else
+    {
+        //return entire queryset
+        VStringBuffer xpath("%s/Query", target);
+        Owned<IPropertyTreeIterator> queryTrees = tree->getElements(xpath);
+        IArrayOf<IEspQueryFilesUsed> queriesFiles;
+        addQueriesFiles(queryTrees, queriesFiles);
+        resp.setQueries(queriesFiles);
+    }
     return true;
 }
 
