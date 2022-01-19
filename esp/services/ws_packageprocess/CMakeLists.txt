@@ -44,6 +44,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/dfu
          ${HPCC_SOURCE_DIR}/dali/sasha
          ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/common/pkgfiles
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
@@ -60,6 +61,7 @@ target_link_libraries ( ws_packageprocess
          esphttp
          dalibase
          ws_fs
+         pkgfiles
     )
 
 IF (USE_OPENSSL)

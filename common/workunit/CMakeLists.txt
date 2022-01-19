@@ -28,18 +28,13 @@ set (    SRCS
          workunit.cpp
          wuattr.cpp
          wujobq.cpp
-         package.cpp
          workflow.cpp
-         referencedfilelist.cpp
-                 
+
          workunit.hpp
          wuattr.hpp
          wuerror.hpp
          wujobq.hpp
-         package.h
          workflow.hpp
-         pkgimpl.hpp
-         referencedfilelist.hpp
     )
 
 include_directories ( 

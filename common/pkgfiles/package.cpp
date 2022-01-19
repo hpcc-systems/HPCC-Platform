@@ -210,12 +210,12 @@ const IHpccPackageMap *CHpccPackageSet::queryActiveMap(const char *target) const
     return NULL;
 }
 
-extern WORKUNIT_API IHpccPackageSet *createPackageSet(const char *process)
+extern PKGFILES_API IHpccPackageSet *createPackageSet(const char *process)
 {
     return new CHpccPackageSet(process);
 }
 
-extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool readonly)
+extern PKGFILES_API IPropertyTree * getPackageMapById(const char * id, bool readonly)
 {
     if (!id || !*id)
         return NULL;
@@ -227,7 +227,7 @@ extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool read
     return conn->getRoot();
 }
 
-extern WORKUNIT_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly)
+extern PKGFILES_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly)
 {
     if (!id || !*id)
         return NULL;
@@ -241,7 +241,7 @@ extern WORKUNIT_API IPropertyTree * getPackageMapById(const char *target, const 
     return getPackageMapById(id, readonly);
 }
 
-extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool readonly)
+extern PKGFILES_API IPropertyTree * getPackageSetById(const char * id, bool readonly)
 {
     if (!id || !*id)
         return NULL;
@@ -253,7 +253,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool read
     return conn->getRoot();
 }
 
-extern WORKUNIT_API IPropertyTree * resolveActivePackageMap(const char *process, const char *target, bool readonly)
+extern PKGFILES_API IPropertyTree * resolveActivePackageMap(const char *process, const char *target, bool readonly)
 {
     if (!target || !*target)
         return NULL;
@@ -270,7 +270,7 @@ extern WORKUNIT_API IPropertyTree * resolveActivePackageMap(const char *process,
     return NULL;
 }
 
-extern WORKUNIT_API IPropertyTree * resolvePackageSetRegistry(const char *process, bool readonly)
+extern PKGFILES_API IPropertyTree * resolvePackageSetRegistry(const char *process, bool readonly)
 {
     if (!process || !*process)
         return NULL;

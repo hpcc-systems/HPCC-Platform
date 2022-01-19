@@ -48,6 +48,12 @@ ESPrequest [nil_remove] WURecreateQueryRequest
     bool IncludeFileErrors(false);
 
     int Wait(-1);
+    [min_ver("1.89")] bool DfuCopyFiles(false);
+    [min_ver("1.89")] string DfuQueue;
+    [min_ver("1.89")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.89")] bool DfuOverwrite(false);
+    [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
@@ -67,6 +73,8 @@ ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
     bool Suspended;
     string ErrorMessage;
     ESParray<ESPStruct LogicalFileError, File> FileErrors;
+    [min_ver("1.89")] string DfuPublisherWuid;
+    [min_ver("1.89")] string DfuPublisherState;
 };
 
 ESPrequest WUQueryGetGraphRequest
@@ -124,6 +132,13 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
+
+    [min_ver("1.89")] bool DfuCopyFiles(false);
+    [min_ver("1.89")] string DfuQueue;
+    [min_ver("1.89")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.89")] bool DfuOverwrite(false);
+    [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -138,6 +153,8 @@ ESPresponse [exceptions_inline] WUPublishWorkunitResponse
     [min_ver("1.39")] string ErrorMessage;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
     [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
+    [min_ver("1.89")] string DfuPublisherWuid;
+    [min_ver("1.89")] string DfuPublisherState;
 };
 
 ESPrequest [nil_remove] WUQueryConfigRequest
@@ -364,6 +381,13 @@ ESPrequest WUQuerysetImportRequest
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
+
+    [min_ver("1.89")] bool DfuCopyFiles(false);
+    [min_ver("1.89")] string DfuQueue;
+    [min_ver("1.89")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.89")] bool DfuOverwrite(false);
+    [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] WUQuerysetImportResponse
@@ -376,6 +400,8 @@ ESPresponse [exceptions_inline] WUQuerysetImportResponse
     ESParray<string, QueryId> ExistingQueries;
     ESParray<string, QueryId> MissingWuids;
     ESParray<ESPStruct LogicalFileError, File> FileErrors;
+    [min_ver("1.89")] string DfuPublisherWuid;
+    [min_ver("1.89")] string DfuPublisherState;
 };
 
 ESPrequest [nil_remove] WUUpdateQueryEntryRequest
@@ -441,12 +467,21 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
     bool SourceSSL(false);
+
+    [min_ver("1.89")] bool DfuCopyFiles(false);
+    [min_ver("1.89")] string DfuQueue;
+    [min_ver("1.89")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.89")] bool DfuOverwrite(false);
+    [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 {
     string QueryId;
     [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
+    [min_ver("1.89")] string DfuPublisherWuid;
+    [min_ver("1.89")] string DfuPublisherState;
 };
 
 ESPrequest [nil_remove] WUCopyQuerySetRequest
@@ -466,6 +501,13 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
     bool SourceSSL(false);
+
+    [min_ver("1.89")] bool DfuCopyFiles(false);
+    [min_ver("1.89")] string DfuQueue;
+    [min_ver("1.89")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.89")] bool DfuOverwrite(false);
+    [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse
@@ -473,4 +515,6 @@ ESPresponse [exceptions_inline] WUCopyQuerySetResponse
     ESParray<string, QueryId> CopiedQueries;
     ESParray<string, QueryId> ExistingQueries;
     [min_ver("1.68")] ESParray<ESPStruct LogicalFileError, File> FileErrors;
+    [min_ver("1.89")] string DfuPublisherWuid;
+    [min_ver("1.89")] string DfuPublisherState;
 };

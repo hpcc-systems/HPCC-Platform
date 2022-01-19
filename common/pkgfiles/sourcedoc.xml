@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,21 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (deftype)
-HPCC_ADD_SUBDIRECTORY (dllserver)
-if (NOT CONTAINERIZED)
-    HPCC_ADD_SUBDIRECTORY (environment)
-ENDIF()
-if ("${BUILD_LEVEL}" STREQUAL "INTERNAL")
-    HPCC_ADD_SUBDIRECTORY (fileview2)
-else ()
-    HPCC_ADD_SUBDIRECTORY (fileview2 "PLATFORM")
-endif ()
-HPCC_ADD_SUBDIRECTORY (monitoring "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (remote)
-HPCC_ADD_SUBDIRECTORY (roxiecommlib)
-HPCC_ADD_SUBDIRECTORY (thorhelper)
-HPCC_ADD_SUBDIRECTORY (pkgfiles)
-HPCC_ADD_SUBDIRECTORY (workunit)
-HPCC_ADD_SUBDIRECTORY (wuanalysis)
-HPCC_ADD_SUBDIRECTORY (wuwebview "PLATFORM")
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>common/pkgfiles</title>
+
+    <para>
+        The common/pkgfiles directory contains the sources for the common/pkgfiles library.
+    </para>
+</section>

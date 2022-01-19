@@ -48,7 +48,7 @@ void testAbort(const char *wuid)
         UERRLOG("WUID %s not found", wuid);
 }
 
-StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
+static StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
 {
     filemask.clear().append(filename).toLowerCase().append("._$P$_of_$N$");
     return filemask;
@@ -636,7 +636,7 @@ void testPagedIterate()
     unsigned n=0;
     for (unsigned page=0;page<3;page++) {
         DFUsortfield sortorder[] = {DFUsf_user,DFUsf_state,DFUsf_term};
-        Owned<IConstDFUWorkUnitIterator> iter = factory->getWorkUnitsSorted(sortorder, NULL, NULL, page*10, 10, "nigel", &cachehint, NULL);
+        Owned<IConstDFUWorkUnitIterator> iter = factory->getWorkUnitsSorted(sortorder, NULL, NULL, page*10, 10, "nigel", &cachehint, NULL, nullptr);
         StringBuffer s;
         ForEach(*iter) {
 

@@ -533,6 +533,8 @@ public:
                 continue;
             if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -576,7 +578,7 @@ public:
         StringBuffer pkgInfo;
         pkgInfo.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... adding package map %s now\n\n", optFileName.str());
+        fprintf(stdout, "\n ... adding package map %s\n\n", optFileName.str());
 
         Owned<IClientAddPackageRequest> request = packageProcessClient->createAddPackageRequest();
         setRpcOptions(request->rpc());
@@ -597,8 +599,13 @@ public:
         request->setUpdateCloneFrom(optUpdateCloneFrom);
         request->setAppendCluster(!optDontAppendCluster);
 
+        dfuOptions.updateRequest(request.get());
+
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
+
+        if (ret==0 && dfuOptions.report(resp.get()))
+            puts("\n package added.\n");
 
         StringArray &notFound = resp->getFilesNotFound();
         if (notFound.length())
@@ -635,7 +642,7 @@ public:
                     "   --update-clone-from      Update local clone from location if remote DALI has changed\n"
                     "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n",
                     stdout);
-
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -646,6 +653,9 @@ private:
     StringAttr optDaliIP;
     StringAttr optPackageMapId;
     StringAttr optSourceProcess;
+
+    EclCmdOptionsDFU dfuOptions;
+
     bool optActivate;
     bool optOverWrite;
     bool optReplacePackagemap;
@@ -702,6 +712,8 @@ public:
                 continue;
             if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -751,8 +763,13 @@ public:
         request->setUpdateCloneFrom(optUpdateCloneFrom);
         request->setAppendCluster(!optDontAppendCluster);
 
+        dfuOptions.updateRequest(request.get());
+
         Owned<IClientCopyPackageMapResponse> resp = packageProcessClient->CopyPackageMap(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
+
+        if (ret==0 && dfuOptions.report(resp.get()))
+            puts("\n package copied.\n");
 
         StringArray &notFound = resp->getFilesNotFound();
         if (notFound.length())
@@ -789,7 +806,7 @@ public:
                     "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
                     "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n",
                     stdout);
-
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -798,6 +815,9 @@ private:
     StringAttr optPMID;
     StringAttr optDaliIP;
     StringAttr optSourceProcess;
+
+    EclCmdOptionsDFU dfuOptions;
+
     bool optActivate = false;
     bool optReplacePackagemap = false;
     bool optUpdateSuperfiles = false;
@@ -1259,6 +1279,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -1320,8 +1342,13 @@ public:
         request->setUpdateCloneFrom(optUpdateCloneFrom);
         request->setAppendCluster(!optDontAppendCluster);
 
+        dfuOptions.updateRequest(request.get());
+
         Owned<IClientAddPartToPackageMapResponse> resp = packageProcessClient->AddPartToPackageMap(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
+
+        if (ret==0 && dfuOptions.report(resp.get()))
+            puts("\n package added.\n");
 
         StringArray &notFound = resp->getFilesNotFound();
         if (notFound.length())
@@ -1357,7 +1384,7 @@ public:
                     "   --update-clone-from         Update local clone from location if remote DALI has changed\n"
                     "   --dont-append-cluster       Only use to avoid locking issues due to adding cluster to file\n",
                     stdout);
-
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -1367,6 +1394,9 @@ private:
     StringAttr optSourceProcess;
     StringAttr optPartName;
     StringAttr optFileName;
+
+    EclCmdOptionsDFU dfuOptions;
+
     bool optDeletePrevious;
     bool optGlobalScope;
     bool optAllowForeign;

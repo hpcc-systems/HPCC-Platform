@@ -124,7 +124,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
     return isFileKnownOnCluster(logicalname, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles)
 {
     StringBuffer user;
     StringBuffer password;
@@ -147,7 +147,7 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     getRoxieDirectAccessPlanes(locations, targetPlane, clusterName.str(), true);
 
     wufiles->resolveFiles(locations, lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
-    wufiles->cloneAllInfo(targetPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr);
+    wufiles->cloneAllInfo(publisherWuid, targetPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr);
 #else
     StringArray locations;
     SCMStringBuffer processName;
@@ -158,7 +158,7 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     StringBuffer defReplicateFolder;
     getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
 
-    wufiles->cloneAllInfo(processName.str(), updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
+    wufiles->cloneAllInfo(publisherWuid, processName.str(), updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
 #endif
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
@@ -170,13 +170,13 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     }
 }
 
-void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles);
+    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles);
 }
 
 void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
@@ -267,10 +267,14 @@ public:
     StringBuffer prefix;
     StringBuffer pmid;
     StringBuffer pkgSetId;
+    StringBuffer publisherWuid;
+    StringBuffer publisherState;
 
     StringAttr process;
     StringAttr target;
+    StringAttr dfuQueue;
     unsigned flags;
+    unsigned dfuWait = 1800000; //wait for DFU Copy, default 30 minutes (only used if !req.getOnlyCopyFiles() and !req.getStopIfFilesCopied())
 
     PackageMapUpdater() : flags(0), packageMaps(NULL), pmExisting(NULL){}
 
@@ -377,7 +381,7 @@ public:
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt)
     {
         if (!streq(target.get(), "*"))
-            cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
         else
         {
             CConstWUClusterInfoArray clusters;
@@ -386,7 +390,7 @@ public:
             {
                 IConstWUClusterInfo &cluster = clusters.item(i);
                 if (cluster.getPlatform() == RoxieCluster)
-                    cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
             }
         }
     }
@@ -394,7 +398,22 @@ public:
     {
         cloneDfsInfo(updateFlags, filesNotFound, pmPart);
     }
-    void doCreate(const char *partname, IPropertyTree *pTree, unsigned updateFlags, StringArray &filesNotFound)
+    bool waitForDfuWorkunit()
+    {
+        if (!publisherWuid.isEmpty())
+        {
+            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+            Owned<IConstDFUWorkUnit> dfuPublisherWu = factory->openWorkUnit(publisherWuid, false);
+            DFUstate state = dfuPublisherWu->pollForCompletion(dfuWait);
+            StringBuffer statemsg;
+            encodeDFUstate(state, publisherState);
+            if (state != DFUstate_finished)
+                return false;
+        }
+        return true;
+    }
+
+    bool doCreate(const char *partname, IPropertyTree *pTree, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
         if (!pTree)
             throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "No PackageMap content provided");
@@ -416,6 +435,10 @@ public:
             cloneDfsInfo(updateFlags, filesNotFound, pmPart);
         }
 
+        if (copyonly || (stopifcopy && !publisherWuid.isEmpty()))
+            return false;
+        if (!waitForDfuWorkunit())
+            return false;
         if (pmExisting)
             packageMaps->removeTree(pmExisting);
 
@@ -440,23 +463,24 @@ public:
             psEntry->setProp("@querySet", target);
         }
         makePackageActive(pkgSet, psEntry, target, checkFlag(PKGADD_MAP_ACTIVATE));
+        return true;
     }
-    void doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    bool doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, ipt_ordered);
-        doCreate(partname, pTree, updateFlags, filesNotFound);
+        return doCreate(partname, pTree, updateFlags, filesNotFound, copyonly, stopifcopy);
     }
-    void create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    bool create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
         init();
-        doCreate(partname, xml, updateFlags, filesNotFound);
+        return doCreate(partname, xml, updateFlags, filesNotFound, copyonly, stopifcopy);
     }
-    void copy(IPropertyTree *pm, const char *name, unsigned updateFlags, StringArray &filesNotFound)
+    bool copy(IPropertyTree *pm, const char *name, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
         init();
-        doCreate(name, pm, updateFlags, filesNotFound);
+        return doCreate(name, pm, updateFlags, filesNotFound, copyonly, stopifcopy);
     }
-    void copy(const char *srcAddress, const char *srcTarget, const char *name, unsigned updateFlags, StringArray &filesNotFound)
+    bool copy(const char *srcAddress, const char *srcTarget, const char *name, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
         VStringBuffer url("http://%s/WsPackageProcess", (srcAddress && *srcAddress) ? srcAddress : ".:8010");
         Owned<IClientWsPackageProcess> client = createWsPackageProcessClient();
@@ -482,17 +506,14 @@ public:
             throw mE.getClear();
         }
         init();
-        doCreate(name, resp->getInfo(), updateFlags, filesNotFound);
+        return doCreate(name, resp->getInfo(), updateFlags, filesNotFound, copyonly, stopifcopy);
     }
-    void addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    bool addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyonly, bool stopifcopy)
     {
         init();
 
         if (!pmExisting)
-        {
-            doCreate(partname, xml, updateFlags, filesNotFound);
-            return;
-        }
+            return doCreate(partname, xml, updateFlags, filesNotFound, copyonly, stopifcopy);
 
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, ipt_ordered);
         createPart(partname, pTree.getClear());
@@ -504,10 +525,14 @@ public:
 
         cloneDfsInfo(updateFlags, filesNotFound);
 
+        if (copyonly || (stopifcopy && !publisherWuid.isEmpty()))
+            return false;
+
         if (existingPart)
             pmExisting->removeTree(existingPart);
 
         pmExisting->addPropTree("Part", pmPart.getClear());
+        return true;
     }
     IPropertyTree *ensurePart(const char *partname)
     {
@@ -804,6 +829,17 @@ void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree
     getPkgInfoById(nullptr, packageMapId, tree);
 }
 
+template<class TRequest>
+static void setDfuOptions(PackageMapUpdater &updater, unsigned &updateFlags, TRequest &req)
+{
+    if (req.getDfuCopyFiles())
+        updateFlags |= DFU_UPDATEF_COPY;
+    if (req.getDfuOverwrite())
+        updateFlags |= DFU_UPDATEF_OVERWRITE;
+    updater.dfuQueue.set(req.getDfuQueue());
+    updater.dfuWait = req.getDfuWait();
+}
+
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
 {
     PackageMapUpdater updater;
@@ -830,12 +866,18 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     if (req.getAppendCluster())
         updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
-    StringArray filesNotFound;
-    updater.create(req.getPackageMap(), req.getInfo(), updateFlags, filesNotFound);
-    resp.setFilesNotFound(filesNotFound);
+    setDfuOptions(updater, updateFlags, req);
 
-    resp.updateStatus().setCode(0);
-    resp.updateStatus().setDescription(StringBuffer("Successfully loaded ").append(req.getPackageMap()));
+    StringArray filesNotFound;
+    if (updater.create(req.getPackageMap(), req.getInfo(), updateFlags, filesNotFound, req.getOnlyCopyFiles(), req.getStopIfFilesCopied()))
+    {
+        resp.updateStatus().setCode(0);
+        resp.updateStatus().setDescription(StringBuffer("Successfully loaded ").append(req.getPackageMap()));
+    }
+    resp.setFilesNotFound(filesNotFound);
+    resp.setDfuPublisherWuid(updater.publisherWuid);
+    resp.setDfuPublisherState(updater.publisherState);
+
     return true;
 }
 
@@ -893,6 +935,8 @@ bool CWsPackageProcessEx::onCopyPackageMap(IEspContext &context, IEspCopyPackage
     if (req.getAppendCluster())
         updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
+    setDfuOptions(updater, updateFlags, req);
+
     StringBuffer srcAddress, srcTarget, srcPMID;
     if (!splitPMPath(req.getSourcePath(), srcAddress, srcTarget, &srcPMID))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source PackageMap path");
@@ -903,21 +947,26 @@ bool CWsPackageProcessEx::onCopyPackageMap(IEspContext &context, IEspCopyPackage
     else
         updater.setPMID(req.getTarget(), srcPMID, false);
 
+    bool loaded = false;
     StringArray filesNotFound;
     if (srcAddress && *srcAddress)
-        updater.copy(srcAddress, srcTarget, srcPMID, updateFlags, filesNotFound);
+        loaded = updater.copy(srcAddress, srcTarget, srcPMID, updateFlags, filesNotFound, req.getOnlyCopyFiles(), req.getStopIfFilesCopied());
     else
     {
         Owned<IPropertyTree> tree = createPTree("PackageMaps");
         getPkgInfoById(srcTarget, srcPMID, tree);
         if (!tree->hasChildren())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source PackageMap not found");
-        updater.copy(tree, srcPMID, updateFlags, filesNotFound);
+        loaded = updater.copy(tree, srcPMID, updateFlags, filesNotFound, req.getOnlyCopyFiles(), req.getStopIfFilesCopied());
     }
     resp.setFilesNotFound(filesNotFound);
-
-    resp.updateStatus().setCode(0);
-    resp.updateStatus().setDescription(StringBuffer("Successfully loaded ").append(srcPMID.str()));
+    resp.setDfuPublisherWuid(updater.publisherWuid);
+    resp.setDfuPublisherState(updater.publisherState);
+    if (loaded)
+    {
+        resp.updateStatus().setCode(0);
+        resp.updateStatus().setDescription(StringBuffer("Successfully loaded ").append(srcPMID.str()));
+    }
     return true;
 }
 
@@ -1418,12 +1467,17 @@ bool CWsPackageProcessEx::onAddPartToPackageMap(IEspContext &context, IEspAddPar
     if (req.getAppendCluster())
         updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
-    StringArray filesNotFound;
-    updater.addPart(req.getPartName(), req.getContent(), updateFlags, filesNotFound);
-    resp.setFilesNotFound(filesNotFound);
+    setDfuOptions(updater, updateFlags, req);
 
-    resp.updateStatus().setCode(0);
-    resp.updateStatus().setDescription(VStringBuffer("Successfully loaded Part %s to PackageMap %s", req.getPartName(), updater.pmid.str()));
+    StringArray filesNotFound;
+    if (updater.addPart(req.getPartName(), req.getContent(), updateFlags, filesNotFound, req.getOnlyCopyFiles(), req.getStopIfFilesCopied()))
+    {
+        resp.updateStatus().setCode(0);
+        resp.updateStatus().setDescription(VStringBuffer("Successfully loaded Part %s to PackageMap %s", req.getPartName(), updater.pmid.str()));
+    }
+    resp.setFilesNotFound(filesNotFound);
+    resp.setDfuPublisherWuid(updater.publisherWuid);
+    resp.setDfuPublisherState(updater.publisherState);
     return true;
 }
 
