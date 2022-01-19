@@ -493,13 +493,14 @@ public:
                 dstfdesc->queryPart(pn)->queryProperties().setProp("@modified",dates.str());
         }
 
-        if (copyphysical) {
+        if (!copyphysical) //cloneFrom tells roxie where to copy from.. it's unnecessary if we already did the copy
+            updateCloneFrom(destfilename, dstfdesc, srcfdesc, srcdali, srcCluster);
+        else
+        {
             DBGLOG("copyphysical dst=%s", destfilename);
             physicalCopyFile(srcfdesc,dstfdesc);
             physicalReplicateFile(dstfdesc,destfilename);
         }
-
-        updateCloneFrom(destfilename, dstfdesc, srcfdesc, srcdali, srcCluster);
 
         Owned<IDistributedFile> dstfile = fdir->createNew(dstfdesc);
         dstfile->attach(destfilename,userdesc);
@@ -753,9 +754,12 @@ public:
                 attsrc->getPropInt("@eclCRC") == attloc.getPropInt("@eclCRC") &&
                 attsrc->getPropInt("@totalCRC") == attloc.getPropInt64("@totalCRC"))
             {
-                Owned<IFileDescriptor> dstfdesc=dfile->getFileDescriptor();
-                Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
-                updateCloneFrom(filename, dstfdesc, srcfdesc, srcdali, srcCluster);
+                if (!copyphysical)
+                {
+                    Owned<IFileDescriptor> dstfdesc=dfile->getFileDescriptor();
+                    Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
+                    updateCloneFrom(filename, dstfdesc, srcfdesc, srcdali, srcCluster);
+                }
                 return;
             }
 
@@ -897,7 +901,8 @@ public:
             {
                 if (checkOverwrite(DALI_UPDATEF_APPEND_CLUSTER) && !checkHasCluster(dfile))
                     addCluster(dfile, ftree);
-                if (checkOverwrite(DALI_UPDATEF_CLONE_FROM))
+                //cloneFrom is to tell roxie where to copy the physical file from, it's unecessary if we do the copy here
+                if (!copyphysical && checkOverwrite(DALI_UPDATEF_CLONE_FROM))
                 {
                     Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
                     if (checkCloneFromChanged(dfile, srcfdesc, srcdali, srcCluster))
@@ -1260,15 +1265,15 @@ public:
                          const char *defReplicateFolder,
                          IUserDescriptor *userdesc,                // user desc for local dali
                          const char *foreigndali,                  // can be omitted if srcname foreign or local
-                         unsigned overwriteFlags                            // overwrite destination if exists
+                         unsigned overwriteFlags,                  // overwrite destination if exists
+                         bool dophysicalcopy
                          )
     {
-        DBGLOG("cloneRoxieSubFile src=%s@%s, dst=%s@%s, prefix=%s, ow=%d, docopy=false", srcLFN, srcCluster, dstLFN, dstCluster, prefix, overwriteFlags);
+        DBGLOG("cloneRoxieSubFile src=%s@%s, dst=%s@%s, prefix=%s, ow=%d, docopy=%d", srcLFN, srcCluster, dstLFN, dstCluster, prefix, overwriteFlags, dophysicalcopy);
         CFileCloner cloner;
-        bool copyPhysical = false;
         // MORE: Would the following be better to ensure files are copied when queries are deployed?
         // bool copyPhysical = isContainerized() && (foreigndali != nullptr);
-        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, NULL, NULL, false, copyPhysical);
+        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, NULL, NULL, false, dophysicalcopy);
         cloner.overwriteFlags = overwriteFlags;
 #ifndef _CONTAINERIZED
         //In containerized mode there is no need to replicate files to the local disks of the roxie cluster - so don't set the special flag

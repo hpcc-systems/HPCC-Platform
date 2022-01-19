@@ -533,6 +533,8 @@ public:
                 continue;
             if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
                 continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -596,6 +598,7 @@ public:
         request->setUpdateSuperFiles(optUpdateSuperfiles);
         request->setUpdateCloneFrom(optUpdateCloneFrom);
         request->setAppendCluster(!optDontAppendCluster);
+        request->setCopyPhysical(optCopyPhysical);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -633,7 +636,8 @@ public:
                     "   --replace                Replace existing packagmap"
                     "   --update-super-files     Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from      Update local clone from location if remote DALI has changed\n"
-                    "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n",
+                    "   --dont-append-cluster    Only use to avoid locking issues due to adding cluster to file\n"
+                    "   --copy-physical          Copy physical files during deployment, not on roxie in the background\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -655,6 +659,7 @@ private:
     bool optGlobalScope;
     bool optAllowForeign;
     bool optPreloadAll;
+    bool optCopyPhysical = false;
 };
 
 class EclCmdPackageMapCopy : public EclCmdCommon
@@ -701,6 +706,8 @@ public:
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
             if (iter.matchFlag(optPreloadAll, ECLOPT_PRELOAD_ALL_PACKAGES))
+                continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
                 continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
@@ -750,6 +757,7 @@ public:
         request->setUpdateSuperFiles(optUpdateSuperfiles);
         request->setUpdateCloneFrom(optUpdateCloneFrom);
         request->setAppendCluster(!optDontAppendCluster);
+        request->setCopyPhysical(optCopyPhysical);
 
         Owned<IClientCopyPackageMapResponse> resp = packageProcessClient->CopyPackageMap(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -787,7 +795,8 @@ public:
                     "   --replace              Replace existing packagmap\n"
                     "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
-                    "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n",
+                    "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
+                    "   --copy-physical        Copy physical files during deployment, not on roxie in the background\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -804,6 +813,7 @@ private:
     bool optUpdateCloneFrom = false;
     bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
     bool optPreloadAll = false;
+    bool optCopyPhysical = false;
 };
 
 class EclCmdPackageValidate : public EclCmdCommon
@@ -1259,6 +1269,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -1319,6 +1331,7 @@ public:
         request->setUpdateSuperFiles(optUpdateSuperfiles);
         request->setUpdateCloneFrom(optUpdateCloneFrom);
         request->setAppendCluster(!optDontAppendCluster);
+        request->setCopyPhysical(optCopyPhysical);
 
         Owned<IClientAddPartToPackageMapResponse> resp = packageProcessClient->AddPartToPackageMap(request);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -1355,7 +1368,8 @@ public:
                     "   --preload-all               Set preload files option for all packages\n"
                     "   --update-super-files        Update local DFS super-files if remote DALI has changed\n"
                     "   --update-clone-from         Update local clone from location if remote DALI has changed\n"
-                    "   --dont-append-cluster       Only use to avoid locking issues due to adding cluster to file\n",
+                    "   --dont-append-cluster       Only use to avoid locking issues due to adding cluster to file\n"
+                    "   --copy-physical             Copy physical files during deployment, not on roxie in the background\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -1374,6 +1388,7 @@ private:
     bool optUpdateSuperfiles;
     bool optUpdateCloneFrom;
     bool optDontAppendCluster;
+    bool optCopyPhysical = false;
 };
 
 class EclCmdPackageRemovePart : public EclCmdCommon

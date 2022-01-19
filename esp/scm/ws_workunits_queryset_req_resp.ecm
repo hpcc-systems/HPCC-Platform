@@ -48,6 +48,7 @@ ESPrequest [nil_remove] WURecreateQueryRequest
     bool IncludeFileErrors(false);
 
     int Wait(-1);
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
@@ -124,6 +125,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -364,6 +366,7 @@ ESPrequest WUQuerysetImportRequest
     bool UpdateCloneFrom(false); //explicity wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline] WUQuerysetImportResponse
@@ -441,6 +444,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
     bool SourceSSL(false);
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
@@ -466,6 +470,7 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
     bool IncludeFileErrors(false);
     bool SourceSSL(false);
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse

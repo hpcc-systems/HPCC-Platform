@@ -1063,6 +1063,7 @@ ESPrequest [nil_remove] WUEclDefinitionActionRequest
     int MsToWait(-1);
     int TimeLimit(-1); //Publish
     int WarnTimeLimit(-1); //Publish
+    bool CopyPhysical(false); //Publish
 };
 
 ESPresponse [exceptions_inline] WUEclDefinitionActionResponse

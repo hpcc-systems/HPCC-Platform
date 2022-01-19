@@ -487,6 +487,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
+                continue;
             if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
@@ -588,6 +590,7 @@ public:
         req->setUpdateCloneFrom(optUpdateCloneFrom);
         req->setAppendCluster(!optDontAppendCluster);
         req->setDontCopyFiles(optDontCopyFiles);
+        req->setCopyPhysical(optCopyPhysical);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
         req->setAllowForeignFiles(optAllowForeign);
@@ -641,6 +644,7 @@ public:
             "   --source-ssl           Use SSL when connecting to source (default if --ssl is used)\n"
             "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
+            "   --copy-physical        Copy physical files during deployment, not on roxie in the background\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "                          (only required if remote environment version < 3.8)\n"
             "   --source-process       Process cluster to copy files from\n"
@@ -688,6 +692,7 @@ private:
     bool optUpdateCloneFrom;
     bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles;
+    bool optCopyPhysical = false; //copy files during deployment, not on roxie in the background
     bool optAllowForeign;
     bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
     bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
@@ -732,6 +737,8 @@ public:
             if (iter.matchFlag(optCloneActiveState, ECLOPT_CLONE_ACTIVE_STATE))
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
+                continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
                 continue;
             if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
                 continue;
@@ -789,6 +796,7 @@ public:
         req->setUpdateCloneFrom(optUpdateCloneFrom);
         req->setAppendCluster(!optDontAppendCluster);
         req->setCopyFiles(!optDontCopyFiles);
+        req->setCopyPhysical(optCopyPhysical);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
 
@@ -843,6 +851,7 @@ public:
             "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --all                  Copy both active and inactive queries\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
+            "   --copy-physical        Copy physical files during deployment, not on roxie in the background\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --clone-active-state   Make copied queries active if active on source\n"
@@ -866,6 +875,7 @@ private:
     bool optUpdateCloneFrom;
     bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles;
+    bool optCopyPhysical = false; //copy files during deployment, not on roxie in the background
     bool optAllowForeign;
     bool optAllQueries;
     bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
@@ -1059,6 +1069,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
+                continue;
             if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
                 continue;
             if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
@@ -1172,6 +1184,7 @@ public:
         req->setNoReload(optNoReload);
         req->setRepublish(!optNoPublish);
         req->setDontCopyFiles(optDontCopyFiles);
+        req->setCopyPhysical(optCopyPhysical);
         req->setAllowForeignFiles(optAllowForeign);
         req->setUpdateDfs(optUpdateDfs);
         req->setUpdateSuperFiles(optUpdateSuperfiles);
@@ -1235,6 +1248,7 @@ public:
             "   --no-publish           Create a recompiled workunit, but do not publish it\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
+            "   --copy-physical        Copy physical files during deployment, not on roxie in the background\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
             "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
@@ -1271,6 +1285,7 @@ private:
     bool optNoReload = false;
     bool optNoPublish = false;
     bool optDontCopyFiles = false;
+    bool optCopyPhysical = false; //copy files during deployment, not on roxie in the background
     bool optSuspendPrevious = false;
     bool optDeletePrevious = false;
     bool optAllowForeign = false;
@@ -1456,6 +1471,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
+                continue;
             if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
                 continue;
             if (iter.matchFlag(optReplace, ECLOPT_REPLACE))
@@ -1512,6 +1529,7 @@ public:
         req->setUpdateCloneFrom(optUpdateCloneFrom);
         req->setAppendCluster(!optDontAppendCluster);
         req->setCopyFiles(!optDontCopyFiles);
+        req->setCopyPhysical(optCopyPhysical);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
 
@@ -1570,6 +1588,7 @@ public:
             "   --replace              Replace entire existing queryset\n"
             "   --queries              Filter query ids to select for import\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
+            "   --copy-physical        Copy physical files during deployment, not on roxie in the background\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --clone-active-state   Make copied queries active if active on source\n"
@@ -1596,6 +1615,7 @@ private:
     bool optUpdateCloneFrom = false;
     bool optDontAppendCluster = false; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles = false;
+    bool optCopyPhysical = false; //copy files during deployment, not on roxie in the background
     bool optAllowForeign = false;
     bool optAllQueries = false;
 };

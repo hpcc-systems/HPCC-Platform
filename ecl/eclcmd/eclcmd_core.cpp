@@ -347,6 +347,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
+            if (iter.matchFlag(optCopyPhysical, ECLOPT_COPY_PHYSICAL))
+                continue;
             if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
                 continue;
             if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
@@ -469,6 +471,7 @@ public:
         req->setWait(remaining);
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
+        req->setCopyPhysical(optCopyPhysical);
         req->setAllowForeignFiles(optAllowForeign);
         req->setUpdateDfs(optUpdateDfs);
         req->setUpdateSuperFiles(optUpdateSuperfiles);
@@ -532,6 +535,7 @@ public:
             "   --protect              protect workunit from deletion\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --copy-physical        Copy physical files during deployment, not on roxie in the background\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
@@ -566,6 +570,7 @@ private:
     bool activateSet;
     bool optNoReload;
     bool optDontCopyFiles;
+    bool optCopyPhysical=false;
     bool optSuspendPrevious;
     bool optDeletePrevious;
     bool optProtect = false;

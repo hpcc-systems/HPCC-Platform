@@ -90,7 +90,8 @@ interface IDFUhelper: extends IInterface
                          const char *defReplicateFolder,
                          IUserDescriptor *userdesc,                // user desc for local dali
                          const char *foreigndali,                  // can be omitted if srcname foreign or local
-                         unsigned overwriteFlags                   // overwrite destination options
+                         unsigned overwriteFlags,                   // overwrite destination options
+                         bool dophysicalcopy
                          ) = 0;
 
     virtual void cloneFileRelationships(

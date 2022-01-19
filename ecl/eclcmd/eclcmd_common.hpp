@@ -84,6 +84,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_OVERWRITE_ENV NULL
 
 #define ECLOPT_DONT_COPY_FILES "--no-files"
+#define ECLOPT_COPY_PHYSICAL "--copy-physical"
 #define ECLOPT_ALLOW_FOREIGN "--allow-foreign"
 
 #define ECLOPT_ACTIVE "--active"

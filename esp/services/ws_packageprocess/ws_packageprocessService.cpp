@@ -124,7 +124,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
     return isFileKnownOnCluster(logicalname, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, bool copyphysical)
 {
     StringBuffer user;
     StringBuffer password;
@@ -147,7 +147,7 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     getRoxieDirectAccessPlanes(locations, targetPlane, clusterName.str(), true);
 
     wufiles->resolveFiles(locations, lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
-    wufiles->cloneAllInfo(targetPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr);
+    wufiles->cloneAllInfo(targetPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr, copyphysical);
 #else
     StringArray locations;
     SCMStringBuffer processName;
@@ -158,7 +158,7 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     StringBuffer defReplicateFolder;
     getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
 
-    wufiles->cloneAllInfo(processName.str(), updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
+    wufiles->cloneAllInfo(processName.str(), updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder, false);
 #endif
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
@@ -170,13 +170,13 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     }
 }
 
-void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles, bool copyphysical)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles);
+    cloneFileInfoToDali(updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles, copyphysical);
 }
 
 void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
@@ -374,10 +374,10 @@ public:
 
         fixPackageMapFileIds(pmPart, checkFlag(PKGADD_PRELOAD_ALL));
     }
-    void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt)
+    void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt, bool copyphysical)
     {
         if (!streq(target.get(), "*"))
-            cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+            cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), copyphysical);
         else
         {
             CConstWUClusterInfoArray clusters;
@@ -386,15 +386,15 @@ public:
             {
                 IConstWUClusterInfo &cluster = clusters.item(i);
                 if (cluster.getPlatform() == RoxieCluster)
-                    cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+                    cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), copyphysical);
             }
         }
     }
-    void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound)
+    void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
-        cloneDfsInfo(updateFlags, filesNotFound, pmPart);
+        cloneDfsInfo(updateFlags, filesNotFound, pmPart, copyphysical);
     }
-    void doCreate(const char *partname, IPropertyTree *pTree, unsigned updateFlags, StringArray &filesNotFound)
+    void doCreate(const char *partname, IPropertyTree *pTree, unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
         if (!pTree)
             throw MakeStringExceptionDirect(PKG_INFO_NOT_DEFINED, "No PackageMap content provided");
@@ -408,12 +408,12 @@ public:
         if (pmTree->hasProp("Part"))
         {
             fixPackageMapFileIds(pmTree, checkFlag(PKGADD_PRELOAD_ALL));
-            cloneDfsInfo(updateFlags, filesNotFound, pmTree);
+            cloneDfsInfo(updateFlags, filesNotFound, pmTree, copyphysical);
         }
         else
         {
             createPart(partname, pmTree.getClear()); //this is a part, not a whole packagemap
-            cloneDfsInfo(updateFlags, filesNotFound, pmPart);
+            cloneDfsInfo(updateFlags, filesNotFound, pmPart, copyphysical);
         }
 
         if (pmExisting)
@@ -441,22 +441,24 @@ public:
         }
         makePackageActive(pkgSet, psEntry, target, checkFlag(PKGADD_MAP_ACTIVATE));
     }
-    void doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    void doCreate(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
         Owned<IPropertyTree> pTree = createPTreeFromXMLString(xml, ipt_ordered);
-        doCreate(partname, pTree, updateFlags, filesNotFound);
+        doCreate(partname, pTree, updateFlags, filesNotFound, copyphysical);
     }
-    void create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    //keep copyphysical as a boolean for now.  makes keeping track of affected code easier.  eventually turn it into an updateFlag for cleaner code
+    void create(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
         init();
-        doCreate(partname, xml, updateFlags, filesNotFound);
+        doCreate(partname, xml, updateFlags, filesNotFound, copyphysical);
     }
-    void copy(IPropertyTree *pm, const char *name, unsigned updateFlags, StringArray &filesNotFound)
+    void copy(IPropertyTree *pm, const char *name, unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
         init();
-        doCreate(name, pm, updateFlags, filesNotFound);
+        doCreate(name, pm, updateFlags, filesNotFound, copyphysical);
     }
-    void copy(const char *srcAddress, const char *srcTarget, const char *name, unsigned updateFlags, StringArray &filesNotFound)
+    //keep copyphysical as a boolean for now.  makes keeping track of affected code easier.  eventually turn it into an updateFlag for cleaner code
+    void copy(const char *srcAddress, const char *srcTarget, const char *name, unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
         VStringBuffer url("http://%s/WsPackageProcess", (srcAddress && *srcAddress) ? srcAddress : ".:8010");
         Owned<IClientWsPackageProcess> client = createWsPackageProcessClient();
@@ -482,15 +484,16 @@ public:
             throw mE.getClear();
         }
         init();
-        doCreate(name, resp->getInfo(), updateFlags, filesNotFound);
+        doCreate(name, resp->getInfo(), updateFlags, filesNotFound, copyphysical);
     }
-    void addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound)
+    //keep copyphysical as a boolean for now.  makes keeping track of affected code easier.  eventually turn it into an updateFlag for cleaner code
+    void addPart(const char *partname, const char *xml, unsigned updateFlags, StringArray &filesNotFound, bool copyphysical)
     {
         init();
 
         if (!pmExisting)
         {
-            doCreate(partname, xml, updateFlags, filesNotFound);
+            doCreate(partname, xml, updateFlags, filesNotFound, copyphysical);
             return;
         }
 
@@ -502,7 +505,7 @@ public:
         if (existingPart && !checkFlag(PKGADD_SEG_REPLACE))
             throw MakeStringException(PKG_NAME_EXISTS, "Package Part %s already exists, remove, or specify 'delete previous'", partname);
 
-        cloneDfsInfo(updateFlags, filesNotFound);
+        cloneDfsInfo(updateFlags, filesNotFound, copyphysical);
 
         if (existingPart)
             pmExisting->removeTree(existingPart);
@@ -806,6 +809,11 @@ void CWsPackageProcessEx::getPkgInfoById(const char *packageMapId, IPropertyTree
 
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
 {
+    #ifndef _CONTAINERIZED
+    if (req.getCopyPhysical())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
+
     PackageMapUpdater updater;
     updater.setFlag(PKGADD_MAP_CREATE);
     updater.setFlag(PKGADD_MAP_ACTIVATE, req.getActivate());
@@ -831,7 +839,7 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
         updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
     StringArray filesNotFound;
-    updater.create(req.getPackageMap(), req.getInfo(), updateFlags, filesNotFound);
+    updater.create(req.getPackageMap(), req.getInfo(), updateFlags, filesNotFound, req.getCopyPhysical());
     resp.setFilesNotFound(filesNotFound);
 
     resp.updateStatus().setCode(0);
@@ -872,6 +880,11 @@ bool splitPMPath(const char *path, StringBuffer &netAddress, StringBuffer &targe
 
 bool CWsPackageProcessEx::onCopyPackageMap(IEspContext &context, IEspCopyPackageMapRequest &req, IEspCopyPackageMapResponse &resp)
 {
+    #ifndef _CONTAINERIZED
+    if (req.getCopyPhysical())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
+
     PackageMapUpdater updater;
     updater.setFlag(PKGADD_MAP_CREATE);
     updater.setFlag(PKGADD_MAP_ACTIVATE, req.getActivate());
@@ -905,14 +918,14 @@ bool CWsPackageProcessEx::onCopyPackageMap(IEspContext &context, IEspCopyPackage
 
     StringArray filesNotFound;
     if (srcAddress && *srcAddress)
-        updater.copy(srcAddress, srcTarget, srcPMID, updateFlags, filesNotFound);
+        updater.copy(srcAddress, srcTarget, srcPMID, updateFlags, filesNotFound, req.getCopyPhysical());
     else
     {
         Owned<IPropertyTree> tree = createPTree("PackageMaps");
         getPkgInfoById(srcTarget, srcPMID, tree);
         if (!tree->hasChildren())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source PackageMap not found");
-        updater.copy(tree, srcPMID, updateFlags, filesNotFound);
+        updater.copy(tree, srcPMID, updateFlags, filesNotFound, req.getCopyPhysical());
     }
     resp.setFilesNotFound(filesNotFound);
 
@@ -1417,6 +1430,11 @@ bool CWsPackageProcessEx::onGetQueryFileMapping(IEspContext &context, IEspGetQue
 
 bool CWsPackageProcessEx::onAddPartToPackageMap(IEspContext &context, IEspAddPartToPackageMapRequest &req, IEspAddPartToPackageMapResponse &resp)
 {
+    #ifndef _CONTAINERIZED
+    if (req.getCopyPhysical())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
+
     PackageMapUpdater updater;
     updater.setFlag(PKGADD_SEG_ADD);
     updater.setFlag(PKGADD_SEG_REPLACE, req.getDeletePrevious());
@@ -1439,7 +1457,7 @@ bool CWsPackageProcessEx::onAddPartToPackageMap(IEspContext &context, IEspAddPar
         updateFlags |= DALI_UPDATEF_APPEND_CLUSTER;
 
     StringArray filesNotFound;
-    updater.addPart(req.getPartName(), req.getContent(), updateFlags, filesNotFound);
+    updater.addPart(req.getPartName(), req.getContent(), updateFlags, filesNotFound, req.getCopyPhysical());
     resp.setFilesNotFound(filesNotFound);
 
     resp.updateStatus().setCode(0);

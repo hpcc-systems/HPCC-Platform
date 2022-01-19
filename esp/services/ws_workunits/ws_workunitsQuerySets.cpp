@@ -752,7 +752,8 @@ public:
         if (ps)
             pm = ps->queryActiveMap(target);
     }
-    void copy(IConstWorkUnit *cw, unsigned updateFlags)
+    //keep copyphysical as a boolean for now.  makes keeping track of affected code easier.  eventually turn it into an updateFlag for cleaner code
+    void copy(IConstWorkUnit *cw, unsigned updateFlags, bool copyphysical)
     {
         StringBuffer queryid;
         if (queryname && *queryname)
@@ -771,11 +772,11 @@ public:
         files->resolveFiles(locations, remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
         Owned<IDFUhelper> helper = createIDFUhelper();
 #ifdef _CONTAINERIZED
-        files->cloneAllInfo(targetPlaneOrGroup, updateFlags, helper, true, true, 0, 1, 0, nullptr);
+        files->cloneAllInfo(targetPlaneOrGroup, updateFlags, helper, true, true, 0, 1, 0, nullptr, copyphysical);
 #else
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
-        files->cloneAllInfo(targetPlaneOrGroup, updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
+        files->cloneAllInfo(targetPlaneOrGroup, updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder, false);
 #endif
     }
 
@@ -861,6 +862,11 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, const char* target, uns
 
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
+    #ifndef _CONTAINERIZED
+    if (req.getCopyPhysical())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
+
     StringBuffer wuid(req.getWuid());
     WsWuHelpers::checkAndTrimWorkunit("WUPublishWorkunit", wuid);
 
@@ -919,7 +925,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         cpr.remotePrefix.set(srcPrefix);
         cpr.srcCluster.set(srcCluster);
         cpr.queryname.set(queryName);
-        cpr.copy(cw, updateFlags);
+        cpr.copy(cw, updateFlags, req.getCopyPhysical());
 
         if (req.getIncludeFileErrors())
             cpr.gatherFileErrors(resp.getFileErrors());
@@ -1987,6 +1993,10 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
 {
     try
     {
+        #ifndef _CONTAINERIZED
+        if (req.getCopyPhysical())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+        #endif
         const char* srcTarget = req.getTarget();
         const char* queryIdOrAlias = req.getQueryId();
         if (!srcTarget || !*srcTarget)
@@ -2080,7 +2090,7 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
                 cpr.remotePrefix.set(srcPrefix);
                 cpr.srcCluster.set(srcCluster);
                 cpr.queryname.set(srcQueryName);
-                cpr.copy(cw, updateFlags);
+                cpr.copy(cw, updateFlags, req.getCopyPhysical());
 
                 if (req.getIncludeFileErrors())
                     cpr.gatherFileErrors(resp.getFileErrors());
@@ -3044,8 +3054,8 @@ public:
         else
             process.set(destProcess);
     }
-
-    void cloneFiles()
+    //keep copyphysical as a boolean for now.  makes keeping track of affected code easier.  eventually turn it into an updateFlag for cleaner code
+    void cloneFiles(bool copyphysical)
     {
         if (cloneFilesEnabled)
         {
@@ -3055,12 +3065,12 @@ public:
             if (cl)
             {
 #ifdef _CONTAINERIZED
-                wufiles->cloneAllInfo(process.str(), updateFlags, helper, true, true, 0, 1, 0, nullptr);
+                wufiles->cloneAllInfo(process.str(), updateFlags, helper, true, true, 0, 1, 0, nullptr, copyphysical);
 #else
                 SCMStringBuffer process;
                 StringBuffer defReplicateFolder;
                 getConfigurationDirectory(NULL, "data2", "roxie", cl->getRoxieProcess(process).str(), defReplicateFolder);
-                wufiles->cloneAllInfo(process.str(), updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
+                wufiles->cloneAllInfo(process.str(), updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder, false);
 #endif
             }
         }
@@ -3098,6 +3108,11 @@ public:
 
 bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRequest &req, IEspWUCopyQuerySetResponse &resp)
 {
+    #ifndef _CONTAINERIZED
+    if (req.getCopyPhysical())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
+
     const char *source = req.getSource();
     if (!source || !*source)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "No source target specified");
@@ -3146,7 +3161,7 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     else
         cloner.cloneAll(req.getCloneActiveState());
 
-    cloner.cloneFiles();
+    cloner.cloneFiles(req.getCopyPhysical());
     if (req.getIncludeFileErrors())
         cloner.gatherFileErrors(resp.getFileErrors());
 
@@ -3158,6 +3173,10 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
 
 bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetCopyQueryRequest &req, IEspWUQuerySetCopyQueryResponse &resp)
 {
+    #ifndef _CONTAINERIZED
+    if (req.getCopyPhysical())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
     unsigned start = msTick();
     const char *source = req.getSource();
     if (!source || !*source)
@@ -3243,7 +3262,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         cpr.remotePrefix.set(srcPrefix);
         cpr.srcCluster.set(srcCluster);
         cpr.queryname.set(targetQueryName);
-        cpr.copy(cw, updateFlags);
+        cpr.copy(cw, updateFlags, req.getCopyPhysical());
 
         if (req.getIncludeFileErrors())
             cpr.gatherFileErrors(resp.getFileErrors());
@@ -3288,6 +3307,10 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
 {
     try
     {
+    #ifndef _CONTAINERIZED
+        if (req.getCopyPhysical())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "The copy-physical option is currently only supported on cloud based systems");
+    #endif
         const char* target = req.getTarget();
         if (!target || !*target)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target not specified");
@@ -3352,7 +3375,7 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
         else
             cloner.cloneAllLocal(activate, req.getQueryMask());
 
-        cloner.cloneFiles();
+        cloner.cloneFiles(req.getCopyPhysical());
         if (req.getIncludeFileErrors())
             cloner.gatherFileErrors(resp.getFileErrors());
 

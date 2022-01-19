@@ -42,6 +42,7 @@ ESPrequest AddPackageRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool CopyPhysical(false);
 };
 
 
@@ -68,6 +69,7 @@ ESPrequest CopyPackageMapRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline] CopyPackageMapResponse
@@ -293,6 +295,7 @@ ESPrequest AddPartToPackageMapRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    bool CopyPhysical(false);
 };
 
 ESPresponse [exceptions_inline] AddPartToPackageMapResponse
