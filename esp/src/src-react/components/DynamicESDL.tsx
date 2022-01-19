@@ -12,7 +12,7 @@ import * as Utility from "src/Utility";
 import * as WsESDLConfig from "src/WsESDLConfig";
 import { ShortVerticalDivider } from "./Common";
 import { selector, tree } from "./DojoGrid";
-import { ESDLDefinitions } from "./ESDLDefinitions";
+import { DESDLDefinitions } from "./DESDLDefinitions";
 import { AddBindingForm } from "./forms/AddBinding";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -73,7 +73,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
                         img = Utility.getImageHTML("machine.png") + nlsHPCC.Port + ":";
                     } else if (row.type === "binding") {
                         img = Utility.getImageHTML("sync.png");
-                        name = `<a href="#/esdl/bindings/${name}">${name}</a>`;
+                        name = `<a href="#/desdl/bindings/${name}">${name}</a>`;
                     }
                     return img + "&nbsp;" + name;
                 },
@@ -193,10 +193,10 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/esdl/bindings/${selection[0].Name}`);
+                    pushUrl(`/desdl/bindings/${selection[0].Name}`);
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/esdl/bindings/${selection[i].Name}`, "_blank");
+                        window.open(`#/desdl/bindings/${selection[i].Name}`, "_blank");
                     }
                 }
             }
@@ -232,7 +232,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
         <SizeMe monitorHeight>{({ size }) =>
             <Pivot
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => pushUrl(`/esdl/${evt.props.itemKey}`)}
+                onLinkClick={evt => pushUrl(`/desdl/${evt.props.itemKey}`)}
             >
                 <PivotItem headerText={nlsHPCC.title_DESDL} itemKey="bindings" style={pivotItemStyle(size)} >
                     <HolyGrail
@@ -241,7 +241,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
                     />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Definitions} itemKey="definitions" style={pivotItemStyle(size, 0)}>
-                    <ESDLDefinitions />
+                    <DESDLDefinitions />
                 </PivotItem>
             </Pivot>
         }</SizeMe>

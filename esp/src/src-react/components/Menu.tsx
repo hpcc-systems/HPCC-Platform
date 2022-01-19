@@ -139,7 +139,7 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/servers" },
         { headerText: nlsHPCC.Security + " (L)", itemKey: "/security" },
         { headerText: nlsHPCC.Monitoring + " (L)", itemKey: "/monitoring" },
-        { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/esdl" },
+        { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/desdl" },
     ],
 };
 

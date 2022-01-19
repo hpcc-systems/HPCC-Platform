@@ -199,12 +199,12 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["topology"],
-        path: "/esdl",
+        path: "/desdl",
         children: [
             { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },
             { path: "/:Tab", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL tab={params.Tab as string} />) },
-            { path: "/bindings/:Name", action: (ctx, params) => import("./components/ESDLBindingDetails").then(_ => <_.ESDLBindingDetails name={params.Name as string} />) },
-            { path: "/bindings/:Name/:Tab", action: (ctx, params) => import("./components/ESDLBindingDetails").then(_ => <_.ESDLBindingDetails name={params.Name as string} tab={params.Tab as string} />) },
+            { path: "/bindings/:Name", action: (ctx, params) => import("./components/DESDLBindingDetails").then(_ => <_.DESDLBindingDetails name={params.Name as string} />) },
+            { path: "/bindings/:Name/:Tab", action: (ctx, params) => import("./components/DESDLBindingDetails").then(_ => <_.DESDLBindingDetails name={params.Name as string} tab={params.Tab as string} />) },
         ]
     },
     {
