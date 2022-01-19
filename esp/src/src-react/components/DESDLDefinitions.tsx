@@ -18,10 +18,10 @@ const defaultUIState = {
     hasSelection: false,
 };
 
-interface ESDLDefinitonsProps {
+interface DESDLDefinitonsProps {
 }
 
-export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
+export const DESDLDefinitions: React.FunctionComponent<DESDLDefinitonsProps> = ({
 }) => {
 
     const [definition, setDefinition] = React.useState("");
