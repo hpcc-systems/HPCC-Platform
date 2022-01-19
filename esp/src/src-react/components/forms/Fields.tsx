@@ -99,23 +99,27 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     className
 }) => {
 
-    let isOptional;
-    let selOptions;
-    let selKey = selectedKey;
-    if (options !== undefined) {
-        isOptional = isOptionalDropdown(required, optional);
-        selOptions = isOptional ? [{ key: "", text: "" }, ...options] : options;
-        if (!selOptions.some(row => row.key === selKey)) {
-            selKey = selOptions[0]?.key;
-            setTimeout(() => {
-                onChange(undefined, selOptions[0], 0);
-            }, 1);
+    const isOptional = React.useMemo<boolean>(() => isOptionalDropdown(required, optional), [optional, required]);
+    const selOptions = React.useMemo<IDropdownOption[]>(() => {
+        if (options !== undefined) {
+            return isOptional ? [{ key: "", text: "" }, ...options] : options;
         }
-    }
+        return [];
+    }, [isOptional, options]);
+
+    const [selectedItem, setSelectedItem] = React.useState<IDropdownOption>();
+    React.useEffect(() => {
+        setSelectedItem(selOptions?.find(row => row.key === selectedKey) ?? selOptions[0]);
+    }, [selectedKey, selOptions]);
+
+    const controlledChange = React.useCallback((event: React.FormEvent<HTMLDivElement>, item: IDropdownOption, idx: number): void => {
+        setSelectedItem(item);
+        onChange(event, item, idx);
+    }, [onChange]);
 
     return options === undefined ?
         <DropdownBase label={label} options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
-        <DropdownBase label={label} options={selOptions} selectedKey={selKey} onChange={onChange} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+        <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={controlledChange} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
 };
 
 const isOptionalDropdown = (required?: boolean, optional?: boolean) => required === false || optional === true;
