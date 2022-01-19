@@ -557,6 +557,17 @@ esp:
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
+- name: dfs
+  application: dfs
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8520
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+
 
 roxie:
 - name: roxie

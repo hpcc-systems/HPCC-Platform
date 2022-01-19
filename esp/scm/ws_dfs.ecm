@@ -60,5 +60,5 @@ ESPservice [
     ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] DFSFileLookup(DFSFileLookupRequest, DFSFileLookupResponse);
 };
 
-SCMexportdef(WSDFS);
-SCMapi(WSDFS) IClientWsDfs *createWsDfsClient();
+SCMexportdef(WsDfs);
+SCMapi(WsDfs) IClientWsDfs *createWsDfsClient();

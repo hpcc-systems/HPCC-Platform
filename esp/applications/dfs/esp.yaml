@@ -1,0 +1,27 @@
+esp:
+   instance: dfs
+   description: DFS Service
+   daliServers: dali
+   loadDaliBindings: false
+   auth: ldap
+   tls: true
+   service:
+     port: 8880
+   enableSEHMapping: true
+   httpConfigAccess: true
+   logLevel: 1
+   maxBacklogQueueSize: 200
+   portalurl: http://hpccsystems.com/download
+   logDir: "-"
+
+   tls_config:
+     certificate: /opt/HPCCSystems/secrets/certificates/public/tls.crt
+     privatekey: /opt/HPCCSystems/secrets/certificates/public/tls.key
+     cipherList: "ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5"
+     verify:
+       enable: false
+       address_match: false
+       accept_selfsigned: false
+       trusted_peers: [ anyone ]
+       ca_certificates:
+       - path: "/opt/HPCCSystems/secrets/certificates/public/ca.crt"
