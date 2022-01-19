@@ -53,6 +53,8 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     store
 }) => {
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -161,7 +163,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
@@ -172,7 +174,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};

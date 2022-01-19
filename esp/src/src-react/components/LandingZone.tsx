@@ -71,6 +71,8 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     filter = emptyFilter
 }) => {
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     const [showFilter, setShowFilter] = React.useState(false);
     const [showAddFile, setShowAddFile] = React.useState(false);
     const [showFixed, setShowFixed] = React.useState(false);
@@ -225,7 +227,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => setShowFilter(true)
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -259,7 +261,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             onClick: () => setShowBlob(true)
         },
         { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> }
-    ], [refreshTable, selection, setShowDeleteConfirm]);
+    ], [hasFilter, refreshTable, selection, setShowDeleteConfirm]);
 
     //  Filter  ---
     const filterFields: Fields = {};
