@@ -780,7 +780,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <xsl:variable name="serviceType" select="'ws_dfsservice'"/>
         <xsl:variable name="serviceName" select="concat($serviceType, '_', @name, '_', $process)"/>
         <xsl:variable name="bindName" select="concat($serviceType, '_', $bindingNode/@name, '_', $process)"/>
-        <xsl:variable name="bindType" select="'ws_dfsserviceSoapBinding'"/>
+        <xsl:variable name="bindType" select="'ws_dfsservice_binding'"/>
         <xsl:variable name="servicePlugin">
             <xsl:call-template name="defineServicePlugin">
                 <xsl:with-param name="plugin" select="'ws_dfsservice'"/>

@@ -5,7 +5,7 @@ application:
    - WsWorkunits
    - WsTopology
    - WsDfu
-   - WsDfs
+   - ws_dfsservice
    - WsDfuXRef
    - WsFileIO
    - WsPackageProcess
