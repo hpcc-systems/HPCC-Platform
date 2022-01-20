@@ -202,6 +202,10 @@ storage:
   hostGroups:
 {{ toYaml $storage.hostGroups | indent 2 }}
 {{- end }}
+{{- if hasKey $storage "remote" }}
+  remote:
+{{ toYaml $storage.remote | indent 2 }}
+{{- end }}
   dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}

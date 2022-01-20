@@ -285,7 +285,7 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "lz" "data" "spill" "dll") "secretsCategories" $secretsCategories "env" $env -}}
+{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "lz" "data" "remote" "spill" "dll") "secretsCategories" $secretsCategories "env" $env -}}
 {{- $_ := set $commonCtx "eclAgentName" (printf "%s-eclagent" .name) -}}
 {{- $_ := set $commonCtx "thorAgentName" (printf "%s-thoragent" .name) -}}
 {{- $_ := set $commonCtx "eclAgentUseChildProcesses" (hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true) }}

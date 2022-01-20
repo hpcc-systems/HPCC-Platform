@@ -231,6 +231,7 @@ if endCluster is not called it will assume only one cluster and not replicated
 
     virtual unsigned numClusters() = 0;
     virtual IClusterInfo *queryCluster(const char *clusterName) = 0;
+    virtual IClusterInfo *queryClusterNum(unsigned idx) = 0;
     virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum) = 0;
     virtual IGroup *queryClusterGroup(unsigned clusternum) = 0;                     // returns group for cluster if known
     virtual void setClusterGroup(unsigned clusternum,IGroup *grp) = 0;              // sets group for cluster
@@ -347,6 +348,7 @@ extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isr
 extern da_decl void initializeStorageGroups(bool createPlanesFromGroups);
 extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
 extern da_decl IStoragePlane * getDataStoragePlane(const char * name, bool required);
+extern da_decl IStoragePlane * getRemoteStoragePlane(const char * name, bool required);
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken

@@ -1218,6 +1218,11 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         return NULL;
     }
 
+    virtual IClusterInfo *queryClusterNum(unsigned idx) override
+    {
+        return &clusters.item(idx);
+    }
+
     void replaceClusterDir(unsigned partno,unsigned copy, StringBuffer &path)
     {
         // assumes default dir matches one of clusters
@@ -3559,12 +3564,9 @@ private:
 
 
 //MORE: This could be cached
-IStoragePlane * getDataStoragePlane(const char * name, bool required)
+static IStoragePlane * getStoragePlane(const char * name, const std::vector<std::string> &categories, bool required)
 {
-    StringBuffer group;
-    group.append(name).toLowerCase();
-
-    VStringBuffer xpath("storage/planes[@name='%s']", group.str());
+    VStringBuffer xpath("storage/planes[@name='%s']", name);
     Owned<IPropertyTree> match = getGlobalConfigSP()->getPropTree(xpath);
     if (!match)
     {
@@ -3573,12 +3575,28 @@ IStoragePlane * getDataStoragePlane(const char * name, bool required)
         return nullptr;
     }
     const char * category = match->queryProp("@category");
-    if (!streq(category, "data") && !streq(category, "lz"))
+    auto r = std::find(categories.begin(), categories.end(), category);
+    if (r == categories.end())
     {
         if (required)
-            throw makeStringExceptionV(-1, "storage plane '%s' does not store data (category %s)", name, category);
+            throw makeStringExceptionV(-1, "storage plane '%s' does not match request categories (plane category=%s)", name, category);
         return nullptr;
     }
 
     return new CStoragePlaneInfo(match);
+}
+
+IStoragePlane * getDataStoragePlane(const char * name, bool required)
+{
+    StringBuffer group;
+    group.append(name).toLowerCase();
+
+    return getStoragePlane(group, { "data", "lz" }, required);
+}
+
+IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
+{
+    StringBuffer group;
+    group.append(name).toLowerCase();
+    return getStoragePlane(group, { "remote" }, required);
 }

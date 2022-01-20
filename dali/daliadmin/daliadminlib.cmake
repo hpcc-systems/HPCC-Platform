@@ -40,6 +40,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/esp/clients/wsdfuaccess
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DDALIADMIN_API_EXPORTS )
@@ -53,4 +55,6 @@ target_link_libraries ( daliadminlib
          dalibase
          workunit
          dllserver
+         wsdfuaccess
+         ws_dfsclient
     )

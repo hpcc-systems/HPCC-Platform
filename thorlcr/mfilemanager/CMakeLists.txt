@@ -29,27 +29,28 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../thorutil 
-         ./../../common/remote 
-         ./../../system/mp 
-         ./../master 
-         ./../../common/workunit 
-         ./../shared 
-         ./../graph 
-         ./../../common/environment 
-         ./../../dali/ft 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../dali/base 
-         ./../../rtl/include 
-         ./../../rtl/eclrtl 
-         ./../../common/dllserver 
-         ./../../system/jlib 
-         ./../thorcodectx 
-         ./../mfilemanager 
-         ./../../common/thorhelper 
-         ./../../roxie/roxiemem
-         ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/common/deftype
+         ${HPCC_SOURCE_DIR}/common/dllserver
+         ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/dali/ft
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/thorlcr/graph
+         ${HPCC_SOURCE_DIR}/thorlcr/master
+         ${HPCC_SOURCE_DIR}/thorlcr/mfilemanager
+         ${HPCC_SOURCE_DIR}/thorlcr/thorutil
+         ${HPCC_SOURCE_DIR}/thorlcr/shared
+         ${HPCC_SOURCE_DIR}/thorlcr/thorcodectx
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )
@@ -57,16 +58,17 @@ ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )
 HPCC_ADD_LIBRARY( mfilemanager_lcr SHARED ${SRCS} )
 install ( TARGETS mfilemanager_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( mfilemanager_lcr
+         dalibase
+         deftype
+         dllserver
+         eclrtl
+         graph_lcr
+         jhtree
          jlib
-         remote 
-         dalibase 
-         dllserver 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
-         jhtree 
-         graph_lcr 
+         nbcd
+         remote
+         workunit
+         ws_dfsclient
     )
 
 if (NOT CONTAINERIZED)

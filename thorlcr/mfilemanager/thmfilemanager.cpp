@@ -38,6 +38,8 @@
 
 #include "workunit.hpp"
 
+#include "ws_dfsclient.hpp"
+
 #define CHECKPOINTSCOPE "checkpoints"
 #define TMPSCOPE "temporary"
 
@@ -312,6 +314,18 @@ public:
     IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, bool write, bool privilegedUser=false, unsigned timeout=INFINITE)
     {
         VStringBuffer blockedMsg("lock file '%s' for %s access", lfn.get(), write ? "WRITE" : "READ");
+        if (!write)
+        {
+            if (lfn.isRemote() || (!lfn.isExternal() && job.getOptBool("dfsesp-localfiles")))
+            {
+                auto func = [&job, &lfn, write, privilegedUser](unsigned timeout)
+                {
+                    return wsdfs::lookupLegacyDFSFile(lfn.get(), timeout, wsdfs::keepAliveExpiryFrequency, job.queryUserDescriptor());
+                };
+                return blockReportFunc<IDistributedFile *>(job, func, timeout, blockedMsg);
+            }
+        }
+        // NB: if we're here, we're not using DFSESP
         auto func = [&job, &lfn, write, privilegedUser](unsigned timeout) { return queryDistributedFileDirectory().lookup(lfn, job.queryUserDescriptor(), write, false, false, nullptr, privilegedUser, timeout); };
         return blockReportFunc<IDistributedFile *>(job, func, timeout, blockedMsg);
     }
