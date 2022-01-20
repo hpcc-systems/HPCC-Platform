@@ -15,3 +15,12 @@
 ################################################################################
 
 ADD_SUBDIRECTORY(schema)
+
+
+FOREACH( iFILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/AddAuthenticateFeature.json
+        ${CMAKE_CURRENT_SOURCE_DIR}/AddKeys.json
+        ${CMAKE_CURRENT_SOURCE_DIR}/AddCost.json
+        )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/configschema/templates COMPONENT Runtime)
+ENDFOREACH ( iFILES )

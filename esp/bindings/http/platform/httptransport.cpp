@@ -2243,6 +2243,9 @@ int CHttpRequest::readContentToFiles(const char * netAddress, const char * path,
         if (writeError)
             break;
 
+        // if remote file is on Windows we must close it before renaming it
+        fileio->close();
+
         file->rename(fileNameWithPath);
 
         if (!foundAnotherFile)

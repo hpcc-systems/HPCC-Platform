@@ -1839,7 +1839,21 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>-ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
-                  server.</entry>
+                  server(s)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-ssl</entry>
+
+                  <entry>Use SSL when connecting to the source (default if
+                  --ssl is enabled)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-no-ssl </entry>
+
+                  <entry>Do not use SSL when connecting to source (default if
+                  --ssl is NOT enabled)</entry>
                 </row>
 
                 <row>
@@ -2000,7 +2014,21 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
-                  server.</entry>
+                  server(s)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-ssl</entry>
+
+                  <entry>Use SSL when connecting to the source (default if
+                  --ssl is enabled)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-no-ssl</entry>
+
+                  <entry>Do not use SSL when connecting to source (default if
+                  --ssl is NOT enabled)</entry>
                 </row>
 
                 <row>

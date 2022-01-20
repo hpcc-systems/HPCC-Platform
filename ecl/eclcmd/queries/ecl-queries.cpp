@@ -344,14 +344,44 @@ public:
             fputs("Target must be specified.\n", stderr);
             return false;
         }
-        if (optTarget.isEmpty())
-        {
-            fputs("Query must be specified.\n", stderr);
-            return false;
-        }
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
         return true;
+    }
+
+    void outputQueryFiles(const char *id, IArrayOf<IConstFileUsedByQuery> &files, IArrayOf<IConstQuerySuperFile> &superfiles)
+    {
+        fputs("------------------\n", stdout);
+        if (!isEmptyString(id))
+            fprintf(stdout, "Query: %s\n", id);
+        if (!files.length())
+            fputs("No files used.\n", stdout);
+        else
+            fputs("Files used:\n", stdout);
+        ForEachItemIn(i, files)
+        {
+            IConstFileUsedByQuery &file = files.item(i);
+            StringBuffer line("  ");
+            line.append(file.getFileName()).append(", ");
+            line.append(file.getFileSize()).append(" bytes, ");
+            line.append(file.getNumberOfParts()).append(" part(s)\n");
+            fputs(line, stdout);
+        }
+        fputs("\n", stdout);
+
+        if (superfiles.length())
+        {
+            fputs("SuperFiles used:\n", stdout);
+            ForEachItemIn(sp, superfiles)
+            {
+                IConstQuerySuperFile &superfile = superfiles.item(sp);
+                fprintf(stdout, "    %s\n", superfile.getName());
+                StringArray &subfiles = superfile.getSubFiles();
+                ForEachItemIn(sb, subfiles)
+                    fprintf(stdout, "    > %s\n", subfiles.item(sb));
+            }
+            fputs("\n", stdout);
+        }
     }
 
     virtual int processCMD()
@@ -368,34 +398,18 @@ public:
         if (ret == 0)
         {
             IArrayOf<IConstFileUsedByQuery> &files = resp->getFiles();
-            if (!files.length())
-                fputs("No files used.\n", stdout);
+            if (optQuery.length())
+                outputQueryFiles(optQuery.str(), resp->getFiles(), resp->getSuperFiles());
             else
-                fputs("Files used:\n", stdout);
-            ForEachItemIn(i, files)
             {
-                IConstFileUsedByQuery &file = files.item(i);
-                StringBuffer line("  ");
-                line.append(file.getFileName()).append(", ");
-                line.append(file.getFileSize()).append(" bytes, ");
-                line.append(file.getNumberOfParts()).append(" part(s)\n");
-                fputs(line, stdout);
-            }
-            fputs("\n", stdout);
-
-            IArrayOf<IConstQuerySuperFile> &superfiles = resp->getSuperFiles();
-            if (superfiles.length())
-            {
-                fputs("SuperFiles used:\n", stdout);
-                ForEachItemIn(sp, superfiles)
+                IArrayOf<IConstQueryFilesUsed> &queries = resp->getQueries();
+                if (!queries.length())
+                    fputs("No queries found.\n", stdout);
+                ForEachItemIn(i, queries)
                 {
-                    IConstQuerySuperFile &superfile = superfiles.item(sp);
-                    fprintf(stdout, "  %s\n", superfile.getName());
-                    StringArray &subfiles = superfile.getSubFiles();
-                    ForEachItemIn(sb, subfiles)
-                        fprintf(stdout, "    > %s\n", subfiles.item(sb));
+                    IConstQueryFilesUsed &query = queries.item(i);
+                    outputQueryFiles(query.getQueryId(), query.getFiles(), query.getSuperFiles());
                 }
-                fputs("\n", stdout);
             }
         }
         return ret;
@@ -407,7 +421,7 @@ public:
             "The 'queries files' command displays a list of the files currently in use by\n"
             "the given query.\n"
             "\n"
-            "ecl queries files <target> <query>\n\n"
+            "ecl queries files <target> [<query>]\n\n"
             " Options:\n"
             "   <target>               Name of target cluster the query is published on\n"
             "   <query>                Name of the query to get a list of files in use by\n"

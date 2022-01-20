@@ -691,6 +691,14 @@
           "type": "string",
           "description": "The optional vault name to be used to look up the Active Directory Administrator account Username/Password, using ldapAdminSecretKey"
         },
+        "hpccAdminSecretKey": {
+          "type": "string",
+          "description": "The optional key name to be used to look up the HPCC Administrator account Username/Password"
+        },
+        "hpccAdminVaultId": {
+          "type": "string",
+          "description": "The optional vault name to be used to look up the HPCC Administrator account Username/Password, using hpccAdminSecretKey"
+        },
         "ldapPort": {
           "type": "integer",
           "description": "The port of the nonsecure Active Directory server"
