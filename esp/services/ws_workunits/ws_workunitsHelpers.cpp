@@ -2245,6 +2245,46 @@ void WsWuInfo::getWUProcessLogSpecs(const char* processName, const char* logSpec
         logSpecs.sortAscii(false); //Sort the logSpecs from old to new
 }
 
+bool WsWuInfo::validateWUProcessLog(const char* file, bool eclAgent)
+{
+    Owned<IStringIterator> logs = cw->getLogs(eclAgent ? "EclAgent" : "Thor");
+    ForEach (*logs)
+    {
+        SCMStringBuffer logName;
+        logs->str(logName);
+        if (logName.length() < 1)
+            continue;
+
+        if (strieq(file, logName.str()))
+            return true;
+    }
+    return false;
+}
+
+bool WsWuInfo::validateWUAssociatedFile(const char* file, WUFileType type)
+{
+    Owned<IConstWUQuery> query = cw->getQuery();
+    if (!query)
+        return false;
+
+    Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
+    ForEach(*iter)
+    {
+        IConstWUAssociatedFile & cur = iter->query();
+        if (cur.getType() != type)
+            continue;
+
+        SCMStringBuffer name;
+        cur.getName(name);
+        if (name.length() < 1)
+            continue;
+
+        if (strieq(file, name.str()))
+            return true;
+    }
+    return false;
+}
+
 void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
@@ -4011,8 +4051,11 @@ IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const
     return createIOStreamWithFileName(zipFileNameWithPath.str(), IFOread);
 }
 
-void CWsWuFileHelper::validateFilePath(const char *file, bool UNCFileName, const char *fileType, const char *compType, const char *compName)
+void CWsWuFileHelper::validateFilePath(const char* file, WsWuInfo& winfo, CWUFileType wuFileType, bool UNCFileName, const char* fileType, const char* compType, const char* compName)
 {
+    if (validateWUFile(file, winfo, wuFileType))
+        return;
+
     StringBuffer actualPath;
     if (UNCFileName)
         splitUNCFilename(file, nullptr, &actualPath, nullptr, nullptr);
@@ -4022,6 +4065,42 @@ void CWsWuFileHelper::validateFilePath(const char *file, bool UNCFileName, const
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
     if (!validateConfigurationDirectory(nullptr, fileType, compType, compName, actualPath))
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+}
+
+bool CWsWuFileHelper::validateWUFile(const char* file, WsWuInfo& winfo, CWUFileType wuFileType)
+{
+    bool valid = false;
+    switch (wuFileType)
+    {
+    case CWUFileType_ThorLog:
+    {
+        valid = winfo.validateWUProcessLog(file, false);
+        break;
+    }
+    case CWUFileType_EclAgentLog:
+    {
+        valid = winfo.validateWUProcessLog(file, true);
+        break;
+    }
+    case CWUFileType_CPP:
+    {
+        valid = winfo.validateWUAssociatedFile(file, FileTypeCpp);
+        break;
+    }
+    case CWUFileType_LOG:
+    {
+        valid = winfo.validateWUAssociatedFile(file, FileTypeLog);
+        break;
+    }
+    case CWUFileType_XML:
+    {
+        valid = winfo.validateWUAssociatedFile(file, FileTypeXml);
+        break;
+    }
+    default:
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", wuFileType);
+    }
+    return valid;
 }
 
 void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, WsWuInfo& winfo, IConstWUFileOption& item,
@@ -4043,9 +4122,9 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     {
         const char *file=item.getName();
 #ifndef _CONTAINERIZED
-        validateFilePath(file, false, "run", nullptr, nullptr);
+        validateFilePath(file, winfo, fileType, false, "run", nullptr, nullptr);
 #else
-        validateFilePath(file, false, "query", nullptr, nullptr);
+        validateFilePath(file, winfo, fileType, false, "query", nullptr, nullptr);
 #endif
 
         const char *tail=pathTail(file);
@@ -4074,7 +4153,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     case CWUFileType_ThorLog:
     {
         const char *file=item.getName();
-        validateFilePath(file, true, "log", nullptr, nullptr);
+        validateFilePath(file, winfo, fileType, true, "log", nullptr, nullptr);
 
         fileName.set("thormaster.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
@@ -4095,7 +4174,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     case CWUFileType_EclAgentLog:
     {
         const char *file=item.getName();
-        validateFilePath(file, true, "log", nullptr, nullptr);
+        validateFilePath(file, winfo, fileType, true, "log", nullptr, nullptr);
 
         fileName.set("eclagent.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
