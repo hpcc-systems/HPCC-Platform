@@ -221,7 +221,8 @@ public:
         const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
         MemoryBuffer& buf, const char* outFile, bool forDownload);
 #endif
-
+    bool validateWUProcessLog(const char* file, bool eclAgent);
+    bool validateWUAssociatedFile(const char* file, WUFileType type);
     void getWorkunitResTxt(MemoryBuffer& buf);
     void getWorkunitArchiveQuery(StringBuffer& str);
     void getWorkunitArchiveQuery(MemoryBuffer& mb);
@@ -654,7 +655,8 @@ public:
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
 
     IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
-    void validateFilePath(const char *file, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
+    void validateFilePath(const char *file, WsWuInfo &winfo, CWUFileType wuFileType, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
+    bool validateWUFile(const char *file, WsWuInfo &winfo, CWUFileType wuFileType);
 };
 
 class CWsWuEmailHelper
