@@ -5,6 +5,7 @@ import { Table } from "@hpcc-js/dgrid";
 import { compare } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
+import { useDeepEffect } from "../hooks/deepHooks";
 import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -31,6 +32,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
+    const [selectedSource, setSelectedSource] = React.useState<"" | "scopes" | "graph">("");
     const [selectedMetrics, setSelectedMetrics] = React.useState([]);
     const [metrics, _columns, _activities, _properties, _measures, _scopeTypes, refresh] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
@@ -130,6 +132,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
         .sortable(true)
         .on("click", (row, col, sel) => {
+            setSelectedSource("scopes");
             const selection = scopesTable.selection();
             pushUrl(`/workunits/${wuid}/metrics/${selection.map(row => row.__lparam.id).join(",")}`);
         })
@@ -170,6 +173,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
         .zoomToFitLimit(1)
         .on("selectionChanged", () => {
+            setSelectedSource("graph");
             const selection = metricGraphWidget.selection().map(id => {
                 return metricGraph.item(id).id;
             });
@@ -300,14 +304,14 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         portal.children(<h1>{timelineFilter}</h1>).lazyRender();
     }, [portal, timelineFilter]);
 
-    React.useEffect(() => {
-        if (selectedMetrics.length) {
-            updateScopesTable(selectedMetrics);
-            updateMetricGraph(selectedMetrics);
+    useDeepEffect(() => {
+        if (selectedMetrics) {
+            if (selectedSource !== "scopes") updateScopesTable(selectedMetrics);
+            if (selectedSource !== "graph") updateMetricGraph(selectedMetrics);
             updatePropsTable(selectedMetrics);
             updatePropsTable2(selectedMetrics);
         }
-    }, [selectedMetrics, updateMetricGraph, updatePropsTable, updatePropsTable2, updateScopesTable]);
+    }, [selectedSource], [selectedMetrics]);
 
     React.useEffect(() => {
         const selectedIDs = selection.split(",");

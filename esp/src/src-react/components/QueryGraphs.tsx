@@ -1,13 +1,10 @@
 import * as React from "react";
-import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
+import { CommandBar, ICommandBarItemProps, Image, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import * as Observable from "dojo/store/Observable";
 import * as ESPQuery from "src/ESPQuery";
-import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { selector } from "./DojoGrid";
 
@@ -34,12 +31,15 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
     queryId
 }) => {
 
-    const [query, setQuery] = React.useState<any>();
+    const query = React.useMemo(() => {
+        return ESPQuery.Get(querySet, queryId);
+    }, [querySet, queryId]);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("__hpcc_id")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
         sort: [{ attribute: "__hpcc_id" }],
         filename: "queryGraphs",
         columns: {
@@ -47,32 +47,23 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
             Name: {
                 label: nlsHPCC.Name,
                 formatter: function (Name, row) {
-                    const url = `#/queries/${querySet}/${queryId}/graphs/${row.Wuid}/${Name}`;
-                    return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='${url}' class='dgrid-row-url'>${Name}</a>`;
+                    return <>
+                        <Image src={Utility.getImageURL(getStateImageName(row))} />
+                        &nbsp;
+                        <Link href={`#/workunits/${row.Wuid}/metrics/${Name}`}>{Name}</Link>
+                    </>;
                 }
             },
             Type: { label: nlsHPCC.Type, width: 72 },
         }
     });
 
-    //  Command Bar  ---
-    const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-    ], [refreshTable]);
-
-    React.useEffect(() => {
-        setQuery(ESPQuery.Get(querySet, queryId));
-    }, [setQuery, queryId, querySet]);
-
-    React.useEffect(() => {
+    const refreshData = React.useCallback(() => {
         query?.getDetails()
             .then(({ WUQueryDetailsResponse }) => {
                 const graphs = query?.WUGraphs?.ECLGraph;
                 if (graphs) {
-                    store.setData(graphs.map((item, idx) => {
+                    setData(graphs.map((item, idx) => {
                         return {
                             __hpcc_id: idx,
                             Name: item.Name,
@@ -83,12 +74,23 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
                             Type: item.Type
                         };
                     }));
-                    refreshTable();
                 }
             })
             .catch(err => logger.error(err))
             ;
-    }, [store, query, refreshTable]);
+    }, [query]);
+
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshData()
+        },
+    ], [refreshData]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

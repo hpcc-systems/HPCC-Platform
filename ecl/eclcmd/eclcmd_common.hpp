@@ -54,6 +54,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SSL "--ssl"
 #define ECLOPT_SSL_S "-ssl"
 
+#define ECLOPT_SOURCE_SSL "--source-ssl"
+#define ECLOPT_SOURCE_NO_SSL "--source-no-ssl"
+
 #define ECLOPT_PORT "--port"
 #define ECLOPT_PORT_INI "eclWatchPort"
 #define ECLOPT_PORT_ENV "ECL_WATCH_PORT"
@@ -193,6 +196,11 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DEBUG_DASH "-g"
 #define ECLOPT_FAST_SYNTAX "--fastsyntax"
 #define ECLOPT_NO_STD_INC "--nostdinc"
+#define ECLOPT_FETCH_REPOS "--fetchrepos"
+#define ECLOPT_UPDATE_REPOS "--updaterepos"
+#define ECLOPT_DEFAULT_GIT_PREFIX "--defaultgitprefix"
+
+#define ECLOPT_REPO_MAPPING "-R"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -266,7 +274,7 @@ public:
         if (usesESP)
             fprintf(stdout,
                 "   -s, --server=<ip>      IP of server running ecl services (eclwatch)\n"
-                "   -ssl, --ssl            Use SSL to secure the connection to the server\n"
+                "   -ssl, --ssl            Use SSL to secure the connection to the server(s)\n"
                 "   --port=<port>          ECL services port\n"
                 "   -u, --username=<name>  Username for accessing ecl services\n"
                 "   -pw, --password=<pw>   Password for accessing ecl services\n"
@@ -355,6 +363,7 @@ public:
     bool optCheckDirty;
     bool optFastSyntax = false;
     bool optNoStdInc = false;
+    StringArray extraOptions;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon

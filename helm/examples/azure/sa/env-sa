@@ -2,6 +2,7 @@
 SUBSCRIPTION=
 STORAGE_ACCOUNT_NAME=
 SA_RESOURCE_GROUP=
+TAGS=
 # Set the same location as Kubernetes cluster
 SA_LOCATION=eastus
 SA_KEY_DIR=~/.azure/storage
@@ -14,4 +15,4 @@ SA_SKU=Standard_LRS
 # Kubernetes secret.
 SECRET_NAME=
 SECRET_NAMESPACE="default"
-SHARE_NAMES=
+SHARE_NAMES="dalishare dllshare sashashare datashare lzshare"

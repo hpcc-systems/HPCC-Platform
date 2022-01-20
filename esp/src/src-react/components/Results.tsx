@@ -1,9 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem, ScrollablePane, Sticky } from "@fluentui/react";
+import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResults } from "../hooks/workunit";
+import { pivotItemStyle } from "../layouts/pivot";
 import { ShortVerticalDivider } from "./Common";
+import { Result } from "./Result";
 import { selector } from "./DojoGrid";
 
 const defaultUIState = {
@@ -127,4 +130,26 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         </Sticky>
         <Grid />
     </ScrollablePane>;
+};
+
+interface TabbedResultsProps {
+    wuid: string;
+}
+
+export const TabbedResults: React.FunctionComponent<TabbedResultsProps> = ({
+    wuid
+}) => {
+
+    const [results] = useWorkunitResults(wuid);
+
+    return <SizeMe monitorHeight>{({ size }) =>
+        <Pivot overflowBehavior="menu" style={{ height: "100%" }}>
+            {results.map(result => {
+                return <PivotItem key={`${result?.ResultName}_${result?.Sequence}`} headerText={result?.ResultName} style={pivotItemStyle(size)}>
+                    <Result wuid={wuid} resultName={result?.ResultName} />
+                </PivotItem>;
+            })}
+        </Pivot>
+    }</SizeMe>;
+
 };

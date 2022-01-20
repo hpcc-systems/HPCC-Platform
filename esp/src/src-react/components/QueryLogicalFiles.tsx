@@ -1,12 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as ESPQuery from "src/ESPQuery";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { selector } from "./DojoGrid";
@@ -28,13 +25,16 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
     queryId
 }) => {
 
-    const [query, setQuery] = React.useState<any>();
+    const query = React.useMemo(() => {
+        return ESPQuery.Get(querySet, queryId);
+    }, [querySet, queryId]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("__hpcc_id")));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
         sort: [{ attribute: "__hpcc_id" }],
         filename: "queryLogicalFiles",
         columns: {
@@ -48,11 +48,32 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
         }
     });
 
+    const refreshData = React.useCallback(() => {
+        query?.getDetails()
+            .then(({ WUQueryDetailsResponse }) => {
+                const logicalFiles = query?.LogicalFiles?.Item;
+                if (logicalFiles) {
+                    setData(logicalFiles.map((item, idx) => {
+                        return {
+                            __hpcc_id: idx,
+                            File: item
+                        };
+                    }));
+                }
+            })
+            .catch(err => logger.error(err))
+            ;
+    }, [query]);
+
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -67,7 +88,7 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
                 }
             }
         },
-    ], [querySet, refreshTable, selection, uiState.hasSelection]);
+    ], [querySet, refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -79,28 +100,6 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
 
         setUIState(state);
     }, [selection]);
-
-    React.useEffect(() => {
-        setQuery(ESPQuery.Get(querySet, queryId));
-    }, [setQuery, queryId, querySet]);
-
-    React.useEffect(() => {
-        query?.getDetails()
-            .then(({ WUQueryDetailsResponse }) => {
-                const logicalFiles = query?.LogicalFiles?.Item;
-                if (logicalFiles) {
-                    store.setData(logicalFiles.map((item, idx) => {
-                        return {
-                            __hpcc_id: idx,
-                            File: item
-                        };
-                    }));
-                    refreshTable();
-                }
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [store, query, refreshTable]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

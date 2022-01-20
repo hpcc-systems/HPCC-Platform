@@ -1,18 +1,15 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
-import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsESDLConfig from "src/WsESDLConfig";
+import { useConfirm } from "../hooks/confirm";
+import { useFluentGrid } from "../hooks/grid";
+import { HolyGrail } from "../layouts/HolyGrail";
+import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 import { XMLSourceEditor } from "./SourceEditor";
-import { HolyGrail } from "../layouts/HolyGrail";
-import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { AddBindingForm } from "./forms/AddBinding";
 
 const logger = scopedLogger("src-react/components/DynamicESDL.tsx");
@@ -21,20 +18,21 @@ const defaultUIState = {
     hasSelection: false,
 };
 
-interface ESDLDefinitonsProps {
+interface DESDLDefinitonsProps {
 }
 
-export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
+export const DESDLDefinitions: React.FunctionComponent<DESDLDefinitonsProps> = ({
 }) => {
 
     const [definition, setDefinition] = React.useState("");
     const [showAddBinding, setShowAddBinding] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("__hpcc_id")));
-    const [Grid, selection, refreshTable] = useGrid({
-        store: store,
+    const [Grid, selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
         query: {},
         sort: [{ attribute: "Name", "descending": false }],
         filename: "esdlDefinitions",
@@ -65,12 +63,12 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
         }
     }, [selection]);
 
-    const refreshGrid = React.useCallback(() => {
+    const refreshData = React.useCallback(() => {
         WsESDLConfig.ListESDLDefinitions({})
             .then(({ ListESDLDefinitionsResponse }) => {
                 const definitions = ListESDLDefinitionsResponse?.Definitions?.Definition;
                 if (definitions) {
-                    store.setData(definitions.map((defn, idx) => {
+                    setData(definitions.map((defn, idx) => {
                         return {
                             __hpcc_id: idx,
                             Name: defn.Id,
@@ -80,12 +78,11 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
                             LastEditTime: defn?.History.LastEditTime
                         };
                     }));
-                    refreshTable();
                 }
             })
             .catch(err => logger.error(err))
             ;
-    }, [store, refreshTable]);
+    }, []);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -106,17 +103,17 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
             });
             Promise
                 .all(requests)
-                .then(() => refreshGrid())
+                .then(() => refreshData())
                 .catch(err => logger.error(err))
                 ;
-        }, [refreshGrid, selection])
+        }, [refreshData, selection])
     });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -127,15 +124,15 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
             key: "add", text: nlsHPCC.AddBinding,
             onClick: () => setShowAddBinding(true)
         },
-    ], [refreshTable, setShowDeleteConfirm, uiState]);
+    ], [refreshData, setShowDeleteConfirm, uiState.hasSelection]);
 
     React.useEffect(() => {
-        refreshGrid();
-    }, [refreshGrid]);
+        refreshData();
+    }, [refreshData]);
 
     return <>
         <HolyGrail
-            header={<CommandBar items={buttons} overflowButtonProps={{}} />}
+            header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
                 <ReflexContainer orientation="vertical">
                     <ReflexElement>
@@ -151,5 +148,4 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
         <AddBindingForm showForm={showAddBinding} setShowForm={setShowAddBinding} minWidth={420} />
         <DeleteConfirm />
     </>;
-
 };

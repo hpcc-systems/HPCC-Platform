@@ -29,11 +29,11 @@ class TreeStore extends AlphaNumSortMemory {
     }
 }
 
-interface ESDLBindingMethodsProps {
+interface DESDLBindingMethodsProps {
     name: string
 }
 
-export const ESDLBindingMethods: React.FunctionComponent<ESDLBindingMethodsProps> = ({
+export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsProps> = ({
     name
 }) => {
 

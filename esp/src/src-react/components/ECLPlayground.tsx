@@ -10,7 +10,7 @@ import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
 import { darkTheme } from "../themes";
 import { InfoGrid } from "./InfoGrid";
-import { Results } from "./Results";
+import { TabbedResults } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
 import { TargetClusterTextField } from "./forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
@@ -363,7 +363,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                     <InfoGrid wuid={workunit?.Wuid} />
 
                 ) : outputMode === OutputMode.RESULTS ? (
-                    <Results wuid={workunit?.Wuid} />
+                    <TabbedResults wuid={workunit?.Wuid} />
 
                 ) : outputMode === OutputMode.VIS ? (
                     <div style={{ height: "calc(100% - 25px)" }}>

@@ -48,6 +48,7 @@
 #include <signal.h>
 #include <paths.h>
 #include <cmath>
+#include <string>
 #endif
 
 #include <limits.h>

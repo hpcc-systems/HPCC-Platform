@@ -219,6 +219,8 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     filter = emptyFilter
 }) => {
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     const resultTable: ResultWidget = useConst(new ResultWidget()
         .baseUrl("")
         .wuid(wuid)
@@ -253,7 +255,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     }, [result]);
 
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
@@ -263,12 +265,12 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
         },
-    ];
+    ], [hasFilter, resultTable]);
 
     //  Filter  ---
     const filterFields: Fields = {};

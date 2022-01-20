@@ -344,14 +344,44 @@ public:
             fputs("Target must be specified.\n", stderr);
             return false;
         }
-        if (optTarget.isEmpty())
-        {
-            fputs("Query must be specified.\n", stderr);
-            return false;
-        }
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
         return true;
+    }
+
+    void outputQueryFiles(const char *id, IArrayOf<IConstFileUsedByQuery> &files, IArrayOf<IConstQuerySuperFile> &superfiles)
+    {
+        fputs("------------------\n", stdout);
+        if (!isEmptyString(id))
+            fprintf(stdout, "Query: %s\n", id);
+        if (!files.length())
+            fputs("No files used.\n", stdout);
+        else
+            fputs("Files used:\n", stdout);
+        ForEachItemIn(i, files)
+        {
+            IConstFileUsedByQuery &file = files.item(i);
+            StringBuffer line("  ");
+            line.append(file.getFileName()).append(", ");
+            line.append(file.getFileSize()).append(" bytes, ");
+            line.append(file.getNumberOfParts()).append(" part(s)\n");
+            fputs(line, stdout);
+        }
+        fputs("\n", stdout);
+
+        if (superfiles.length())
+        {
+            fputs("SuperFiles used:\n", stdout);
+            ForEachItemIn(sp, superfiles)
+            {
+                IConstQuerySuperFile &superfile = superfiles.item(sp);
+                fprintf(stdout, "    %s\n", superfile.getName());
+                StringArray &subfiles = superfile.getSubFiles();
+                ForEachItemIn(sb, subfiles)
+                    fprintf(stdout, "    > %s\n", subfiles.item(sb));
+            }
+            fputs("\n", stdout);
+        }
     }
 
     virtual int processCMD()
@@ -368,34 +398,18 @@ public:
         if (ret == 0)
         {
             IArrayOf<IConstFileUsedByQuery> &files = resp->getFiles();
-            if (!files.length())
-                fputs("No files used.\n", stdout);
+            if (optQuery.length())
+                outputQueryFiles(optQuery.str(), resp->getFiles(), resp->getSuperFiles());
             else
-                fputs("Files used:\n", stdout);
-            ForEachItemIn(i, files)
             {
-                IConstFileUsedByQuery &file = files.item(i);
-                StringBuffer line("  ");
-                line.append(file.getFileName()).append(", ");
-                line.append(file.getFileSize()).append(" bytes, ");
-                line.append(file.getNumberOfParts()).append(" part(s)\n");
-                fputs(line, stdout);
-            }
-            fputs("\n", stdout);
-
-            IArrayOf<IConstQuerySuperFile> &superfiles = resp->getSuperFiles();
-            if (superfiles.length())
-            {
-                fputs("SuperFiles used:\n", stdout);
-                ForEachItemIn(sp, superfiles)
+                IArrayOf<IConstQueryFilesUsed> &queries = resp->getQueries();
+                if (!queries.length())
+                    fputs("No queries found.\n", stdout);
+                ForEachItemIn(i, queries)
                 {
-                    IConstQuerySuperFile &superfile = superfiles.item(sp);
-                    fprintf(stdout, "  %s\n", superfile.getName());
-                    StringArray &subfiles = superfile.getSubFiles();
-                    ForEachItemIn(sb, subfiles)
-                        fprintf(stdout, "    > %s\n", subfiles.item(sb));
+                    IConstQueryFilesUsed &query = queries.item(i);
+                    outputQueryFiles(query.getQueryId(), query.getFiles(), query.getSuperFiles());
                 }
-                fputs("\n", stdout);
             }
         }
         return ret;
@@ -407,7 +421,7 @@ public:
             "The 'queries files' command displays a list of the files currently in use by\n"
             "the given query.\n"
             "\n"
-            "ecl queries files <target> <query>\n\n"
+            "ecl queries files <target> [<query>]\n\n"
             " Options:\n"
             "   <target>               Name of target cluster the query is published on\n"
             "   <query>                Name of the query to get a list of files in use by\n"
@@ -454,7 +468,12 @@ public:
                 continue;
             if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
                 continue;
+
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+                continue;
+            if (iter.matchFlag(optSourceSSL, ECLOPT_SOURCE_SSL))
+                continue;
+            if (iter.matchFlag(optSourceNoSSL, ECLOPT_SOURCE_NO_SSL))
                 continue;
             if (iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS)||iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS_S))
                 continue;
@@ -537,6 +556,15 @@ public:
         return true;
     }
 
+    inline bool useSSLForSource()
+    {
+        if (optSourceSSL)
+            return true;
+        if (optSourceNoSSL)
+            return false;
+        return optSSL; //default to whether we use SSL to call ESP
+    }
+
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
@@ -564,6 +592,9 @@ public:
         req->setNoReload(optNoReload);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
+
+        //default to same tcp/tls as our ESP connection, but can be changed using --source-ssl or --source-no-ssl
+        req->setSourceSSL(useSSLForSource());
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -607,6 +638,8 @@ public:
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
             "   <target>               Name of target cluster to copy the query to\n"
+            "   --source-ssl           Use SSL when connecting to source (default if --ssl is used)\n"
+            "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
             "                          (only required if remote environment version < 3.8)\n"
@@ -656,6 +689,8 @@ private:
     bool optDontAppendCluster; //Undesirable but here temporarily because DALI may have locking issues
     bool optDontCopyFiles;
     bool optAllowForeign;
+    bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
+    bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
 };
 
 class EclCmdQueriesCopyQueryset : public EclCmdCommon
@@ -686,6 +721,10 @@ public:
                 }
                 continue;
             }
+            if (iter.matchFlag(optSourceSSL, ECLOPT_SOURCE_SSL))
+                continue;
+            if (iter.matchFlag(optSourceNoSSL, ECLOPT_SOURCE_NO_SSL))
+                continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
             if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
@@ -724,6 +763,15 @@ public:
         return true;
     }
 
+    inline bool useSSLForSource()
+    {
+        if (optSourceSSL)
+            return true;
+        if (optSourceNoSSL)
+            return false;
+        return optSSL; //default to whether we use SSL to call ESP
+    }
+
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
@@ -743,6 +791,9 @@ public:
         req->setCopyFiles(!optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
+
+        //default to same tcp/tls as our ESP connection, but can be changed using --source-ssl or --source-no-ssl
+        req->setSourceSSL(useSSLForSource());
 
         Owned<IClientWUCopyQuerySetResponse> resp = client->WUCopyQuerySet(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
@@ -788,6 +839,8 @@ public:
             "   <source_target>        Name of local (or path to remote) target cluster to"
             "                          copy queries from\n"
             "   <destination_target>   Target cluster to copy queries to\n"
+            "   --source-ssl           Use SSL when connecting to source (default if --ssl is used)\n"
+            "   --source-no-ssl        Do not use SSL when connecting to source (default if --ssl is NOT used)\n"
             "   --all                  Copy both active and inactive queries\n"
             "   --no-files             Do not copy DFS file information for referenced files\n"
             "   --daliip=<ip>          Remote Dali DFS to use for copying file information\n"
@@ -815,6 +868,8 @@ private:
     bool optDontCopyFiles;
     bool optAllowForeign;
     bool optAllQueries;
+    bool optSourceSSL = false; //user explicitly turning on SSL for accessing the remote source location (ssl defaults to use SSL if we are hitting ESP via SSL)
+    bool optSourceNoSSL = false; //user explicitly turning OFF SSL for accessing the remote source location (ssl defaults to not use SSL if we are not hitting ESP via SSL)
 };
 
 class EclCmdQueriesConfig : public EclCmdCommon

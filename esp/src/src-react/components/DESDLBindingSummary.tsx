@@ -9,14 +9,14 @@ import { replaceUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/ESDLBindingSummary.tsx");
 
-interface ESDLBindingSummaryProps {
+interface DESDLBindingSummaryProps {
     processName: string,
     serviceName: string,
     port: string,
     bindingName: string
 }
 
-export const ESDLBindingSummary: React.FunctionComponent<ESDLBindingSummaryProps> = (props) => {
+export const DESDLBindingSummary: React.FunctionComponent<DESDLBindingSummaryProps> = (props) => {
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -25,7 +25,7 @@ export const ESDLBindingSummary: React.FunctionComponent<ESDLBindingSummaryProps
             WsESDLConfig.DeleteESDLBinding({ request: { Id: props.bindingName } })
                 .then(({ DeleteESDLRegistryEntryResponse }) => {
                     if (DeleteESDLRegistryEntryResponse?.status?.Code === 0) {
-                        replaceUrl("/esdl/bindings");
+                        replaceUrl("/desdl/bindings");
                     }
                 })
                 .catch(err => logger.error(err))
