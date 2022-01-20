@@ -3041,9 +3041,9 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             {
                 const char* file = req.getName();
 #ifndef _CONTAINERIZED
-                helper.validateFilePath(file, false, "run", nullptr, nullptr);
+                helper.validateFilePath(file, winfo, strieq(File_Cpp,req.getType())? CWUFileType_CPP : CWUFileType_LOG, false, "run", nullptr, nullptr);
 #else
-                helper.validateFilePath(file, false, "query", nullptr, nullptr);
+                helper.validateFilePath(file, winfo, strieq(File_Cpp,req.getType())? CWUFileType_CPP : CWUFileType_LOG, false, "query", nullptr, nullptr);
 #endif
                 winfo.getWorkunitCpp(file, req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
@@ -3064,7 +3064,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
                 const char* file = req.getName();
-                helper.validateFilePath(file, true, "log", nullptr, nullptr);
+                helper.validateFilePath(file, winfo, CWUFileType_ThorLog, true, "log", nullptr, nullptr);
                 winfo.getWorkunitThorMasterLog(nullptr, file, mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
@@ -3077,7 +3077,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             else if (strieq(File_EclAgentLog,req.getType()))
             {
                 const char* file = req.getName();
-                helper.validateFilePath(file, true, "log", nullptr, nullptr);
+                helper.validateFilePath(file, winfo, CWUFileType_EclAgentLog, true, "log", nullptr, nullptr);
                 winfo.getWorkunitEclAgentLog(nullptr, file, req.getProcess(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
@@ -3085,9 +3085,9 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             {
                 const char* name  = req.getName();
 #ifndef _CONTAINERIZED
-                helper.validateFilePath(name, false, "run", nullptr, nullptr);
+                helper.validateFilePath(name, winfo, CWUFileType_XML, false, "run", nullptr, nullptr);
 #else
-                helper.validateFilePath(name, false, "query", nullptr, nullptr);
+                helper.validateFilePath(name, winfo, CWUFileType_XML, false, "query", nullptr, nullptr);
 #endif
                 const char* ptr = strrchr(name, '/');
                 if (ptr)
