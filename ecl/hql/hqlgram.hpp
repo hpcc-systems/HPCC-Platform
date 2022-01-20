@@ -1254,7 +1254,7 @@ class HqlLex
         void pushMacro(IHqlExpression *expr);
         void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);
-        bool getParameter(StringBuffer &curParam, const char* for_what);
+        bool getParameter(StringBuffer &curParam, const char* directive, const ECLlocation & location);
         IValue *foldConstExpression(const ECLlocation & errpos, IHqlExpression * expr, IXmlScope *xmlScope);
         IValue *parseConstExpression(const ECLlocation & errpos, StringBuffer &curParam, IXmlScope *xmlScope);
         IValue *parseConstExpression(const ECLlocation & errpos, IFileContents * contents, IXmlScope *xmlScope);
@@ -1286,7 +1286,7 @@ class HqlLex
         void doInModule(attribute & returnToken);
         void doMangle(attribute & returnToken, bool de);
         void doUniqueName(attribute & returnToken);
-        void doSkipUntilEnd(attribute & returnToken, const char * forwhat);
+        void doSkipUntilEnd(attribute & returnToken, const char* directive, const ECLlocation & location);
 
         void processEncrypted();
         void checkSignature(const attribute & dummyToken);
@@ -1294,7 +1294,7 @@ class HqlLex
         void declareUniqueName(const char* name, const char * pattern);
         void checkNextLoop(bool first);
 
-        bool getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* for_what, SharedHqlExpr & resolved);
+        bool getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* directive, const ECLlocation & location, SharedHqlExpr & resolved);
 
         int processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, unsigned CUR_TOKEN_LENGTH, int oldColumn, int oldPosition);
 
