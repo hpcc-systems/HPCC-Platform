@@ -39,10 +39,13 @@ public:
     }
 
     bool matchFlag(StringAttr & value, const char * name);                  //-Xvalue, -X option
-    bool matchFlag(bool & value, const char * name);                            //-X -X-
+    bool matchFlag(bool & value, const char * name);                        //-X -X-
     bool matchOption(StringAttr & value, const char * name);                //-option[=value], -option value
     bool matchOption(unsigned & value, const char * name);                  //-option[=value], -option value
     bool matchPathFlag(StringBuffer & option, const char * name);           //-Ivalue, -I value
+
+    // Extract the entire option if it matches.  isBoolFlag indicates a boolean option isShortOption for -I etc.
+    bool matchOptionText(StringBuffer & option, const char * name, bool isBoolFlag, bool isShortOption);
 
     inline const char * query() { return cur < argc ? argv[cur] : NULL; }
     inline bool hasMore(int num) { return (cur + num) < argc; }
