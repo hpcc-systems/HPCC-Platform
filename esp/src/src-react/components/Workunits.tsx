@@ -100,7 +100,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
                 },
                 width: 25,
-                sortable: false,
+                sortable: true,
                 formatter: function (_protected) {
                     if (_protected === true) {
                         return Utility.getImageHTML("locked.png");

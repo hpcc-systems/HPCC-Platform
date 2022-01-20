@@ -463,7 +463,7 @@ define([
                             node.innerHTML = Utility.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
-                        sortable: false,
+                        sortable: true,
                         formatter: function (_protected) {
                             if (_protected === true) {
                                 return Utility.getImageHTML("locked.png");
