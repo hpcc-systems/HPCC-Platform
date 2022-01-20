@@ -31,6 +31,9 @@
         },
         "planes": {
           "$ref": "#/definitions/storagePlanes"
+        },
+        "remote": {
+          "$ref": "#/definitions/remoteStorage"
         }
       },
       "additionalProperties": false
@@ -467,7 +470,7 @@
         "category": {
           "description": "the category this plane is usd for, e.g. lz, data",
           "type": "string",
-          "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git" ]
+          "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git", "remote" ]
         },
         "umask" : {
           "description": "file creation mask (used by despray)",
@@ -506,6 +509,44 @@
         }
       },
       "required": [ "name", "prefix", "category" ],
+      "additionalProperties": false
+    },
+    "remoteStorage": {
+      "description": "remote storage definitions",
+      "type": "array",
+      "items": { "$ref": "#/definitions/remoteStorageEntry" }
+    },
+    "remoteStorageEntry": {
+      "description": "information about an individual remote storage definition",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "the name of the remote storage definition",
+          "type": "string"
+        },
+        "service": {
+          "description": "the remote DFS service",
+          "type": "string"
+        },
+        "planes": {
+          "description": "mapping of remote planes to local planes",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "remote": {
+                "type": "string",
+                "description": "The name of the remote plane to map from"
+              },
+              "local": {
+                "type": "string",
+                "description": "The name of the local plane to map to"
+              }
+            }
+          }
+        }
+      },
+      "required": [ "name", "service", "planes" ],
       "additionalProperties": false
     },
     "resources": {

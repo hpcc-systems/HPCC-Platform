@@ -41,6 +41,7 @@
 #define EXTERNAL_SCOPE      "file"
 #define PLANE_SCOPE         "plane"
 #define FOREIGN_SCOPE       "foreign"
+#define REMOTE_SCOPE        "remote"
 #define SELF_SCOPE          "."
 #define SDS_DFS_ROOT        "Files" // followed by scope/name
 #define SDS_RELATIONSHIPS_ROOT  "Files/Relationships"
@@ -208,6 +209,11 @@ public:
                         tmp.append(FOREIGN_SCOPE "::");
                         foreignEp.getUrlStr(tmp).append("::");
                     }
+                    else if (sub.isRemote())
+                    {
+                        tmp.append(REMOTE_SCOPE "::");
+                        foreignEp.getUrlStr(tmp).append("::");
+                    }
                     tmp.append(name);
                     lfnExpanded.append(tmp.str());
                 }
@@ -310,6 +316,11 @@ bool CDfsLogicalFileName::isExternalPlane() const
     return external && startsWithIgnoreCase(lfn, PLANE_SCOPE "::");
 }
 
+bool CDfsLogicalFileName::isRemote() const
+{
+    return external && startsWithIgnoreCase(lfn, REMOTE_SCOPE "::");
+}
+
 bool CDfsLogicalFileName::getExternalPlane(StringBuffer & plane) const
 {
     if (!isExternalPlane())
@@ -319,6 +330,20 @@ bool CDfsLogicalFileName::getExternalPlane(StringBuffer & plane) const
     const char * end = strstr(start,"::");
     assertex(end);
     plane.append(end-start, start);
+    return true;
+}
+
+
+bool CDfsLogicalFileName::getRemoteSpec(StringBuffer &remoteSvc, StringBuffer &logicalName) const
+{
+    if (!isRemote())
+        return false;
+
+    const char * start = lfn.str() + strlen(REMOTE_SCOPE "::");
+    const char * end = strstr(start,"::");
+    assertex(end);
+    remoteSvc.append(end-start, start);
+    logicalName.append(end+2);
     return true;
 }
 
@@ -737,6 +762,30 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             throw makeStringExceptionV(-1, "Scope contains invalid storage plane '%s'", planeName.str());
             
         str.append("::").append(planeName);
+        str.append(ns1);
+        str.toLowerCase();
+        res.set(str);
+        return true;
+    }
+
+    if (startsWithIgnoreCase(name, REMOTE_SCOPE "::"))
+    {
+        //Syntax plane::<remote>::<path>
+        lfn.clear();
+        StringBuffer str;
+        const char *s=strstr(name,"::");
+        normalizeScope(name, name, s-name, str, strict);    // "remote"
+
+        //find the name of the remote (service)
+        const char *s1 = s+2;
+        const char *ns1 = strstr(s1,"::");
+        if (!ns1)
+            return false;
+
+        StringBuffer remoteSvc;
+        normalizeScope(s1, s1, ns1-s1, remoteSvc, strict);
+
+        str.append("::").append(remoteSvc);
         str.append(ns1);
         str.toLowerCase();
         res.set(str);

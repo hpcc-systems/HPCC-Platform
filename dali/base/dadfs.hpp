@@ -587,7 +587,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
-    virtual IDistributedFile *createNew(IFileDescriptor *desc) = 0;
+    virtual IDistributedFile *createNew(IFileDescriptor *desc, const char *optName=nullptr) = 0;
     virtual IDistributedFile *createExternal(IFileDescriptor *desc, const char *name) = 0;
 
     virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user,bool isPrivilegedUser) = 0;
@@ -612,7 +612,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
-    virtual IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionamName=nullptr) = 0;
+    virtual IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionamName=nullptr, IArrayOf<IDistributedFile> *subFiles=nullptr) = 0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
                                                     unsigned timeout=INFINITE) = 0;  // NB lookup will also return superfiles
@@ -703,6 +703,8 @@ interface IDistributedFileDirectory: extends IInterface
 
     // useful to clearup after temporary unpublished file.
     virtual bool removePhysicalPartFiles(const char *logicalName, IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0) = 0;
+
+    virtual void setFileAccessed(const char *logicalName, const CDateTime &dt, const INode *foreigndali=nullptr, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 };
 
 

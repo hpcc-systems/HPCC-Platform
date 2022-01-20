@@ -747,5 +747,6 @@ jlib_decl IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback);
 
 extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
 extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
+extern jlib_decl IPropertyTree * getRemoteStorage(const char * name);
 
 #endif

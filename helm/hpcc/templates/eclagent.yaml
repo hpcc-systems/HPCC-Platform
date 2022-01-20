@@ -112,7 +112,7 @@ data:
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $apptype := .type | default "hthor" -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "includeCategories" (list "lz" "data" "spill" "dll") "env" $env }}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "includeCategories" (list "lz" "data" "remote" "spill" "dll") "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" (print "global," $apptype ".replicas"))) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 apiVersion: apps/v1

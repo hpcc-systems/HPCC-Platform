@@ -14494,7 +14494,7 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
     StringBuffer output;
     try
     {
-        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].spec.ports[0].port}", serviceName);
+        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].status.loadBalancer.ingress[0].ip},{.items[0].spec.ports[0].port}", serviceName);
         runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
     }
     catch (IException *e)
@@ -14509,15 +14509,15 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
     fields.appendList(output, ",");
 
     // NB: add even if no result, want non-result to be cached too
-    std::string host;
-    unsigned port = 0;
-    if (fields.ordinality())
+    std::string host, port;
+    if (fields.ordinality() == 3) // hostname,ip,port. NB: hostname may be missing, but still present as a blank field
     {
-        host = fields.item(0);
-        if (fields.ordinality()>1)
-            port = atoi(fields.item(1));
+        host = fields.item(0); // hostname
+        if (0 == host.length())
+            host = fields.item(1); // ip
+        port = fields.item(2);
     }
-    auto servicePair = std::make_pair(host, port);
+    auto servicePair = std::make_pair(host, atoi(port.c_str()));
     externalServiceCache.add(serviceName, servicePair);
     return servicePair;
 }
