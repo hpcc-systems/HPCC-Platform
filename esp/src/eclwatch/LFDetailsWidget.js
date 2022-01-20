@@ -275,11 +275,11 @@ define([
             });
             this.logicalFile.refresh();
 
-            this.isProtected.on("change", function (evt) {
+            this.isProtected.on("click", function (evt) {
                 context._onSave();
             });
 
-            this.isRestricted.on("change", function (evt) {
+            this.isRestricted.on("click", function (evt) {
                 context._onSave();
             });
         },
