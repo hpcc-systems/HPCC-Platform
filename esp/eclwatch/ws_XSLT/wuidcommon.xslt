@@ -1223,17 +1223,13 @@
         </xsl:otherwise>
       </xsl:choose>
       <td>
-        <a href="javascript:void(0)" onclick="return loadUrl('/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={Name}');" >
-          <xsl:value-of select="Name"/>
-          <xsl:if test="number(RunningId)">
-            (<xsl:value-of select="RunningId"/>)
-          </xsl:if>
-        </a>
+        <xsl:value-of select="Name"/>
+        <xsl:if test="number(RunningId)">
+          (<xsl:value-of select="RunningId"/>)
+        </xsl:if>
       </td>
       <td>
-        <a href="javascript:void(0)" onclick="return loadUrl('/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={Name}');" >
-          <xsl:value-of select="Label"/>
-        </a>
+        <xsl:value-of select="Label"/>
       </td>
     </tr>
   </xsl:template>
@@ -1242,14 +1238,10 @@
     <tr class="{$rowclass}">
       <td>
         <xsl:if test="GraphName and SubGraphId">
-          <a href="javascript:void(0)" onclick="return loadUrl('/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={GraphName}&amp;SubGraphId={SubGraphId}');" >
-            <xsl:value-of select="Name"/>
-          </a>
+          <xsl:value-of select="Name"/>
         </xsl:if>
         <xsl:if test="GraphName and not(SubGraphId)">
-          <a href="javascript:void(0)" onclick="return loadUrl('/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={GraphName}');" >
-            <xsl:value-of select="Name"/>
-          </a>
+          <xsl:value-of select="Name"/>
         </xsl:if>
         <xsl:if test="not(GraphName)">
           <xsl:value-of select="Name"/>
@@ -1257,14 +1249,10 @@
       </td>
       <td style="text-align:right;">
         <xsl:if test="GraphName and SubGraphId">
-          <a href="javascript:void(0)" onclick="return loadUrl('/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={GraphName}&amp;SubGraphId={SubGraphId}');" >
-            <xsl:value-of select="Value"/>
-          </a>
+          <xsl:value-of select="Value"/>
         </xsl:if>
         <xsl:if test="GraphName and not(SubGraphId)">
-          <a href="javascript:void(0)" onclick="return loadUrl('/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={GraphName}');" >
-            <xsl:value-of select="Value"/>
-          </a>
+          <xsl:value-of select="Value"/>
         </xsl:if>
         <xsl:if test="not(GraphName)">
           <xsl:value-of select="Value"/>
@@ -1532,20 +1520,6 @@
                      {
                         document.location.href=link.href;
                      }     
-
-                     function selectSubGraph(GraphName, SubGraphId)
-                     {
-                        if (window.opener)
-              {
-                              window.opener.selectGraphSubGraph(GraphName.substring(5), SubGraphId);
-              }
-              else
-              {
-                // Load the Graph page directly.
-                var urlBase = '/WsWorkunits/GVCAjaxGraph?Name=' + wuid + '&GraphName=' + GraphName + '&SubGraphId=' + SubGraphId;
-                document.location.href = urlBase;
-              }
-                     } 
    
                ]]></xsl:text>
         </script>
@@ -1585,13 +1559,7 @@
   <xsl:template match="Workunit/TimingData/ECLTimingData">
     <tr>
       <td align="left">
-        <xsl:text disable-output-escaping="yes"><![CDATA[<a href="javascript:void(0)" onclick="selectSubGraph('graph]]></xsl:text>
-        <xsl:value-of select="GraphNum"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[', ]]></xsl:text>
         <xsl:value-of select="GID"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[);return false;">]]></xsl:text>
-        <xsl:value-of select="GID"/>
-        <xsl:text disable-output-escaping="yes"><![CDATA[ </a> ]]></xsl:text>
       </td>
       <td align="left">
         <xsl:value-of select="GraphNum"/>

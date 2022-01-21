@@ -1065,18 +1065,14 @@
                 </xsl:when>
                 <xsl:when test="string-length(GraphName) and (number(MemoryBlocked) > 0)">
                     <xsl:value-of select="State"/>
-                    (<a title="Graphview Control" href="javascript:go('/WsWorkunits/GVCAjaxGraph?Name={Wuid}&amp;GraphName={GraphName}&amp;SubGraphId={GID}&amp;SubGraphOnly=1')">
-                        <xsl:value-of select="Duration"/>
-                    </a>*)
+                    <xsl:value-of select="Duration"/>
                     <xsl:if test="string-length(Warning)">
                         <a class="thorstoppedrunningqueue" title="More Information" onclick="alert('{Warning}')">&#160;</a>
                     </xsl:if>
                 </xsl:when>
                 <xsl:when test="string-length(GraphName)">
                     <xsl:value-of select="State"/>
-                    (<a title="Graphview Control" href="javascript:go('/WsWorkunits/GVCAjaxGraph?Name={Wuid}&amp;GraphName={GraphName}&amp;SubGraphId={GID}&amp;SubGraphOnly=1')">
-                        <xsl:value-of select="Duration"/>
-                    </a>)
+                    <xsl:value-of select="Duration"/>
                     <xsl:if test="string-length(Warning)">
                         <a class="thorstoppedrunningqueue" title="More Information" onclick="alert('{Warning}')">&#160;</a>
                     </xsl:if>

@@ -63,10 +63,6 @@
                           {
                               document.location.href='/WsRoxieQuery/QueryFileList?FileType=Non Super Files&QueryID='+ id + '&Cluster=' + cluster;
                           }
-                          function showGraph()
-                          {
-                              document.location.href='/WsRoxieQuery/GVCAjaxGraph?Name='+ id + '&ClusterName=' + cluster;
-              }
 
               var xypos = YAHOO.util.Dom.getXY('mn' + posid);
               if (oMenu)
@@ -81,8 +77,7 @@
               //{ text: "ShowAllFiles", onclick: { fn: showAllFiles } },
               { text: "ShowSuperFiles", onclick: { fn: showSuperFiles } },
               //{ text: "ShowSubFiles", onclick: { fn: showSubFiles } },
-              { text: "ShowNonSuperFiles", onclick: { fn: showDataFiles } },
-              { text: "ShowGraph", onclick: { fn: showGraph } }
+              { text: "ShowNonSuperFiles", onclick: { fn: showDataFiles } }
               ]);
 
               oMenu.render("listroxiequerymenu");
