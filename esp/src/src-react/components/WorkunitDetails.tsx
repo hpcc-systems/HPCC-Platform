@@ -12,7 +12,7 @@ import { SourceFiles } from "./SourceFiles";
 import { Helpers } from "./Helpers";
 import { Queries } from "./Queries";
 import { Resources } from "./Resources";
-import { WUXMLSourceEditor } from "./SourceEditor";
+import { FetchEditor, WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
 import { Metrics } from "./Metrics";
 import { WorkunitSummary } from "./WorkunitSummary";
@@ -22,12 +22,14 @@ interface WorkunitDetailsProps {
     wuid: string;
     tab?: string;
     state?: string;
+    queryParams?: { [key: string]: string };
 }
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     wuid,
     tab = "summary",
-    state
+    state,
+    queryParams = {}
 }) => {
 
     const [workunit] = useWorkunit(wuid, true);
@@ -64,7 +66,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Resources wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Helpers} itemKey="helpers" itemCount={workunit?.HelpersCount} style={pivotItemStyle(size, 0)}>
-                <Helpers wuid={wuid} />
+                {state ?
+                    <FetchEditor mode={queryParams?.mode as any} url={queryParams?.src as string} /> :
+                    <Helpers wuid={wuid} />
+                }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="eclsummary" style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />
