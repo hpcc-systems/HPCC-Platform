@@ -3690,10 +3690,36 @@ public:
     {
         clusters.clear();
         unsigned nc = fdesc->numClusters();
-        if (nc) {
-            for (unsigned i=0;i<nc;i++) {
-                IClusterInfo &cluster = OLINK(*fdesc->queryClusterNum(i));
-                clusters.append(cluster);
+        if (nc)
+        {
+            for (unsigned i=0;i<nc;i++)
+            {
+                StringBuffer cname;
+                fdesc->getClusterGroupName(i, cname, nullptr);
+                IClusterInfo *cluster;
+                if (cname.length())
+                    cluster = LINK(fdesc->queryClusterNum(i));
+                else
+                {
+                    // NB: this is non-standard, for situations where the cluster name is not known,
+                    // which happens where none has been provided/set to the file descriptor,
+                    // and the file descriptor has been built up of parts with ips. 
+                    // createClusterInfo will perform a reverse lookup to Dali to try to discover
+                    // a group name.
+                    cluster = createClusterInfo(
+                                  nullptr,
+                                  fdesc->queryClusterGroup(i),
+                                  fdesc->queryPartDiskMapping(i),
+                                  &queryNamedGroupStore()
+                               );
+
+                    if (!cluster->queryGroup(&queryNamedGroupStore()))
+                        IERRLOG("IDistributedFileDescriptor cannot set cluster for %s", logicalName.get());
+                }
+#ifdef EXTRA_LOGGING
+                PROGLOG("setClusters(%d,%s)", i, cluster->queryGroupName());
+#endif
+                clusters.append(*cluster);
             }
         }
         else
@@ -4103,6 +4129,10 @@ public:
             setClusters(fdesc);
             setParts(fdesc,false);
             setUserDescriptor(udesc, user);
+#ifdef EXTRA_LOGGING
+            LOGFDESC("CDistributedFile::attach fdesc",fdesc);
+            LOGPTREE("CDistributedFile::attach root.2",root);
+#endif
         }
         catch (IException *e)
         {
@@ -4110,10 +4140,6 @@ public:
             logicalName.clear();
             throw;
         }
-#ifdef EXTRA_LOGGING
-        LOGFDESC("CDistributedFile::attach fdesc",fdesc);
-        LOGPTREE("CDistributedFile::attach root.2",root);
-#endif
     }
 
     /*
