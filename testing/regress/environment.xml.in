@@ -405,8 +405,8 @@
                          service="ws_codesign"/>
     <AuthenticateFeature authenticate="Yes"
                          description="Access to DFS service"
-                         path="WsDfsAccess"
-                         resource="WsDfsAccess"
+                         path="DfsAccess"
+                         resource="DfsAccess"
                          service="ws_dfsservice"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
@@ -653,8 +653,8 @@
                          resource="CodeSignAccess"
                          service="ws_codesign"/>
     <AuthenticateFeature description="Access to DFS service"
-                         path="WsDfsAccess"
-                         resource="WsDfsAccess"
+                         path="DfsAccess"
+                         resource="DfsAccess"
                          service="ws_dfsservice"/>
     <ProcessFilters>
      <Platform name="Windows">
@@ -956,8 +956,8 @@
                           resource="CodeSignAccess"
                           service="ws_codesign"/>
     <AuthenticateFeature  description="Access to DFS service"
-                          path="WsDfsAccess"
-                          resource="WsDfsAccess"
+                          path="DfsAccess"
+                          resource="DfsAccess"
                           service="ws_dfsservice"/>
      <ProcessFilters>
       <Platform name="Windows">
