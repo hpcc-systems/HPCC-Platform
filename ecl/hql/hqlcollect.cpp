@@ -517,9 +517,12 @@ void FileSystemDirectory::processDependencies(IDirectoryIterator * dir)
         const char * tail = pathTail(filename);
         if (file.isDirectory() == fileBool::foundYes)
         {
-            //If there is a directory within node_module, then treat that directory as a package
-            PackageDependency * depend = new PackageDependency(createIdAtom(tail), filename, false);
-            contents.append(*depend);
+            if (isValidIdentifier(tail))
+            {
+                //If there is a directory within node_module, then treat that directory as a package
+                PackageDependency * depend = new PackageDependency(createIdAtom(tail), filename, false);
+                contents.append(*depend);
+            }
         }
         else if (file.isFile() == fileBool::foundYes)
         {

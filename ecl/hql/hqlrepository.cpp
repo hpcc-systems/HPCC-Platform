@@ -36,6 +36,11 @@ static const char * queryExtractFilename(const char * urn)
     case '/':
         return urn;
     }
+#ifdef _WIN32
+    //Check for drive:....
+    if (*urn && (urn[1] == ':'))
+        return urn;
+#endif
     return nullptr;
 }
 

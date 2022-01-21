@@ -17204,6 +17204,21 @@ unsigned __int64 querySeqId(IHqlExpression * seq)
 #endif
 }
 
+bool isValidIdentifier(const char * text)
+{
+    if (!isalpha(*text))
+        return false;
+
+    for (;;)
+    {
+        byte next = *++text;
+        if (!next)
+            return true;
+        if (!isalnum(next) && (next != '_'))
+            return false;
+    }
+}
+
 /*
 List of changes:
 
