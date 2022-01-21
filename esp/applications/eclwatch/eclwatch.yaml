@@ -34,7 +34,7 @@ eclwatch:
         xslt:
         - name: def_file
           ^: "./smc_xslt/def_file.xslt"
-   WsDfs:
+   ws_dfsservice:
    WsDfuXRef:
       ViewTimeout: 1000
       LayoutProgram: dot/dot -Tsvg -Gordering=out

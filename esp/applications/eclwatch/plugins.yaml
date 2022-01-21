@@ -7,7 +7,7 @@ service_plugins:
   ws_access: ws_access
   ws_account: ws_account
   WsDfu: ws_dfu
-  WsDfs: ws_dfsservice
+  ws_dfsservice: ws_dfsservice
   WsDfuXRef: ws_dfu
   ws_ecl: ws_ecl
   ws_elk: ws_elk
@@ -28,7 +28,7 @@ binding_plugins:
   ws_access: ws_access
   ws_account: ws_account
   WsDfu: ws_dfu
-  WsDfs: ws_dfsservice
+  ws_dfsservice: ws_dfsservice
   WsDfuXRef: ws_dfu
   ws_ecl: ws_ecl
   ws_elk: ws_elk

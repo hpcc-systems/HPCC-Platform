@@ -48,7 +48,7 @@ ESP_FACTORY IEspRpcBinding* esp_binding_factory(const char* name, const char* ty
     //binding names of the form <servicetype>_http are being added so the names can be made more consistent and can therefore be automatically generated
     //  the name also better reflects that these bindings are for all HTTP based protocols, not just SOAP
     //  both "SoapBinding" and "_http" names instantiate the same objects.
-    if (strieq(type, "ws_dfsserviceSoapBinding") || strieq(type, "WsDfs_http"))
+    if (strieq(type, "ws_dfsservice_binding") || strieq(type, "ws_dfsservice_http"))
     {
         return new CWsDfsSoapBinding(cfg, name, process);
     }
