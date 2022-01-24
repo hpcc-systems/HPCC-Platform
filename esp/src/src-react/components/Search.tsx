@@ -1,9 +1,9 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotItem, ProgressIndicator } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem, ProgressIndicator } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
@@ -51,54 +51,63 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [searchCount, setSearchCount] = React.useState(0);
 
+    const [data, setData] = React.useState<any[]>([]);
+
     //  Search
-    const search = useConst(new ESPSearch(
-        searchCount => {
-            setSearchCount(searchCount);
-        },
-        () => {
-            progress.value++;
-            refreshTable();
-        }, () => {
-            setSearchCount(0);
-        }));
+    const search = useConst(new ESPSearch(() => { progress.value++; }));
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store: search.store,
+    const [Grid, selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
+        sort: [{ attribute: "__hpcc_id" }],
         filename: "search",
         columns: {
             col1: selector({ width: 27, selectorType: "checkbox" }),
-            Type: {
+            What: {
                 label: nlsHPCC.What, width: 108, sortable: true,
-                formatter: function (type, row) {
-                    return "<a href='" + searchResultUrl(row) + "'>" + type + "</a>";
+                formatter: function (_, row) {
+                    return <Link href={`${searchResultUrl(row)}`}>{row.Type}</Link>;
                 }
             },
             Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
             Summary: {
                 label: nlsHPCC.Who, sortable: true,
-                formatter: function (summary, row) {
-                    return "<a href='" + searchResultUrl(row) + "'>" + summary + "</a>";
+                formatter: function (Summary, row) {
+                    return <Link href={`${searchResultUrl(row)}`}>{Summary}</Link>;
                 }
             }
         }
     });
 
+    const refreshData = React.useCallback(() => {
+        search.searchAll(searchText).then(results => {
+            const _data = [];
+            const matchedIds: { [key: string]: boolean } = {};
+            results.forEach(resultCategory => {
+                if (resultCategory) {
+                    resultCategory.forEach(result => {
+                        if (!matchedIds[result.id]) {
+                            _data.push(result);
+                            matchedIds[result.id] = true;
+                        }
+                    });
+                }
+            });
+            setSearchCount(_data.length);
+            setData(_data);
+        });
+    }, [search, searchText]);
+
     React.useEffect(() => {
-        if (searchText) {
-            progress.value = 0;
-            setSearchCount(0);
-            search.searchAll(searchText);
-            refreshTable();
-        }
-    }, [progress, refreshTable, search, searchText]);
+        refreshData();
+    }, [refreshData]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -120,7 +129,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, uiState.hasSelection]);
+    ], [mine, refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -137,7 +146,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     return <HolyGrail
         header={<Pivot headersOnly={true} onLinkClick={(item: PivotItem) => setSelectedKey(item.props.itemKey!)
         }>
-            <PivotItem itemKey="all" headerText={nlsHPCC.All} itemCount={search.store.data.length} />
+            <PivotItem itemKey="all" headerText={nlsHPCC.All} itemCount={data.length} />
             <PivotItem itemKey="ecl" headerText={nlsHPCC.ECLWorkunit} headerButtonProps={search.eclStore.data.length === 0 ? disabled : undefined} itemCount={search.eclStore.data.length} />
             <PivotItem itemKey="dfu" headerText={nlsHPCC.DFUWorkunit} headerButtonProps={search.dfuStore.data.length === 0 ? disabled : undefined} itemCount={search.dfuStore.data.length} />
             <PivotItem itemKey="file" headerText={nlsHPCC.LogicalFile} headerButtonProps={search.fileStore.data.length === 0 ? disabled : undefined} itemCount={search.fileStore.data.length} />

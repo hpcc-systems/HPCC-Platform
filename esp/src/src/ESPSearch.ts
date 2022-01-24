@@ -11,6 +11,16 @@ import nlsHPCC from "./nlsHPCC";
 
 export type searchAllResponse = undefined | "ecl" | "dfu" | "file" | "query";
 
+interface SearchParams {
+    searchECL: boolean;
+    searchECLText: boolean;
+    searchDFU: boolean;
+    searchFile: boolean;
+    searchQuery: boolean;
+    text: string;
+    searchType?: string;
+}
+
 export class ESPSearch {
 
     protected _searchID = 0;
@@ -24,12 +34,44 @@ export class ESPSearch {
     fileStore = Observable(new Memory("__hpcc_id"));
     queryStore = Observable(new Memory("__hpcc_id"));
 
-    constructor(private begin: (searchCount: number) => void, private update: () => void, private end: (success: boolean) => void) {
+    constructor(private update: () => void) {
     }
 
-    searchAll(searchText: string): searchAllResponse {
-        const searchID = ++this._searchID;
-        ++this.id;
+    generateSearchParams(searchText: string): SearchParams {
+        const searchParams: SearchParams = {
+            searchECL: false,
+            searchECLText: false,
+            searchDFU: false,
+            searchFile: false,
+            searchQuery: false,
+            text: searchText
+        };
+
+        if (searchText.indexOf("ecl:") === 0) {
+            searchParams.searchECL = true;
+            searchParams.searchECLText = true;
+            searchParams.text = searchText.substring(4);
+        } else if (searchText.indexOf("dfu:") === 0) {
+            searchParams.searchDFU = true;
+            searchParams.text = searchText.substring(4);
+        } else if (searchText.indexOf("file:") === 0) {
+            searchParams.searchFile = true;
+            searchParams.text = searchText.substring(5);
+        } else if (searchText.indexOf("query:") === 0) {
+            searchParams.searchQuery = true;
+            searchParams.text = searchText.substring(6);
+        } else {
+            searchParams.searchECL = true;
+            searchParams.searchDFU = true;
+            searchParams.searchFile = true;
+            searchParams.searchQuery = true;
+        }
+        searchParams.text = searchParams.text.trim();
+
+        return searchParams;
+    }
+
+    searchAll(searchText: string): any {
 
         this.store.setData([]);
         this.eclStore.setData([]);
@@ -37,234 +79,216 @@ export class ESPSearch {
         this.fileStore.setData([]);
         this.queryStore.setData([]);
 
-        let searchECL = false;
-        let searchECLText = false;
-        let searchDFU = false;
-        let searchFile = false;
-        let searchQuery = false;
-
-        let retVal: searchAllResponse = undefined;
-
-        if (searchText.indexOf("ecl:") === 0) {
-            retVal = "ecl";
-            searchECL = true;
-            searchECLText = true;
-            searchText = searchText.substring(4);
-        } else if (searchText.indexOf("dfu:") === 0) {
-            searchDFU = true;
-            searchText = searchText.substring(4);
-        } else if (searchText.indexOf("file:") === 0) {
-            searchFile = true;
-            searchText = searchText.substring(5);
-        } else if (searchText.indexOf("query:") === 0) {
-            searchQuery = true;
-            searchText = searchText.substring(6);
-        } else {
-            searchECL = true;
-            searchDFU = true;
-            searchFile = true;
-            searchQuery = true;
-        }
-        searchText = searchText.trim();
-
         const searchArray = [];
-        if (searchECL) {
-            searchArray.push(WsWorkunits.WUQuery({ request: { Wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadWUQueryResponse(nlsHPCC.WUID, response);
-                    this.update();
-                }
+        const searchParams = this.generateSearchParams(searchText);
+
+        if (searchParams.searchECL) {
+            searchArray.push(WsWorkunits.WUQuery({ request: { Wuid: "*" + searchParams.text + "*" } }).then(response => {
+                const results = this.parseWuQueryResponse(nlsHPCC.WUID, response);
+                this.loadWUQueryResponse(results);
+                return results;
             }));
             searchArray.push(WsWorkunits.WUQuery({ request: { Jobname: "*" + searchText + "*" } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadWUQueryResponse(nlsHPCC.JobName, response);
-                    this.update();
-                }
+                const results = this.parseWuQueryResponse(nlsHPCC.JobName, response);
+                this.loadWUQueryResponse(results);
+                return results;
             }));
             searchArray.push(WsWorkunits.WUQuery({ request: { Owner: searchText } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadWUQueryResponse(nlsHPCC.Owner, response);
-                    this.update();
-                }
+                const results = this.parseWuQueryResponse(nlsHPCC.Owner, response);
+                this.loadWUQueryResponse(results);
+                return results;
             }));
         }
-        if (searchECLText) {
-            searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchText } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadWUQueryResponse(nlsHPCC.ECL, response);
-                    this.update();
-                }
+        if (searchParams.searchECLText) {
+            searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchParams.text } }).then(response => {
+                const results = this.parseWuQueryResponse(nlsHPCC.ECL, response);
+                this.loadWUQueryResponse(results);
+                return results;
             }));
         }
-        if (searchDFU) {
-            searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadGetDFUWorkunitResponse(nlsHPCC.WUID, response);
-                    this.update();
-                }
+        if (searchParams.searchDFU) {
+            searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" } }).then(response => {
+                const results = this.parseGetDFUWorkunitResponse(nlsHPCC.ECL, response);
+                this.loadGetDFUWorkunitResponse(results);
+                return results;
             }));
             searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadGetDFUWorkunitsResponse(nlsHPCC.JobName, response);
-                    this.update();
-                }
+                const results = this.parseGetDFUWorkunitsResponse(nlsHPCC.JobName, response);
+                this.loadGetDFUWorkunitsResponse(results);
+                return results;
             }));
             searchArray.push(FileSpray.GetDFUWorkunits({ request: { Owner: searchText } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadGetDFUWorkunitsResponse(nlsHPCC.Owner, response);
-                    this.update();
-                }
+                const results = this.parseGetDFUWorkunitsResponse(nlsHPCC.Owner, response);
+                this.loadGetDFUWorkunitsResponse(results);
+                return results;
             }));
         }
-        if (searchFile) {
-            searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchText + "*" } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadDFUQueryResponse(nlsHPCC.LogicalName, response);
-                    this.update();
-                }
+        if (searchParams.searchFile) {
+            searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchParams.text + "*" } }).then(response => {
+                const results = this.parseDFUQueryResponse(nlsHPCC.LogicalName, response);
+                this.loadDFUQueryResponse(results);
+                return results;
             }));
-            searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchText } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadDFUQueryResponse(nlsHPCC.Owner, response);
-                    this.update();
-                }
+            searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchParams.text } }).then(response => {
+                const results = this.parseDFUQueryResponse(nlsHPCC.Owner, response);
+                this.loadDFUQueryResponse(results);
+                return results;
             }));
         }
-        if (searchQuery) {
-            searchArray.push(WsWorkunits.WUListQueries({ request: { QueryID: "*" + searchText + "*" } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadWUListQueriesResponse(nlsHPCC.ID, response);
-                    this.update();
-                }
+        if (searchParams.searchQuery) {
+            searchArray.push(WsWorkunits.WUListQueries({ request: { QueryID: "*" + searchParams.text + "*" } }).then(response => {
+                const results = this.parseWUListQueriesResponse(nlsHPCC.ID, response);
+                this.loadWUListQueriesResponse(results);
+                return results;
             }));
-            searchArray.push(WsWorkunits.WUListQueries({ request: { QueryName: "*" + searchText + "*" } }).then(response => {
-                if (searchID === this._searchID) {
-                    this.loadWUListQueriesResponse(nlsHPCC.Name, response);
-                    this.update();
-                }
+            searchArray.push(WsWorkunits.WUListQueries({ request: { QueryName: "*" + searchParams.text + "*" } }).then(response => {
+                const results = this.parseWUListQueriesResponse(nlsHPCC.Name, response);
+                this.loadWUListQueriesResponse(results);
+                return results;
             }));
         }
 
-        //  Always true  ---
-        this.begin(searchArray.length);
-        Promise.all(searchArray).then(results => {
-            if (searchID === this._searchID)
-                this.end(true);
-        }).catch(e => {
-            if (searchID === this._searchID)
-                this.end(false);
+        this.update();
 
-        });
-
-        return retVal;
+        return Promise.all(searchArray);
     }
 
-    loadWUQueryResponse(prefix, response) {
-        const workunits = response?.WUQueryResponse?.Workunits?.ECLWorkunit;
-        if (workunits) {
-            workunits.forEach((item, idx) => {
-                this.store.add({
+    parseWuQueryResponse(prefix, response) {
+        return response?.WUQueryResponse?.Workunits?.ECLWorkunit.map(item => {
+            return {
+                storeID: ++this._rowID,
+                id: item.Wuid,
+                Type: nlsHPCC.ECLWorkunit,
+                Reason: prefix,
+                Summary: item.Wuid,
+                _type: "Wuid",
+                _wuid: item.Wuid,
+                ...item
+            };
+        });
+    }
+
+    parseGetDFUWorkunitResponse(prefix, response) {
+        const item = response?.GetDFUWorkunitResponse?.result;
+        return (item && item.State !== 999) ? {
+            storeID: ++this._rowID,
+            id: item.ID,
+            Type: nlsHPCC.DFUWorkunit,
+            Reason: prefix,
+            Summary: item.ID,
+            _type: "DFUWuid",
+            _wuid: item.ID,
+            ...item
+        } : undefined;
+    }
+
+    parseGetDFUWorkunitsResponse(prefix, response) {
+        return response?.GetDFUWorkunitsResponse?.results?.DFUWorkunit.map(item => {
+            return {
+                storeID: ++this._rowID,
+                id: item.ID,
+                Type: nlsHPCC.DFUWorkunit,
+                Reason: prefix,
+                Summary: item.ID,
+                _type: "DFUWuid",
+                _wuid: item.ID,
+                ...item
+            };
+        });
+    }
+
+    parseDFUQueryResponse(prefix, response) {
+        return response?.DFUQueryResponse?.DFULogicalFiles?.DFULogicalFile.map(item => {
+            if (item.isSuperfile) {
+                return {
                     storeID: ++this._rowID,
-                    id: this.id + item.Wuid,
-                    Type: nlsHPCC.ECLWorkunit,
+                    id: item.Name,
+                    Type: nlsHPCC.SuperFile,
                     Reason: prefix,
-                    Summary: item.Wuid,
-                    _type: "Wuid",
-                    _wuid: item.Wuid
-                });
-                this.eclStore.add(ESPWorkunit.Get(item.Wuid, item), { overwrite: true });
+                    Summary: item.Name,
+                    _type: "SuperFile",
+                    _nodeGroup: item.NodeGroup,
+                    _name: item.Name,
+                    ...item
+                };
+            }
+            return {
+                storeID: ++this._rowID,
+                id: item.NodeGroup + "::" + item.Name,
+                Type: nlsHPCC.LogicalFile,
+                Reason: prefix,
+                Summary: item.Name + " (" + item.NodeGroup + ")",
+                _type: "LogicalFile",
+                _nodeGroup: item.NodeGroup,
+                _name: item.Name,
+                ...item
+            };
+        });
+    }
+
+    parseWUListQueriesResponse(prefix, response) {
+        return response?.WUListQueriesResponse?.QuerysetQueries?.QuerySetQuery.map(item => {
+            return {
+                storeID: ++this._rowID,
+                id: item.QuerySetId + "::" + item.Id,
+                Type: nlsHPCC.Query,
+                Reason: prefix,
+                Summary: item.Name + " (" + item.QuerySetId + " - " + item.Id + ")",
+                _type: "Query",
+                _querySetId: item.QuerySetId,
+                _id: item.Id,
+                ...item
+            };
+        });
+    }
+
+    loadWUQueryResponse(results) {
+        if (results) {
+            results.forEach((item, idx) => {
+                this.store.put(item, { overwrite: true });
+                this.eclStore.put(ESPWorkunit.Get(item._wuid, item), { overwrite: true });
             });
-            return workunits.length;
+            return results.length;
         }
         return 0;
     }
 
-    loadGetDFUWorkunitResponse(prefix, response) {
-        const workunit = response?.GetDFUWorkunitResponse?.result;
-        if (workunit && workunit.State !== 999) {
-            this.store.add({
-                storeID: ++this._rowID,
-                id: this.id + workunit.ID,
-                Type: nlsHPCC.DFUWorkunit,
-                Reason: prefix,
-                Summary: workunit.ID,
-                _type: "DFUWuid",
-                _wuid: workunit.ID
-            });
-            this.dfuStore.add(ESPDFUWorkunit.Get(workunit.ID, workunit), { overwrite: true });
+    loadGetDFUWorkunitResponse(workunit) {
+        if (workunit) {
+            this.store.put(workunit, { overwrite: true });
+            this.dfuStore.put(ESPDFUWorkunit.Get(workunit._wuid, workunit), { overwrite: true });
             return 1;
         }
         return 0;
     }
 
-    loadGetDFUWorkunitsResponse(prefix, response) {
-        const workunits = response?.GetDFUWorkunitsResponse?.results?.DFUWorkunit;
-        if (workunits) {
-            workunits.forEach((item, idx) => {
-                this.store.add({
-                    storeID: ++this._rowID,
-                    id: this.id + item.ID,
-                    Type: nlsHPCC.DFUWorkunit,
-                    Reason: prefix,
-                    Summary: item.ID,
-                    _type: "DFUWuid",
-                    _wuid: item.ID
-                });
-                this.dfuStore.add(ESPDFUWorkunit.Get(item.ID, item), { overwrite: true });
+    loadGetDFUWorkunitsResponse(results) {
+        if (results) {
+            results.forEach((item, idx) => {
+                this.store.put(item, { overwrite: true });
+                this.dfuStore.put(ESPDFUWorkunit.Get(item._wuid, item), { overwrite: true });
             });
-            return workunits.length;
+            return results.length;
         }
         return 0;
     }
 
-    loadDFUQueryResponse(prefix, response) {
-        const items = response?.DFUQueryResponse?.DFULogicalFiles?.DFULogicalFile;
+    loadDFUQueryResponse(items) {
         if (items) {
             items.forEach((item, idx) => {
-                if (item.isSuperfile) {
-                    this.store.add({
-                        storeID: ++this._rowID,
-                        id: this.id + item.Name,
-                        Type: nlsHPCC.SuperFile,
-                        Reason: prefix,
-                        Summary: item.Name,
-                        _type: "SuperFile",
-                        _name: item.Name
-                    });
-                } else {
-                    this.store.add({
-                        storeID: ++this._rowID,
-                        id: this.id + item.Name,
-                        Type: nlsHPCC.LogicalFile,
-                        Reason: prefix,
-                        Summary: item.Name + " (" + item.NodeGroup + ")",
-                        _type: "LogicalFile",
-                        _nodeGroup: item.NodeGroup,
-                        _name: item.Name
-                    });
-                }
-                this.fileStore.add(ESPLogicalFile.Get(item.NodeGroup, item.Name, item), { overwrite: true });
+                this.store.put(item, { overwrite: true });
+                this.fileStore.put(ESPLogicalFile.Get(item._nodeGroup, item._name, item), { overwrite: true });
             });
             return items.length;
         }
         return 0;
     }
 
-    loadWUListQueriesResponse(prefix, response) {
-        const items = response?.WUListQueriesResponse?.QuerysetQueries?.QuerySetQuery;
+    loadWUListQueriesResponse(items) {
         if (items) {
             items.forEach((item, idx) => {
-                this.store.add({
-                    storeID: ++this._rowID,
-                    id: this.id + item.QuerySetId + "::" + item.Id,
-                    Type: nlsHPCC.Query,
-                    Reason: prefix,
-                    Summary: item.Name + " (" + item.QuerySetId + " - " + item.Id + ")",
-                    _type: "Query",
-                    _querySetId: item.QuerySetId,
-                    _id: item.Id
-                });
-                this.queryStore.add(ESPQuery.Get(item.QuerySetId, item.Id, item), { overwrite: true });
+                this.store.put(item, { overwrite: true });
+                this.queryStore.put(ESPQuery.Get(item._querySetId, item._id, item), { overwrite: true });
             });
             return items.length;
         }
@@ -273,86 +297,97 @@ export class ESPSearch {
 }
 
 export function searchAll(searchText: string,
-    loadWUQueryResponse: (what: string, response: any) => void,
-    loadGetDFUWorkunitResponse: (what: string, response: any) => void,
-    loadGetDFUWorkunitsResponse: (what: string, response: any) => void,
-    loadDFUQueryResponse: (what: string, response: any) => void,
-    loadWUListQueriesResponse: (what: string, response: any) => void,
+    loadWUQueryResponse: (prefix: string, response: any) => void,
+    loadGetDFUWorkunitResponse: (prefix: string, response: any) => void,
+    loadGetDFUWorkunitsResponse: (prefix: string, response: any) => void,
+    loadDFUQueryResponse: (prefix: string, response: any) => void,
+    loadWUListQueriesResponse: (prefix: string, response: any) => void,
     start: (searchCount: number) => void,
     done: (success: boolean) => void,
-): searchAllResponse {
+): any {
 
-    let searchECL = false;
-    let searchECLText = false;
-    let searchDFU = false;
-    let searchFile = false;
-    let searchQuery = false;
+    const generateSearchParams = (searchText: string): SearchParams => {
+        const searchParams: SearchParams = {
+            searchECL: false,
+            searchECLText: false,
+            searchDFU: false,
+            searchFile: false,
+            searchQuery: false,
+            text: searchText,
+            searchType: ""
+        };
 
-    let retVal: searchAllResponse = undefined;
+        if (searchText.indexOf("ECL:") === 0) {
+            searchParams.searchType = "ecl";
+            searchParams.searchECL = true;
+            searchParams.searchECLText = true;
+            searchParams.text = searchText.substring(4);
+        } else if (searchText.indexOf("DFU:") === 0) {
+            searchParams.searchType = "dfu";
+            searchParams.searchDFU = true;
+            searchParams.text = searchText.substring(4);
+        } else if (searchText.indexOf("FILE:") === 0) {
+            searchParams.searchType = "file";
+            searchParams.searchFile = true;
+            searchParams.text = searchText.substring(5);
+        } else if (searchText.indexOf("QUERY:") === 0) {
+            searchParams.searchType = "query";
+            searchParams.searchQuery = true;
+            searchParams.text = searchText.substring(6);
+        } else {
+            searchParams.searchECL = true;
+            searchParams.searchDFU = true;
+            searchParams.searchFile = true;
+            searchParams.searchQuery = true;
+        }
+        searchParams.text = searchParams.text.trim();
 
-    if (searchText.indexOf("ecl:") === 0) {
-        retVal = "ecl";
-        searchECL = true;
-        searchECLText = true;
-        searchText = searchText.substring(4);
-    } else if (searchText.indexOf("dfu:") === 0) {
-        searchDFU = true;
-        searchText = searchText.substring(4);
-    } else if (searchText.indexOf("file:") === 0) {
-        searchFile = true;
-        searchText = searchText.substring(5);
-    } else if (searchText.indexOf("query:") === 0) {
-        searchQuery = true;
-        searchText = searchText.substring(6);
-    } else {
-        searchECL = true;
-        searchDFU = true;
-        searchFile = true;
-        searchQuery = true;
+        return searchParams;
     }
-    searchText = searchText.trim();
 
     const searchArray = [];
-    if (searchECL) {
-        searchArray.push(WsWorkunits.WUQuery({ request: { Wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(function (response) {
+    const searchParams = generateSearchParams(searchText);
+
+    if (searchParams.searchECL) {
+        searchArray.push(WsWorkunits.WUQuery({ request: { Wuid: "*" + searchParams.text + "*" } }).then(response => {
             loadWUQueryResponse(nlsHPCC.WUID, response);
         }));
-        searchArray.push(WsWorkunits.WUQuery({ request: { Jobname: "*" + searchText + "*" } }).then(function (response) {
+        searchArray.push(WsWorkunits.WUQuery({ request: { Jobname: "*" + searchText + "*" } }).then(response => {
             loadWUQueryResponse(nlsHPCC.JobName, response);
         }));
-        searchArray.push(WsWorkunits.WUQuery({ request: { Owner: searchText } }).then(function (response) {
+        searchArray.push(WsWorkunits.WUQuery({ request: { Owner: searchText } }).then(response => {
             loadWUQueryResponse(nlsHPCC.Owner, response);
         }));
     }
-    if (searchECLText) {
-        searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchText } }).then(function (response) {
+    if (searchParams.searchECLText) {
+        searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchParams.text } }).then(response => {
             loadWUQueryResponse(nlsHPCC.ECL, response);
         }));
     }
-    if (searchDFU) {
-        searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(function (response) {
-            loadGetDFUWorkunitResponse(nlsHPCC.WUID, response);
+    if (searchParams.searchDFU) {
+        searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" } }).then(response => {
+            loadGetDFUWorkunitResponse(nlsHPCC.ECL, response);
         }));
-        searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(function (response) {
+        searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(response => {
             loadGetDFUWorkunitsResponse(nlsHPCC.JobName, response);
         }));
-        searchArray.push(FileSpray.GetDFUWorkunits({ request: { Owner: searchText } }).then(function (response) {
+        searchArray.push(FileSpray.GetDFUWorkunits({ request: { Owner: searchText } }).then(response => {
             loadGetDFUWorkunitsResponse(nlsHPCC.Owner, response);
         }));
     }
-    if (searchFile) {
-        searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchText + "*" } }).then(function (response) {
+    if (searchParams.searchFile) {
+        searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchParams.text + "*" } }).then(response => {
             loadDFUQueryResponse(nlsHPCC.LogicalName, response);
         }));
-        searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchText } }).then(function (response) {
+        searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchParams.text } }).then(response => {
             loadDFUQueryResponse(nlsHPCC.Owner, response);
         }));
     }
-    if (searchQuery) {
-        searchArray.push(WsWorkunits.WUListQueries({ request: { QueryID: "*" + searchText + "*" } }).then(function (response) {
+    if (searchParams.searchQuery) {
+        searchArray.push(WsWorkunits.WUListQueries({ request: { QueryID: "*" + searchParams.text + "*" } }).then(response => {
             loadWUListQueriesResponse(nlsHPCC.ID, response);
         }));
-        searchArray.push(WsWorkunits.WUListQueries({ request: { QueryName: "*" + searchText + "*" } }).then(function (response) {
+        searchArray.push(WsWorkunits.WUListQueries({ request: { QueryName: "*" + searchParams.text + "*" } }).then(response => {
             loadWUListQueriesResponse(nlsHPCC.Name, response);
         }));
     }
@@ -364,5 +399,5 @@ export function searchAll(searchText: string,
         done(false);
     });
 
-    return retVal;
+    return searchParams.searchType;
 }
