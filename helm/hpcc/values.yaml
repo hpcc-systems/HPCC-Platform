@@ -652,6 +652,7 @@ roxie:
   topoServer:
     replicas: 1
   #directAccessPlanes: []  #add direct access planes that roxie will read from without copying the data to its default data plane
+  #ldapUser: roxie_file_access    #add system username for accessing files
 
 ## The [manager/worker/eclAgent]Resources define the resource limits for each pod.
 ## workerMemory defines the memory requirements for each individual worker.

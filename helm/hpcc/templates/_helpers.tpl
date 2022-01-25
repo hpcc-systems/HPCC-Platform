@@ -808,6 +808,7 @@ Generate instance queue names
   prefix: {{ .prefix }}
   {{- end }}
   queriesOnly: true
+  ldapUser: {{ .ldapUser }}
   dataPlane: {{ .dataPlane | default (include "hpcc.getDefaultDataPlane" $) }}
   {{- if hasKey . "directAccessPlanes" }}
   directAccessPlanes: {{ .directAccessPlanes }}

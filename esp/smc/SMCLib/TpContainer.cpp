@@ -493,14 +493,16 @@ class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
     StringAttr serverQueue;
     StringAttr agentQueue;
     StringAttr thorQueue;
+    StringAttr ldapUser;
     ClusterType platform;
     unsigned clusterWidth;
     StringArray thorProcesses;
     bool queriesOnly = false;
 
 public:
-    CContainerWUClusterInfo(const char* _name, const char* type, unsigned _clusterWidth, bool _queriesOnly)
-        : name(_name), clusterWidth(_clusterWidth), queriesOnly(_queriesOnly)
+    CContainerWUClusterInfo(const char* _name, const char* type, const char* _ldapUser,
+        unsigned _clusterWidth, bool _queriesOnly)
+        : name(_name), ldapUser(_ldapUser), clusterWidth(_clusterWidth), queriesOnly(_queriesOnly)
     {
         StringBuffer queue;
         if (strieq(type, "thor"))
@@ -598,11 +600,11 @@ public:
     }
     virtual const char *getLdapUser() const override
     {
-        UNIMPLEMENTED;
+        return ldapUser.get();
     }
     virtual const char *getLdapPassword() const override
     {
-        UNIMPLEMENTED;
+        return nullptr;
     }
     virtual unsigned getRoxieRedundancy() const override
     {
@@ -629,7 +631,8 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
     {
         IPropertyTree& queue = queues->query();
         Owned<IConstWUClusterInfo> cluster = new CContainerWUClusterInfo(queue.queryProp("@name"),
-            queue.queryProp("@type"), (unsigned) queue.getPropInt("@width", 1), queue.getPropBool("@queriesOnly"));
+            queue.queryProp("@type"), queue.queryProp("@ldapUser"), (unsigned) queue.getPropInt("@width", 1),
+            queue.getPropBool("@queriesOnly"));
         clusters.append(*cluster.getClear());
     }
 
@@ -654,7 +657,8 @@ extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clu
         return nullptr;
 
     return new CContainerWUClusterInfo(queue->queryProp("@name"), queue->queryProp("@type"),
-        (unsigned) queue->getPropInt("@width", 1), queue->getPropBool("@queriesOnly"));
+        queue->queryProp("@ldapUser"), (unsigned) queue->getPropInt("@width", 1),
+        queue->getPropBool("@queriesOnly"));
 }
 
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
