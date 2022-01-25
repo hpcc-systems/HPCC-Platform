@@ -1,0 +1,9 @@
+protocol_plugins:
+  http_protocol: esphttp
+  secure_http_protocol: esphttp
+
+service_plugins:
+  ldapenvironment: ldapenvironment
+
+binding_plugins:
+  ldapenvironment: ldapenvironment

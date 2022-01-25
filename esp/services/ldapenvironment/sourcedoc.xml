@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,13 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (common)
-HPCC_ADD_SUBDIRECTORY (eclwatch)
-HPCC_ADD_SUBDIRECTORY (eclservices)
-HPCC_ADD_SUBDIRECTORY (eclqueries)
-HPCC_ADD_SUBDIRECTORY (esdl)
-HPCC_ADD_SUBDIRECTORY (esdl-sandbox)
-HPCC_ADD_SUBDIRECTORY (loggingservice)
-HPCC_ADD_SUBDIRECTORY (sql2ecl)
-HPCC_ADD_SUBDIRECTORY (dfs)
-HPCC_ADD_SUBDIRECTORY (ldapenvironment)
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>esp/services/ldapenvironment</title>
+
+    <para>
+      The esp/services/ldapenvironment directory contains the sources for the esp/services/ldapenvironment library.
+    </para>
+</section>

@@ -3334,6 +3334,43 @@ void jlib_decl atomicWriteFile(const char *fileName, const char *output)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+const char * generatePassword(StringBuffer &pwd, int pwdLen)
+{
+    if (pwdLen < 8)
+        throw makeStringException(0, "Generated Passwords must be at least 8 characters in length");
+
+    #define NUM_GROUPS 4    //4 character groups follow
+    const char alphaUC[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const char alphaLC[] = "abcdefghijklmnopqrstuvwxyz";
+    const char numeric[] = "0123456789";
+    const char symbol[] = "~`!@#$%^&*()_-+={[}]|:;<,>.?/";
+
+    //Ensures each character group used at least once
+    srand(time(0));
+    pwd.append(alphaUC[rand() % sizeof(alphaUC)]);
+    pwd.append(alphaLC[rand() % sizeof(alphaLC)]);
+    pwd.append(numeric[rand() % sizeof(numeric)]);
+    pwd.append(symbol[rand() % sizeof(symbol)]);
+
+    for (int i = 4; i < pwdLen; i++)
+    {
+        switch(rand() % NUM_GROUPS)//select a random character group
+        {
+        case 0:
+            pwd.append(alphaUC[rand() % sizeof(alphaUC)]);  break;
+        case 1:
+            pwd.append(alphaLC[rand() % sizeof(alphaLC)]);  break;
+        case 2:
+            pwd.append(numeric[rand() % sizeof(numeric)]);  break;
+        case 3:
+            pwd.append(symbol[rand() % sizeof(symbol)]);  break;
+        }
+    }
+    return pwd.str();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 bool checkCreateDaemon(unsigned argc, const char * * argv)
 {
 #ifndef _CONTAINERIZED

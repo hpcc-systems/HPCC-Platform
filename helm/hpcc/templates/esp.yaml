@@ -73,7 +73,7 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $application := .application | default "eclwatch" -}}
-{{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify" "authn")  (list "storage" "esp") (eq $application "eclwatch") -}}
+{{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify" "authn")  (list "storage" "esp") (or (eq $application "eclwatch") (eq $application "ldapenvironment")) -}}
 {{- $includeStorageCategories := ternary (list "lz" "data" "dll" "debug") (list "data" "dll" "debug") (eq $application "eclwatch") -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeCategories" $includeStorageCategories "env" $env -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp.queues")) -}}

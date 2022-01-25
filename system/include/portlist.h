@@ -136,4 +136,7 @@
 #define WS_SQL_DEFAULT_PORT             8510
 //Secure
 #define WS_SQL_SECURE_PORT              18510
+
+#define LDAPENVIRONMENT_PORT            8511
+
 #endif
