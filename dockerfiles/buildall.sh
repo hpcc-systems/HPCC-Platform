@@ -83,7 +83,7 @@ build_ml_images() {
   done
 }
 
-if [[ -n "$BUILD_LN" ]]; then
+if [[ -n "$INPUT_BUILD_LN" ]]; then
   PUSH=0
   GITHUB_TOKEN=${INPUT_LNB_TOKEN}
   lnBuildTag=${BUILD_TAG/community_/internal_}
