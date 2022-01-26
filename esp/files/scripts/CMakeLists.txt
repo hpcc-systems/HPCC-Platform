@@ -46,7 +46,6 @@ set ( SCRIPTS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/LogsWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/multiselect.js
     ${CMAKE_CURRENT_SOURCE_DIR}/objtree.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/prototype.js
     ${CMAKE_CURRENT_SOURCE_DIR}/prototype_helpers.js
     ${CMAKE_CURRENT_SOURCE_DIR}/range.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ResultsWidget.js

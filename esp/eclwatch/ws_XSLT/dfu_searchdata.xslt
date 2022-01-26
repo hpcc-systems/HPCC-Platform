@@ -71,7 +71,6 @@
                 <title>EclWatch</title>
         <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
         <xsl:text disable-output-escaping="yes"><![CDATA[
-        <script type="text/javascript" src="/esp/files/scripts/prototype.js"></script>
         <script type="text/javascript" src="/esp/files/scripts/scriptaculous.js"></script>
         <script type="text/javascript" src="/esp/files/scripts/dragdrop.js"></script>
         ]]></xsl:text>
