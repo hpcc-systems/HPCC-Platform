@@ -28,6 +28,12 @@ inputs:
   build_ml:
     description: 'What to build ml - all, or combination of ml,gnn,gnn-gpu separated by comma'
     required: false
+  lnb_token:
+    description: 'Token to build LN images'
+    required: false
+  build_ln:
+    description: 'Build the ln images'
+    required: false
 outputs:
   tag:
     description: 'Is the tag, which was pushed'
