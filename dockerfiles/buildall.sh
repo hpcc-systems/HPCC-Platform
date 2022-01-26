@@ -83,7 +83,13 @@ build_ml_images() {
   done
 }
 
-if [[ -z "$BUILD_ML" ]]; then
+if [[ -z "$BUILD_LN" ]]; then
+  PUSH=0
+  GITHUB_TOKEN=${INPUT_LNB_TOKEN}
+  lnBuildTag=${BUILD_TAG/community_/internal_}
+  build_image platform-build-ln ${BUILD_LABEL} ${lnBuildTag}
+  build_image platform-core-ln ${BUILD_LABEL} ${lnBuildTag} --build-arg BUILD_TAG_OVERRIDE=${HPCC_LONG_TAG}
+elif [[ -z "$BUILD_ML" ]]; then
   build_image platform-build-base ${BASE_VER}
   build_image platform-build
   build_image platform-core
