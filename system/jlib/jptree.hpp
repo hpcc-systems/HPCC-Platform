@@ -414,4 +414,17 @@ jlib_decl StringBuffer &decodePtreeName(StringBuffer &s, const char *name);
 jlib_decl const char *findFirstInvalidPTreeNameChar(const char *ch, unsigned len);
 jlib_decl const char *findFirstInvalidPTreeNameChar(const char *ch);
 
+interface IPropertyNodeVisitor : extends IInterface
+{
+    enum VisitorAction 
+    {
+        Split,      // split the tree into multiple trees
+        NoSplit,    // don't split the tree
+        Skip,       // skip this node
+        NeverSplit  // don't split the tree or any of its children
+    };
+
+    virtual VisitorAction visit(const std::vector<const IPropertyTree*> &stack, StringBuffer &filename) const = 0;
+};
+
 #endif
