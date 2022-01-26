@@ -32,6 +32,7 @@
 #include "jqueue.hpp"
 #include "jregexp.hpp"
 #include "jutil.hpp"
+#include "jptree.hpp"
 
 #include "unittests.hpp"
 
@@ -1400,6 +1401,7 @@ class JlibIPTTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testMergeConfig);
         CPPUNIT_TEST(testRemoveReuse);
         CPPUNIT_TEST(testSpecialTags);
+        CPPUNIT_TEST(testSaveMarkup);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -2284,6 +2286,49 @@ Nothing_toEncodeHere:
             throw;
         }
     }
+
+    void testSaveMarkup() 
+    {
+        const char * test = R"!!(
+<root>
+ x
+ <a myattr='1'>1</a>
+  <b>
+   <e>2</e>
+   <f>3</f>
+  </b>
+ <c>3</c>
+</root>
+)!!";
+        auto tree = createPTreeFromXMLString(test);
+        StringBuffer before;
+        toXML(tree, before);
+        saveXML("test.xml", tree, 0, XML_Format);
+        Owned<IPropertyTree> reread = createPTreeFromXMLFile("test.xml");
+        StringBuffer after;
+        toXML(reread, after);
+        CPPUNIT_ASSERT(streq(before.str(), after.str()));
+
+        class MyVisitor : implements IPropertyNodeVisitor
+        {
+            mutable std::atomic<unsigned> idx = { 0 };
+        public:
+            virtual VisitorAction visit(const char *element, const std::vector<const IPropertyTree*> &stack, StringBuffer &filename) const override
+            {
+                if (streq(element, "c"))
+                    return IPropertyNodeVisitor::NoSplit;
+                // MORE - parallel write may mean this needs to be threadsafe?
+                filename.clear().append("test2.xml.").append(element).append(idx++);
+                return IPropertyNodeVisitor::Split;
+            }
+        } visitor;
+        saveMultipleXML("test2.xml", tree, &visitor, 0, XML_Format);
+        reread.setown(createPTreeFromXMLFile("test2.xml"));
+        StringBuffer after2;
+        toXML(reread, after2);
+        //printf("\n%s\n", after2.str());
+        CPPUNIT_ASSERT(streq(before.str(), after2.str()));
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
@@ -2975,6 +3020,8 @@ class BlockedTimingTests : public CppUnit::TestFixture
             printf("%" I64F "u %" I64F "u\n", blockTime-expected, postBlockTime-blockTime);
     }
 };
+
+
 
 CPPUNIT_TEST_SUITE_REGISTRATION( BlockedTimingTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( BlockedTimingTests, "BlockedTimingTests" );

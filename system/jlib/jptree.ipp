@@ -29,6 +29,8 @@
 #include "jptree.hpp"
 #include "jbuff.hpp"
 #include "jlog.hpp"
+#include "jtask.hpp"
+#include <string>
 
 #define ANE_APPEND -1
 #define ANE_SET -2
@@ -962,6 +964,16 @@ protected:
     };
 protected:
     IPropertyTree *currentNode;
+
+    void pop()
+    {
+        unsigned c = ptreeStack.ordinality();
+        if (c==1 && !noRoot && currentNode != root) 
+            ::Release(currentNode);
+        ptreeStack.pop();
+        currentNode = (c>1) ? &ptreeStack.tos() : NULL;
+    }
+
 public:
     CPTreeMaker(byte flags=ipt_none, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot=false) : noRoot(_noRoot)
     {
@@ -1028,11 +1040,7 @@ public:
             currentNode->setPropBin(NULL, length, value);
         else
             currentNode->setProp(NULL, (const char *)value);
-        unsigned c = ptreeStack.ordinality();
-        if (c==1 && !noRoot && currentNode != root) 
-            ::Release(currentNode);
-        ptreeStack.pop();
-        currentNode = (c>1) ? &ptreeStack.tos() : NULL;
+        pop();
     }
     virtual IPropertyTree *queryRoot() override { return root; }
     virtual IPropertyTree *queryCurrentNode() override { return currentNode; }
@@ -1125,6 +1133,69 @@ public:
             name = encoded.str();
         }
         setPTreeAttribute(currentNode, name, value, !encoded.isEmpty());
+    }
+};
+
+class CPTreeMultipleFileMaker : public CPTreeMaker
+{
+    bool indirect = false;
+    bool isChild = false;
+    Owned<CCompletionTask> completeTask;
+public:
+    CPTreeMultipleFileMaker(byte flags=ipt_none, IPTreeNodeCreator *_nodeCreator=NULL, IPropertyTree *_root=NULL, bool _noRoot = false, CCompletionTask *parentTask=nullptr) 
+    : CPTreeMaker(flags, _nodeCreator, _root, _noRoot)
+    {
+        if (parentTask)
+        {
+            completeTask.set(parentTask);
+            isChild = true;
+        }
+    }
+    ~CPTreeMultipleFileMaker()
+    {
+        if (completeTask && !isChild)
+            completeTask->decAndWait();
+    }
+
+// IPTreeMaker
+    virtual void beginNode(const char *tag, bool arrayitem, offset_t startOffset) override
+    {
+        indirect = false;
+        CPTreeMaker::beginNode(tag, arrayitem, startOffset);
+        
+    }
+    virtual void newAttribute(const char *name, const char *value) override
+    {
+        if (streq(name, "@__filename__"))
+        {
+            if (!completeTask)
+                completeTask.setown(new CCompletionTask(1, queryTaskScheduler()));
+            std::string filename(value);  // Ensure string value is captured not just pointer
+            // This would be easier in c++14..
+            auto _nodeCreator = this->nodeCreator;
+            auto _currentNode = this->currentNode;
+            auto _completeTask = this->completeTask; 
+            completeTask->spawn([filename, _nodeCreator, _currentNode, _completeTask]()
+            {
+                Owned<IPTreeMaker> maker = new CPTreeMultipleFileMaker(ipt_none, _nodeCreator, _currentNode, false, _completeTask);
+                Owned <IPropertyTree> child = createPTreeFromXMLFile(filename.c_str(), 0, ptr_ignoreWhiteSpace, maker);  // Note - child is not used, currentNode gets updated in situe
+            });
+            indirect = true;
+        }
+        else
+            CPTreeMaker::newAttribute(name, value);
+    }
+
+    virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset) override
+    {
+        if (!indirect)
+        {
+            if (binary)
+                currentNode->setPropBin(NULL, length, value);
+            else
+                currentNode->setProp(NULL, (const char *)value);
+        }
+        pop();
     }
 };
 
