@@ -55,9 +55,9 @@ ESPservice [
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfs
 {
-    ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.01")] GetLease(LeaseRequest, LeaseResponse);
-    ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.01")] KeepAlive(KeepAliveRequest, KeepAliveResponse);
-    ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.01")] DFSFileLookup(DFSFileLookupRequest, DFSFileLookupResponse);
+    ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] GetLease(LeaseRequest, LeaseResponse);
+    ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] KeepAlive(KeepAliveRequest, KeepAliveResponse);
+    ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] DFSFileLookup(DFSFileLookupRequest, DFSFileLookupResponse);
 };
 
 SCMexportdef(WSDFS);
