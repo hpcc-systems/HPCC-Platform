@@ -710,6 +710,23 @@ public:
     }
 };
 
+class CParallelTaskQuickSortAlgorithm : public CInplaceSortAlgorithm
+{
+public:
+    CParallelTaskQuickSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
+
+    virtual void prepare(IEngineRowStream *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+        {
+            cycle_t startCycles = get_cycles_now();
+            taskqsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+            elapsedCycles += (get_cycles_now() - startCycles);
+        }
+    }
+};
+
 class CTbbQuickSortAlgorithm : public CInplaceSortAlgorithm
 {
 public:
@@ -769,6 +786,17 @@ public:
     virtual void sortRows(void * * rows, size_t numRows, void * * temp)
     {
         parqsortvecstableinplace(rows, numRows, *compare, temp);
+    }
+};
+
+class CParallelTaskStableQuickSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CParallelTaskStableQuickSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        taskqsortvecstableinplace(rows, numRows, *compare, temp);
     }
 };
 
@@ -1227,6 +1255,11 @@ extern ISortAlgorithm *createParallelQuickSortAlgorithm(ICompare *_compare)
     return new CParallelQuickSortAlgorithm(_compare);
 }
 
+extern ISortAlgorithm *createParallelTaskQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelTaskQuickSortAlgorithm(_compare);
+}
+
 extern ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare)
 {
     return new CStableQuickSortAlgorithm(_compare);
@@ -1235,6 +1268,11 @@ extern ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare)
 extern ISortAlgorithm *createParallelStableQuickSortAlgorithm(ICompare *_compare)
 {
     return new CParallelStableQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createParallelTaskStableQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelTaskStableQuickSortAlgorithm(_compare);
 }
 
 extern ISortAlgorithm *createTbbQuickSortAlgorithm(ICompare *_compare)
@@ -1281,6 +1319,10 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
         return createParallelQuickSortAlgorithm(_compare);
     case parallelStableQuickSortAlgorithm:
         return createParallelStableQuickSortAlgorithm(_compare);
+    case parallelTaskQuickSortAlgorithm:
+        return createParallelTaskQuickSortAlgorithm(_compare);
+    case parallelTaskStableQuickSortAlgorithm:
+        return createParallelTaskStableQuickSortAlgorithm(_compare);
     case spillingQuickSortAlgorithm:
     case stableSpillingQuickSortAlgorithm:
         return createSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _algorithm==stableSpillingQuickSortAlgorithm);

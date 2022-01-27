@@ -8,8 +8,7 @@
 
 import ^ as root;
 algo := #IFDEFINED(root.algo, 'quicksort');
-
-numRows := 100000;
+numRows := #IFDEFINED(root.numRows, 100000);
 
 ds := DATASET(numRows, TRANSFORM({unsigned id}, SELF.id := HASH32(COUNTER)));
 s1 := sort(ds, id, local, stable(algo));

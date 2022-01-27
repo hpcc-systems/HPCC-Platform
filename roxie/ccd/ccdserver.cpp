@@ -8318,6 +8318,15 @@ public:
             default: throwUnexpected();
             }
         }
+        else if (stricmp(algorithmName, "taskquicksort")==0)
+        {
+            switch (sortFlags & TAFstable)
+            {
+            case 0: sortAlgorithm = parallelTaskQuickSortAlgorithm; break;
+            case TAFstable: sortAlgorithm = parallelTaskStableQuickSortAlgorithm; break;
+            default: throwUnexpected();
+            }
+        }
         else if (stricmp(algorithmName, "heapsort")==0)
             sortAlgorithm = heapSortAlgorithm; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection. Also explicit selection of heapsort overrides request to spill
         else if (stricmp(algorithmName, "mergesort")==0)

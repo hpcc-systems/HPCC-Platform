@@ -81,6 +81,9 @@ extern jlib_decl void parqsortvec(void **a, size32_t n, const ICompare & compare
 extern jlib_decl void parqsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp, unsigned ncpus=0); // runs in parallel on multi-core
 
 
+extern jlib_decl void taskqsortvec(void **a, size32_t n, const ICompare & compare); // runs in parallel on multi-core
+extern jlib_decl void taskqsortvecstableinplace(void ** rows, size32_t n, const ICompare & compare, void ** temp);
+
 // we define the heap property that no element c should be smaller than its parent (unsigned)(c-1)/2
 // heap stores indexes into the data in rows, so compare->docompare is called with arguments rows[heap[i]]
 // these functions are stable

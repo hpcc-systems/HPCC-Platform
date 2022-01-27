@@ -4056,6 +4056,13 @@ void CHThorGroupSortActivity::createSorter()
         else
             sorter.setown(new CParallelQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     }
+    else if(stricmp(algoname, "taskquicksort") == 0)
+    {
+        if((flags & TAFstable) != 0)
+            sorter.setown(new CParallelTaskStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep, this));
+        else
+            sorter.setown(new CParallelTaskQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
+    }
     else if(stricmp(algoname, "mergesort") == 0)
     {
         if((flags & TAFparallel) != 0)
@@ -4224,6 +4231,17 @@ void CParallelQuickSorter::performSort()
     }
 }
 
+void CParallelTaskQuickSorter::performSort()
+{
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        taskqsortvec((void * *)rows, numRows, *compare);
+        finger = 0;
+    }
+}
+
 // StableQuick sort
 
 bool CStableSorter::addRow(const void * next)
@@ -4285,6 +4303,17 @@ void CParallelStableQuickSorter::performSort()
     {
         const void * * rows = rowsToSort.getBlock(numRows);
         parqsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
+        finger = 0;
+    }
+}
+
+void CParallelTaskStableQuickSorter::performSort()
+{
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        taskqsortvecstableinplace((void * *)rows, numRows, *compare, (void * *)index);
         finger = 0;
     }
 }
