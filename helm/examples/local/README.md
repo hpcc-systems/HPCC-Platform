@@ -2,9 +2,9 @@
 
 ## Directory contents
 
-### localfile/
+### hpcc-localfile/
 
-The hpcc systems localfile helm chart will provision a new Persistent Volume and a Persistent Volume Claim for each of the required HPCC storage types.
+The hpcc systems hpcc-localfile helm chart will provision a new Persistent Volume and a Persistent Volume Claim for each of the required HPCC storage types.
 Once installed the generated PVC names should be used when installing the HPCC helm chart.
 The values-localfile.yaml is an example of the HPCC storage settings that should be applied, after the "localfile" helm chart is installed.
 Note: The output of installing this chart, will contain a generated example with the correct PVC names.
@@ -20,11 +20,13 @@ Examples of use:
     helm install localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
+Note for the above example 'localfile' is the arbitrary instance name, it could be named anything, but "localfile" will match the delivered examples values-localfile.yaml file.
+
 #### Docker desktop (using osx):
 
   With a host directory of /Users/myuser/hpccdata
 
-    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myuser/hpccdata
+    helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myuser/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 #### Docker desktop (using hyper-v):
