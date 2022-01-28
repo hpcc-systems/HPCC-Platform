@@ -333,4 +333,13 @@ extern jlib_decl char *mkdtemp(char *_template);
 #endif
 
 extern jlib_decl char **getSystemEnv();
+
+
+extern jlib_decl void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output);
+
+// return the k8s external host and port for serviceName
+extern jlib_decl std::pair<std::string, unsigned> getExternalService(const char *serviceName);
+
+extern jlib_decl std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application);
+
 #endif

@@ -1770,9 +1770,6 @@ extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, 
 extern WORKUNIT_API bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *suffix, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional);
 extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
 
-// return the k8s external host and port for serviceName
-extern WORKUNIT_API std::pair<std::string, unsigned> getExternalService(const char *serviceName);
-
 // returns a vector of {pod-name, node-name} vectors,
 extern WORKUNIT_API std::vector<std::vector<std::string>> getPodNodes(const char *selector);
 #endif

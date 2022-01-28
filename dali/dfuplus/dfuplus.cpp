@@ -78,7 +78,7 @@ public:
     int run()
     {
         try {
-            server->run(securitySettings.queryDAFSConnectCfg(), listenep);
+            server->run(nullptr, securitySettings.queryDAFSConnectCfg(), listenep);
         }
         catch (IException *e) {
             EXCLOG(e,"dfuplus(dafilesrv)");

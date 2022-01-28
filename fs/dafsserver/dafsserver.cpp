@@ -3424,7 +3424,8 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     Owned<ISocket>      acceptsock;
     Owned<ISocket>      securesock;
     Owned<ISocket>      rowServiceSock;
-
+    Linked<IPropertyTree> componentConfig;
+    bool directIO = true;
     bool rowServiceOnStdPort = true; // should row service commands be processed on std. service port
     bool rowServiceSSL = false;
 
@@ -4786,7 +4787,7 @@ public:
             }
 
 #ifdef _CONTAINERIZED
-            bool authorizedOnly = true;
+            bool authorizedOnly = !directIO; // unless in directIO application mode, only allow signed requests
 #else
             /* NB: In bare-metal, unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
              * In a locked down secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
@@ -5017,9 +5018,23 @@ public:
         unsigned posOfErr = reply.length();
         try
         {
-            switch(cmd)
+            /* isRowServiceClient only set for bare-metal clients
+             * Check they aren't sending a non-rowservice command to the row service
+             */
+            switch (cmd)
             {
-#ifndef _CONTAINERIZED // only bare-metal for now
+                case RFCStreamGeneral:
+                case RFCStreamRead:
+                case RFCStreamReadJSON:
+                    break;
+                default:
+                    if (!directIO || client->isRowServiceClient())
+                        throw createDafsException(DAFSERR_cmdstream_unauthorized, "Unauthorized command");
+                    break;
+            }
+
+            switch (cmd)
+            {
                 MAPCOMMANDSTATS(RFCread, cmdRead, *stats);
                 MAPCOMMANDSTATS(RFCwrite, cmdWrite, *stats);
                 MAPCOMMANDCLIENTSTATS(RFCappend, cmdAppend, *client, *stats);
@@ -5062,7 +5077,6 @@ public:
                     cmdStreamReadTestSocket(msg, reply, *client, *stats);
                     break;
                 }
-#endif
                 // row service commands
                 case RFCStreamGeneral:
                 {
@@ -5109,7 +5123,7 @@ public:
             handleTracer.traceIfReady();
     }
 
-    virtual void run(DAFSConnectCfg _connectMethod, const SocketEndpoint &listenep, unsigned sslPort, const SocketEndpoint *rowServiceEp, bool _rowServiceSSL, bool _rowServiceOnStdPort) override
+    virtual void run(IPropertyTree *componentConfig, DAFSConnectCfg _connectMethod, const SocketEndpoint &listenep, unsigned sslPort, const SocketEndpoint *rowServiceEp, bool _rowServiceSSL, bool _rowServiceOnStdPort) override
     {
         SocketEndpoint sslep(listenep);
 #ifndef _CONTAINERIZED
@@ -5196,14 +5210,19 @@ public:
 #endif
         }
 
-        run(_connectMethod, acceptSock.getClear(), secureSock.getClear(), rowServiceSock.getClear());
+        run(componentConfig, _connectMethod, acceptSock.getClear(), secureSock.getClear(), rowServiceSock.getClear());
     }
 
-    virtual void run(DAFSConnectCfg _connectMethod, ISocket *_acceptSock, ISocket *_secureSock, ISocket *_rowServiceSock) override
+    virtual void run(IPropertyTree *_componentConfig, DAFSConnectCfg _connectMethod, ISocket *_acceptSock, ISocket *_secureSock, ISocket *_rowServiceSock) override
     {
         acceptsock.setown(_acceptSock);
         securesock.setown(_secureSock);
         rowServiceSock.setown(_rowServiceSock);
+        componentConfig.set(_componentConfig);
+#ifdef _CONTAINERIZED
+        if (componentConfig) // will be null in some scenarios (test cases)
+            directIO = strsame(componentConfig->queryProp("@application"), "directio");
+#endif
         if (_connectMethod != SSLOnly)
         {
             if (!acceptsock)
@@ -5727,7 +5746,7 @@ protected:
             virtual void threadmain() override
             {
                 DAFSConnectCfg sslCfg = SSLNone;
-                server->run(sslCfg, socket, nullptr, nullptr);
+                server->run(nullptr, sslCfg, socket, nullptr, nullptr);
             }
         };
         Owned<IRemoteFileServer> server = createRemoteFileServer();

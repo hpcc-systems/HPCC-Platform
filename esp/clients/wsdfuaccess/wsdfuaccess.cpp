@@ -666,7 +666,7 @@ protected:
             virtual void threadmain() override
             {
                 DAFSConnectCfg sslCfg = SSLNone;
-                server->run(sslCfg, socket, nullptr, nullptr);
+                server->run(nullptr, sslCfg, socket, nullptr, nullptr);
             }
         };
         Owned<IRemoteFileServer> server = createRemoteFileServer();

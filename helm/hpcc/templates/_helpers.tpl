@@ -573,7 +573,10 @@ Add config arg for a component
 Add dali arg for a component
 */}}
 {{- define "hpcc.daliArg" -}}
-"--daliServers={{ (index .Values.dali 0).name }}"
+{{- $dali := (index .Values.dali 0) -}}
+{{- $daliService := $dali.service | default dict -}}
+{{- $daliServicePort := $daliService.servicePort | default 7070 -}}
+"--daliServers={{ (index .Values.dali 0).name }}:{{ $daliServicePort }}"
 {{- end -}}
 
 {{/*
@@ -881,8 +884,8 @@ Generate list of available services
 {{- range $.Values.dafilesrv -}}
  {{- if not .disabled -}}
 - name: {{ .name }}
-  type: dafilesrv
-  port: {{ .servicePort | default 7600 }}
+  type: {{ .application | default "stream" }}
+  port: {{ .service.servicePort | default 7600 }}
   public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}
  {{- end -}}
 {{- end -}}
