@@ -244,6 +244,18 @@ certificates:
       ## for information on what spec should contain.
       spec:
         selfSigned: {}
+    remote:
+      name: hpcc-remote-issuer
+      ## set enabled to true if adding remoteClients for any components
+      enabled: false
+      ## kind can be changed to ClusterIssue to refer to a ClusterIssuer. https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.ClusterIssuer
+      kind: Issuer
+      ## do not define spec (set spec: null), to reference an Issuer resource that already exists in the cluster
+      ## change spec if you'd like to change how certificates get issued... see ## https://cert-manager.io/docs/configuration/#supported-issuer-types
+      ## for information on what spec should contain.
+      spec:
+        ca:
+          secretName: hpcc-remote-issuer-key-pair
     signing: # intended to be used for signing/verification purposes only, e.g. by dafilesrv
       name: hpcc-signing-issuer
       ## kind can be changed to ClusterIssue to refer to a ClusterIssuer. https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.ClusterIssuer
@@ -483,6 +495,8 @@ esp:
   application: eclwatch
   auth: none
   replicas: 1
+# remoteClients:
+# - name: client333
   service:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
     port: 8888
@@ -550,6 +564,8 @@ esp:
   application: sql2ecl
   auth: none
   replicas: 1
+# remoteClients:
+# - name: sqlclient111
   service:
     visibility: local
     servicePort: 8510

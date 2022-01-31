@@ -820,6 +820,10 @@ Generate instance queue names
 {{ end -}}
 {{- end -}}
 
+{{- define "hpcc.usesRemoteClientCertificates" -}}
+  {{- if (hasKey . "remoteClients") -}}{{- if (.remoteClients) -}} true {{- end -}}{{- end -}}
+{{- end -}}
+
 {{/*
 Generate service entries for TLS
 */}}
@@ -832,7 +836,8 @@ Generate service entries for TLS
     {{- if and ($externalService) (hasKey .component "certificate") }}
   tls: true
     {{- else }}
-      {{- $issuerName := ternary "public" "local" $externalService }}
+      {{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+      {{- $issuerName := ternary $externalIssuerName "local" $externalService }}
       {{- $certificates := (.root.Values.certificates | default dict) -}}
       {{- if not $certificates.enabled }}
   tls: false
@@ -877,7 +882,7 @@ Generate list of available services
   class: esp
   type: {{ $esp.application }}
   port: {{ $esp.service.servicePort }}
-  {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $esp "component" $esp "visibility" $esp.service.visibility) }}
+  {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $esp "component" $esp "visibility" $esp.service.visibility "remoteClients" $esp.remoteClients) }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
 {{- $sashaServices := $dali.services | default dict -}}
@@ -1335,7 +1340,8 @@ use "public" or "local"
 {{- define "hpcc.addCertificate" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
+{{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+{{- $issuerName := .issuer | default (ternary $externalIssuerName "local" $externalCert) -}}
 {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
 {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
 {{- if $issuer -}}
@@ -1402,6 +1408,109 @@ spec:
 {{- end }}
 
 {{/*
+Builds the commonName for a client certificate.  Used in creation of both certificate and access control list.
+*/}}
+{{- define "hpcc.getClientCommonName" -}}
+  {{- if (.root.Values.certificates | default dict).enabled -}}
+    {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+    {{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
+    {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
+      {{- $_ := fail (printf "Issuer '%s' for client certificates not enabled." $issuerName) -}}
+    {{- else -}}
+      {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
+      {{- if not $issuer -}}
+        {{- $_ := fail (printf "Issuer '%s' for client certificates not found." $issuerName) -}}
+      {{- else -}}
+        {{- $namespace := .root.Release.Namespace -}}
+        {{- $service := (.service | default dict) -}}
+        {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
+        {{- .client }}@{{ .instance }}.{{ .component }}.{{ $domain }}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- define "hpcc.getTrustedPeerString" -}}
+  {{- if not .remoteClients -}}
+    anyone
+  {{- else -}}
+    {{/* Turn remoteClients array into one single array element which is a | delimited string */}}
+    {{- $instance := .instance -}}
+    {{- $component := .component -}}
+    {{- $visibility := .visibility -}}
+    {{- $root := .root }}
+    {{- range $remoteClient := .remoteClients -}}
+      {{- include "hpcc.getClientCommonName" (dict "root" $root "client" $remoteClient.name "instance" $instance "component" $component "visibility" $visibility) -}}|
+    {{- end -}}
+  {{- end -}}
+{{- end }}
+
+{{/*
+Use cert-manager to create a public certificate and private key for use as
+remote client certificates.
+Adding the following to ESP (Roxie support to be added later)
+  remoteClients:
+  - name: myRemoteClient
+Will generate certificates that can be deployed to the remote client.
+Will cause ESP require client certificates when a socket connects.
+Will create a TLS based access contol list which ESP will check to make sure a connections client certificate is enabled.
+*/}}
+{{- define "hpcc.addClientCertificate" }}
+{{- if (.root.Values.certificates | default dict).enabled -}}
+{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+{{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
+{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
+{{- if not $issuer -}}
+  {{- $_ := fail (printf "Issuer %s for client certificates not found." $issuerName) -}}
+{{- else -}}
+{{- if not $issuer.enabled -}}
+  {{- $_ := fail (printf "Issuer %s for client certificates not enabled." $issuerName) -}}
+{{- end }}
+{{- $namespace := .root.Release.Namespace -}}
+{{- $service := (.service | default dict) -}}
+{{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
+{{- $instance := .instance -}}
+{{- $component := .component -}}
+{{- $client := .client -}}
+{{- if not $externalCert -}}
+ {{- $_ := fail (printf "Remote certificate defined for non external facing service %s - %s." $component $instance) -}}
+{{- end }}
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: client-{{ $issuerName }}-{{ $component }}-{{ $instance }}-{{ $client }}-cert
+  namespace: {{ $namespace }}
+spec:
+  # Secret names are always required.
+  secretName: client-{{ $issuerName }}-{{ $component }}-{{ $instance }}-{{ $client }}-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+    - HPCC Systems
+  commonName: {{ include "hpcc.getClientCommonName" . }}
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - client auth
+  uris:
+  - spiffe://hpcc-client.{{ $client }}/{{ $domain }}/{{ $component }}/{{ $instance }}
+  issuerRef:
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+    group: cert-manager.io
+---
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
 Experimental: Use certmanager to generate a key for roxie udp encryption.
 A public certificate and private key are generated under /opt/HPCCSystems/secrets/certificates/udp.
 Current udp encryption design would only use the private key.
@@ -1459,7 +1568,8 @@ use "public" or "local"
 */}}
 {{- define "hpcc.addCertificateVolumeMount" -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
+{{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+{{- $issuerName := .issuer | default (ternary $externalIssuerName "local" $externalCert) -}}
 {{- /*
     A .certificate parameter means the user explicitly configured a certificate to use
     otherwise check if certificate generation is enabled
@@ -1482,7 +1592,8 @@ use "public" or "local"
 */}}
 {{- define "hpcc.addCertificateVolume" -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
+{{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+{{- $issuerName := .issuer | default (ternary $externalIssuerName "local" $externalCert) -}}
 {{- /*
     A .certificate parameter means the user explicitly configured a certificate to use
     otherwise check if certificate generation is enabled
