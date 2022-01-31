@@ -280,9 +280,6 @@
             <xsl:attribute name="modulesBasedn">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@modulesBasedn"/>
             </xsl:attribute>
-            <xsl:attribute name="sudoersBasedn">
-                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@sudoersBasedn"/>
-            </xsl:attribute>
             <xsl:attribute name="usersBasedn">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@usersBasedn"/>
             </xsl:attribute>

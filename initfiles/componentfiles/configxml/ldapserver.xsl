@@ -33,7 +33,6 @@
  #base dc=internal,dc=sds
  filesBasedn="<xsl:value-of select="@filesBasedn"/>"
  resourcesBasedn="<xsl:value-of select="@resourcesBasedn"/>"
- sudoersBasedn="<xsl:value-of select="@sudoersBasedn"/>"
  systemBasedn="<xsl:value-of select="@systemBasedn"/>"
  usersBasedn="<xsl:value-of select="@usersBasedn"/>"
  workunitsBasedn="<xsl:value-of select="@workunitsBasedn"/>"

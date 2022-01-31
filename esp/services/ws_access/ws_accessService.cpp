@@ -3814,121 +3814,12 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
 
 bool Cws_accessEx::onUserSudoersInput(IEspContext &context, IEspUserSudoersInputRequest &req, IEspUserSudoersInputResponse &resp)
 {
-    try
-    {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        const char* username = req.getUsername();
-        if(username == NULL || *username == '\0')
-        {
-            throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
-        }
-
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
-        secmgr->getUserInfo(*user.get(), "sudoers");
-        resp.setUsername(username);
-        resp.setInsudoers(user->getInSudoers());
-        if(user->getInSudoers())
-        {
-            resp.setSudoHost(user->getSudoHost());
-            resp.setSudoCommand(user->getSudoCommand());
-            resp.setSudoOption(user->getSudoOption());
-        }
-        else
-        {
-            resp.setSudoHost("ALL");
-            resp.setSudoCommand("ALL");
-            resp.setSudoOption("!authenticate");
-        }
-    }
-    catch(IException* e)
-    {
-        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
-    }
-
-    return true;
+    throw MakeStringException(ECLWATCH_INVALID_ACTION, "UserSudoersInput no longer supported");
 }
 
 bool Cws_accessEx::onUserSudoers(IEspContext &context, IEspUserSudoersRequest &req, IEspUserSudoersResponse &resp)
 {
-    try
-    {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        const char* username = req.getUsername();
-        if(username == NULL || *username == '\0')
-        {
-            resp.setRetcode(-1);
-            resp.setRetmsg("username can't be empty");
-            return false;
-        }
-
-        resp.setUsername(username);
-
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
-        const char* action = req.getAction();
-        if(!action || !*action)
-        {
-            resp.setRetcode(-1);
-            resp.setRetmsg("Action can't be empty");
-            return false;
-        }
-
-        user->setSudoHost(req.getSudoHost());
-        user->setSudoCommand(req.getSudoCommand());
-        user->setSudoOption(req.getSudoOption());
-
-        bool ok = false;
-        StringBuffer retmsg;
-
-        try
-        {
-            if(stricmp(action, "add") == 0)
-                ok = secmgr->updateUser("sudoersadd", *user.get());
-            else if(stricmp(action, "delete") == 0)
-                ok = secmgr->updateUser("sudoersdelete", *user.get());
-            else if(stricmp(action, "update") == 0)
-                ok = secmgr->updateUser("sudoersupdate", *user.get());
-        }
-        catch(IException* e)
-        {
-            ok = false;
-            e->errorMessage(retmsg);
-            e->Release();
-        }
-        catch(...)
-        {
-            ok = false;
-            retmsg.append("unknown exception");
-        }
-
-        if(!ok)
-        {
-            resp.setRetcode(-1);
-            resp.setRetmsg(retmsg.str());
-        }
-        else
-        {
-            resp.setRetcode(0);
-            resp.setRetmsg("succeeded.");
-        }
-    }
-    catch(IException* e)
-    {
-        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
-    }
-
-    return true;
+    throw MakeStringException(ECLWATCH_INVALID_ACTION, "UserSudoers no longer supported");
 }
 
 bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermissionsRequest &req, IEspAccountPermissionsResponse &resp)

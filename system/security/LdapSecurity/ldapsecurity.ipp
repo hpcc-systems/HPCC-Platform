@@ -63,11 +63,6 @@ private:
     StringAttr   m_homedirectory;
     StringAttr   m_loginshell;
 
-    bool         m_sudoersenabled;
-    bool         m_insudoers;
-    StringAttr   m_sudoHost;
-    StringAttr   m_sudoCommand;
-    StringAttr   m_sudoOption;
     unsigned     m_sessionToken;//User's ESP session token
     StringBuffer m_signature;//User's digital signature
 
@@ -211,48 +206,6 @@ public:
     virtual bool getPosixenabled()
     {
         return m_posixenabled;
-    }
-
-// Sudoers specific fields  
-    virtual void setSudoersEnabled(bool enabled)
-    {
-        m_sudoersenabled = enabled;
-    }
-    virtual bool getSudoersEnabled()
-    {
-        return m_sudoersenabled;
-    }
-    virtual void setInSudoers(bool in)
-    {
-        m_insudoers = in;
-    }
-    virtual bool getInSudoers()
-    {
-        return m_insudoers;
-    }
-    virtual void setSudoHost(const char* host)
-    {
-        m_sudoHost.set(host);
-    }
-    virtual const char* getSudoHost()
-    {
-        return m_sudoHost.get();
-    }
-    virtual void setSudoCommand(const char* cmd)
-    {
-         m_sudoCommand.set(cmd);
-    }
-    virtual const char* getSudoCommand()
-    {
-        return m_sudoCommand.get();
-    }
-    virtual void setSudoOption(const char* option)
-    {
-        m_sudoOption.set(option);
-    }
-    virtual const char* getSudoOption()
-    {
-        return m_sudoOption.get();
     }
 };
 

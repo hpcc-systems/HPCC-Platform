@@ -265,13 +265,6 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="sudoersBasedn" type="xs:string" use="optional" default="ou=SUDOers">
-                <xs:annotation>
-                    <xs:appinfo>
-                        <tooltip>The place to hold the sudoers entries.</tooltip>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:attribute>
             <xs:attribute name="serverType" use="required" default="ActiveDirectory">
                 <xs:annotation>
                     <xs:appinfo>

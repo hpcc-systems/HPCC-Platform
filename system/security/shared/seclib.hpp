@@ -122,7 +122,7 @@ enum SecResourceType : int
     RT_SERVICE = 2,
     RT_FILE_SCOPE = 3,
     RT_WORKUNIT_SCOPE = 4,
-    RT_SUDOERS = 5,
+//no longer supported    RT_SUDOERS = 5,
     RT_TRIAL = 6,
     RT_VIEW_SCOPE = 7,
     RT_SCOPE_MAX = 8
