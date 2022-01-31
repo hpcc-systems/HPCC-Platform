@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Checkbox, ChoiceGroup, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator } from "@fluentui/react";
-import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import * as WsAccess from "src/ws_access";
@@ -8,6 +7,7 @@ import * as WsESDLConfig from "src/WsESDLConfig";
 import { States } from "src/WsWorkunits";
 import { FileList, States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
+import { useLogicalClusters } from "../../hooks/platform";
 
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
 
@@ -304,47 +304,26 @@ export interface TargetClusterTextFieldProps extends AsyncDropdownProps {
 
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
 
-    const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>();
+    const [targetClusters, defaultCluster] = useLogicalClusters();
+    const [options, setOptions] = React.useState<IDropdownOption[]>();
     const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
 
     React.useEffect(() => {
-        const topology = Topology.attach({ baseUrl: "" });
-        let active = true;
-        topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
-            if (active) {
-                const options = response.map(row => {
-                    return {
-                        key: row.Name || "unknown",
-                        text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
-                        type: row.Type
-                    };
-                }) || [];
-                setTargetClusters(options);
-                let firstRow: IDropdownOption;
-                let firstHThor: IDropdownOption;
-                let firstThor: IDropdownOption;
-                options.forEach(row => {
-                    if (firstRow === undefined) {
-                        firstRow = row;
-                    }
-                    if (firstHThor === undefined && (row as any).type === "hthor") {
-                        firstHThor = row;
-                    }
-                    if (firstThor === undefined && (row as any).type === "thor") {
-                        firstThor = row;
-                    }
-                    return row;
-                });
-                if (autoSelectDropdown(props.selectedKey, props.required, props.optional)) {
-                    const selRow = firstThor || firstHThor || firstRow;
-                    setDefaultRow(selRow);
-                }
-            }
-        }).catch(e => logger.error);
-        return () => { active = false; };
-    }, [props.selectedKey, props.required, props.optional]);
+        const options = targetClusters?.map(row => {
+            return {
+                key: row.Name || "unknown",
+                text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
+                type: row.Type
+            };
+        }) || [];
+        setOptions(options);
 
-    return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={targetClusters} />;
+        if (autoSelectDropdown(props.selectedKey, props.required, props.optional)) {
+            setDefaultRow(options.filter(row => row.key === defaultCluster?.Name)[0]);
+        }
+    }, [targetClusters, defaultCluster, props.selectedKey, props.required, props.optional]);
+
+    return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
 };
 
 export interface TargetDropzoneTextFieldProps extends AsyncDropdownProps {
@@ -363,7 +342,7 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
                     path: row.Path
                 };
             }) || []);
-        }).catch(e => logger.error);
+        }).catch(err => logger.error(err));
     }, []);
 
     return <AsyncDropdown {...props} options={targetDropzones} />;
@@ -387,7 +366,7 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
                     OS: n.OS
                 };
             }) || []);
-        }).catch(e => logger.error);
+        }).catch(err => logger.error(err));
     }, [props.selectedKey, props.dropzone]);
 
     return <AsyncDropdown {...props} options={targetServers} />;
@@ -425,7 +404,7 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
                     text: n.Name + (n.Name !== n.Kind ? ` (${n.Kind})` : "")
                 };
             }));
-        }).catch(e => logger.error);
+        }).catch(err => logger.error(err));
     }, []);
 
     return <AsyncDropdown {...props} options={targetGroups} />;
@@ -448,7 +427,7 @@ export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSpra
                     };
                 })
             );
-        }).catch(e => logger.error);
+        }).catch(err => logger.error(err));
     }, []);
 
     return <AsyncDropdown {...props} options={dfuSprayQueues} />;
@@ -547,7 +526,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                             retVal = retVal.concat(response);
                         });
                         resolve(retVal);
-                    }).catch(e => logger.error);
+                    }).catch(err => logger.error(err));
                 });
             }
         });
