@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Checkbox, ChoiceGroup, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator } from "@fluentui/react";
-import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
@@ -741,17 +740,14 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <MaterialUITextField
+                    field: <input
                         key={fieldID}
                         type="datetime-local"
                         name={fieldID}
                         value={field.value}
-                        placeholder={field.placeholder}
                         onChange={ev => {
                             field.value = ev.target.value;
                         }}
-                        InputLabelProps={{ shrink: true }
-                        }
                     />
                 });
                 break;
