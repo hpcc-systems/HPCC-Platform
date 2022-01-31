@@ -59,16 +59,20 @@ typedef enum
  * LOG MESSAGE CLASS:                                                                   */
 typedef enum
 {
-    MSGCLS_unknown     = 0x00, // Invalid/unknown log message class
-    MSGCLS_disaster    = 0x01, // Any unrecoverable or critical system errors
-    MSGCLS_error       = 0x02, // Recoverable/not critical Errors
-    MSGCLS_warning     = 0x04, // Warnings
-    MSGCLS_information = 0x08, // Config, environmental and internal status  info
-    MSGCLS_progress    = 0x10, // Progress of workunits. Status of file operations
-    MSGCLS_metric      = 0x20, // A metric line
-    MSGCLS_addid       = 0x40, // Internal use within log system
-    MSGCLS_removeid    = 0x80, // Internal use within log system
-    MSGCLS_all         = 0xFF  // Use as a filter to select all messages
+    MSGCLS_unknown     = 0x000, // Invalid/unknown log message class
+    MSGCLS_disaster    = 0x001, // Any unrecoverable or critical system errors
+    MSGCLS_error       = 0x002, // Recoverable/not critical Errors
+    MSGCLS_warning     = 0x004, // Warnings
+    MSGCLS_information = 0x008, // Config, environmental and internal status  info
+    MSGCLS_progress    = 0x010, // Progress of workunits. Status of file operations
+    MSGCLS_metric      = 0x020, // A metric line
+    MSGCLS_addid       = 0x040, // Internal use within log system
+    MSGCLS_removeid    = 0x080, // Internal use within log system
+    MSGCLS_all         = 0x0FF, // Use as a filter to select all messages EXCEPT those below
+
+    // All classes below are for special purposes as indicated. They are not selected
+    // using the MSGCLS_all mask so that custom filters can be used as needed
+    MSGCLS_elevated    = 0x800, // Use with custom filter for component custom elevated logging
 } LogMsgClass;
 /* ------------------------------------------------------------------------------------ *
  * NOTES:                                                                               *
@@ -195,6 +199,8 @@ inline const char * LogMsgClassToVarString(LogMsgClass msgClass)
         return("Progress");
     case MSGCLS_metric:
         return("Metric");
+    case MSGCLS_elevated:
+        return("Elevated");
     default:
         return("UNKNOWN");
     }
@@ -216,6 +222,8 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
         return("PRO ");
     case MSGCLS_metric:
         return("MET ");
+    case MSGCLS_elevated:
+        return("ELE");
     default:
         return("UNK ");
     }
@@ -237,6 +245,8 @@ inline LogMsgClass LogMsgClassFromAbbrev(char const * abbrev)
         return MSGCLS_metric;
     if(strnicmp(abbrev, "ALL", 3)==0)
         return MSGCLS_all;
+    if(strnicmp(abbrev, "ELE", 3)==0)
+        return MSGCLS_elevated;
     return MSGCLS_unknown;
 }
 
@@ -249,6 +259,7 @@ typedef unsigned LogMsgDetail;
  * It represents the lowest logging level (detail) required to output
  * messages of the given category.
  */
+
 constexpr LogMsgDetail CriticalMsgThreshold    = 1;  //Use to declare categories reporting critical events (log level => 1)
 constexpr LogMsgDetail FatalMsgThreshold       = 1;  //Use to declare categories reporting Fatal events (log level => 1)
 constexpr LogMsgDetail ErrMsgThreshold         = 10; //Use to declare categories reporting Err messages (log level => 10)

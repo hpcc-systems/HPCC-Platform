@@ -1618,7 +1618,7 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
 
         StringBuffer schemaXml;
         getSchema(schemaXml, context, request, wsinfo);
-        ESPLOG(LogMax,"request schema: %s", schemaXml.str());
+        LOG(LegacyMsgCatMax,"request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
         {
@@ -1654,7 +1654,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
 
         StringBuffer schemaXml;
         getSchema(schemaXml, context, request, wsinfo);
-        ESPLOG(LogMax,"request schema: %s", schemaXml.str());
+        LOG(LegacyMsgCatMax,"request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
         {
@@ -2161,8 +2161,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     {
         StringBuffer soapmsg;
         getSoapMessage(soapmsg, context, request, wsinfo, REQSF_TRIM|REQSF_ROOT, false);
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("submitQuery soap: %s", soapmsg.str());
+        LOG(LegacyMsgCatMax, "submitQuery soap: %s", soapmsg.str());
 
         unsigned xmlflags = WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
         if (context.queryRequestParameters()->hasProp("display"))
@@ -2205,8 +2204,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
 
     StringBuffer soapmsg;
     getSoapMessage(soapmsg, context, request, wsinfo, REQSF_TRIM|REQSF_ROOT, false);
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("submitQuery soap: %s", soapmsg.str());
+    LOG(LegacyMsgCatMax, "submitQuery soap: %s", soapmsg.str());
 
     const char *thepath = request->queryPath();
 
@@ -2633,11 +2631,9 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             soapreq.append("</soap:Body></soap:Envelope>");
             StringBuffer output;
             StringBuffer status;
-            if (getEspLogLevel()>LogNormal)
-                DBGLOG("roxie req: %s", soapreq.str());
+            LOG(LegacyMsgCatMax, "roxie req: %s", soapreq.str());
             sendRoxieRequest(target, soapreq, output, status, qid, parms->getPropBool(".trim", true), "text/xml", request);
-            if (getEspLogLevel()>LogNormal)
-                DBGLOG("roxie resp: %s", output.str());
+            LOG(LegacyMsgCatMax, "roxie resp: %s", output.str());
 
             if (context->queryRequestParameters()->hasProp("display"))
             {
@@ -2827,8 +2823,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             jsonresp.append(jsonp).append('(');
 
         StringBuffer content(request->queryContent());
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("json request: %s", content.str());
+        LOG(LegacyMsgCatMax, "json request: %s", content.str());
 
         StringBuffer status;
         if (!forceCreateWorkunit && wsecl->connMap.getValue(queryset.str()))
@@ -2855,8 +2850,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
         }
         if (jsonp && *jsonp)
             jsonresp.append(");");
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("json response: %s", jsonresp.str());
+        LOG(LegacyMsgCatMax, "json response: %s", jsonresp.str());
 
     }
     catch (IException *e)
@@ -2980,8 +2974,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
         submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp, xmlflags, request);
     }
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("HandleSoapRequest response: %s", soapresp.str());
+    LOG(LegacyMsgCatMax, "HandleSoapRequest response: %s", soapresp.str());
 
     response->setContent(soapresp.str());
     response->setContentType("text/xml");

@@ -24,7 +24,7 @@
 //Copy the code to esdl_binding.cpp.
 
 #ifdef USE_TEST_RESP
-                ESPLOG(LogMin,"origResp: %s", origResp.str());
+                LOG(LegacyMsgCatMin,"origResp: %s", origResp.str());
                 StringBuffer respWithLodData;
                 respWithLodData.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><ExchangeNumbersResponse xmlns=\"urn:hpccsystems:ecl:exchangenumbers\" sequence=\"0\"><Results><Result>\n");
                 respWithLodData.append("<Dataset xmlns=\"urn:hpccsystems:ecl:vin_services.servicevinstandard:result:log_log__vin_intermediate__log\" name=\"LOG_log__vin_intermediate__log\">\n");

@@ -67,7 +67,7 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
 
     if (!m_isDetachedFromDali)
     {
-        ESPLOG(LogMin, "CwsstoreEx: Ensuring configured stores are created:");
+        PROGLOG("CwsstoreEx: Ensuring configured stores are created:");
         Owned<IPropertyTreeIterator> iter = m_serviceConfig->getElements("Stores/Store");
 
         StringBuffer owner;
@@ -94,11 +94,11 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
             VStringBuffer xpath("Stores/Store[%s='%s']", ESP_STORE_NAME_ATT, id.str());
             if (stores && stores->hasProp(xpath.str()))
             {
-                ESPLOG(LogMin, "CwsstoreEx: Detected previously created store '%s'.", id.str());
+                LOG(LegacyMsgCatMin, "CwsstoreEx: Detected previously created store '%s'.", id.str());
             }
             else
             {
-                ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
+                PROGLOG("CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
 
                 m_storeProvider->createStore(type.str(), id.str(), description.str(), secuser.get(), maxvalsize);
             }
@@ -108,7 +108,7 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
                 if (!m_defaultStore.isEmpty())
                    throw MakeStringException(-1, "ws_store init(): Multiple stores erroneously configured as default store!");
 
-                ESPLOG(LogMin, "CwsstoreEx: setting '%s' as default store", id.str());
+                PROGLOG("CwsstoreEx: setting '%s' as default store", id.str());
                 m_defaultStore.set(id.str());
             }
         }
@@ -223,7 +223,7 @@ bool CwsstoreEx::onDeleteNamespace(IEspContext &context, IEspDeleteNamespaceRequ
 
     if (!global && !isEmptyString(targetUser))
     {
-        ESPLOG(LogMin, "CwsstoreEx::onDeleteNamespace: '%s' requesting to delete namespace on behalf of '%s'", user, targetUser);
+        LOG(MCauditWarning, "CwsstoreEx::onDeleteNamespace: '%s' requesting to delete namespace on behalf of '%s'", user, targetUser);
         user = targetUser;
     }
 
@@ -407,4 +407,3 @@ bool CwsstoreEx::onFetchAll(IEspContext &context, IEspFetchAllRequest &req, IEsp
     resp.setNamespace(req.getNamespace());
     return true;
 }
-

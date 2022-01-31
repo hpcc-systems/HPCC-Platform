@@ -17,12 +17,22 @@
 
 EspInclude(common);
 
+ESPenum LogLevelEnum : int
+{
+    None(0, "none"),
+    Min(1, "min"),
+    Normal(5, "normal"),
+    Max(10, "max"),
+};
+
 ESPrequest [nil_remove] SetLoggingRequest
 {
-    int LoggingLevel;
+    [depr_ver("1.04")] int LoggingLevel;
+    [min_ver("1.04")] ESPenum LogLevelEnum LoggingLevelEnum;
     string LogRequests;
     bool LogResponses;
 };
+
 
 ESPresponse [exceptions_inline, nil_remove, http_encode(0)] SetLoggingResponse
 {
@@ -36,7 +46,8 @@ ESPrequest [nil_remove] GetLoggingSettingsRequest
 
 ESPresponse [exceptions_inline, nil_remove, http_encode(0)] GetLoggingSettingsResponse
 {
-    int LoggingLevel;
+    [depr_ver("1.04")] int LoggingLevel;
+    [min_ver("1.04")] ESPenum LogLevelEnum LoggingLevelEnum;
     string LogRequests;
     bool LogResponses;
     int LoggingLevelSetting;
@@ -149,7 +160,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] AttachToDaliResponse
     string Message;
 };
 
-ESPservice [auth_feature("NONE"), version("1.03"), default_client_version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
+ESPservice [auth_feature("NONE"), version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSESPControl
 {
     ESPmethod SetLogging(SetLoggingRequest, SetLoggingResponse);
     ESPmethod [min_ver("1.03")] GetLoggingSettings(GetLoggingSettingsRequest, GetLoggingSettingsResponse);

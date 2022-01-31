@@ -1020,6 +1020,53 @@ unsigned getSlowProcessingTime()
     return false;
 }
 
+LogMsgDetail mapLegacyEspLogLevelToJlogThreshold(LogLevel level)
+{
+    if (level == LogNone)
+    {
+        return(LogNoneLegacyThreshold);
+    }
+    else if (level >= LogMin && level < LogNormal)
+    {
+        return(LogMinLegacyThreshold);
+    }
+    else if (level >= LogNormal && level < LogMax)
+    {
+        return(LogNormalLegacyThreshold);
+    }
+    return(LogMaxLegacyThreshold);
+}
+
+LogMsgCategory getEspLogCategoryForContext(IEspContext* ctx, LogMsgCategory defaultLogMsgCategory)
+{
+    if (ctx)
+    {
+        ISecPropertyList* properties = ctx->querySecuritySettings();
+        if (properties)
+        {
+            ISecProperty* sec = properties->findProperty("DebugMode");
+            if (sec)
+            {
+                const char* mode = sec->getValue();
+                if ( mode && (streq(mode,"1") || streq(mode, "true")) )
+                {
+#ifdef _CONTAINERIZED
+
+                    if (getContainer())
+                    {
+                        getContainer()->enableElevatedLogging();
+                        return MsgCatEspElevated;
+                    }
+#else
+                    return LegacyMsgCatForce;  // bare metal does not add a custom monitor
+#endif
+                }
+            }
+        }
+    }
+    return defaultLogMsgCategory;
+}
+
 void ESPLOG(LogLevel level, const char* fmt, ...)
 {
     if (getEspLogLevel(NULL)>=level)

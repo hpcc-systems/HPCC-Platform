@@ -606,8 +606,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
     if (processHeaders(me)==-1)
         return -1;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Headers processed! content_length = %" I64F "d", m_content_length);
+    LOG(LegacyMsgCatMax, "Headers processed! content_length = %" I64F "d", m_content_length);
     StringBuffer expect;
     getHeader("Expect", expect);
     if (expect.length() && strieq(expect, "100-continue"))
@@ -623,15 +622,13 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
     if(m_content_length > 0)
     {
         readContent();
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("length of content read = %d", m_content.length());
+        LOG(LegacyMsgCatMax, "length of content read = %d", m_content.length());
     }
     else if (alwaysReadContent && m_content_length == -1)
     {
         //HTTP protocol does not require a content length: read until socket closed
         readContentTillSocketClosed();
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("length of content read = %d", m_content.length());
+        LOG(LegacyMsgCatMax, "length of content read = %d", m_content.length());
     }
     if(m_content_length != m_content.length())
         m_context->addTraceSummaryValue(LogMin, "custom_fields.contRead", m_content.length(), TXSUMMARY_GRP_ENTERPRISE);
@@ -989,9 +986,8 @@ int CHttpMessage::startSend()
 {
     StringBuffer sendbuf;
     constructHeaderBuffer(sendbuf, false);
-    
-    if (getEspLogLevel(queryContext())>LogNormal)
-        DBGLOG("Start Sending chunked HTTP message:\n %s", sendbuf.str());
+
+    LOG(getEspLogCategoryForContext(queryContext(), LegacyMsgCatMax), "Start Sending chunked HTTP message:\n %s", sendbuf.str());
 
     try
     {
@@ -1017,8 +1013,7 @@ int CHttpMessage::startSend()
 
 int CHttpMessage::sendChunk(const char *chunk)
 {
-    if (getEspLogLevel(queryContext())>LogNormal)
-        DBGLOG("Sending HTTP chunk:\n %s", chunk);
+    LOG(getEspLogCategoryForContext(queryContext(), LegacyMsgCatMax), "Sending HTTP chunk:\n %s", chunk);
 
     try
     {
@@ -1044,8 +1039,7 @@ int CHttpMessage::sendChunk(const char *chunk)
 
 int CHttpMessage::sendFinalChunk(const char *chunk)
 {
-    if (getEspLogLevel(queryContext())>LogNormal)
-        DBGLOG("Sending HTTP Final chunk:\n %s", chunk);
+    LOG(getEspLogCategoryForContext(queryContext(), LegacyMsgCatMax), "Sending HTTP Final chunk:\n %s", chunk);
 
     try
     {
@@ -1410,8 +1404,6 @@ void CHttpRequest::parseQueryString(const char* querystr)
 
 int CHttpRequest::parseFirstLine(char* oneline)
 {
-    //if (getEspLogLevel()>LogNormal)
-    //  DBGLOG("First Line of request=%s", oneline);
     DBGLOG("HTTP First Line: %s", oneline);
 
     if(*oneline == 0)
@@ -2352,8 +2344,7 @@ int CHttpResponse::parseFirstLine(char* oneline)
     if(*oneline == 0)
         return -1;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("http response status = %s", oneline);
+    LOG(LegacyMsgCatMax, "http response status = %s", oneline);
 
     char* ptr = oneline;
     while(*ptr != '\0' && *ptr != ' ')
@@ -2590,10 +2581,8 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
     
     if (processHeaders(me)==-1)
         return -1;
+    LOG(LegacyMsgCatMax, "Response headers processed! content_length = %" I64F "d", m_content_length);
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response headers processed! content_length = %" I64F "d", m_content_length);
-    
     char status_class = '2';
     if(m_status.length() > 0)
         status_class = *(m_status.get());
@@ -2601,15 +2590,13 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
     if(m_content_length > 0)
     {
         readContent();
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("length of response content read = %d", m_content.length());
+        LOG(LegacyMsgCatMax, "length of response content read = %d", m_content.length());
     }
     else if(alwaysReadContent && status_class != '4' && status_class != '5' && m_content_length == -1)
     {
         //HTTP protocol does not require a content length: read until socket closed
         readContentTillSocketClosed();
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("length of content read = %d", m_content.length());
+        LOG(LegacyMsgCatMax, "length of content read = %d", m_content.length());
     }
 
     bool decompressed = false;

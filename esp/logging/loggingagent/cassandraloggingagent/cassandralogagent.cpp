@@ -243,7 +243,8 @@ void CCassandraLogAgent::setUpdateLogStatement(const char* dbName, const char* t
 
 void CCassandraLogAgent::executeSimpleStatement(const char* st)
 {
-    CassandraStatement statement(cassSession->prepareStatement(st, getEspLogLevel()>LogNormal));
+    bool trace = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatMin);
+    CassandraStatement statement(cassSession->prepareStatement(st, trace));
     CassandraFuture future(cass_session_execute(cassSession->querySession(), statement));
     future.wait("execute");
 }
@@ -263,7 +264,8 @@ void CCassandraLogAgent::executeUpdateLogStatement(StringBuffer& st)
 
 bool CCassandraLogAgent::executeSimpleSelectStatement(const char* st, unsigned& resultValue)
 {
-    CassandraStatement statement(cassSession->prepareStatement(st, getEspLogLevel()>LogNormal));
+    bool trace = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatMin);
+    CassandraStatement statement(cassSession->prepareStatement(st, trace));
     CassandraFuture future(cass_session_execute(cassSession->querySession(), statement));
     future.wait("execute");
     CassandraResult result(cass_future_get_result(future));

@@ -674,14 +674,14 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
         ISecResourceList* settinglist = m_setting_authmap->getResourceList("*");
         if(settinglist == NULL)
             return ;
-        if (getEspLogLevel()>=LogMax)
+        if (queryLogMsgManager()->rejectsCategory(LegacyMsgCatMax))
         {
             StringBuffer s;
-            DBGLOG("Set security settings: %s", settinglist->toString(s).str());
+            LOG(LegacyMsgCatMax, "Set security settings: %s", settinglist->toString(s).str());
         }
         ctx->setSecuritySettings(settinglist);
     }
-    return ;
+    return;
 }
 
 bool EspHttpBinding::doAuth(IEspContext* ctx)
@@ -799,7 +799,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
             {
                 const char *desc=curres->getDescription();
                 VStringBuffer msg("Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
-                ESPLOG(LogMin, "%s", msg.str());
+                LOG(LegacyMsgCatMin, "%s", msg.str());
                 ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: Not Authorized", "Resource: %s [%s]", curres->getName(), (desc) ? desc : "");
                 ctx->setAuthError(EspAuthErrorNotAuthorized);
                 ctx->setRespMsg(msg.str());
@@ -864,11 +864,11 @@ bool EspHttpBinding::sendFromESPCache(IEspCache* cacheClient, CHttpRequest* requ
 {
     StringBuffer content, contentType;
     if (!cacheClient->readResponseCache(cacheID, content.clear(), contentType.clear()))
-        ESPLOG(LogMax, "Failed to read from ESP Cache for %s.", request->queryServiceMethod());
+        LOG(LegacyMsgCatMax, "Failed to read from ESP Cache for %s.", request->queryServiceMethod());
     if (content.isEmpty() || contentType.isEmpty())
         return false;
 
-    ESPLOG(LogMax, "Sending from ESP Cache for %s.", request->queryServiceMethod());
+    LOG(LegacyMsgCatMax, "Sending from ESP Cache for %s.", request->queryServiceMethod());
     response->setContentType(contentType.str());
     response->setContent(content.str());
     response->send();
@@ -881,9 +881,9 @@ void EspHttpBinding::addToESPCache(IEspCache* cacheClient, CHttpRequest* request
     response->getContent(content);
     response->getContentType(contentType);
     if (cacheClient->cacheResponse(cacheID, cacheSeconds, content.str(), contentType.str()))
-        ESPLOG(LogMax, "AddTo ESP Cache for %s.", request->queryServiceMethod());
+        LOG(LegacyMsgCatMax, "AddTo ESP Cache for %s.", request->queryServiceMethod());
     else
-        ESPLOG(LogMax, "Failed to add ESP Cache for %s.", request->queryServiceMethod());
+        LOG(LegacyMsgCatMax, "Failed to add ESP Cache for %s.", request->queryServiceMethod());
 }
 
 void EspHttpBinding::clearCacheByGroupID(const char *ids)
@@ -895,7 +895,7 @@ void EspHttpBinding::clearCacheByGroupID(const char *ids)
     if (!espContainer->hasCacheClient())
         return;
 
-    ESPLOG(LogMax, "clearCacheByGroupID %s.", ids);
+    LOG(LegacyMsgCatMax, "clearCacheByGroupID %s.", ids);
     StringArray errorMsgs;
     espContainer->clearCacheByGroupID(ids, errorMsgs);
     if (errorMsgs.length() > 0)
@@ -946,10 +946,8 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
     // At this time, the request is already received and fully passed, and
     // the user authenticated
-    LogLevel level = getEspLogLevel(&context);
-    if (level >= LogNormal)
-        DBGLOG("EspHttpBinding::onGet");
-    
+    LOG(getEspLogCategoryForContext(&context, LegacyMsgCatMax), "EspHttpBinding::onGet");
+
     response->setVersion(HTTP_VERSION);
     response->addHeader("Expires", "0");
 
@@ -1555,8 +1553,8 @@ int EspHttpBinding::onGetIframe(IEspContext &context, CHttpRequest* request, CHt
     if (plainText.length() > 0)
         inner.appendf("&PlainText=%s", plainText.str());
             
-    ESPLOG(LogNormal,"Inner: %s", inner.str());
-    ESPLOG(LogNormal,"Param: %s", request->queryParamStr());
+    LOG(LegacyMsgCatNormal,"Inner: %s", inner.str());
+    LOG(LegacyMsgCatNormal,"Param: %s", request->queryParamStr());
     content.appendf("<frame name=\"imain\" target=\"main\" src=\"%s\" scrolling=\"auto\" frameborder=\"0\" noresize=\"noresize\"/>", inner.str());
     content.append("</frameset>");
     content.append("</body></html>");
@@ -1578,7 +1576,7 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
     {
         if (getESPContainer() && getESPContainer()->queryApplicationConfig())
         {
-            ESPLOG(LogNormal, "Get config generated during application init");
+            LOG(LegacyMsgCatNormal, "Get config generated during application init");
             StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             if (context.queryRequestParameters()->hasProp("display"))
                 content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
@@ -1590,7 +1588,7 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
             return 0;
         }
 
-        ESPLOG(LogNormal, "Get config file: %s", m_configFile.get());
+        LOG(LegacyMsgCatNormal, "Get config file: %s", m_configFile.get());
 
         StringBuffer content;
         xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
@@ -2823,8 +2821,7 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
     getSchema(xsd,context,request,serviceQName,methodQName,true);
             
     // validation
-    if (getEspLogLevel()>LogMax)
-        DBGLOG("[VALIDATE] xml: %s\nxsd: %s\nns: %s",xml.str(), xsd.str(), ns.str());
+    LOG(LegacyMsgCatMax, "[VALIDATE] xml: %s\nxsd: %s\nns: %s",xml.str(), xsd.str(), ns.str());
 
     IXmlValidator* v = getXmlLibXmlValidator();
 
@@ -2859,7 +2856,7 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
 void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, MemoryBuffer& content, 
                                       const char *serviceName, const char* methodName)
 {
-    ESPLOG(LogNormal,"Sorting Response XML...");
+    LOG(LegacyMsgCatNormal,"Sorting Response XML...");
 
     try {
         StringBuffer result;
@@ -2873,8 +2870,7 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
 
         xform->setXmlSource(respXML,respXML.length());
         xform->transform(result);
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("XML sorted: %s", result.str());
+        LOG(LegacyMsgCatMax, "XML sorted: %s", result.str());
         unsigned len = result.length();
         content.setBuffer(len, result.detach(), true);      
     } catch (IException* e) {

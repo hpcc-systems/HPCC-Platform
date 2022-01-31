@@ -181,7 +181,7 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
 
         StringBuffer updateLogRequestXML;
         toXML(filteredLogRequestTree, updateLogRequestXML);
-        ESPLOG(LogMax, "filtered content and option: <%s>", updateLogRequestXML.str());
+        LOG(LegacyMsgCatMax, "filtered content and option: <%s>", updateLogRequestXML.str());
 
         req->setUpdateLogRequest(updateLogRequestXML);
         if (logRequestTree)
@@ -337,7 +337,7 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
 
     StringBuffer updateLogRequestXML;
     toXML(updateLogRequestTree, updateLogRequestXML);
-    ESPLOG(LogMax, "filtered content and option: <%s>", updateLogRequestXML.str());
+    LOG(LegacyMsgCatMax, "filtered content and option: <%s>", updateLogRequestXML.str());
 
     Owned<IEspUpdateLogRequestWrap> newReq = new CUpdateLogRequestWrap(req->getGUID(), req->getOption(), updateLogRequestXML.str());
     if (scriptValues)
@@ -519,7 +519,8 @@ bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
     if (!hasService(LGSTUpdateLOG))
         throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "%s: no updateLog service configured", agentName.get());
 
-    unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+    bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+    unsigned startTime = isLogging ? msTick() : 0;
     bool ret = false;
     try
     {
@@ -549,11 +550,11 @@ bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
             if(!buildUpdateLogStatement(logRequestTree, logDB.str(), table, logID, updateDBStatement))
                 throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Failed in creating SQL statement.");
 
-            ESPLOG(LogNormal, "LAgent UpdateLog BuildStat %d done: %dms\n", i, msTick() -  startTime);
-            ESPLOG(LogMax, "UpdateLog: %s\n", updateDBStatement.str());
+            LOG(LegacyMsgCatNormal, "LAgent UpdateLog BuildStat %d done: %dms\n", i, (isLogging ? msTick() : 0) -  startTime);
+            LOG(LegacyMsgCatMax, "UpdateLog: %s\n", updateDBStatement.str());
 
             executeUpdateLogStatement(updateDBStatement);
-            ESPLOG(LogNormal, "LAgent UpdateLog ExecStat %d done: %dms\n", i, msTick() -  startTime);
+            LOG(LegacyMsgCatNormal, "LAgent UpdateLog ExecStat %d done: %dms\n", i, (isLogging ? msTick() : 0) -  startTime);
         }
         resp.setStatusCode(0);
         ret = true;
@@ -567,7 +568,7 @@ bool CDBLogAgentBase::updateLog(IEspUpdateLogRequestWrap& req, IEspUpdateLogResp
         resp.setStatusCode(-1);
         resp.setStatusMessage(errorMessage.str());
     }
-    ESPLOG(LogNormal, "LAgent UpdateLog total=%dms\n", msTick() -  startTime);
+    LOG(LegacyMsgCatNormal, "LAgent UpdateLog total=%dms\n", (isLogging ? msTick() : 0) -  startTime);
     return ret;
 }
 

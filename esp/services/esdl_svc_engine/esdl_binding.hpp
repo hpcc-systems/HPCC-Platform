@@ -250,7 +250,7 @@ private:
             m_proxyInfo.clear();
 
         //prob need to un-initesdlservinfo as well.
-        ESPLOG(LogNormal, "Warning binding %s.%s is being un-loaded!", m_processName.get(), m_bindingName.get());
+        LOG(LegacyMsgCatNormal, "Warning binding %s.%s is being un-loaded!", m_processName.get(), m_bindingName.get());
     }
 
 public:
@@ -340,7 +340,7 @@ public:
         m_isAttached = true;
         if(m_bindingId.length() != 0)
         {
-            ESPLOG(LogNormal, "Requesting reload of ESDL binding %s...", m_bindingId.get());
+            LOG(LegacyMsgCatNormal, "Requesting reload of ESDL binding %s...", m_bindingId.get());
             reloadBindingFromCentralStore(m_bindingId.get());
         }
         return true;

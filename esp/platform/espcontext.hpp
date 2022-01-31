@@ -31,6 +31,21 @@
 #include "esp.hpp"
 #include "esphttp.hpp"
 
+#ifdef __GNUC__
+#define ESP_DEPRECATED(X) X __attribute__((deprecated))
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7)
+#define ESP_DEPRECATED2(X, reason) X __attribute__((deprecated(reason)))
+#else
+#define ESP_DEPRECATED2(X, reason) LCB_DEPRECATED(X)
+#endif
+#elif defined(_MSC_VER)
+#define ESP_DEPRECATED(X) __declspec(deprecated) X
+#define ESP_DEPRECATED2(X, reason) __declspec(deprecated(reason)) X
+#else
+#define ESP_DEPRECATED(X) X
+#define ESP_DEPRECATED2(X, reason)
+#endif
+
 #define SESSION_SDS_LOCK_TIMEOUT (30*1000) // 30 seconds
 #define ESP_SESSION_TIMEOUT (120) // 120 Mins
 #define ESP_SESSION_NEVER_TIMEOUT   -1
@@ -125,7 +140,11 @@ esp_http_decl void checkRequest(IEspContext& ctx);
 
 esp_http_decl LogRequest readLogRequest(char const* req);
 esp_http_decl StringBuffer& getLogRequestString(LogRequest req, StringBuffer& out);
+#ifdef _CONTAINERIZED
+esp_http_decl LogLevel ESP_DEPRECATED2 (getEspLogLevel(IEspContext* ), "ESP log level is being deprecated, use logging manager functions instead");
+#else
 esp_http_decl LogLevel getEspLogLevel(IEspContext* );
+#endif
 esp_http_decl LogLevel getEspLogLevel();
 esp_http_decl LogRequest getEspLogRequests();
 esp_http_decl bool getEspLogResponses();
@@ -136,9 +155,16 @@ esp_http_decl const unsigned int getTxSummaryGroup();
 esp_http_decl const unsigned int readTxSummaryGroup(const char* group);
 esp_http_decl bool getTxSummaryResourceReq();
 esp_http_decl unsigned getSlowProcessingTime();
+esp_http_decl LogMsgDetail mapLegacyEspLogLevelToJlogThreshold(LogLevel level);
 
+esp_http_decl LogMsgCategory getEspLogCategoryForContext(IEspContext* ctx, LogMsgCategory defaultLogMsgCategory);
+#ifdef _CONTINEERIZED
+esp_http_decl void ESP_DEPRECATED2(ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4))), "Use native JLog fuctions instead");
+esp_http_decl void ESP_DEPRECATED2(ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3))), "Use native JLog fuctions instead");
+#else
 esp_http_decl void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
 esp_http_decl void ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+#endif
 esp_http_decl void setEspContainer(IEspContainer* container);
 
 esp_http_decl IEspContainer* getESPContainer();
@@ -155,4 +181,3 @@ esp_http_decl IEspServer* queryEspServer();
 interface IRemoteConnection;
 esp_http_decl IRemoteConnection* getSDSConnectionWithRetry(const char* xpath, unsigned mode, unsigned timeoutMs);
 #endif
-

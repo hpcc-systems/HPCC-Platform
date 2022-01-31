@@ -78,7 +78,7 @@ CLogFailSafe::CLogFailSafe(IPropertyTree* cfg, const char* pszService, const cha
 
 CLogFailSafe::~CLogFailSafe()
 {
-    ESPLOG(LogMax, "CLogFailSafe::~CLogFailSafe()");
+    DBGLOG("CLogFailSafe::~CLogFailSafe()");
     m_Added.Close();
     if (!decoupledLogging)
         m_Cleared.Close();
@@ -214,7 +214,7 @@ bool CLogFailSafe::PopPendingLogRecord(StringBuffer& GUID, StringBuffer& cache)
 
     unsigned int nPendingLogs = m_PendingLogs.size();
     if (nPendingLogs && (nPendingLogs < TRACE_PENDING_LOGS_MIN || (nPendingLogs % TRACE_PENDING_LOGS_MAX == 0)))
-        ESPLOG(LogNormal, "%u logs pending", nPendingLogs);
+        LOG(LegacyMsgCatNormal, "%u logs pending", nPendingLogs);
 
     return true;
 }

@@ -134,7 +134,7 @@ bool setChildColumns(HPCCColumnMetaData * parent, IPropertyTree * fieldtree)
 
     if (parent == nullptr || fieldtree == nullptr)
     {
-        ESPLOG(LogMin, "Could not set HPCC file childcolumns!");
+        ERRLOG("Could not set HPCC file childcolumns!");
         return false;
     }
 
@@ -169,7 +169,7 @@ bool HPCCFile::setFileColumns(const char * eclString)
        StringBuffer errtext;
        IError *first = errs.firstError();
        first->toString(errtext);
-       ESPLOG(LogNormal, "Could not set HPCC file columns: %s", errtext.str());
+       ERRLOG("Could not set HPCC file columns: %s", errtext.str());
        return false;
     }
 

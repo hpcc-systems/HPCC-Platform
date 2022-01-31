@@ -1294,10 +1294,7 @@ int Cws_machineEx::invokeProgram(const char *command_line, StringBuffer& respons
     // Run the command so that it writes its output to a pipe. Open this
     // pipe with read text attribute so that we can read it
     // like a text file.
-    if (getEspLogLevel()>LogNormal)
-    {
-        DBGLOG("command_line=<%s>", command_line);
-    }
+    LOG(LegacyMsgCatMax, "command_line=<%s>", command_line);
 #ifndef NO_CONNECTION_DEBUG
     if( (fp = popen( command_line, "r" )) == NULL )
         return -1;
@@ -1313,10 +1310,7 @@ int Cws_machineEx::invokeProgram(const char *command_line, StringBuffer& respons
         if ( fgets( buffer, 128, fp) )
             response.append( buffer );
 
-    if (getEspLogLevel()>LogNormal)
-    {
-        DBGLOG("response=<%s>", response.str());
-    }
+    LOG(LegacyMsgCatMax, "response=<%s>", response.str());
     // Close pipe and print return value of CHKDSK.
 #ifndef NO_CONNECTION_DEBUG
     return pclose( fp );
@@ -2681,7 +2675,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
         command.appendf("%s", t.queryProp("@path"));
         pathCount++;
     }
-    ESPLOG(LogMax, "command(%s)", command.str());
+    LOG(LegacyMsgCatMax, "command(%s)", command.str());
 
     StringBuffer response;
     int error = runCommand(context, param->request->queryProp("@netAddress"), nullptr,
@@ -2694,7 +2688,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
             param->request->addProp("@error", response);
         return;
     }
-    ESPLOG(LogMax, "response(%s)", response.str());
+    LOG(LegacyMsgCatMax, "response(%s)", response.str());
 
     ForEach(*diskPathList)
     {
@@ -2866,7 +2860,7 @@ bool Cws_machineEx::onGetComponentUsage(IEspContext& context, IEspGetComponentUs
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
 
-            ESPLOG(LogMax, "GetComponentUsage: found UsageCache.");
+            LOG(LegacyMsgCatMax, "GetComponentUsage: found UsageCache.");
             uniqueUsages.set(usage->queryUsages());
         }
 
@@ -3005,7 +2999,7 @@ bool Cws_machineEx::onGetTargetClusterUsage(IEspContext& context, IEspGetTargetC
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
 
-            ESPLOG(LogMax, "GetTargetClusterUsage: found UsageCache.");
+            LOG(LegacyMsgCatMax, "GetTargetClusterUsage: found UsageCache.");
             uniqueUsages.set(usage->queryUsages());
         }
         readTargetClusterUsageResult(context, usageReq, uniqueUsages, targetClusterUsages);
@@ -3205,7 +3199,7 @@ bool Cws_machineEx::onGetNodeGroupUsage(IEspContext& context, IEspGetNodeGroupUs
             if (!usage)
                 throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get usage. Please try later.");
 
-            ESPLOG(LogMax, "GetNodeGroupUsage: found UsageCache.");
+            LOG(LegacyMsgCatMax, "GetNodeGroupUsage: found UsageCache.");
             uniqueUsages.set(usage->queryUsages());
         }
 

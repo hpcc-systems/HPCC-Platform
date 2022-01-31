@@ -20,6 +20,7 @@
 
 #include "espthread.hpp"
 #include "espcfg.ipp"
+#include "jlog.hpp"
 
 typedef ISocket * isockp;
 
@@ -69,6 +70,9 @@ private:
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;
+    ILogMsgHandler * m_pLogMsgHandler;
+    ILogMsgFilter *m_elevatedLoggingFilter;
+    CriticalSection m_elevatedLoggingCs;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -91,6 +95,8 @@ public:
         m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
         m_SEHMappingEnabled = false;
+        m_pLogMsgHandler = nullptr;
+        m_elevatedLoggingFilter = nullptr;
     }
 
     ~CEspServer()
@@ -101,6 +107,8 @@ public:
         }
         m_socketCleanup.kill();
     }
+
+    void setLogMsgHandler(ILogMsgHandler * pLogMsgHandler) { m_pLogMsgHandler = pLogMsgHandler;}
 
     void waitForExit(CEspConfig &config)
     {
@@ -155,7 +163,7 @@ public:
             m_waitForExit.signal();
     }
 
-    void setLogLevel(LogLevel level) { m_logLevel = level; }
+    void setLogLevel(LogLevel level);
     void setLogRequests(LogRequest logReq) { m_logReq = logReq; }
     void setLogResponses(bool logResp) { m_logResp = logResp; }
     void setTxSummaryLevel(LogLevel level) { txSummaryLevel = level; }
@@ -182,14 +190,17 @@ public:
         return applicationConfig.get();
     }
 
-    void log(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)))
+    void enableElevatedLogging()
     {
-        if (getLogLevel()>=level)
+        if (m_elevatedLoggingFilter == nullptr)
         {
-            va_list args;
-            va_start(args, fmt);
-            VALOG(MCdebugInfo, unknownJob, fmt, args);
-            va_end(args);
+            CriticalBlock b(m_elevatedLoggingCs);
+            if (m_elevatedLoggingFilter == nullptr)
+            {
+                // Add custom log monitor to handle elevated context based logging
+                m_elevatedLoggingFilter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_elevated, ExtraneousMsgThreshold);
+                queryLogMsgManager()->addMonitorOwn(queryStderrLogMsgHandler(), m_elevatedLoggingFilter);
+            }
         }
     }
 
@@ -379,5 +390,3 @@ public:
 #define MAX_CHILDREN 1
 
 #endif //__ESPP_HPP__
-
-

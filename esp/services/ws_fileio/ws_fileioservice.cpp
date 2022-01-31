@@ -149,7 +149,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
         else
         {
             SCMStringBuffer dropZoneName;
-            ESPLOG(LogMin, "Found LZ '%s' without a directory attribute!", dropZoneInfo->getName(dropZoneName).str());
+            LOG(LegacyMsgCatMin, "Found LZ '%s' without a directory attribute!", dropZoneInfo->getName(dropZoneName).str());
         }
 
     }
@@ -393,5 +393,3 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
 
     return true;
 }
-
-

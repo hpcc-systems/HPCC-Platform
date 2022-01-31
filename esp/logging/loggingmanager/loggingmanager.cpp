@@ -340,7 +340,8 @@ bool CLoggingManager::saveToTankFile(IEspUpdateLogRequestWrap& logRequest, CLogR
         return false;
     }
 
-    unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+    bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+    unsigned startTime = isLogging ? msTick() : 0;
 
     StringBuffer GUID;
     logFailSafe->GenerateGUID(GUID, NULL);
@@ -366,7 +367,7 @@ bool CLoggingManager::saveToTankFile(IEspUpdateLogRequestWrap& logRequest, CLogR
         logFailSafe->Add(GUID, nullptr, reqBuf, reqInFile);
     }
 
-    ESPLOG(LogNormal, "LThread:saveToTankFile: %dms\n", msTick() - startTime);
+    LOG(LegacyMsgCatNormal, "LThread:saveToTankFile: %dms\n", (isLogging ? msTick() : 0) - startTime);
     return true;
 }
 
@@ -511,7 +512,7 @@ bool CLoggingManager::getFilteredTransactionID(StringAttrMapping* transFields, S
                 agent->getTransactionID(transFields, transactionID);
                 if (!transactionID.isEmpty())
                 {
-                    ESPLOG(LogMax, "Got TransactionID '%s'", transactionID.str());
+                    LOG(LegacyMsgCatMax, "Got TransactionID '%s'", transactionID.str());
                     return true;
                 }
             }

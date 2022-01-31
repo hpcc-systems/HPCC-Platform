@@ -262,7 +262,6 @@ interface IEspContainer : extends IInterface
     virtual void setTxSummaryGroup(unsigned int group) = 0;
     virtual bool getTxSummaryResourceReq() = 0;
     virtual void setTxSummaryResourceReq(bool req) = 0;
-    virtual void log(LogLevel level, const char*,...) __attribute__((format(printf, 3, 4))) = 0;
     virtual unsigned getSlowProcessingTime() = 0;
     virtual void setFrameTitle(const char* title) = 0;
     virtual const char* getFrameTitle() = 0;
@@ -278,6 +277,7 @@ interface IEspContainer : extends IInterface
     virtual void clearCacheByGroupID(const char* ids, StringArray& errorMsgs) = 0;
     virtual IPropertyTree *queryApplicationConfig() = 0;
     virtual void setApplicationConfig(IPropertyTree *config) = 0;
+    virtual void enableElevatedLogging() = 0;
 };
 
 interface IEspRpcBinding;
@@ -616,3 +616,15 @@ SCMinterface IEspNgServiceBinding(IInterface)
 
 
 };
+
+#define LogNoneLegacyThreshold   CriticalMsgThreshold
+#define LogMinLegacyThreshold    ErrMsgThreshold
+#define LogNormalLegacyThreshold ProgressMsgThreshold
+#define LogMaxLegacyThreshold    ExtraneousMsgThreshold
+
+constexpr LogMsgCategory LegacyMsgCatMin(MSGAUD_all, MSGCLS_all, LogMinLegacyThreshold);
+constexpr LogMsgCategory LegacyMsgCatNormal(MSGAUD_all, MSGCLS_all, LogNormalLegacyThreshold);
+constexpr LogMsgCategory LegacyMsgCatMax(MSGAUD_all, MSGCLS_all, LogMaxLegacyThreshold);
+constexpr LogMsgCategory LegacyMsgCatForce(MSGAUD_all, MSGCLS_all, CriticalMsgThreshold);
+
+constexpr LogMsgCategory MsgCatEspElevated(MSGAUD_all, MSGCLS_elevated, DebugMsgThreshold);

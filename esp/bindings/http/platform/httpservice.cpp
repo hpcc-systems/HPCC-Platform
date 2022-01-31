@@ -232,7 +232,7 @@ int CEspHttpServer::processRequest()
         StringBuffer serviceName;
         StringBuffer methodName;
         m_request->getEspPathInfo(stype, &pathEx, &serviceName, &methodName, false);
-        ESPLOG(LogNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
+        LOG(LegacyMsgCatNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
 
         m_request->updateContext();
         ctx->setServiceName(serviceName.str());
@@ -263,9 +263,9 @@ int CEspHttpServer::processRequest()
         StringBuffer peerStr, pathStr;
         const char *userid=ctx->queryUserId();
         if (isEmptyString(userid))
-            ESPLOG(LogMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
+            LOG(LegacyMsgCatMin, "%s %s, from %s", method.str(), m_request->getPath(pathStr).str(), m_request->getPeer(peerStr).str());
         else //user ID is in HTTP header
-            ESPLOG(LogMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
+            LOG(LegacyMsgCatMin, "%s %s, from %s@%s", method.str(), m_request->getPath(pathStr).str(), userid, m_request->getPeer(peerStr).str());
 
         authState = checkUserAuth();
         if ((authState == authTaskDone) || (authState == authFailed))
@@ -969,7 +969,7 @@ EspAuthState CEspHttpServer::checkUserAuth()
     if (!authReq.authBinding)
         throw MakeStringException(-1, "Cannot find ESP HTTP Binding");
 
-    ESPLOG(LogMax, "checkUserAuth: %s %s", m_request->isSoapMessage() ? "SOAP" : "HTTP", authReq.httpMethod.isEmpty() ? "??" : authReq.httpMethod.str());
+    LOG(LegacyMsgCatMax, "checkUserAuth: %s %s", m_request->isSoapMessage() ? "SOAP" : "HTTP", authReq.httpMethod.isEmpty() ? "??" : authReq.httpMethod.str());
 
     //The preCheckAuth() does not return authUnknown when:
     //No authentication is required for the ESP binding;
@@ -1416,12 +1416,12 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
             strieq(authReq.httpMethod.str(), POST_METHOD);
         if (basicAuthentication)
         {
-            ESPLOG(LogMin, "Authentication failed: send BasicAuthentication.");
+            LOG(LegacyMsgCatMin, "Authentication failed: send BasicAuthentication.");
             m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
         }
         else
         {
-            ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
+            LOG(LegacyMsgCatMin, "Authentication failed: call askUserLogin.");
             //Display a GetUserName (similar to login) page to get a user name.
             askUserLogin(authReq, "Empty username.");
         }
@@ -1462,7 +1462,7 @@ bool CEspHttpServer::isAuthRequiredForBinding(EspAuthRequest& authReq)
 
 EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, StringBuffer& authorizationHeader)
 {
-    ESPLOG(LogMax, "checkUserAuthPerSession");
+    LOG(LegacyMsgCatMax, "checkUserAuthPerSession");
 
     unsigned sessionID = readCookie(authReq.authBinding->querySessionIDCookieName());
     if (sessionID > 0)
@@ -1515,7 +1515,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerSession(EspAuthRequest& authReq, St
 
 EspAuthState CEspHttpServer::checkUserAuthPerRequest(EspAuthRequest& authReq)
 {
-    ESPLOG(LogMax, "checkUserAuthPerRequest");
+    LOG(LegacyMsgCatMax, "checkUserAuthPerRequest");
 
     authReq.authBinding->populateRequest(m_request.get());
     if (authReq.authBinding->doAuth(authReq.ctx))
@@ -1525,7 +1525,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerRequest(EspAuthRequest& authReq)
         authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
 
         StringBuffer userName, peer;
-        ESPLOG(LogNormal, "Authenticated for %s@%s", authReq.ctx->getUserID(userName).str(), m_request->getPeer(peer).str());
+        LOG(LegacyMsgCatNormal, "Authenticated for %s@%s", authReq.ctx->getUserID(userName).str(), m_request->getPeer(peer).str());
         return authSucceeded;
     }
     if (!authReq.isSoapPost)
@@ -1551,7 +1551,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     StringBuffer peer;
     m_request->getPeer(peer);
 
-    ESPLOG(LogMax, "authNewSession for %s@%s", _userName, peer.str());
+    LOG(LegacyMsgCatMax, "authNewSession for %s@%s", _userName, peer.str());
 
     authReq.ctx->setUserID(_userName);
     authReq.ctx->setPassword(_password);
@@ -1559,7 +1559,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     if (!authReq.authBinding->doAuth(authReq.ctx) && (authReq.ctx->getAuthError() != EspAuthErrorNotAuthorized))
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
-        ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
+        LOG(LegacyMsgCatMin, "Authentication failed for %s@%s", _userName, peer.str());
         return handleAuthFailed(true, authReq, unlock, "User authentication failed.");
     }
 
@@ -1569,7 +1569,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     unsigned sessionID = createHTTPSession(authReq.authBinding, _userName, sessionStartURL);
     authReq.ctx->setSessionToken(sessionID);
 
-    ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
+    LOG(LegacyMsgCatMax, "Authenticated for %s@%s", _userName, peer.str());
 
     VStringBuffer cookieStr("%u", sessionID);
     addCookie(authReq.authBinding->querySessionIDCookieName(), cookieStr.str(), 0, true);
@@ -1785,7 +1785,7 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
         addCookie(authReq.authBinding->querySessionIDCookieName(), sessionIDStr.str(), 0, true);
         addCookie(SESSION_AUTH_OK_COOKIE, "true", 0, false); //client can access this cookie.
 
-        if (getEspLogLevel()>=LogMax)
+        if (!queryLogMsgManager()->rejectsCategory(MCuserProgress))
         {
             CDateTime timeoutAtCDT;
             StringBuffer timeoutAtString, nowString;
@@ -1795,7 +1795,7 @@ void CEspHttpServer::resetSessionTimeout(EspAuthRequest& authReq, unsigned sessi
                 now.getString(nowString).str(), createTime, timeoutAtCDT.getString(timeoutAtString).str(), timeoutAt);
         }
         else
-            ESPLOG(LogMin, "Reset %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+            LOG(LegacyMsgCatMin, "Reset %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
                 authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
 
         if (format == ESPSerializationJSON)
@@ -1909,7 +1909,7 @@ void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest&
 
 EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsigned sessionID)
 {
-    ESPLOG(LogMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
+    LOG(LegacyMsgCatMax, "authExistingSession: %s<%u>", PropSessionID, sessionID);
 
     bool getLoginPage = false;
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
@@ -1955,7 +1955,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
         sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: invalid session.");
-        ESPLOG(LogMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
+        LOG(LegacyMsgCatMin, "Authentication failed: invalid session ID '%u'. clearSessionCookies() called for the session.", sessionID);
         return authFailed;
     }
 
@@ -1964,12 +1964,12 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     if (!streq(m_request->getPeer(peer).str(), sessionStartIP))
     {
 #ifdef _CONTAINERIZED
-        ESPLOG(LogMax, "####Peer changed");
+        LOG(LegacyMsgCatMax, "####Peer changed");
 #else
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
         sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: Network address for ESP session has been changed.");
-        ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
+        LOG(LegacyMsgCatMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
 #endif
     }
@@ -1985,7 +1985,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     authReq.ctx->queryUser()->setAuthenticateStatus(AS_AUTHENTICATED);
     authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
 
-    ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
+    LOG(LegacyMsgCatMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "login"))
     {
         VStringBuffer msg("User %s has logged into this session. If you want to login as a different user, please logout and login again.", userName.str());
@@ -2016,7 +2016,7 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     {
         time_t timeoutAt = createTime + authReq.authBinding->getServerSessionTimeoutSeconds();
         sessionTree->setPropInt64(PropSessionTimeoutAt, timeoutAt);
-        ESPLOG(LogMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
+        LOG(LegacyMsgCatMin, "Updated %s for (/%s/%s) : %ld", PropSessionTimeoutAt, authReq.serviceName.isEmpty() ? "" : authReq.serviceName.str(),
             authReq.methodName.isEmpty() ? "" : authReq.methodName.str(), timeoutAt);
     }
     ///authReq.ctx->setAuthorized(true);
@@ -2066,7 +2066,7 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
         }
     }
     else
-        ESPLOG(LogMin, "Can't find session tree: %s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
+        LOG(LegacyMsgCatMin, "Can't find session tree: %s[@port=\"%d\"]", PathSessionApplication, authReq.authBinding->getPort());
 
     ///authReq.ctx->setAuthorized(true);
 
@@ -2093,24 +2093,24 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         switch (user->getAuthenticateStatus())
         {
         case AS_PASSWORD_VALID_BUT_EXPIRED :
-            ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
+            LOG(LegacyMsgCatMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
             if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
                 addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
             m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
             return authSucceeded;
         case AS_PASSWORD_EXPIRED :
-            ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
+            LOG(LegacyMsgCatMin, "ESP password expired for %s", authReq.ctx->queryUserId());
             break;
         case AS_ACCOUNT_DISABLED :
-            ESPLOG(LogMin, "Account disabled for %s", authReq.ctx->queryUserId());
+            LOG(LegacyMsgCatMin, "Account disabled for %s", authReq.ctx->queryUserId());
             addCookie(USER_ACCT_ERROR_COOKIE, "Account Disabled", 0, false);
             break;
         case AS_ACCOUNT_EXPIRED :
-            ESPLOG(LogMin, "Account expired for %s", authReq.ctx->queryUserId());
+            LOG(LegacyMsgCatMin, "Account expired for %s", authReq.ctx->queryUserId());
             addCookie(USER_ACCT_ERROR_COOKIE, "Account Expired", 0, false);
             break;
         case AS_ACCOUNT_LOCKED :
-            ESPLOG(LogMin, "Account locked for %s", authReq.ctx->queryUserId());
+            LOG(LegacyMsgCatMin, "Account locked for %s", authReq.ctx->queryUserId());
             addCookie(USER_ACCT_ERROR_COOKIE, "Account Locked", 0, false);
             break;
         }
@@ -2118,19 +2118,19 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
 
     if (unlock)
     {
-        ESPLOG(LogMin, "Unlock failed: invalid user name or password.");
+        LOG(LegacyMsgCatMin, "Unlock failed: invalid user name or password.");
         sendLockResponse(false, true, "Invalid user name or password");
         return authTaskDone;
     }
 
     if (!sessionAuth)
     {
-        ESPLOG(LogMin, "Authentication failed: send BasicAuthentication.");
+        LOG(LegacyMsgCatMin, "Authentication failed: send BasicAuthentication.");
         m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
     }
     else
     {
-        ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
+        LOG(LegacyMsgCatMin, "Authentication failed: call askUserLogin.");
         askUserLogin(authReq, msg);
     }
     return authFailed;
@@ -2193,7 +2193,7 @@ unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const ch
             sessionTree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getServerSessionTimeoutSeconds());
         return sessionID;
     }
-    ESPLOG(LogMax, "New sessionID <%d> at <%ld> in createHTTPSession()", sessionID, createTime);
+    LOG(LegacyMsgCatMax, "New sessionID <%d> at <%ld> in createHTTPSession()", sessionID, createTime);
 
     IPropertyTree* ptree = domainSessions->addPropTree(sessionTag.str());
     ptree->setProp(PropSessionNetworkAddress, peer.str());

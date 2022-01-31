@@ -3816,11 +3816,13 @@ bool CWsWorkunitsEx::onWUQueryGetSummaryStats(IEspContext& context, IEspWUQueryG
             return true;
         }
 
-        if (getEspLogLevel() >= LogMax)
         {
             StringBuffer sb;
-            toXML(queryAggregates, sb);
-            DBGLOG("getQueryStats(): '%s' => '%s'", control.str(), sb.str());
+            if (!queryLogMsgManager()->rejectsCategory(LegacyMsgCatMax))
+            {
+                toXML(queryAggregates, sb);
+                LOG(LegacyMsgCatMax, "getQueryStats(): '%s' => '%s'", control.str(), sb.str());
+            }
         }
 
         IArrayOf<IEspQuerySummaryStats> querySummaryStatsList;

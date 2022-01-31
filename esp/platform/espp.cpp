@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+
 #pragma warning (disable : 4786)
 #if defined(_WIN32) && defined(_DEBUG)
 //#include <vld.h>
@@ -120,6 +121,18 @@ bool CEspServer::isSubscribedToDali()
     return m_config->isSubscribedToDali();
 }
 
+void CEspServer::setLogLevel(LogLevel level)
+{
+    m_logLevel = level;
+    unsigned newThreshold = mapLegacyEspLogLevelToJlogThreshold(level);
+    ILogMsgFilter * espfilter = queryLogMsgManager()->queryMonitorFilter(queryStderrLogMsgHandler());
+    ILogMsgFilter *newfilter = getCategoryLogMsgFilter(espfilter->queryAudienceMask(), espfilter->queryClassMask(),
+                                                       newThreshold, espfilter->queryLocalFlag());
+    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), newfilter);
+
+    if (m_pLogMsgHandler)
+        queryLogMsgManager()->changeMonitorFilter(m_pLogMsgHandler, newfilter);
+}
 
 #ifdef _WIN32
 /*******************************************
@@ -271,8 +284,9 @@ int work_main(CEspConfig& config, CEspServer& server)
 }
 
 
-void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
+ILogMsgHandler * openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 {
+    ILogMsgHandler * pLogMsgHandler = nullptr;
     StringBuffer logdir;
     if(procpt->hasProp("@name"))
     {
@@ -291,6 +305,7 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 
 #ifndef _CONTAINERIZED
     //logDir="-" is the default in application mode and logs to stderr, not to a file
+    unsigned logLevel = LogMin;
     if (logdir.length() && !streq(logdir, "-"))
     {
         long maxLogFileSize = procpt->getPropInt64("@maxLogFileSize", 0);
@@ -298,14 +313,33 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
         lf->setName("esp_main");//override default filename
         lf->setAliasName("esp");
         lf->setMaxLogFileSize(maxLogFileSize);
-        lf->beginLogging();
+
+        // If log level defined in legacy config, honor it
+        int loglev = -1;
+        if(procpt->hasProp("@logLevel"))
+            loglev = procpt->getPropInt("@logLevel", LogMin);
+
+        // If log level is valid, set max detail, otherwise use system default set in jlog
+        if (loglev > -1)
+        {
+            lf->setMaxDetail(mapLegacyEspLogLevelToJlogThreshold((unsigned) loglev)); //jlog range set to 1-100
+            logLevel = loglev;
+        }
+        pLogMsgHandler = lf->beginLogging();
     }
+
+    // Replace the standard error message filter with one matching the set level
+    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all,
+                                                          mapLegacyEspLogLevelToJlogThreshold(logLevel), true);
+    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 #else
     setupContainerizedLogMsgHandler();
 #endif
 
     if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();
+
+    return pLogMsgHandler;  // note, this value is null for containerized builds
 }
 
 
@@ -426,6 +460,7 @@ int init_main(int argc, const char* argv[])
 
     //save off generated config to register with container.  Legacy can always reference the config file, application based ESP needs generated config saved off
     Owned<IPropertyTree> appConfig;
+    ILogMsgHandler * pLogMsgHandler = nullptr;
 
     try
     {
@@ -484,7 +519,7 @@ int init_main(int argc, const char* argv[])
         const char * processName = procpt->queryProp("@name");
         setStatisticsComponentName(SCTesp, processName, true);
 
-        openEspLogFile(envpt.get(), procpt.get());
+        pLogMsgHandler = openEspLogFile(envpt.get(), procpt.get());
 
         DBGLOG("Esp starting %s", hpccBuildInfo.buildTag);
 
@@ -543,6 +578,9 @@ int init_main(int argc, const char* argv[])
             config->loadAll();
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
+
+            if (pLogMsgHandler)
+                server->setLogMsgHandler(pLogMsgHandler);
 
             initializeMetrics(config);
         }
