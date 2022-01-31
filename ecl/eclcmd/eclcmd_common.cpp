@@ -354,7 +354,23 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE) || iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optSSL, ECLOPT_SSL) || iter.matchFlag(optSSL, ECLOPT_SSL_S))
+    {
+        sslOptProvided = true;
         return EclCmdOptionMatch;
+    }
+
+    if (iter.matchOption(optClientCert, ECLOPT_CLIENT_CERT))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optClientPrivateKey, ECLOPT_CLIENT_PRIVATE_KEY))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optCACert, ECLOPT_CA_CERT))
+        return EclCmdOptionMatch;
+
+    if (iter.matchFlag(optAcceptSelfSigned, ECLOPT_ACCEPT_SELFSIGNED))
+    {
+        selfsignedOptProvided = true;
+        return EclCmdOptionMatch;
+    }
 
     StringAttr tempArg;
     if (iter.matchOption(tempArg, "-brk"))
@@ -378,6 +394,14 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
     extractEclCmdOption(optServer, globals, ECLOPT_SERVER_ENV, ECLOPT_SERVER_INI, ECLOPT_SERVER_DEFAULT, NULL);
     extractEclCmdOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, ECLOPT_PORT_DEFAULT, NULL);
     extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
+    extractEclCmdOption(optClientCert, globals, ECLOPT_CLIENT_CERT_ENV, ECLOPT_CLIENT_CERT_INI, NULL, NULL);
+    extractEclCmdOption(optClientPrivateKey, globals, ECLOPT_CLIENT_PRIVATE_KEY_ENV, ECLOPT_CLIENT_PRIVATE_KEY_INI, NULL, NULL);
+    extractEclCmdOption(optCACert, globals, ECLOPT_CA_CERT_ENV, ECLOPT_CA_CERT_INI, NULL, NULL);
+    if (!sslOptProvided)
+        extractEclCmdOption(optSSL, globals, ECLOPT_SSL_ENV, ECLOPT_SSL_INI, false);
+    if (!selfsignedOptProvided)
+        extractEclCmdOption(optAcceptSelfSigned, globals, ECLOPT_ACCEPT_SELFSIGNED_ENV, ECLOPT_ACCEPT_SELFSIGNED_INI, false);
+
 
     //if an empty password was explicitly provided, optPasswordProvided would still be set
     if (!optPasswordProvided)
@@ -390,7 +414,11 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
         if (pw.length())
             optPassword.set(pw);
     }
-
+    if (!optClientCert.isEmpty() && optClientPrivateKey.isEmpty())
+    {
+        fprintf(stdout, "\n ... Adding a client certificate requires adding a client private key.\n");
+        return false;
+    }
     if (!optVerbose)
     {
         Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);

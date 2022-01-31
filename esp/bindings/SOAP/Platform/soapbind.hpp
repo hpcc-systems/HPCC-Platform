@@ -132,6 +132,11 @@ private:
     StringBuffer password_;
     StringBuffer realm_;
     StringBuffer mtls_secret_;
+    StringBuffer client_cert_;
+    StringBuffer client_priv_key_;
+    StringBuffer ca_certs_;
+    bool accept_self_signed_ = false;
+
     unsigned connectTimeoutMs_ = 0;
     unsigned readTimeoutSecs_ = 0;
 
@@ -176,6 +181,14 @@ public:
     void setMtlsSecretName(const char *name){mtls_secret_.set(name);}
     const char *getMtlsSecretName(){return mtls_secret_.str();}
 
+    void setCACertificates(const char *path) override {ca_certs_.set(path);}
+    virtual void setClientCertificate(const char *certPath, const char *privateKeyPath) override
+    {
+        client_cert_.set(certPath);
+        client_priv_key_.set(privateKeyPath);
+    }
+    virtual void setAcceptSelfSigned(bool acceptSelfSigned) override {accept_self_signed_=acceptSelfSigned;}
+
     void post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *action=NULL);
 
     void post(IRpcResponseBinding& response)
@@ -189,6 +202,39 @@ public:
     }
 };
 
+inline void setRpcSSLOptions(IEspClientRpcSettings &rpc, bool useSSL, const char *clientCert, const char *clientPrivateKey, const char *caCert, bool acceptSelfSigned)
+{
+    if (useSSL)
+    {
+        if (!isEmptyString(clientCert))
+        {
+            if (!checkFileExists(clientCert))
+                throw makeStringExceptionV(-1,"Client certificate not found %s.", clientCert);
+            if (isEmptyString(clientPrivateKey))
+                throw makeStringException(-1,"Client private key not provided.");
+            if (!checkFileExists(clientPrivateKey))
+                throw makeStringExceptionV(-1,"Client private key not found %s.", clientPrivateKey);
+            rpc.setClientCertificate(clientCert, clientPrivateKey);
+        }
+        if (!isEmptyString(caCert))
+        {
+            if (!checkFileExists(caCert))
+                throw makeStringExceptionV(-1,"CA certificate not found %s.", caCert);
+            rpc.setCACertificates(caCert);
+        }
+        rpc.setAcceptSelfSigned(acceptSelfSigned);
+    }
+}
+
+inline void setRpcRequestTimeouts(IEspClientRpcSettings &rpc, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
+{
+    if (waitMs==(unsigned)-1)
+        waitMs=0;
+    if (waitConnectMs || waitMs)
+        rpc.setConnectTimeOutMs(waitConnectMs ? waitConnectMs : waitMs);
+    if (waitReadSec || waitMs)
+        rpc.setReadTimeOutSecs(waitReadSec ? waitReadSec : (waitMs / 1000));
+}
 
 class esp_http_decl CSoapBinding : public CEspBinding
 {

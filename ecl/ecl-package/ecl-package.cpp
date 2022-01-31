@@ -102,7 +102,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientActivatePackageRequest> request = packageProcessClient->createActivatePackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setPackageMap(optPackageMap);
@@ -193,7 +193,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientDeActivatePackageRequest> request = packageProcessClient->createDeActivatePackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setPackageMap(optPackageMap);
@@ -263,7 +263,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientListPackageRequest> request = packageProcessClient->createListPackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setProcess("*");
@@ -354,7 +354,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientGetPackageRequest> request = packageProcessClient->createGetPackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setProcess("*");
@@ -446,7 +446,7 @@ public:
 
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientDeletePackageRequest> request = packageProcessClient->createDeletePackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setPackageMap(optPackageMap);
@@ -579,7 +579,7 @@ public:
         fprintf(stdout, "\n ... adding package map %s now\n\n", optFileName.str());
 
         Owned<IClientAddPackageRequest> request = packageProcessClient->createAddPackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setActivate(optActivate);
         request->setInfo(pkgInfo);
@@ -736,7 +736,7 @@ public:
         fprintf(stdout, "\n ... copy package map %s to %s\n\n", optSrcPath.str(), optTarget.str());
 
         Owned<IClientCopyPackageMapRequest> request = packageProcessClient->createCopyPackageMapRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setSourcePath(optSrcPath);
         request->setTarget(optTarget);
@@ -920,7 +920,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
         Owned<IClientValidatePackageRequest> request = packageProcessClient->createValidatePackageRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         if (optFileName.length())
         {
@@ -1143,7 +1143,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
         Owned<IClientGetQueryFileMappingRequest> request = packageProcessClient->createGetQueryFileMappingRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setQueryName(optQueryId);
@@ -1304,7 +1304,7 @@ public:
         fprintf(stdout, "\n ... adding packagemap %s part %s from file %s\n\n", optPMID.get(), optPartName.get(), optFileName.get());
 
         Owned<IClientAddPartToPackageMapRequest> request = packageProcessClient->createAddPartToPackageMapRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setPackageMap(optPMID);
@@ -1442,7 +1442,7 @@ public:
 
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientRemovePartFromPackageMapRequest> request = packageProcessClient->createRemovePartFromPackageMapRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setPackageMap(optPMID);
@@ -1542,7 +1542,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientGetPartFromPackageMapRequest> request = packageProcessClient->createGetPartFromPackageMapRequest();
-        setCmdRequestTimeouts(request->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(request->rpc());
 
         request->setTarget(optTarget);
         request->setPackageMap(optPMID);

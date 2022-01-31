@@ -145,10 +145,14 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     Owned<CSoapResponse> soap_response;
     soap_response.setown(new CSoapResponse);
 
+    Owned<IHttpClientContext> httpctx;
     //Send request and get response
     if(m_transportclient.get() == NULL)
     {
-        Owned<IHttpClientContext> httpctx = getHttpClientSecretContext(m_mtls_secret);
+        if (m_sec_config)
+            httpctx.setown(createHttpClientContext(LINK(m_sec_config)));
+        else
+            httpctx.setown(getHttpClientSecretContext(m_mtls_secret));
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
         if (m_disableKeepAlive)
             httpclient->disableKeepAlive();
@@ -357,7 +361,11 @@ int CSoapClient::postRequest(IRpcMessage & rpccall, StringBuffer & responsebuf, 
     //Send request and get response
     if(m_transportclient.get() == NULL)
     {
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
+        Owned<IHttpClientContext> httpctx;
+        if (m_sec_config)
+            httpctx.setown(createHttpClientContext(LINK(m_sec_config)));
+        else
+            httpctx.setown(getHttpClientContext());
         IHttpClient* httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
         m_transportclient.setown(httpclient);
         if (m_disableKeepAlive)

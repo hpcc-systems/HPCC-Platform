@@ -66,12 +66,12 @@ void expandDefintionsAsDebugValues(const IArrayOf<IEspNamedValue> & definitions,
 
 }
 
-void checkFeatures(IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
+void checkFeatures(EclCmdCommon &cmd, IClientWsWorkunits *client, bool &useCompression, int &major, int &minor, int &point, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
 {
     try
     {
         Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
-        setCmdRequestTimeouts(req->rpc(), waitMs, waitConnectMs, waitReadSec);
+        cmd.setRpcOptions(req->rpc(), waitMs);
         Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
         useCompression = resp->getDeployment().getUseCompression();
         major = resp->getBuildVersionMajor();
@@ -93,7 +93,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
     int minor = 0;
     int point = 0;
     bool useCompression = false;
-    checkFeatures(client, useCompression, major, minor, point, 0, cmd.optWaitConnectMs, cmd.optWaitReadSec);
+    checkFeatures(cmd, client, useCompression, major, minor, point, 0, cmd.optWaitConnectMs, cmd.optWaitReadSec);
 
     bool compressed = false;
     if (useCompression)
@@ -110,7 +110,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
 
     StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
-    setCmdRequestTimeouts(req->rpc(), waitMs, cmd.optWaitConnectMs, cmd.optWaitReadSec);
+    cmd.setRpcOptions(req->rpc(), waitMs);
 
     switch (cmd.optObj.type)
     {
@@ -444,7 +444,7 @@ public:
 
         unsigned clientRemaining = remaining + 100; //give the ESP method time to return from timeout before hard client stop
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
-        setCmdRequestTimeouts(req->rpc(), clientRemaining, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc(), clientRemaining);
         req->setWuid(wuid.str());
         if (optDeletePrevious)
             req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
@@ -783,7 +783,7 @@ public:
             fputs("Getting Workunit Information\n", stdout);
 
         Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
-        setCmdRequestTimeouts(req->rpc(), optWaitTime, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc(), optWaitTime);
 
         req->setWuid(wuid);
         req->setIncludeExceptions(true);
@@ -839,7 +839,7 @@ public:
         if (optVerbose)
             fputs("Retrieving Results\n", stdout);
         Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
-        setCmdRequestTimeouts(req->rpc(), optWaitTime, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc(), optWaitTime);
 
         req->setWuid(wuid);
         req->setNoRootTag(optNoRoot);
@@ -864,7 +864,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
+        checkFeatures(*this, client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
         bool optimized = !optPre64 && ((major>=7) || (major==6 && minor>=3));
 
         try
@@ -925,7 +925,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         Owned<IClientWURunRequest> req = client->createWURunRequest();
-        setCmdRequestTimeouts(req->rpc(), optWaitTime, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc(), optWaitTime);
         req->setCloneWorkunit(true);
         req->setNoRootTag(optNoRoot);
 
@@ -1155,7 +1155,7 @@ public:
     int gatherLegacyServerResults(IClientWsWorkunits* client, const char *wuid)
     {
         Owned<IClientWUInfoRequest> req = client->createWUInfoRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         req->setWuid(wuid);
         req->setIncludeExceptions(true);
@@ -1205,7 +1205,7 @@ public:
     int getAndOutputResults(IClientWsWorkunits* client, const char *wuid)
     {
         Owned<IClientWUFullResultRequest> req = client->createWUFullResultRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         req->setWuid(wuid);
         req->setNoRootTag(optNoRoot);
@@ -1226,7 +1226,7 @@ public:
         int minor = 0;
         int point = 0;
         bool useCompression = false;
-        checkFeatures(client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
+        checkFeatures(*this, client, useCompression, major, minor, point, 0, optWaitConnectMs, optWaitReadSec);
 
         if (!optPre64 && (major>=6 && minor>=3))
             return getAndOutputResults(client, optWuid);
@@ -1284,7 +1284,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         IArrayOf<IEspQuerySetQueryActionItem> queries;
         Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
@@ -1334,7 +1334,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetQueryActionRequest> req = client->createWUQuerysetQueryActionRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         req->setQuerySetName(optQuerySet.get());
         req->setAction("Delete");
@@ -1384,7 +1384,7 @@ public:
         StringBuffer s;
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetAliasActionRequest> req = client->createWUQuerysetAliasActionRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         IArrayOf<IEspQuerySetAliasActionItem> aliases;
         Owned<IEspQuerySetAliasActionItem> item = createQuerySetAliasActionItem();
@@ -1502,7 +1502,7 @@ public:
 
         // Abort
         Owned<IClientWUAbortRequest> req = client->createWUAbortRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
 
         req->setWuids(wuids);
@@ -1603,7 +1603,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
 
         if (optName.isEmpty())
@@ -1688,7 +1688,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         if (optName.isEmpty())
             return 0;
@@ -1780,7 +1780,7 @@ public:
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
-        setCmdRequestTimeouts(req->rpc(), 0, optWaitConnectMs, optWaitReadSec);
+        setRpcOptions(req->rpc());
 
         if (optName.isEmpty())
         {

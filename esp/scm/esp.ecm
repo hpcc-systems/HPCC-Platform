@@ -332,6 +332,9 @@ SCMinterface IEspClientRpcSettings(IEspStruct)
     unsigned getReadTimeOutSecs();
     void setMtlsSecretName(const char *name);
     const char *getMtlsSecretName();
+    void setClientCertificate(const char *certPath, const char *privateKeyPath);
+    void setCACertificates(const char *path);
+    void setAcceptSelfSigned(bool accept);
 };
 
 SCMinterface IEspResponse(IEspStruct)
