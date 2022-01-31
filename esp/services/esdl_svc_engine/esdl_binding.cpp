@@ -143,17 +143,17 @@ IPropertyTree * fetchESDLBindingFromStateFile(const char *process, const char *b
         if (esdlState)
         {
             const char * restoredBindingTS = esdlState->queryProp("@StateSaveTimems");
-            ESPLOG(LogNormal, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
+            LOG(LegacyMsgCatNormal, "ESDL State restored from local state store: %s created epoch: %s", bindingName, restoredBindingTS);
             return esdlState->getPropTree("EsdlBinding/Binding");
         }
         else
         {
-            ESPLOG(LogNormal, "Failed to load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
+            LOG(LegacyMsgCatNormal, "Failed to load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
         }
     }
     catch (...)
     {
-        ESPLOG(LogNormal, "Failed to load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
+        LOG(LegacyMsgCatNormal, "Failed to load DESDL binding state from local file: '%s' for ESP binding %s.%s", stateFileName, process, bindingName);
     }
 
     return nullptr;
@@ -385,10 +385,10 @@ void EsdlServiceImpl::configureUrlMethod(const char *method, IPropertyTree &entr
     }
     catch(IException* ie)
     {
-        ESPLOG(LogMin,"DESDL: Error while setting up connection for method \"%s\" verify its configuration.", method);
+        LOG(LegacyMsgCatMin,"DESDL: Error while setting up connection for method \"%s\" verify its configuration.", method);
         StringBuffer msg;
         ie->errorMessage(msg);
-        ESPLOG(LogMin,"%s",msg.str());
+        LOG(LegacyMsgCatMin,"%s",msg.str());
         connMap.remove(method);
         ie->Release();
     }
@@ -882,11 +882,11 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
             StringBuffer trxidstatus;
             if (!loggingManager()->getTransactionID(&trxidbasics,trxid, trxidstatus))
-                ESPLOG(LogMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
+                LOG(LegacyMsgCatMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
             context.addTraceSummaryTimeStamp(LogNormal, "end-trxid");
         }
         else
-            ESPLOG(LogMin,"DESDL: Transaction ID could not be fetched from logging manager!");
+            LOG(LegacyMsgCatMin,"DESDL: Transaction ID could not be fetched from logging manager!");
     }
 
     if (!trxid.length())                       //either there's no logging agent providing trxid, or it failed to generate an id
@@ -895,7 +895,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     if (trxid.length())
         context.setTransactionID(trxid.str());
     else
-        ESPLOG(LogMin,"DESDL: Transaction ID could not be generated!");
+        LOG(LegacyMsgCatMin,"DESDL: Transaction ID could not be generated!");
 
     // In the future we could instantiate a profile from the service configuration.
     // For now use a profile created on service initialization.
@@ -1084,7 +1084,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
     }
 
-    ESPLOG(LogMax,"Customer Response: %s", out.str());
+    LOG(LegacyMsgCatMax,"Customer Response: %s", out.str());
 }
 
 bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree * reqcontext, IPropertyTree * request,const char *rawreq, const char * rawresp, const char * finalresp, const char * logdata)
@@ -1124,7 +1124,7 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptCo
             entry->setOwnScriptValuesTree(scriptContext->createPTreeFromSection(ESDLScriptCtxSection_Logging));
         StringBuffer logresp;
         success = loggingManager()->updateLog(entry, logresp);
-        ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
+        LOG(LegacyMsgCatMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
     espcontext.addTraceSummaryTimeStamp(LogNormal, "end-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     return success;
@@ -1158,7 +1158,7 @@ void EsdlServiceImpl::getSoapBody(StringBuffer& out,StringBuffer& soapresp)
     //if for some reason invalid soap, return
     if(finger==end-5)
     {
-        ESPLOG(LogMax,"EsdlServiceImpl - Invalid Soap Response: %s",soapresp.str());
+        LOG(LegacyMsgCatMax,"EsdlServiceImpl - Invalid Soap Response: %s",soapresp.str());
         return;
     }
 
@@ -1175,7 +1175,7 @@ void EsdlServiceImpl::getSoapBody(StringBuffer& out,StringBuffer& soapresp)
 
     if(finger==start)
     {
-        ESPLOG(LogMax,"EsdlServiceImpl - Invalid Soap Response: %s",soapresp.str());
+        LOG(LegacyMsgCatMax,"EsdlServiceImpl - Invalid Soap Response: %s",soapresp.str());
         return;
     }
 
@@ -1220,7 +1220,7 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
     //if for some reason invalid soap, return
     if(finger==end-textlen)
     {
-        ESPLOG(LogMax,"EsdlServiceImpl - Could not find Reason, trying for other tags.: %s",soapresp.str());
+        LOG(LegacyMsgCatMax,"EsdlServiceImpl - Could not find Reason, trying for other tags.: %s",soapresp.str());
         return;
     }
 
@@ -1236,7 +1236,7 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
 
     if(finger==start)
     {
-        ESPLOG(LogMax,"EsdlServiceImpl - Could not find Reason, trying for other tags.: %s",soapresp.str());
+        LOG(LegacyMsgCatMax,"EsdlServiceImpl - Could not find Reason, trying for other tags.: %s",soapresp.str());
         return;
     }
 
@@ -1267,7 +1267,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     }
     else
     {
-        ESPLOG(LogMax,"No target URL configured for %s",mthdef.queryMethodName());
+        LOG(LegacyMsgCatMax,"No target URL configured for %s",mthdef.queryMethodName());
         throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT, "ESP",
                    "No target URL configured for %s!", mthdef.queryMethodName());
     }
@@ -1503,8 +1503,8 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
     StringBuffer status;
     StringBuffer clreq(req);
 
-    ESPLOG(LogMax,"OUTGOING Request target: %s", url.str());
-    ESPLOG(LogMax,"OUTGOING Request: %s", clreq.str());
+    LOG(LegacyMsgCatMax,"OUTGOING Request target: %s", url.str());
+    LOG(LegacyMsgCatMax,"OUTGOING Request: %s", clreq.str());
     {
         EspTimeSection timing("Calling out to query");
         context.addTraceSummaryTimeStamp(LogMin, "startcall", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
@@ -1543,12 +1543,12 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
         throw makeWsException( 3402, WSERR_SERVER, "ESP", "SoapCallStatus:%s", status.str());
     }
 
-    ESPLOG(LogMax,"INCOMING Response: %s", resp.str());
+    LOG(LegacyMsgCatMax,"INCOMING Response: %s", resp.str());
     if (querytype!=NULL && strieq(querytype, "WSECL"))
     {
         StringBuffer decoded;
         decodeXML(resp.str(), decoded);
-        ESPLOG(LogMax,"SOAP Decoded Response: %s", decoded.str());
+        LOG(LegacyMsgCatMax,"SOAP Decoded Response: %s", decoded.str());
         resp.swapWith(decoded);
     }
 }
@@ -1560,7 +1560,7 @@ void EsdlServiceImpl::getTargetResponseFile(IEspContext & context,
 {
     const char * respfile = srvinfo->queryProp("@respfile");
 
-    ESPLOG(LogMax,"Response file: %s", respfile);
+    LOG(LegacyMsgCatMax,"Response file: %s", respfile);
     if (respfile)
         resp.loadFile(respfile);
 }
@@ -2255,7 +2255,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                 try
                 {
                     params2xml(m_esdl, srvdef->queryName(), mthdef->queryName(), EsdlTypeRequest, request->queryParameters(), xmlstr, 0, context.getClientVersion());
-                    ESPLOG(LogMax,"params reqxml: %s", xmlstr.str());
+                    LOG(LegacyMsgCatMax,"params reqxml: %s", xmlstr.str());
 
                     StringBuffer out;
                     StringBuffer logdata;
@@ -2291,7 +2291,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     unsigned timetaken = msTick() - context.queryCreationTime();
                     context.addTraceSummaryTimeStamp(LogMin, "respSent", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
-                    ESPLOG(LogMax,"EsdlBindingImpl:onGetInstantQuery response: %s", out.str());
+                    LOG(LegacyMsgCatMax,"EsdlBindingImpl:onGetInstantQuery response: %s", out.str());
 
                     m_pESDLService->handleResultLogging(context, scriptContext, *srvdef, *mthdef, tgtctx.get(), req_pt.get(), soapmsg.str(), origResp.str(), out.str(), logdata.str());
                     context.addTraceSummaryTimeStamp(LogMin, "respLogged");
@@ -2325,7 +2325,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
         response->setStatus(HTTP_STATUS_OK);
         response->send();
 
-        ESPLOG(LogMax,"EsdlBindingImpl:onGetInstantQuery response: %s", xml.str());
+        LOG(LegacyMsgCatMax,"EsdlBindingImpl:onGetInstantQuery response: %s", xml.str());
     }
 
     return 0;
@@ -2622,7 +2622,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
 
             m_pESDLService->handleResultLogging(*ctx, scriptContext, *srvdef, *mthdef, tgtctx.get(), pt, soapmsg.str(), origResp.str(), out.str(), logdata.str());
 
-            ESPLOG(LogMax,"EsdlBindingImpl:HandleSoapRequest response: %s", xmlout.str());
+            LOG(LegacyMsgCatMax,"EsdlBindingImpl:HandleSoapRequest response: %s", xmlout.str());
         }
         else
             throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, request->queryServiceName(), "EsdlBindingImpl could not process SOAP request" );
@@ -2631,7 +2631,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     {
         StringBuffer text;
         text.appendf("Parsing xml error: %s.", exml.getMessage().c_str());
-        ESPLOG(LogMax, "%s\n", text.str());
+        LOG(LegacyMsgCatMax, "%s\n", text.str());
         ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
         throw makeWsException(  ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "Esp", "%s", text.str() );
     }
@@ -2647,7 +2647,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     {
         StringBuffer text;
         text.append( "EsdlBindingImpl could not process SOAP request" );
-        ESPLOG(LogMax,"%s", text.str());
+        LOG(LegacyMsgCatMax,"%s", text.str());
         ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
         throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP", "%s", text.str() );
     }
@@ -3046,7 +3046,7 @@ bool EsdlBindingImpl::getSchema(StringBuffer& schema,
 
     Owned<IEsdlDefObjectIterator> it = m_esdl->getDependencies(service, method, ctx.getClientVersion(), ctx.queryRequestParameters(), ESDLDEP_FLAGS);
     m_xsdgen->toXSD( *it, schema, EsdlXslToXsd, ctx.getClientVersion(), ctx.queryRequestParameters(), ns.str(), ESDLDEP_FLAGS, ctx.queryXslParameters());
-    ESPLOG(LogMax,"EsdlBindingImpl::getSchema schema: %s", schema.str());
+    LOG(LegacyMsgCatMax,"EsdlBindingImpl::getSchema schema: %s", schema.str());
     return true;
 }
 
@@ -3054,7 +3054,7 @@ int EsdlBindingImpl::getQualifiedNames(IEspContext& ctx, MethodInfoArray & metho
 {
     if (!m_esdl)
     {
-        ESPLOG(LogMax,"ESDL definition for service not loaded");
+        LOG(LegacyMsgCatMax,"ESDL definition for service not loaded");
         return -1;
     }
 
@@ -3069,7 +3069,7 @@ int EsdlBindingImpl::getQualifiedNames(IEspContext& ctx, MethodInfoArray & metho
     IEsdlDefService *srv = m_esdl->queryService(servname);
     if (!srv)
     {
-        ESPLOG(LogNone,"Service (%s) not found", servname);
+        PROGLOG("Service (%s) not found", servname);
         return -1;
     }
 
@@ -3095,21 +3095,21 @@ int EsdlBindingImpl::getMethodProperty(IEspContext &context, const char *serv, c
 
     if (!m_esdl)
     {
-        ESPLOG(LogMax,"EsdlBindingImpl::getMethodProperty - ESDL definition for service not loaded");
+        LOG(LegacyMsgCatMax,"EsdlBindingImpl::getMethodProperty - ESDL definition for service not loaded");
         return 0;
     }
 
     IEsdlDefService *srv = m_esdl->queryService(serv);
     if (!srv)
     {
-        ESPLOG(LogMax,"EsdlBindingImpl::getMethodProperty - service (%s) not found", serv);
+        LOG(LegacyMsgCatMax,"EsdlBindingImpl::getMethodProperty - service (%s) not found", serv);
         return 0;
     }
 
     IEsdlDefMethod *mth = srv->queryMethodByName(method);
     if (!mth)
     {
-        ESPLOG(LogMax,"EsdlBindingImpl::getMethodProperty - service (%s) method (%s) not found", serv, method);
+        LOG(LegacyMsgCatMax,"EsdlBindingImpl::getMethodProperty - service (%s) method (%s) not found", serv, method);
         return 0;
     }
 
@@ -3135,14 +3135,14 @@ bool EsdlBindingImpl::qualifyServiceName(IEspContext &context,
 {
     if (!m_esdl)
     {
-        ESPLOG(LogMax,"ESDL definition for service not loaded");
+        LOG(LegacyMsgCatMax,"ESDL definition for service not loaded");
         return false;
     }
 
     IEsdlDefService *srv = m_esdl->queryService(servname);
     if (!srv)
     {
-        ESPLOG(LogMax,"Service (%s) not found", servname);
+        LOG(LegacyMsgCatMax,"Service (%s) not found", servname);
         return false;
     }
 
@@ -3166,7 +3166,7 @@ bool EsdlBindingImpl::qualifyMethodName(IEspContext &context,
 {
     if (!m_esdl)
     {
-        ESPLOG(LogMax,"ESDL definition for service not loaded");
+        LOG(LegacyMsgCatMax,"ESDL definition for service not loaded");
         return false;
     }
 
@@ -3209,7 +3209,7 @@ int EsdlBindingImpl::onGetXForm(IEspContext &context,
         StringBuffer schema;
         context.addOptions(ESPCTX_ALL_ANNOTATION);
         getSchema(schema, context, request, serv, method, true);
-        ESPLOG(LogMax,"Schema: %s", schema.str());
+        LOG(LegacyMsgCatMax,"Schema: %s", schema.str());
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
         xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
@@ -3377,8 +3377,7 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
         }
 
         StringBuffer content(request->queryContent());
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("EsdlBinding::%s::%s: JSON request: %s", serviceName, methodName, content.str());
+        LOG(LegacyMsgCatMax, "EsdlBinding::%s::%s: JSON request: %s", serviceName, methodName, content.str());
 
         Owned<IPropertyTree> contentTree = createPTreeFromJSONString(content.str());
         if (!contentTree)
@@ -3429,8 +3428,7 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
 
         m_pESDLService->handleResultLogging(*ctx, scriptContext, *srvdef, *mthdef, tgtctx.get(), reqTree, soapmsg.str(), origResp.str(), jsonresp.str(), logdata.str());
 
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("json response: %s", jsonresp.str());
+            LOG(LegacyMsgCatMax, "json response: %s", jsonresp.str());
         return;
     }
     catch (IWsException * iwse)
@@ -3592,7 +3590,7 @@ int EsdlBindingImpl::onRoxieRequest(CHttpRequest* request, CHttpResponse* respon
         response->setStatus(HTTP_STATUS_NOT_ALLOWED);
         response->send();
 
-        ESPLOG(LogMax,"Roxie Test response: %s", xml.str());
+        LOG(LegacyMsgCatMax,"Roxie Test response: %s", xml.str());
     }
 
     return 0;
@@ -3691,7 +3689,7 @@ void EsdlBindingImpl::getRequestContent(IEspContext &context, StringBuffer & req
     {
        StringBuffer xmlstr;
        params2xml(m_esdl, servicename, methodname, EsdlTypeRequest, request->queryParameters(), xmlstr, flags, context.getClientVersion());
-       ESPLOG(LogMax,"params reqxml: %s", xmlstr.str());
+       LOG(LegacyMsgCatMax,"params reqxml: %s", xmlstr.str());
 
        Owned<IPropertyTree> tgtctx;
        Owned<IPropertyTree> req_pt = createPTreeFromXMLString(xmlstr.length(), xmlstr.str(), false);
@@ -3863,7 +3861,7 @@ void EsdlBindingImpl::getSoapMessage(StringBuffer& out,StringBuffer& soapresp,
     //if for some reason invalid soap, return
     if(finger==end-textlen)
     {
-        ESPLOG(LogMax,"getSoapMessage - Could not find start text, trying for other tags.: %s",soapresp.str());
+        LOG(LegacyMsgCatMax,"getSoapMessage - Could not find start text, trying for other tags.: %s",soapresp.str());
         return;
     }
 
@@ -3880,7 +3878,7 @@ void EsdlBindingImpl::getSoapMessage(StringBuffer& out,StringBuffer& soapresp,
 
     if(finger==start)
     {
-        ESPLOG(LogMax,"EsdlServiceImpl - Could not find end text, trying for other tags.: %s",soapresp.str());
+        LOG(LegacyMsgCatMax,"EsdlServiceImpl - Could not find end text, trying for other tags.: %s",soapresp.str());
         return;
     }
 

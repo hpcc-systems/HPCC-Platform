@@ -317,7 +317,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
             {
                 char peername[256];
                 int port = accepted->peer_name(peername, 256);
-                ESPLOG(LogMax, "HTTPS connection from %s:%d on %s socket", peername, port, persistentHandler?"persistent":"new");
+                LOG(LegacyMsgCatMax, "HTTPS connection from %s:%d on %s socket", peername, port, persistentHandler?"persistent":"new");
                 if(m_ssctx != NULL)
                 {
                     if(m_maxConcurrentThreads > 0)
@@ -343,7 +343,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
                         workthread->setMaxRequestEntityLength(getMaxRequestEntityLength());
                         workthread->setShouldClose(shouldClose);
                         workthread->start();
-                        ESPLOG(LogMax, "Request processing thread started.");
+                        LOG(LegacyMsgCatMax, "Request processing thread started.");
                         workthread->Release();
                     }
                 }
@@ -421,16 +421,16 @@ bool CHttpThread::onRequest()
     Owned<ISecureSocket> secure_sock;
     if(m_is_ssl && m_ssctx && m_persistentHandler == nullptr)
     {
-        ESPLOG(LogMax, "Creating secure socket");
+        LOG(LegacyMsgCatMax, "Creating secure socket");
         secure_sock.setown(m_ssctx->createSecureSocket(m_socket.getLink(), getEspLogLevel()));
         int res = 0;
         try
         {
-            ESPLOG(LogMax, "Accepting from secure socket");
+            LOG(LegacyMsgCatMax, "Accepting from secure socket");
             res = secure_sock->secure_accept();
             if(res < 0)
             {
-                ESPLOG(LogMin, "Error accepting from secure socket");
+                LOG(LegacyMsgCatMin, "Error accepting from secure socket");
                 return false;
             }
         }
@@ -446,7 +446,7 @@ bool CHttpThread::onRequest()
             IERRLOG("Unknown exception accepting from secure socket");
             return false;
         }
-        ESPLOG(LogMax, "Request from secure socket");
+        LOG(LegacyMsgCatMax, "Request from secure socket");
         m_socket.set(secure_sock);
         httpserver.setown(new CEspHttpServer(*secure_sock.get(), m_apport, m_viewConfig, getMaxRequestEntityLength()));
         IEspContext* ctx = httpserver->queryContext();

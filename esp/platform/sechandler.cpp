@@ -117,8 +117,7 @@ bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* Use
         // if a debit units value has been passed in.
         if(m_user->getStatus() == SecUserStatus_Inhouse && DebitUnits == 0)
         {
-            if (getEspLogLevel() >= LogNormal)
-                DBGLOG("Inhouse primary user and DebitUtits are 0 so not decrementing free trial");
+            LOG(LegacyMsgCatNormal, "Inhouse primary user and DebitUtits are 0 so not decrementing free trial");
             return true;
         }
         if (DebitUnits > 0)

@@ -124,10 +124,8 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
         multipart->serialize(contenttypestr, requeststr);
     }
 
-    if (getEspLogLevel(rpccall.queryContext())>LogNormal)
-    {
-        DBGLOG("Content type: %s", contenttypestr.str());
-    }
+    auto logCat = (rpccall.queryContext() != nullptr) ? (rpccall.queryContext()->debugTraceEnabled() ? MsgCatEspElevated : LegacyMsgCatMax) : LegacyMsgCatMax;
+    LOG(logCat, "Content type: %s", contenttypestr.str());
 
     Owned<CSoapRequest> soap_request;
     soap_request.setown(new CSoapRequest);

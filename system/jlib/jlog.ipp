@@ -137,6 +137,27 @@ protected:
     bool                      localFlag;
 };
 
+//
+// Implementation of a filter that passes messages solely based on the category's class
+// Audience and detail are set to not affect filtering
+
+class PassClassLogMsgFilter : public CLogMsgFilter
+{
+public:
+    PassClassLogMsgFilter(unsigned _cMask) : classMask(_cMask) {}
+
+    bool                      includeMessage(const LogMsg & msg) const { return mayIncludeCategory(msg.queryCategory()); }
+    bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return cat.queryClass() & classMask; }
+    unsigned                  queryAudienceMask() const { return MSGAUD_unknown; }
+    unsigned                  queryClassMask() const { return classMask; }
+    LogMsgDetail              queryMaxDetail() const { return 0; }
+    void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_category).append(MSGAUD_programmer).append(classMask).append(0); out.append(false); }
+    void                      addToPTree(IPropertyTree * tree) const {}
+    void                      orWithFilter(const ILogMsgFilter * filter) {};
+protected:
+    unsigned                  classMask;
+};
+
 // Implementations of filters using sysInfo
 
 class PIDLogMsgFilter : public CLogMsgFilter

@@ -93,6 +93,7 @@ private:
     StringBuffer   m_localId;
     StringBuffer   m_callerId;
     IHttpMessage* m_request;
+    bool          m_debugTraceEnabled = false;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -411,7 +412,28 @@ public:
     {
         m_sec_settings.setown(slist);
 
+        //
+        // Cache debug mode if enabled in security settings
+        ISecProperty* sec = slist->findProperty("DebugMode");
+        if (sec)
+        {
+            const char* mode = sec->getValue();
+            if ( mode && (streq(mode,"1") || streq(mode, "true")) )
+            {
+                if (getESPContainer())
+                {
+                    getESPContainer()->enableElevatedLogging();
+                    m_debugTraceEnabled = true;
+                }
+            }
+        }
     }
+
+    virtual bool debugTraceEnabled()
+    {
+        return m_debugTraceEnabled;
+    }
+
     virtual ISecPropertyList* querySecuritySettings()
     {
         return m_sec_settings.get();
@@ -1018,6 +1040,23 @@ unsigned getSlowProcessingTime()
     if (getContainer())
         return getContainer()->getSlowProcessingTime();
     return false;
+}
+
+LogMsgDetail mapLegacyEspLogLevelToJlogThreshold(LogLevel level)
+{
+    if (level == LogNone)
+    {
+        return(LogNoneLegacyThreshold);
+    }
+    else if (level >= LogMin && level < LogNormal)
+    {
+        return(LogMinLegacyThreshold);
+    }
+    else if (level >= LogNormal && level < LogMax)
+    {
+        return(LogNormalLegacyThreshold);
+    }
+    return(LogMaxLegacyThreshold);
 }
 
 void ESPLOG(LogLevel level, const char* fmt, ...)

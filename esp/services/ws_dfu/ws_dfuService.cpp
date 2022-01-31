@@ -6218,7 +6218,7 @@ static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType
         if (group->equals(groupFound))
         {
             foundGroup = true;
-            ESPLOG(LogMax, "Found DFUFileIGroup %s", groupName.str());
+            LOG(LegacyMsgCatMax, "Found DFUFileIGroup %s", groupName.str());
             break;
         }
         //The original group name is used by another group. Rename it to: 'original name + _ + a random number'.
@@ -6240,7 +6240,7 @@ static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType
         ForEachItemIn(l, locations)
             hosts.push_back(locations.item(l));
         queryNamedGroupStore().add(groupName, hosts, false, defaultDir, grpType);
-        ESPLOG(LogMin, "DFUFileIGroup %s added", groupName.str());
+        LOG(LegacyMsgCatMin, "DFUFileIGroup %s added", groupName.str());
     }
     return group.getClear();
 #endif

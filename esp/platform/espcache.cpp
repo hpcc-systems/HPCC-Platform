@@ -60,7 +60,7 @@ ESPMemCached::ESPMemCached()
 {
 #if (LIBMEMCACHED_VERSION_HEX < 0x01000010)
     VStringBuffer msg("ESPMemCached: libmemcached version '%s' incompatible with min version>=1.0.10", LIBMEMCACHED_VERSION_STRING);
-    ESPLOG(LogNormal, "%s", msg.str());
+    LOG(LegacyMsgCatNormal, "%s", msg.str());
 #endif
 }
 
@@ -163,7 +163,7 @@ bool ESPMemCached::checkServersUp()
     unsigned int numberOfServers = memcached_server_count(connection);
     if (numberOfServers < 1)
     {
-        ESPLOG(LogMin,"ESPMemCached: no server connected.");
+        LOG(LegacyMsgCatMin,"ESPMemCached: no server connected.");
         return false;
     }
 
@@ -174,12 +174,12 @@ bool ESPMemCached::checkServersUp()
         {
             numberOfServersDown++;
             VStringBuffer msg("ESPMemCached: Failed connecting to entry %u\nwithin the server list: %s", i+1, options.str());
-            ESPLOG(LogMin, "%s", msg.str());
+            LOG(LegacyMsgCatMin, "%s", msg.str());
         }
     }
     if (numberOfServersDown == numberOfServers)
     {
-        ESPLOG(LogMin,"ESPMemCached: Failed connecting to ALL servers. Check memcached on all servers and \"memcached -B ascii\" not used.");
+        LOG(LegacyMsgCatMin,"ESPMemCached: Failed connecting to ALL servers. Check memcached on all servers and \"memcached -B ascii\" not used.");
         return false;
     }
 
@@ -278,7 +278,7 @@ void ESPMemCached::assertOnError(memcached_return_t rc, const char * _msg)
     if (rc != MEMCACHED_SUCCESS)
     {
         VStringBuffer msg("ESPMemCached: %s%s", _msg, memcached_strerror(connection, rc));
-        ESPLOG(LogNormal, "%s", msg.str());
+        LOG(LegacyMsgCatNormal, "%s", msg.str());
     }
 }
 
@@ -288,7 +288,7 @@ void ESPMemCached::assertPool()
     {
         StringBuffer msg("ESPMemCached: Failed to instantiate server pool with:");
         msg.newline().append(options);
-        ESPLOG(LogNormal, "%s", msg.str());
+        LOG(LegacyMsgCatNormal, "%s", msg.str());
     }
 }
 #endif //USE_LIBMEMCACHED

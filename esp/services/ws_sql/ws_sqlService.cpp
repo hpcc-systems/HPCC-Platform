@@ -62,10 +62,10 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
     {
         const char * querysetfilter = req.getQuerySet();
 #ifdef _CONTAINERIZED
-        ESPLOG(LogNormal, "WsSQL: getting containerTargetClusters...");
+        LOG(LegacyMsgCatNormal, "WsSQL: getting containerTargetClusters...");
         Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
 #else
-        ESPLOG(LogNormal, "WsSQL-legacy: getting targetClusters...");
+        LOG(LegacyMsgCatNormal, "WsSQL-legacy: getting targetClusters...");
         Owned<IStringIterator> targets = getTargetClusters(nullptr, nullptr);
 #endif
         IArrayOf<IEspHPCCQuerySet> pquerysets;
@@ -204,17 +204,17 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
         {
             StringArray dfuclusters;
 #ifdef _CONTAINERIZED
-            ESPLOG(LogNormal, "WsSQL: getting containerTargetClusters...");
+            LOG(LegacyMsgCatNormal, "WsSQL: getting containerTargetClusters...");
             Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
             SCMStringBuffer target;
             ForEach(*targets)
             {
                 const char *setname = targets->str(target).str();
-                ESPLOG(LogNormal, "WsSQL: found containerTargetClusters: %s", setname);
+                LOG(LegacyMsgCatNormal, "WsSQL: found containerTargetClusters: %s", setname);
                 dfuclusters.append(setname);
             }
 #else
-            ESPLOG(LogNormal, "WsSQL-legacy: getting getTargetClusterList...");
+            LOG(LegacyMsgCatNormal, "WsSQL-legacy: getting getTargetClusterList...");
             CTpWrapper topologyWrapper;
             IArrayOf<IEspTpLogicalCluster> clusters;
             topologyWrapper.getTargetClusterList(clusters, req.getClusterType(), NULL);
@@ -879,9 +879,9 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
         bool cacheeligible =  (version > 3.04 ) ? !req.getIgnoreCache() : true;
 
         Owned<HPCCSQLTreeWalker> parsedSQL;
-        ESPLOG(LogNormal, "WsSQL: Parsing sql query...");
+        LOG(LegacyMsgCatNormal, "WsSQL: Parsing sql query...");
         parsedSQL.setown(parseSQL(context, sqltext));
-        ESPLOG(LogNormal, "WsSQL: Finished parsing sql query...");
+        LOG(LegacyMsgCatNormal, "WsSQL: Finished parsing sql query...");
 
         SQLQueryType querytype = parsedSQL->getSqlType();
         if (querytype == SQLTypeCall)
@@ -893,7 +893,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
                 else
                     parsedSQL->setQuerySetName(req.getTargetQuerySet());
             }
-            ESPLOG(LogMax, "WsSQL: Processing call query...");
+            LOG(LegacyMsgCatMax, "WsSQL: Processing call query...");
 
             WsEclWuInfo wsinfo("", parsedSQL->getQuerySetName(), parsedSQL->getStoredProcName(), username.str(), passwd);
             compiledwuid.set(wsinfo.ensureWuid());
@@ -922,17 +922,17 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
         if (compiledwuid.length() != 0)
            normalizedSQL.append("--PWUID=").append(compiledwuid.str());
 
-        ESPLOG(LogMax, "WsSQL: getWorkUnitFactory...");
+        LOG(LegacyMsgCatMax, "WsSQL: getWorkUnitFactory...");
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
 
-        ESPLOG(LogMax, "WsSQL: checking query cache...");
+        LOG(LegacyMsgCatMax, "WsSQL: checking query cache...");
         if(cacheeligible && getCachedQuery(normalizedSQL.str(), compiledwuid.s))
         {
-           ESPLOG(LogMax, "WsSQL: cache hit opening wuid %s...", compiledwuid.str());
+           LOG(LegacyMsgCatMax, "WsSQL: cache hit opening wuid %s...", compiledwuid.str());
            Owned<IConstWorkUnit> cw = factory->openWorkUnit(compiledwuid.str(), false);
            if (!cw)//cache hit but unavailable WU
            {
-               ESPLOG(LogMax, "WsSQL: cache hit but unavailable WU...");
+               LOG(LegacyMsgCatMax, "WsSQL: cache hit but unavailable WU...");
                removeQueryFromCache(normalizedSQL.str());
                compiledwuid.clear();
            }
@@ -965,7 +965,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
                 fprintf(stderr, "GENERATED ECL:\n%s\n", ecltext.str());
 #endif
 
-                ESPLOG(LogMax, "WsSQL: creating new WU...");
+                LOG(LegacyMsgCatMax, "WsSQL: creating new WU...");
                 NewWsWorkunit wu(context);
                 compiledwuid.set(wu->queryWuid());
 
@@ -992,7 +992,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
             }
         }
 
-        ESPLOG(LogMax, "WsSQL: opening WU...");
+        LOG(LegacyMsgCatMax, "WsSQL: opening WU...");
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(compiledwuid.str(), false);
 
         if (!cw)
@@ -1098,7 +1098,7 @@ void CwssqlEx::createWUXMLParams(StringBuffer & xmlparams, const IArrayOf <ISQLE
             xmlparams.appendf("</%s>", currentvalplaceholder->getPlaceHolderName());
         }
         else
-            ESPLOG(LogNormal, "WsSQL: attempted to create XML params from unexpected expression type.");
+            LOG(LegacyMsgCatNormal, "WsSQL: attempted to create XML params from unexpected expression type.");
     }
     xmlparams.append("</root>");
     DBGLOG("XML PARAMS: %s", xmlparams.str());
@@ -1322,7 +1322,7 @@ bool CwssqlEx::addQueryToCache(const char * sqlQuery, const char * wuid)
         CriticalBlock block(critCache);
         if (isCacheExpired())
         {
-            ESPLOG(LogNormal, "WsSQL: Query Cache has expired and is being flushed.");
+            LOG(LegacyMsgCatNormal, "WsSQL: Query Cache has expired and is being flushed.");
             //Flushing cache logic could have been in dedicated function, but
             //putting it here makes this action more atomic, less synchronization concerns
             cachedSQLQueries.clear();
@@ -1854,7 +1854,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
     if (description && * description)
         ecl.appendf("\nStd.file.setfiledescription('~%s','%s')", targetTableName, description);
 
-    ESPLOG(LogMax, "WsSQL: creating new WU...");
+    LOG(LegacyMsgCatMax, "WsSQL: creating new WU...");
 
     NewWsWorkunit wu(context);
     SCMStringBuffer compiledwuid;
@@ -1874,13 +1874,13 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
     wu->commit();
     wu.clear();
 
-    ESPLOG(LogMax, "WsSQL: compiling WU...");
+    LOG(LegacyMsgCatMax, "WsSQL: compiling WU...");
     WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
     waitForWorkUnitToCompile(compiledwuid.str(), req.getWait());
 
-    ESPLOG(LogMax, "WsSQL: finish compiling WU...");
+    LOG(LegacyMsgCatMax, "WsSQL: finish compiling WU...");
 
-    ESPLOG(LogMax, "WsSQL: opening WU...");
+    LOG(LegacyMsgCatMax, "WsSQL: opening WU...");
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(compiledwuid.str(), false);
 
@@ -1896,12 +1896,12 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
     }
     else
     {
-        ESPLOG(LogMax, "WsSQL: executing WU(%s)...", compiledwuid.str());
+        LOG(LegacyMsgCatMax, "WsSQL: executing WU(%s)...", compiledwuid.str());
         WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, false, true, true, nullptr, nullptr, nullptr, nullptr);
 
-        ESPLOG(LogMax, "WsSQL: waiting on WU(%s)...", compiledwuid.str());
+        LOG(LegacyMsgCatMax, "WsSQL: waiting on WU(%s)...", compiledwuid.str());
         waitForWorkUnitToComplete(compiledwuid.str(), req.getWait());
-        ESPLOG(LogMax, "WsSQL: finished waiting on WU(%s)...", compiledwuid.str());
+        LOG(LegacyMsgCatMax, "WsSQL: finished waiting on WU(%s)...", compiledwuid.str());
 
         Owned<IConstWorkUnit> rw = factory->openWorkUnit(compiledwuid.str(), false);
 
@@ -2006,4 +2006,3 @@ bool CwssqlEx::publishWorkunit(IEspContext &context, const char * queryname, con
 
     return true;
 }
-

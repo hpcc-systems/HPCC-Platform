@@ -416,11 +416,8 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
         httprequest->addHeader("WWW-Authenticate", authheader.str());
     }
 
-    if (getEspLogLevel()>LogNormal)
-    {
-        DBGLOG("Content type: %s", contenttype);
-        DBGLOG("Request content: %s", request.str());
-    }
+    LOG(LegacyMsgCatMax, "Content type: %s", contenttype);
+    LOG(LegacyMsgCatMax, "Request content: %s", request.str());
 
     httprequest->setContent(request.str());
 
@@ -463,8 +460,7 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
     m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", response.str());
+    LOG(LegacyMsgCatMax,"Response content: %s", response.str());
 
     return HttpClientErrCode::OK;
 }
@@ -596,12 +592,9 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
     httprequest->setContentType(contentType);
     httprequest->setContent(forwardRequest->queryContent());
 
-    if (getEspLogLevel()>LogNormal)
-    {
-        StringBuffer s;
-        DBGLOG("Content type: %s", forwardRequest->getContentType(s).str());
-        DBGLOG("Request content: %s", forwardRequest->queryContent());
-    }
+    StringBuffer s;
+    LOG(LegacyMsgCatMax, "Content type: %s", forwardRequest->getContentType(s).str());
+    LOG(LegacyMsgCatMax, "Request content: %s", forwardRequest->queryContent());
 
     copyCookies(*httprequest, *forwardRequest, m_host);
 
@@ -629,8 +622,7 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
     m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", httpresponse->queryContent());
+    LOG(LegacyMsgCatMax, "Response content: %s", httpresponse->queryContent());
 
     return HttpClientErrCode::OK;
 }
@@ -708,11 +700,9 @@ IHttpMessage *CHttpClient::sendRequestEx(const char* method, const char* content
         httprequest->addHeader("WWW-Authenticate", authheader.str());
     }
 
-    if (getEspLogLevel()>LogNormal)
-    {
-        DBGLOG("Content type: %s", contenttype);
-        DBGLOG("Request content: %s", content.str());
-    }
+    LOG(LegacyMsgCatMax, "Content type: %s", contenttype);
+    LOG(LegacyMsgCatMax, "Request content: %s", content.str());
+
 
     httprequest->setContent(content.str());
 
@@ -773,8 +763,7 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
     resp->getContent(responseContent);
     resp->getStatus(responseStatus);
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", responseContent.str());
+    LOG(LegacyMsgCatMax, "Response content: %s", responseContent.str());
 
     return code;
 }
@@ -1025,11 +1014,8 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     StringBuffer content;
     httpresponse->getContent(content);
 
-    if (getEspLogLevel()>LogNormal)
-    {
-        if(httpresponse->isTextMessage())
-            DBGLOG("http response content = %s", content.str());
-    }
+    if(httpresponse->isTextMessage())
+        LOG(LegacyMsgCatMax, "http response content = %s", content.str());
 
     response.set_text(content.str());
             

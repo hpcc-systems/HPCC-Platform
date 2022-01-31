@@ -357,32 +357,32 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                     }
                     else
                     {
-                        ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                        LOG(LegacyMsgCatMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
                     }
                 }
                 catch (IException* e)
                 {
                     e->Release();
-                    ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                    LOG(LegacyMsgCatMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
                 }
                 catch (...)
                 {
-                    ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                    LOG(LegacyMsgCatMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
                 }
 
                 saveAttachState();
             }
             else
-                ESPLOG(LogMin, "ESP Process [%s] configuration is missing '@directory' attribute, could not read AttachState", m_process.str());
+                LOG(LegacyMsgCatMin, "ESP Process [%s] configuration is missing '@directory' attribute, could not read AttachState", m_process.str());
         }
         catch (IException* e)
         {
             e->Release();
-            ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+            LOG(LegacyMsgCatMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
         }
         catch (...)
         {
-           ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+           LOG(LegacyMsgCatMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
         }
 
         if (isDetachedFromDali())
@@ -1133,7 +1133,7 @@ bool CEspConfig::reSubscribeESPToDali()
         binding_cfg& bindingConfig = **iter;
         if (bindingConfig.bind)
         {
-            ESPLOG(LogMin, "Requesting binding '%s' to subscribe to DALI notifications", bindingConfig.name.str());
+            LOG(LegacyMsgCatMin, "Requesting binding '%s' to subscribe to DALI notifications", bindingConfig.name.str());
             bindingConfig.bind->subscribeBindingToDali();
         }
         iter++;
@@ -1150,7 +1150,7 @@ bool CEspConfig::unsubscribeESPFromDali()
         binding_cfg& bindingConfig = **iter;
         if (bindingConfig.bind)
         {
-            ESPLOG(LogMin, "Requesting binding '%s' to un-subscribe from DALI notifications", bindingConfig.name.str());
+            LOG(LegacyMsgCatMin, "Requesting binding '%s' to un-subscribe from DALI notifications", bindingConfig.name.str());
             bindingConfig.bind->unsubscribeBindingFromDali();
         }
         iter++;
@@ -1177,7 +1177,7 @@ bool CEspConfig::detachESPFromDali(bool force)
         while (iter!=m_bindings.end())
         {
             binding_cfg& xcfg = **iter;
-            ESPLOG(LogMin, "Detach ESP From DALI: requesting binding: '%s' to detach...", xcfg.name.str());
+            LOG(LegacyMsgCatMin, "Detach ESP From DALI: requesting binding: '%s' to detach...", xcfg.name.str());
             if (xcfg.bind)
             {
                 xcfg.bind->detachBindingFromDali();
@@ -1209,12 +1209,12 @@ bool CEspConfig::attachESPToDali()
         while (iter!=m_bindings.end())
         {
             binding_cfg& xcfg = **iter;
-            ESPLOG(LogMin, "Attach ESP to DALI: requesting binding: '%s' to attach...", xcfg.name.str());
+            LOG(LegacyMsgCatMin, "Attach ESP to DALI: requesting binding: '%s' to attach...", xcfg.name.str());
             if (xcfg.bind)
             {
                 map<string, srv_cfg*>::iterator sit = m_services.find(xcfg.service_name.str());
                 if(sit == m_services.end())
-                    ESPLOG(LogMin, "Warning: Service %s not found for the binding", xcfg.service_name.str());
+                    LOG(LegacyMsgCatMin, "Warning: Service %s not found for the binding", xcfg.service_name.str());
                 else
                     ((*sit).second->srv)->attachServiceToDali();
             }
@@ -1252,4 +1252,3 @@ IEspRpcBinding* CEspConfig::queryBinding(const char* name)
     }
     return nullptr;
 }
-

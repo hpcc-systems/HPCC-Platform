@@ -315,11 +315,11 @@ public:
             Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
             if (!conn)
             {
-                ESPLOG(LogMin, "Unable to connect to ESDL Service binding information in dali %s", xpath.str());
+                LOG(LegacyMsgCatMin, "Unable to connect to ESDL Service binding information in dali %s", xpath.str());
                 return nullptr;
             }
 
-            ESPLOG(LogNormal, "ESDL Binding: Fetching ESDL Binding from Dali %s", xpath.str());
+            LOG(LegacyMsgCatNormal, "ESDL Binding: Fetching ESDL Binding from Dali %s", xpath.str());
             return createPTreeFromIPT(conn->queryRoot());
         }
         catch (IException *E)
@@ -330,7 +330,7 @@ public:
         }
         catch(...)
         {
-            ESPLOG(LogMin, "ESDL Binding: Unknown error encountered while fetching ESDL Binding from Dali %s", xpath.str());
+            LOG(LegacyMsgCatMin, "ESDL Binding: Unknown error encountered while fetching ESDL Binding from Dali %s", xpath.str());
         }
 
         return nullptr;
@@ -344,11 +344,11 @@ public:
             Owned<IRemoteConnection> conn = checkQuerySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_DESDL);
             if (!conn)
             {
-                ESPLOG(LogMin, "Unable to connect to ESDL Service binding information in dali %s", xpath.str());
+                LOG(LegacyMsgCatMin, "Unable to connect to ESDL Service binding information in dali %s", xpath.str());
                 return nullptr;
             }
 
-            ESPLOG(LogNormal, "ESDL Binding: Fetching ESDL Binding from Dali %s", xpath.str());
+            LOG(LegacyMsgCatNormal, "ESDL Binding: Fetching ESDL Binding from Dali %s", xpath.str());
             return createPTreeFromIPT(conn->queryRoot());
         }
         catch (IException *E)
@@ -359,7 +359,7 @@ public:
         }
         catch(...)
         {
-            ESPLOG(LogMin, "ESDL Binding: Unknown error encountered while fetching ESDL Binding from Dali %s", xpath.str());
+            LOG(LegacyMsgCatMin, "ESDL Binding: Unknown error encountered while fetching ESDL Binding from Dali %s", xpath.str());
         }
 
         return nullptr;
@@ -411,14 +411,14 @@ public:
                 else
                 {
                     message.setf("Could not overwrite Definition: '%s.%d'", definitionName, newSeq);
-                    ESPLOG(LogMin, "%s", message.str());
+                    LOG(LegacyMsgCatMin, "%s", message.str());
                     return false;
                 }
             }
             else
             {
                 message.setf("Will not delete previous ESDL definition version because it is referenced in an ESDL binding.");
-                ESPLOG(LogMin, "%s", message.str());
+                LOG(LegacyMsgCatMin, "%s", message.str());
                 return false;
             }
         }
@@ -1007,7 +1007,7 @@ public:
         triggerSubscription(changestr.str());
 
         message.setf("Successfully configured Service '%s', associated with ESDL definition '%s', on ESP '%s' and port '%s'", esdlServiceName, lcId.str(), espProcName, espPort);
-        ESPLOG(LogMin, "ESDL Binding '%s' published by user='%s' overwrite flag: %s", lcId.str(), (user && *user) ? user : "Anonymous", overwrite ? "TRUE" : "FALSE");
+        LOG(LegacyMsgCatMin, "ESDL Binding '%s' published by user='%s' overwrite flag: %s", lcId.str(), (user && *user) ? user : "Anonymous", overwrite ? "TRUE" : "FALSE");
         return 0;
     }
 

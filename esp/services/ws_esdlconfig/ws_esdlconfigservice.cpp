@@ -361,7 +361,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
         }
 
         msg.appendf("Successfully published %s", newqueryid.str());
-        ESPLOG(LogMin, "ESDL Definition '%s' published by user='%s'", newqueryid.str(), (user && *user) ? user : "Anonymous");
+        LOG(LegacyMsgCatMin, "ESDL Definition '%s' published by user='%s'", newqueryid.str(), (user && *user) ? user : "Anonymous");
 
         double ver = context.getClientVersion();
         if (ver >= 1.2)
@@ -515,7 +515,7 @@ bool CWsESDLConfigEx::onPublishESDLBinding(IEspContext &context, IEspPublishESDL
         }
 
         if (!methodstree || methodstree->getCount("Method") == 0)
-            ESPLOG(LogMin, "Publishing ESDL Binding with no METHODS configured!");
+            LOG(LegacyMsgCatMin, "Publishing ESDL Binding with no METHODS configured!");
 
         if (espProcName.length() == 0)
             throw MakeStringException(-1, "Must provide ESP Process name");
@@ -869,9 +869,9 @@ bool CWsESDLConfigEx::onConfigureESDLBindingMethod(IEspContext &context, IEspCon
                         double ver = context.getClientVersion();
 
                         if (ver >= 1.4)
-                            ESPLOG(LogMin, "ESDL Binding '%s' configured method '%s' by user='%s' overwrite flag: %s", bindingId, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
+                            LOG(LegacyMsgCatMin, "ESDL Binding '%s' configured method '%s' by user='%s' overwrite flag: %s", bindingId, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
                         else
-                            ESPLOG(LogMin, "ESDL Binding '%s.%d' configured method '%s' by user='%s' overwrite flag: %s", esdlDefinitionName.str(), esdlver, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
+                            LOG(LegacyMsgCatMin, "ESDL Binding '%s.%d' configured method '%s' by user='%s' overwrite flag: %s", esdlDefinitionName.str(), esdlver, username.isEmpty() ? "Anonymous" : username.str(), methodName, override ? "TRUE" : "FALSE");
 
                         if (ver >= 1.2)
                         {
@@ -1373,7 +1373,7 @@ void CWsESDLConfigEx::addPublishHistory(IPropertyTree * publishedEntryTree, IEsp
          history.setLastEditTime(publishedEntryTree->queryProp("@lastEdit"));
     }
     else
-        ESPLOG(LogMin, "Could not fetch ESDL publish history!");
+        LOG(LegacyMsgCatMin, "Could not fetch ESDL publish history!");
 }
 
 bool CWsESDLConfigEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp)
@@ -1411,7 +1411,7 @@ bool CWsESDLConfigEx::onDeleteESDLDefinition(IEspContext &context, IEspDeleteESD
     {
         StringBuffer username;
         context.getUserID(username);
-        ESPLOG(LogMin, "ESDL Definition '%s' Deleted by user='%s'", esdlDefinitionId.str(), username.isEmpty() ? "Anonymous" : username.str());
+        LOG(LegacyMsgCatMin, "ESDL Definition '%s' Deleted by user='%s'", esdlDefinitionId.str(), username.isEmpty() ? "Anonymous" : username.str());
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setCode(0);
         VStringBuffer desc("Deleted ESDL Definition %s", esdlDefinitionId.str());
@@ -1510,7 +1510,7 @@ bool CWsESDLConfigEx::onDeleteESDLBinding(IEspContext &context, IEspDeleteESDLBi
     {
         StringBuffer username;
         context.getUserID(username);
-        ESPLOG(LogMin, "ESDL binding '%s' Deleted by user='%s'", esdlBindingId.str(), username.isEmpty() ? "Anonymous" : username.str());
+        LOG(LegacyMsgCatMin, "ESDL binding '%s' Deleted by user='%s'", esdlBindingId.str(), username.isEmpty() ? "Anonymous" : username.str());
 
         resp.setDeletedTree(thexml.str());
         resp.updateStatus().setDescription("Service successfully unbound");

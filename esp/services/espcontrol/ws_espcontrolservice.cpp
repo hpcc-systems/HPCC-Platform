@@ -178,6 +178,7 @@ bool CWSESPControlEx::onEnableDaliSubscriptions(IEspContext& context, IEspEnable
 
 bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& req, IEspSetLoggingResponse& resp)
 {
+    double version = context.getClientVersion();
     try
     {
 #ifdef _USE_OPENLDAP
@@ -192,8 +193,37 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
         if (!m_container)
             throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to access container.");
 
-        if (!req.getLoggingLevel_isNull())
-            m_container->setLogLevel(req.getLoggingLevel());
+        if (version >= 1.04)
+        {
+            unsigned requestedLevel = req.getLoggingLevelEnum();
+            unsigned espLevel;
+
+            switch (requestedLevel)
+            {
+                case 0:
+                    espLevel = LogNone;
+                    break;
+                case 1:
+                    espLevel = LogMin;
+                    break;
+                case 2:
+                    espLevel = LogNormal;
+                    break;
+                case 3:
+                    espLevel = LogMax;
+                    break;
+                default:
+                    espLevel = LogMax;
+                    break;
+            }
+            m_container->setLogLevel(espLevel);
+        }
+        else
+        {
+            if (!req.getLoggingLevel_isNull())
+                m_container->setLogLevel(req.getLoggingLevel());
+        }
+
         m_container->setLogRequests(readLogRequest(req.getLogRequests()));
         if (!req.getLogResponses_isNull())
             m_container->setLogResponses(req.getLogResponses());
@@ -209,6 +239,7 @@ bool CWSESPControlEx::onSetLogging(IEspContext& context, IEspSetLoggingRequest& 
 
 bool CWSESPControlEx::onGetLoggingSettings(IEspContext& context, IEspGetLoggingSettingsRequest& req, IEspGetLoggingSettingsResponse& resp)
 {
+    double version = context.getClientVersion();
     try
     {
 #ifdef _USE_OPENLDAP
@@ -223,7 +254,29 @@ bool CWSESPControlEx::onGetLoggingSettings(IEspContext& context, IEspGetLoggingS
             throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to access container.");
 
         StringBuffer logRequests;
-        resp.setLoggingLevel(m_container->getLogLevel());
+
+        if (version >= 1.04)
+        {
+
+            LogLevel curLevel = m_container->getLogLevel();
+
+            CLogLevelEnum returnLevel;
+
+            if (curLevel == 0)
+                returnLevel = static_cast<CLogLevelEnum>(0);
+            else if (curLevel < 5)
+                returnLevel = static_cast<CLogLevelEnum>(1);
+            else if (curLevel < 10)
+                returnLevel = static_cast<CLogLevelEnum>(2);
+            else
+                returnLevel = static_cast<CLogLevelEnum>(3);
+            resp.setLoggingLevelEnum(returnLevel);
+        }
+        else
+        {
+            resp.setLoggingLevel(m_container->getLogLevel());
+        }
+
         resp.setLogRequests(getLogRequestString(m_container->getLogRequests(), logRequests));
         resp.setLogResponses(m_container->getLogResponses());
         resp.setLoggingLevelSetting(loggingLevelSetting);

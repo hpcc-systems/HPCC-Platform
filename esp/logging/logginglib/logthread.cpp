@@ -123,7 +123,7 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
 
 CLogThread::~CLogThread()
 {
-    ESPLOG(LogMax, "CLogThread::~CLogThread()");
+    LOG(LegacyMsgCatMax, "CLogThread::~CLogThread()");
 }
 
 void CLogThread::start()
@@ -181,9 +181,10 @@ bool CLogThread::queueLog(IEspUpdateLogRequest* logRequest)
 
 bool CLogThread::queueLog(IEspUpdateLogRequestWrap* logRequest)
 {
-    unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+    bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+    unsigned startTime = isLogging ? msTick() : 0;
     Owned<IEspUpdateLogRequestWrap> logRequestFiltered = logAgent->filterLogContent(logRequest);
-    ESPLOG(LogNormal, "LThread:filterLog: %dms\n", msTick() -  startTime);
+    LOG(LegacyMsgCatNormal, "LThread:filterLog: %dms\n", (isLogging ? msTick() : 0) -  startTime);
     return enqueue(logRequestFiltered, nullptr);
 }
 
@@ -192,7 +193,9 @@ bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest, const char* guid)
     if (!logRequestReader && logFailSafe.get())
     {
         StringBuffer GUID, reqBuf;
-        unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+
+        bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+        unsigned startTime = isLogging ? msTick() : 0;
         if (isEmptyString(guid))
             logFailSafe->GenerateGUID(GUID, nullptr);
         else
@@ -204,7 +207,7 @@ bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest, const char* guid)
         //So, the scriptValues section is not needed to be in the logFailSafe->Add().
         if (serializeLogRequestContent(logRequest, reqBuf))
             logFailSafe->Add(GUID, nullptr, reqBuf.str(), nullptr);
-        ESPLOG(LogNormal, "LThread:addToFailSafe: %dms\n", msTick() -  startTime);
+        LOG(LegacyMsgCatNormal, "LThread:addToFailSafe: %dms\n", (isLogging ? msTick() : 0) -  startTime);
     }
 
     writeJobQueue(logRequest);
@@ -239,7 +242,8 @@ void CLogThread::sendLog()
 
             try
             {
-                unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+                bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+                unsigned startTime = isLogging ? msTick() : 0;
                 Owned<IEspUpdateLogResponse> logResponse = createUpdateLogResponse();
                 if (logRequestInFile)
                     logAgent->updateLog(*logRequestInFile, *logResponse);
@@ -255,19 +259,19 @@ void CLogThread::sendLog()
                     else
                         throw MakeStringException(EspLoggingErrors::UpdateLogFailed, "Unknown error");
                 }
-                ESPLOG(LogNormal, "LThread:updateLog: %dms\n", msTick() -  startTime);
+                LOG(LegacyMsgCatNormal, "LThread:updateLog: %dms\n", (isLogging ? msTick() : 0) -  startTime);
 
                 if (logRequestReader)
                 {
-                    unsigned startTime1 = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+                    unsigned startTime1 = isLogging ? msTick() : 0;
                     logRequestReader->addACK(GUID);
-                    PROGLOG("%s acked: %dms\n", GUID, msTick() -  startTime1);
+                    PROGLOG("%s acked: %dms\n", GUID, (isLogging ? msTick() : 0) -  startTime1);
                 }
                 else if(ensureFailSafe && logFailSafe.get())
                 {
-                    unsigned startTime1 = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+                    unsigned startTime1 = isLogging ? msTick() : 0;
                     logFailSafe->AddACK(GUID);
-                    ESPLOG(LogNormal, "LThread:AddACK: %dms\n", msTick() -  startTime1);
+                    LOG(LegacyMsgCatNormal, "LThread:AddACK: %dms\n", (isLogging ? msTick() : 0) -  startTime1);
                 }
 
                 logRequest->Release();//Make sure that no data (such as GUID) is needed before releasing the logRequest.
@@ -420,8 +424,9 @@ void CLogThread::checkRollOver()
         if(numNewArrivals <= 0)
             return;
 
-        ESPLOG(LogMax, "writing %d requests in the queue to the rolled over tank file.", numNewArrivals);
-        unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+        LOG(LegacyMsgCatMax, "writing %d requests in the queue to the rolled over tank file.", numNewArrivals);
+        bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+        unsigned startTime = isLogging ? msTick() : 0;
         for(unsigned i = 0; i < numNewArrivals; i++)
         {
             IInterface* pRequest = logQueue.item(i);
@@ -441,7 +446,7 @@ void CLogThread::checkRollOver()
             if(GUID && *GUID && serializeLogRequestContent(pEspRequest, reqBuf))
                 logFailSafe->Add(GUID, nullptr, reqBuf.str(), nullptr);
         }
-        ESPLOG(LogNormal, "LThread:AddFailSafe: %dms\n", msTick() -  startTime);
+        LOG(LegacyMsgCatNormal, "LThread:AddFailSafe: %dms\n", (isLogging ? msTick() : 0) -  startTime);
     }
     catch(IException* Ex)
     {
@@ -555,9 +560,10 @@ void CLogThread::writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite)
 {
     if (jobToWrite)
     {
-        unsigned startTime = (getEspLogLevel()>=LogNormal) ? msTick() : 0;
+        bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+        unsigned startTime = isLogging ? msTick() : 0;
         CriticalBlock b(logQueueCrit);
-        ESPLOG(LogNormal, "LThread:waitWQ: %dms\n", msTick() -  startTime);
+        LOG(LegacyMsgCatNormal, "LThread:waitWQ: %dms\n", (isLogging ? msTick() : 0) -  startTime);
 
         int QueueSize = logQueue.ordinality();
         if(QueueSize > maxLogQueueLength)
@@ -572,14 +578,13 @@ void CLogThread::writeJobQueue(IEspUpdateLogRequestWrap* jobToWrite)
 
 IEspUpdateLogRequestWrap* CLogThread::readJobQueue()
 {
-#define LOG_LEVEL LogNormal
-    unsigned startTime = (getEspLogLevel()>=LOG_LEVEL) ? msTick() : 0;
+    bool isLogging = !queryLogMsgManager()->rejectsCategory(LegacyMsgCatNormal);
+    unsigned startTime = isLogging ? msTick() : 0;
     CriticalBlock b(logQueueCrit);
-    unsigned delta = (getEspLogLevel()>=LOG_LEVEL) ? msTick() - startTime : 0;
+    unsigned delta = (isLogging ? msTick() : 0) - startTime;
     if (delta > 1) // <=1ms is not indicative of an unexpected delay
-        ESPLOG(LOG_LEVEL, "LThread:waitRQ: %dms", delta);
+        LOG(LegacyMsgCatNormal, "LThread:waitRQ: %dms", delta);
     return (IEspUpdateLogRequestWrap*)logQueue.dequeue();
-#undef LOG_LEVEL
 }
 
 void CLogThread::checkAndCreateFile(const char* fileName)
@@ -612,12 +617,12 @@ void CLogRequestReader::threadmain()
     unsigned waitMillSeconds = 1000*settings->waitSeconds;
     while (!stopping)
     {
-        ESPLOG(LogMax, "#### CLogRequestReader: the loop for reading log requests begins.");
+        LOG(LegacyMsgCatMax, "#### CLogRequestReader: the loop for reading log requests begins.");
         if (!paused)
         {
             try
             {
-                ESPLOG(LogMax, "#### CLogRequestReader: waiting for readLogRequest().");
+                LOG(LegacyMsgCatMax, "#### CLogRequestReader: waiting for readLogRequest().");
                 CriticalBlock b(crit);
                 readLogRequest();
                 if (newAckedLogFiles.length())
@@ -650,7 +655,7 @@ void CLogRequestReader::reportAckedLogFiles(StringArray& ackedLogFiles)
     CriticalBlock b(crit);
     for (auto r : ackedLogFileCheckList)
         ackedLogFiles.append(r.c_str());
-    ESPLOG(LogMax, "#### The reportAckedLogFiles() done.");
+    LOG(LegacyMsgCatMax, "#### The reportAckedLogFiles() done.");
 }
 
 //This method is used to setup an acked file list which contains the acked files for all agents.
@@ -666,7 +671,7 @@ void CLogRequestReader::removeUnknownAckedLogFiles(StringArray& ackedLogFiles)
         if (ackedLogFileCheckList.find(node) == ackedLogFileCheckList.end())
             ackedLogFiles.remove(i);
     }
-    ESPLOG(LogMax, "#### The removeUnknownAckedLogFiles() done.");
+    LOG(LegacyMsgCatMax, "#### The removeUnknownAckedLogFiles() done.");
 }
 
 void CLogRequestReader::addNewAckedFileList(const char* list, StringArray& fileNames)
@@ -764,7 +769,7 @@ void CLogRequestReader::readAcked(const char* fileName, std::set<std::string>& a
 
 void CLogRequestReader::readLogRequest()
 {
-    ESPLOG(LogMax, "#### Enter readLogRequest()");
+    LOG(LegacyMsgCatMax, "#### Enter readLogRequest()");
 
     StringAttr tankFileNotFinished;//Today's newest tank file.
     findTankFileNotFinished(tankFileNotFinished);
@@ -778,7 +783,7 @@ void CLogRequestReader::readLogRequest()
 
         if (ackedLogFileCheckList.find(fileName) != ackedLogFileCheckList.end())
         {
-            ESPLOG(LogMax, "####Skip tank file: %s. It is in the Acked File list.", fileName);
+            LOG(LegacyMsgCatMax, "####Skip tank file: %s. It is in the Acked File list.", fileName);
             continue;
         }
 
@@ -794,7 +799,7 @@ void CLogRequestReader::readLogRequest()
         lastTankFilePos = tankFileNotFinishedPos;
     }
 
-    ESPLOG(LogMax, "#### Leave readLogRequest()");
+    LOG(LegacyMsgCatMax, "#### Leave readLogRequest()");
 }
 
 void CLogRequestReader::findTankFileNotFinished(StringAttr& tankFileNotFinished)
@@ -849,7 +854,7 @@ StringBuffer& CLogRequestReader::getTankFileTimeString(const char* fileName, Str
 
 bool CLogRequestReader::readLogRequestsFromTankFile(const char* fileName, StringAttr& tankFileNotFinished, offset_t& tankFileNotFinishedPos)
 {
-    ESPLOG(LogMax, "#### Enter readLogRequestsFromTankFile(): %s", fileName);
+    LOG(LegacyMsgCatMax, "#### Enter readLogRequestsFromTankFile(): %s", fileName);
 
     Owned<IFile> file = createIFile(fileName);
     if (!file) //This can only happen at start time. So, throw exception.
@@ -875,7 +880,7 @@ bool CLogRequestReader::readLogRequestsFromTankFile(const char* fileName, String
         if (!parseLogRequest(data, GUID, logRequest, skipLogRequest))
         {
             if (skipLogRequest)
-                ESPLOG(LogMax, "#### Agent %s skips %s.", logThread->getLogAgent()->getName(), GUID.str());
+                LOG(LegacyMsgCatMax, "#### Agent %s skips %s.", logThread->getLogAgent()->getName(), GUID.str());
             else
                 IERRLOG("Invalid logging request in %s", fileName);
         }
@@ -897,7 +902,7 @@ bool CLogRequestReader::readLogRequestsFromTankFile(const char* fileName, String
     if (isTankFileNotFinished)
         tankFileNotFinishedPos = fileIO->size();
 
-    ESPLOG(LogMax, "#### Leave readLogRequestsFromTankFile(): %s, totalMissed(%d)", fileName, totalMissed);
+    LOG(LegacyMsgCatMax, "#### Leave readLogRequestsFromTankFile(): %s, totalMissed(%d)", fileName, totalMissed);
     return (totalMissed == 0) && !isTankFileNotFinished;
 }
 
@@ -974,11 +979,11 @@ bool CLogRequestReader::checkScriptValues(const char* ptr, const char* end, bool
 
 void CLogRequestReader::addPendingLogsToQueue()
 {
-    ESPLOG(LogMax, "#### Enter addPendingLogsToQueue()");
+    LOG(LegacyMsgCatMax, "#### Enter addPendingLogsToQueue()");
 
     //Add the pendingLogs to log queue
     if (pendingLogs.size())
-        ESPLOG(LogMin, "Adding %zu Pending Log Request(s) to job queue", pendingLogs.size());
+        LOG(LegacyMsgCatMin, "Adding %zu Pending Log Request(s) to job queue", pendingLogs.size());
     StringArray queuedPendingLogs;
     for (auto const& x : pendingLogs)
     {
@@ -995,12 +1000,12 @@ void CLogRequestReader::addPendingLogsToQueue()
     ForEachItemIn(i, queuedPendingLogs)
         pendingLogs.erase(queuedPendingLogs.item(i));
 
-    ESPLOG(LogMax, "#### Leave addPendingLogsToQueue()");
+    LOG(LegacyMsgCatMax, "#### Leave addPendingLogsToQueue()");
 }
 
 void CLogRequestReader::addACK(const char* GUID)
 {
-    ESPLOG(LogMax, "#### Enter addACK(): %s", GUID);
+    LOG(LegacyMsgCatMax, "#### Enter addACK(): %s", GUID);
 
     CriticalBlock b(crit);
     Owned<IFile> f = createIFile(settings->ackedLogRequestFile);
@@ -1013,7 +1018,7 @@ void CLogRequestReader::addACK(const char* GUID)
     ackedLogRequests.insert(GUID);
     pendingLogGUIDs.erase(GUID);
 
-    ESPLOG(LogMax, "#### addACK(): %s acked", GUID);
+    LOG(LegacyMsgCatMax, "#### addACK(): %s acked", GUID);
 }
 
 void CLogRequestReader::addToAckedLogFileList(const char* fileName, const char* fileNameWithPath)
@@ -1026,7 +1031,7 @@ void CLogRequestReader::addToAckedLogFileList(const char* fileName, const char* 
 //Update newAckedLogFiles to file settings->ackedFileList,
 void CLogRequestReader::updateAckedFileList()
 {
-    ESPLOG(LogMax, "#### Enter updateAckedFileList()");
+    LOG(LegacyMsgCatMax, "#### Enter updateAckedFileList()");
 
     OwnedIFile ackedFiles = createIFile(settings->ackedFileList);
     if (!ackedFiles)
@@ -1060,12 +1065,12 @@ void CLogRequestReader::updateAckedFileList()
 
     newAckedLogFiles.clear();
 
-    ESPLOG(LogMax, "#### Leave updateAckedFileList()");
+    LOG(LegacyMsgCatMax, "#### Leave updateAckedFileList()");
 }
 
 void CLogRequestReader::updateAckedLogRequestList()
 {
-    ESPLOG(LogMax, "#### Enter updateAckedLogRequestList()");
+    LOG(LegacyMsgCatMax, "#### Enter updateAckedLogRequestList()");
 
     OwnedIFile newAckedLogRequestFile = createIFile(settings->ackedLogRequestFile);
     if (newAckedLogRequestFile)
@@ -1090,7 +1095,7 @@ void CLogRequestReader::updateAckedLogRequestList()
         PROGLOG("Add AckedLogRequest %s to %s", line.str(), settings->ackedLogRequestFile.str());
     }
 
-    ESPLOG(LogMax, "#### Leave updateAckedLogRequestList()");
+    LOG(LegacyMsgCatMax, "#### Leave updateAckedLogRequestList()");
 }
 
 void CLogRequestReader::setTankFilePattern(const char* service)
@@ -1105,7 +1110,7 @@ static bool checkEnabledLogVariant(IPropertyTree *scriptValues, const char *prof
 
     if (checkProfile && (isEmptyString(group) || !strieq(profile, group)))
     {
-        ESPLOG(LogNormal, "'%s' log entry disabled - log profile '%s' disabled", tracename, profile);
+        LOG(LegacyMsgCatNormal, "'%s' log entry disabled - log profile '%s' disabled", tracename, profile);
         return false;
     }
     else if (checkType)
@@ -1113,7 +1118,7 @@ static bool checkEnabledLogVariant(IPropertyTree *scriptValues, const char *prof
         VStringBuffer xpath("@disable-log-type-%s", logtype);
         if (scriptValues->getPropBool(xpath, false))
         {
-            ESPLOG(LogNormal, "'%s' log entry disabled - log type '%s' disabled", tracename, logtype);
+            LOG(LegacyMsgCatNormal, "'%s' log entry disabled - log type '%s' disabled", tracename, logtype);
             return false;
         }
      }
