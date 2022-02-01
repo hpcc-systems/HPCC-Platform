@@ -1046,7 +1046,11 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 static unsigned evalAffinityCpus()
 {
     unsigned numCpus = 0;
+#ifdef __64BIT__
+    DWORD64 ProcessAffinityMask, SystemAffinityMask;
+#else
     DWORD ProcessAffinityMask, SystemAffinityMask;
+#endif
     if (GetProcessAffinityMask(GetCurrentProcess(), (PDWORD_PTR)&ProcessAffinityMask, (PDWORD_PTR)&SystemAffinityMask))
     {
         unsigned i = 0;
