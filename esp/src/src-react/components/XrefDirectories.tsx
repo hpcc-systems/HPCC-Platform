@@ -1,13 +1,10 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import nlsHPCC from "src/nlsHPCC";
 
@@ -21,10 +18,12 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
     name
 }) => {
 
+    const [data, setData] = React.useState<any[]>([]);
+
     //  Grid ---
-    const store = useConst(new Observable(new Memory("name")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "name",
         query: {},
         sort: [{ attribute: "name", "descending": false }],
         filename: "xrefsDirectories",
@@ -64,7 +63,7 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
             .then(({ DFUXRefDirectoriesQueryResponse }) => {
                 const directories = DFUXRefDirectoriesQueryResponse?.DFUXRefDirectoriesQueryResult?.Directory;
                 if (directories) {
-                    store.setData(directories.map((item, idx) => {
+                    setData(directories.map((item, idx) => {
                         return {
                             name: item.Name,
                             num: item.Num,
@@ -77,13 +76,11 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
                             negativeSkew: item.NegativeSkew,
                         };
                     }));
-
-                    refreshTable();
                 }
             })
             .catch(err => logger.error(err))
             ;
-    }, [store, name, refreshTable]);
+    }, [name]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -98,6 +95,10 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
         }, [name, refreshData])
     });
 
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -111,10 +112,6 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ], [refreshData, setShowDeleteConfirm]);
-
-    React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

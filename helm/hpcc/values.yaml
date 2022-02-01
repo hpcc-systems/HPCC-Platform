@@ -80,7 +80,7 @@ global:
       type: LoadBalancer
       # If ingress is specified, an ingress Network Policy will be created for any pod implementing a service with this visibility
       # Default allows ingress from anywhere, but more restrictive rules can be used if preferred.
-      # Ingress rules can also be overriden by individual services
+      # Ingress rules can also be overridden by individual services
       ingress:
       - {}
     global:

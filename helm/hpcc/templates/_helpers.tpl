@@ -129,6 +129,13 @@ Get default dll plane
 {{- end -}}
 
 {{/*
+Get default git plane
+*/}}
+{{- define "hpcc.getDefaultGitPlane" -}}
+{{- include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "git") | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "dll")) -}}
+{{- end -}}
+
+{{/*
 Returns the largest number of workers from all the thors
 */}}
 {{- define "hpcc.getMaxNumWorkers" -}}
@@ -194,6 +201,10 @@ storage:
 {{- if hasKey $storage "hostGroups" }}
   hostGroups:
 {{ toYaml $storage.hostGroups | indent 2 }}
+{{- end }}
+{{- if hasKey $storage "remote" }}
+  remote:
+{{ toYaml $storage.remote | indent 2 }}
 {{- end }}
   dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
   planes:
@@ -354,7 +365,26 @@ The plane will generate a volume if it matches either an includeLabel or an incl
 {{- end -}}
 
 {{/*
-Add a volume mount - if default plane is used, or the storage plane specifies a pvc
+Check that the data plane name is valid, and report an error if not
+Pass in dict with root, planeName
+*/}}
+{{- define "hpcc.checkPlaneExists" -}}
+{{- $storage := (.root.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $name := .planeName -}}
+{{- $matched := dict -}}
+{{- range $plane := $planes -}}
+ {{- if (eq $plane.name $name) -}}
+  {{- $_ := set $matched "ok" true -}}
+ {{- end -}}
+{{- end -}}
+{{- if not $matched.ok -}}
+ {{- $_ := fail (printf "Storage plane %s does not exist" $name) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Return the path associated with a data plane.
 Pass in dict with root, planeName
 */}}
 {{- define "hpcc.getPlanePrefix" -}}
@@ -363,7 +393,11 @@ Pass in dict with root, planeName
 {{- $name := .planeName -}}
 {{- range $plane := $planes -}}
  {{- if (eq $plane.name $name) -}}
-  {{- $plane.prefix -}}
+  {{- if $plane.subPath -}}
+   {{- printf "%s/%s" $plane.prefix $plane.subPath | quote -}}
+  {{- else -}}
+   {{- $plane.prefix | quote -}}
+  {{- end -}}
  {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -1343,7 +1377,7 @@ use "public" or "local"
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
 {{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
 {{- /*
-    A .certificate parameter means the user explictly configured a certificate to use
+    A .certificate parameter means the user explicitly configured a certificate to use
     otherwise check if certificate generation is enabled
 */ -}}
 {{- if .certificate -}}
@@ -1366,7 +1400,7 @@ use "public" or "local"
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
 {{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
 {{- /*
-    A .certificate parameter means the user explictly configured a certificate to use
+    A .certificate parameter means the user explicitly configured a certificate to use
     otherwise check if certificate generation is enabled
 */ -}}
 {{- if .certificate -}}
@@ -1383,7 +1417,7 @@ use "public" or "local"
 {{- end -}}
 
 {{/*
-Add the certficate volume mount for a roxie udp key
+Add the certificate volume mount for a roxie udp key
 */}}
 {{- define "hpcc.addUDPCertificateVolumeMount" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
@@ -1492,14 +1526,14 @@ globalExcludeList below is a hard-coded list of global keys to exclude.
 
 {{/*
 A template to ensure that the flag specifying whether kubernetes resource validation is allowed exists.  When running helm
-in template mode access to functions like "lookup" that need to access the kubernetes API are diabled.  We use that function
-to validate things like the existance of secrets we have dependencies on.  We also check the Capabilities.APIVersions for the
+in template mode access to functions like "lookup" that need to access the kubernetes API are disabled.  We use that function
+to validate things like the existence of secrets we have dependencies on.  We also check the Capabilities.APIVersions for the
 existence of custom CRDS which are not updated when kubernetes API access is not allowed.
 
 By default the behavior should now be correct for both install and template.
 
 Setting the default requires an extra call to lookup.  To avoid a call to "lookup" every time we cache the value in
-global.noResourceValidation flag.  This behavior can be overriden by the caller using "--set global.noResourceValidation=true"
+global.noResourceValidation flag.  This behavior can be overridden by the caller using "--set global.noResourceValidation=true"
 */}}
 {{- define "hpcc.ensureNoResourceValidationFlag" }}
   {{- if not (hasKey .root.Values.global "noResourceValidation" )}}
@@ -1542,7 +1576,7 @@ Pass in value
  {{- else if hasSuffix "Ei" . -}}
   {{- $_ := set $ctx "scale" 1152921504606846976 -}}
  {{- else -}}
-  {{- $_ := fail (printf "Invalid size suffix on memory resoure specification: %s" .) -}}
+  {{- $_ := fail (printf "Invalid size suffix on memory resource specification: %s" .) -}}
  {{- end -}}
  {{- $_ := set $ctx "number" (substr 0 (int (sub (len .) 2)) .) -}}
 {{- else -}}
@@ -1559,7 +1593,7 @@ Pass in value
  {{- else if hasSuffix "E" . -}}
   {{- $_ := set $ctx "scale" 1000000000000000000 -}}
  {{- else -}}
-  {{- $_ := fail (printf "Invalid size suffix on memory resoure specification: %s" .) -}}
+  {{- $_ := fail (printf "Invalid size suffix on memory resource specification: %s" .) -}}
  {{- end -}}
  {{- $_ := set $ctx "number" (substr 0 (sub (len .) 1) .) -}}
 {{- end -}}

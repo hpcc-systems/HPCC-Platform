@@ -510,7 +510,8 @@ public:
         }
         MemoryBuffer encryptBuffer;
         if (udpTraceFlow)
-            DBGLOG("Sending %u packets [..%u] from max of %u [resend %u queued %u]", (unsigned)toSend.size(), nextSendSequence.load(), permit.max_data, resendList->numActive(), packetsQueued.load(std::memory_order_relaxed));
+            DBGLOG("Sending %u packets [..%u] from max of %u [resend %u queued %u]",
+                   (unsigned)toSend.size(), nextSendSequence.load(), permit.max_data, resendList ? resendList->numActive() : 0, packetsQueued.load(std::memory_order_relaxed));
         sendStart(toSend.size());
         for (DataBuffer *buffer: toSend)
         {

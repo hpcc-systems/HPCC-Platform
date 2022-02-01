@@ -1,12 +1,9 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 
@@ -47,6 +44,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<any>({});
     const [exceptions] = useWorkunitExceptions(wuid);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -57,9 +55,9 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("id")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "id",
         filename: "errorwarnings",
         columns: {
             Severity: {
@@ -159,10 +157,9 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             }
             return l.Severity.localeCompare(r.Severity);
         });
-        store.setData(filteredExceptions);
-        refreshTable();
+        setData(filteredExceptions);
         setFilterCounts(filterCounts);
-    }, [errorChecked, exceptions, store, infoChecked, otherChecked, refreshTable, warningChecked]);
+    }, [errorChecked, exceptions, infoChecked, otherChecked, warningChecked]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

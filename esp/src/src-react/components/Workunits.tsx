@@ -77,6 +77,8 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     store
 }) => {
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -98,7 +100,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
                 },
                 width: 25,
-                sortable: false,
+                sortable: true,
                 formatter: function (_protected) {
                     if (_protected === true) {
                         return Utility.getImageHTML("locked.png");
@@ -198,14 +200,14 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => { setShowFilter(true); }
         },
         {
             key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => { setMine(!mine); }
         },
-    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {

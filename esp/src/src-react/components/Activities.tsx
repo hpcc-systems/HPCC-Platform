@@ -391,7 +391,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         setUIState(state);
     }, [activity, selection]);
 
-    const [, isContainer] = useBuildInfo();
+    const [, { isContainer }] = useBuildInfo();
 
     if (isContainer) {
         return <HolyGrail key="activities"

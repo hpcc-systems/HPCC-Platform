@@ -75,6 +75,7 @@
           <AuthenticateFeature description="Access to WS Decoupled Log service" path="WsDecoupledLogAccess" resource="WsDecoupledLogAccess" service="ws_decoupledlogging"/>
           <AuthenticateFeature description="Access to sign ECL code" path="CodeSignAccess" resource="CodeSignAccess" service="ws_codesign"/>
           <AuthenticateFeature description="Access to LogAccess service" path="WsLogAccess" resource="WsLogAccess" service="ws_logaccess"/>
+          <AuthenticateFeature description="Access to DFS service" path="DfsAccess" resource="DfsAccess" service="ws_dfsservice"/>
           <ProcessFilters>
             <Platform name="Windows">
               <ProcessFilter name="any">

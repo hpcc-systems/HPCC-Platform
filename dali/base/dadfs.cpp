@@ -1079,10 +1079,10 @@ public:
     /* createNew always creates an unnamed unattached distributed file
      * The caller must associated it with a name and credentials when it is attached (attach())
      */
-    IDistributedFile *createNew(IFileDescriptor * fdesc);
+    IDistributedFile *createNew(IFileDescriptor * fdesc, const char *optionalName=nullptr);
     IDistributedFile *createExternal(IFileDescriptor *desc, const char *name);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
-    IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionalName=nullptr);
+    IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionalName=nullptr, IArrayOf<IDistributedFile> *subFiles=nullptr);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user,bool isPrivilegedUser);
@@ -1171,6 +1171,7 @@ public:
         return ret;
     }
     virtual bool removePhysicalPartFiles(const char *logicalName, IFileDescriptor *fileDesc, IMultiException *mexcept, unsigned numParallelDeletes=0) override;
+    virtual void setFileAccessed(const char *logicalName, const CDateTime &dt, const INode *foreigndali, unsigned foreigndalitimeout);
 };
 
 
@@ -2799,7 +2800,9 @@ public:
     void resetHistory()
     {
         DistributedFilePropertyLock lock(this);
-        queryAttributes().removeTree(queryHistory());
+        IPropertyTree *history = queryHistory();
+        if (history)
+            queryAttributes().removeTree(history);
     }
     void lockFileAttrLock(CFileAttrLock & attrLock)
     {
@@ -3687,24 +3690,36 @@ public:
     {
         clusters.clear();
         unsigned nc = fdesc->numClusters();
-        if (nc) {
-            for (unsigned i=0;i<nc;i++) {
+        if (nc)
+        {
+            for (unsigned i=0;i<nc;i++)
+            {
                 StringBuffer cname;
-                StringBuffer clabel;
-                IClusterInfo &cluster = *createClusterInfo(
-                                    fdesc->getClusterGroupName(i,cname,NULL).str(),
-                                    fdesc->queryClusterGroup(i),
-                                    fdesc->queryPartDiskMapping(i),
-                                    &queryNamedGroupStore()
-                                    );
-#ifdef EXTRA_LOGGING
-                PROGLOG("setClusters(%d,%s)",i,cname.str());
-#endif
+                fdesc->getClusterGroupName(i, cname, nullptr);
+                IClusterInfo *cluster;
+                if (cname.length())
+                    cluster = LINK(fdesc->queryClusterNum(i));
+                else
+                {
+                    // NB: this is non-standard, for situations where the cluster name is not known,
+                    // which happens where none has been provided/set to the file descriptor,
+                    // and the file descriptor has been built up of parts with ips. 
+                    // createClusterInfo will perform a reverse lookup to Dali to try to discover
+                    // a group name.
+                    cluster = createClusterInfo(
+                                  nullptr,
+                                  fdesc->queryClusterGroup(i),
+                                  fdesc->queryPartDiskMapping(i),
+                                  &queryNamedGroupStore()
+                               );
 
-                if (!cluster.queryGroup(&queryNamedGroupStore())) {
-                    IERRLOG("IDistributedFileDescriptor cannot set cluster for %s",logicalName.get());
+                    if (!cluster->queryGroup(&queryNamedGroupStore()))
+                        IERRLOG("IDistributedFileDescriptor cannot set cluster for %s", logicalName.get());
                 }
-                clusters.append(cluster);
+#ifdef EXTRA_LOGGING
+                PROGLOG("setClusters(%d,%s)", i, cluster->queryGroupName());
+#endif
+                clusters.append(*cluster);
             }
         }
         else
@@ -4114,6 +4129,10 @@ public:
             setClusters(fdesc);
             setParts(fdesc,false);
             setUserDescriptor(udesc, user);
+#ifdef EXTRA_LOGGING
+            LOGFDESC("CDistributedFile::attach fdesc",fdesc);
+            LOGPTREE("CDistributedFile::attach root.2",root);
+#endif
         }
         catch (IException *e)
         {
@@ -4121,10 +4140,6 @@ public:
             logicalName.clear();
             throw;
         }
-#ifdef EXTRA_LOGGING
-        LOGFDESC("CDistributedFile::attach fdesc",fdesc);
-        LOGPTREE("CDistributedFile::attach root.2",root);
-#endif
     }
 
     /*
@@ -5564,11 +5579,16 @@ public:
         updateFileAttrs();
     }
 
-    CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root, const char *optionalName)
+    CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root, const char *optionalName, IArrayOf<IDistributedFile> *subFiles)
     {
         commonInit(_parent, _root);
         if (optionalName)
             logicalName.set(optionalName);
+        if (subFiles)
+        {
+            ForEachItemIn(i,*subFiles)
+                subfiles.append(OLINK(subFiles->item(i)));
+        }
     }
 
     ~CDistributedSuperFile()
@@ -6594,11 +6614,13 @@ public:
             ForEachItemIn(i,subfiles) {
                 StringArray clusters;
                 IDistributedFile &f=subfiles.item(i);
+                Owned<IFileDescriptor> fdesc = f.getFileDescriptor();
                 unsigned nc = f.numClusters();
                 for(unsigned j=0;j<nc;j++) {
                     f.getClusterName(j,name.clear());
-                    if (clusterscache.find(name.str())==NotFound) {
-                        IClusterInfo &cluster = *createClusterInfo(name.str(),f.queryClusterGroup(j),f.queryPartDiskMapping(j),&queryNamedGroupStore());
+                    if (clusterscache.find(name.str())==NotFound)
+                    {
+                        IClusterInfo &cluster = OLINK(*fdesc->queryClusterNum(j));
                         clusterscache.append(cluster);
                     }
                 }
@@ -8031,9 +8053,12 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
     return file->existsPhysicalPartFiles(0);
 }
 
-IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc)
+IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc, const char *optName)
 {
-    return new CDistributedFile(this, fdesc, NULL, false);
+    CDistributedFile *ret = new CDistributedFile(this, fdesc, NULL, false);
+    if (optName)
+        ret->setLogicalName(optName);
+    return ret;
 }
 
 IDistributedFile *CDistributedFileDirectory::createExternal(IFileDescriptor *fdesc, const char *name)
@@ -8524,9 +8549,9 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
 }
 
 // MORE: This should be implemented in DFSAccess later on
-IDistributedSuperFile *CDistributedFileDirectory::createNewSuperFile(IPropertyTree *tree, const char *optionalName)
+IDistributedSuperFile *CDistributedFileDirectory::createNewSuperFile(IPropertyTree *tree, const char *optionalName, IArrayOf<IDistributedFile> *subFiles)
 {
-    return new CDistributedSuperFile(this, tree, optionalName);
+    return new CDistributedSuperFile(this, tree, optionalName, subFiles);
 }
 
 // MORE: This should be implemented in DFSAccess later on
@@ -11092,6 +11117,13 @@ void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn,IUserD
     else
         queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
+}
+
+void CDistributedFileDirectory::setFileAccessed(const char *logicalName, const CDateTime &dt, const INode *foreigndali, unsigned foreigndalitimeout)
+{
+    CDfsLogicalFileName dlfn;
+    dlfn.set(logicalName);
+    setFileAccessed(dlfn, nullptr, dt, foreigndali, foreigndalitimeout);
 }
 
 void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali,unsigned foreigndalitimeout)

@@ -165,7 +165,12 @@ kind: ConfigMap
 ---
 {{- if hasKey . "service" -}}
 {{- if .service.servicePort -}}
-{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" .service "selector" .name "defaultPort" 8880 ) }}
+{{- $service := deepCopy .service -}}
+{{- if not (hasKey $service "labels") -}}
+ {{- $_ := set $service "labels" dict -}}
+{{- end -}}
+{{- $_ := set $service "labels" (merge $service.labels (dict "server" $application)) -}}
+{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 ) }}
 ---
 {{- end }}
 {{- end }}

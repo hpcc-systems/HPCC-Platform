@@ -41,7 +41,7 @@ store.get("ModernMode", false).then(modernMode => {
         import("./components/Frame").then(_ => {
             try {
                 ReactDOM.render(
-                    <_.DevFrame />,
+                    <_.Frame />,
                     document.getElementById("placeholder")
                 );
                 document.getElementById("loadingOverlay").remove();

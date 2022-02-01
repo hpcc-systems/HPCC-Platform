@@ -1,11 +1,8 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { Query } from "@hpcc-js/comms";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 
 interface QuerySummaryStatsProps {
@@ -18,12 +15,15 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
     queryId
 }) => {
 
-    const [query, setQuery] = React.useState<any>();
+    const query = React.useMemo(() => {
+        return Query.attach({ baseUrl: "" }, querySet, queryId);
+    }, [querySet, queryId]);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("__hpcc_id")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
         sort: [{ attribute: "__hpcc_id" }],
         filename: "querySummaryStats",
         columns: {
@@ -43,23 +43,10 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
         }
     });
 
-    //  Command Bar  ---
-    const buttons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-    ], [refreshTable]);
-
-    React.useEffect(() => {
-        setQuery(Query.attach({ baseUrl: "" }, querySet, queryId));
-    }, [setQuery, queryId, querySet]);
-
-    React.useEffect(() => {
-        if (!query) return;
+    const refreshData = React.useCallback(() => {
         query?.fetchSummaryStats().then(({ StatsList }) => {
             if (StatsList?.QuerySummaryStats) {
-                store.setData(StatsList?.QuerySummaryStats.map((item, idx) => {
+                setData(StatsList?.QuerySummaryStats.map((item, idx) => {
                     return {
                         __hpcc_id: idx,
                         Endpoint: item.Endpoint,
@@ -77,10 +64,21 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
                         Percentile97Estimate: item.Percentile97Estimate
                     };
                 }));
-                refreshTable();
             }
         });
-    }, [store, query, refreshTable]);
+    }, [query]);
+
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshData()
+        },
+    ], [refreshData]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

@@ -1,10 +1,7 @@
 import * as React from "react";
 import { Checkbox, CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { useECLWatchLogger } from "../hooks/logging";
 import { Level } from "@hpcc-js/util";
@@ -21,6 +18,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<any>({});
     const [log, lastUpdate] = useECLWatchLogger();
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -31,9 +29,9 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("dateTime")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "dateTime",
         filename: "errorwarnings",
         columns: {
             dateTime: { label: nlsHPCC.Time, width: 160, sortable: false },
@@ -83,10 +81,9 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
         }).sort((l, r) => {
             return l.level - r.level;
         });
-        store.setData(filteredExceptions);
-        refreshTable();
+        setData(filteredExceptions);
         setFilterCounts(filterCounts);
-    }, [errorChecked, store, infoChecked, log, otherChecked, refreshTable, warningChecked, lastUpdate]);
+    }, [errorChecked, infoChecked, log, otherChecked, warningChecked, lastUpdate]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

@@ -16,15 +16,18 @@ import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
 import { Metrics } from "./Metrics";
 import { WorkunitSummary } from "./WorkunitSummary";
+import { Result } from "./Result";
 
 interface WorkunitDetailsProps {
     wuid: string;
     tab?: string;
+    state?: string;
 }
 
 export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     wuid,
-    tab = "summary"
+    tab = "summary",
+    state
 }) => {
 
     const [workunit] = useWorkunit(wuid, true);
@@ -40,13 +43,16 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Variables wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Outputs} itemKey="outputs" itemCount={workunit?.ResultCount} style={pivotItemStyle(size, 0)}>
-                <Results wuid={wuid} />
+                {state ?
+                    <Result wuid={wuid} resultName={state} /> :
+                    <Results wuid={wuid} />
+                }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Inputs} itemKey="inputs" itemCount={workunit?.SourceFileCount} style={pivotItemStyle(size, 0)}>
                 <SourceFiles wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" itemCount={workunit?.GraphCount} style={pivotItemStyle(size, 0)}>
-                <Metrics wuid={wuid} />
+                <Metrics wuid={wuid} selection={state} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Workflows} itemKey="workflows" itemCount={workunit?.WorkflowCount} style={pivotItemStyle(size, 0)}>
                 <Workflows wuid={wuid} />

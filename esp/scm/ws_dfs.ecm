@@ -1,0 +1,64 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+
+ESPrequest LeaseRequest
+{
+    int KeepAliveExpiryFrequency(10);   // If client has not 'pinged' the lease in this period (secs), associated locks will expire
+};
+
+ESPresponse [exceptions_inline] LeaseResponse
+{
+    int64 LeaseId;
+};
+
+ESPrequest DFSFileLookupRequest
+{
+    string Name;                        // the logical file name
+    int64 LeaseId;                      // lease to associate any locks to
+    int RequestTimeout(300);            // Max seconds to block waiting (default = 5 mins)
+};
+
+ESPresponse [exceptions_inline] DFSFileLookupResponse
+{
+    string Meta; // json
+};
+
+ESPrequest KeepAliveRequest
+{
+    int64 LeaseId;
+};
+
+ESPresponse [exceptions_inline] KeepAliveResponse
+{
+};
+
+//  ===========================================================================
+ESPservice [
+    auth_feature("DEFERRED"),
+    version("1.01"),
+    default_client_version("1.01"),
+    noforms,
+    exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfs
+{
+    ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] GetLease(LeaseRequest, LeaseResponse);
+    ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] KeepAlive(KeepAliveRequest, KeepAliveResponse);
+    ESPmethod [auth_feature("DfsAccess:READ"), min_ver("1.01")] DFSFileLookup(DFSFileLookupRequest, DFSFileLookupResponse);
+};
+
+SCMexportdef(WSDFS);
+SCMapi(WSDFS) IClientWsDfs *createWsDfsClient();

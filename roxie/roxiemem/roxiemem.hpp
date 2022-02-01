@@ -214,7 +214,7 @@ private:
     void released();
 
 protected:
-    DataBuffer() : count(1)
+    DataBuffer() : count(1), nextDataId(0)
     {
     }
 public:
@@ -230,13 +230,20 @@ public:
     }
     void noteReleased(const void *ptr);
     void noteLinked(const void *ptr);
+    bool attachToRowMgr(IRowManager *rowMgr);
+
 public:
     std::atomic_uint count;
     unsigned filler = 0; // keeps valgrind happy
     IRowManager *mgr = nullptr;
-    DataBuffer *next = nullptr;   // Used when chaining them together in rowMgr
+    union
+    {
+        std::atomic<memsize_t> nextDataId;  // Used when chaining freeblocks within a DataBufferBottom
+        DataBuffer * nextActive;        // Used when attached to an RowManager
+    };
     DataBuffer *msgNext = nullptr;    // Next databuffer in same slave message
-    bool attachToRowMgr(IRowManager *rowMgr);
+
+    /* data */
     char data[1]; // actually DATA_PAYLOAD
 };
 
@@ -248,9 +255,9 @@ class roxiemem_decl DataBufferBottom : public HeapletBase
 private:
     friend class CDataBufferManager;
     std::atomic<CDataBufferManager *> owner;
-    DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager 
-    DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager 
-    DataBuffer *freeChain;
+    DataBufferBottom *nextBottom = nullptr; // Used when chaining them together in CDataBufferManager
+    DataBufferBottom *prevBottom = nullptr; // Used when chaining them together in CDataBufferManager
+    std::atomic<memsize_t> freeHeadId{0};               // a chain of freed DataBuffers, implemented as a lock free list bottom bits are a sequence number
     CriticalSection crit;
 
     virtual void noteReleased(const void *ptr) override;

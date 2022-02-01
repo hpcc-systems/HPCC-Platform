@@ -620,19 +620,13 @@ void HqlLex::processEncrypted()
 }
 
 /* Return: true if more parameter(s) left. */
-bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* startLine, int* startCol)
+bool HqlLex::getParameter(StringBuffer &curParam, const char* directive, const ECLlocation & location)
 {
     unsigned parenDepth = 1;
-    if (startLine) *startLine = -1;
     attribute nextToken;
     for (;;)
     {
         int tok = yyLex(nextToken, LEXnone, 0);
-        if (startLine && *startLine == -1)
-        {
-            *startLine = nextToken.pos.lineno;
-            *startCol = nextToken.pos.column;
-        }
         switch(tok)
         {
         case '(':
@@ -655,9 +649,7 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
             break;
         case EOF:
             {
-                StringBuffer msg("EOF encountered while gathering parameters for ");
-                msg.append(for_what);
-                reportError(nextToken, ERR_TMPLT_EOFINPARAM, "%s", msg.str());
+                reportError(location, ERR_TMPLT_EOFINPARAM, "EOF encountered while gathering parameters for %s", directive);
             }
             return false;
         default:
@@ -669,7 +661,7 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
     }
 }
 
-void HqlLex::doSkipUntilEnd(attribute & returnToken, const char * forwhat)
+void HqlLex::doSkipUntilEnd(attribute & returnToken, const char* directive, const ECLlocation & location)
 {
     while (skipNesting)
     {
@@ -677,9 +669,7 @@ void HqlLex::doSkipUntilEnd(attribute & returnToken, const char * forwhat)
         returnToken.release();
         if (tok == EOF)
         {
-            StringBuffer msg;
-            msg.appendf("Unexpected EOF in %s: #END expected",forwhat);
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
+            reportError(location, ERR_TMPLT_HASHENDEXPECTED, "Unexpected EOF in %s: #END expected", directive);
             clearNestedHash();      // prevent unnecessary more error messages
             break;
         }
@@ -688,29 +678,29 @@ void HqlLex::doSkipUntilEnd(attribute & returnToken, const char * forwhat)
 
 void HqlLex::doIf(attribute & returnToken, bool isElseIf)
 {
-    StringBuffer forwhat;
-    int line = returnToken.pos.lineno, col = returnToken.pos.column;
-    forwhat.appendf("#IF(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#IF";
 
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); // MORE - make it fatal!
+
     StringBuffer curParam("(");
-    if (getParameter(curParam, forwhat.str()))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,forwhat.str()))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
-    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),line,col);
+    Owned<IValue> value = parseConstExpression(location, curParam, queryTopXmlScope());
     if (value && !value->getBoolValue())
     {
         setHashEndFlags(0);
         skipNesting = 1;
         if (!isElseIf)
-            doSkipUntilEnd(returnToken, forwhat);
+            doSkipUntilEnd(returnToken, directive, location);
     }
     else
         setHashEndFlags(HEFhadtrue);
@@ -718,8 +708,8 @@ void HqlLex::doIf(attribute & returnToken, bool isElseIf)
 
 int HqlLex::doElse(attribute & returnToken, LexerFlags lookupFlags, const short * activeState, bool isElseIf)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#%s(%d,%d)",isElseIf ? "ELSEIF" : "ELSE", returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = isElseIf ? "#ELSEIF" : "#ELSE";
 
     if ((hashendKinds.ordinality() == 0) || (hashendKinds.tos() != HashStmtIf))
     {
@@ -739,7 +729,7 @@ int HqlLex::doElse(attribute & returnToken, LexerFlags lookupFlags, const short 
     {
     case 0:
         skipNesting = 1;
-        doSkipUntilEnd(returnToken, forwhat);
+        doSkipUntilEnd(returnToken, directive, location);
         return yyLex(returnToken, lookupFlags, activeState);
     case 1:
         if (flags & HEFhadtrue)
@@ -779,9 +769,7 @@ int HqlLex::doEnd(attribute & returnToken, LexerFlags lookupFlags, const short *
 
 void HqlLex::doDeclare(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#DECLARE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
-
+    ECLlocation location = returnToken.pos;
     IIdAtom * name = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
@@ -795,9 +783,7 @@ void HqlLex::doDeclare(attribute & returnToken)
         int tok = yyLex(returnToken, LEXidentifier, 0);
         if (tok == EOF)
         {
-            StringBuffer msg;
-            msg.append("Unexpected EOF in ").append(forwhat.str()).append(": ')' expected");
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
+            reportError(location, ERR_TMPLT_HASHENDEXPECTED, "Unexpected EOF in #DECLARE: ')' expected");
             clearNestedHash();      // prevent unnecessary more error messages
             return;
         }
@@ -819,9 +805,7 @@ void HqlLex::doDeclare(attribute & returnToken)
             continue;
         else if (tok == EOF)
         {
-            StringBuffer msg;
-            msg.append("Unexpected EOF in ").append(forwhat.str()).append(": ) expected");
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
+            reportError(location, ERR_TMPLT_HASHENDEXPECTED, "Unexpected EOF in #DECLARE: ')' expected");
             clearNestedHash();      // prevent unnecessary more error messages
         }
         else
@@ -834,8 +818,8 @@ void HqlLex::doDeclare(attribute & returnToken)
 
 void HqlLex::doExpand(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#DECLARE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#EXPAND";
 
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
@@ -845,16 +829,15 @@ void HqlLex::doExpand(attribute & returnToken)
     }
 
     StringBuffer curParam("(");
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,forwhat.str()))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
-    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    Owned<IValue> value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         StringBuffer buf;
@@ -866,8 +849,8 @@ void HqlLex::doExpand(attribute & returnToken)
 
 void HqlLex::doSet(attribute & returnToken, bool append)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("%s(%d,%d)",append?"#APPEND":"#SET",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = append ? "#APPEND" : "#SET";
 
     IIdAtom * name = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
@@ -888,18 +871,17 @@ void HqlLex::doSet(attribute & returnToken, bool append)
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected");
         return;
     }
-    StringBuffer curParam("(");
 
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    StringBuffer curParam("(");
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,forwhat.str()))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    IValue *value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         StringBuffer buf;
@@ -911,9 +893,8 @@ void HqlLex::doSet(attribute & returnToken, bool append)
 
 void HqlLex::doLine(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    int line = returnToken.pos.lineno, col = returnToken.pos.column;
-    forwhat.appendf("LINE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#LINE";
 
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
@@ -922,10 +903,10 @@ void HqlLex::doLine(attribute & returnToken)
         return;
     }
     StringBuffer curParam("(");
-    bool moreParams = getParameter(curParam, forwhat.str(), &line, &col);
+    bool moreParams = getParameter(curParam, directive, location);
     curParam.append(')');
 
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),line,col);
+    IValue *value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value && value->getTypeCode()==type_int)
     {
         returnToken.pos.lineno = yyLineNo = (int)value->getIntValue();
@@ -936,16 +917,18 @@ void HqlLex::doLine(attribute & returnToken)
 
     if (moreParams)
     {
-        int startLine, startCol;
-        if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+        ECLlocation extrapos;
+        getPosition(extrapos);
+
+        if (getParameter(curParam, directive, location))
         {
-            reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
+            reportError(extrapos, ERR_OPERANDS_TOOMANY, "Too many operands");
             StringBuffer dummy;
-            while (getParameter(dummy,forwhat.str()))
+            while (getParameter(dummy, directive, location))
                 ;
         }
         curParam.append(')');
-        IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+        IValue *value = parseConstExpression(extrapos, curParam, queryTopXmlScope());
         if (value && value->getTypeCode()==type_string)
         {
             StringBuffer buf;
@@ -1023,8 +1006,8 @@ void HqlLex::doSlashSlashHash(attribute const & returnToken, const char * comman
 
 void HqlLex::doError(attribute & returnToken, bool isError)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("%s(%d,%d)",isError?"#ERROR":"#WARNING",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = isError ? "#ERROR" : "#WARNING";
 
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
@@ -1033,17 +1016,16 @@ void HqlLex::doError(attribute & returnToken, bool isError)
         return;
     }
     StringBuffer curParam("(");
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,forwhat.str()))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
     StringBuffer buf;
-    OwnedIValue value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    OwnedIValue value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         value->getStringValue(buf);
@@ -1058,8 +1040,8 @@ void HqlLex::doError(attribute & returnToken, bool isError)
 
 void HqlLex::doExport(attribute & returnToken, bool toXml)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#EXPORT(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#EXPORT";
 
     IIdAtom * exportname = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
@@ -1084,7 +1066,7 @@ void HqlLex::doExport(attribute & returnToken, bool toXml)
     for (;;)
     {
         StringBuffer curParam("SIZEOF(");
-        bool more = getParameter(curParam,"#EXPORT");
+        bool more = getParameter(curParam, directive, location);
         curParam.append(",MAX)");
 
         OwnedHqlExpr expr;
@@ -1128,8 +1110,8 @@ void HqlLex::doExport(attribute & returnToken, bool toXml)
 
 void HqlLex::doTrace(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#TRACE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#TRACE";
 
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
@@ -1139,16 +1121,15 @@ void HqlLex::doTrace(attribute & returnToken)
     }
     StringBuffer curParam("(");
 
-    int startLine, startCol;
-    if (getParameter(curParam,forwhat.str(),&startLine,&startCol))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,forwhat.str()))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
-    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),startLine-1,startCol);
+    Owned<IValue> value = parseConstExpression(returnToken.pos, curParam, queryTopXmlScope());
     if (value)
     {
         StringBuffer buf;
@@ -1164,11 +1145,8 @@ void HqlLex::doTrace(attribute & returnToken)
 
 void HqlLex::doFor(attribute & returnToken, bool doAll)
 {
-    //MTIME_SECTION(timer, "HqlLex::doFor")
-
-    int startLine = -1, startCol = 0;
-    StringBuffer forwhat;
-    forwhat.appendf("#FOR(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#FOR";
 
     IIdAtom * name = NULL;
     if (yyLex(returnToken, LEXnone, 0) != '(')
@@ -1192,7 +1170,7 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
     if (tok == '(')
     {
         forFilterText.append('(');
-        while (getParameter(forFilterText, forwhat.str()))
+        while (getParameter(forFilterText, directive, location))
             forFilterText.append(") AND (");
         forFilterText.append(')');
         tok = yyLex(returnToken, LEXnone, 0);
@@ -1205,21 +1183,17 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
         pushText(get_yyText());
         returnToken.release();
     }
+    ECLlocation loopPos = returnToken.pos;
 
     // Now gather the tokens we are going to repeat...
     StringBuffer forBodyText;
     for (;;)
     {
         int tok = yyLex(returnToken, LEXnone,0);
-        if (startLine == -1)
-        {
-            startLine = returnToken.pos.lineno - 1;
-            startCol = returnToken.pos.column;
-        }
 
         if (tok == EOF)
         {
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "EOF encountered inside %s: #END expected", forwhat.str());
+            reportError(location, ERR_TMPLT_HASHENDEXPECTED, "EOF encountered inside %s: #END expected", directive);
             clearNestedHash();      // prevent unnecessary more error messages
             return;
         }
@@ -1231,6 +1205,7 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
     }
     ::Release(forLoop);
 
+    forLocation = loopPos;
     forLoop = getSubScopes(returnToken, str(name), doAll);
     if (forFilterText.length())
         forFilter.setown(createFileContentsFromText(forFilterText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
@@ -1238,15 +1213,13 @@ void HqlLex::doFor(attribute & returnToken, bool doAll)
 
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
-        checkNextLoop(returnToken, true, startLine, startCol);
+        checkNextLoop(true);
 }
 
 void HqlLex::doLoop(attribute & returnToken)
 {
-    int startLine = -1, startCol = 0;
-    StringBuffer forwhat;
-    forwhat.appendf("#LOOP(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
-
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#LOOP";
 
     // Now gather the tokens we are going to repeat...
     StringBuffer forBodyText;
@@ -1256,15 +1229,10 @@ void HqlLex::doLoop(attribute & returnToken)
     for (;;)
     {
         int tok = yyLex(returnToken, LEXnone,0);
-        if (startLine == -1)
-        {
-            startLine = returnToken.pos.lineno-1;
-            startCol = returnToken.pos.column;
-        }
 
         if (tok == EOF)
         {
-            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "EOF encountered inside %s: #END expected",forwhat.str());
+            reportError(location, ERR_TMPLT_HASHENDEXPECTED, "EOF encountered inside #LOOP: #END expected");
             clearNestedHash();      // prevent unnecessary more error messages
             return;
         }
@@ -1276,30 +1244,34 @@ void HqlLex::doLoop(attribute & returnToken)
     }
     if (!hasHashbreak)
     {
-        reportError(returnToken, ERR_TMPLT_NOBREAKINLOOP,"No #BREAK inside %s: infinite loop will occur", forwhat.str());
+        reportError(location, ERR_TMPLT_NOBREAKINLOOP, "No #BREAK inside %s: infinite loop will occur", directive);
         return;
     }
 
     ::Release(forLoop);
+    forLocation = location;
     forLoop = new CDummyScopeIterator(ensureTopXmlScope());
     forFilter.clear();
     forBody.setown(createFileContentsFromText(forBodyText, sourcePath, yyParser->inSignedModule, yyParser->gpgSignature, 0));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
-        checkNextLoop(returnToken, true,startLine,startCol);
+        checkNextLoop(true);
 }
 
 void HqlLex::doGetDataType(attribute & returnToken)
 {
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#GETDATATYPE";
+
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); // MORE - make it fatal!
     StringBuffer curParam("(");
-    if (getParameter(curParam, "#GETDATATYPE"))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,"#GETDATATYPE"))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
@@ -1326,8 +1298,8 @@ StringBuffer& HqlLex::doGetDataType(StringBuffer & type, const char * text, int 
 
 int HqlLex::doHashText(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#TEXT(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#TEXT";
 
     if (yyLex(returnToken, LEXnone, 0) != '(')
     {
@@ -1338,7 +1310,7 @@ int HqlLex::doHashText(attribute & returnToken)
     }
 
     StringBuffer parameterText;
-    bool moreParams = getParameter(parameterText, forwhat.str());
+    bool moreParams = getParameter(parameterText, directive, location);
     if (!moreParams)
     {
         while (parameterText.length() && parameterText.charAt(0)==' ')
@@ -1348,7 +1320,7 @@ int HqlLex::doHashText(attribute & returnToken)
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "Too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,forwhat.str()))
+        while (getParameter(dummy, directive, location))
             ;
     }
 
@@ -1359,24 +1331,24 @@ int HqlLex::doHashText(attribute & returnToken)
 
 void HqlLex::doInModule(attribute & returnToken)
 {
-#ifdef TIMING_DEBUG
-    MTIME_SECTION(timer, "HqlLex::doInModule");
-#endif
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#INMODULE";
+
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
 
     StringBuffer moduleName, attrName;
 
-    if (getParameter(moduleName,"#INMODULE"))
+    if (getParameter(moduleName, directive, location))
     {
-        if (getParameter(attrName,"#INMODULE"))
+        if (getParameter(attrName, directive, location))
         {
             reportError(returnToken, ERR_OPERANDS_TOOMANY, "too many operands");
 
             /* skip the rest */
             StringBuffer dummy;
-            while (getParameter(dummy,"#INMODULE"))
+            while (getParameter(dummy, directive, location))
                 ;
         }
     }
@@ -1504,15 +1476,18 @@ void HqlLex::declareUniqueName(const char *name, const char * pattern)
 
 void HqlLex::doIsValid(attribute & returnToken)
 {
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#ISVALID";
+
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected");
     StringBuffer curParam("(");
-    if (getParameter(curParam,"#ISVALID"))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy,"#ISVALID"))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
@@ -1547,13 +1522,13 @@ void HqlLex::doIsValid(attribute & returnToken)
 }
 
 
-void HqlLex::checkNextLoop(const attribute & errpos, bool first, int startLine, int startCol)
+void HqlLex::checkNextLoop(bool first)
 {
     if (yyParser->checkAborting())
         return;
     if (loopTimes++ > MAX_LOOP_TIMES)
     {
-        reportError(errpos, ERR_TMPLT_LOOPEXCESSMAX,"The loop exceeded the limit: infinite loop is suspected");
+        reportError(forLocation, ERR_TMPLT_LOOPEXCESSMAX,"The loop exceeded the limit: infinite loop is suspected");
         return;
     }
     //printf("%d\r",loopTimes);
@@ -1567,14 +1542,14 @@ void HqlLex::checkNextLoop(const attribute & errpos, bool first, int startLine, 
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
 #endif
-            Owned<IValue> value = parseConstExpression(errpos, forFilter, subscope,startLine,startCol);
+            Owned<IValue> value = parseConstExpression(forLocation, forFilter, subscope);
             filtered = !value || !value->getBoolValue();
         }
         else
             filtered = false;
         if (!filtered)
         {
-            pushText(forBody,startLine,startCol);
+            pushText(forBody,forLocation.lineno,forLocation.column);
             inmacro->xmlScope = LINK(subscope);
             return;
         }
@@ -1650,7 +1625,7 @@ void HqlLex::doPreprocessorLookup(const attribute & errpos, bool stringify, int 
 
 
 //Read the text of a parameter, but also have a good guess at whether it is defined.
-bool HqlLex::getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* for_what, SharedHqlExpr & resolved)
+bool HqlLex::getDefinedParameter(StringBuffer &curParam, attribute & returnToken, const char* directive, const ECLlocation & location, SharedHqlExpr & resolved)
 {
     enum { StateStart, StateDot, StateSelectId, StateFailed } state = StateStart;
     unsigned parenDepth = 1;
@@ -1685,9 +1660,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, attribute & returnToken
             break;
         case EOF:
             {
-                StringBuffer msg("EOF encountered while gathering parameters for ");
-                msg.append(for_what);
-                reportError(returnToken, ERR_TMPLT_EOFINPARAM, "%s", msg.str());
+                reportError(location, ERR_TMPLT_EOFINPARAM, "EOF encountered while gathering parameters for %s", directive);
             }
             return false;
         case UNKNOWN_ID:
@@ -1744,15 +1717,15 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, attribute & returnToken
 
 bool HqlLex::doIsDefined(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#ISDEFINED(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#ISDEFINED";
 
     if (!assertNextOpenBra())
         return false;
 
     OwnedHqlExpr resolved;
     StringBuffer paramText;
-    bool hasMore = getDefinedParameter(paramText, returnToken, forwhat.str(), resolved);
+    bool hasMore = getDefinedParameter(paramText, returnToken, directive, location, resolved);
     if (hasMore)
         reportError(returnToken, ERR_EXPECTED, "Expected ')'");
     return resolved != NULL;
@@ -1761,8 +1734,8 @@ bool HqlLex::doIsDefined(attribute & returnToken)
 
 void HqlLex::doDefined(attribute & returnToken)
 {
-    StringBuffer forwhat;
-    forwhat.appendf("#DEFINED(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#DEFINED";
 
     if (!assertNextOpenBra())
         return;
@@ -1770,9 +1743,9 @@ void HqlLex::doDefined(attribute & returnToken)
     OwnedHqlExpr resolved;
     StringBuffer param1Text;
     StringBuffer param2Text;
-    bool hasMore = getDefinedParameter(param1Text, returnToken, forwhat.str(), resolved);
+    bool hasMore = getDefinedParameter(param1Text, returnToken, directive, location, resolved);
     if (hasMore)
-        hasMore = getParameter(param2Text, forwhat.str());
+        hasMore = getParameter(param2Text, directive, location);
     if (hasMore)
         reportError(returnToken, ERR_EXPECTED, "Expected ')'");
 
@@ -1803,7 +1776,7 @@ IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int sta
 }
 
 
-IValue *HqlLex::foldConstExpression(const attribute & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::foldConstExpression(const ECLlocation & errpos, IHqlExpression * expr, IXmlScope *xmlScope)
 {
     OwnedIValue value;
     if (expr)
@@ -1840,22 +1813,22 @@ IValue *HqlLex::foldConstExpression(const attribute & errpos, IHqlExpression * e
     return value.getClear();
 }
 
-IValue *HqlLex::parseConstExpression(const attribute & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::parseConstExpression(const ECLlocation & errpos, StringBuffer &curParam, IXmlScope *xmlScope)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
-    OwnedHqlExpr expr = parseECL(curParam, xmlScope, startLine, startCol);
-    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
+    OwnedHqlExpr expr = parseECL(curParam, xmlScope, errpos.lineno, errpos.position);
+    return foldConstExpression(errpos, expr, xmlScope);
 }
 
-IValue *HqlLex::parseConstExpression(const attribute & errpos, IFileContents * text, IXmlScope *xmlScope, int startLine, int startCol)
+IValue *HqlLex::parseConstExpression(const ECLlocation & errpos, IFileContents * text, IXmlScope *xmlScope)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
-    OwnedHqlExpr expr = parseECL(text, xmlScope, startLine, startCol);
-    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
+    OwnedHqlExpr expr = parseECL(text, xmlScope, errpos.lineno, errpos.position);
+    return foldConstExpression(errpos, expr, xmlScope);
 }
 
 int hexchar(char c)
@@ -1870,17 +1843,20 @@ int hexchar(char c)
 
 void HqlLex::doApply(attribute & returnToken)
 {
+    ECLlocation location = returnToken.pos;
+    const char * directive = "#APPLY";
+
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); // MORE - make it fatal!
 
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
     StringBuffer curParam("(");
-    if (getParameter(curParam, "#APPLY"))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy, "#APPLY"))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
@@ -1895,21 +1871,24 @@ void HqlLex::doApply(attribute & returnToken)
 
 void HqlLex::doMangle(attribute & returnToken, bool de)
 {
+    ECLlocation location = returnToken.pos;
+    const char * directive = de?"#DEMANGLE":"#MANGLE";
+
     int tok = yyLex(returnToken, LEXnone, 0);
     if (tok != '(')
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); // MORE - make it fatal!
 
-    int line = returnToken.pos.lineno, col = returnToken.pos.column;
+    ECLlocation pos = returnToken.pos;
     StringBuffer curParam("(");
-    if (getParameter(curParam, de?"#DEMANGLE":"#MANGLE"))
+    if (getParameter(curParam, directive, location))
     {
         reportError(returnToken, ERR_OPERANDS_TOOMANY, "too many operands");
         StringBuffer dummy;
-        while (getParameter(dummy, de?"#DEMANGLE":"MANGLE"))
+        while (getParameter(dummy, directive, location))
             ;
     }
     curParam.append(')');
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(), line, col);
+    IValue *value = parseConstExpression(pos, curParam, queryTopXmlScope());
     if (value)
     {
         const char *str = value->getStringValue(curParam.clear());
@@ -2184,6 +2163,17 @@ void HqlLex::reportError(const attribute & returnToken, int errNo, const char *f
     }
 }
 
+void HqlLex::reportError(const ECLlocation & pos, int errNo, const char *format, ...)
+{
+    if (yyParser)
+    {
+        va_list args;
+        va_start(args, format);
+        yyParser->reportErrorVa(errNo, pos, format, args);
+        va_end(args);
+    }
+}
+
 void HqlLex::reportWarning(WarnErrorCategory category, const attribute & returnToken, int warnNo, const char *format, ...)
 {
     if (yyParser)
@@ -2396,7 +2386,7 @@ int HqlLex::yyLex(attribute & returnToken, LexerFlags lookupFlags, const short *
             }
 
             if (forLoop)
-                checkNextLoop(returnToken, false,0,0);
+                checkNextLoop(false);
         }
 
         returnToken.clear();

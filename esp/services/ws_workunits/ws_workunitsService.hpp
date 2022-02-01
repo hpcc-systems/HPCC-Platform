@@ -30,6 +30,7 @@
 #include "referencedfilelist.hpp"
 #include "ws_wuresult.hpp"
 #include "jsmartsock.ipp"
+#include <atomic>
 
 #define UFO_DIRTY                                0x01
 #define UFO_RELOAD_TARGETS_CHANGED_PMID          0x02
@@ -38,9 +39,11 @@
 
 static const __uint64 defaultWUResultMaxSize = 0x100000*10; //10M
 
-class QueryFilesInUse : public CInterface, implements ISDSSubscription
+class QueryFilesInUse : public CInterface, implements ISDSSubscription, implements IThreaded
 {
     mutable CriticalSection crit;
+    CThreaded threaded;
+    Semaphore sem;
     MapStringTo<IUserDescriptor *> roxieUserMap;
     IArrayOf<IUserDescriptor> roxieUsers;
 
@@ -50,7 +53,7 @@ class QueryFilesInUse : public CInterface, implements ISDSSubscription
     SubscriptionId psChange;
     mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
     unsigned dirty;
-    bool aborting;
+    std::atomic_bool aborting;
 private:
     void loadTarget(IPropertyTree *tree, const char *target, unsigned flags);
     void loadTargets(IPropertyTree *tree, unsigned flags);
@@ -83,10 +86,31 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(UFO_DIRTY)
+    QueryFilesInUse() : threaded("QueryFilesInUse"), aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(UFO_DIRTY)
     {
         tree.setown(createPTree("QueryFilesInUse"));
         updateUsers();
+        threaded.init(this);
+    }
+
+    ~QueryFilesInUse()
+    {
+        aborting = true;
+        sem.signal();
+        threaded.join();
+    }
+
+    virtual void threadmain()
+    {
+        while (!aborting)
+        {
+            //prepopulate the cache, lazy mode is very slow
+            //getTree() builds the cache, but only does work if the cache is dirty (changes in dali would have dirtied the cache)
+            Owned<IPropertyTree> thetree = getTree();
+            //wait 1 minute, then check if dirty again
+            if (sem.wait(60000))
+                break;
+        }
     }
 
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
@@ -152,6 +176,8 @@ public:
     }
     IPropertyTree *getTree()
     {
+        //getTree() is thread safe because when load(flags) is called below it creates a new working tree,
+        //  the previous tree might still be in use outside this class, in which case it will not actually freed until there are no remaining references outstanding
         CriticalBlock b(crit);
         unsigned flags;
         {

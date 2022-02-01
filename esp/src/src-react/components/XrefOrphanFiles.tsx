@@ -1,13 +1,10 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 import nlsHPCC from "src/nlsHPCC";
@@ -26,11 +23,12 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("name")));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "name",
         query: {},
         sort: [{ attribute: "modified", "descending": false }],
         filename: "xrefsOrphanFiles",
@@ -59,7 +57,7 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
         WsDFUXref.DFUXRefOrphanFiles(name)
             .then(rows => {
                 if (rows.length) {
-                    store.setData(rows.map((item, idx) => {
+                    setData(rows.map((item, idx) => {
                         return {
                             name: item.Name,
                             modified: item.Modified,
@@ -68,13 +66,15 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
                             size: item.Size
                         };
                     }));
-
-                    refreshTable();
                 }
             })
             .catch(err => logger.error(err))
             ;
-    }, [name, refreshTable, store]);
+    }, [name]);
+
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -103,10 +103,6 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ], [refreshData, setShowDeleteConfirm, uiState]);
-
-    React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

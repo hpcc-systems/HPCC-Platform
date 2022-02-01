@@ -34,6 +34,7 @@ eclwatch:
         xslt:
         - name: def_file
           ^: "./smc_xslt/def_file.xslt"
+   ws_dfsservice:
    WsDfuXRef:
       ViewTimeout: 1000
       LayoutProgram: dot/dot -Tsvg -Gordering=out
@@ -58,7 +59,6 @@ eclwatch:
          -  name: HPCCApps
             description: Generic KeyVal store for HPCC Applications
             default: true
-         Store:
          -  name: JWTAuth
             description: JWT token cache
             default: false

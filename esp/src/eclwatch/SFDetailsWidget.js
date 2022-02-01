@@ -36,6 +36,7 @@ define([
     "dijit/form/Button",
     "dijit/form/DropDownButton",
     "dijit/form/ToggleButton",
+    "dijit/Fieldset",
     "dijit/TitlePane"
 ], function (exports, declare, nlsHPCCMod, arrayUtil, dom, domAttr, domClass, domForm, MemoryMod, Observable, all,
     registry,

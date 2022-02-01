@@ -1447,8 +1447,8 @@
                   <entry><emphasis role="bold">Submit drop
                   list</emphasis></entry>
 
-                  <entry>Choose from Submit, Submit Selected, Compile, or
-                  Debug <itemizedlist>
+                  <entry>Choose from Submit, Submit Selected, or Compile
+                  <itemizedlist>
                       <listitem>
                         <para><emphasis role="bold">Submit </emphasis>-
                         submits the ECL code to be compiled and executed on

@@ -27,10 +27,10 @@ kubectl get secret -n $SECRET_NAMESPACE  | cut -d' ' -f1 | grep -q "$SECRET_NAME
 if [[ $? -ne 0 ]]
 then
   echo "create secret $SECRET_NAME"
-  account_key=$(cat ${SA_KEY_DIR}/${STORAGE_ACCOUNT_NAME}.key | cut -d':' -f2 | sed 's/[[:space:]]\+//g')
+  account_key=$(cat ${SA_KEY_DIR}/${STORAGE_ACCOUNT_NAME}.key | cut -d':' -f2 | sed 's/[[:space:]]*//g')
   kubectl create secret generic $SECRET_NAME -n $SECRET_NAMESPACE \
-    --from-literal=azurestorageaccountname=${STORAGE_ACCOUNT_NAME} \
-    --from-literal=azurestorageaccountkey=${account_key}
+    --from-literal="azurestorageaccountname=${STORAGE_ACCOUNT_NAME}" \
+    --from-literal="azurestorageaccountkey=${account_key}"
 else
   echo "Secret $SECRET_NAME already exists"
 fi

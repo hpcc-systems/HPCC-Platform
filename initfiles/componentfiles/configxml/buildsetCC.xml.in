@@ -229,6 +229,10 @@
                         path="WsLogAccess"
                         resource="WsLogAccess"
                         service="ws_logaccess"/>
+                    <AuthenticateFeature description="Access to DFS service"
+                        path="DfsAccess"
+                        resource="DfsAccess"
+                        service="ws_dfsservice"/>
                     <ProcessFilters>
                         <Platform name="Windows">
                             <ProcessFilter name="any">

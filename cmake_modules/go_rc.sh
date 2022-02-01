@@ -86,7 +86,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
     fi
     doit "git add $VERSIONFILE"
     doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
-    doit "git push $REMOTE"
+    doit "git push $REMOTE candidate-$HPCC_MAJOR.$NEW_MINOR.x"
   fi
   GIT_BRANCH=candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT
   doit "git checkout $GIT_BRANCH"

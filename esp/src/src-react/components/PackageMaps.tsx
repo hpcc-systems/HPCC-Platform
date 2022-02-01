@@ -88,6 +88,8 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     tab = "packageMaps"
 }) => {
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     const [targets, setTargets] = React.useState<IDropdownOption[]>();
     const [processes, setProcesses] = React.useState<IDropdownOption[]>();
     const [activeMapTarget, setActiveMapTarget] = React.useState("");
@@ -307,12 +309,12 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
         },
-    ], [refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
+    ], [hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};

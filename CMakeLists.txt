@@ -403,7 +403,7 @@ if(TOP_LEVEL_PROJECT)
             ###
             set(CPACK_RPM_SPEC_MORE_DEFINE
 "%define _use_internal_dependency_generator 0
-%define __getdeps() while read file; do /usr/lib/rpm/rpmdeps -%{1} ${file} | %{__grep} -v libantlr3c.so | %{__grep} -v libtbb.so ; done | /bin/sort -u
+%define __getdeps() while read file; do /usr/lib/rpm/rpmdeps -%{1} ${file} | %{__grep} -v libantlr3c.so | %{__grep} -v libelasticlient.so | %{__grep} -v libcpr.so | %{__grep} -v libjsoncpp.so | %{__grep} -v libtbb.so ; done | /bin/sort -u
 %define __find_provides /bin/sh -c '%{__getdeps P}'
 %define __find_requires /bin/sh -c '%{__getdeps R}'
 %undefine __brp_mangle_shebangs

@@ -62,6 +62,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     //  Grid ---
     const [Grid, selection, refreshTable, copyButtons] = useGrid({
         store: store || ESPQuery.CreateQueryStore({}),
@@ -222,7 +224,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
@@ -233,7 +235,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};

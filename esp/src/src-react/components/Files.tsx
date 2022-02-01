@@ -68,6 +68,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     store
 }) => {
 
+    const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
     const [showFilter, setShowFilter] = React.useState(false);
     const [showRemoteCopy, setShowRemoteCopy] = React.useState(false);
     const [showCopy, setShowCopy] = React.useState(false);
@@ -229,7 +231,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
@@ -240,7 +242,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
+    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
