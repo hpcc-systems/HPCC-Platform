@@ -19861,6 +19861,20 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
     }
 }
 
+bool HqlCppTranslator::isLightweightQuery(WorkflowArray & workflow)
+{
+    ForEachItemIn(idx2, workflow)
+    {
+        HqlExprArray & exprs = workflow.item(idx2).queryExprs();
+        ForEachItemIn(idx, exprs)
+        {
+            if (needsRealThor(&exprs.item(idx), 0))
+                return false;
+        }
+    }
+    return true;
+}
+
 unsigned getVirtualFieldSize(IHqlExpression * record)
 {
     unsigned size = 0;

@@ -14350,6 +14350,9 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
 #endif
     updateClusterType();
 
+    if (isLightweightQuery(workflow))
+        wu()->setDebugValueInt("isLightweightQuery", 1, true);
+
     ForEachItemIn(i2, workflow)
     {
         WorkflowItem & curWorkflow = workflow.item(i2);

@@ -2032,6 +2032,7 @@ public:
     unsigned nextLibrarySequence() { return librarySequence++; }
     unsigned queryMaxWfid() { return maxWfid; }
     void setMaxWfid(unsigned wfid) { maxWfid = wfid; }
+    bool isLightweightQuery(WorkflowArray & workflow);
 
 public:
     void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);

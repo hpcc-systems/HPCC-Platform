@@ -245,7 +245,7 @@ public:
                 wuid.set(sArray.item(0));
                 graphName.set(sArray.item(1));
 
-                // JCSMORE - idealy apptype, image and executable name would all be same.
+                // JCSMORE - ideally apptype, image and executable name would all be same.
                 jobSpecName.set("thormanager");
                 processName.set("thormaster_lcr");
             }
