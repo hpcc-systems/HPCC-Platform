@@ -2775,6 +2775,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optIgnoreUnknownImport, "--ignoreunknownimport"))
         {
         }
+        else if (iter.matchOption(tempArg, "--jobid"))
+        {
+            setDefaultJobId(tempArg, false);
+        }
         else if (iter.matchFlag(optKeywords, "--keywords"))
         {
         }

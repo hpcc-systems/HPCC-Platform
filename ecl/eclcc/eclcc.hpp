@@ -96,6 +96,7 @@ const char * const helpText[] = {
     "!   --ignoresimplified Do not use simplified expressions when syntax checking",
     "!   --ignoreunknownimport Do not report an error on an unknown import",
     "!   -internal     Run internal tests",
+    "!   --jobid=str   Set the name of the job id output in the logging",
     "?!  -legacy       Use legacy import and when semantics (deprecated)",
     "!   --leakcheck   Clean up memory since checking for memory leaks",
     "!   --keywords    Outputs the list of ECL reserved words to stdout (XML format)",
