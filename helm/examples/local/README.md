@@ -4,10 +4,10 @@
 
 ### hpcc-localfile/
 
-The hpcc-localfile helm chart will provision a new Persistent Volume and a Persistent Volume Claim for each of the required HPCC storage types.
+The hpcc systems hpcc-localfile helm chart will provision a new Persistent Volume and a Persistent Volume Claim for each of the required HPCC storage types.
 Once installed the generated PVC names should be used when installing the HPCC helm chart.
-The values-localfile.yaml is an example of the HPCC storage settings that should be applied, after the "hpcc-localfile" helm chart is installed.
-NB: The output of installing this chart, will contain a generated example with the correct PVC names.
+The values-localfile.yaml is an example of the HPCC storage settings that should be applied, after the "localfile" helm chart is installed.
+Note: The output of installing this chart, will contain a generated example with the correct PVC names.
 
 The chart assumes that the dalistorage, queries, sasha, and hpcc-data subdirectories already exist.
 
@@ -17,8 +17,10 @@ Examples of use:
 
   With a host directory of c:\hpccdata
 
-    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
+    helm install localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
+
+Note for the above example 'localfile' is the arbitrary instance name, it could be named anything, but "localfile" will match the delivered examples values-localfile.yaml file.
 
 #### Docker desktop (using osx):
 
@@ -32,7 +34,7 @@ Examples of use:
   With a host directory of c:\hpccdata<br/>
   In addition, you must add the folder in Docker Desktop's settings for Resources>File Sharing.
 
-    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+    helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 #### Minikube:
@@ -49,7 +51,7 @@ Examples of use:
 
     minikube mount /home/myuser/hpccdata:/mnt/hpccdata --gid=1000 --uid=999
 
-    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/mnt/hpccdata
+    helm install localfile examples/local/hpcc-localfile --set common.hostpath=/mnt/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 ### values-localfile.yaml
