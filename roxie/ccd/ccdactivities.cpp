@@ -45,8 +45,6 @@
 #include "thorstrand.hpp"
 #include "jstats.h"
 
-size32_t diskReadBufferSize = 0x10000;
-
 using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::OwnedRoxieString;

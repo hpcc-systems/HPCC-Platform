@@ -11,6 +11,11 @@ global:
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
 
+  ## It is possible (but not recommended) to change the uid/gid that the HPCC containers run under
+  ## user:
+  ##  uid: 10000
+  ##  gid: 10001
+
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
     detail: 80

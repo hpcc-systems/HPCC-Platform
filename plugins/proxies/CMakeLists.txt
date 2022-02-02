@@ -20,6 +20,7 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION ${p
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone3.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_fileservices.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 
 IF (USE_OPENSSL)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)

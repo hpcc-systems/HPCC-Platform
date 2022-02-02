@@ -64,7 +64,7 @@ Timeouts:
                           => Timeout for a permit before it is assumed lost
                           [receiver] If rts received while permit is active, permit is resent.  If not complete within timeout,
                                      revoke the permit.
-    udpResendTimeout    - the time that should have elapsed before a missing data packet is resent
+    udpResendDelay      - the time that should have elapsed before a missing data packet is resent
                           (I think this only makes sense if a new permit can be granted before all the data has been received,
                           so the request to send more is sent to the flow port.)
                           0 means they are unlikely to be lost, so worth resending as soon as it appears to be missing - trading
@@ -181,7 +181,7 @@ because the extra flow messages or data packets will reduce the overall capacity
   Too high: lost send_begin will reduce the number of permits, lost request_to_send_more will delay the sender
   Too low: permits will expire while the data is being transferred - slots will be over-committed.
            sender will potentially re-request to send before all the data has been sent over the wire
-           which will cause all "missing" packets to be resent if udpResendTimeout is low.
+           which will cause all "missing" packets to be resent if udpResendDelay is low.
   Suggestion: If multiple permits, probably better to be too high than too low.
               E.g. The time to send and receive the data for all/half the slots?
 
@@ -196,7 +196,7 @@ because the extra flow messages or data packets will reduce the overall capacity
   Suggestion: Better to be too low than too high.  Similar to udpDataSendTimeout?  10 * the ack timeout?
               (If lower than the udpDataSendTimeout then the permit could be resent)
 
-* udpResendTimeout
+* udpResendDelay
   Too high: Missing packets will take a long time to be resent.
   Too low: If large proportion of packets reordered or dropped by the network packets will be sent unnecessarily
   Suggestion: Set it to lower than the permit timeout, I'm not sure we want to run on a network where that many packets are being lost!
@@ -234,7 +234,7 @@ Other udp settings
   The smallest number of slots to assign to a sender, defaults to 1.  Could increase to prevent lots of small permits being granted.
 
 * udpAssumeSequential
-  If the sender has received a later sequence data packet, then resend a non-received packet - regardless of the udpResendTimeout
+  If the sender has received a later sequence data packet, then resend a non-received packet - regardless of the udpResendDelay
 
 * udpResendAllMissingPackets
   Do no limit the number of missing packets sent to the size of the permit - send all that are ok to end.  The rationale is that
@@ -347,7 +347,7 @@ The main difference for asynchronous requests is that instead of sending request
 into two messages - send_complete sent to the data port, and a request_to_send_more to the flow port.
 
 What is the trade off for asynchronous requests?
-- Synchronous requests are received after the data, so it makes sense for udpResendTimeout to be 0 (i.e. send immediately).
+- Synchronous requests are received after the data, so it makes sense for udpResendDelay to be 0 (i.e. send immediately).
   This means that missing data packets are likely to be sent much more quickly.
 - Asynchronous requests allow a sender to start sending more data before the previous data has been read.  When
   there is a single sender this will significantly reduce the latency.
@@ -622,7 +622,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             // We can send some if (a) the first available new packet is less than TRACKER_BITS above the first unreceived packet or
             // (b) we are assuming arrival in order, and there are some marked seen that are > first unseen OR
             // (c) the oldest in-flight packet has expired
-            if (!udpResendLostPackets || (udpResendTimeout == 0))
+            if (!udpResendLostPackets || (udpResendDelay == 0))
                 return true;
             {
                 CriticalBlock b(psCrit);
@@ -633,7 +633,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             }
 
             //The best approximation to the oldest-inflight packet - because permits may have expired...
-            return (msTick()-lastPermitTime > udpResendTimeout);
+            return (msTick()-lastPermitTime > udpResendDelay);
         }
 
         void acknowledgeRequest(const IpAddress &returnAddress, sequence_t _flowSeq, sequence_t _sendSeq)
@@ -1181,7 +1181,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 }
 
                 //Hard to tell what should happen to the timeout - try again when the resend timeout will allow missing packets to be sent
-                unsigned missingPacketTimeout = std::max(udpResendTimeout, 1U);
+                unsigned missingPacketTimeout = std::max(udpResendDelay, 1U);
                 if (timeout > missingPacketTimeout)
                     timeout = missingPacketTimeout; // Hopefully one of the senders should unblock soon
             }

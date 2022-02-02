@@ -111,7 +111,7 @@ export const routes: RoutesEx = [
         path: "/landingzone",
         children: [
             { path: "", action: (context) => import("./components/LandingZone").then(_ => <_.LandingZone filter={parseSearch(context.search) as any} />) },
-            { path: "/preview/:logicalFile", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="HexViewWidget" params={params} />) },
+            { path: "/preview/:logicalFile", action: (ctx, params) => import("./components/HexView").then(_ => <_.HexView logicalFile={params.logicalFile as string} />) },
         ],
     },
     {

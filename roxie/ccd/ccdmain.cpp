@@ -74,9 +74,9 @@ unsigned parallelLoopFlowLimit = 100;
 unsigned perChannelFlowLimit = 10;
 time_t startupTime;
 unsigned statsExpiryTime = 3600;
-unsigned miscDebugTraceLevel = 0;  // separate trace settings purely for debugging specific items (i.e. all possible locations to look for files at startup)
+unsigned miscDebugTraceLevel = 0;      // separate trace settings purely for debugging specific items (i.e. all possible locations to look for files at startup)
 bool traceRemoteFiles = false;
-unsigned readTimeout = 300;
+unsigned readTimeout = 300;            // timeout (in ms) for reading input data blocks in roxiepipe mode
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
@@ -125,7 +125,6 @@ bool useAeron;
 bool ignoreOrphans;
 bool doIbytiDelay = true; 
 bool copyResources;
-bool enableKeyDiff = true;
 bool chunkingHeap = true;
 bool logFullQueries;
 bool blindLogging = false;
@@ -138,7 +137,7 @@ bool reloadRetriesFailed;
 bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
-unsigned parallelLoadQueries = 8;
+unsigned parallelQueryLoadThreads = 0;               // Number of threads to use for parallel loading of queries. 0 means don't (may cause CPU starvation on other vms)
 bool alwaysFailOnLeaks = false;
 SinkMode defaultSinkMode = SinkMode::Parallel;
 unsigned continuationCompressThreshold = 1024;
@@ -895,7 +894,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         lowTimeout = topology->getPropInt("@lowTimeout", 10000);
         highTimeout = topology->getPropInt("@highTimeout", 2000);
         slaTimeout = topology->getPropInt("@slaTimeout", 2000);
-        parallelLoopFlowLimit = topology->getPropInt("@parallelLoopFlowLimit", 100);
+        parallelLoopFlowLimit = topology->getPropInt("@parallelLoopFlowLimit", parallelLoopFlowLimit);
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = (!oneShotRoxie) && topology->getPropBool("@copyResources", true);
         useRemoteResources = oneShotRoxie || topology->getPropBool("@useRemoteResources", !isContainerized());
@@ -983,12 +982,17 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 
         updDataSendTimeout = topology->getPropInt("@udpDataSendTimeout", updDataSendTimeout);
-        udpResendTimeout = topology->getPropInt("@udpResendTimeout", udpResendTimeout);
+        udpResendDelay = topology->getPropInt("@udpResendDelay", udpResendDelay);
         udpMaxClientPercent = topology->getPropInt("@udpMaxClientPercent", udpMaxClientPercent);
 
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
 
+#ifdef _CONTAINERIZED
+        udpMulticastBufferSize = topology->getPropInt("@udpAgentBufferSize", 262142);
+#else
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
+#endif
+
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
 #ifndef _CONTAINERIZED
@@ -1058,7 +1062,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         agentQueryReleaseDelaySeconds = topology->getPropInt("@agentQueryReleaseDelaySeconds", topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60));  // legacy name
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
-        diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = RecordTranslationMode::Payload;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
@@ -1107,15 +1110,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         mergeAgentStatistics = topology->getPropBool("@mergeAgentStatistics", topology->getPropBool("@mergeSlaveStatistics", true));  // legacy name
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
-        parallelLoadQueries = topology->getPropInt("@parallelLoadQueries", 8);
-        if (!parallelLoadQueries)
-            parallelLoadQueries = 1;
+        parallelQueryLoadThreads = topology->getPropInt("@parallelQueryLoadThreads", parallelQueryLoadThreads);
+        if (!parallelQueryLoadThreads)
+            parallelQueryLoadThreads = 1;
         alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
         const char *sinkModeText = topology->queryProp("@sinkMode");
         if (sinkModeText)
             defaultSinkMode = getSinkMode(sinkModeText);
 
-        enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
 
         // NB: these directories will have been setup by topology earlier
@@ -1413,7 +1415,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         }
                         const char *soname =  roxieFarm.queryProp("@so");
                         const char *config  = roxieFarm.queryProp("@config");
-                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        // NB: leaks - until we fix bug in ensureProtocolPlugin() whereby some paths return a linked object and others do not
+                        IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
                         roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
                     }
                     else

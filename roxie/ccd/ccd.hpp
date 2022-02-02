@@ -372,7 +372,7 @@ extern bool enableKeyDiff;
 extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeAgentStatistics;
 extern bool defaultNoSeekBuildIndex;
-extern unsigned parallelLoadQueries;
+extern unsigned parallelQueryLoadThreads;
 extern bool adhocRoxie;
 extern bool alwaysFailOnLeaks;
 extern SinkMode defaultSinkMode;
@@ -397,7 +397,6 @@ extern IPropertyTree *roxiePortTlsClientConfig;
 
 
 extern unsigned udpMulticastBufferSize;
-extern size32_t diskReadBufferSize;
 
 extern unsigned nodeCacheMB;
 extern unsigned leafCacheMB;

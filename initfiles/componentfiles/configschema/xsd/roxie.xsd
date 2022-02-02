@@ -407,9 +407,6 @@
                     <xs:attribute name="defaultPrefetchProjectPreload" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Default Prefetch Project Preload" hpcc:presetValue="10"
                                   hpcc:tooltip="Default prefetch value for PROJECT,PREFETCH activity"/>
-                    <xs:attribute name="diskReadBufferSize" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="Disk Read Buffer Size (bytes)" hpcc:presetValue="65536"
-                                  hpcc:tooltip="Default buffer size for disk read operations"/>
                     <xs:attribute name="doIbytiDelay" type="xs:boolean" hpcc:displayName="Enable IBYTI Ddelay Logic"
                                   hpcc:presetValue="true" hpcc:tooltip="Enables the IBYTI delay logic in the agents"/>
                     <xs:attribute name="enableHeartBeat" type="xs:boolean" hpcc:displayName="Enable Heartbeat"

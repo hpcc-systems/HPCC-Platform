@@ -318,7 +318,7 @@ public:
         {
             if (lfn.isRemote() || (!lfn.isExternal() && job.getOptBool("dfsesp-localfiles")))
             {
-                auto func = [&job, &lfn, write, privilegedUser](unsigned timeout)
+                auto func = [&job, &lfn](unsigned timeout)
                 {
                     return wsdfs::lookupLegacyDFSFile(lfn.get(), timeout, wsdfs::keepAliveExpiryFrequency, job.queryUserDescriptor());
                 };

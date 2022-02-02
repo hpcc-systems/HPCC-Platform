@@ -175,38 +175,31 @@ void CassandraClusterSession::setOptions(const StringArray &options)
             }
             else if (stricmp(optName, "max_connections_per_host")==0)
             {
-                unsigned max_connections_per_host = getUnsignedOption(val, "max_connections_per_host");
-                checkSetOption(cass_cluster_set_max_connections_per_host(cluster, max_connections_per_host), "max_connections_per_host");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "max_concurrent_creation")==0)
             {
-                unsigned max_concurrent_creation = getUnsignedOption(val, "max_concurrent_creation");
-                checkSetOption(cass_cluster_set_max_concurrent_creation(cluster, max_concurrent_creation), "max_concurrent_creation");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "write_bytes_high_water_mark")==0)
             {
-                unsigned write_bytes_high_water_mark = getUnsignedOption(val, "write_bytes_high_water_mark");
-                checkSetOption(cass_cluster_set_write_bytes_high_water_mark(cluster, write_bytes_high_water_mark), "write_bytes_high_water_mark");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "write_bytes_low_water_mark")==0)
             {
-                unsigned write_bytes_low_water_mark = getUnsignedOption(val, "write_bytes_low_water_mark");
-                checkSetOption(cass_cluster_set_write_bytes_low_water_mark(cluster, write_bytes_low_water_mark), "write_bytes_low_water_mark");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "pending_requests_high_water_mark")==0)
             {
-                unsigned pending_requests_high_water_mark = getUnsignedOption(val, "pending_requests_high_water_mark");
-                checkSetOption(cass_cluster_set_pending_requests_high_water_mark(cluster, pending_requests_high_water_mark), "pending_requests_high_water_mark");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "pending_requests_low_water_mark")==0)
             {
-                unsigned pending_requests_low_water_mark = getUnsignedOption(val, "pending_requests_low_water_mark");
-                checkSetOption(cass_cluster_set_pending_requests_low_water_mark(cluster, pending_requests_low_water_mark), "pending_requests_low_water_mark");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "max_concurrent_requests_threshold")==0)
             {
-                unsigned max_concurrent_requests_threshold = getUnsignedOption(val, "max_concurrent_requests_threshold");
-                checkSetOption(cass_cluster_set_max_concurrent_requests_threshold(cluster, max_concurrent_requests_threshold), "max_concurrent_requests_threshold");
+                //Option is now deprecated and has no effect
             }
             else if (stricmp(optName, "connect_timeout")==0)
             {

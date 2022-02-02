@@ -587,8 +587,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 # This is only required when mounting a remote filing systems from another container or machine.
 # NB: this includes where the filing system is on the containers host machine .
 # Examples include, minikube, docker for desktop, or NFS mounted storage.
-# NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platform-core
-{{- $permCmd := printf "chown -R 10000:10001 %s" .volumePath }}
+{{- $permCmd := printf "chown -R %v:%v %s" .uid .gid .volumePath }}
 - name: volume-mount-hack
   image: busybox
   command: [
@@ -604,8 +603,12 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 
 {{/*
 A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop) has correct permissions for PV
+NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platform-core
 */}}
 {{- define "hpcc.changePlaneMountPerms" -}}
+{{- $user := (.root.Values.global.user | default dict) -}}
+{{- $uid := $user.uid | default 10000 -}}
+{{- $gid := $user.gid | default 10001 -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeCategories := .includeCategories | default list -}}
@@ -615,12 +618,11 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
   {{- $mountpath := $plane.prefix -}}
   {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) -}}
    {{- $volumeName := (printf "%s-pv" $plane.name) -}}
-   {{- include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+   {{- include "hpcc.changeMountPerms" (dict "root" .root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
   {{- end -}}
  {{- end -}}
 {{- end -}}
 {{- end -}}
-
 
 {{/*
 Container to watch for a file on a shared mount and execute a command
@@ -693,6 +695,7 @@ Add security context
 Pass in a dictionary with root and me defined
 */}}
 {{- define "hpcc.addSecurityContext" }}
+{{- $user := (.root.Values.global.user | default dict) }}
 securityContext:
 {{- if .root.Values.global.privileged }}
   privileged: true
@@ -708,8 +711,8 @@ securityContext:
   readOnlyRootFilesystem: true
 {{- end }}
   runAsNonRoot: true
-  runAsUser: 10000
-  runAsGroup: 10001
+  runAsUser: {{ $user.uid | default 10000 }}
+  runAsGroup: {{ $user.gid | default 10001 }}
 {{ end -}}
 
 {{/*

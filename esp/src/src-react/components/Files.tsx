@@ -33,8 +33,8 @@ const FilterFields: Fields = {
     "FileType": { type: "file-type", label: nlsHPCC.FileType },
     "FirstN": { type: "string", label: nlsHPCC.FirstN, placeholder: "-1" },
     // "Sortby": { type: "file-sortby", label: nlsHPCC.FirstNSortBy, disabled: (params: Fields) => !params.FirstN.value },
-    "StartDate": { type: "datetime", label: nlsHPCC.FromDate, placeholder: "" },
-    "EndDate": { type: "datetime", label: nlsHPCC.ToDate, placeholder: "" },
+    "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
+    "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
 function formatQuery(_filter) {

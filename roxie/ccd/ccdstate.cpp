@@ -977,7 +977,7 @@ public:
         if (numQueries)
         {
             std::vector<hash64_t> queryHashes(numQueries);
-            asyncFor(numQueries, parallelLoadQueries, [this, querySet, &packages, &queryHashes, forceRetry](unsigned i)
+            asyncFor(numQueries, parallelQueryLoadThreads, [this, querySet, &packages, &queryHashes, forceRetry](unsigned i)
             {
                 queryHashes[i] = 0;
                 VStringBuffer xpath("Query[%u]", i+1);
@@ -1034,7 +1034,7 @@ public:
         if (numAliases)
         {
             std::vector<hash64_t> aliasHashes(numAliases);
-            asyncFor(numAliases, parallelLoadQueries, [this, querySet, &aliasHashes](unsigned i)
+            asyncFor(numAliases, parallelQueryLoadThreads, [this, querySet, &aliasHashes](unsigned i)
             {
                 aliasHashes[i] = 0;
                 VStringBuffer xpath("Alias[%u]", i+1);
@@ -2301,16 +2301,6 @@ private:
                 unknown = true;
             break;
 
-        case 'E':
-            if (stricmp(queryName, "control:enableKeyDiff")==0)
-            {
-                enableKeyDiff = control->getPropBool("@val", true);
-                topology->setPropBool("@enableKeyDiff", enableKeyDiff);
-            }
-            else
-                unknown = true;
-            break;
-            
         case 'F':
             if (stricmp(queryName, "control:fieldTranslationEnabled")==0)
             {

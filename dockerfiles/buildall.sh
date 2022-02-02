@@ -39,6 +39,12 @@ fi
 BUILD_ML=    # all or ml,gnn,gnn-gpu
 [[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
 
+BUILD_LN=
+[[ -n ${INPUT_BUILD_LN} ]] && BUILD_LN=${INPUT_BUILD_LN}
+
+LNB_TOKEN=
+[[ -n ${INPUT_LNB_TOKEN} ]] && LNB_TOKEN=${INPUT_LNB_TOKEN}
+
 set -e
 
 ml_features=(
@@ -83,7 +89,13 @@ build_ml_images() {
   done
 }
 
-if [[ -z "$BUILD_ML" ]]; then
+if [[ -n "$BUILD_LN" ]]; then
+  PUSH=0
+  GITHUB_TOKEN=${LNB_TOKEN}
+  lnBuildTag=${BUILD_TAG/community_/internal_}
+  build_image platform-build-ln ${BUILD_LABEL} ${lnBuildTag}
+  build_image platform-core-ln ${BUILD_LABEL} ${lnBuildTag} --build-arg BUILD_TAG_OVERRIDE=${HPCC_LONG_TAG}
+elif [[ -z "$BUILD_ML" ]]; then
   build_image platform-build-base ${BASE_VER}
   build_image platform-build
   build_image platform-core

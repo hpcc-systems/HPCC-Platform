@@ -60,7 +60,6 @@
                 defaultStripLeadingWhitespace="1"
                 description="Roxie cluster"
                 directory="${RUNTIME_PATH}/myroxie"
-                diskReadBufferSize="65536"
                 doIbytiDelay="true"
                 enableHeartBeat="true"
                 enableKeyDiff="true"
@@ -435,8 +434,8 @@
                          service="ws_logaccess"/>
     <AuthenticateFeature authenticate="Yes"
                          description="Access to DFS service"
-                         path="WsDfsAccess"
-                         resource="WsDfsAccess"
+                         path="DfsAccess"
+                         resource="DfsAccess"
                          service="ws_dfsservice"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
@@ -785,8 +784,8 @@
                          service="ws_logaccess"/>
     <AuthenticateFeature authenticate="Yes"
                          description="Access to DFS service"
-                         path="WsDfsAccess"
-                         resource="WsDfsAccess"
+                         path="DfsAccess"
+                         resource="DfsAccess"
                          service="ws_dfsservice"/>
     <ProcessFilters>
      <Platform name="Windows">
@@ -1191,8 +1190,8 @@
                           service="ws_logaccess"/>
      <AuthenticateFeature authenticate="Yes"
                           description="Access to DFS service"
-                          path="WsDfsAccess"
-                          resource="WsDfsAccess"
+                          path="DfsAccess"
+                          resource="DfsAccess"
                           service="ws_dfsservice"/>
      <ProcessFilters>
       <Platform name="Windows">

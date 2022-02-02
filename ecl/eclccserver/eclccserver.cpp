@@ -546,6 +546,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         splitDirTail(queryCurrentProcessPath(), eclccProgName);
         eclccProgName.append("eclcc");
         StringBuffer eclccCmd(" --xml -shared");
+        eclccCmd.appendf(" --jobid=%s", workunit->queryWuid());
+
         //Clone all the options that were passed to eclccserver (but not the filename) and also pass them to eclcc
         for (const char * * pArg = globalArgv+1; *pArg; pArg++)
             eclccCmd.append(' ').append(*pArg);
@@ -788,6 +790,8 @@ public:
 
     virtual void threadmain() override
     {
+        setDefaultJobId(wuid, true);
+
         DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IPropertyTree> config = getComponentConfig();
 #ifdef _CONTAINERIZED
