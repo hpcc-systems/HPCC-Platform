@@ -154,7 +154,7 @@ public:
                 else
                 {
                     // The current table entry is not marked as seen by receiver. Should we resend it?
-                    if (now-timeSent[idx] >= udpResendTimeout ||    // Note that this will block us from sending newer packets, if we have reached limit of tracking.
+                    if (now-timeSent[idx] >= udpResendDelay ||    // Note that this will block us from sending newer packets, if we have reached limit of tracking.
                         (udpAssumeSequential && (int)(seq - seen.lastSeen()) < 0))  // so we (optionally) assume any packet not received that is EARLIER than one that HAS been received is lost.
                     {
                         if (udpTraceLevel > 1 || udpTraceTimeouts)

@@ -62,7 +62,7 @@ unsigned udpFlowAckTimeout = 2;         // [sender] the maximum time that it is 
 unsigned updDataSendTimeout = 20;       // [sender+receiver] how long to receive the maximum amount of data, ~100 packets of 8K should take 10ms on a 1Gb network. Timeout for assuming send_complete has been lost
 unsigned udpRequestTimeout = 20;        // [sender] A reasonable expected time between a request for a permit until the permit is granted - used as a timeout to guard against an ok_to_send has been lost.
 unsigned udpPermitTimeout = 50;         // [receiver] How long is a grant expected to last before it is assumed lost?
-unsigned udpResendTimeout = 0;          // [sender+receiver] How long should elapse after a data packet has been sent before we assume it is lost.
+unsigned udpResendDelay = 0;            // [sender+receiver] How long should elapse after a data packet has been sent before we assume it is lost.
                                         // 0 means they are unlikely to be lost, so worth resending as soon as it appears to be missing - trading duplicate packets for delays (good if allowasync=false)
 
 unsigned udpMaxPendingPermits = 10;     // This seems like a reasonable compromise - each sender will be able to send up to 20% of the input queue each request.
@@ -514,7 +514,7 @@ void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __ui
         trace("updDataSendTimeout", updDataSendTimeout, minTimeForAllPackets, 10);
         trace("udpPermitTimeout", udpPermitTimeout, 2 * minLatencyNs + minTimeForPermitPackets, 10);
         trace("udpRequestTimeout", udpRequestTimeout, (2 * minLatencyNs + minTimeForPermitPackets) * 2 / 5, 10);
-        trace("udpResendTimeout", udpResendTimeout, minTimeForAllPackets, 10);
+        trace("udpResendDelay", udpResendDelay, minTimeForAllPackets, 10);
         DBGLOG("udpMaxPendingPermits: %u [%u..%u]", udpMaxPendingPermits, udpMaxPendingPermits, udpMaxPendingPermits);
         DBGLOG("udpMaxClientPercent: %u [%u..%u]", udpMaxClientPercent, 100, 500);
         DBGLOG("udpMaxPermitDeadTimeouts: %u [%u..%u]", udpMaxPermitDeadTimeouts, 2, 10);
@@ -527,13 +527,13 @@ void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __ui
         WARNLOG("udpResendLostPackets is currently disabled - only viable on a very reliable network");
     if (udpAllowAsyncPermits)
     {
-        if (udpResendTimeout == 0)
-            ERRLOG("udpResendTimeout of 0 should not be used if udpAllowAsyncPermits=true");
+        if (udpResendDelay == 0)
+            ERRLOG("udpResendDelay of 0 should not be used if udpAllowAsyncPermits=true");
     }
     else
     {
-        if (udpResendTimeout != 0)
-            WARNLOG("udpResendTimeout of 0 is recommended if udpAllowAsyncPermits=false");
+        if (udpResendDelay != 0)
+            WARNLOG("udpResendDelay of 0 is recommended if udpAllowAsyncPermits=false");
     }
     if (udpFlowAckTimeout == 0)
     {
