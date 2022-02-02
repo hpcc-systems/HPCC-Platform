@@ -249,6 +249,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "user": {
+          "$ref": "#/definitions/user"
+        },
         "env": {
           "$ref": "#/definitions/env"
         },
@@ -412,6 +415,20 @@
         "pullPolicy": {
           "type": "string",
           "enum": ["IfNotPresent", "Always", "Never"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "integer",
+          "default": 10000
+        },
+        "gid": {
+          "type": "integer",
+          "default": 10001
         }
       },
       "additionalProperties": false
@@ -1211,6 +1228,583 @@
         "certificate": {
           "type": "string",
           "description": "Name of the secret which contains the TLS certificate.  Custom configuration instead of using, or overriding cert-manager certificate."
+        },
+        
+        "allFilesDynamic": { 
+          "type": "boolean",
+          "default": false,
+          "description": "If enabled, files will be resolved per-query and not locked between queries"
+        },
+        "backgroundCopyClass": { 
+          "type": "string",
+          "default": "none",
+          "enum": [ "none", "best-effort", "idle"],
+          "description": "Specify an IONICE class for the background copy thread."
+        },
+        "backgroundCopyPrio": { 
+          "type": "integer",
+          "default": 0,
+          "description": "Specify an IONICE value for the background copy thread, if backgroundCopyClass set to best-effort."
+        },
+        "callbackRetries": { 
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "description": "Number of retries before callbacks from agents to server are aborted"
+        },
+        "callbackTimeout": { 
+          "type": "integer",
+          "default": 5000,
+          "minimum": 0,
+          "description": "Timeout (in ms) before callbacks from agents to server are resent"
+        },
+        "checkFileDate": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Compare file dates of physical files with the information in DFS."
+        },
+        "collectFactoryStatistics": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Accumulate summary statistics for all queries"
+        },
+        "copyResources": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Copies any missing data files/keys from the position they were in when query was deployed."
+        },
+        "defaultHighPriorityTimeLimit": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Maximum run time (in ms) for any single active high-priority query (if not overridden)"
+        },
+        "defaultHighPriorityTimeWarning": { 
+          "type": "integer",
+          "default": 5000,
+          "minimum": 0,
+          "description": "Time (in ms) before generating SNMP warning for a high-priority query (if not overridden)"
+        },
+        "defaultLowPriorityTimeLimit": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Maximum run time (in ms) for any single active low-priority query (if not overridden)"
+        },
+        "defaultLowPriorityTimeWarning": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Time (in ms) before generating SNMP warning for a low-priority query (if not overridden)"
+        },
+        "defaultMemoryLimit": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Maximum amount of memory available for row data in any single active query (if not overridden)"
+        },
+        "defaultSLAPriorityTimeLimit": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Maximum run time (in ms) for any single active SLA-high-priority query (if not overridden)"
+        },
+        "defaultSLAPriorityTimeWarning": { 
+          "type": "integer",
+          "default": 5000,
+          "minimum": 0,
+          "description": "Time (in ms) before generating SNMP warning for a SLA-high-priority query (if not overridden)"
+        },
+        "defaultStripLeadingWhitespace": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Default value for stripping leading whitespace in input XML values"
+        },
+        "encryptionInTransit": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Encrypt traffic between Roxie nodes."
+        },
+        "flushJHtreeCacheOnOOM": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Should the index node memory allocation flush the cache and retry if memory allocation fails"
+        },
+        "fieldTranslationEnabled": {
+          "default": "payload",
+          "enum": ["false", "true", "payload"],
+          "description": "Enables translation (where possible) of mismatched file layouts on-the-fly. Specify 'payload' to attempt to translate payload fields only"
+        },
+        "highTimeout": { 
+          "type": "integer",
+          "default": 2000,
+          "minimum": 0,
+          "description": "Timeout (in ms) before high priority requests are resent to agents"
+        },
+        "httpCallerIdHeader": { 
+          "type": "string",
+          "default": "HPCC-Caller-Id",
+          "description": "HTTP Header field to use for sending and receiving CallerId"
+        },
+        "httpGlobalIdHeader": { 
+          "type": "string",
+          "default": "HPCC-Global-Id",
+          "description": "HTTP Header field to use for sending and receiving GlobalId"
+        },
+        "ignoreOrphans": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Treat out-of-date local files as if they were not present."
+        },
+        "lazyOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "Delay opening files until first use."
+        },
+        "localFilesExpire": { 
+          "type": "integer",
+          "default": -1,
+          "description": "Period (in ms) of inactivity before a local datafile handle is closed"
+        },
+        "lockSuperFiles": { 
+          "type": "boolean",
+          "default": false,
+          "description": "If enabled, superfiles will be locked while queries that use them are loaded"
+        },
+        "lowTimeout": { 
+          "type": "integer",
+          "default": 10000,
+          "minimum": 0,
+          "description": "Timeout (in ms) before low priority requests are resent to agents"
+        },
+        "maxHttpConnectionRequests": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Max number of query requests per persistent http connection"
+        },
+        "maxHttpKeepAliveWait": { 
+          "type": "integer",
+          "default": 5000,
+          "minimum": 0,
+          "description": "Max number of miliseconds to wait for additional requests on a persistent http connection"
+        },
+        "maxLocalFilesOpen": { 
+          "type": "integer",
+          "default": 4000,
+          "minimum": 0,
+          "description": "Maximum number of local files to keep open"
+        },
+        "maxRemoteFilesOpen": { 
+          "type": "integer",
+          "default": 1000,
+          "minimum": 0,
+          "description": "Maximum number of remote files to keep open"
+        },
+        "minLocalFilesOpen": { 
+          "type": "integer",
+          "default": 2000,
+          "minimum": 0,
+          "description": "Minimum number of local files to keep open"
+        },
+        "minRemoteFilesOpen": { 
+          "type": "integer",
+          "default": 500,
+          "minimum": 0,
+          "description": "Minimum number of remote files to keep open"
+        },
+        "parallelQueryLoadThreads": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Use up to n multiple threads for initial query loading"
+        },
+        "preloadOnceData": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Evaluate : ONCE sections of queries at query load time"
+        },
+        "prestartAgentThreads": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Prestart agent worker threads at startup"
+        },
+        "reloadRetriesSuspended": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Retry loading of suspended queries whenever QuerySet reloads"
+        },
+        "remoteFilesExpire": { 
+          "type": "integer",
+          "default": 3600000,
+          "minimum": 0,
+          "description": "Period (in ms) of inactivity before a remote datafile handle is closed"
+        },
+        "serverThreads": { 
+          "type": "integer",
+          "default": 30,
+          "minimum": 0,
+          "description": "Default number of threads processing Roxie server requests (if not specified on service)"
+        },
+        "slaTimeout": { 
+          "type": "integer",
+          "default": 2000,
+          "minimum": 0,
+          "description": "Timeout (in ms) before SLA high priority requests are resent to agents"
+        },
+        "agentQueryReleaseDelaySeconds": { 
+          "type": "integer",
+          "default": 60,
+          "minimum": 0,
+          "description": "Delay before unregistering slave queries to allow in-flight to complete. Files are locked until query is unregistered."
+        },
+        "agentThreads": { 
+          "type": "integer",
+          "default": 30,
+          "minimum": 0,
+          "description": "Number of threads processing agent requests"
+        },
+        "statsExpiryTime": { 
+          "type": "integer",
+          "default": 3600,
+          "minimum": 0,
+          "description": "Time (in seconds) that detailed reporting stats are kept"
+        },
+        "totalMemoryLimit": { 
+          "type": "integer",
+          "default": 1073741824,
+          "minimum": 0,
+          "description": "Maximum amount of memory available for row data in all active queries"
+        },
+        "heapUseHugePages": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Allow roxie to use memory from huge pages if they have been configured."
+        },
+        "heapUseTransparentHugePages": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Allow roxie to use memory from transparent huge pages."
+        },
+        "heapRetainMemory": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Retain and do not return unused memory to the operating system."
+        },
+        "trapTooManyActiveQueries": { 
+          "type": "boolean",
+          "default": true,
+          "description": "should an SNMP trap get sent when too many active query error occurs"
+        },
+        "useMemoryMappedIndexes": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Using memory-mapped files when merging multiple result streams from row-compressed indexes."
+        },
+        "useRemoteResources": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Reads any missing data files/keys from the position they were in when deployed."
+        },
+        "traceLevel": { 
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "description": "Level of detail in reporting (set to 0 for none, 1 for normal, > 1 or more for extended)"
+        },
+        "logFullQueries": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Log full text (unless blindLogging) and resource usage of all queries received "
+        },
+        "blindLogging": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Suppress all logging of any data or query text"
+        },
+        "memTraceLevel": { 
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "description": "Level of detail in reporting mem mgr information(set to 0 for none, 1 for normal, >1 or more for extended)"
+        },
+        "miscDebugTraceLevel": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Level of miscellaneous debug tracing unrelated to all other tracing(set to 0 for none, 1 for normal, >1 or more for extended)"
+        },
+        "soapTraceLevel": { 
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "description": "Level of detail in reporting SOAPCALL information(set to 0 for none, 1 for normal, >1 or more for extended)"
+        },
+        "traceTranslations": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Trace record layout translations to log file"
+        },
+        "traceEnabled": { 
+          "type": "boolean",
+          "default": false,
+          "description": "TRACE activity output enabled by default (can be overridden in workunit or query)"
+        },
+        "traceLimit": { 
+          "type": "integer",
+          "default": 10,
+          "minimum": 0,
+          "description": "Number of rows output by TRACE activity"
+        },
+        "udpTraceLevel": { 
+          "type": "integer",
+          "default": 1,
+          "minimum": 0,
+          "description": "Level of detail in reporting udp information(set to 0 for none, 1 for normal, >1 or more for extended)"
+        },
+        "udpAdjustThreadPriorities": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Should UDP socket reading threads operate at elevated priority"
+        },
+        "udpFlowSocketsSize": { 
+          "type": "integer",
+          "default": 131072,
+          "minimum": 0,
+          "description": "Controls the read socket buffer size of the UDP layer flow control sockets"
+        },
+        "udpLocalWriteSocketSize": { 
+          "type": "integer",
+          "default": 1024000,
+          "minimum": 0,
+          "description": "Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"
+        },
+        "udpAgentBufferSize": { 
+          "type": "integer",
+          "default": 262142,
+          "minimum": 0,
+          "description": "Controls the read socket buffer size of the UDP agent read sockets"
+        },
+        "udpOutQsPriority": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Turns on/off Priority weight-based for output queues (0 round-robin no priority - old logic, 1 round-robin new logic, 2 and higher is factor of priority)"
+        },
+        "udpQueueSize": { 
+          "type": "integer",
+          "default": 100,
+          "minimum": 0,
+          "description": "UDP transport layer receive queue size"
+        },
+        "udpResendLostPackets": { 
+          "type": "boolean",
+          "default": true,
+          "description": "UDP transport layer resend lost packets"
+        },
+        "udpSendQueueSize": { 
+          "type": "integer",
+          "default": 50,
+          "minimum": 0,
+          "description": "UDP transport layer send queue size"
+        },
+        "udpStatsReportInterval": { 
+          "type": "integer",
+          "default": 60000,
+          "minimum": 0,
+          "description": "UDP transport layer stats reporting interval"
+        },
+        "blobCacheMem": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Size (in Mb) of blob index page cache"
+        },
+        "leafCacheMem": { 
+          "type": "integer",
+          "default": 50,
+          "minimum": 0,
+          "description": "Size (in Mb) of leaf index page cache"
+        },
+        "nodeCacheMem": { 
+          "type": "integer",
+          "default": 100,
+          "minimum": 0,
+          "description": "Size (in Mb) of non-leaf index page cache"
+        },
+        "mysqlCacheCheckPeriod": { 
+          "type": "integer",
+          "default": 10000,
+          "minimum": 0,
+          "description": "Time to wait (ms) between checking if any cached MySQL connections can be closed"
+        },
+        "mysqlCacheTimeoutPeriod": { 
+          "type": "integer",
+          "default": 60000,
+          "minimum": 0,
+          "description": "Time to wait (ms) before closing a cached MySQL connection"
+        },
+        "mysqlConnectionCacheSize": { 
+          "type": "integer",
+          "default": 10000,
+          "minimum": 0,
+          "description": "Number of MySQL connections to hold in cache"
+        },
+        "checkCompleted": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Check pending replies when agent gets a retry request"
+        },
+        "dafilesrvLookupTimeout": { 
+          "type": "integer",
+          "default": 10000,
+          "minimum": 0,
+          "description": "Maximum time (in milliseconds) dafilesrv will wait before timing out the first time through the list"
+        },
+        "defaultConcatPreload": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Default concat preload"
+        },
+        "defaultFetchPreload": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Default fetch preload"
+        },
+        "defaultFullKeyedJoinPreload": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Default full keyed join preload"
+        },
+        "defaultKeyedJoinPreload": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Default keyed join preload"
+        },
+        "defaultParallelJoinPreload": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Default parallel join preload"
+        },
+        "defaultPrefetchProjectPreload": { 
+          "type": "integer",
+          "default": 10,
+          "minimum": 0,
+          "description": "Default prefetch value for PROJECT,PREFETCH activity"
+        },
+        "doIbytiDelay": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Enables the IBYTI delay logic in the agents."
+        },
+        "enableHeartBeat": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Enable HeartBeat messages to roxiepipe clients"
+        },
+        "fastLaneQueue": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Enable special fast-lane queue for simple queries."
+        },
+        "ignoreMissingFiles": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore missing files"
+        },
+        "indexReadChunkSize": { 
+          "type": "integer",
+          "default": 60000,
+          "minimum": 0,
+          "description": "Break up results from indexRead (and other remote activities) every N bytes"
+        },
+        "initIbytiDelay": { 
+          "type": "integer",
+          "default": 50,
+          "minimum": 0,
+          "description": "Initial time (in milliseconds) a secondary agent will wait for an IBYTI packet from a primary peer."
+        },
+        "mtuPayload": { 
+          "type": "integer",
+          "default": 1400,
+          "minimum": 1400,
+          "maximum": 9000,
+          "description": "Set higher than 1400 for networks with a larger MTU."
+        },
+        "linuxYield": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Yield to scheduler in some tight loops. May help latency on uniprocessor machines"
+        },
+        "maxBlockSize": { 
+          "type": "integer",
+          "default": 10000000,
+          "minimum": 0,
+          "description": "Max size of block read from client socket"
+        },
+        "maxLockAttempts": { 
+          "type": "integer",
+          "default": 5,
+          "minimum": 0,
+          "description": "Number of retries to get lock for global queries"
+        },
+        "memoryStatsInterval": { 
+          "type": "integer",
+          "default": 60,
+          "minimum": 0,
+          "description": "Interval (in seconds) between reports on Roxie heap usage"
+        },
+        "memTraceSizeLimit": { 
+          "type": "integer",
+          "default": 10,
+          "minimum": 0,
+          "description": "Generate stacktrace whenever a request is made for a row larger than this threshold (0 to disable)"
+        },
+        "parallelAggregate": { 
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Number of parallel threads to use for in-memory aggregate processing. Set to 0 to use one per CPU, 1 to disable parallel processing of in-memory aggregates"
+        },
+        "perChannelFlowLimit": { 
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "description": "Number of pending queries permitted per channel (per active activity) before blocking"
+        },
+        "pingInterval": { 
+          "type": "integer",
+          "default": 60,
+          "minimum" : 0,
+          "description": "Interval (in seconds) between Roxie server ping tests"
+        },
+        "preabortIndexReadsThreshold": { 
+          "type": "integer",
+          "default": 100,
+          "minimum": 0,
+          "description": "Use seek to precheck keyed limits (i.e. assume ,COUNT) on index reads if limit greater than this value"
+        },
+        "preabortKeyedJoinsThreshold": { 
+          "type": "integer",
+          "minimum" : 0,
+          "default": 100,
+          "description": "Use seek to precheck limits on keyed joins if limit greater than this value"
+        },
+        "simpleLocalKeyedJoins": { 
+          "type": "boolean",
+          "default": true,
+          "description": "Enable single-threaded local keyed joins"
+        },
+        "socketCheckInterval": { 
+          "type": "integer",
+          "default": 5000,
+          "minimum": 0,
+          "description": "Interval (in milliseconds) between checks that client socket is still open"
         }
       }
     },

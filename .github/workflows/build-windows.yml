@@ -1,5 +1,8 @@
 name: Check win32 compiles
 
+env:
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,readwrite"
+
 on:
   pull_request:
     branches:
@@ -38,34 +41,52 @@ jobs:
           OPTION: x64
         working-directory: .
         run: |
-          $vcpkg_root = $(get-command vcpkg | Select-Object -ExpandProperty Source | Split-Path)
           echo Option:$Env:OPTION
           echo "Checkout to $Env:GITHUB_WORKSPACE"
-          echo "vcpkg @$(get-command vcpkg | Select-Object -ExpandProperty Source | Split-Path)"
-          echo "vcpkg @$vcpkg_root"
-      - name: Install bison
+
+      - name: "Remove builtin vcpkg (old)"
         working-directory: .
+        shell: "bash"
         run: |
-          choco install winflexbison3 -y
-      - name: Setup msvc environment
-        uses: hpcc-systems/msvc-dev-cmd@v1
-      - name: Install vcpkg packages
-        working-directory: .
-        run: |
-          vcpkg update
-          vcpkg install icu:x64-windows
-          vcpkg install zlib:x64-windows
-          vcpkg install openssl:x64-windows
-          vcpkg install libxslt:x64-windows
+          rm -rf "$VCPKG_INSTALLATION_ROOT"
+
       - name: Check out source code
         uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: "Bootstrap vcpkg"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: "Setup NuGet Credentials"
+        working-directory: ./vcpkg
+        shell: "bash"
+        run: |
+          `./vcpkg.exe fetch nuget | tail -n 1` \
+            sources add \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -name "GitHub" \
+            -username "hpcc-systems" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+          `./vcpkg.exe fetch nuget | tail -n 1` \
+            setapikey "${{ secrets.GITHUB_TOKEN }}" \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
+
+      - name: "vcpkg package refresh"
+        working-directory: ./vcpkg
+        shell: "bash"
+        run: >
+          ./vcpkg.exe install --keep-going icu zlib openssl libxslt winflexbison --triplet x64-windows
+
       - name: Windows compilation
         working-directory: .
+        shell: "bash"
         run: |
           mkdir build
           cd build
-          $vcpkg_root = $(get-command vcpkg | Select-Object -ExpandProperty Source | Split-Path)
-          cmake $Env:GITHUB_WORKSPACE -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DUSE_OPENLDAP=0 -DUSE_ICU=1 -DUSE_LIBXSLT=1 -DUSE_CBLAS=0 -DUSE_ZLIB=1 -DUSE_LIBARCHIVE=0 -DUSE_BOOST_REGEX=0 -DUSE_OPENSSL=1 -DUSE_APR=0 -DUSE_AZURE=0 -DUSE_AWS=0 -DWSSQL_SERVICE=0 -DUSE_PYTHON3=0 -DUSE_PYTHON2=0 -DUSE_CASSANDRA=0 -DUSE_TBB=0 -DUSE_JAVA=0 -DUSE_NATIVE_LIBRARIES=1 -DINCLUDE_CONFIG_MANAGER=0 -DINCLUDE_TREEVIEW=0 -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -G "Visual Studio 16 2019" -T host=x64 -A x64
-          cmake --build . --config Debug --target ALL_BUILD -- /maxcpucount:3
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake  -G "Visual Studio 16 2019" -T host=x64 -A x64 -DUSE_OPENLDAP=0 -DUSE_ICU=1 -DUSE_LIBXSLT=1 -DUSE_CBLAS=0 -DUSE_ZLIB=1 -DUSE_LIBARCHIVE=0 -DUSE_BOOST_REGEX=0 -DUSE_OPENSSL=1 -DUSE_APR=0 -DUSE_AZURE=0 -DUSE_AWS=0 -DWSSQL_SERVICE=0 -DUSE_PYTHON3=0 -DUSE_PYTHON2=0 -DUSE_CASSANDRA=0 -DUSE_TBB=0 -DUSE_JAVA=0 -DUSE_NATIVE_LIBRARIES=1 -DINCLUDE_CONFIG_MANAGER=0 -DINCLUDE_TREEVIEW=0 -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE
+          cmake --build . --config Debug --target ALL_BUILD -- -m

@@ -30,8 +30,8 @@ const FilterFields: Fields = {
     "LogicalFile": { type: "string", label: nlsHPCC.LogicalFile, placeholder: nlsHPCC.somefile },
     "LogicalFileSearchType": { type: "logicalfile-type", label: nlsHPCC.LogicalFileType, placeholder: "", disabled: (params: Fields) => !params.LogicalFile.value },
     "LastNDays": { type: "string", label: nlsHPCC.LastNDays, placeholder: "2" },
-    "StartDate": { type: "datetime", label: nlsHPCC.FromDate, placeholder: "" },
-    "EndDate": { type: "datetime", label: nlsHPCC.ToDate, placeholder: "" },
+    "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
+    "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
 function formatQuery(_filter) {
@@ -48,7 +48,7 @@ function formatQuery(_filter) {
             filter.StartDate = new Date(filter.StartDate).toISOString();
         }
         if (filter.EndDate) {
-            filter.EndDate = new Date(filter.StartDate).toISOString();
+            filter.EndDate = new Date(filter.EndDate).toISOString();
         }
     }
     logger.debug(filter);

@@ -10,8 +10,8 @@ drop5="--dropDataPackets=1 --dropDataPacketsPercent=5 --dropOkToSendPackets=20 -
 drop50="--dropDataPackets=1 --dropDataPacketsPercent=50 --dropOkToSendPackets=2 --dropRequestReceivedPackets=2 --dropRequestToSendPackets=2 --dropRequestToSendMorePackets=2 --dropSendCompletedPackets=2   --dropSendStartPackets=2"
 
 legacy=""
-sync="--udpAllowAsyncPermits=0 --udpResendTimeout=0"
-async="--udpAllowAsyncPermits=1 --udpResendTimeout=1"
+sync="--udpAllowAsyncPermits=0 --udpResendDelay=0"
+async="--udpAllowAsyncPermits=1 --udpResendDelay=1"
 synclegacy="$sync --udpMaxPendingPermits=1"
 sync10p="$sync --udpMaxClientPercent=100"
 sync20p="$sync --udpMaxClientPercent=200"
@@ -269,9 +269,9 @@ then
     doit "$async --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1d" async10d1
     doit "$async --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1p" async10p1
 
-    # What performance difference does the resend timeout make?
-    doit "$async --udpResendTimeout=1 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1dp" async10dp1t1
-    doit "$async --udpResendTimeout=5 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1dp" async10dp1
-    doit "$async --udpResendTimeout=20 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1d" async10d1t20
-    doit "$async --udpResendTimeout=50 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1d" async10d1t50
+    # What performance difference does the resend delay make?
+    doit "$async --udpResendDelay=1 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1dp" async10dp1t1
+    doit "$async --udpResendDelay=5 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1dp" async10dp1
+    doit "$async --udpResendDelay=20 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1d" async10d1t20
+    doit "$async --udpResendDelay=50 --numThreads=10 --packetsPerThread=100000 --udpTraceTimeouts=0 $drop1d" async10d1t50
 fi

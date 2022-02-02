@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
@@ -38,7 +38,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                 width: 180,
                 label: nlsHPCC.Name,
                 formatter: function (_name, idx) {
-                    return `<a href="#/xref/${_name}">${_name}</a>`;
+                    return <Link href={`#/xref/${_name}`}>{_name}</Link>;
                 }
             },
             modified: { width: 180, label: nlsHPCC.LastRun },
