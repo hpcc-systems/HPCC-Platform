@@ -249,6 +249,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "user": {
+          "$ref": "#/definitions/user"
+        },
         "env": {
           "$ref": "#/definitions/env"
         },
@@ -412,6 +415,20 @@
         "pullPolicy": {
           "type": "string",
           "enum": ["IfNotPresent", "Always", "Never"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "integer",
+          "default": 10000
+        },
+        "gid": {
+          "type": "integer",
+          "default": 10001
         }
       },
       "additionalProperties": false
