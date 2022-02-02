@@ -69,7 +69,8 @@ data:
           serviceAccountName: "hpcc-default"
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
-{{- end }}            
+{{- end }}
+          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
           containers:
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunContainer" (. | merge (dict "command" $misc.postJobCommand)) | indent 10 }}
@@ -159,6 +160,7 @@ spec:
       initContainers:
       {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
       {{- include "hpcc.addBundles" $commonCtx | nindent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ .name | quote }}
         workingDir: /tmp

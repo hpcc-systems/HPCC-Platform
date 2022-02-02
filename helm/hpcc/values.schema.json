@@ -415,6 +415,9 @@
         "pullPolicy": {
           "type": "string",
           "enum": ["IfNotPresent", "Always", "Never"]
+        },
+        "imagePullSecrets": {
+          "type": "string"
         }
       },
       "additionalProperties": false
