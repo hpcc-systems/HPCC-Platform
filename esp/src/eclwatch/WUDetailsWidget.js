@@ -319,7 +319,7 @@ define([
             this.statusNode = dom.byId(this.id + "WUStatus");
             srcReact.render(srcReact.WUStatus, { wuid: params.Wuid }, this.statusNode);
 
-            this.protected.on("change", function (evt) {
+            this.protected.on("click", function (evt) {
                 context._onSave();
             });
 
