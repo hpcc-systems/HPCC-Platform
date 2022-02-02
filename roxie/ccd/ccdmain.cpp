@@ -1391,7 +1391,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         }
                         const char *soname =  roxieFarm.queryProp("@so");
                         const char *config  = roxieFarm.queryProp("@config");
-                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        // NB: leaks - until we fix bug in ensureProtocolPlugin() whereby some paths return a linked object and others do not
+                        IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
                         roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
                     }
                     else
