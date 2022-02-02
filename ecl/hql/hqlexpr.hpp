@@ -1995,4 +1995,6 @@ extern HQL_API void sanityCheckTransformation(const char * title, const HqlExprA
 extern HQL_API void sanityCheckTransformation(const char * title, IHqlExpression * before, IHqlExpression * after);
 extern HQL_API void sanityCheckTransformation(const char * title, IHqlExpression * before, const HqlExprArray & after);
 
+extern HQL_API bool isValidIdentifier(const char * text);
+
 #endif
