@@ -642,6 +642,9 @@ public:
             while(acistr[ci] == '\0' && ci < len)
                 ci++;
         }
+#ifdef _DEBUG
+        debugPrintout();
+#endif
     }
 
     bool getPermissions(ISecUser& user, ISecResource& resource, ILdapClient* ldapclient, const char* dn)
@@ -654,7 +657,10 @@ public:
             resource.setAccessFlags(SecAccess_Full);
             return true;
         }
-
+#ifdef _DEBUG
+        DBGLOG("LDAP::aci:getPermissions USER %s, dn %s", user.getName(), dn);
+        StringBuffer dbgMsg;
+#endif
         int perm = 0;
         SecAccessFlags perms = SecAccess_None;
         if(m_acilist.length() == 0)
@@ -683,6 +689,9 @@ public:
                     const char* onedn = aci.userdns().item(z);
                     if(onedn != NULL && (stricmp(onedn, "anyone") == 0 || stricmp(onedn, userdn.str()) == 0))
                     {
+#ifdef _DEBUG
+                        dbgMsg.appendf("Applying USER '%s', '%s' perm %d", onedn, aci.isDeny() ? "Deny" : "Allow", aci.permission());
+#endif
                         applicable = true;
                         break;
                     }
@@ -698,6 +707,9 @@ public:
                             continue;
                         if(ldapclient->userInGroup(userdn.str(), onegdn))
                         {
+#ifdef _DEBUG
+                            dbgMsg.appendf("Applying GROUP '%s', '%s' perm %d", onegdn, aci.isDeny() ? "Deny" : "Allow", aci.permission());
+#endif
                             applicable =true;
                             break;
                         }
@@ -706,6 +718,10 @@ public:
 
                 if(applicable)
                 {
+#ifdef _DEBUG
+                    DBGLOG("LDAP::aci:getPermissions %s", dbgMsg.str());
+                    dbgMsg.clear();
+#endif
                     if(aci.isDeny())
                         deny |= aci.permission();
                     else
@@ -863,9 +879,10 @@ public:
     {
         ForEachItemIn(x, m_acilist)
         {
-            printf("---------\n");
+            printf("LDAP::CAciList:dump ACI ---------\n");
             IAci& aci = m_acilist.item(x);
             aci.debugPrintout();
+            printf("---------\n");
         }
     }
 
