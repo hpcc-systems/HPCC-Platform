@@ -1,0 +1,136 @@
+name: build-vcpkg
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,readwrite"
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-7.10.*"
+      - "!candidate-7.8.*"
+      - "!candidate-7.6.*"
+      - "!candidate-7.4.*"
+      - "!candidate-7.2.*"
+      - "!candidate-7.0.*"
+      - "!candidate-6.*"
+
+jobs:
+  pre_job:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-20.04
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: hpcc-systems/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+          paths_ignore: '["docs/**", "esp/src/**/*", "dockerfiles/**", "helm/**", "ecllibrary/**", "testing/**", "initfiles/**" ]'
+
+  build:
+    strategy:
+      matrix:
+        os: ["ubuntu-20.04", "windows-2019", "macos-10.15"]
+        include:
+          - os: "ubuntu-20.04"
+            triplet: "x64-linux"
+            mono: "mono"
+            sudo: "sudo"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug"
+            cmake_build_options: "-- -j$(nproc)"
+          - os: "windows-2019"
+            triplet: "x64-windows"
+            mono: ""
+            sudo: ""
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64'
+            cmake_build_options: "--config Debug -- -m"
+          - os: "macos-10.15"
+            triplet: "x64-osx"
+            mono: "mono"
+            sudo: "sudo"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug"
+            cmake_build_options: "-- -j$(nproc)"
+      fail-fast: false
+
+    name: "Build with vcpkg"
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Display build summary
+        working-directory: .
+        run: |
+          echo ${{ matrix.os }} ${{ matrix.triplet }}
+          echo "Checkout to $Env:GITHUB_WORKSPACE"
+
+      - name: Ubuntu Dependencies
+        if: ${{ matrix.os == 'ubuntu-20.04' }}
+        shell: "bash"
+        run: |
+          sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
+            zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
+            libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
+            default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config libtool autotools-dev automake \
+            libssl-dev xmlstarlet
+
+          curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
+          sudo apt-add-repository "deb https://deb.nodesource.com/node_16.x $(lsb_release -sc) main"
+          sudo apt-get update -y
+          sudo apt-get install -y nodejs
+
+      - name: OSX Dependencies
+        if: ${{ matrix.os == 'macos-10.15' }}
+        shell: "bash"
+        run: |
+          brew install bison flex
+          export CMAKE_INCLUDE_PATH="/usr/local/opt/flex/include"
+          export CMAKE_LIBRARY_PATH="/usr/local/opt/flex/lib;/usr/local/opt/bison/lib"
+          export PATH="/usr/local/opt/flex/bin:/usr/local/opt/bison/bin:$PATH"
+
+          brew install automake libtool cppunit boost mysql-client openldap
+          brew tap AdoptOpenJDK/openjdk
+          brew install --cask adoptopenjdk13
+
+      - name: "Remove builtin vcpkg"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+      - name: Check out source code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: "Bootstrap vcpkg"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: "Setup NuGet credentials"
+        working-directory: ./vcpkg
+        shell: "bash"
+        run: |
+          ${{ matrix.mono }} `./vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -name "GitHub" \
+            -username "hpcc-systems" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+          ${{ matrix.mono }} `./vcpkg fetch nuget | tail -n 1` \
+            setapikey "${{ secrets.GITHUB_TOKEN }}" \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
+
+      - name: "Build HPCC-Platform"
+        working-directory: .
+        shell: "bash"
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_config_options }}
+          cmake --build . ${{ matrix.cmake_build_options }}

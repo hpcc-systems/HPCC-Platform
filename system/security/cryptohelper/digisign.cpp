@@ -206,7 +206,9 @@ public:
 
 
 static IDigitalSignatureManager * dsm = nullptr;
+#if defined(_USE_OPENSSL) && !defined(_WIN32)
 static std::once_flag dsmInitFlag;
+#endif
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
