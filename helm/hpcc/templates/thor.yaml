@@ -92,6 +92,7 @@ data:
           serviceAccountName: "hpcc-agent"
           initContainers: 
           {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
+          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
@@ -157,6 +158,7 @@ data:
           serviceAccountName: hpcc-agent
           initContainers:
           {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
+          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
@@ -222,6 +224,7 @@ data:
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
+          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
           containers:
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunContainer" (. | merge (dict "command" $misc.postJobCommand)) | indent 10 }}
@@ -319,6 +322,7 @@ spec:
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       serviceAccountName: {{ $commonCtx.eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $commonCtx.eclAgentName | quote }}
@@ -377,6 +381,7 @@ spec:
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.thorAgentName "target" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       serviceAccountName: "hpcc-thoragent"
       containers:
       - name: {{ $commonCtx.thorAgentName | quote }}

@@ -580,6 +580,23 @@ imagePullPolicy: {{ .root.Values.global.image.pullPolicy | default "IfNotPresent
 {{- end -}}
 
 {{/*
+Add image pull credentials for a component 
+Pass in a dictionary with root and me defined
+*/}}
+{{- define "hpcc.addImagePullSecrets" -}}
+{{- $secret := dict -}}
+{{- if .me.image -}}
+{{- $_ := set $secret "imagePullSecrets" (.me.image.imagePullSecrets | default .root.Values.global.image.imagePullSecrets) -}}
+{{- else -}}
+{{- $_ := set $secret "imagePullSecrets" .root.Values.global.image.imagePullSecrets -}}
+{{- end -}}
+{{- if $secret.imagePullSecrets -}}
+imagePullSecrets:
+- name: {{ $secret.imagePullSecrets }}
+{{ end -}}
+{{- end -}}
+
+{{/*
 A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop) has correct permissions for PV
 */}}
 {{- define "hpcc.changeMountPerms" -}}

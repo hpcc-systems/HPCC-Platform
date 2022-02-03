@@ -84,6 +84,7 @@ spec:
       serviceAccountName: "hpcc-default"
       initContainers: 
       {{- include "hpcc.changePlaneMountPerms" (dict "root" $ "includeCategories" $tmpDaliScope.aggregatePlaneCategories "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes) | indent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ $dali.name | quote }}
         workingDir: /var/lib/HPCCSystems
