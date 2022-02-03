@@ -82,6 +82,7 @@ spec:
       serviceAccountName: "hpcc-default"
       initContainers:
       {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ $roxie.name | quote }}
         workingDir: /var/lib/HPCCSystems

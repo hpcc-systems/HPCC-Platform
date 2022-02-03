@@ -10,6 +10,8 @@ global:
     ## version: x.y.z
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
+    ## If you need to provide credentials to pull your image, they should be added as a k8s secret, and the secret name provided here
+    # imagePullSecrets: xxx
 
   ## It is possible (but not recommended) to change the uid/gid that the HPCC containers run under
   ## user:
