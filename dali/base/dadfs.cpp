@@ -177,7 +177,7 @@ static IPropertyTree *getEmptyAttr()
     return createPTree("Attr");
 }
 
-extern da_decl double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads)
+extern da_decl void calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads, double & atRestCost, double & accessCost)
 {
     Owned<IPropertyTree> plane = getStoragePlane(cluster);
     Owned<IPropertyTree> global;
@@ -193,13 +193,25 @@ extern da_decl double calcFileCost(const char * cluster, double sizeGB, double f
         costPT = global->queryPropTree("cost");
     }
     if (costPT==nullptr)
-        return 0.0;
+    {
+        atRestCost = 0.0;
+        accessCost = 0.0;
+        return;
+    }
     constexpr int accessPriceScalingFactor = 10000; // read/write pricing based on 10,000 operations
     double atRestPrice = costPT->getPropReal("@storageAtRest", 0.0);
     double readPrice =  costPT->getPropReal("@storageReads", 0.0);
     double writePrice =  costPT->getPropReal("@storageWrites", 0.0);
     double storageCostDaily = atRestPrice * 12 / 365;
-    return (storageCostDaily * sizeGB * fileAgeDays) + (readPrice * numDiskReads / accessPriceScalingFactor) + (writePrice * numDiskWrites / accessPriceScalingFactor);
+    atRestCost = storageCostDaily * sizeGB * fileAgeDays;
+    accessCost = (readPrice * numDiskReads / accessPriceScalingFactor) + (writePrice * numDiskWrites / accessPriceScalingFactor);
+}
+
+extern da_decl double calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads)
+{
+    double atRestCost, accessCost;
+    calcFileCost(cluster, 0, 0, numDiskWrites, numDiskReads, atRestCost, accessCost);
+    return accessCost;
 }
 
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
@@ -4787,7 +4799,7 @@ public:
         else
             return false;
     }
-    virtual double getCost(const char * cluster) override
+    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) override
     {
         CDateTime dt;
         getModificationTime(dt);
@@ -4800,19 +4812,21 @@ public:
             numDiskWrites = attrs->getPropInt64("@numDiskWrites");
             numDiskReads = attrs->getPropInt64("@numDiskReads");
         }
-
         if (isEmptyString(cluster))
         {
             StringArray clusterNames;
             unsigned countClusters = getClusterNames(clusterNames);
-            double totalCost = 0.0;
             for (unsigned i = 0; i < countClusters; i++)
-                totalCost += calcFileCost(clusterNames[i], sizeGB, fileAgeDays, numDiskWrites, numDiskReads);
-            return totalCost;
+            {
+                double tmpAtRestcost, tmpAccessCost;
+                calcFileCost(clusterNames[i], sizeGB, fileAgeDays, numDiskWrites, numDiskReads, tmpAtRestcost, tmpAccessCost);
+                atRestCost += tmpAtRestcost;
+                accessCost += tmpAccessCost;
+            }
         }
         else
         {
-            return calcFileCost(cluster, sizeGB, fileAgeDays, numDiskWrites, numDiskReads);
+            calcFileCost(cluster, sizeGB, fileAgeDays, numDiskWrites, numDiskReads, atRestCost, accessCost);
         }
     }
 };
@@ -6783,16 +6797,17 @@ public:
         return false;
     }
 
-    virtual double getCost(const char * cluster) override
+    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) override
     {
-        double totalCost = 0.0;
         CriticalBlock block (sect);
         ForEachItemIn(i,subfiles)
         {
+            double tmpAtRestcost, tmpAccessCost;
             IDistributedFile &f = subfiles.item(i);
-            totalCost += f.getCost(cluster);
+            f.getCost(cluster, tmpAtRestcost, tmpAccessCost);
+            atRestCost += tmpAtRestcost;
+            accessCost += tmpAccessCost;
         }
-        return totalCost;
     }
 };
 
@@ -12818,7 +12833,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
     "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
     "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
-    "@cost", "@numDiskReads", "@numDiskWrites" };
+    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost" };
 
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 {
@@ -12905,8 +12920,11 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             double sizeGB = sizeDiskSize / ((double)1024 * 1024 * 1024);
             __int64 numDiskWrites = file->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
             __int64 numDiskReads = file->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
-            double totalCost = calcFileCost(nodeGroup, sizeGB, fileAgeDays, numDiskWrites, numDiskReads);
-            file->setPropReal(getDFUQResultFieldName(DFUQRFcost), totalCost);
+            double atRestCost, accessCost;
+            calcFileCost(nodeGroup, sizeGB, fileAgeDays, numDiskWrites, numDiskReads, atRestCost, accessCost);
+            file->setPropReal(getDFUQResultFieldName(DFUQRFcost), atRestCost+accessCost);
+            file->setPropReal(getDFUQResultFieldName(DFUQRFatRestCost), atRestCost);
+            file->setPropReal(getDFUQResultFieldName(DFUQRFaccessCost), accessCost);
         }
 
         IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& nodeGroupFilter)

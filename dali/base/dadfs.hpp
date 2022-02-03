@@ -282,7 +282,9 @@ enum DFUQResultField
     DFUQRFcost = 24,
     DFUQRFnumDiskReads = 25,
     DFUQRFnumDiskWrites = 26,
-    DFUQRFterm = 27,
+    DFUQRFatRestCost = 27,
+    DFUQRFaccessCost = 28,
+    DFUQRFterm = 29,
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
     DFUQRFnumeric = 1024,
@@ -419,7 +421,7 @@ interface IDistributedFile: extends IInterface
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) = 0;
     virtual int  getExpire() = 0;
     virtual void setExpire(int expireDays) = 0;
-    virtual double getCost(const char * cluster) = 0;
+    virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) = 0;
 };
 
 
@@ -855,7 +857,8 @@ inline const char *queryFileKind(IFileDescriptor *f) { return queryFileKind(f->q
 extern da_decl void ensureFileScope(const CDfsLogicalFileName &dlfn, unsigned timeoutms=INFINITE);
 
 extern da_decl bool checkLogicalName(const char *lfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg);
-extern da_decl double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads);
+extern da_decl void calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads, double & atRestCost, double & accessCost);
+extern da_decl double calcFileAccessCost(const char * cluster, __int64 numDiskWrites, __int64 numDiskReads);
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 
