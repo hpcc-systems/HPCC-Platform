@@ -504,16 +504,6 @@ unsigned WsWuInfo::getTimerCount()
     return visitor.getNumTimers();
 }
 
-EnumMapping queryFileTypes[] = {
-   { FileTypeCpp, "cpp" },
-   { FileTypeDll, "dll" },
-   { FileTypeResText, "res" },
-   { FileTypeHintXml, "hint" },
-   { FileTypeXml, "xml" },
-   { FileTypeLog, "log" },
-   { FileTypeSize,  NULL },
-};
-
 void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
 {
     try

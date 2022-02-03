@@ -1,0 +1,92 @@
+#!/bin/bash
+
+usage() {
+  echo "Usage: check-executes [options] -- cmd args"
+  echo "    -d <directory>     Mounted directory to store post-mortem info in"
+  echo "    -f <file>          Specifies a file to preserve on post-mortem"
+}
+
+PMD_DIRECTORYBASE=${HPCC_DEBUG_PATH}
+[[ -z ${PMD_DIRECTORYBASE} ]] && PMD_DIRECTORYBASE=$(pwd)
+PMD_PROGNAME=
+PMD_COPYFILES=()
+PMD_DALISERVER=
+PMD_WORKUNIT=
+
+while [ "$#" -gt 0 ]; do
+  arg=$1
+  if [[ ${arg:0:1} == '-' ]]; then
+    case "${arg:1:1}" in
+      -) shift
+         PROGNAME=$1
+         shift
+         break
+         ;;
+      d) shift;
+         PMD_DIRECTORYBASE=$1
+         ;;
+      f) shift;
+         PMD_COPYFILES+=($1)
+         ;;
+      *) usage
+         exit
+         ;;
+    esac
+  else
+    usage
+    exit
+  fi
+  shift
+done
+
+if [[ -z $PMD_PROGNAME} ]] ; then
+  usage
+  exit
+fi
+
+# Scan managed process parameters for additional information
+for (( arg=1; arg <= "$#"; arg++ )); do
+  optname=${!arg%=*}
+  optval=${!arg#*=}
+  if [[ ${optname} == '--config' ]]; then
+    PMD_COPYFILES+=(${optval})
+  elif [[] ${optname} == '--daliServer' ]]; then
+    PMD_DALISERVER=${optval}
+  elif [[] ${optname} == '--workunit' ]]; then
+    PMD_WORKUNIT=${optval}
+  fi
+done
+
+ulimit -c unlimited
+
+# Execute the main program, defaulting postmortem logging on (can be overriden by program's config file)
+${PROGNAME} --logging.postMortem=1000 "$@" 
+
+# If it did not exit cleanly, copy some post-mortem info
+retVal=$?
+if [ $retVal -ne 0 ]; then
+  POST_MORTEM_DIR=${PMD_DIRECTORYBASE}/$(hostname)/$(date -Iseconds)
+  mkdir -p ${POST_MORTEM_DIR}
+  echo "Post-mortem info gathered in $POST_MORTEM_DIR"
+  echo "Process exited with code $retVal" | tee $POST_MORTEM_DIR/info.log
+  for f in ${PMD_COPYFILES[@]}; do
+    mkdir -p $POST_MORTEM_DIR/$(dirname $f)  
+    cp $f $POST_MORTEM_DIR/$f
+    echo "Copied $f to $POST_MORTEM_DIR/$f" | tee -a $POST_MORTEM_DIR/info.log
+  done
+  cp `ls -rt /tmp/postmortem.log.*` $POST_MORTEM_DIR
+  rm /tmp/postmortem.log.*
+  if [ -f core ]; then
+    echo "Generating info from core file to $POST_MORTEM_DIR/info.log" | tee -a $POST_MORTEM_DIR/info.log
+    gdb -batch -x /opt/HPCCSystems/bin/post-mortem-gdb ${PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
+    echo "Generated info from core file" | tee -a $POST_MORTEM_DIR/info.log
+    rm core
+  fi
+  if [[ -n "${PMD_DALISERVER}" ]] && [[ -n "${PMD_WORKUNIT}" ]]; then
+    wutool postmortem ${PMD_WORKUNIT} DALISERVERS=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
+    echo Updated workunit ${PMD_WORKUNIT}
+  fi
+fi
+exit $retVal
+
+

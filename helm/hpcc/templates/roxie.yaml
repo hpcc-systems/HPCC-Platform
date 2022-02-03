@@ -82,7 +82,7 @@ data:
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
 {{- $toposerver := ($roxie.topoServer | default dict) -}}
-{{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "remote" "spill" "dll") "secretsCategories" $secretsCategories "toposerver" $toposerver "env" $env }}
+{{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "remote" "spill" "dll" "debug") "secretsCategories" $secretsCategories "toposerver" $toposerver "env" $env }}
 {{- $_ := set $commonCtx "toponame" (printf "%s-toposerver" $roxie.name) -}}
 {{- $_ := set $commonCtx "numChannels" ($roxie.numChannels | int | default 1) -}}
 {{- $_ := set $commonCtx "topoport" ($toposerver.port | int | default 9004) -}}
@@ -381,8 +381,16 @@ spec:
                 "--log-fd=1",
                 "roxie",
 {{- else }}
+{{- if (include "hpcc.hasPlaneForCategory" (dict "root" $ "category" "debug")) }}
+        command: [ check_executes ] 
+        args: [
+                "-f", "/etc/config/{{ $roxie.name }}.yaml",
+                "--",
+                "roxie",
+{{- else }}
         command: [ roxie ] 
         args: [
+{{- end }}
 {{- end }}
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
@@ -390,6 +398,7 @@ spec:
                 "--server={{ not $roxie.serverReplicas }}",
               ]
         env:
+{{ include "hpcc.printDebugEnvironment" $commonCtx | indent 8 }}
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ $roxie.name }}.sentinel"

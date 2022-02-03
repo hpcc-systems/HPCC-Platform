@@ -93,6 +93,7 @@ void usage(const char * action = nullptr)
                "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
                "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
                "   importzap <zapreport-filename> <output-helper-directory> [<zapreport-password>]\n"
+               "   postmortem <workunit> PMD=<dir> - Add post-mortem info\n"
                 "\n"
                "   orphans             - Delete orphaned information from store\n"
                "   cleanup [days=NN]   - Delete workunits older than NN days\n"
@@ -238,6 +239,16 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
             factory->deleteWorkUnit(wuid.str());
         }
         printf("deleted %s\n", wuid.str());
+    }
+    else if (stricmp(action, "postmortem")==0)
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        StringBuffer postMortemDirectory;
+        globals->getProp("PMD", postMortemDirectory);
+        StringAttr wuid(w.queryWuid());
+        Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
+        Owned<IWUQuery> query = lw->updateQuery();
+        associateLocalFile(query, FileTypePostMortem, postMortemDirectory, "PostMortem", 0);
     }
     else if (stricmp(action, "archive")==0)
     {
@@ -622,7 +633,7 @@ int main(int argc, const char *argv[])
         {
             usage();
         }
-        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info") || strieq(action, "analyze"))
+        else if (strieq(action, "list") || strieq(action, "dump") || strieq(action, "results") || strieq(action, "delete") || strieq(action, "archive") || strieq(action, "info") || strieq(action, "analyze") || strieq(action, "postmortem"))
         {
             if (strieq(action, "info") && args.empty())
                 args.append("source[all],properties[all]");
