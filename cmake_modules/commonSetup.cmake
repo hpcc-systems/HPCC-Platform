@@ -133,6 +133,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(INCLUDE_TREEVIEW "Build legacy treeview" OFF)
   option(INCLUDE_CONFIG_MANAGER "Build config manager" ON)
   option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
+if (WIN32)
+  option(USE_JWT "Enable JSON Web Tokens" OFF)
+else ()
+  option(USE_JWT "Enable JSON Web Tokens" ON)
+endif ()
+#########################################################
+
+  if (VCPKG_APPLOCAL_DEPS)
+    include(${HPCC_SOURCE_DIR}/cmake_modules/vcpkgSetup.cmake)
+  endif ()
+
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
 
      MACRO(SET_PLUGIN_PACKAGE plugin)
@@ -677,12 +688,37 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endif()
 
     IF ( NOT MAKE_DOCS_ONLY )
+      # On macOS, search Homebrew for keg-only versions of Bison and Flex. Xcode does
+      # not provide new enough versions for us to use.
+      if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+        execute_process(
+            COMMAND brew --prefix bison
+            RESULT_VARIABLE BREW_BISON
+            OUTPUT_VARIABLE BREW_BISON_PREFIX
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (BREW_BISON EQUAL 0 AND EXISTS "${BREW_BISON_PREFIX}")
+            message(STATUS "Found Bison keg installed by Homebrew at ${BREW_BISON_PREFIX}")
+            set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
+        endif()
+
+        execute_process(
+            COMMAND brew --prefix flex
+            RESULT_VARIABLE BREW_FLEX
+            OUTPUT_VARIABLE BREW_FLEX_PREFIX
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (BREW_FLEX EQUAL 0 AND EXISTS "${BREW_FLEX_PREFIX}")
+          message(STATUS "Found Flex keg installed by Homebrew at ${BREW_FLEX_PREFIX}")
+          set(FLEX_EXECUTABLE "${BREW_FLEX_PREFIX}/bin/flex")
+        endif ()
+      endif ()
       FIND_PACKAGE(BISON)
       FIND_PACKAGE(FLEX)
       IF ( BISON_FOUND AND FLEX_FOUND )
         SET(BISON_exename ${BISON_EXECUTABLE})
         SET(FLEX_exename ${FLEX_EXECUTABLE})
-        IF (WIN32)
+        IF (WIN32 OR APPLE)
           SET(bisoncmd ${BISON_exename})
           SET(flexcmd ${FLEX_exename})
         ELSE()
@@ -958,7 +994,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       endif(USE_BOOST_REGEX)
 
       if(USE_OPENSSL)
-        find_package(OPENSSL)
+        find_package(OpenSSL)
         if (OPENSSL_FOUND)
           add_definitions (-D_USE_OPENSSL)
           include_directories(${OPENSSL_INCLUDE_DIR})

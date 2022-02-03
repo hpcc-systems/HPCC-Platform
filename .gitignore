@@ -1,6 +1,6 @@
 build/
 node_modules/
-vcpkg/
+vcpkg_installed/
 externals/
 .project
 .svn/
