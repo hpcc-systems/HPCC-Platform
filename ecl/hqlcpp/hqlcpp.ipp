@@ -634,6 +634,7 @@ struct HqlCppOptions
     DBZaction           divideByZeroAction;
     unsigned            maxOptimizeSize;
     unsigned            minNoOptimizeSize;
+    unsigned            irOptions;
     bool                peephole;
     bool                foldConstantCast;
     bool                optimizeBoolReturn;
@@ -835,6 +836,8 @@ struct HqlCppOptions
     bool                genericDiskReads;
     bool                generateActivityFormats;
     bool                generateDiskFormats;
+    bool                generateIR;
+    bool                generateIRAfterTransform;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

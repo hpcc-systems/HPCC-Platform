@@ -5997,6 +5997,17 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
     bool ok = prepareToGenerate(query, workflow, (embeddedLibraryName != NULL));
     if (ok)
     {
+        if (options.generateIRAfterTransform)
+        {
+            ForEachItemIn(i, workflow)
+            {
+                WorkflowItem & cur = workflow.item(i);
+                printf("Workflow %u:\n", cur.queryWfid());
+                EclIR::dump_ir_external(cur.queryExprs(), options.irOptions);
+            }
+            return false;
+        }
+
         //This is done late so that pickBestEngine has decided which engine we are definitely targeting.
         if (!embeddedLibraryName)
             updateClusterType();
