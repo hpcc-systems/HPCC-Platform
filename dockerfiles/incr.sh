@@ -26,7 +26,10 @@
 
 # NB: INPUT_* may be pre-set as environment variables.
 
-while getopts “d:fhlpt:n:u:b:” opt; do
+#The name of your "upstream" git remote
+UPSTREAM=upstream
+
+while getopts “d:fhlpt:n:u:b:r:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
     n) CUSTOM_TAG_NAME=$OPTARG ;;
@@ -35,6 +38,7 @@ while getopts “d:fhlpt:n:u:b:” opt; do
     d) INPUT_DOCKER_REPO=$OPTARG ;;
     u) INPUT_BUILD_USER=$OPTARG ;;
     b) INPUT_BUILD_TYPE=$OPTARG ;;
+    r) UPSTREAM=$OPTARG ;;
     f) FORCE=1 ;;
     h) echo "Usage: incr.sh [options]"
        echo "    -d <docker-repo>   Specify the repo to publish images to"
@@ -44,6 +48,7 @@ while getopts “d:fhlpt:n:u:b:” opt; do
        echo "    -l                 Tag the images as the latest"
        echo "    -n                 Tag the image with a custom name (e.g. -n HPCC-25285)"
        echo "    -p                 Push images to docker repo"
+       echo "    -r                 Override git upstream repo name (default is 'upstream')"
        echo "    -t <num-threads>   Override the number of build threads"
        echo "    -u <user>          Specify the build user"
        exit
@@ -80,9 +85,24 @@ if [[ -z "$FORCE" ]] ; then
     PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
   fi
 
+# Work out which candidate branch this one was probably forked from
+
+
   # If not found above, look for latest tagged
   if [[ -z ${PREV} ]] ; then
-    PREV=$(git log --oneline --no-merges | grep "^[0-9a-f]* Split off " | head -1 | sed "s/.*Split off //" | head -1)-rc1
+    best=1000000
+    for candidate in `git branch -r -l ${UPSTREAM}/candidate-8* | sed 's/\*//' | sed s/.*candidate-// | egrep -v [.]x$ | sort | uniq` ; do
+      delta=$(git rev-list --count --no-merges ${UPSTREAM}/candidate-$candidate...HEAD)
+      # echo $candidate : $delta
+      if [ $delta -lt $best ] ; then
+        best=$delta
+        PREV=`git tag -l | grep ${candidate} | tail -1 | sed s/.*_//`
+      fi
+    done
+    if [[ -z ${PREV} ]] ; then
+      echo "Could not locate version to base from - please specify manually"
+      exit
+    fi
     if [[ ! "${BUILD_TYPE}" =~ "Release" ]] ; then
       PREV=${PREV}-${BUILD_TYPE}
     fi
