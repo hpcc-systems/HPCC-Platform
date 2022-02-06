@@ -3,22 +3,11 @@
     "name": "hpcc-platform",
     "version": "8.6.0",
     "dependencies": [
-        {
-            "name": "icu",
-            "platform": "windows"
-        },
-        {
-            "name": "zlib",
-            "platform": "windows | osx"
-        },
-        {
-            "name": "openssl",
-            "platform": "windows | osx"
-        },
-        {
-            "name": "libxslt",
-            "platform": "windows"
-        },
+        "icu",
+        "zlib",
+        "openssl",
+        "libxslt",
+        "boost-regex",
         {
             "name": "winflexbison",
             "platform": "windows"

@@ -1,6 +1,8 @@
 set (USE_OPENLDAP OFF)
 set (USE_ICU ON)
+find_package(ICU REQUIRED COMPONENTS data i18n io le lx tu uc)
 set (USE_LIBXSLT ON)
+find_package(LibXslt REQUIRED)
 set (USE_OPENSSL ON)
 find_package(OpenSSL REQUIRED)
 
@@ -10,6 +12,7 @@ find_package(ZLIB REQUIRED)
 
 set (USE_LIBARCHIVE OFF)
 set (USE_BOOST_REGEX OFF)
+# find_package(Boost REQUIRED COMPONENTS regex)
 
 set (USE_APR OFF)
 set (USE_AZURE OFF)
