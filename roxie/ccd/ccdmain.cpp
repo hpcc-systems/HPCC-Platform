@@ -1292,6 +1292,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();
         if (runOnce)
         {
+            // Avoid delaying the release of packages or queries - otherwise stand-alone queries can take a while to terminate
+            agentQueryReleaseDelaySeconds = 0;
             if (wuid)
             {
                 Owned<IHpccProtocolListener> roxieServer = createRoxieWorkUnitListener(1, false);

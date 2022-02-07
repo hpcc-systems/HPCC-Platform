@@ -152,7 +152,7 @@ public:
 class DelayedReleaserThread : public Thread
 {
 private:
-    bool closing;
+    std::atomic<bool> closing;
     bool started;
     CriticalSection lock;
     IArrayOf<DelayedReleaseQueueItem> queue;
@@ -2010,7 +2010,7 @@ private:
 
     class AutoReloadThread : public Thread
     {
-        bool closing;
+        std::atomic<bool> closing;
         CRoxiePackageSetManager &owner;
     public:
         AutoReloadThread(CRoxiePackageSetManager &_owner)
