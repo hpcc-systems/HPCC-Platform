@@ -26,12 +26,15 @@ restArgs=()
 CLUSTERNAME=mycluster
 PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
 DEPLOY_ES=1
+MANAGED_ELK_SUBPATH="managed/logging/elastic"
+MANAGED_PROM_SUBPATH="managed/metrics/prometheus"
 
 dependency_check () {
 
   if [ -z "$1" ]
   then
-      CHART_SUBPATH="hpcc"
+      echo "dependency_check requires target chart subdir"
+      exit 0
   else
       CHART_SUBPATH=$1
   fi
@@ -40,16 +43,29 @@ dependency_check () {
   while IFS= read -r line
   do
     echo "${line}"
-    if echo "${line}" | egrep -q 'missing$'; then
+    if echo "${line}" | egrep -q 'missing$|wrong version$' ; then
       let "missingDeps++"
     fi
   done < <(helm dependency list ${scriptdir}/../helm/${CHART_SUBPATH} | grep -v WARNING)
   if [[ ${missingDeps} -gt 0 ]]; then
-    echo "Some of the chart dependencies are missing."
+    echo "Some of the chart dependencies are missing or outdated."
     echo "Either issue a 'helm dependency update ${scriptdir}/../helm/${CHART_SUBPATH}' to fetch them,"
     echo "or rerun $0 with option -c to auto update them."
     exit 0
   fi
+}
+
+dependency_update () {
+
+  if [ -z "$1" ]
+  then
+      echo "dependency_update requires target chart subdir"
+      exit 0
+  else
+      CHART_SUBPATH=$1
+  fi
+
+  helm dependency update ${scriptdir}/../helm/${CHART_SUBPATH}
 }
 
 CMD="install"
@@ -77,7 +93,7 @@ while [ "$#" -gt 0 ]; do
            PERSIST=$1
          fi
          ;;
-      c) DEP_UPDATE_ARG="--dependency-update"
+      c) DEP_UPDATE=1
          ;;
       h) echo "Usage: startall.sh [options]"
          echo "    -d <docker-repo>   Docker repository to fetch images from"
@@ -113,16 +129,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-
-if [[ -n "${DEP_UPDATE_ARG}" ]]; then
-  if [[ "${CMD}" = "upgrade" ]]; then
-    echo "Chart dependencies cannot be updated whilst performing a helm upgrade"
-    DEP_UPDATE_ARG=""
-  fi
-else
-  dependency_check "hpcc"
-fi
-
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
 [[ -z ${LABEL} ]] && LABEL=$(docker image ls | fgrep "${DOCKER_REPO}/platform-core" | head -n 1 | awk '{print $2}')
 
@@ -135,25 +141,29 @@ if [[ -n ${PERSIST} ]] ; then
   done
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG}
 else
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG}
 fi
 
 if [[ $DEPLOY_ES == 1 ]] ; then
   echo -e "\n\nDeploying "myelastic4hpcclogs" - light-weight Elastic Stack:"
-  if [[ -z "${DEP_UPDATE_ARG}" ]]; then
-    dependency_check "managed/logging/elastic"
+  if [[ $DEP_UPDATE == 1 ]]; then
+    dependency_update $MANAGED_ELK_SUBPATH
+  else
+    dependency_check $MANAGED_ELK_SUBPATH
   fi
-  helm ${CMD} myelastic4hpcclogs $scriptdir/../helm/managed/logging/elastic $DEP_UPDATE_ARG ${restArgs[@]}
+  helm ${CMD} myelastic4hpcclogs $scriptdir/../helm/$MANAGED_ELK_SUBPATH ${restArgs[@]}
 fi
 
 if [[ $DEPLOY_PROM == 1 ]] ; then
   echo -e "\n\nDeploying "myprometheus4hpccmetrics" - Prometheus Stack:"
-  if [[ -z "${DEP_UPDATE_ARG}" ]]; then
-    dependency_check "managed/metrics/prometheus"
+  if [[ $DEP_UPDATE == 1 ]]; then
+    dependency_update $MANAGED_PROM_SUBPATH
+  else
+    dependency_check $MANAGED_PROM_SUBPATH
   fi
-  helm ${CMD} myprometheus4hpccmetrics $scriptdir/../helm/managed/metrics/prometheus $DEP_UPDATE_ARG ${restArgs[@]} --set kube-prometheus-stack.prometheus.service.type=LoadBalancer --set kube-prometheus-stack.grafana.service.type=LoadBalancer
+  helm ${CMD} myprometheus4hpccmetrics $scriptdir/../helm/$MANAGED_PROM_SUBPATH ${restArgs[@]} --set kube-prometheus-stack.prometheus.service.type=LoadBalancer --set kube-prometheus-stack.grafana.service.type=LoadBalancer
 fi
 
 if [ ${CMD} != "template" ] ; then
