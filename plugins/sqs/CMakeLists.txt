@@ -1,8 +1,6 @@
-# minimal CMakeLists.txt for the AWS SDK for C++
-cmake_minimum_required(VERSION 2.8)
-
-# "my-example" is just an example value.
-project(sqs)
+PROJECT(sqs
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 if(SQS AND USE_AWS)
     ADD_PLUGIN(sqs)

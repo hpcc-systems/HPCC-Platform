@@ -14,8 +14,9 @@
 #    limitations under the License.
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8)
-PROJECT(initfiles)
+PROJECT(initfiles
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 if ( PLATFORM AND UNIX )
     HPCC_ADD_EXECUTABLE(processor processor.cpp)

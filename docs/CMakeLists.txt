@@ -14,8 +14,9 @@
 #    limitations under the License.
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8)
-PROJECT(docs)
+PROJECT(docs 
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 define_property(GLOBAL PROPERTY DOC_TARGETS BRIEF_DOCS "docs" FULL_DOCS "docs")
 mark_as_advanced(DOC_TARGETS)
