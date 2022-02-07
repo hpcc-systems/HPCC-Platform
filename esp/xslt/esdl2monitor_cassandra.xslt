@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 ##############################################################################
-# HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
+# HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
     <xsl:param name="diffmode" select="'Monitor'"/>
     <xsl:param name="diffaction" select="'Run'"/>
     <xsl:param name="listCategories" select="false()"/>
+    <xsl:param name="cass_consistency" select="'LOCAL_QUORUM'"/>
     <xsl:variable name="docname" select="/esxdl/@name"/>
     <xsl:param name="skipResponseTag" select="substring($responseType, string-length($responseType) - 1)='Ex'"/>
 
@@ -44,9 +45,8 @@
 EXPORT <xsl:value-of select="$definitionName"/>() := MACRO<xsl:text>
 </xsl:text>
 </xsl:if>
-
 <xsl:if test="$diffmode='Monitor'">
-IMPORT mysql;
+IMPORT cassandra;
 </xsl:if>
 
 IMPORT std;
@@ -127,7 +127,7 @@ difference := MODULE<xsl:text>
 
 </xsl:text>
   <xsl:for-each select="Selectors/Selector">
-<xsl:text>  EXPORT boolean Monitor</xsl:text><xsl:value-of select="."/> := FALSE : STORED('<xsl:value-of select="$diffmode"/>_<xsl:value-of select="."/>', FORMAT(sequence(<xsl:value-of select="position()+200"/>)));<xsl:text>
+<xsl:text>  EXPORT boolean Monitor</xsl:text><xsl:value-of select="."/> := FALSE : STORED('<xsl:value-of select="$diffmode"/>_<xsl:value-of select="."/>', FORMAT(sequence(<xsl:value-of select="position()+10"/>)));<xsl:text>
 </xsl:text>
     </xsl:for-each><xsl:text>
 </xsl:text>
@@ -190,25 +190,24 @@ END;
 <xsl:choose>
   <xsl:when test="$diffmode='Monitor'">
   //Inputs
-  string dbServer := '127.0.0.1' : stored('dbServer', FORMAT(SEQUENCE(1)));
-  unsigned2 dbPort := 0 : stored('dbPort', FORMAT(SEQUENCE(2)));
-  string dbDatabase := 'myDB' : stored('dbDatabase', FORMAT(SEQUENCE(3)));
-  string dbUser := '' : stored('dbUser', FORMAT(SEQUENCE(4)));
-  string dbPassword := '' : stored('dbPassword', FORMAT(PASSWORD, SEQUENCE(5)));
-  string1 dbFromStore := 'A' : stored('dbFromStore', FORMAT(SEQUENCE(6)));
-  string1 dbToStore := 'B' : stored('dbToStore', FORMAT(SEQUENCE(7)));
+  string csndServer := '127.0.0.1' : stored('cassandraServer', FORMAT(SEQUENCE(1)));
+  string csndUser := '' : stored('cassandraUser', FORMAT(SEQUENCE(2)));
+  string csndPassword := '' : stored('cassandraPassword', FORMAT(PASSWORD, SEQUENCE(3)));
 
-  string monAction := 'Create' : STORED('MonAction', FORMAT(SELECT('Create,Run'), SEQUENCE(20)));
-  string userId := '' : stored('UserId', FORMAT(SEQUENCE(21)));
-  string serviceURL := '' : stored('QueryURL', FORMAT(SEQUENCE(22)));
-  string serviceName := '' : stored('QueryName', FORMAT(SEQUENCE(23)));
-  unsigned2 serviceTimeout := 1000 : stored('QueryTimeoutSecs', FORMAT(SEQUENCE(24)));
-  unsigned1 serviceRetries := 3 : stored('QueryRetries', FORMAT(SEQUENCE(25)));
+  string csndKeySpaceFrom := 'monitors_a' : stored('fromKeyspace', FORMAT(SEQUENCE(4)));
+  string csndKeySpaceTo := 'monitors_a' : stored('toKeyspace', FORMAT(SEQUENCE(4)));
+
+  string monAction := 'Create' : STORED('MonAction', FORMAT(SELECT('Create,Run'), SEQUENCE(5)));
+  string userId := '' : stored('UserId', FORMAT(SEQUENCE(6)));
+  string serviceURL := '' : stored('QueryURL', FORMAT(SEQUENCE(7)));
+  string serviceName := '' : stored('QueryName', FORMAT(SEQUENCE(8)));
+  unsigned2 serviceTimeout := 1000 : stored('QueryTimeoutSecs', FORMAT(SEQUENCE(9)));
+  unsigned1 serviceRetries := 3 : stored('QueryRetries', FORMAT(SEQUENCE(10)));
 
 <xsl:if test="$diffaction='Run' or $diffaction='Demo'">
-  string monitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(30)));
+  string monitorIdIn := '' : stored('MonitorId', FORMAT(SEQUENCE(9)));
 </xsl:if>
-  requestIn := DATASET([], the_requestLayout) : STORED ('<xsl:value-of select="$requestType"/>', FEW, FORMAT(FIELDWIDTH(100),FIELDHEIGHT(30), sequence(50)));
+  requestIn := DATASET([], the_requestLayout) : STORED ('<xsl:value-of select="$requestType"/>', FEW, FORMAT(FIELDWIDTH(100),FIELDHEIGHT(30), sequence(100)));
 
   exceptionRec := RECORD
     string10 Source {xpath('Source')};
@@ -265,14 +264,18 @@ END;
     string result
   END;
 
-  monitorStoreRec getStoredMonitor(string id, string1 storeid) := EMBED(mysql : server(dbServer), port(dbPort), database(dbDatabase), user(dbUser), password(dbPassword))
-    SELECT monitorid, result from monitor WHERE monitorid=? AND store=? LIMIT 1;
-  ENDEMBED;
+// Initialize the Cassandra table, passing in the ECL dataset to provide the rows
+// When not using batch mode, maxFutures controls how many simultaenous writes to Cassandra are allowed before
+// we start to throttle, and maxRetries controls how many times inserts that fail because Cassandra is too busy
+// will be retried.
 
-  updateMonitor(dataset(monitorStoreRec) values, string1 storeid) := EMBED(mysql : server(dbServer), port(dbPort), database(dbDatabase), user(dbUser), password(dbPassword))
-    INSERT INTO monitor (monitorid, result, store) values (?,?,?)
-    ON DUPLICATE KEY UPDATE monitorid=VALUES(monitorid), result=VALUES(result), store=VALUES(store);
-  ENDEMBED;
+monitorStoreRec getStoredMonitor(string id) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceFrom)<xsl:if test="$cass_consistency">, consistency('<xsl:value-of select="$cass_consistency"/>')</xsl:if>)
+  SELECT monitorId, result from monitor WHERE monitorId=? LIMIT 1;
+ENDEMBED;
+
+updateMonitor(dataset(monitorStoreRec) values) := EMBED(cassandra : server(csndServer), user(csndUser), password(csndPassword), keyspace(csndKeySpaceTo), maxFutures(100), maxRetries(10)<xsl:if test="$cass_consistency">, consistency('<xsl:value-of select="$cass_consistency"/>')</xsl:if>)
+  INSERT INTO monitor (monitorId, result) values (?,?);
+ENDEMBED;
 
   MonitorResultRec := RECORD
     string id;
@@ -311,13 +314,13 @@ CreateMonitor (string userid, dataset(the_requestLayout) req) := MODULE
 END;
 
   executedAction := CreateMonitor(userId, requestIn).Result();
-  updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec), dbToStore);
+  updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec));
   </xsl:when>
   <xsl:when test="$diffaction='Run'">
 
 RunMonitor (string id, dataset(the_requestLayout) req) := MODULE
   SHARED monitorId := id;
-  SHARED monitorStore := getStoredMonitor(id, dbFromStore);
+  SHARED monitorStore := getStoredMonitor(id);
   SHARED soapOut := MonSoapCall(req)[1];
   <xsl:choose>
     <xsl:when test="$platform='esp'">
@@ -344,13 +347,13 @@ RunMonitor (string id, dataset(the_requestLayout) req) := MODULE
 END;
 
   executedAction := RunMonitor(monitorIdIn, requestIn).Result();
-  updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec), dbToStore);
+  updateMonitor(DATASET([{executedAction.id, executedAction.responseXML}], monitorStoreRec));
   </xsl:when>
   <xsl:when test="$diffaction='Demo'">
 
 DemoMonitor (string id, ROW(the_responseLayout) changedRow) := MODULE
   SHARED monitorId := id;
-  SHARED monitorStore := getStoredMonitor(id, dbFromStore);
+  SHARED monitorStore := getStoredMonitor(id);
 
   SHARED oldResponse := FROMXML (the_responseLayout, monitorStore.result);
 

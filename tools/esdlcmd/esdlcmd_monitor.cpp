@@ -351,6 +351,8 @@ public:
                     continue;
                 if (iter.matchFlag(optHideGetDataFrom, ESDLOPT_HIDE_GETDATAFROM))
                     continue;
+                if (iter.matchFlag(optUseCassandra, ESDL_OPTION_USE_CASSANDRA))
+                    continue;
                 if (EsdlConvertCmd::matchCommandLineOption(iter, true)!=EsdlCmdOptionMatch)
                     return false;
             }
@@ -1073,14 +1075,19 @@ public:
         Owned<IXslProcessor> xslp = getXslProcessor();
         Owned<IXslTransform> xform = xslp->createXslTransform();
         StringBuffer fullXsltPath(optXsltPath);
-        fullXsltPath.append("/xslt/esdl2monitor.xslt");
+        if (optUseCassandra)
+            fullXsltPath.append("/xslt/esdl2monitor_cassandra.xslt");
+        else
+            fullXsltPath.append("/xslt/esdl2monitor.xslt");
+
         xform->loadXslFromFile(fullXsltPath);
         xform->setXmlSource(xml.str(), xml.length());
 
         StringBuffer stringvar;
         xform->setParameter("requestType", stringvar.setf("'%s'", depTree->queryProp(xpath.setf("EsdlMethod[@name='%s']/@request_type", optMethod.str()))));
         xform->setParameter("queryName", stringvar.setf("'%s'", monitoringTemplate->queryProp("@queryName")));
-        xform->setParameter("cass_consistency", stringvar.setf("'%s'", optCassConsistency.str()));
+        if (optUseCassandra)
+            xform->setParameter("cass_consistency", stringvar.setf("'%s'", optCassConsistency.str()));
 
         StringBuffer ecl;
 
@@ -1198,6 +1205,7 @@ public:
         puts("  --hide-get-data-from  Hide ESDL elements with @get_data_from option" );
 
         puts(ESDLOPT_INCLUDE_PATH_USAGE);
+        puts("   --use-cassandra                        Generate monitoring code that stores it's state in Cassandra (default is MySQL)");
         puts("   --cassandra-consistency <consistency>  Consistency value to use for Cassandra statements\n");
         EsdlConvertCmd::usage();
     }
@@ -1221,6 +1229,7 @@ public:
     bool optOutputCategoryList=false;  //hidden option, do not document
     bool optNoExport = false;
     bool optHideGetDataFrom = false;
+    bool optUseCassandra = false;
 };
 
 
