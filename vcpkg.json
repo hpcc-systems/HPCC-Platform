@@ -3,21 +3,14 @@
     "name": "hpcc-platform",
     "version": "8.6.0",
     "dependencies": [
-        {
-            "name": "icu",
-            "platform": "windows"
-        },
-        {
-            "name": "zlib",
-            "platform": "windows | osx"
-        },
-        {
-            "name": "openssl",
-            "platform": "windows | osx"
-        },
+        "icu",
+        "zlib",
+        "openssl",
+        "libxml2",
         {
             "name": "libxslt",
-            "platform": "windows"
+            "default-features": false,
+            "features": []
         },
         {
             "name": "winflexbison",
