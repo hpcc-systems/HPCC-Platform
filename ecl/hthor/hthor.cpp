@@ -761,7 +761,7 @@ void CHThorDiskWriteActivity::publish()
         {
             StringBuffer clusterName;
             file->getClusterName(0, clusterName);
-            diskAccessCost = money2cost_type(calcFileCost(clusterName, 0, 0, numDiskWrites, 0));
+            diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
         }
         file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(file, "HThor", "CREATED", graph);
@@ -1357,7 +1357,7 @@ void CHThorIndexWriteActivity::execute()
 
         StringBuffer clusterName;
         dfile->getClusterName(0, clusterName);
-        diskAccessCost = money2cost_type(calcFileCost(clusterName, 0, 0, numDiskWrites, 0));
+        diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
     }
     else
         lfn = filename;
@@ -8460,7 +8460,7 @@ void CHThorDiskReadBaseActivity::closepart()
                 dFile->addAttrValue("@numDiskReads", curDiskReads);
                 StringBuffer clusterName;
                 dFile->getClusterName(0, clusterName);
-                diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, 0, curDiskReads));
+                diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, 0, curDiskReads));
             }
             numDiskReads += curDiskReads;
         }
