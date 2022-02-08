@@ -139,7 +139,7 @@ const char * const helpText[] = {
     "?!  -fcheckAsserts          Check ASSERT() statements",
     "?!  -fcheckDuplicateThreshold=n Warn if SEQUENTIAL or workflow may duplicate more than n%% activities",
     "?!  -fexportDependencies    Generate information about inter-definition dependencies",
-    "!   -fgenerateIR            Output the internal representation for the query to stdout"
+    "!   -fgenerateIR            Output the internal representation for the query to stdout",
     "?!  -fmaxCompileThreads     Number of compiler instances to compile the c++",
     "?!  -fmaxErrors             Maximum number of errors to report",
     "?!  -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
