@@ -518,6 +518,31 @@ private:
                     bindingtree->setProp("@port", port);
                     servicetree->setProp("@name", serviceName.str());
                     servicetree->setProp("@type", "DynamicESDL");
+
+                    // Copy resource_map properties from the desdlBinding.resource_map section
+                    // for this dynamic service into the bindingtree
+                    IPropertyTree* desdlBindingConfig = bindingtree->queryPropTree("desdlBinding");
+                    if (desdlBindingConfig)
+                    {
+                        IPropertyTree* bindingAuthenticate = bindingtree->queryPropTree("Authenticate");
+                        xpath.setf("resource_map/%s", serviceName.str());
+                        IPropertyTree* resourceMap = desdlBindingConfig->queryPropTree(xpath.str());
+                        if (resourceMap && bindingAuthenticate)
+                        {
+                            mergePTree(bindingAuthenticate, resourceMap);
+                            desdlBindingConfig->removeProp(xpath.str());
+                        }
+
+                        // Likewise copy over any additional dynamic service-specific binding configuration
+                        xpath.setf("additionalInfo/%s", serviceName.str());
+                        IPropertyTree* addtlInfo = desdlBindingConfig->queryPropTree(xpath.str());
+                        if (addtlInfo)
+                        {
+                            mergePTree(bindingtree, addtlInfo);
+                            desdlBindingConfig->removeProp(xpath.str());
+                        }
+                    }
+
                     Owned<IPropertyTree> envpttree = createPTreeFromIPT(m_envptTemplate.get());
                     envpttree->addPropTree("Software/EspProcess/EspBinding", bindingtree);
                     envpttree->addPropTree("Software/EspProcess/EspService", servicetree);
