@@ -44,12 +44,20 @@
 
 namespace EclIR
 {
+enum
+{
+    TIRexpandSimpleTypes    = 0x00000001,
+    TIRexpandAttributes     = 0x00000002,
+    TIRstripAnnotatations   = 0x00000004,
+};
+
 extern HQL_API const char * getOperatorIRText(node_operator op);
 extern HQL_API const char * getTypeIRText(type_t type);
 
 extern HQL_API void dump_ir(IHqlExpression * expr);
 extern HQL_API void dump_ir(ITypeInfo * type);
 extern HQL_API void dump_ir(const HqlExprArray & exprs);
+extern HQL_API void dump_ir_external(const HqlExprArray & exprs, unsigned options);
 
 //The following are useful for finding the differences between two types or expressions - the output between the two returns
 extern HQL_API void dump_ir(ITypeInfo * type1, ITypeInfo * type2);

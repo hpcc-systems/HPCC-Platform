@@ -14308,6 +14308,12 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         curActivityId = creator.queryMaxActivityId();
     }
 
+    if (options.generateIR)
+    {
+        EclIR::dump_ir_external(exprs, options.irOptions);
+        return false;
+    }
+
     applyGlobalOptimizations(exprs);
     if (exprs.ordinality() == 0)
         return false;   // No action needed

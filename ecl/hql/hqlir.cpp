@@ -1118,12 +1118,6 @@ IAtom * BinaryIRPlayer::readName()
 //- Text
 //--------------------------------------------------------------------------------------------------------------------
 
-enum
-{
-    TIRexpandSimpleTypes    = 0x00000001,
-    TIRexpandAttributes     = 0x00000002,
-    TIRstripAnnotatations   = 0x00000004,
-};
 class TextIRBuilder : public CInterfaceOf<IEclBuilder>
 {
     class Definition
@@ -2204,6 +2198,12 @@ extern HQL_API void dump_ir(const HqlExprArray & exprs)
 extern HQL_API void dump_ir(ITypeInfo * type)
 {
     dump_ir(NULL, NULL, type);
+}
+
+void dump_ir_external(const HqlExprArray & exprs, unsigned options)
+{
+    FileIRBuilder output(options, stdout);
+    playIR(output, nullptr, &exprs, nullptr);
 }
 
 extern HQL_API void dump_ir(ITypeInfo * type1, ITypeInfo * type2)

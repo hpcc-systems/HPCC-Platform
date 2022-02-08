@@ -1868,6 +1868,9 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.generateDiskFormats, "generateDiskFormats", false),
         DebugOption(options.maxOptimizeSize, "maxOptimizeSize", 5),             // Remove the overhead from very small functions e.g. function prolog
         DebugOption(options.minNoOptimizeSize, "minNoOptimizeSize", 10000),     // functions larger than this will take a long time to optimize, better to not try
+        DebugOption(options.generateIR, "generateIR", false),
+        DebugOption(options.generateIRAfterTransform, "generateIRAfterTransform", false),
+        DebugOption(options.irOptions, "irOptions", EclIR::TIRexpandSimpleTypes),
     };
 
     //get options values from workunit
