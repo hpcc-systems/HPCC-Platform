@@ -1,11 +1,9 @@
-import { Workunit, WUStateID } from "@hpcc-js/comms";
-import Step from "@material-ui/core/Step";
-import StepLabel from "@material-ui/core/StepLabel";
-import Stepper from "@material-ui/core/Stepper";
-import { MuiThemeProvider } from "@material-ui/core/styles";
-import nlsHPCC from "../nlsHPCC";
-import { theme } from "./theme";
 import * as React from "react";
+import { ThemeProvider } from "@fluentui/react";
+import { Workunit, WUStateID } from "@hpcc-js/comms";
+import { useUserTheme } from "../../src-react/hooks/theme";
+import { StepProps, Stepper } from "../../src-react/components/controls/Stepper";
+import nlsHPCC from "../nlsHPCC";
 
 const Steps = [
     {
@@ -71,7 +69,9 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
     wuid
 }) => {
     const [activeStep, setActiveStep] = React.useState(-1);
+    const [theme] = useUserTheme();
     const [failed, setFailed] = React.useState(false);
+    const [stepProps, setStepProps] = React.useState<StepProps[]>();
     const [steps, setSteps] = React.useState([]);
 
     React.useEffect(() => {
@@ -87,19 +87,23 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
         };
     }, [wuid]);
 
+    React.useEffect(() => {
+        setStepProps(steps.map((step, i) => {
+            const label = activeStep === i ? step.activeText : step.text;
+            return {
+                key: `${label}_${i}`,
+                label: label,
+                step: i + 1,
+                failed: failed,
+                completed: activeStep > i,
+                showConnector: i > 0 && i < steps.length + 1
+            };
+        }));
+    }, [activeStep, failed, steps]);
+
     return (
-        <MuiThemeProvider theme={theme}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-                {steps.map((step, i) => {
-                    const labelProps = {
-                        error: i <= activeStep ? failed : false
-                    };
-                    const label = activeStep === i ? step.activeText : step.text;
-                    return <Step key={i}>
-                        <StepLabel {...labelProps}>{label}</StepLabel>
-                    </Step>;
-                })}
-            </Stepper>
-        </MuiThemeProvider>
+        <ThemeProvider theme={theme}>
+            <Stepper activeStep={activeStep} steps={stepProps}></Stepper>
+        </ThemeProvider>
     );
 };
