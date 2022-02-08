@@ -187,3 +187,4 @@ kibana:
               echo Failed to retrieve index pattern information from Kibana: ${httpcode}
               exit ${httpcode}
             fi
+            curl -X PUT 'localhost:5601/s/default/api/saved_objects/config/7.16.3' -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{"attributes": {"defaultRoute": "/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(kubernetes.container.name,hpcc.log.message,hpcc.log.audience,hpcc.log.class,hpcc.log.jobid,hpcc.log.timestamp),filters:!(),index:hpcc-filebeat-pattern,interval:auto)"}}'
