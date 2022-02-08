@@ -9776,7 +9776,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     else
         macroBodyExpr = expr;
 
-    IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
+    IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra(0));
     size32_t len = macroContents->length();
 
     //Strangely some macros still have the ENDMACRO on the end, and others don't.  This should be removed really.

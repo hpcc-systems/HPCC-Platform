@@ -7347,9 +7347,9 @@ unsigned __int64 CHqlAnnotation::querySequenceExtra()
     return body->querySequenceExtra();
 }
 
-IInterface * CHqlAnnotation::queryUnknownExtra()
+IInterface * CHqlAnnotation::queryUnknownExtra(unsigned idx)
 {
-    return body->queryUnknownExtra();
+    return body->queryUnknownExtra(idx);
 }
 
 IValue * CHqlAnnotation::queryValue() const 
@@ -10679,9 +10679,13 @@ bool CHqlUnknown::equals(const IHqlExpression &r) const
     return false;
 }
 
-IInterface * CHqlUnknown::queryUnknownExtra()
+IInterface * CHqlUnknown::queryUnknownExtra(unsigned idx)
 {
-    return extra;
+    switch (idx)
+    {
+    case 0: return extra;
+    }
+    return nullptr;
 }
 
 
@@ -10695,10 +10699,66 @@ void CHqlUnknown::sethash()
 IHqlExpression *CHqlUnknown::clone(HqlExprArray &newkids)
 {
     assertex(newkids.ordinality() == 0);
-    return createUnknown(op, type, name, extra.getLink());
+    return LINK(this);
 }
 
 StringBuffer &CHqlUnknown::toString(StringBuffer &ret)
+{
+    return ret.append(name);
+}
+
+//==============================================================================================================
+
+CHqlMacro::CHqlMacro(node_operator _op, ITypeInfo * _type, IEclPackage * _package, IAtom * _name, IFileContents * _ownedContents)
+: CHqlExpressionWithType(_op, _type), package(_package), name(_name)
+{
+    name = _name;
+    contents.setown(_ownedContents);
+}
+
+CHqlMacro *CHqlMacro::makeMacro(node_operator _op, ITypeInfo * _type, IEclPackage * _package, IAtom * _name, IFileContents * _ownedContents)
+{
+    if (!_type) _type = makeVoidType();
+    return new CHqlMacro(_op, _type, _package, _name, _ownedContents);
+}
+
+bool CHqlMacro::equals(const IHqlExpression &r) const
+{
+    if (CHqlExpressionWithType::equals(r) && name==r.queryName())
+    {
+        const CHqlMacro * other = dynamic_cast<const CHqlMacro *>(&r);
+        if (other && (contents == other->contents) && (package == other->package))
+            return true;
+    }
+    return false;
+}
+
+IInterface * CHqlMacro::queryUnknownExtra(unsigned idx)
+{
+    switch (idx)
+    {
+    case 0: return contents;
+    case 1: return package;
+    }
+    return nullptr;
+}
+
+
+void CHqlMacro::sethash()
+{
+    CHqlExpression::sethash();
+    HASHFIELD(name);
+    HASHFIELD(contents);
+    HASHFIELD(package);
+}
+
+IHqlExpression *CHqlMacro::clone(HqlExprArray &newkids)
+{
+    assertex(newkids.ordinality() == 0);
+    return LINK(this);
+}
+
+StringBuffer &CHqlMacro::toString(StringBuffer &ret)
 {
     return ret.append(name);
 }
@@ -11471,6 +11531,16 @@ extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type,
     IHqlExpression * ret = CHqlUnknown::makeUnknown(op, type, name, extra);
     return ret->closeExpr();
 }
+
+extern HQL_API IHqlExpression *createMacro(bool complex, IHqlScope * container, IFileContents * contents)
+{
+    ITypeInfo * type = complex ? makeVoidType() : makeBoolType();
+    const char * containerName = container->queryFullName();
+    IAtom * containerId = createAtom(containerName);
+    IHqlExpression * ret = CHqlMacro::makeMacro(no_macro, type, container->queryPackage(), containerId, LINK(contents));
+    return ret->closeExpr();
+}
+
 
 extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, IAtom * name, unsigned __int64 seq)
 {

@@ -73,7 +73,7 @@ bool ECLlocation::extractLocationAttr(const IHqlExpression * location)
 
         IHqlExpression * sourceExpr = location->queryChild(3);
         if (sourceExpr)
-            sourcePath = static_cast<ISourcePath *>(sourceExpr->queryUnknownExtra());
+            sourcePath = static_cast<ISourcePath *>(sourceExpr->queryUnknownExtra(0));
         else
             sourcePath = NULL;
         lineno = (int)getIntValue(location->queryChild(0));

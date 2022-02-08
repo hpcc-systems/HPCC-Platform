@@ -1428,7 +1428,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
             break;
         case no_callback:
             {
-                IHqlDelayedCodeGenerator * generator = (IHqlDelayedCodeGenerator *)expr->queryUnknownExtra();
+                IHqlDelayedCodeGenerator * generator = (IHqlDelayedCodeGenerator *)expr->queryUnknownExtra(0);
                 generator->generateCpp(out);
                 break;
             }
