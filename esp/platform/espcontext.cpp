@@ -459,12 +459,14 @@ public:
 
     virtual void ensureSuperUser(unsigned excCode, const char* excMsg)
     {
+#ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(m_secmgr.get());
         if (secmgr && !secmgr->isSuperUser(m_user.get()))
         {
             setAuthStatus(AUTH_STATUS_NOACCESS);
             throw makeStringException(excCode, excMsg);
         }
+#endif
     }
 
     void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...) __attribute__((format(printf, 5, 6)));

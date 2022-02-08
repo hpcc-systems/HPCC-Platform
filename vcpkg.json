@@ -1,0 +1,27 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "hpcc-platform",
+    "version": "8.6.0",
+    "dependencies": [
+        {
+            "name": "icu",
+            "platform": "windows"
+        },
+        {
+            "name": "zlib",
+            "platform": "windows | osx"
+        },
+        {
+            "name": "openssl",
+            "platform": "windows | osx"
+        },
+        {
+            "name": "libxslt",
+            "platform": "windows"
+        },
+        {
+            "name": "winflexbison",
+            "platform": "windows"
+        }
+    ]
+}
