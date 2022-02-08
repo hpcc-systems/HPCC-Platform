@@ -112,4 +112,4 @@ export FileServices := SERVICE : plugin('fileservices'), time
   integer4 GetExpireDays(const varstring lfn) : c,context,entrypoint='fsGetExpireDays';
   SetExpireDays(const varstring lfn, integer4 expireDays) : c,context,entrypoint='fsSetExpireDays';
   ClearExpireDays(const varstring lfn) : c,context,entrypoint='fsClearExpireDays';
-end;
+END;
