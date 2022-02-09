@@ -685,9 +685,9 @@
     and WILD keywords that are available for use in INDEX filters,
     only.</para>
 
-    <para>For both types of keyed join, any GROUPing of the base record sets
-    is left untouched. See KEYED and WILD for a discussion of INDEX
-    filtering.</para>
+    <para>For both types of keyed join, any GROUPing and/or distribution of
+    the base record sets is left untouched. See KEYED and WILD for a
+    discussion of INDEX filtering.</para>
   </sect2>
 
   <sect2 id="Join_Logic">
