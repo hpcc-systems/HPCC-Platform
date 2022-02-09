@@ -14,8 +14,9 @@
 #    limitations under the License.
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8)
-PROJECT(lib2)
+PROJECT(lib2
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 if (APPLE)
     if ("${BOOST_REGEX_LIBRARIES}" STREQUAL "Boost::regex")

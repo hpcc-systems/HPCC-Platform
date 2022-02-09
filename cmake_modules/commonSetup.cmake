@@ -37,13 +37,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     and the file ${CMAKE_BINARY_DIR}/CMakeCache.txt,
     then create a separate build directory and run 'cmake path_to_source [options]' there.")
 
-  cmake_policy ( SET CMP0011 NEW )
-  if (NOT (CMAKE_MAJOR_VERSION LESS 3))
-    cmake_policy ( SET CMP0026 OLD )
-    if (NOT (CMAKE_MINOR_VERSION LESS 1))
-      cmake_policy ( SET CMP0054 NEW )
-    endif()
-  endif()
   option(CONTAINERIZED "Build for container images." OFF)
   option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
   option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
@@ -680,7 +673,7 @@ endif ()
   ###########################################################################
 
     if(USE_OPTIONAL)
-        message(WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
+        message(AUTHOR_WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
     endif()
 
     if(NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")

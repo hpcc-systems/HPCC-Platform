@@ -14,7 +14,8 @@
 #    limitations under the License.
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8)
-PROJECT(initfiles)
+PROJECT(initfiles
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 ADD_SUBDIRECTORY(componentfiles)
