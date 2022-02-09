@@ -117,7 +117,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 formatter: function (Type, row) {
                     const target = getTarget(row.id, row);
                     if (target) {
-                        return <Link href={`#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}`}>{Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</Link>;
+                        return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}`}>{Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</Link>;
                     }
                     return Type;
                 }
