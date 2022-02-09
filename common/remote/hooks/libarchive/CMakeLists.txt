@@ -46,7 +46,7 @@ install ( TARGETS archivefile RUNTIME DESTINATION filehooks LIBRARY DESTINATION 
 
 target_link_libraries ( archivefile
     jlib
-    ${LIBARCHIVE_LIBRARIES}
+    ${LibArchive_LIBRARIES}
     )
 
 if (WIN32)

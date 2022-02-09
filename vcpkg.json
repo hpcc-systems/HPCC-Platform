@@ -14,6 +14,13 @@
         },
         "boost-property-tree",
         {
+            "name": "libarchive",
+            "default-features": false,
+            "features": [
+                "bzip2"
+            ]
+        },
+        {
             "name": "winflexbison",
             "platform": "windows"
         }

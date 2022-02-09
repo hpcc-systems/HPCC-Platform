@@ -8,7 +8,6 @@ set (USE_CBLAS OFF)
 set (USE_ZLIB ON)
 find_package(ZLIB REQUIRED)
 
-set (USE_LIBARCHIVE OFF)
 set (USE_BOOST_REGEX OFF)
 
 set (USE_APR OFF)
