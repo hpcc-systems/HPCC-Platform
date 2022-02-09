@@ -12,6 +12,7 @@
             "default-features": false,
             "features": []
         },
+        "boost-property-tree",
         {
             "name": "winflexbison",
             "platform": "windows"
