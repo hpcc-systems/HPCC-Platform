@@ -28,5 +28,6 @@ set (CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 # Additional
 option(BUILD_TESTS "Enable libgit2 tests (override libgit2 option)" ON)
 set (BUILD_TESTS OFF)
+set (SKIP_ECLWATCH ON)
 set (USE_JWT OFF)
-
+set (USE_OPTIONAL OFF)

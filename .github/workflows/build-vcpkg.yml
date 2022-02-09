@@ -33,7 +33,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "windows-2019", "macos-10.15"]
+        os: ["ubuntu-20.04", "windows-2019", "macos-11"]
         include:
           - os: "ubuntu-20.04"
             triplet: "x64-linux"
@@ -47,7 +47,7 @@ jobs:
             sudo: ""
             cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64'
             cmake_build_options: "--config Debug -- -m"
-          - os: "macos-10.15"
+          - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
@@ -82,17 +82,10 @@ jobs:
           sudo apt-get install -y nodejs
 
       - name: OSX Dependencies
-        if: ${{ matrix.os == 'macos-10.15' }}
+        if: ${{ matrix.os == 'macos-11' }}
         shell: "bash"
         run: |
-          brew install bison flex
-          export CMAKE_INCLUDE_PATH="/usr/local/opt/flex/include"
-          export CMAKE_LIBRARY_PATH="/usr/local/opt/flex/lib;/usr/local/opt/bison/lib"
-          export PATH="/usr/local/opt/flex/bin:/usr/local/opt/bison/bin:$PATH"
-
-          brew install pkg-config automake libtool cppunit boost mysql-client openldap
-          brew tap AdoptOpenJDK/openjdk
-          brew install --cask adoptopenjdk13
+          brew install bison flex pkg-config automake libtool cmake
 
       - name: "Remove builtin vcpkg"
         working-directory: .
@@ -105,7 +98,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: "Bootstrap vcpkg"
+      - name: "vcpkg Bootstrap"
         working-directory: .
         shell: "bash"
         run: |
@@ -126,11 +119,16 @@ jobs:
             setapikey "${{ secrets.GITHUB_TOKEN }}" \
             -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
-      - name: "Build HPCC-Platform"
+      - name: "Generate HPCC-Platform Build Files"
         working-directory: .
         shell: "bash"
         run: |
           mkdir build
           cd build
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_config_options }}
+
+      - name: "Build HPCC-Platform"
+        working-directory: ./build
+        shell: "bash"
+        run: |
           cmake --build . ${{ matrix.cmake_build_options }}
