@@ -17,7 +17,7 @@
 #    limitations under the License.
 ##############################################################################
 
-# Utility script for starting a local cluster corresponding to current git branch
+# Utility script for starting a local cluster (including elastic4hpcclogs) corresponding to current git branch
 # Usage startup.sh [<image.version>] [<helm-install-options>]
 
 DOCKER_REPO=hpccsystems
@@ -25,6 +25,7 @@ scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
 CLUSTERNAME=mycluster
 PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
+DEPLOY_ES=1
 
 dependency_check () {
 
@@ -87,7 +88,7 @@ while [ "$#" -gt 0 ]; do
          echo "    -c                 Update chart dependencies"
          echo "    -p <location>      Use local persistent data"
          echo "    -pv <yamlfile>     Override dataplane definitions for local persistent data"
-         echo "    -e                 Deploy light-weight Elastic Stack for component log processing"
+         echo "    -e                 Suppress deployment of elastic4hpcclogs (deployed by default)"
          echo "    -m                 Deploy Prometheus Stack for component metrics processing"
          exit
          ;;
@@ -97,7 +98,8 @@ while [ "$#" -gt 0 ]; do
       # vanilla install - for testing system in the same way it will normally be used
       v) DEVELOPER_OPTIONS=""
          ;;
-      e) DEPLOY_ES=1
+      e) DEPLOY_ES=0
+	     echo -e "\nDeployment of elastic4hpcclogs suppressed.\n"
          ;;
       m) DEPLOY_PROM=1
          PROMETHEUS_METRICS_SINK_ARG="-f $scriptdir/../helm/examples/metrics/prometheus_metrics.yaml"
