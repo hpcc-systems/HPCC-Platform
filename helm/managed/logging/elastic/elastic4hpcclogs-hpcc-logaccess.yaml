@@ -1,0 +1,23 @@
+# Configures HPCC logAccess to target elastic4hpcclogs deployment
+global:
+  logAccess:
+      name: "Elastic4HPCCLogs"
+      type: "elasticstack"
+      connection:
+          protocol: "http"
+          host: "elasticsearch-master.default.svc.cluster.local"
+          port: 9200
+      logMaps:
+        - type: "global"                             #These settings apply to all log mappings
+          storeName: "filebeat-*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
+          searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
+          timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+        - type: "workunits"                          #Search by workunits specific log mapping
+          storeName: "filebeat-*"                    # Only needed if differs from global.storeName
+          searchColumn: "hpcc.log.jobid"             # Field containing WU information
+        - type: "components"                         #Search by components specific log mapping
+          searchColumn: "kubernetes.container.name"  # Field containing container information
+        - type: "audience"                           #Search by audience specific log mapping
+          searchColumn: "hpcc.log.audience"          # Field containing audience information
+        - type: "class"                              #Search by log class specific log mapping
+          searchColumn: "hpcc.log.class"             # Field containing log class information

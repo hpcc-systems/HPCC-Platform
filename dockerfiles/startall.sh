@@ -25,9 +25,11 @@ scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
 CLUSTERNAME=mycluster
 PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
-DEPLOY_ES=1
+
 MANAGED_ELK_SUBPATH="managed/logging/elastic"
 MANAGED_PROM_SUBPATH="managed/metrics/prometheus"
+
+ELASTIC_LOG_ACCESS_ARG="-f $scriptdir/../helm/${MANAGED_ELK_SUBPATH}/elastic4hpcclogs-hpcc-logaccess.yaml"
 
 dependency_check () {
 
@@ -114,8 +116,8 @@ while [ "$#" -gt 0 ]; do
       # vanilla install - for testing system in the same way it will normally be used
       v) DEVELOPER_OPTIONS=""
          ;;
-      e) DEPLOY_ES=0
-	     echo -e "\nDeployment of elastic4hpcclogs suppressed.\n"
+      e) ELASTIC_LOG_ACCESS_ARG=""
+	       echo -e "\nDeployment of elastic4hpcclogs suppressed.\n"
          ;;
       m) DEPLOY_PROM=1
          PROMETHEUS_METRICS_SINK_ARG="-f $scriptdir/../helm/examples/metrics/prometheus_metrics.yaml"
@@ -147,12 +149,12 @@ if [[ -n ${PERSIST} ]] ; then
   done
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG}
 else
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG}
 fi
 
-if [[ $DEPLOY_ES == 1 ]] ; then
+if [[ -n $ELASTIC_LOG_ACCESS_ARG ]] ; then
   echo -e "\n\nDeploying "myelastic4hpcclogs" - light-weight Elastic Stack:"
   if [[ $DEP_UPDATE == 1 ]]; then
     dependency_update $MANAGED_ELK_SUBPATH
