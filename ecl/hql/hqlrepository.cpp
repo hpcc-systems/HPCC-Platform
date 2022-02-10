@@ -107,6 +107,21 @@ static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, String
 }
 
 
+//A (very) temporary solution - to prevent other dependencies from node projects from causing problems
+//the correct fix HPCC-27173, to delay processing the package until actually used.
+bool canReadPackageFrom(const char * urn)
+{
+    if (queryExtractFilename(urn))
+        return true;
+    if (looksLikeGitPackage(urn))
+        return true;
+    if (!isalnum(*urn))
+        return false;
+    if (endsWith(urn, ".tgz"))
+        return false;
+    return true;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 static void extractRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope, HqlLookupContext & ctx)
