@@ -158,3 +158,8 @@ ldap:
       ws_elk: []
       ws_store: []
       WSDali: []
+      ws_logaccess:
+         Feature:
+         -  path: WsLogAccess
+            resource: WsLogAccess
+            description: Access to HPCC component log

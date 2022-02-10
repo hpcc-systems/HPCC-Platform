@@ -229,6 +229,10 @@ storage:
 cost:
 {{ toYaml .Values.global.cost | indent 2 }}
 {{- end }}
+{{- if .Values.global.logAccess }}
+logAccess:
+{{ toYaml .Values.global.logAccess | indent 2 }}
+{{- end }}
 {{- end -}}
 
 {{/*
