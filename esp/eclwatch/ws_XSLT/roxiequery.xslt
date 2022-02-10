@@ -78,11 +78,6 @@
                         {
                             document.location.href='/WsRoxieQuery/QueryFileList?FileType=Non Super Files&QueryID='+ id + '&Cluster=' + cluster;
                         }
-                        function showGVCGraph()
-                        {
-              //document.location.href='/WsWorkunits/GVCAjaxGraph?Name=' + Wuid + '&GraphName=graph1';
-              document.location.href='/WsRoxieQuery/GVCAjaxGraph?Name=' + id + '&GraphName=graph1&Cluster=' + cluster;
-          }
 
           var xypos = YAHOO.util.Dom.getXY('mn' + PosId);
           if (oMenu)
@@ -95,8 +90,7 @@
           oMenu.addItems([
           { text: "Details", onclick: { fn: details } },
           { text: "ShowSuperFiles", onclick: { fn: showSuperFiles }, disabled: true },
-          { text: "ShowNonSuperFiles", onclick: { fn: showDataFiles }, disabled: true },
-          { text: "ShowGVCGraph", onclick: { fn: showGVCGraph }, disabled: (Wuid.length<1 ? true : false) }
+          { text: "ShowNonSuperFiles", onclick: { fn: showDataFiles }, disabled: true }
           ]);
 
           oMenu.render("roxiequerylistmenu");

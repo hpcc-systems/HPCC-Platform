@@ -217,8 +217,6 @@
                  onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=ActivateQueries', 'XmlArg')"> </input>
                 <input type="submit" name="Queries.QueryInfo.MultiEdit2" value="Add Alias" disabled="true" 
                  onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=AddAliases', 'XmlArg')"> </input>
-                <input type="submit" name="Queries.QueryInfo.Edit1" value="Show Graph" disabled="true" 
-                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/GVCAjaxGraph?Name={QueryName}&quot;))"> </input>
                 <input type="submit" name="Queries.QueryInfo.Edit2" value="List Data Files" disabled="true" 
                  onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeSuperFileNames=1&quot;))"> </input>
                 <input type="submit" name="Queries.QueryInfo.Edit3" value="List Super Files" disabled="true" 
@@ -298,8 +296,6 @@
                  onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=ActivateQueries', 'XmlArg')"> </input>
             <input type="submit" name="Queries.QueryInfo.MultiEdit2" value="Add Alias" disabled="true"
                  onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=AddAliases', 'XmlArg')"> </input>
-            <input type="submit" name="Queries.QueryInfo.Edit1" value="Show Graph" disabled="true"
-                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/GVCAjaxGraph?Name={QueryName}&quot;))"> </input>
             <input type="submit" name="Queries.QueryInfo.Edit2" value="List Data Files" disabled="true"
                  onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeSuperFileNames=1&quot;))"> </input>
             <input type="submit" name="Queries.QueryInfo.Edit3" value="List Super Files" disabled="true"
@@ -379,8 +375,6 @@
                  onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=ActivateQueries', 'XmlArg')"> </input>
             <input type="submit" name="Queries.QueryInfo.MultiEdit2" value="Add Alias" disabled="true"
                  onclick="return submitSelectedItemsAsXml('Queries/QueryInfo', '/ws_roxieconfig/NavMenuEvent?Cmd=AddAliases', 'XmlArg')"> </input>
-            <input type="submit" name="Queries.QueryInfo.Edit1" value="Show Graph" disabled="true"
-                 onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/GVCAjaxGraph?Name={QueryName}&quot;))"> </input>
             <input type="submit" name="Queries.QueryInfo.Edit2" value="List Data Files" disabled="true"
                  onclick="return submitSelectedItem('Queries/QueryInfo', unescape(&quot;/ws_roxieconfig/ListFilesUsedByQuery?queryName={QueryName}&amp;excludeSuperFileNames=1&quot;))"> </input>
             <input type="submit" name="Queries.QueryInfo.Edit3" value="List Super Files" disabled="true"

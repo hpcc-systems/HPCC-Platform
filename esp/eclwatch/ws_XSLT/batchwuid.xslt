@@ -442,10 +442,8 @@
                 </xsl:otherwise>
             </xsl:choose>
             <td>
-                <a href="/WsWorkunits/WUGVCGraphInfo?Wuid={$wuid}&amp;Name={Name}&amp;BatchWU=1" onclick="launch(this)">
-                    <xsl:value-of select="Name"/>
-                    <xsl:if test="number(RunningId)"> (<xsl:value-of select="RunningId"/>)</xsl:if>
-                </a>
+                <xsl:value-of select="Name"/>
+                <xsl:if test="number(RunningId)"> (<xsl:value-of select="RunningId"/>)</xsl:if>
             </td>
             <td>
                 <a href="/WsWorkunits/WUGraphInfo?Wuid={$wuid}&amp;Name={Name}&amp;BatchWU=1" onclick="launch(this)">

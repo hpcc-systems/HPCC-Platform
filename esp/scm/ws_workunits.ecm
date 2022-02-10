@@ -34,8 +34,8 @@ ESPservice [
     ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuiddetails.xslt")]     WUInfoDetails(WUInfoRequest, WUInfoResponse);
     ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/wuid.xslt")]     WUGraphTiming(WUGraphTimingRequest, WUGraphTimingResponse);
     ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph.xslt")]         WUGraphInfo(WUGraphInfoRequest, WUGraphInfoResponse);
-    ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/graph_gvc.xslt")]     WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
-    ESPmethod [description("Stub for Ajax GVC Graph."), help(""), resp_xsl_default("/esp/xslt/GvcGraph.xslt")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
+    ESPmethod [cache_seconds(30)]  WUGVCGraphInfo(WUGVCGraphInfoRequest, WUGVCGraphInfoResponse);
+    ESPmethod [cache_seconds(30), description("Stub for Ajax GVC Graph."), help("")] GVCAjaxGraph(GVCAjaxGraphRequest, GVCAjaxGraphResponse);
     ESPmethod [cache_seconds(30), resp_xsl_default("/esp/xslt/result.xslt")]        WUResult(WUResultRequest, WUResultResponse);
     ESPmethod WUFullResult(WUFullResultRequest, WUFullResultResponse);
     ESPmethod [cache_seconds(30)] WUResultView(WUResultViewRequest, WUResultViewResponse);

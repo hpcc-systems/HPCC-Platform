@@ -615,13 +615,6 @@
               
             }
 
-                      function selectSubGraph(GraphName, SubGraphId)
-                      {
-                // Load the Graph page directly.
-                var urlBase = '/WsWorkunits/GVCAjaxGraph?Name=' + wid + '&GraphName=' + GraphName + '&SubGraphId=' + SubGraphId;
-                document.location.href = urlBase;
-                      } 
-
             var updateSuccess = function(o){
                 //o.responseText !== undefined
                 alert('Workunit Updated');

@@ -23,9 +23,6 @@ ENDFOREACH ( iFILES )
 
 FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/BoolResponse.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/GvcGraph.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/RoxieGVCGraph.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/RoxieGraph.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/action.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/addto_superfile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/atts.xslt
@@ -63,8 +60,6 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/fs_renameForm.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/graph.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/graphStats.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/graph_gvc.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/graph_gvc_common.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/graphupdate_gvc.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/html.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/index.xslt
