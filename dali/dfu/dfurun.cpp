@@ -1507,7 +1507,7 @@ public:
                             default:
                                 os = DFD_OSdefault;
                             };
-                            Owned<IFileDescriptor> dstpatchf = createFileDescriptor(lname.str(),grp,NULL,os,patchf->numParts());
+                            Owned<IFileDescriptor> dstpatchf = createFileDescriptor(lname.str(), gname.str(), patchf->numParts());
                             fsys.transfer(patchf, dstpatchf, NULL, NULL, NULL, opttree, &feedback, &abortnotify, dfuwuid);
                             removePartFiles(patchf);
                             Owned<IFileDescriptor> newf = dstFile->getFileDescriptor();

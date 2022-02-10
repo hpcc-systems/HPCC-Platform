@@ -1677,6 +1677,7 @@ public:
 
             bool defaultDirPerPart = false;
             StringBuffer defaultDir;
+            unsigned stripeNum = 0;
 #ifdef _CONTAINERIZED
             if (!dlfn.isExternal())
             {
@@ -1685,12 +1686,14 @@ public:
                 fileDesc.getClusterGroupName(0, planeName);
                 Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
                 defaultDir.append(plane->queryPrefix());
+                unsigned numStripedDevices = plane->numDevices();
+                stripeNum = calcStripeNumber(partNo-1, dlfn.get(), numStripedDevices);
                 FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(fileDesc.queryProperties().getPropInt("@flags"));
                 if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
                     defaultDirPerPart = true;
             }
 #endif
-            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir.str(), defaultDirPerPart);
+            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir.str(), defaultDirPerPart, stripeNum);
         }
         Owned<ILazyFileIO> ret;
         try
@@ -3627,13 +3630,11 @@ private:
         if (!dFile->isExternal())
         {
             Owned<IFileDescriptor> desc = createFileDescriptor();
+            desc->setTraceName(dFile->queryLogicalName());
             desc->setNumParts(1);
 
-            RemoteFilename rfn;
-            dFile->getPartFilename(rfn, 0, 0);
-            StringBuffer physicalName, physicalDir, physicalBase;
-            rfn.getLocalPath(physicalName);
-            splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
+            StringBuffer physicalDir, physicalBase;
+            dFile->getDirAndFilename(physicalDir, physicalBase);
             desc->setDefaultDir(physicalDir.str());
             desc->setPartMask(physicalBase.str());
 

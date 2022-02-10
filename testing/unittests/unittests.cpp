@@ -114,7 +114,13 @@ void loadDlls(IArray &objects, const char * libDirectory)
     }
 }
 
-int main(int argc, char* argv[])
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+unittests:
+  name: unittests
+)!!";
+
+int main(int argc, const char *argv[])
 {
     InitModuleObjects();
 
@@ -127,6 +133,10 @@ int main(int argc, char* argv[])
     bool verbose = false;
     bool list = false;
     bool useDefaultLocations = true;
+
+    //NB: not actually used for now, but required initialization for anything that may call getGlobalConfig*() or getComponentConfig*()
+    Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "unittests", nullptr, nullptr, nullptr, nullptr, false);
+
     for (int argNo = 1; argNo < argc; argNo++)
     {
         const char *arg = argv[argNo];

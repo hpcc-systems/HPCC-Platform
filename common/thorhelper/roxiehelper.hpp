@@ -542,7 +542,7 @@ public:
     ClusterWriteHandler(char const * _logicalName, char const * _activityType);
     void addCluster(char const * cluster);
     void getLocalPhysicalFilename(StringAttr & out) const;
-    void splitPhysicalFilename(StringBuffer & dir, StringBuffer & base) const;
+    void getDirAndFilename(StringBuffer & dir, StringBuffer & filename) const;
     void copyPhysical(IFile * source, bool noCopy) const;
     void setDescriptorParts(IFileDescriptor * desc, char const * basename, IPropertyTree * attrs) const;
     void finish(IFile * file) const;

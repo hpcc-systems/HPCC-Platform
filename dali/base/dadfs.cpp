@@ -4311,12 +4311,19 @@ public:
         newdir.append(baseDir).append(newPath);
         StringBuffer fullname;
         CIArrayOf<CIStringArray> newNames;
+        unsigned existingLfnHash = queryAttributes().getPropInt("@lfnHash");
         unsigned i;
-        for (i=0;i<width;i++) {
+        for (i=0;i<width;i++)
+        {
             newNames.append(*new CIStringArray);
             CDistributedFilePart &part = parts.item(i);
-            for (unsigned copy=0; copy<part.numCopies(); copy++) {
-                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart());
+            for (unsigned copy=0; copy<part.numCopies(); copy++)
+            {
+                unsigned cn = copyClusterNum(i, copy, nullptr);
+                unsigned numStripedDevices = queryPartDiskMapping(cn).numStripedDevices;
+                unsigned stripeNum = calcStripeNumber(i, existingLfnHash, numStripedDevices);
+
+                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum);
                 newPath.remove(0, strlen(myBase));
 
                 StringBuffer copyDir(baseDir);
@@ -4519,11 +4526,8 @@ public:
             root->setProp("@partmask",newmask.str());
             partmask.set(newmask.str());
             directory.set(newdir.str());
-            StringBuffer mask;
-            for (unsigned i=0;i<width;i++) {
-                mask.appendf("Part[%d]/@name",i+1);
+            for (unsigned i=0;i<width;i++)
                 parts.item(i).clearOverrideName();
-            }
             savePartsAttr(false);
         }
         else {
@@ -6951,6 +6955,13 @@ unsigned CDistributedFilePart::copyClusterNum(unsigned copy,unsigned *replicate)
 StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned copy)
 {
     const char *defdir = parent.queryDefaultDir();
+    StringBuffer stripeDir;
+    unsigned cn = copyClusterNum(copy, nullptr);
+    unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
+    unsigned lfnHash = parent.queryRoot()->getPropInt("Attr/@lfnHash");
+    addStripeDirectory(stripeDir, defdir, parent.clusters.item(cn).queryGroupName(), partIndex, lfnHash, numStripedDevices);
+    if (stripeDir.isEmpty())
+        stripeDir.append(defdir);
     StringBuffer dir;
     const char *pn;
     if (overridename.isEmpty())
@@ -6966,11 +6977,11 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
         if (odir.length()) {
             if (isAbsolutePath(pn))
                 dir.append(odir);
-            else if (defdir&&*defdir)
-                addPathSepChar(dir.append(defdir)).append(odir);
+            else if (!stripeDir.isEmpty())
+                addPathSepChar(dir.append(stripeDir)).append(odir);
         }
         else
-            dir.append(defdir);
+            dir.append(stripeDir);
     }
     if (dir.length()==0)
         IERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");

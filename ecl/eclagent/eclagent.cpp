@@ -3238,7 +3238,7 @@ char *EclAgent::getFilePart(const char *lfn, bool create)
         expandLogicalName(full_lfn, lfn);
 
         StringBuffer physical;
-        makePhysicalPartName(full_lfn.str(), 1, 1, physical, 0, DFD_OSdefault, nullptr, false);//MORE: What do we do if local ?
+        makePhysicalPartName(full_lfn.str(), 1, 1, physical, 0, DFD_OSdefault, nullptr, false, 0);//MORE: What do we do if local ?
 
         StringBuffer dir,base;
         splitFilename(physical.str(), &dir, &dir, &base, &base);

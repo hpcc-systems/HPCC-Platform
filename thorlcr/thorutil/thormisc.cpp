@@ -62,6 +62,7 @@ static Owned<IGroup> nodeGroup;    // master + processGroup
 static Owned<IGroup> slaveGroup;   // group containing all channels
 static Owned<IGroup> clusterGroup; // master + slaveGroup
 static Owned<IGroup> dfsGroup;     // same as slaveGroup, but without ports
+static Owned<IGroup> localGroup;   // used as a placeholder in IFileDescriptors for local files (spills)
 static Owned<ICommunicator> nodeComm; // communicator based on nodeGroup (master+slave processes)
 
 
@@ -103,6 +104,7 @@ MODULE_EXIT()
     clusterGroup.clear();
     slaveGroup.clear();
     dfsGroup.clear();
+    localGroup.clear();
     nodeComm.clear();
     ClusterMPAllocator.clear();
 }
@@ -861,6 +863,10 @@ void setupGroups(INode *_masterNode, IGroup *_processGroup, IGroup *_slaveGroup)
         dfsGroupNodes.append(*createINodeIP(nodeIter->query().endpoint(), 0));
     dfsGroup.setown(createIGroup(dfsGroupNodes.ordinality(), dfsGroupNodes.getArray()));
 
+    Owned<INode> localNode = createINode("localhost");
+    INode *p = localNode;
+    localGroup.setown(createIGroup(1, &p));
+
     nodeComm.setown(createCommunicator(nodeGroup));
 }
     
@@ -934,6 +940,7 @@ IGroup &queryProcessGroup() { return *processGroup; }
 IGroup &queryClusterGroup() { return *clusterGroup; }
 IGroup &querySlaveGroup() { return *slaveGroup; }
 IGroup &queryDfsGroup() { return *dfsGroup; }
+IGroup &queryLocalGroup() { return *localGroup; }
 unsigned queryClusterWidth() { return clusterGroup->ordinality()-1; }
 unsigned queryNodeClusterWidth() { return nodeGroup->ordinality()-1; }
 

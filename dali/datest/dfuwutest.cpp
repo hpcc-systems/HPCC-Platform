@@ -435,7 +435,7 @@ IFileDescriptor *createRoxieFileDescriptor(const char *cluster, const char *lfn,
             UERRLOG("dataDirectory not specified");
             return NULL;
         }
-        makePhysicalPartName(lfn,i+1,width,filename,0,DFD_OSdefault,dir,false);
+        makePhysicalPartName(lfn,i+1,width,filename,0,DFD_OSdefault,dir,false,0);
         RemoteFilename rfn;
         rfn.setPath(grp->queryNode(i).endpoint(),filename.str());
         ret->setPart(i,rfn,NULL);
