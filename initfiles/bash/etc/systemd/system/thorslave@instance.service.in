@@ -3,7 +3,7 @@ Description=%i
 After=network.target remote-fs.target @dependencies@
 
 [Service]
-Type=simple
+Type=forking
 User=@RUNTIME_USER@
 Group=@RUNTIME_GROUP@
 PermissionsStartOnly=false
