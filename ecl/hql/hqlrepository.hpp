@@ -101,5 +101,6 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
 extern HQL_API IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx, IEclPackage * optPackage);
 extern HQL_API bool looksLikeGitPackage(const char * urn);
+extern HQL_API bool canReadPackageFrom(const char * urn);
 
 #endif
