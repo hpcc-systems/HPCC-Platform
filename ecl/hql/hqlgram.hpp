@@ -445,8 +445,7 @@ public:
 
     void saveContext(HqlGramCtx & ctx, bool cloneScopes);
     IHqlScope * queryGlobalScope();
-    IHqlScope * queryMacroScope();
-    IAtom * queryGlobalScopeId();
+    IHqlScope * queryMacroScope(IEclPackage * & package);
 
     bool canFollowCurrentState(int tok, const short * yyps);
     int mapToken(int lexToken) const;
@@ -798,6 +797,7 @@ protected:
     IHqlExpression * createAssert(attribute & cond, attribute * msg, attribute & flags);
 
     void defineImport(const attribute & errpos, IHqlExpression * imported, IIdAtom * newName);
+    IHqlExpression * doResolveImportModule(HqlLookupContext & importCtx, const attribute & errpos, IHqlExpression * expr);
     IHqlExpression * resolveImportModule(const attribute & errpos, IHqlExpression * expr);
 
     void setActiveAttrs(int activityToken, const TokenMap * attrs);
@@ -1155,7 +1155,7 @@ class HqlLex
         HqlLex* getParentLex() { return parentLex; }
         void setParentLex(HqlLex* pLex) { parentLex = pLex; }
         const char* getMacroName() { return (macroExpr) ? str(macroExpr->queryName()) : "<param>"; }
-        const char * queryMacroScopeName();
+        const char * queryMacroScopeName(IEclPackage * & package);
 
         IPropertyTree * getClearJavadoc();
         void doSlashSlashHash(attribute const & returnToken, const char * command);
@@ -1316,7 +1316,7 @@ private:
         Owned<IFileContents> forBody;
         Owned<IFileContents> forFilter;
         IAtom * hashDollar = nullptr;
-
+        IEclPackage * hashDollarPackage = nullptr;
 
         enum { HashStmtNone, HashStmtFor, HashStmtForAll, HashStmtLoop, HashStmtIf };
         int lastToken;

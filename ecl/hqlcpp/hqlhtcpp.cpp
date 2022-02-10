@@ -1486,7 +1486,7 @@ void HqlCppTranslator::queryAddResultDependancy(ABoundActivity & whoAmIActivity,
             HqlExprAssociation & cur = iter.get();
             if (cur.represents == attr)
             {
-                ABoundActivity * match = (ABoundActivity *)cur.queryExpr()->queryUnknownExtra();
+                ABoundActivity * match = (ABoundActivity *)cur.queryExpr()->queryUnknownExtra(0);
                 IHqlExpression * whoAmI = whoAmIActivity.queryBound();
                 OwnedHqlExpr dependency = createAttribute(dependencyAtom, LINK(whoAmI), LINK(match->queryBound()));
                 if (!activeGraphCtx->queryMatchExpr(dependency))
@@ -9101,7 +9101,7 @@ void HqlCppTranslator::doBuildStmtSkip(BuildCtx & ctx, IHqlExpression * expr, bo
     BuildCtx subctx(ctx);
     if (match)
     {
-        IHqlCodeCallback * callback = static_cast<IHqlCodeCallback *>(match->queryExpr()->queryUnknownExtra());
+        IHqlCodeCallback * callback = static_cast<IHqlCodeCallback *>(match->queryExpr()->queryUnknownExtra(0));
         if (cond)
             buildFilter(subctx, cond);
         callback->buildCode(*this, subctx);
@@ -15692,7 +15692,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCallSideEffect(BuildCtx & ctx,
     HqlExprAssociation * match = activeGraphCtx->queryMatchExpr(attr);
     if (!match)
         throwUnexpected();
-    ABoundActivity * activity = static_cast<ABoundActivity *>(match->queryExpr()->queryUnknownExtra());
+    ABoundActivity * activity = static_cast<ABoundActivity *>(match->queryExpr()->queryUnknownExtra(0));
     return LINK(activity);
 }
 
@@ -19115,7 +19115,7 @@ void HqlCppTranslator::addFileDependency(IHqlExpression * name, ABoundActivity *
         OwnedHqlExpr search = createAttribute(fileAtom, getNormalizedFilename(name));
         HqlExprAssociation * match = activeGraphCtx->queryMatchExpr(search);
         if (match)
-            addDependency(*activeGraphCtx, ((ABoundActivity *)match->queryExpr()->queryUnknownExtra()), whoAmI, sourceAtom);
+            addDependency(*activeGraphCtx, ((ABoundActivity *)match->queryExpr()->queryUnknownExtra(0)), whoAmI, sourceAtom);
     }
 }
 

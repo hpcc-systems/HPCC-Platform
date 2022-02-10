@@ -1111,6 +1111,7 @@ interface IHqlScope : public IInterface
     virtual bool includeInArchive() const = 0;
     virtual bool isRemoteScope() const = 0;
     virtual const char * queryPackageName() const = 0;
+    virtual IEclPackage * queryPackage() const  = 0;
 
     //IHqlCreateScope
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;
@@ -1188,7 +1189,7 @@ interface IHqlExpression : public IInterface
     virtual bool isIndependentOfScopeIgnoringInputs() = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray & inScope) = 0;
     virtual IValue *queryValue() const = 0;
-    virtual IInterface *queryUnknownExtra() = 0;
+    virtual IInterface *queryUnknownExtra(unsigned idx) = 0;
     virtual unsigned __int64 querySequenceExtra() = 0;              // sequence, but also overloaded with parameter number
 
     virtual IHqlDataset *queryDataset() = 0;
@@ -1375,6 +1376,7 @@ extern HQL_API IHqlExpression *createAttribute(IAtom * name, HqlExprArray & args
 extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
 extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
+extern HQL_API IHqlExpression *createMacro(bool complex, IHqlScope * container, IFileContents * value);
 extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, IAtom * name, IInterface * value);
 extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, IAtom * name, unsigned __int64 value);
 extern HQL_API IHqlExpression *createCompareExpr(node_operator op, IHqlExpression * l, IHqlExpression * r);

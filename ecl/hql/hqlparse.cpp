@@ -507,7 +507,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     }
 
     IHqlExpression *macroBodyExpr = expr->queryChild(0);
-    IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
+    IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra(0));
     if (isMacroActive(expr))
     {
         StringBuffer msg;
@@ -540,6 +540,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->setParentLex(this);
         inmacro->macroParms.setown(macroParms.getClear());
         inmacro->hashDollar = macroBodyExpr->queryBody()->queryName();
+        inmacro->hashDollarPackage = static_cast<IEclPackage *>(macroBodyExpr->queryUnknownExtra(1));
     }
 }
 
@@ -2308,16 +2309,19 @@ void HqlLex::loadXML(const attribute & errpos, const char *name, const char * ch
     }
 }
 
-const char * HqlLex::queryMacroScopeName()
+const char * HqlLex::queryMacroScopeName(IEclPackage * & package)
 {
     if (inmacro)
     {
-        const char * scope = inmacro->queryMacroScopeName();
+        const char * scope = inmacro->queryMacroScopeName(package);
         if (scope)
             return scope;
     }
     if (hashDollar)
+    {
+        package = hashDollarPackage;
         return str(hashDollar);
+    }
     return nullptr;
 }
 
