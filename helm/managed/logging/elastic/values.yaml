@@ -58,7 +58,6 @@ elasticsearch:
                 echo 'Successfully added hpccpipeline !'
               else
                 echo 'Failed to add hpccpipeline.'
-                exit $rc
               fi
             fi
 
@@ -185,5 +184,4 @@ kibana:
               echo Index pattern creation response:  ${httpcode}
             else
               echo Failed to retrieve index pattern information from Kibana: ${httpcode}
-              exit ${httpcode}
             fi
