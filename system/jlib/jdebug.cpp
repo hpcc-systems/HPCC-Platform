@@ -4077,8 +4077,6 @@ public:
     virtual void setMessageFields(unsigned _fields __attribute__((unused)) = MSGFIELD_all) {}
     virtual void addToPTree(IPropertyTree * parent __attribute__((unused))) const {}
     virtual int flush() { return 0; }
-    virtual char const *disable() { return 0; }
-    virtual void enable() {}
     virtual bool getLogName(StringBuffer &name __attribute__((unused))) const { return false; }
     virtual offset_t getLogPosition(StringBuffer &logFileName __attribute__((unused))) const { return 0; };
 

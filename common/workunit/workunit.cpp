@@ -10148,6 +10148,7 @@ EnumMapping queryFileTypes[] = {
    { FileTypeHintXml, "hint" },
    { FileTypeXml, "xml" },
    { FileTypeLog, "log" },
+   { FileTypePostMortem, "postmortem" },
    { FileTypeSize,  NULL },
 };
 

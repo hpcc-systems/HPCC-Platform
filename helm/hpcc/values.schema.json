@@ -449,6 +449,10 @@
           "description": "the name of the storage plane",
           "type": "string"
         },
+        "disabled": {
+          "description": "disable this plane definition",
+          "type": "boolean"
+        },
         "prefix": {
           "description": "either the path for a local mount, or the url prefix",
           "type": "string"
@@ -490,7 +494,7 @@
         "category": {
           "description": "the category this plane is usd for, e.g. lz, data",
           "type": "string",
-          "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git", "remote" ]
+          "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git", "remote", "debug" ]
         },
         "umask" : {
           "description": "file creation mask (used by despray)",

@@ -1107,6 +1107,68 @@ void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
+// PostMortemLogMsgHandler
+
+PostMortemLogMsgHandler::PostMortemLogMsgHandler(const char * _filebase, unsigned _maxLinesToKeep, unsigned _messageFields)
+  : filebase(_filebase), maxLinesToKeep(_maxLinesToKeep), messageFields(_messageFields)
+{
+    openFile();
+}
+
+PostMortemLogMsgHandler::~PostMortemLogMsgHandler()
+{
+    closeAndDeleteEmpty(filename, handle);
+}
+
+void PostMortemLogMsgHandler::handleMessage(const LogMsg & msg)
+{
+    CriticalBlock block(crit);
+    if (handle)
+    {
+        checkRollover();
+        msg.fprintTable(handle, messageFields);
+        if(flushes)
+            fflush(handle);
+        linesInCurrent++;
+    }
+}
+
+void PostMortemLogMsgHandler::addToPTree(IPropertyTree * tree) const
+{
+}
+
+void PostMortemLogMsgHandler::checkRollover()
+{
+    if (linesInCurrent>=maxLinesToKeep)
+    {
+        doRollover();
+    }
+}
+
+void PostMortemLogMsgHandler::doRollover()
+{
+    closeAndDeleteEmpty(filename, handle);
+    handle = 0;
+    if (sequence > 0)
+    {
+        StringBuffer agedName;
+        agedName.append(filebase).append('.').append(sequence-1);
+        remove(agedName);
+    }
+    sequence++;
+    openFile();
+}
+
+void PostMortemLogMsgHandler::openFile()
+{
+    filename.clear().append(filebase).append('.').append(sequence);
+    recursiveCreateDirectoryForFile(filename.str());
+    handle = fopen(filename.str(), "wt");
+    if(!handle)
+        handle = getNullHandle();   // If we can't write where we expected, write to /dev/null instead
+    linesInCurrent = 0;
+}
+
 // RollingFileLogMsgHandler
 #define MIN_LOGFILE_SIZE_LIMIT 10000
 #define LOG_LINE_SIZE_ESTIMATE 80
@@ -1131,24 +1193,6 @@ RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const
 RollingFileLogMsgHandler::~RollingFileLogMsgHandler()
 {
     closeAndDeleteEmpty(filename,handle);
-}
-
-char const * RollingFileLogMsgHandler::disable()
-{
-    crit.enter();
-    fclose(handle);
-    return filename;
-}
-
-void RollingFileLogMsgHandler::enable()
-{
-    recursiveCreateDirectoryForFile(filename);
-    handle = fopen(filename, "a");
-    if(!handle) {
-        handle = getNullHandle();
-        assertex(!"RollingFileLogMsgHandler::enable : could not open file for output");
-    }
-    crit.leave();
 }
 
 void RollingFileLogMsgHandler::addToPTree(IPropertyTree * tree) const
@@ -1300,24 +1344,6 @@ void BinLogMsgHandler::addToPTree(IPropertyTree * tree) const
     handlerTree->setProp("@filename", filename.get());
     if(append) handlerTree->setProp("@append", "true");
     tree->addPropTree("handler", handlerTree);
-}
-
-char const * BinLogMsgHandler::disable()
-{
-    crit.enter();
-    fstr.clear();
-    fio.clear();
-    return filename.get();
-}
-
-void BinLogMsgHandler::enable()
-{
-    fio.setown(file->open(IFOwrite));
-    if(!fio) assertex(!"BinLogMsgHandler::enable : Could not create IFileIO");
-    fstr.setown(createIOStream(fio));
-    if(!fstr) assertex(!"BinLogMsgHandler::enable : Could not create IFileIOStream");
-    fstr->seek(0, IFSend);
-    crit.leave();
 }
 
 // LogMsgComponentReporter
@@ -2414,6 +2440,11 @@ ILogMsgHandler * getBinLogMsgHandler(const char * filename, bool append)
     return new BinLogMsgHandler(filename, append);
 }
 
+ILogMsgHandler * getPostMortemLogMsgHandler(const char * filebase, unsigned maxLinesToKeep, unsigned messageFields)
+{
+    return new PostMortemLogMsgHandler(filebase, maxLinesToKeep, messageFields);
+}
+
 void installLogMsgFilterSwitch(ILogMsgHandler * handler, ILogMsgFilter * switchFilter, ILogMsgFilter * newFilter)
 {
     queryLogMsgManager()->changeMonitorFilterOwn(handler, getSwitchLogMsgFilterOwn(switchFilter, newFilter, queryLogMsgManager()->getMonitorFilter(handler)));
@@ -2616,8 +2647,6 @@ MODULE_EXIT()
     thePassAllFilter = nullptr;
 }
 
-#ifdef _CONTAINERIZED
-
 static constexpr const char * logFieldsAtt = "@fields";
 static constexpr const char * logMsgDetailAtt = "@detail";
 static constexpr const char * logMsgAudiencesAtt = "@audiences";
@@ -2625,8 +2654,9 @@ static constexpr const char * logMsgClassesAtt = "@classes";
 static constexpr const char * useLogQueueAtt = "@useLogQueue";
 static constexpr const char * logQueueLenAtt = "@queueLen";
 static constexpr const char * logQueueDropAtt = "@queueDrop";
-static constexpr const char * logQueueDisabledAtt = "@disabled";
+static constexpr const char * logDisabledAtt = "@disabled";
 static constexpr const char * useSysLogpAtt ="@enableSysLog";
+static constexpr const char * capturePostMortemAtt ="@postMortem";
 
 #ifdef _DEBUG
 static constexpr bool useQueueDefault = false;
@@ -2643,7 +2673,7 @@ void setupContainerizedLogMsgHandler()
     Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig)
     {
-        if (logConfig->getPropBool(logQueueDisabledAtt, false))
+        if (logConfig->getPropBool(logDisabledAtt, false))
         {
             removeLog();
             return;
@@ -2688,9 +2718,15 @@ void setupContainerizedLogMsgHandler()
 
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
             UseSysLogForOperatorMessages();
+
+        unsigned postMortemLines = logConfig->getPropInt(capturePostMortemAtt, 0);
+        if (postMortemLines)
+        {
+            ILogMsgHandler *fileMsgHandler = getPostMortemLogMsgHandler("/tmp/postmortem.log", postMortemLines, MSGFIELD_STANDARD);
+            queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+        }
     }
 }
-#endif
 
 ILogMsgManager * queryLogMsgManager()
 {

@@ -129,6 +129,12 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+if [[ "${CMD}" = "upgrade" ]]; then
+  if [[ $(helm list -q -f $CLUSTERNAME) != $CLUSTERNAME ]]; then
+    echo "Requested installation for upgrade does not exist - assuming install"
+    CMD="install"
+  fi
+fi
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
 [[ -z ${LABEL} ]] && LABEL=$(docker image ls | fgrep "${DOCKER_REPO}/platform-core" | head -n 1 | awk '{print $2}')
 
