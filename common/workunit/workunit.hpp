@@ -1193,6 +1193,7 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual bool isProtected() const = 0;
     virtual cost_type getExecuteCost() const = 0;
     virtual cost_type getFileAccessCost() const = 0;
+    virtual cost_type getCompileCost() const = 0;
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
 
     virtual unsigned getTotalThorTime() const = 0;
@@ -1304,6 +1305,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
     virtual cost_type getExecuteCost() const = 0;
     virtual cost_type getFileAccessCost() const = 0;
+    virtual cost_type getCompileCost() const = 0;
 };
 
 

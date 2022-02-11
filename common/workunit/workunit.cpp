@@ -3662,6 +3662,7 @@ public:
 
         costExecute = p.getPropInt64("@costExecute");
         costFileAccess = p.getPropInt64("@costFileAccess");
+        costCompile = p.getPropInt64("@costCompile");
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3678,6 +3679,7 @@ public:
     virtual bool isProtected() const { return _isProtected; }
     virtual cost_type getExecuteCost() const { return costExecute; }
     virtual cost_type getFileAccessCost() const { return costFileAccess; }
+    virtual cost_type getCompileCost() const { return costCompile; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -3698,6 +3700,7 @@ protected:
     bool _isProtected;
     unsigned __int64 costExecute;
     unsigned __int64 costFileAccess;
+    unsigned __int64 costCompile;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -4353,6 +4356,8 @@ public:
             { return c->getExecuteCost(); }
     virtual cost_type getFileAccessCost() const
             { return c->getFileAccessCost(); }
+    virtual cost_type getCompileCost() const
+            { return c->getCompileCost(); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -8669,6 +8674,8 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else if (kind == StCostFileAccess)
             p->setPropInt64("@costFileAccess", value);
     }
+    if (kind == StCostCompile)
+        p->setPropInt64("@costCompile", value);
 }
 
 void CLocalWorkUnit::_loadStatistics() const
@@ -12328,6 +12335,12 @@ cost_type CLocalWorkUnit::getFileAccessCost() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("@costFileAccess");
+}
+
+cost_type CLocalWorkUnit::getCompileCost() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("@costCompile");
 }
 
 #if 0

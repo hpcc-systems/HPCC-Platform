@@ -308,6 +308,7 @@ public:
     virtual unsigned __int64 getAbortTimeStamp() const;
     virtual cost_type getExecuteCost() const;
     virtual cost_type getFileAccessCost() const;
+    virtual cost_type getCompileCost() const;
     void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();
