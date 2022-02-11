@@ -562,7 +562,7 @@ void CMasterActivity::updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCol
                 stat_type numDiskReads = subFileStats[i]->getStatisticSum(StNumDiskReads);
                 StringBuffer clusterName;
                 file->getClusterName(0, clusterName);
-                diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, 0, numDiskReads));
+                diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
                 file->addAttrValue("@numDiskReads", numDiskReads);
             }
         }
@@ -575,7 +575,7 @@ void CMasterActivity::updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCol
             stat_type numDiskReads = statsCollection.getStatisticSum(StNumDiskReads);
             StringBuffer clusterName;
             file->getClusterName(0, clusterName);
-            diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, 0, numDiskReads));
+            diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
             file->addAttrValue("@numDiskReads", numDiskReads);
         }
     }
@@ -589,7 +589,7 @@ void CMasterActivity::updateFileWriteCostStats(IFileDescriptor & fileDesc, IProp
         assertex(fileDesc.numClusters()>=1);
         StringBuffer clusterName;
         fileDesc.getClusterGroupName(0, clusterName);// Note: calculating for 1st cluster. (Future: calc for >1 clusters)
-        diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, numDiskWrites, 0));
+        diskAccessCost = money2cost_type(calcFileAccessCost(clusterName, numDiskWrites, 0));
     }
 }
 

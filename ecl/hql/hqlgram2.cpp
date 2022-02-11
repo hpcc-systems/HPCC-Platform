@@ -450,23 +450,20 @@ IHqlScope * HqlGram::queryGlobalScope()
     return globalScope;
 }
 
-IHqlScope * HqlGram::queryMacroScope()
+IHqlScope * HqlGram::queryMacroScope(IEclPackage * & package)
 {
-    const char * scopeName = lexObject->queryMacroScopeName();
+    const char * scopeName = lexObject->queryMacroScopeName(package);
     if (scopeName)
     {
-        OwnedHqlExpr matched = getResolveAttributeFullPath(scopeName, LSFpublic, lookupCtx, nullptr);
+        assertex(package);
+        HqlLookupContext macroCtx(lookupCtx);
+        macroCtx.rootPackage = package;
+        OwnedHqlExpr matched = getResolveAttributeFullPath(scopeName, LSFpublic, macroCtx, nullptr);
         if (matched && matched->queryScope())
             return matched->queryScope();
     }
 
     return globalScope;
-}
-
-IAtom * HqlGram::queryGlobalScopeId()
-{
-    const char * globalName = globalScope->queryFullName();
-    return createAtom(globalName);
 }
 
 void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
@@ -11054,19 +11051,22 @@ inline bool isRootModule(IHqlExpression * expr)
     return expr->isAttribute() && (expr->queryName() == _root_Atom);
 }
 
-IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpression * expr)
+IHqlExpression * HqlGram::doResolveImportModule(HqlLookupContext & importCtx, const attribute & errpos, IHqlExpression * expr)
 {
     if (isDollarModule(expr))
         return LINK(queryExpression(globalScope));
     if (isHashDollarModule(expr))
-        return LINK(queryExpression(queryMacroScope()));
+    {
+        //NOTE: This also updates importCtx.rootPackage so relative references are resolved within the correct package
+        return LINK(queryExpression(queryMacroScope(importCtx.rootPackage)));
+    }
     if (isRootModule(expr))
-        return LINK(queryExpression(lookupCtx.queryPackage()->queryRootScope()));
+        return LINK(queryExpression(importCtx.queryPackage()->queryRootScope()));
 
     IAtom * name = expr->queryName();
     if ((name != _dot_Atom) && (name != _container_Atom))
     {
-        if (!lookupCtx.queryPackage())
+        if (!importCtx.queryPackage())
         {
             //This never happens in practice since a null repository is generally passed.
             reportError(ERR_MODULE_UNKNOWN, "Import not supported with no repository specified",  
@@ -11077,14 +11077,14 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         }
 
         IIdAtom * id = expr->queryId();
-        IHqlScope * rootScope = lookupCtx.queryPackage()->queryRootScope();
-        OwnedHqlExpr importMatch = rootScope->lookupSymbol(id, LSFimport, lookupCtx);
+        IHqlScope * rootScope = importCtx.queryPackage()->queryRootScope();
+        OwnedHqlExpr importMatch = rootScope->lookupSymbol(id, LSFimport, importCtx);
         if (!importMatch)
             importMatch.setown(lookupParseSymbol(id));
 
         if (!importMatch || !importMatch->queryScope())
         {
-            if (lookupCtx.queryParseContext().ignoreUnknownImport)
+            if (importCtx.queryParseContext().ignoreUnknownImport)
                 return NULL;
 
             StringBuffer msg;
@@ -11102,7 +11102,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         return importMatch.getClear();
     }
 
-    OwnedHqlExpr parent = resolveImportModule(errpos, expr->queryChild(0));
+    OwnedHqlExpr parent = doResolveImportModule(importCtx, errpos, expr->queryChild(0));
     if (!parent)
         return NULL;
 
@@ -11115,7 +11115,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         //scope as the parent, rather than the merged scope...
         if (containerName)
         {
-            OwnedHqlExpr matched = getResolveAttributeFullPath(containerName, LSFpublic, lookupCtx, nullptr);
+            OwnedHqlExpr matched = getResolveAttributeFullPath(containerName, LSFpublic, importCtx, nullptr);
             if (matched)
                 return matched.getClear();
         }
@@ -11123,7 +11123,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         {
             //A null parent must be because it is within the global scope, or is the global scope
             if (parentName)
-                return LINK(lookupCtx.queryPackage()->queryRootScope()->queryExpression());
+                return LINK(importCtx.queryPackage()->queryRootScope()->queryExpression());
         }
 
         if (parentName)
@@ -11134,7 +11134,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     }
 
     IIdAtom * childId = expr->queryChild(1)->queryId();
-    OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childId, LSFpublic, lookupCtx);
+    OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childId, LSFpublic, importCtx);
     if (!resolved)
     {
         if (!parentName)
@@ -11149,6 +11149,13 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         return NULL;
     }
     return resolved.getClear();
+}
+
+IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpression * expr)
+{
+    //Create a local lookup context, because any modules resolved within $# need to be resolved within the macro's package
+    HqlLookupContext importCtx(lookupCtx);
+    return doResolveImportModule(importCtx, errpos, expr);
 }
 
 void HqlGram::processImportAll(attribute & modulesAttr)

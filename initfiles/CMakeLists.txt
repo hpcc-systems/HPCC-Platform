@@ -14,8 +14,9 @@
 #    limitations under the License.
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8)
-PROJECT(initfiles)
+PROJECT(initfiles
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 if ( PLATFORM AND UNIX )
     HPCC_ADD_EXECUTABLE(processor processor.cpp)
@@ -38,7 +39,12 @@ if ( PLATFORM AND UNIX )
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/bash-vars.in" "${CMAKE_BINARY_DIR}/bash-vars")
     set(bash-vars "${CMAKE_BINARY_DIR}/bash-vars")
 
-    if ( NOT CONTAINERIZED )
+    if ( CONTAINERIZED )
+      install ( FILES bin/.gdbinit DESTINATION ${EXEC_DIR} COMPONENT Runtime )
+      install ( FILES bin/post-mortem-gdb DESTINATION ${EXEC_DIR} COMPONENT Runtime )
+      install ( FILES lib/libjlib.so-gdb.py DESTINATION ${LIB_DIR} COMPONENT Runtime )
+      install ( PROGRAMS bin/check_executes DESTINATION ${EXEC_DIR} COMPONENT Runtime )
+    else ()
       ADD_SUBDIRECTORY(etc)
       ADD_SUBDIRECTORY(bash)
       ADD_SUBDIRECTORY(bin)

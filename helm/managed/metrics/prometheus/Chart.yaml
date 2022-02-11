@@ -5,10 +5,10 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 0.0.1
+version: 0.0.2
 
 # Prometheus version
-appVersion: 0.50.0
+appVersion: 0.53.1
 
 # Dependencies can be automatically updated via HELM dependancy update command:
 # > 'helm dependency update' command
@@ -18,5 +18,5 @@ appVersion: 0.50.0
 # Official Prometheus repository https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md
 dependencies:
 - name: kube-prometheus-stack
-  version: 18.1.0
+  version: 30.2.0
   repository: https://prometheus-community.github.io/helm-charts

@@ -644,8 +644,6 @@ interface jlib_decl ILogMsgHandler : public IInterface
     virtual void              setMessageFields(unsigned _fields = MSGFIELD_all) = 0;
     virtual void              addToPTree(IPropertyTree * parent) const = 0;
     virtual int               flush() { return 0; }
-    virtual char const *      disable() { return 0; }
-    virtual void              enable() {}
     virtual bool              getLogName(StringBuffer &name) const = 0;
     virtual offset_t          getLogPosition(StringBuffer &logFileName) const = 0;
 };
@@ -820,6 +818,7 @@ extern jlib_decl ILogMsgHandler * getHandleLogMsgHandler(FILE * handle = stderr,
 extern jlib_decl ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, bool writeXML = true, bool append = false, bool flushes = true);
 extern jlib_decl ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields = MSGFIELD_all, bool append = false, bool flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false, long maxLogSize = 0);
 extern jlib_decl ILogMsgHandler * getBinLogMsgHandler(const char * filename, bool append = false);
+extern jlib_decl ILogMsgHandler * getPostMortemLogMsgHandler(const char * filebase, unsigned maxLinesToKeep, unsigned _messageFields=MSGFIELD_all);
 
 // Function to install switch filter into a monitor, switch some messages to new filter whilst leaving rest to previous filter
 

@@ -184,7 +184,15 @@ bool WsDFUHelpers::addToLogicalFileList(IPropertyTree& file, const char* nodeGro
                 lFile->setAccessed(accessed.replace('T', ' '));
         }
         if (version >= 1.61)
-            lFile->setCost(file.getPropReal(getDFUQResultFieldName(DFUQRFcost)));
+        {
+            if (version < 1.62)
+                lFile->setCost(file.getPropReal(getDFUQResultFieldName(DFUQRFcost)));
+            else
+            {
+                lFile->setAtRestCost(file.getPropReal(getDFUQResultFieldName(DFUQRFatRestCost)));
+                lFile->setAccessCost(file.getPropReal(getDFUQResultFieldName(DFUQRFaccessCost)));
+            }
+        }
 
         logicalFiles.append(*lFile.getClear());
     }

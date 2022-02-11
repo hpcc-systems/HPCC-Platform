@@ -69,7 +69,7 @@
 
         <listitem>
           <para>Verify that they are stopped. You can use a single command,
-          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh status</programlisting></para>
         </listitem>
 
         <listitem>

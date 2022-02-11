@@ -2655,7 +2655,18 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         }
     }
     if (version >= 1.60)
-        FileDetails.setCost(df->getCost(cluster));
+    {
+        double atRestCost, accessCost;
+        df->getCost(cluster, atRestCost, accessCost);
+
+        if (version <= 1.61)
+            FileDetails.setCost(atRestCost+accessCost);
+        else
+        {
+            FileDetails.setAccessCost(atRestCost);
+            FileDetails.setAtRestCost(accessCost);
+        }
+    }
     PROGLOG("doGetFileDetails: %s done", name);
 }
 

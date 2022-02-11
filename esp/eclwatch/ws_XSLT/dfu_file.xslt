@@ -461,9 +461,7 @@
          <xsl:attribute name="class">grey</xsl:attribute>
             <xsl:variable name="item"><xsl:value-of select="."/></xsl:variable>
             <td>
-        <a href="/WsWorkunits/GVCAjaxGraph?Name={$wuid}&amp;GraphName={$item}" >
-                    <xsl:value-of select="."/>
-                </a>
+                <xsl:value-of select="."/>
             </td>
         <td>
             </td>

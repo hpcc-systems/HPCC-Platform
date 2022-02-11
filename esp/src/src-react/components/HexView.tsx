@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Checkbox, ICheckboxStyles, ISpinButtonStyles, Label, SpinButton } from "@fluentui/react";
-import { Topology, Workunit } from "@hpcc-js/comms";
-import { TextSourceEditor } from "./SourceEditor";
-import nlsHPCC from "src/nlsHPCC";
 import { scopedLogger } from "@hpcc-js/util";
+import { Workunit } from "@hpcc-js/comms";
+import nlsHPCC from "src/nlsHPCC";
+import { useLogicalClusters } from "../hooks/platform";
+import { TextSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("src-react/components/HexView.tsx");
 
@@ -34,7 +35,6 @@ export const HexView: React.FunctionComponent<HexViewProps> = ({
     const [cachedResponse, setCachedResponse] = React.useState<any[]>([]);
     const [lineLength, setLineLength] = React.useState("16");
     const [showEbcdic, setShowEbcdic] = React.useState(false);
-    const [queryTarget, setQueryTarget] = React.useState("");
 
     const onLineLengthChange = React.useCallback((event: React.FormEvent<HTMLInputElement>, newValue?: string) => {
         if (newValue !== undefined) {
@@ -61,16 +61,11 @@ analysis_dataset := project(data_dataset, calcAnalysis(left));
 choosen(analysis_dataset, ${bufferLength});`;
     }, [logicalFile]);
 
-    React.useEffect(() => {
-        const topology = Topology.attach({ baseUrl: "" });
-        topology.fetchLogicalClusters().then(response => {
-            setQueryTarget(response.filter(row => row.Type === "hthor")[0]?.Name || "");
-        }).catch(err => logger.error(err));
-    }, []);
+    const [, defaultCluster] = useLogicalClusters();
 
     React.useEffect(() => {
-        if (queryTarget == "") return;
-        Workunit.submit({ baseUrl: "" }, queryTarget, query).then(wu => {
+        if (!defaultCluster?.Name) return;
+        Workunit.submit({ baseUrl: "" }, defaultCluster?.Name, query).then(wu => {
             wu.on("changed", function () {
                 if (!wu.isComplete()) {
                     setText("..." + wu.State + "...");
@@ -78,7 +73,9 @@ choosen(analysis_dataset, ${bufferLength});`;
             });
             return wu.watchUntilComplete();
         }).then(function (wu) {
-            return wu.fetchECLExceptions().then(function () { return wu; });
+            return wu.fetchECLExceptions()
+                .then(() => wu)
+                .catch(err => wu);
         }).then(function (wu) {
             const exceptions = wu.Exceptions && wu.Exceptions.ECLException ? wu.Exceptions.ECLException : [];
             if (exceptions.length) {
@@ -108,7 +105,7 @@ choosen(analysis_dataset, ${bufferLength});`;
         }).then(function (wu) {
             return wu.delete();
         });
-    }, [query, queryTarget]);
+    }, [defaultCluster?.Name, query]);
 
     React.useEffect(() => {
         const formatRow = (row, strRow, hexRow, length) => {
@@ -167,7 +164,7 @@ choosen(analysis_dataset, ${bufferLength});`;
             <Label>{nlsHPCC.Width}</Label>
             <SpinButton value={lineLength.toString()} min={1} onChange={onLineLengthChange} styles={spinStyles} />
             <Label>{nlsHPCC.EBCDIC}</Label>
-            <Checkbox onChange={() => setShowEbcdic(!showEbcdic)} styles={checkboxStyles} />
+            <Checkbox onChange={(ev, checked) => setShowEbcdic(checked)} styles={checkboxStyles} />
         </div>
         <TextSourceEditor text={text} readonly={true} />
     </>;

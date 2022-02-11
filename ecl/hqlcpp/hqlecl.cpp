@@ -175,18 +175,18 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
-    virtual void addLibrary(const char * name);
-    virtual bool processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget _generateTarget);
-    virtual bool generateDll(ICppCompiler * compiler);
-    virtual bool generateExe(ICppCompiler * compiler);
-    virtual bool generatePackage(const char * packageName);
-    virtual void setMaxCompileThreads(unsigned value) { defaultMaxCompileThreads = value; }
-    virtual void addManifest(const char *filename) { code->addManifest(filename, ctxCallback); }
-    virtual void addManifestsFromArchive(IPropertyTree *archive) { code->addManifestsFromArchive(archive, ctxCallback); }
-    virtual void addWebServiceInfo(IPropertyTree *wsinfo){ code->addWebServiceInfo(wsinfo); }
+    virtual void addLibrary(const char * name) override;
+    virtual bool processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget _generateTarget) override;
+    virtual bool generateDll(ICppCompiler * compiler) override;
+    virtual bool generateExe(ICppCompiler * compiler) override;
+    virtual bool generatePackage(const char * packageName) override;
+    virtual void setMaxCompileThreads(unsigned value) override { defaultMaxCompileThreads = value; }
+    virtual void addManifest(const char *filename) override { code->addManifest(filename, ctxCallback); }
+    virtual void addManifestsFromArchive(IPropertyTree *archive) override { code->addManifestsFromArchive(archive, ctxCallback); }
+    virtual void addWebServiceInfo(IPropertyTree *wsinfo) override { code->addWebServiceInfo(wsinfo); }
+    virtual void setSaveGeneratedFiles(bool value) override { deleteGenerated = !value; }
 
-    virtual double getECLcomplexity(IHqlExpression * exprs);
-    virtual void setSaveGeneratedFiles(bool value) { deleteGenerated = !value; }
+    double getECLcomplexity(IHqlExpression * exprs);
 
 protected:
     void addCppName(const char * filename, unsigned minActivity, unsigned maxActivity);

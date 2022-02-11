@@ -107,6 +107,21 @@ static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, String
 }
 
 
+//A (very) temporary solution - to prevent other dependencies from node projects from causing problems
+//the correct fix HPCC-27173, to delay processing the package until actually used.
+bool canReadPackageFrom(const char * urn)
+{
+    if (queryExtractFilename(urn))
+        return true;
+    if (looksLikeGitPackage(urn))
+        return true;
+    if (!isalnum(*urn))
+        return false;
+    if (endsWith(urn, ".tgz"))
+        return false;
+    return true;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 static void extractRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope, HqlLookupContext & ctx)
@@ -664,37 +679,36 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
                 throw makeStringExceptionV(99, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
 
             // Really the version should be a SHA, but for flexibility version could be a sha, a tag or a branch (on origin).
-            // Check for a sha/tag and map it to a version.  If that does not work see if it is a branch.
-            VStringBuffer params("rev-parse --short %s", version.str());
+            // Check for a remote branch first - because it appears that when git clones a repo, it creates a local branch for
+            // remote head.  That never gets updated, and if it matches the branch being resolved it causes problems.
+
+            // Check for a remote branch "origin/<version>"
+            VStringBuffer params("rev-parse --short origin/%s", version.str());
             StringBuffer sha;
             unsigned retCode = runGitCommand(&sha, params, repoPath, false);
-            if (retCode == 0)
+            if (retCode != 0)
             {
-                if (requireSHA)
-                {
-                    //Either version or sha could be longer, but leading characters should match
-                    //should --short=8 be used?
-                    //if (!strncmp(sha, version, 7) != 0)
-                    //    throw makeStringExceptionV(99, "Expected a SHA as the git version for dependency '%s'.", defaultUrl);
-                    //Revisit in HPCC-26423
-                }
-                version.set(sha);
-            }
-            else
-            {
-                if (requireSHA)
-                    throw makeStringExceptionV(99, "Expected a SHA as the git version for dependency '%s'.", defaultUrl);
-
-                //Check for a branch origin/<version>
-                params.clear().appendf("rev-parse --short origin/%s", version.str());
+                //Check for a tag (or local sha)
+                params.clear().appendf("rev-parse --short %s", version.str());
                 unsigned retCode = runGitCommand(&sha.clear(), params, repoPath, false);
-                if (retCode == 0)
-                    version.set(sha);
+                if (retCode != 0)
+                    sha.clear();
             }
-            //Strip any trailing newlines and spaces.
-            version.clip();
 
-            path.append(repoPath).appendf("/.git/{%s}", version.str());
+            //Strip any trailing newlines and spaces.
+            sha.clip();
+
+            if (sha.isEmpty())
+                throw makeStringExceptionV(99, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
+
+            if (requireSHA)
+            {
+                //If version was a valid sha then the version should match it (one should match the leading characters of the other)
+                if (!(hasPrefix(sha, version, false) || hasPrefix(version, sha, false)))
+                    throw makeStringExceptionV(99, "Expected a SHA as the git version for dependency '%s'.", defaultUrl);
+            }
+
+            path.append(repoPath).appendf("/.git/{%s}", sha.str());
             filename = path;
         }
     }

@@ -193,11 +193,9 @@ background-position:center;
       var leftcfg;
       var start_page;
 
-function getURLParameter(name)
+function getURLInnerParameter()
 {
-    name = name.replace(/[[]/,"\[").replace(/[]]/,"\]");
-    var regexS = "[\?&]"+name+"=([^&#]*)";
-    var regex = new RegExp( regexS );
+    var regex = new RegExp( "[?&]inner=([^&#]*)" );
     var results = regex.exec( window.location.href );
     if( results == null )
         return "";
@@ -254,7 +252,7 @@ function writeESPappname(appname)
 
         layout.render();
 
-        var inner  = getURLParameter("inner");
+        var inner  = getURLInnerParameter();
         if (inner!="")
             gomain(inner);
 
@@ -817,7 +815,7 @@ var navunit_callback = {
     var appname = xroot.getAttribute("appName");
     viewtype = xroot.getAttribute("viewType");
     
-    var inner  = getURLParameter("inner");
+    var inner  = getURLInnerParameter();
     if (inner!="")
         start_page = inner;
     else

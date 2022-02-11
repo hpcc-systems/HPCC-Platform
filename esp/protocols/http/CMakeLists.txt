@@ -71,7 +71,9 @@ include_directories(
     )
 
 add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN -DTXSUMMARY_EXPORTS)
-
+if(USE_OPENLDAP)
+    add_definitions(-D_USE_OPENLDAP)
+endif()
 HPCC_ADD_LIBRARY(esphttp SHARED ${SRCS})
 add_dependencies(esphttp  espscm)
 install(TARGETS esphttp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR})

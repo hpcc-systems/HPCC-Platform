@@ -21,6 +21,11 @@ planes:
   size: 1Gi
   rwmany: true
   category: sasha
+- name: debug
+  subPath: debug
+  size: 5Gi
+  rwmany: true
+  category: debug
 - name: data
   subPath: hpcc-data # cannot currently be changed
   size: 3Gi

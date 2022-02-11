@@ -1,0 +1,16 @@
+# These commands will be executed by gdb to extract post-mortem debug information from a corefile
+# These commands define what information is gathered
+
+set print object 1
+info registers
+info threads
+info shared
+echo
+echo =========== Full thread info =====================
+echo
+thread apply all stack-info 20 5
+echo
+echo =========== Global variables =====================
+echo
+all-globals
+

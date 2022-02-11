@@ -359,10 +359,11 @@ enum WUFileType
     FileTypeHintXml = 3,
     FileTypeXml = 4,
     FileTypeLog = 5,
-    FileTypeSize = 6
+    FileTypePostMortem = 6,
+    FileTypeSize = 7
 };
 
-
+extern WORKUNIT_API EnumMapping queryFileTypes[];
 
 
 interface IConstWUAssociatedFile : extends IInterface

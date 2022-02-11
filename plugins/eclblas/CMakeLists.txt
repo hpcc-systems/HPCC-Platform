@@ -56,7 +56,7 @@ if(USE_CBLAS)
         eclrtl
         ${CBLAS_LIBRARIES})
 else()
-    message(WARNING "Not building eclblas library for standard library due to lacking libcblas")
+    message(AUTHOR_WARNING "Not building eclblas library for standard library due to lacking libcblas")
 endif(USE_CBLAS)
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)

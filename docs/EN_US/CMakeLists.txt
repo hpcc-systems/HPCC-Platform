@@ -27,8 +27,9 @@
 #
 
 
-cmake_minimum_required(VERSION 2.8)
-PROJECT(docs_en_us)
+PROJECT(docs
+  VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
+)
 
 #define_property(GLOBAL PROPERTY DOC_TARGETS BRIEF_DOCS "docs_en_us" FULL_DOCS "docs_en_us")
 #mark_as_advanced(DOC_TARGETS)

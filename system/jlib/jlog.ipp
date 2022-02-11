@@ -541,6 +541,36 @@ private:
     bool                      prepped;
 };
 
+class PostMortemLogMsgHandler : public CInterfaceOf<ILogMsgHandler>
+{
+public:
+    PostMortemLogMsgHandler(const char * _filebase, unsigned _maxLinesToKeep, unsigned _messageFields=MSGFIELD_all);
+    virtual ~PostMortemLogMsgHandler();
+    virtual void handleMessage(const LogMsg & msg) override;
+    virtual bool needsPrep() const override { return false; }
+    virtual void prep() override {}
+    virtual unsigned queryMessageFields() const override { return messageFields; }
+    virtual void setMessageFields(unsigned _fields) override { messageFields = _fields; }
+    virtual void addToPTree(IPropertyTree * tree) const override;
+    virtual int flush() override { CriticalBlock block(crit); return fflush(handle); }
+    virtual bool getLogName(StringBuffer &name) const override { CriticalBlock block(crit); name.append(filename); return true; }
+    virtual offset_t getLogPosition(StringBuffer &name) const override { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
+protected:
+    void checkRollover();
+    void doRollover();
+    void openFile();
+protected:
+    mutable FILE *handle = nullptr;
+    StringAttr filebase;
+    mutable StringBuffer filename;
+    mutable CriticalSection crit;
+    const unsigned maxLinesToKeep = 0;
+    unsigned messageFields = MSGFIELD_all;
+    unsigned linesInCurrent = 0;
+    unsigned sequence = 0;
+    const bool flushes = true;
+};
+
 class RollingFileLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
@@ -570,8 +600,6 @@ public:
     void                      setMessageFields(unsigned _fields) { messageFields = _fields; }
     void                      addToPTree(IPropertyTree * tree) const;
     int                       flush() { CriticalBlock block(crit); return fflush(handle); }
-    char const *              disable();
-    void                      enable();
     bool                      getLogName(StringBuffer &name) const { CriticalBlock block(crit); name.append(filename); return true; }
     offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
 protected:
@@ -610,8 +638,6 @@ public:
     unsigned                  queryMessageFields() const { return MSGFIELD_all; }
     void                      setMessageFields(unsigned _fields) {}
     int                       flush() { return 0; }
-    char const *              disable();
-    void                      enable();
     bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
     offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); name.append(filename); return fstr->tell(); }
 protected:
@@ -638,8 +664,6 @@ public:
     unsigned                  queryMessageFields() const { return fields; }
     void                      setMessageFields(unsigned _fields) { fields = _fields; }
     int                       flush() { return 0; }
-    char const *              disable() { return "Audit"; }
-    void                      enable() {}
     bool                      getLogName(StringBuffer &name) const { return false; }
     offset_t                  getLogPosition(StringBuffer &logFileName) const { return 0; }
 protected:

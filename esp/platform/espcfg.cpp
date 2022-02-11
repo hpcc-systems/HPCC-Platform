@@ -360,6 +360,11 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
                         ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
                     }
                 }
+                catch (IException* e)
+                {
+                    e->Release();
+                    ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());
+                }
                 catch (...)
                 {
                     ESPLOG(LogMin, "Could not load DALI Attach state file [%s] for ESP process [%s]", m_daliAttachStateFileName.str(), m_process.str());

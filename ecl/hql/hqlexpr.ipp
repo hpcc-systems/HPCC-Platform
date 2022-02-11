@@ -289,7 +289,7 @@ public:
 
     virtual IHqlExpression *queryBody(bool singleLevel = false) override { return this; }
     virtual IValue *queryValue() const override { return NULL; }
-    virtual IInterface *queryUnknownExtra() override { return NULL; }
+    virtual IInterface *queryUnknownExtra(unsigned idx) override { return NULL; }
     virtual unsigned __int64 querySequenceExtra() override { return 0; }
 
     virtual StringBuffer &toString(StringBuffer &ret) override;
@@ -664,7 +664,7 @@ public:
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) override;
     virtual void gatherTablesUsed(HqlExprCopyArray & inScope) override;
     virtual IValue *queryValue() const override;
-    virtual IInterface *queryUnknownExtra() override;
+    virtual IInterface *queryUnknownExtra(unsigned idx) override;
     virtual unsigned __int64 querySequenceExtra() override;
     virtual IHqlDataset *queryDataset() override;
     virtual IHqlScope *queryScope() override;
@@ -1167,6 +1167,7 @@ public:
     virtual bool includeInArchive() const override { return false; }
     virtual bool isRemoteScope() const override { return false; }
     virtual const char * queryPackageName() const override { return nullptr; }
+    virtual IEclPackage * queryPackage() const override { return nullptr; }
 
     using CHqlDelayedCall::clone;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
@@ -1233,6 +1234,7 @@ public:
     virtual bool isContainerScope() const override { return false; }
     virtual bool isRemoteScope() const override { return false; }
     virtual const char * queryPackageName() const override { return nullptr; }
+    virtual IEclPackage * queryPackage() const override { return nullptr; }
 
     virtual void    getSymbols(HqlExprArray& exprs) const override;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
@@ -1336,6 +1338,7 @@ public:
     virtual IEclSource * queryEclSource() const override { return eclSource; }
     virtual bool isRemoteScope() const override { return true; }
     virtual const char * queryPackageName() const override { throwUnexpected(); }
+    virtual IEclPackage * queryPackage() const override { return nullptr; }
 };
 
 class HQL_API CHqlLocalScope : public CHqlScope
@@ -1412,6 +1415,7 @@ public:
     virtual IHqlScope * queryConcreteScope() override { return this; }
     virtual bool isRemoteScope() const override;
     virtual const char * queryPackageName() const override;
+    virtual IEclPackage * queryPackage() const override { return rootRepository; }
 
 protected:
     CriticalSection cs;
@@ -1652,6 +1656,7 @@ public:
     virtual bool includeInArchive() const override { return false; }
     virtual bool isRemoteScope() const override { return false; }
     virtual const char * queryPackageName() const override { return nullptr; }
+    virtual IEclPackage * queryPackage() const override { return nullptr; }
 
 //IHqlCreateScope
     virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) override { throwUnexpected(); }
@@ -1714,10 +1719,28 @@ protected:
 public:
     static CHqlUnknown *makeUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra);
     virtual IAtom * queryName() const override { return name; }
-    virtual IInterface *queryUnknownExtra() override;
+    virtual IInterface *queryUnknownExtra(unsigned idx) override;
     virtual StringBuffer &toString(StringBuffer &ret) override;
     virtual IHqlExpression *clone(HqlExprArray &newkids) override;
 };
+
+class CHqlMacro : public CHqlExpressionWithType
+{
+protected:
+    //Cannot have a pointer to the containing scope because that will cause a circular reference.
+    Linked<IEclPackage> package;
+    IAtom * name;
+    Owned<IFileContents> contents;
+    CHqlMacro(node_operator _op, ITypeInfo * _type, IEclPackage * _package, IAtom * _name, IFileContents * _contents);
+    virtual bool equals(const IHqlExpression & other) const override;
+    virtual void sethash() override;
+public:
+    static CHqlMacro *makeMacro(node_operator _op, ITypeInfo * _type, IEclPackage * _package, IAtom * _name, IFileContents * _contents);
+    virtual IAtom * queryName() const override { return name; }
+    virtual IInterface *queryUnknownExtra(unsigned idx) override;
+    virtual StringBuffer &toString(StringBuffer &ret) override;
+    virtual IHqlExpression *clone(HqlExprArray &newkids) override;
+    };
 
 class CHqlSequence : public CHqlExpressionWithType
 {

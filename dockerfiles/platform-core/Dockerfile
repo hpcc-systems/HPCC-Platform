@@ -56,6 +56,7 @@ RUN if [ ${USE_CPPUNIT} -eq 1 ] ; then apt-get install -y libcppunit-1.15-0 ; fi
 
 RUN apt-get install -y \
     dnsutils \
+    gdb \
     nano 
 
 # Set the locale
@@ -80,6 +81,7 @@ RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
 USER hpcc
+RUN cp /opt/HPCCSystems/bin/.gdbinit ~/.gdbinit
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 WORKDIR /var/lib/HPCCSystems

@@ -35,6 +35,7 @@ ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 
 USER hpcc
+RUN cp /opt/HPCCSystems/bin/.gdbinit ~/.gdbinit
 WORKDIR /var/lib/HPCCSystems
 ARG BUILD_TAG_OVERRIDE
 ENV HPCC_BUILD_TAG=${BUILD_TAG_OVERRIDE}

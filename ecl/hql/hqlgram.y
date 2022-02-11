@@ -1059,8 +1059,7 @@ badObject
 macro
     : MACRO             {
                             Owned<IFileContents> contents = $1.getContents();
-                            IAtom * globalId = parser->queryGlobalScopeId();
-                            IHqlExpression* expr = createUnknown(no_macro, makeBoolType(), globalId, LINK(contents));
+                            IHqlExpression* expr = createMacro(false, parser->queryGlobalScope(), contents);
 #if defined(TRACE_MACRO)
                             DBGLOG("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
 #endif
@@ -1075,8 +1074,7 @@ macro
     | COMPLEX_MACRO     {
                             Owned<IFileContents> contents = $1.getContents();
 
-                            IAtom * globalId = parser->queryGlobalScopeId();
-                            IHqlExpression* expr = createUnknown(no_macro, makeVoidType(), globalId, LINK(contents));
+                            IHqlExpression* expr = createMacro(true, parser->queryGlobalScope(), contents);
 
 #if defined(TRACE_MACRO)
                             DBGLOG("MACRO>> verify: macro definition at %d:%d\n",yylval.startLine, yylval.startColumn);
@@ -7369,7 +7367,8 @@ abstractModule
                         }
     | HASH_DOLLAR
                         {
-                            IHqlExpression * scopeExpr = queryExpression(parser->queryMacroScope());
+                            IEclPackage * package = nullptr;
+                            IHqlExpression * scopeExpr = queryExpression(parser->queryMacroScope(package));
                             $$.setExpr(LINK(scopeExpr), $1);
                         }
     | VALUE_MACRO abstractModule ENDMACRO

@@ -48,40 +48,40 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
         fetch(`/WsEcl/definitions/query/${querySet}/${queryId}/main/${queryId}.wsdl`)
             .then(response => response.text())
             .then(content => setWsdl(content))
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
 
         fetch(`/WsEcl/definitions/query/${querySet}/${queryId}/main/${queryId}.xsd`)
             .then(response => response.text())
             .then(content => setRequestSchema(content))
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
 
         const requests = resultNames.map(name => {
             const url = `/WsEcl/definitions/query/${querySet}/${queryId}/result/${name}.xsd`;
             return fetch(url)
                 .then(response => response.text())
-                .catch(err => logger.error);
+                .catch(err => logger.error(err));
         });
         Promise.all(requests)
             .then(schemas => {
                 logger.debug(schemas);
                 setResponseSchemas(schemas);
             })
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
 
         fetch(`/WsEcl/example/request/query/${querySet}/${queryId}`)
             .then(response => response.text())
             .then(content => setExampleRequest(content))
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
 
         fetch(`/WsEcl/example/response/query/${querySet}/${queryId}`)
             .then(response => response.text())
             .then(content => setExampleResponse(content))
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
 
         fetch(`/WsEcl/definitions/query/${querySet}/${queryId}/resource/soap/${queryId}.xml`)
             .then(response => response.text())
             .then(content => setParameterXml(content))
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
 
         setFormUrl(`/WsEcl/forms/ecl/query/${querySet}/${queryId}`);
         setLinksUrl(`/WsEcl/links/query/${querySet}/${queryId}`);
@@ -92,7 +92,7 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
             .then(({ WUQueryDetailsResponse }) => {
                 setWuid(WUQueryDetailsResponse.Wuid);
             })
-            .catch(err => logger.error);
+            .catch(err => logger.error(err));
     }, [query]);
 
     React.useEffect(() => {

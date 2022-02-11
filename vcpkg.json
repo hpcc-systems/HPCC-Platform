@@ -1,0 +1,21 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "hpcc-platform",
+    "version": "8.6.0",
+    "dependencies": [
+        "icu",
+        "zlib",
+        "openssl",
+        "libxml2",
+        {
+            "name": "libxslt",
+            "default-features": false,
+            "features": []
+        },
+        "boost-property-tree",
+        {
+            "name": "winflexbison",
+            "platform": "windows"
+        }
+    ]
+}

@@ -25,6 +25,7 @@
 #include "hqlexpr.hpp"
 #include "hqlerrors.hpp"
 
+#include "hqlrepository.hpp"        // MORE: Temporary until HPCC-27173 is implemented
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif
@@ -568,12 +569,18 @@ void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const 
             name = decodedName;
         }
 
+        if (!isValidIdentifier(name))
+            continue;
+
         //Ignore the entry if it has already been defined (node_modules has precedence over package-lock.json over package.json)
         IIdAtom * id = createIdAtom(name);
         if (find(id))
             continue;
 
         const char * url = isPackageLock ? cur.queryProp("resolved") : cur.queryProp(nullptr);
+        if (!canReadPackageFrom(url))
+            continue;
+
         PackageDependency * depend = new PackageDependency(id, url, onlyAllowSHA);
         contents.append(*depend);
     }

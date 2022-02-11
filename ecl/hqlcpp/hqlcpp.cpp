@@ -1868,6 +1868,9 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.generateDiskFormats, "generateDiskFormats", false),
         DebugOption(options.maxOptimizeSize, "maxOptimizeSize", 5),             // Remove the overhead from very small functions e.g. function prolog
         DebugOption(options.minNoOptimizeSize, "minNoOptimizeSize", 10000),     // functions larger than this will take a long time to optimize, better to not try
+        DebugOption(options.generateIR, "generateIR", false),
+        DebugOption(options.generateIRAfterTransform, "generateIRAfterTransform", false),
+        DebugOption(options.irOptions, "irOptions", EclIR::TIRexpandSimpleTypes),
     };
 
     //get options values from workunit
@@ -3281,7 +3284,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, log10Id, options.divideByZeroAction);
         return;
     case no_power:
-        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        doBuildExprPow(ctx, expr, tgt);
         return;
     case no_fail:
         doBuildStmtFail(ctx, expr);
@@ -7484,6 +7487,66 @@ void HqlCppTranslator::doBuildAssignExecuteWhen(BuildCtx & ctx, const CHqlBoundT
     {
         buildExprAssign(ctx, target, value);
         buildStmt(ctx, action);
+    }
+}
+
+void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    assertex(expr->numChildren() == 2);
+
+    IHqlExpression * right = expr->queryChild(1);
+
+    bool notIntegerPower = !right->queryType()->isInteger();
+    if (notIntegerPower)
+    {
+        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        return;
+    }
+
+    IValue * value = right->queryValue();
+    bool notConstant = (value == nullptr);
+    if (notConstant) 
+    {
+        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        return;
+    }
+
+    __int64 rightIntVal = value->getIntValue();
+    __int64 absExp = abs(rightIntVal);
+
+    const unsigned int MAX_EXP_INLINE_VALUE = 3;
+    if (absExp > MAX_EXP_INLINE_VALUE)
+    {
+        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        return;
+    }
+
+    IHqlExpression * left = expr->queryChild(0);
+    if (rightIntVal == 0)
+    {
+        tgt.expr.setown(createConstant(expr->queryType()->castFrom(1.0)));
+    }
+    else
+    {
+        OwnedITypeInfo realType = makeRealType(DEFAULT_REAL_SIZE);
+        OwnedHqlExpr castLeft = ensureExprType(left, realType);
+
+        CHqlBoundExpr leftBound;
+        buildSimpleExpr(ctx, castLeft, leftBound);
+
+        tgt.set(leftBound);
+        for (int i = 1; i < absExp; i++)
+        {
+            tgt.expr.setown(createValue(no_mul, LINK(realType), tgt.expr.getClear(), LINK(leftBound.expr)));
+        }
+
+        if (rightIntVal < 0)
+        {
+            OwnedHqlExpr numerator = createConstant(realType->castFrom(1.0));
+            OwnedHqlExpr eclDivisor = tgt.getTranslatedExpr();
+            OwnedHqlExpr divide = createValue(no_div, LINK(realType), numerator.getClear(), LINK(eclDivisor));
+            buildExpr(ctx, divide, tgt);
+        }
     }
 }
 

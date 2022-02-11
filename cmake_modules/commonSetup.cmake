@@ -37,13 +37,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     and the file ${CMAKE_BINARY_DIR}/CMakeCache.txt,
     then create a separate build directory and run 'cmake path_to_source [options]' there.")
 
-  cmake_policy ( SET CMP0011 NEW )
-  if (NOT (CMAKE_MAJOR_VERSION LESS 3))
-    cmake_policy ( SET CMP0026 OLD )
-    if (NOT (CMAKE_MINOR_VERSION LESS 1))
-      cmake_policy ( SET CMP0054 NEW )
-    endif()
-  endif()
   option(CONTAINERIZED "Build for container images." OFF)
   option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
   option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
@@ -133,6 +126,18 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(INCLUDE_TREEVIEW "Build legacy treeview" OFF)
   option(INCLUDE_CONFIG_MANAGER "Build config manager" ON)
   option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
+  option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
+if (WIN32)
+  option(USE_JWT "Enable JSON Web Tokens" OFF)
+else ()
+  option(USE_JWT "Enable JSON Web Tokens" ON)
+endif ()
+#########################################################
+
+  if (VCPKG_APPLOCAL_DEPS)
+    include(${HPCC_SOURCE_DIR}/cmake_modules/vcpkgSetup.cmake)
+  endif ()
+
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
 
      MACRO(SET_PLUGIN_PACKAGE plugin)
@@ -669,7 +674,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ###########################################################################
 
     if(USE_OPTIONAL)
-        message(WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
+        message(AUTHOR_WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
     endif()
 
     if(NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
@@ -677,12 +682,37 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endif()
 
     IF ( NOT MAKE_DOCS_ONLY )
+      # On macOS, search Homebrew for keg-only versions of Bison and Flex. Xcode does
+      # not provide new enough versions for us to use.
+      if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+        execute_process(
+            COMMAND brew --prefix bison
+            RESULT_VARIABLE BREW_BISON
+            OUTPUT_VARIABLE BREW_BISON_PREFIX
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (BREW_BISON EQUAL 0 AND EXISTS "${BREW_BISON_PREFIX}")
+            message(STATUS "Found Bison keg installed by Homebrew at ${BREW_BISON_PREFIX}")
+            set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
+        endif()
+
+        execute_process(
+            COMMAND brew --prefix flex
+            RESULT_VARIABLE BREW_FLEX
+            OUTPUT_VARIABLE BREW_FLEX_PREFIX
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if (BREW_FLEX EQUAL 0 AND EXISTS "${BREW_FLEX_PREFIX}")
+          message(STATUS "Found Flex keg installed by Homebrew at ${BREW_FLEX_PREFIX}")
+          set(FLEX_EXECUTABLE "${BREW_FLEX_PREFIX}/bin/flex")
+        endif ()
+      endif ()
       FIND_PACKAGE(BISON)
       FIND_PACKAGE(FLEX)
       IF ( BISON_FOUND AND FLEX_FOUND )
         SET(BISON_exename ${BISON_EXECUTABLE})
         SET(FLEX_exename ${FLEX_EXECUTABLE})
-        IF (WIN32)
+        IF (WIN32 OR APPLE)
           SET(bisoncmd ${BISON_exename})
           SET(flexcmd ${FLEX_exename})
         ELSE()
@@ -835,7 +865,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       ENDIF(CONTAINERIZED)
 
       IF (USE_ICU)
-        find_package(ICU)
+        find_package(ICU COMPONENTS data i18n io tu uc)
         IF (ICU_FOUND)
           add_definitions (-D_USE_ICU)
           IF (NOT WIN32)
@@ -857,7 +887,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       endif(USE_XALAN)
 
       if(USE_LIBXSLT)
-        find_package(LIBXSLT)
+        find_package(LibXslt)
         if (LIBXSLT_FOUND)
           add_definitions (-D_USE_LIBXSLT)
         else()
@@ -875,7 +905,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       endif(USE_XERCES)
 
       if(USE_LIBXML2)
-        find_package(LIBXML2)
+        find_package(LibXml2)
         if (LIBXML2_FOUND)
           add_definitions (-D_USE_LIBXML2)
         else()
@@ -958,7 +988,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       endif(USE_BOOST_REGEX)
 
       if(USE_OPENSSL)
-        find_package(OPENSSL)
+        find_package(OpenSSL)
         if (OPENSSL_FOUND)
           add_definitions (-D_USE_OPENSSL)
           include_directories(${OPENSSL_INCLUDE_DIR})
@@ -1050,6 +1080,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
   ENDMACRO()
 
+  macro(print_all_variables)
+      message(STATUS "print_all_variables------------------------------------------{")
+      get_cmake_property(_variableNames VARIABLES)
+      foreach (_variableName ${_variableNames})
+          message(STATUS "${_variableName}=${${_variableName}}")
+      endforeach()
+      message(STATUS "print_all_variables------------------------------------------}")
+  endmacro()
+
   function(LIST_TO_STRING separator outvar)
     set ( tmp_str "" )
     list (LENGTH ARGN list_length)
@@ -1137,4 +1176,5 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       add_dependencies(${module_without_extension}-ecl export-stdlib-pubkey)
     endif()
   ENDMACRO()
+
 endif ("${COMMONSETUP_DONE}" STREQUAL "")
