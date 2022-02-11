@@ -1,0 +1,44 @@
+authNZ:
+   testauth:
+      name: testauth
+      type: testauth
+      LibName: libtestauthSecurity.so
+      # Define which authorization resources to be tested.
+      # As default, the authorization resources defined in
+      # ldap_authorization_map.yaml are tested.
+      resources: ldap
+      useraccess:
+      -  username: testadmin
+         #secretkey: testauthusercreds1     # optional
+         #vaultkey: testauthuservaultcreds1 # optional
+         defaults:
+            filescope: FULL
+            eclwuscope: FULL
+            resource: FULL
+      -  username: testuser
+         #secretkey: testauthusercreds2     # optional
+         #vaultkey: testauthuservaultcreds2 # optional
+         defaults:
+            filescope: NONE
+            eclwuscope: NONE
+            resource: NONE
+         filescopes: # what kinds of file scopes should be given to testuser?
+            "testuser": FULL
+            "thor::thor1": READ #TODO: remove
+            "thor::thor3": NONE #TODO: remove
+         eclwuscopes: # what kinds of eclwu scopes should be given to testuser?
+            "testuser": FULL
+         resources:  # what kinds of resource permissions should be given to testuser?
+            WsSMC:
+               Features:
+                  SmcAccess: FULL
+                  ThorQueueAccess: FULL
+                  MachineInfoAccess: FULL
+                  ClusterTopologyAccess: FULL
+            WsWorkunits:
+               Features:
+                  OwnWorkunitsAccess: FULL
+                  OthersWorkunitsAccess: FULL
+            WsTopology:
+               Features:
+                  ClusterTopologyAccess: FULL

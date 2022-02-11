@@ -138,7 +138,8 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
     if (isEmptyString(tag))
         throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set 'auth: none'");
 
-    legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString("<AuthDomains><AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default' invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png' logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240' unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/></AuthDomains>"));
+    if (!strieq(name, "testauth"))
+        legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString("<AuthDomains><AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default' invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png' logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240' unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/></AuthDomains>"));
 
     IPropertyTree *legacy = legacyEsp->addPropTree("SecurityManagers");
     legacy = legacy->addPropTree("SecurityManager");
@@ -166,11 +167,19 @@ bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &
     return addAuthNZSecurity(auth, legacyEsp, appEsp, bindAuth);
 }
 
+IPropertyTree *queryTestAuthResources(IPropertyTree *appEsp)
+{
+    const char *resources = appEsp->queryProp("authNZ/testauth/@resources");
+    return appEsp->queryPropTree(isEmptyString(resources) ? "testauth" : resources);
+}
+
 void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, const char *service, const char *auth)
 {
     IPropertyTree *appAuth = nullptr;
     if (isEmptyString(auth) || streq(auth, "ldap") || streq(auth, "azure_ldap"))
         appAuth = app->queryPropTree("ldap");
+    else if (streq(auth, "testauth"))
+        appAuth = queryTestAuthResources(app);
     else if (streq(auth, "none"))
         return;
     else

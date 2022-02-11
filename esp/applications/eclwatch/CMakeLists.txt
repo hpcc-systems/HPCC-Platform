@@ -20,6 +20,7 @@ set ( ESP_APPLICATION_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/ldap_authorization_map.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/htpasswd_authorization_map.yaml
+    ${CMAKE_CURRENT_SOURCE_DIR}/testauth_authorization_map.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/plugins.yaml
 )
 

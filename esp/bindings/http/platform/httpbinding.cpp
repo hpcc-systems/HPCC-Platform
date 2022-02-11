@@ -198,6 +198,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 if (secMgrCfg)
                 {
                     //This is a Pluggable Security Manager
+                    addServiceType(tree, procname, bnd_cfg);
                     m_secmgr.setown(SecLoader::loadPluggableSecManager<ISecManager>(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
@@ -328,6 +329,21 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     }
 
     setABoolHash(proc_cfg->queryProp("@urlAlias"), serverAlias);
+}
+
+void EspHttpBinding::addServiceType(IPropertyTree* tree, const char* procName, IPropertyTree* bndCfg)
+{
+    const char* srvName = bndCfg->queryProp("@service");
+    if (isEmptyString(srvName))
+        return;
+
+    Owned<IPropertyTree> srvCfg = getServiceConfig(tree, srvName, procName);
+    if (!srvCfg)
+        return;
+
+    const char* srvType = srvCfg->queryProp("@type");
+    if (!isEmptyString(srvType))
+        bndCfg->addProp("@serviceType", srvType);
 }
 
 static int compareLength(char const * const *l, char const * const *r) { return strlen(*l) - strlen(*r); }

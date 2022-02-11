@@ -176,6 +176,7 @@ private:
     std::set<sub_service>   unrestrictedSSTypes;
 
     void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
+    void addServiceType(IPropertyTree* tree, const char* procName, IPropertyTree* bndCfg);
 
 protected:
     MethodInfoArray m_methods;
