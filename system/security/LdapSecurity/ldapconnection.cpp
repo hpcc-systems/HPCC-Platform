@@ -266,7 +266,6 @@ private:
     StringBuffer         m_filescope_basedn;
     StringBuffer         m_view_basedn;
     StringBuffer         m_workunitscope_basedn;
-    StringBuffer         m_sudoers_basedn;
     StringBuffer         m_template_name;
 
     StringBuffer         m_sysuser;
@@ -555,12 +554,6 @@ public:
             throw MakeStringException(-1, "One of the following basedns need to be defined: modulesBasedn, resourcesBasedn, filesBasedn or workunitScopesBasedn.");
         }
 
-        dnbuf.clear();
-        cfg->getProp(".//@sudoersBasedn", dnbuf);
-        if(dnbuf.length() == 0)
-            dnbuf.append("ou=SUDOers");
-        LdapUtils::normalizeDn(dnbuf.str(), m_basedn.str(), m_sudoers_basedn);
-
         cfg->getProp(".//@templateName", m_template_name);
         cfg->getProp(".//@authMethod", m_authmethod);
         cfg->getProp(".//@ldapDomain", m_domain);
@@ -738,8 +731,6 @@ public:
             return m_view_basedn.str();
         else if(rtype == RT_WORKUNIT_SCOPE)
             return m_workunitscope_basedn.str();
-        else if(rtype == RT_SUDOERS)
-            return m_sudoers_basedn.str();
         else
             return m_resource_basedn.str();
     }
@@ -1640,7 +1631,6 @@ public:
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_ADMINISTRATORS_ONLY);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_DEFAULT);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY);
 
             createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
             createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
@@ -2203,69 +2193,6 @@ public:
             return false;
         }
         
-        if(infotype && stricmp(infotype, "sudoers") == 0)
-        {
-            CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
-            if (ldapuser == nullptr)
-            {
-                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
-            }
-
-            TIMEVAL timeOut = {m_ldapconfig->getLdapTimeout(),0};
-            Owned<ILdapConnection> lconn = m_connections->getConnection();
-            LDAP* ld = lconn.get()->getLd();
-
-            StringBuffer filter("sudoUser=");
-            filter.append(username);
-            char  *attrs[] = {"sudoHost", "sudoCommand", "sudoOption", NULL};
-            const char* basedn = m_ldapconfig->getResourceBasedn(RT_SUDOERS);
-            CLDAPMessage searchResult;
-            int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
-
-            if ( rc != LDAP_SUCCESS )
-            {
-                DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basedn);
-                ldapuser->setSudoersEnabled(false);
-                ldapuser->setInSudoers(false);
-                return false;
-            }
-            
-            ldapuser->setSudoersEnabled(true);
-
-            unsigned entries = ldap_count_entries(ld, searchResult);
-            if(entries == 0)
-            {
-                ldapuser->setInSudoers(false);
-                return true;
-            }
-
-            message = LdapFirstEntry(ld, searchResult);
-            if(message == NULL)
-            {
-                ldapuser->setInSudoers(false);
-                return true;
-            }
-
-            ldapuser->setInSudoers(true);
-            CLDAPGetAttributesWrapper   atts(ld, searchResult);
-            for ( attribute = atts.getFirst();
-                  attribute != NULL;
-                  attribute = atts.getNext())
-            {
-                CLDAPGetValuesLenWrapper vals(ld, message, attribute);
-                if (vals.hasValues())
-                {
-                    if(stricmp(attribute, "sudoHost") == 0)
-                        ldapuser->setSudoHost(vals.queryCharValue(0));
-                    else if(stricmp(attribute, "sudoCommand") == 0)
-                        ldapuser->setSudoCommand(vals.queryCharValue(0));
-                    else if(stricmp(attribute, "sudoOption") == 0)
-                        ldapuser->setSudoOption(vals.queryCharValue(0));
-                }
-            }
-            return true;
-        }
-        else
         {
             StringBuffer filter;
             const char* basedn = m_ldapconfig->getUserBasedn();
@@ -3228,168 +3155,6 @@ public:
                 attrs[ind] = NULL;
 
                 rc = ldap_modify_ext_s(ld, (char*)userdn.str(), attrs, NULL, NULL);
-            }
-        }
-        else if(stricmp(type, "sudoersadd") == 0)
-        {
-            CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
-            if (ldapuser == nullptr)
-            {
-                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
-            }
-
-            char *cn_values[] = {(char*)username, NULL };
-            LDAPMod cn_attr =
-            {
-                LDAP_MOD_ADD,
-                "cn",
-                cn_values
-            };
-
-            char *oc_values[] = {"sudoRole", NULL };
-            LDAPMod oc_attr =
-            {
-                LDAP_MOD_ADD,
-                "objectClass",
-                oc_values
-            };
-
-            char *user_values[] = {(char*)username, NULL };
-            LDAPMod user_attr =
-            {
-                LDAP_MOD_ADD,
-                "sudoUser",
-                user_values
-            };
-
-            char* sudoHost = (char*)ldapuser->getSudoHost();
-            char* sudoCommand = (char*)ldapuser->getSudoCommand();
-            char* sudoOption = (char*)ldapuser->getSudoOption();
-
-            char *host_values[] = {sudoHost, NULL };
-            LDAPMod host_attr = 
-            {
-                LDAP_MOD_ADD,
-                "sudoHost",
-                host_values
-            };
-            char *cmd_values[] = {sudoCommand, NULL };
-            LDAPMod cmd_attr = 
-            {
-                LDAP_MOD_ADD,
-                "sudoCommand",
-                cmd_values
-            };
-            char *option_values[] = {sudoOption, NULL };
-            LDAPMod option_attr = 
-            {
-                LDAP_MOD_ADD,
-                "sudoOption",
-                option_values
-            };
-
-            LDAPMod *attrs[8];
-            int ind = 0;
-            
-            attrs[ind++] = &cn_attr;
-            attrs[ind++] = &oc_attr;
-            attrs[ind++] = &user_attr;
-            if(sudoHost && *sudoHost)
-                attrs[ind++] = &host_attr;
-            if(sudoCommand && *sudoCommand)
-                attrs[ind++] = &cmd_attr;
-            if(sudoOption && *sudoOption)
-                attrs[ind++] = &option_attr;
-
-            attrs[ind] = NULL;
-
-            Owned<ILdapConnection> lconn = m_connections->getConnection();
-            LDAP* ld = lconn.get()->getLd();
-            StringBuffer dn;
-            dn.append("cn=").append(username).append(",").append(m_ldapconfig->getResourceBasedn(RT_SUDOERS));
-            int rc = ldap_add_ext_s(ld, (char*)dn.str(), attrs, NULL, NULL);
-            if ( rc != LDAP_SUCCESS )
-            {
-                if(rc == LDAP_ALREADY_EXISTS)
-                {
-                    throw MakeStringException(-1, "can't add %s to sudoers, an LDAP object with this name already exists", username);
-                }
-                else
-                {
-                    DBGLOG("error adding %s to sudoers: %s", username, ldap_err2string( rc ));
-                    throw MakeStringException(-1, "error adding %s to sudoers: %s", username, ldap_err2string( rc ));
-                }
-            }
-        }
-        else if(stricmp(type, "sudoersdelete") == 0)
-        {
-            StringBuffer dn;
-            dn.append("cn=").append(username).append(",").append(m_ldapconfig->getResourceBasedn(RT_SUDOERS));
-
-            Owned<ILdapConnection> lconn = m_connections->getConnection();
-            LDAP* ld = lconn.get()->getLd();
-
-            int rc = ldap_delete_ext_s(ld, (char*)dn.str(), NULL, NULL);
-
-            if ( rc != LDAP_SUCCESS )
-            {
-                throw MakeStringException(-1, "Error deleting user %s from sudoers: %s", username, ldap_err2string(rc));
-            }
-        }
-        else if(stricmp(type, "sudoersupdate") == 0)
-        {
-            CLdapSecUser* ldapuser = dynamic_cast<CLdapSecUser*>(&user);
-            if (ldapuser == nullptr)
-            {
-                throw MakeStringException(-1, "Unable to cast user %s to CLdapSecUser", username);
-            }
-
-            char* sudoHost = (char*)ldapuser->getSudoHost();
-            char* sudoCommand = (char*)ldapuser->getSudoCommand();
-            char* sudoOption = (char*)ldapuser->getSudoOption();
-
-            char *host_values[] = {(sudoHost&&*sudoHost)?sudoHost:NULL, NULL };
-            LDAPMod host_attr =
-            {
-                LDAP_MOD_REPLACE,
-                "sudoHost",
-                host_values
-            };
-
-            char *cmd_values[] = {(sudoCommand&&*sudoCommand)?sudoCommand:NULL, NULL };
-            LDAPMod cmd_attr =
-            {
-                LDAP_MOD_REPLACE,
-                "sudoCommand",
-                cmd_values
-            };
-
-            char *option_values[] = {(sudoOption&&*sudoOption)?sudoOption:NULL, NULL };
-            LDAPMod option_attr =
-            {
-                LDAP_MOD_REPLACE,
-                "sudoOption",
-                option_values
-            };
-
-            LDAPMod *attrs[4];
-            int ind = 0;
-
-            attrs[ind++] = &host_attr;
-            attrs[ind++] = &cmd_attr;
-            attrs[ind++] = &option_attr;
-
-            attrs[ind] = NULL;
-
-            Owned<ILdapConnection> lconn = m_connections->getConnection();
-            LDAP* ld = lconn.get()->getLd();
-            StringBuffer dn;
-            dn.append("cn=").append(username).append(",").append(m_ldapconfig->getResourceBasedn(RT_SUDOERS));
-            int rc = ldap_modify_ext_s(ld, (char*)dn.str(), attrs, NULL, NULL);
-            if ( rc != LDAP_SUCCESS )
-            {
-                DBGLOG("error modifying sudoers for user %s: %s", username, ldap_err2string( rc ));
-                throw MakeStringException(-1, "error modifying sudoers for user %s: %s", username, ldap_err2string( rc ));
             }
         }
 

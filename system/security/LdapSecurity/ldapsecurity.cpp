@@ -41,8 +41,6 @@ CLdapSecUser::CLdapSecUser(const char *name, const char *pw) :
     setName(name);
     setUserID(0);
     setPosixenabled(false);
-    setSudoersEnabled(false);
-    setInSudoers(false);
     setSessionToken(0);
     setSignature(nullptr);
 }

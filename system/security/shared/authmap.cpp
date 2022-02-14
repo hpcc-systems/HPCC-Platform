@@ -195,7 +195,6 @@ const char* resTypeDesc(SecResourceType type)
     case RT_SERVICE: return "Service";
     case RT_FILE_SCOPE: return "FileScope";
     case RT_WORKUNIT_SCOPE: return "Workunit_Scope";
-    case RT_SUDOERS: return "Sudoers";
     case RT_TRIAL: return "Trial";
     case RT_VIEW_SCOPE: return "View";
     default: return "<unknown>";

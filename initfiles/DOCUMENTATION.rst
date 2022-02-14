@@ -37,7 +37,7 @@ Most install procedures are handled in install-init directly, but install-init a
 sub-installs using install files that are placed in /opt/HPCCSystems/etc/init.d/install/
 
 The final steps of the install are to set permissions correctly for the hpcc user, along with
-calling add_conf_settings.sh to add the sudoers and limits.conf changes.
+calling add_conf_settings.sh to add the limits.conf changes.
 
 Init uninstall
 ==============
@@ -55,7 +55,7 @@ Directory structure of initfiles
  - processor.cpp - simple application used at build time to search and replace ###<REPLACE>### in bash scripts
 
  - sbin/ - Directory containing administration based scripts
-  - add_conf_settings.sh.in - used to add sudoers and limits.conf settings on package install
+  - add_conf_settings.sh.in - used to add limits.conf settings on package install
   - alter_confs.sh - contains functions used by add_conf_settings.sh.in and rm_conf_settings.sh.in
   - complete-uninstall.sh.in - script to remove package and all directories from platform
   - configmgr.in - configmgr start script
@@ -68,7 +68,7 @@ Directory structure of initfiles
   - prerm.in - script run pre-remove of the installed DEB or RPM
   - regex.awk.in.cmake - regex awk code used by configmgr
   - remote-install-engine.sh.in - payload install script used by install-cluster.sh
-  - rm_conf_settings.sh.in - remove sudoers and limits.conf settings on package uninstall
+  - rm_conf_settings.sh.in - remove limits.conf settings on package uninstall
 
  - etc/
   - bash_completion/ - contains bash completion scripts used by the bash shell

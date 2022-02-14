@@ -158,8 +158,6 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/access_resourceaddinput.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_resourcedelete.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_resources.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/access_sudoers.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/access_sudoersinput.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_useraction.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_useredit.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_usergroupedit.xslt

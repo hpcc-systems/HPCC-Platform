@@ -220,8 +220,6 @@
             <xsl:if test="../../posixok=1">
             <xsl:text disable-output-escaping="yes"> </xsl:text>
             <a href="javascript:go('/ws_access/UserPosixInput?username={username}')">Posix</a>
-            <xsl:text disable-output-escaping="yes"> </xsl:text>
-            <a href="javascript:go('/ws_access/UserSudoersInput?username={username}')">Sudoers</a>
             </xsl:if>
         </td>
         </tr>

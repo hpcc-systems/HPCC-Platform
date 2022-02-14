@@ -13,7 +13,6 @@ ldap:
   sharedCache: true
   filesBasedn: ou=files,ou=ecl
   groupsBasedn: ou=groups,ou=ecl
-  sudoersBasedn: ou=SUDOers
   systemBasedn: cn=Users
   usersBasedn: ou=users,ou=ecl
   resourcesBasedn: ou=WsEcl,ou=EspServices,ou=ecl
