@@ -12549,18 +12549,18 @@ extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
     }
 }
 
-extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout)
+extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int timeout)
 {
-    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Compile", false, true))
+    if (checkWuSecAccess(wuid, secmgr, secuser, SecAccess_Read, "Wait for Compile", false, true))
         return waitForWorkUnitToCompile(wuid, timeout);
     return false;
 }
 
-extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response)
+extern WORKUNIT_API bool secDebugWorkunit(const char *wuid, ISecManager *secmgr, ISecUser *secuser, const char *command, StringBuffer &response)
 {
-    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Debug", false, true))
+    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, secmgr, secuser, SecAccess_Read, "Debug", false, true))
     {
-        Owned<IConstWorkUnit> wu = globalFactory->openWorkUnit(wuid, &secmgr, &secuser);
+        Owned<IConstWorkUnit> wu = globalFactory->openWorkUnit(wuid, secmgr, secuser);
         SCMStringBuffer ip;
         unsigned port = 0;
         try
