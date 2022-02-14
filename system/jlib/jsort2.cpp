@@ -100,7 +100,7 @@ class cTaskQSortBase
 
 public:
 
-    cTaskQSortBase() : taskScheduler(queryTaskScheduler()), finished(new CCompletionTask(1, queryTaskScheduler()))
+    cTaskQSortBase() : taskScheduler(queryTaskScheduler()), finished(new CCompletionTask(queryTaskScheduler()))
     {
     }
 
@@ -114,7 +114,7 @@ private:
     //MORE: Not really sure what this should do...
     void abort()
     {
-        notifyPredDone(finished);
+        notifyPredDone(*finished);
     }
 
     void doSubSort(unsigned s, unsigned n)
@@ -136,14 +136,14 @@ private:
             }
         }
         serialsort(s,n);
-        notifyPredDone(finished);
+        notifyPredDone(*finished);
     }
 
     void enqueueSort(unsigned from, unsigned num)
     {
         CSubSortTask * task = new CSubSortTask(this, from, num);
         finished->addPred();
-        enqueueOwnedTask(taskScheduler, task);
+        enqueueOwnedTask(taskScheduler, *task);
     }
 
 public:

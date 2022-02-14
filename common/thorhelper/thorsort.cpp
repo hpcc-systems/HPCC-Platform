@@ -21,10 +21,9 @@
 #include "jlog.hpp"
 #include "errorlist.h"
 #include <exception>
+#include "jtask.hpp"
 
 #ifdef _USE_TBB
-#include "tbb/task.h"
-#include "tbb/task_scheduler_init.h"
 #include "tbb/parallel_sort.h"
 #endif
 
@@ -277,126 +276,129 @@ void msortvecstableinplace(void ** rows, size_t n, const ICompare & compare, voi
 
 //=========================================================================
 
-#ifdef _USE_TBB
 static const unsigned numPartitionSamples = 3;
 //These constants are probably architecture and number of core dependent
 static const size_t singleThreadedMSortThreshold = 2000;
 static const size_t multiThreadedBlockThreshold = 64;       // must be at least 2!
 
-using tbb::task;
-class TbbParallelMergeSorter
+class ParallelMergeSorter
 {
-    class SplitTask : public tbb::task
+    class SplitTask : public CTask
     {
     public:
-        SplitTask(task * _next1, task * _next2) : next1(_next1), next2(_next2)
+        SplitTask(CTask * _succ1, CTask * _succ2) : CTask(1), succ1(_succ1), succ2(_succ2)
         {
         }
 
-        virtual task * execute()
+        virtual CTask * execute()
         {
-            if (next1->decrement_ref_count() == 0)
-                spawn(*next1);
-            if (next2->decrement_ref_count() == 0)
-                return next2;
+            //MORE: Nothing shares either succ1 or succ2, so we could initialize predecessor count to 0, and unconditionally schedule
+            if (succ1->notePredDone())
+                spawnOwnedChildTask(*succ1);
+            if (succ2->notePredDone())
+                return succ2;
             return NULL;
         }
     protected:
-        task * next1;
-        task * next2;
+        CTask * succ1;
+        CTask * succ2;
     };
 
-    class BisectTask : public tbb::task
+    class BisectTask : public CTask
     {
     public:
-        BisectTask(TbbParallelMergeSorter & _sorter, void ** _rows, size_t _n, void ** _temp, unsigned _depth, task * _next)
-        : sorter(_sorter), rows(_rows), temp(_temp), next(_next), n(_n), depth(_depth)
+        BisectTask(ParallelMergeSorter & _sorter, void ** _rows, size_t _n, void ** _temp, unsigned _depth, CTask * _succ)
+        : CTask(0), sorter(_sorter), rows(_rows), temp(_temp), successor(_succ), n(_n), depth(_depth)
         {
         }
-        virtual task * execute()
+        virtual CTask * execute()
         {
             for (;;)
             {
                 //On entry next is assumed to be used once by this function
                 if ((n <= multiThreadedBlockThreshold) || (depth >= sorter.singleThreadDepth))
                 {
-                    //Create a new task rather than calling sort directly, so that the successor is set up correctly
-                    //It would be possible to sort then if (next->decrement_ref_count()) return next; instead
-                    task * sort = new (next->allocate_child()) SubSortTask(sorter, rows, n, temp, depth);
-                    return sort;
+                    mergeSort(rows, n, sorter.compare, temp, depth);
+                    if (successor->notePredDone())
+                        return successor;
+                    return nullptr;
                 }
 
                 void * * result = (depth & 1) ? temp : rows;
                 void * * src = (depth & 1) ? rows : temp;
                 size_t n1 = (n+1)/2;
                 size_t n2 = n-n1;
-                task * mergeTask;
+                CTask * mergeTask;
                 if (depth < sorter.parallelMergeDepth)
                 {
                     unsigned partitions = sorter.numPartitionCores() >> depth;
+
+                    //Following will create 2 * partition merge tasks, one of which will inherit the already incremented predecessor count
                     if (partitions > 1)
                     {
-                        PartitionSplitTask * splitTask = new (allocate_root()) PartitionSplitTask(n1, src, n2, src+n1, partitions, sorter.compare);
+                        successor->incPred(2 * partitions - 1);
+                        PartitionSplitTask * splitTask = new PartitionSplitTask(n1, src, n2, src+n1, partitions, sorter.compare);
                         for (unsigned i=0; i < partitions; i++)
                         {
-                            MergeTask * mergeFwdTask = new (allocate_additional_child_of(*next)) MergeTask(sorter.compare, result, n1, src, n2, src+n1, 0);
-                            mergeFwdTask->set_ref_count(1);
-                            MergeTask * mergeRevTask = new (allocate_additional_child_of(*next)) MergeRevTask(sorter.compare, result, n1, src, n2, src+n1, 0);
-                            mergeRevTask->set_ref_count(1);
+                            MergeTask * mergeFwdTask = new MergeTask(sorter.compare, *successor, result, n1, src, n2, src+n1, 0);
+                            MergeTask * mergeRevTask = new MergeRevTask(sorter.compare, *successor, result, n1, src, n2, src+n1, 0);
                             splitTask->setTasks(i, mergeFwdTask, mergeRevTask);
                         }
-                        next->decrement_ref_count();
                         mergeTask = splitTask;
                     }
                     else
                     {
-                        task * mergeFwdTask = new (allocate_additional_child_of(*next)) MergeTask(sorter.compare, result, n1, src, n2, src+n1, n1);
-                        mergeFwdTask->set_ref_count(1);
-                        task * mergeRevTask = new (next->allocate_child()) MergeRevTask(sorter.compare, result, n1, src, n2, src+n1, n2);
-                        mergeRevTask->set_ref_count(1);
-                        mergeTask = new (allocate_root()) SplitTask(mergeFwdTask, mergeRevTask);
+                        successor->incPred(1);
+                        CTask * mergeFwdTask = new MergeTask(sorter.compare, *successor, result, n1, src, n2, src+n1, n1);
+                        CTask * mergeRevTask = new MergeRevTask(sorter.compare, *successor, result, n1, src, n2, src+n1, n2);
+                        mergeTask = new SplitTask(mergeFwdTask, mergeRevTask);
                     }
                 }
                 else
                 {
-                    mergeTask = new (next->allocate_child()) MergeTask(sorter.compare, result, n1, src, n2, src+n1, n);
+                    mergeTask = new MergeTask(sorter.compare, *successor, result, n1, src, n2, src+n1, n);
                 }
 
-                mergeTask->set_ref_count(2);
-                task * bisectRightTask = new (allocate_root()) BisectTask(sorter, rows+n1, n2, temp+n1, depth+1, mergeTask);
-                spawn(*bisectRightTask);
+                mergeTask->setNumPredecessors(2);
+
+                CTask * bisectRightTask = new BisectTask(sorter, rows+n1, n2, temp+n1, depth+1, mergeTask);
+                enqueueOwnedTask(sorter.scheduler, *bisectRightTask);
 
                 //recurse directly on the left side rather than creating a new task
                 n = n1;
                 depth = depth+1;
-                next = mergeTask;
+                successor = mergeTask;
             }
         }
     protected:
-        TbbParallelMergeSorter & sorter;
+        ParallelMergeSorter & sorter;
         void ** rows;
         void ** temp;
-        task * next;
+        CTask * successor;
         size_t n;
         unsigned depth;
     };
 
 
-    class SubSortTask : public tbb::task
+    class SubSortTask : public CTask
     {
     public:
-        SubSortTask(TbbParallelMergeSorter & _sorter, void ** _rows, size_t _n, void ** _temp, unsigned _depth)
-        : sorter(_sorter), rows(_rows), temp(_temp), n(_n), depth(_depth)
+        SubSortTask(ParallelMergeSorter & _sorter, CTask & _successor, void ** _rows, size_t _n, void ** _temp, unsigned _depth)
+        : CTask(0), sorter(_sorter), successor(_successor), rows(_rows), temp(_temp), n(_n), depth(_depth)
         {
         }
 
-        virtual task * execute()
+        virtual CTask * execute()
         {
             mergeSort(rows, n, sorter.compare, temp, depth);
+            if (successor.notePredDone())
+                return &successor;
             return NULL;
         }
+
     protected:
-        TbbParallelMergeSorter & sorter;
+        ParallelMergeSorter & sorter;
+        CTask & successor;
         void ** rows;
         void ** temp;
         size_t n;
@@ -404,15 +406,15 @@ class TbbParallelMergeSorter
     };
 
 
-    class MergeTask : public tbb::task
+    class MergeTask : public CTask
     {
     public:
-        MergeTask(const ICompare & _compare, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size_t _n)
-        : compare(_compare),result(_result), src1(_src1), src2(_src2), n1(_n1), n2(_n2), n(_n)
+        MergeTask(const ICompare & _compare, CTask & _successor, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size_t _n)
+        : CTask(1), compare(_compare), successor(_successor), result(_result), src1(_src1), src2(_src2), n1(_n1), n2(_n2), n(_n)
         {
         }
 
-        virtual task * execute()
+        virtual CTask * execute()
         {
             //After the ranges are adjusted it is possible for one input to shrink to zero size (e.g., if input is sorted)
             if (n1 == 0)
@@ -427,7 +429,7 @@ class TbbParallelMergeSorter
             }
             else
                 mergePartitions(compare, result, n1, src1, n2, src2, n);
-            return NULL;
+            return checkNextTask();
         }
 
         void adjustRange(size_t deltaLeft, size_t numLeft, size_t deltaRight, size_t numRight, size_t num)
@@ -440,8 +442,16 @@ class TbbParallelMergeSorter
             n = num;
         }
 
+        CTask * checkNextTask()
+        {
+            if (successor.notePredDone())
+                return &successor;
+            return nullptr;
+        }
+
     protected:
         const ICompare & compare;
+        CTask & successor;
         void * * result;
         void * * src1;
         void * * src2;
@@ -453,12 +463,12 @@ class TbbParallelMergeSorter
     class MergeRevTask : public MergeTask
     {
     public:
-        MergeRevTask(const ICompare & _compare, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size_t _n)
-        : MergeTask(_compare, _result, _n1, _src1, _n2, _src2, _n)
+        MergeRevTask(const ICompare & _compare, CTask & _successor, void * * _result, size_t _n1, void * * _src1, size_t _n2, void * * _src2, size_t _n)
+        : MergeTask(_compare, _successor, _result, _n1, _src1, _n2, _src2, _n)
         {
         }
 
-        virtual task * execute()
+        virtual CTask * execute()
         {
             if (n1 == 0)
             {
@@ -475,15 +485,16 @@ class TbbParallelMergeSorter
             }
             else
                 mergePartitionsRev(compare, result, n1, src1, n2, src2, n);
-            return NULL;
+
+            return checkNextTask();
         }
     };
 
-    class PartitionSplitTask : public tbb::task
+    class PartitionSplitTask : public CTask
     {
     public:
         PartitionSplitTask(size_t _n1, void * * _src1, size_t _n2, void * * _src2, unsigned _numPartitions, const ICompare & _compare)
-            : compare(_compare), numPartitions(_numPartitions), n1(_n1), n2(_n2), src1(_src1), src2(_src2)
+            : CTask(0), compare(_compare), numPartitions(_numPartitions), n1(_n1), n2(_n2), src1(_src1), src2(_src2)
         {
             //These could be local variables in calculatePartitions(), but placed here to simplify cleanup.  (Should consider using alloca)
             posLeft = new size_t[numPartitions+1];
@@ -606,13 +617,15 @@ class TbbParallelMergeSorter
             }
         }
 
-        virtual task * execute()
+        virtual CTask * execute()
         {
             calculatePartitions();
             for (unsigned i=0; i < numPartitions*2; i++)
             {
-                if (tasks[i]->decrement_ref_count() == 0)
-                    spawn(*tasks[i]);
+                //NOTE: These tasks only hava a single successor, so simpler to set #pred to 0, and unconditionally spawn them
+                //(and use continuation to return the 1st)
+                if (tasks[i]->notePredDone())
+                    spawnOwnedChildTask(*tasks[i]);
             }
             return NULL;
         }
@@ -671,7 +684,8 @@ class TbbParallelMergeSorter
     };
 
 public:
-    TbbParallelMergeSorter(void * * _rows, const ICompare & _compare) : compare(_compare), baseRows(_rows)
+    ParallelMergeSorter(void * * _rows, const ICompare & _compare)
+    : scheduler(queryTaskScheduler()), compare(_compare), baseRows(_rows)
     {
         //The following constants control the number of iterations to be performed in parallel.
         //The sort is split into more parts than there are cpus so that the effect of delays from one task tend to be evened out.
@@ -679,7 +693,7 @@ public:
         const unsigned extraBisectDepth = 3;
         const unsigned extraParallelMergeDepth = 3;
 
-        unsigned numCpus = tbb::task_scheduler_init::default_num_threads();
+        unsigned numCpus = scheduler.numProcessors();
         unsigned ln2NumCpus = (numCpus <= 1) ? 0 : getMostSignificantBit(numCpus-1);
         assertex(numCpus <= (1U << ln2NumCpus));
 
@@ -688,23 +702,28 @@ public:
 
         //Aim to execute in parallel until the width is 8*the maximum number of parallel task
         singleThreadDepth = ln2NumCpus + extraBisectDepth;
-        partitionCores = numCpus / 2;
+        partitionCores = std::max(numCpus / 2, 1U);
     }
 
     unsigned numPartitionCores() const { return partitionCores; }
 
     void sortRoot(void ** rows, size_t n, void ** temp)
     {
-        task * end = new (task::allocate_root()) tbb::empty_task();
-        end->set_ref_count(1+1);
-        task * task = new (task::allocate_root()) BisectTask(*this, rows, n, temp, 0, end);
-        end->spawn(*task);
-        end->wait_for_all();
-        end->destroy(*end);
+        unsigned  numPred = 1 + 1; // the initial bisect task and the wait for the result.
+        Owned<CCompletionTask> end = new CCompletionTask(scheduler, numPred);
+
+        // Rely on scheduling to release the link counts for child tasks (including this completion task) to minimize atomic operations
+        end->setMinimalLinking();
+
+        //MORE: This bisection could be done in a single pass, rather than creating separate tasks - although
+        //it is hard to tell what would be the most efficient...  This ensures they are spread over all cpus.
+        scheduler.enqueueOwnedTask(*new BisectTask(*this, rows, n, temp, 0, end));
+        end->decAndWait();
     }
 
 public:
     const ICompare & compare;
+    ITaskScheduler & scheduler;
     unsigned singleThreadDepth;
     unsigned parallelMergeDepth;
     unsigned partitionCores;
@@ -712,9 +731,9 @@ public:
 };
 
 //-------------------------------------------------------------------------------------------------------------------
-void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp, unsigned ncpus)
+void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp)
 {
-    if ((n <= singleThreadedMSortThreshold) || ncpus == 1)
+    if ((n <= singleThreadedMSortThreshold) || queryTaskScheduler().numProcessors() == 1)
     {
         msortvecstableinplace(rows, n, compare, temp);
         return;
@@ -722,7 +741,7 @@ void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, 
 
     try
     {
-        TbbParallelMergeSorter sorter(rows, compare);
+        ParallelMergeSorter sorter(rows, compare);
         sorter.sortRoot(rows, n, temp);
     }
     catch (const std::exception & e)
@@ -730,9 +749,3 @@ void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, 
         throw makeStringExceptionV(ERRORID_UNKNOWN, "TBB exception: %s", e.what());
     }
 }
-#else
-void parmsortvecstableinplace(void ** rows, size_t n, const ICompare & compare, void ** temp, unsigned ncpus)
-{
-    parqsortvecstableinplace(rows, (size32_t)n, compare, temp, ncpus);
-}
-#endif

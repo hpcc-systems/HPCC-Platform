@@ -23,6 +23,72 @@
 #include "jthread.hpp"
 #include "jqueue.hpp"
 
+
+/*
+
+This file defines multiple taskSchedulers than be used to execute code in parallel without the cost of starting up
+new threads, and avoiding over-commiting the number of cores to process tasks.
+
+It is currently aimed at non-blocking tasks, but the hope is to also use it for IO based tasks (which may over-commit to a certain degree).
+
+There are two common ways of using it.
+
+1) Lambda style functions.
+
+Create a completion task.  When you want to execute some code in parallel use the spawn() function, and at the end wait for all tasks to complete.
+
+Owned<CCompletionTask> completed = new CCompletionTask[(queryTaskScheduler())];
+...
+completed->spawn([n]() { printf("%u\n", n); });
+...
+completed->decAndWait();
+
+
+2) Create task classes, and schedule them when they are ready to run
+
+
+Owned<CCompletionTask> completed = new CCompletionTask[(queryTaskScheduler())];
+...
+CTask * task = new XTask(completed);
+queryTaskScheduler().enqueueOwnedTask(*task);
+...
+processor->decAndWait();
+
+
+Link counting
+-------------
+
+- Simple successor linking:
+  The simplest approach is for all tasks to LINK their successor tasks.  When a successor task is ready to be scheduled
+  it is LINKed and scheduled.  The link counts are reduced when the predecessor task is destroyed, and then released
+  again when the task completes.
+  However, this means two effective link counts are held for a task, one for the number of predecessors and another
+  for the lifetime.
+
+  The classes used to implmement the lambda tasks use this approach.
+
+- Avoiding successor linking:
+  A task is only ever scheduled by a single predecessor. If all created tasks will eventually be
+  executed there is no need to link/release the successor tasks.  The link count will be 1 from when it was created.
+  When it is executed it will be decremented and cleaned up.
+
+  If this approach is used, you must call setMinimalLinking() on the CCompletionTask - this increments the link count
+  ready for decrementing when the task is scheduled, and also avoids starting a task if there are no child tasks
+  waiting to complete.
+
+  The parallel merge sort uses this approach.
+
+Exceptions
+----------
+Any code using tasks needs to be careful that it will complete if exceptions are reported.  Task base class has
+helper functions for thread-safely recording exceptions for later throwing
+
+The lambda style functions automatically forward any exception to the completion task, which will rethrow the first
+exception once all functions have completed.  By default new functions will not be executed once another function
+has thrown an exception, but this can be overriden.
+
+*/
+
 interface ITaskScheduler;
 
 class jlib_decl CTask : public CInterface
@@ -32,6 +98,7 @@ class jlib_decl CTask : public CInterface
 
 public:
     CTask(unsigned _numPred) : numPredecessors(_numPred) {}
+    ~CTask() { ::Release(exception.load()); }
 
     //Return the next task to execute
     virtual CTask * execute() = 0;
@@ -40,6 +107,10 @@ public:
     void addPred()
     {
         numPredecessors.fetch_add(1);
+    }
+    void incPred(unsigned numExtra)
+    {
+        numPredecessors.fetch_add(numExtra);
     }
     // Return true if this is now available to execute.
     bool notePredDone()
@@ -52,9 +123,18 @@ public:
         return nullptr;
     }
 
-    //Set an exception (if one has not already been set), which will be thrown after waiting is complete
-    void setException(IException * e);
+    void setNumPredecessors(unsigned _numPred)
+    {
+        numPredecessors.store(_numPred);
+    }
+
+    // Called within an executing task to start a child task - will be pushed onto the local task queue
+    void spawnOwnedChildTask(CTask & ownedTask);
+
+// Exception management helper functions
     bool hasException() const { return exception != nullptr; }
+    IException * queryException() const { return exception.load(); }
+    void setException(IException * e);      //Set an exception (if one has not already been set)
 
 protected:
     CTask * next = nullptr;
@@ -69,7 +149,7 @@ protected:
 interface ITaskScheduler : public IInterface
 {
 public:
-    virtual void enqueueOwnedTask(CTask * ownedTask) = 0;
+    virtual void enqueueOwnedTask(CTask & ownedTask) = 0;
     virtual unsigned numProcessors() const = 0;
 };
 
@@ -85,20 +165,9 @@ extern jlib_decl ITaskScheduler & queryIOTaskScheduler();
 
 //---------------------------------------------------------------------------------------------------------------------
 
-//MORE: This can probably be private within the cpp file (and enqueue can become non-virtual).
-class jlib_decl ATaskProcessor  : public Thread
-{
-public:
-    virtual void enqueueOwnedChildTask(CTask * ownedTask) = 0;
-};
-
-extern jlib_decl ATaskProcessor * queryCurrentTaskProcessor();
-
-//---------------------------------------------------------------------------------------------------------------------
-
-extern jlib_decl void notifyPredDone(CTask * successor);
+extern jlib_decl void notifyPredDone(CTask & successor);
 extern jlib_decl void notifyPredDone(Owned<CTask> && successor);
-extern jlib_decl void enqueueOwnedTask(ITaskScheduler & scheduler, CTask * ownedTask);
+extern jlib_decl void enqueueOwnedTask(ITaskScheduler & scheduler, CTask & ownedTask);
 
 //---------------------------------------------------------------------------------------------------------------------
 // Helper task implementations
@@ -137,8 +206,8 @@ protected:
 class jlib_decl CCompletionTask final : public CTask
 {
 public:
-    CCompletionTask(unsigned _numPred, ITaskScheduler & _scheduler) : CTask(_numPred), scheduler(_scheduler) {}
-    ~CCompletionTask() { ::Release(exception.load()); }
+    CCompletionTask(ITaskScheduler & _scheduler, unsigned _numPred=1) : CTask(_numPred), scheduler(_scheduler) {}
+    CCompletionTask() : CTask(1), scheduler(queryTaskScheduler()) {}
 
     virtual CTask * execute() override
     {
@@ -147,27 +216,51 @@ public:
     }
 
     // Execute a function as a child task - decAndWait() will wait for completion
-    void spawn(std::function<void ()> func);
+    void spawn(std::function<void ()> func, bool ignoreParallelExceptions = false);
 
     //Called when main thread has completed - decrements the predecessor count, and waits for completion
     void decAndWait();
 
+    //Called when tasks are not linked before scheduling
+    void setMinimalLinking();
+
 protected:
     ITaskScheduler & scheduler;
     Semaphore sem;
+    bool tasksLinkedOnSchedule{true};
 };
 
 // A class used by CCompletionTask to implement spawn
 class jlib_decl CFunctionTask final : public CPredecessorTask
 {
 public:
-    CFunctionTask(std::function<void ()> _func, CTask * _successor);
+    CFunctionTask(std::function<void ()> _func, CTask * _successor, bool _ignoreParallelExceptions);
 
     virtual CTask * execute() override;
 
 protected:
     std::function<void ()> func;
+    bool ignoreParallelExceptions;
 };
 
+//Implementation of asyncFor that uses the task library
+template <typename AsyncFunc>
+inline void taskAsyncFor(unsigned num, ITaskScheduler & scheduler, AsyncFunc func)
+{
+    if (num != 1)
+    {
+        Owned<CCompletionTask> completed = new CCompletionTask(scheduler);
+        for (unsigned i=0; i < num; i++)
+            completed->spawn([i, func]() { func(i); });
+
+        completed->decAndWait();
+    }
+    else
+        func(0);
+}
+
+static constexpr unsigned UnlimitedTasks = (unsigned)-1;
+// Allow the number of parallel tasks to be restricted.  by default it will be set to (#cores, 2* #cores)
+void jlib_decl setTaskLimits(unsigned _maxCpuTasks, unsigned _maxIOTasks);
 
 #endif
