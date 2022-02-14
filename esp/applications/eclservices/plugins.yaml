@@ -19,6 +19,7 @@ service_plugins:
   WsTopology: ws_topology
   WsWorkunits: ws_workunits
   ws_codesign: ws_codesign
+  ws_logaccess: ws_logaccess
 
 binding_plugins:
   FileSpray: ws_fs
@@ -37,3 +38,4 @@ binding_plugins:
   WsSMC: ws_smc
   WSESPControl: wsespcontrol
   ws_codesign: ws_codesign
+  ws_logaccess: ws_logaccess

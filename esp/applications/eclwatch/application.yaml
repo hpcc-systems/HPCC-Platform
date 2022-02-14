@@ -18,3 +18,4 @@ application:
    - ws_codesign
    - ws_resources
    - WSDali
+   - ws_logaccess

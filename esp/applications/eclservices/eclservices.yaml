@@ -65,4 +65,4 @@ eclservices:
             description: JWT token cache
             default: false
             maxValSize: 32768
-            
+   ws_logaccess:
