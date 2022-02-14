@@ -81,7 +81,6 @@ RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
 
 USER hpcc
-RUN cp /opt/HPCCSystems/bin/.gdbinit ~/.gdbinit
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 WORKDIR /var/lib/HPCCSystems
