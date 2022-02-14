@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -232,4 +232,13 @@
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/PVCStorage.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/CustomConfig.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/ConfigureValues.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+			  
+			   <!-- xi:include href="ContainerizedHPCC/ContainerizedMods/ContainerLogging.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" / -->
 </book>
