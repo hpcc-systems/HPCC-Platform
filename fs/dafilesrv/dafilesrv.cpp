@@ -391,7 +391,8 @@ int main(int argc, const char* argv[])
     unsigned short  sslport;
     unsigned dedicatedRowServicePort = DEFAULT_ROWSERVICE_PORT;
 #ifdef _CONTAINERIZED
-    connectMethod = SSLOnly;
+    bool directIO = strsame(config->queryProp("@application"), "directio");
+    connectMethod = directIO ? SSLNone : SSLOnly;
     dedicatedRowServicePort = 0; // row service always runs on same secure ssl port in containerized mode
     port = 0;
     sslport = config->getPropInt("service/@port", SECURE_DAFILESRV_PORT);
@@ -648,6 +649,7 @@ int main(int argc, const char* argv[])
         {
             bool stopped;
             bool started;
+            Linked<IPropertyTree> config;
             DAFSConnectCfg connectMethod;
             SocketEndpoint listenep;
             unsigned maxThreads;
@@ -685,7 +687,7 @@ int main(int argc, const char* argv[])
 
         public:
 
-            cserv(DAFSConnectCfg _connectMethod, SocketEndpoint _listenep,
+            cserv(IPropertyTree *_config, DAFSConnectCfg _connectMethod, SocketEndpoint _listenep,
                         unsigned _maxThreads, unsigned _maxThreadsDelayMs, unsigned _maxAsyncCopy,
                         unsigned _parallelRequestLimit, unsigned _throttleDelayMs, unsigned _throttleCPULimit,
                         unsigned _parallelSlowRequestLimit, unsigned _throttleSlowDelayMs, unsigned _throttleSlowCPULimit,
@@ -693,7 +695,7 @@ int main(int argc, const char* argv[])
                         IPropertyTree *_keyPairInfo,
                         const char *_rowServiceConfiguration,
                         unsigned _dedicatedRowServicePort, bool _dedicatedRowServiceSSL, bool _rowServiceOnStdPort)
-            : connectMethod(_connectMethod), listenep(_listenep), pollthread(this),
+                : config(_config), connectMethod(_connectMethod), listenep(_listenep), pollthread(this),
                   maxThreads(_maxThreads), maxThreadsDelayMs(_maxThreadsDelayMs), maxAsyncCopy(_maxAsyncCopy),
                   parallelRequestLimit(_parallelRequestLimit), throttleDelayMs(_throttleDelayMs), throttleCPULimit(_throttleCPULimit),
                   parallelSlowRequestLimit(_parallelSlowRequestLimit), throttleSlowDelayMs(_throttleSlowDelayMs), throttleSlowCPULimit(_throttleSlowCPULimit),
@@ -773,10 +775,10 @@ int main(int argc, const char* argv[])
                     {
                         SocketEndpoint rowServiceEp(listenep); // copy listenep, incase bound by -addr
                         rowServiceEp.port = dedicatedRowServicePort;
-                        server->run(connectMethod, listenep, sslport, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
+                        server->run(config, connectMethod, listenep, sslport, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
                     }
                     else
-                        server->run(connectMethod, listenep, sslport);
+                        server->run(config, connectMethod, listenep, sslport);
                 }
                 catch (IException *e)
                 {
@@ -786,7 +788,7 @@ int main(int argc, const char* argv[])
                 PROGLOG(DAFS_SERVICE_DISPLAY_NAME " Stopped");
                 stopped = true;
             }
-        } service(connectMethod, listenep,
+        } service(config, connectMethod, listenep,
                 maxThreads, maxThreadsDelayMs, maxAsyncCopy,
                 parallelRequestLimit, throttleDelayMs, throttleCPULimit,
                 parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit, sslport,
@@ -870,10 +872,10 @@ int main(int argc, const char* argv[])
         {
             SocketEndpoint rowServiceEp(listenep); // copy listenep, incase bound by -addr
             rowServiceEp.port = dedicatedRowServicePort;
-            server->run(connectMethod, listenep, sslport, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
+            server->run(config, connectMethod, listenep, sslport, &rowServiceEp, dedicatedRowServiceSSL, rowServiceOnStdPort);
         }
         else
-            server->run(connectMethod, listenep, sslport);
+            server->run(config, connectMethod, listenep, sslport);
     }
     catch (IException *e)
     {

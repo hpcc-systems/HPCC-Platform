@@ -14307,25 +14307,6 @@ KeepK8sJobs translateKeepJobs(const char *keepJob)
     return KeepK8sJobs::none;
 }
 
-// NB: will fire an exception if command fails (returns non-zero exit code)
-static void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output)
-{
-    StringBuffer _output, error;
-    if (!output)
-        output = &_output;
-    unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".", nullptr);
-    if (output->length())
-        MLOG(MCExtraneousInfo, unknownJob, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
-    if (error.length())
-        MLOG(MCinternalError, unknownJob, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
-    if (ret)
-    {
-        if (input)
-            MLOG(MCinternalError, unknownJob, "Using input %s", input);
-        throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
-    }
-}
-
 bool isActiveK8sService(const char *serviceName)
 {
     VStringBuffer getEndpoints("kubectl get endpoints %s \"--output=jsonpath={range .subsets[*].addresses[*]}{.ip}{'\\n'}{end}\"", serviceName);
@@ -14477,50 +14458,6 @@ void runK8sJob(const char *componentName, const char *wuid, const char *job, con
         deleteK8sResource(componentName, job, "networkpolicy");
     if (exception)
         throw exception.getClear();
-}
-
-
-std::pair<std::string, unsigned> getExternalService(const char *serviceName)
-{
-    static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
-    static CriticalSection externalServiceCacheCrit;
-
-    {
-        CriticalBlock b(externalServiceCacheCrit);
-        std::pair<std::string, unsigned> cachedExternalSevice;
-        if (externalServiceCache.get(serviceName, cachedExternalSevice))
-            return cachedExternalSevice;
-    }
-
-    StringBuffer output;
-    try
-    {
-        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].status.loadBalancer.ingress[0].ip},{.items[0].spec.ports[0].port}", serviceName);
-        runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
-    }
-    catch (IException *e)
-    {
-        EXCLOG(e);
-        VStringBuffer exceptionText("Failed to get external service for '%s'. Error: [%d, ", serviceName, e->errorCode());
-        e->errorMessage(exceptionText).append("]");
-        e->Release();
-        throw makeStringException(-1, exceptionText);
-    }
-    StringArray fields;
-    fields.appendList(output, ",");
-
-    // NB: add even if no result, want non-result to be cached too
-    std::string host, port;
-    if (fields.ordinality() == 3) // hostname,ip,port. NB: hostname may be missing, but still present as a blank field
-    {
-        host = fields.item(0); // hostname
-        if (0 == host.length())
-            host = fields.item(1); // ip
-        port = fields.item(2);
-    }
-    auto servicePair = std::make_pair(host, atoi(port.c_str()));
-    externalServiceCache.add(serviceName, servicePair);
-    return servicePair;
 }
 
 // returns a vector of {pod-name, node-name} vectors,

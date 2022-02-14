@@ -21,18 +21,17 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility "includeCategories" (list "data") -}}
-{{- if ($.Values.certificates | default dict).enabled -}}
+{{- $_ := set $commonCtx "certificatesEnabled" (($.Values.certificates | default dict).enabled) -}}
+{{- if $commonCtx.certificatesEnabled -}}
  {{- $externalCert := ne (include "hpcc.isVisibilityPublic" $commonCtx) "" -}}
  {{- $issuerName := ternary "public" "local" $externalCert -}}
  {{- $issuer := get $.Values.certificates.issuers $issuerName -}}
- {{- if $issuer -}}
+ {{- if $issuer }}
   {{- $_ := set $commonCtx "exposure" (ternary "public" "local" $externalCert) -}}
- {{- else -}}
+ {{ else }}
   {{- $_ := fail (printf "dafilesrv - unable to locate issuer '%s'" $issuerName) -}}
- {{- end -}}
-{{- else -}}
- {{- $_ := fail (printf "dafilesrv - certificates must be enabled to use") -}}
-{{- end -}}
+ {{ end }}
+{{ end }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global")) }}
 apiVersion: apps/v1
 kind: Deployment
@@ -72,11 +71,19 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
+{{- if $commonCtx.certificatesEnabled }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 8 }}
+{{- else }}
+ {{- if eq .application "stream" }}
+  {{- $_ := fail (printf "dafilesrv[application=stream]- certificates must be enabled to use") -}}
+ {{- end }}
+{{- end }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
+{{- if $commonCtx.certificatesEnabled }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 6 }}
+{{- end }}
 ---
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap")) }}
