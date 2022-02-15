@@ -28,18 +28,18 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
         const unlisten = hashHistory.listen(async (location, action) => {
             logger.debug(location.pathname);
             setLocation(location.pathname);
-            document.title = `ECL Watch${location.pathname.split("/").join(" | ")}`;
+            document.title = `ECL Watch - 9${location.pathname.split("/").join(" | ")}`;
             setBody(await router.resolve(location));
         });
 
         router.resolve(hashHistory.location).then(setBody);
 
         userKeyValStore().get("user_cookie_consent")
-            .then((resp)=>{
+            .then((resp) => {
                 setShowCookieConsent(resp === "1");
             })
             ;
-            
+
         return () => unlisten();
     }, []);
 
@@ -60,6 +60,6 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
         />
         <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
             userKeyValStore().set("user_cookie_consent", n ? "1" : "0");
-        }}/>
+        }} />
     </ThemeProvider >;
 };

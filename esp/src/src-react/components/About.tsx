@@ -14,11 +14,13 @@ const dialogContentProps = {
 };
 
 interface AboutProps {
+    eclwatchVersion: string;
     show?: boolean;
     onClose?: () => void;
 }
 
 export const About: React.FunctionComponent<AboutProps> = ({
+    eclwatchVersion = "",
     show = false,
     onClose = () => { }
 }) => {
@@ -57,8 +59,8 @@ export const About: React.FunctionComponent<AboutProps> = ({
             <PivotItem itemKey="about" headerText={nlsHPCC.About}>
                 <div style={{ minHeight: "208px", paddingTop: "32px" }}>
                     <TableGroup fields={{
-                        version: { label: nlsHPCC.Version, type: "string", value: version || "???", readonly: true },
-                        homepage: { label: nlsHPCC.Homepage, type: "link", href: "https://hpccsystems.com", newTab: true },
+                        platformVersion: { label: `${nlsHPCC.Platform}:`, type: "string", value: version || "???", readonly: true },
+                        eclwatchVersion: { label: "ECL Watch:", type: "string", value: eclwatchVersion, readonly: true },
                     }}>
                     </TableGroup>
                 </div>
