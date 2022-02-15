@@ -81,7 +81,7 @@ spec:
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}
-      serviceAccountName: "hpcc-default"
+      serviceAccountName: "hpcc-dali"
       initContainers: 
       {{- include "hpcc.changePlaneMountPerms" (dict "root" $ "includeCategories" $tmpDaliScope.aggregatePlaneCategories "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes) | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
@@ -186,22 +186,31 @@ kind: ConfigMap
 {{- end }}
 {{- end }}
 {{- end }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .name | quote }}
-  labels:
-    helmVersion: 8.7.0-trunk0
-spec:
-  ports:
-  - port: 7070
-    protocol: TCP
-    targetPort: 7070
-  selector:
-    server: {{ .name | quote }}
-  type: ClusterIP
+{{/*
+Expose dali as a external service, only if there is a service definition and dafilesrv directio service is active.
+*/}}
+{{- $dafilesrvCtx := dict -}}
+{{- $service := deepCopy (.service | default dict) -}}
+{{- $_ := set $service "visibility" ($service.visibility | default "cluster") -}}
+{{- $_ := set $service "servicePort" ($service.servicePort | default 7070) -}}
+{{- if and (hasKey . "service") (not (eq $service.visibility "cluster")) -}}
+ {{ range $.Values.dafilesrv -}}
+  {{- if not .disabled -}}
+   {{- if (eq "directio" .application) -}}
+    {{- $_ := set $dafilesrvCtx "directAccess" true -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end }}
+{{- if $dafilesrvCtx.directAccess -}}
+ {{- if not (hasKey $service "labels") -}}
+  {{- $_ := set $service "labels" dict -}}
+ {{- end -}}
+ {{- $_ := set $service "labels" (merge $service.labels (dict "server" .name)) -}}
+{{- end }}
+{{- include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 7070 ) | nindent 0 }}
 ---
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" "dali" "external" false) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" $service "component" "dali" "external" false) }}
 
 {{- end }}
 {{- end }}

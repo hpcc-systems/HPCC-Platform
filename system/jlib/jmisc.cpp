@@ -1021,3 +1021,91 @@ jlib_decl char **getSystemEnv()
     return environ;
 #endif
 }
+
+
+#ifdef _CONTAINERIZED
+// NB: will fire an exception if command fails (returns non-zero exit code)
+void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output)
+{
+    StringBuffer _output, error;
+    if (!output)
+        output = &_output;
+    unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".", nullptr);
+    if (output->length())
+        MLOG(MCExtraneousInfo, unknownJob, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
+    if (error.length())
+        MLOG(MCinternalError, unknownJob, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
+    if (ret)
+    {
+        if (input)
+            MLOG(MCinternalError, unknownJob, "Using input %s", input);
+        throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
+    }
+}
+
+static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
+static CriticalSection externalServiceCacheCrit;
+std::pair<std::string, unsigned> getExternalService(const char *serviceName)
+{
+    {
+        CriticalBlock b(externalServiceCacheCrit);
+        std::pair<std::string, unsigned> cachedExternalSevice;
+        if (externalServiceCache.get(serviceName, cachedExternalSevice))
+            return cachedExternalSevice;
+    }
+
+    StringBuffer output;
+    try
+    {
+        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].status.loadBalancer.ingress[0].ip},{.items[0].spec.ports[0].port}", serviceName);
+        runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        VStringBuffer exceptionText("Failed to get external service for '%s'. Error: [%d, ", serviceName, e->errorCode());
+        e->errorMessage(exceptionText).append("]");
+        e->Release();
+        throw makeStringException(-1, exceptionText);
+    }
+    StringArray fields;
+    fields.appendList(output, ",");
+
+    // NB: add even if no result, want non-result to be cached too
+    std::string host, port;
+    if (fields.ordinality() == 3) // hostname,ip,port. NB: hostname may be missing, but still present as a blank field
+    {
+        host = fields.item(0); // hostname
+        if (0 == host.length())
+            host = fields.item(1); // ip
+        port = fields.item(2);
+    }
+    auto servicePair = std::make_pair(host, atoi(port.c_str()));
+    externalServiceCache.add(serviceName, servicePair);
+    return servicePair;
+}
+
+
+std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application)
+{
+    /* NB: For now expect 1 dafilesrv in configuration only
+     * We could have multiple dafilesrv services with e.g. different specs./replicas etc. that
+     * serviced different planes. At the moment dafilesrv mounts all data planes.
+     */
+    VStringBuffer serviceXPath("services[@type='%s']", application);
+    Owned<IPropertyTreeIterator> dafilesrvServices = getGlobalConfigSP()->getElements(serviceXPath);
+    if (!dafilesrvServices->first())
+        throw makeStringException(-1, "dafilesrv service not defined");
+    const IPropertyTree &dafilesrv = dafilesrvServices->query();
+    if (!dafilesrv.getPropBool("@public"))
+        throw makeStringException(-1, "dafilesrv service has no public service defined");
+    StringBuffer dafilesrvName;
+    dafilesrv.getProp("@name", dafilesrvName);
+    auto externalService = getExternalService(dafilesrvName);
+    if (externalService.first.empty())
+        throw makeStringExceptionV(-1, "dafilesrv '%s': external service not found", dafilesrvName.str());
+    if (0 == externalService.second)
+        throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
+    return externalService;
+}
+#endif

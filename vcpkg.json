@@ -13,6 +13,12 @@
             "features": []
         },
         "boost-property-tree",
+        "apr",
+        "apr-util",
+        {
+            "name": "libiconv",
+            "platform": "osx"
+        },
         {
             "name": "winflexbison",
             "platform": "windows"

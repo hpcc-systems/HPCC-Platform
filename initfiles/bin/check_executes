@@ -78,7 +78,7 @@ if [ $retVal -ne 0 ]; then
   rm /tmp/postmortem.log.*
   if [ -f core ]; then
     echo "Generating info from core file to $POST_MORTEM_DIR/info.log" | tee -a $POST_MORTEM_DIR/info.log
-    gdb -batch -x /opt/HPCCSystems/bin/post-mortem-gdb ${PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
+    gdb -batch -ix /opt/HPCCSystems/bin/.gdbinit -x /opt/HPCCSystems/bin/post-mortem-gdb ${PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
     echo "Generated info from core file" | tee -a $POST_MORTEM_DIR/info.log
     rm core
   fi

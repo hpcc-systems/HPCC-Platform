@@ -6021,30 +6021,6 @@ SecAccessFlags translateToSecAccessFlags(CSecAccessType from)
     }
 }
 
-#ifdef _CONTAINERIZED
-std::pair<std::string, unsigned> getDafileServiceFromConfig(IFileDescriptor &fileDesc)
-{
-    /* NB: For now expect 1 dafilesrv in configuration only
-     * We could have multiple dafilesrv services with e.g. different specs./replicas etc. that
-     * serviced different planes. At the moment dafilesrv mounts all data planes.
-     */
-    Owned<IPropertyTreeIterator> dafilesrvServices = getGlobalConfigSP()->getElements("services[@type='dafilesrv']");
-    if (!dafilesrvServices->first())
-        throw makeStringException(-1, "dafilesrv service not defined");
-    const IPropertyTree &dafilesrv = dafilesrvServices->query();
-    if (!dafilesrv.getPropBool("@public"))
-        throw makeStringException(-1, "dafilesrv service has no public service defined");
-    StringBuffer dafilesrvName;
-    dafilesrv.getProp("@name", dafilesrvName);
-    auto externalService = getExternalService(dafilesrvName);
-    if (externalService.first.empty())
-        throw makeStringExceptionV(-1, "dafilesrv '%s': external service not found", dafilesrvName.str());
-    if (0 == externalService.second)
-        throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
-    return externalService;
-}
-#endif
-
 void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp)
 {
     double version = context.getClientVersion();
@@ -6083,7 +6059,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     if (!info)
         throw makeStringExceptionV(-1, "dFUFileAccessCommon: file signing certificate ('%s') not defined in configuration.", keyPairName.str());
 
-    auto externalService = getDafileServiceFromConfig(*fileDesc);
+    auto externalService = getDafileServiceFromConfig("stream");
     dafilesrvHost.set(externalService.first.c_str());
     port = externalService.second;
     secure = true;
@@ -6461,11 +6437,11 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
             throw makeStringExceptionV(-1, "onDFUFileCreateV2: file signing certificate ('%s' ) not defined in configuration.", keyPairName.str());
 
         const char *planeName = clusterName;
-        unsigned numParts = 0; // in future perhaps client can specify, for now default is = to plane default (fefaultSprayParts)
+        unsigned numParts = 0; // in future perhaps client can specify, for now default is = to plane default (defaultSprayParts)
         fileDesc.setown(createFileDescriptor(tempFileName, planeName, numParts));
         numParts = fileDesc->numParts();
 
-        auto externalService = getDafileServiceFromConfig(*fileDesc);
+        auto externalService = getDafileServiceFromConfig("stream");
         dafilesrvHost.set(externalService.first.c_str());
         port = externalService.second;
         secure = true;

@@ -20,6 +20,43 @@ Cluster-level logging for the containerized HPCC Systems cluster can be accompli
 
 _Specific logging tool examples can be found in the child folders_
 
+## HPCC Systems log access
+
+Out of the box, HPCC component logs are handled by K8s drivers, and exposed via the kubectl logs pod command.
+Access to logs processed by other processes such as Elastic Stack, Azure log analytics, etc. is provided by the chosen log processor solution.
+However, HPCC provides a standard interface into the logs. To enable this feature, information about the chosen log processor solution must be provided in
+the global.logAccess portion of the Helm chart.
+For example, if an elastic stack is deployed under the default namespace, and it contains hpcc logs in indexes prefixed 'filebeat-' the following log access configuration would allow log access through HPCC:
+
+    
+    global:
+      logAccess:
+        name: "LocalElasticStack"
+        type: "elasticstack"
+        connection:
+            protocol: "http"
+            host: "elasticsearch-master.default.svc.cluster.local"
+            port: 9200
+        logMaps:
+          - type: "global"                             #These settings apply to all log mappings
+            storeName: "filebeat-*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
+            searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
+            timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+          - type: "workunits"                          #Search by workunits specific log mapping
+            storeName: "filebeat-*"                    # Only needed if differs from global.storeName
+            searchColumn: "hpcc.log.jobid"             # Field containing WU information
+          - type: "components"                         #Search by components specific log mapping
+            searchColumn: "kubernetes.container.name"  # Field containing container information
+          - type: "audience"                           #Search by audience specific log mapping
+            searchColumn: "hpcc.log.audience"          # Field containing audience information
+          - type: "class"                              #Search by log class specific log mapping
+            searchColumn: "hpcc.log.class"             # Field containing log class information
+
+This configuration coincides with the elastic4hpcclogs managed solution found in HPCC-Systems/helm/managed/logging/elastic, and can be provided as part of an HPCC Systems deployment as follows:
+    
+    >helm install HPCC-Systems/helm/hpcc -f HPCC-Platform/helm/managed/logging/elastic/elastic4hpcclogs-hpcc-logaccess.yaml
+
+
 ## HPCC Systems application-level logging details
 
 As mentioned earlier, the HPCC Systems logs provide a wealth of information which can be used for benchmarking, auditing, debugging, monitoring, etc. The type of information provided in the logs and its format is trivially controlled via standard Helm configuration.
@@ -62,4 +99,3 @@ Adjustment of per-component logging values can require assertion of multiple com
 
     For example, the ESP component instance 'eclwatch' should output minimal log:
     helm install myhpcc ./hpcc --set -f ./examples/logging/esp-eclwatch-low-logging-values.yaml
- 

@@ -10435,6 +10435,8 @@ class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements I
     bool stopped;
     unsigned defaultTimeout;
     unsigned numThreads;
+    Owned<INode> dafileSrvNode;
+    CriticalSection dafileSrvNodeCS;
 
 public:
 
@@ -10764,10 +10766,12 @@ public:
         unsigned ver;
         if (mb.length()<mb.getPos()+sizeof(unsigned))
             ver = 0;
-        else {
+        else
+        {
             mb.read(ver);
             // this is a bit of a mess - for backward compatibility where user descriptor specified
-            if (ver>MDFS_GET_FILE_TREE_V2) {
+            if (ver>MDFS_GET_FILE_TREE_V2)
+            {
                 mb.reset(mb.getPos()-sizeof(unsigned));
                 ver = 0;
             }
@@ -10776,7 +10780,8 @@ public:
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         Owned<IUserDescriptor> udesc;
-        if (mb.getPos()<mb.length()) {
+        if (mb.getPos()<mb.length())
+        {
             udesc.setown(createUserDescriptor());
             udesc->deserialize(mb);
         }
@@ -10785,17 +10790,49 @@ public:
         dlfn.set(lname);
         CDfsLogicalFileName *logicalname=&dlfn;
         Owned<IDfsLogicalFileNameIterator> redmatch;
-        for (;;) {
+        for (;;)
+        {
             StringBuffer tail;
             checkLogicalName(*logicalname,udesc,true,false,true,"getFileTree on");
             CScopeConnectLock sconnlock("getFileTree", *logicalname, false, false, false, defaultTimeout);
             IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
             logicalname->getTail(tail);
             Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
-            if (tree) {
-                if (ver>=MDFS_GET_FILE_TREE_V2) {
+            if (tree)
+            {
+                if (ver>=MDFS_GET_FILE_TREE_V2)
+                {
                     Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_EXCLUDE_CLUSTERNAMES);
-                    if (fdesc) {
+                    if (fdesc)
+                    {
+#ifdef _CONTAINERIZED
+                        unsigned nc = fdesc->numClusters();
+                        for (unsigned c=0; c<nc; c++)
+                        {
+                            IClusterInfo *clusterInfo = fdesc->queryClusterNum(c);
+                            const char *planeName = clusterInfo->queryGroupName();
+                            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+                            if (!plane->queryHosts() && isAbsolutePath(plane->queryPrefix())) // if host group, or url, don't touch
+                            {
+                                {
+                                    CriticalBlock b(dafileSrvNodeCS);
+                                    if (nullptr == dafileSrvNode)
+                                    {
+                                        auto externalService = getDafileServiceFromConfig("directio");
+                                        VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
+                                        dafileSrvNode.setown(createINode(dafilesrvEpStr));
+                                    }
+                                }
+                                IGroup *oldGroup = clusterInfo->queryGroup();
+                                std::vector<INode *> nodes;
+                                for (unsigned n=0; n<oldGroup->ordinality(); n++)
+                                    nodes.push_back(dafileSrvNode);
+                                Owned<IGroup> newGroup = createIGroup((rank_t)oldGroup->ordinality(), &nodes[0]);
+                                clusterInfo->setGroup(newGroup); // NB: links
+                            }
+                        }
+#endif
+
                         ver = MDFS_GET_FILE_TREE_V2;
                         mb.append((int)-2).append(ver);
                         fdesc->serialize(mb);
@@ -10809,7 +10846,8 @@ public:
                     else
                         ver = 0;
                 }
-                if (ver==0) {
+                if (ver==0)
+                {
                     tree.setown(createPTreeFromIPT(tree));
                     StringBuffer cname;
                     logicalname->getCluster(cname);
@@ -10818,18 +10856,22 @@ public:
                 }
                 break;
             }
-            else {
+            else
+            {
                 tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
-                if (tree) {
+                if (tree)
+                {
                     tree->serialize(mb);
                     break;
                 }
             }
-            if (redmatch.get()) {
+            if (redmatch.get())
+            {
                 if (!redmatch->next())
                     break;
             }
-            else {
+            else
+            {
                 redmatch.setown(queryDistributedFileDirectory().queryRedirection().getMatch(logicalname->get()));
                 if (!redmatch.get())
                     break;

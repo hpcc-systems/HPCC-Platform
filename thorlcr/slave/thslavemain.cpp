@@ -558,7 +558,7 @@ int main( int argc, const char *argv[]  )
                     try
                     {
                         PROGLOG("Starting dafilesrv");
-                        dafsInstance->run(SSLNone, listenEp);
+                        dafsInstance->run(nullptr, SSLNone, listenEp);
                     }
                     catch (IException *e)
                     {

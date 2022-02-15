@@ -338,10 +338,20 @@ bundles: []
 # - name: DataPatterns
 
 dafilesrv:
-- name: mydafilesrv
+- name: rowservice
   disabled: true # disabled by default because requires cert-manager etc. (see certificates section)
+  application: stream
   service:
     servicePort: 7600
+    visibility: local
+
+ # Enabling this service exposes a dafilesrv and Dali for foreign file access for backward compatibility.
+ # If enabled, both services should be secured with strict ingress rules.
+- name: direct-access
+  disabled: true
+  application: directio
+  service:
+    servicePort: 7200
     visibility: local
     
 
