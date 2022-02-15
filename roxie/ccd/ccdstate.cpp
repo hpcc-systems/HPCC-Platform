@@ -1525,7 +1525,7 @@ public:
     const unsigned numChannels;
     const hash64_t xmlHash;
     const StringAttr querySet;
-    // The following is set once it is no longer the current package manager (so any changes will be thrown away)
+    // The following is set once it is no longer the current package manager (so any change notifications will be ignored)
     std::atomic<bool> orphaned{false};
 };
 
@@ -1590,25 +1590,32 @@ public:
             //Check to see if any other requests came in during the small delay.
             if (active == nextActive)
             {
-                //If no more process all the notifications
+                //If no more notifications arrived while this thread was waiting then process the reload
                 break;
             }
             active = nextActive;
             waits++;
+
+            if ((waits % 20) == 0)
+                DBGLOG("Merging %u package notifications - delayed %ums", waits, waits * NotifyMergeDelayMs);
         }
 
         //Critical section is here to prevent a subsequent notify from overtaking the previous one, and ensure only one thread
         //is reloading at a time.
         CriticalBlock block(cs);
 
-        //Ignore any changes if they are going to be thrown away, any subsequent changes will return immediately.
-        //check inside cs because it is best to test this as late as possible.
+        // A package that will no longer be used can be tagged as orphaned inside reload() since it will be replaced once that function completes.
+        // So ignore any changes if they are going to be thrown away....
+
+        // Check inside cs because it is best to test this as late as possible.
+        // Do not reset notifyCount - so any subsequent notifications for this package map are thrown away with no delay.
         if (orphaned)
             return;
 
         //How many notifications are there, and reset the count so that subsequent notifications will be processed.
         active = notifyCount.exchange(0);
-        DBGLOG("Dali update '%s' for '%s': %u changes (%u waits) [%p] %s", xpath, queryQuerySetName(), active, waits, this, orphaned ? " <orphaned>" : "");
+        if (traceLevel)
+            DBGLOG("Dali update '%s' for '%s': %u changes (%u waits) [%p] %s", xpath, queryQuerySetName(), active, waits, this, orphaned ? " <orphaned>" : "");
         reloadPackage(false);
         daliHelper->commitCache();
     }
@@ -1624,6 +1631,9 @@ public:
 private:
     void reloadPackage(bool forceRetry)
     {
+        if (orphaned)
+            return;
+
         //Should be called within a critical section
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
@@ -1828,12 +1838,6 @@ public:
             throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", id);
     }
 
-    void noteOrphaned()
-    {
-        ForEachItemIn(i, allQueryPackages)
-            allQueryPackages.item(i).noteOrphaned();
-    }
-
 private:
     CIArrayOf<CRoxieQueryPackageManager> allQueryPackages;
     Linked<IRoxieDaliHelper> daliHelper;
@@ -1860,6 +1864,10 @@ private:
 
     void createQueryPackageManagers(unsigned numChannels, const char *querySet, CRoxiePackageSetWatcher *oldPackages, bool forceReload)
     {
+        // MORE: This could be recoded to mark unused packages as orphaned.
+        // Walk all the packages and find the cache matches, tag any unused old packages as orphaned with package->noteOrphaned().
+        // Then finally load the new package managers with createQueryPackageManager()
+
         int loadedPackages = 0;
         int activePackages = 0;
         Owned<IPropertyTree> packageTree = daliHelper->getPackageSets();
@@ -2077,7 +2085,7 @@ private:
                     break;
 
                 //If there has been an explicit reload(), there may also be a control:reload in quick succession, so wait for it.
-                //NOTE: control:reload generally locaks the roxie connection and waits for a response, so it is unlikely that
+                //NOTE: control:reload generally locks the roxie connection and waits for a response, so it is unlikely that
                 //multiple control:reloads will be received at the same time.
                 unsigned signalsPending = owner.autoSignalsPending;
                 if (!signalsPending)
@@ -2127,10 +2135,6 @@ private:
     void reload(bool forceRetry)
     {
         clearDaliMisses();
-
-        //The old packages are about to be replaced - so there is no point updating them with any incoming changes.
-        if (allQueryPackages)
-            allQueryPackages->noteOrphaned();
 
         // We want to kill the old packages, but not until we have created the new ones
         // So that the query/dll caching will work for anything that is not affected by the changes
