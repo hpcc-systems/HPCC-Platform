@@ -19,6 +19,7 @@
             "name": "libiconv",
             "platform": "osx"
         },
+        "curl",
         {
             "name": "winflexbison",
             "platform": "windows"

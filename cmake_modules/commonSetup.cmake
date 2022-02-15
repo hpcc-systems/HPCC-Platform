@@ -127,11 +127,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(INCLUDE_CONFIG_MANAGER "Build config manager" ON)
   option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
   option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
-if (WIN32)
-  option(USE_JWT "Enable JSON Web Tokens" OFF)
-else ()
-  option(USE_JWT "Enable JSON Web Tokens" ON)
-endif ()
 #########################################################
 
   if (VCPKG_APPLOCAL_DEPS)
