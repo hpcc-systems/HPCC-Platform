@@ -18,22 +18,22 @@
 # - Find Apache Portable Runtime
 # Find the APR includes and libraries
 # This module defines
-#  APR_INCLUDE_DIR, where to find apr.h, etc.
-#  APR_LIBRARIES, the libraries needed to use APR.
-#  APR_FOUND, If false, do not try to use APR.
+#  APRUTIL_INCLUDE_DIR, where to find apr.h, etc.
+#  APRUTIL_LIBRARIES, the libraries needed to use APR.
+#  APRUTIL_FOUND, If false, do not try to use APR.
 # also defined, but not for general use are
-#  APR_LIBRARY, where to find the APR library.
+#  APRUTIL_LIBRARY, where to find the APR library.
 
-FIND_PATH(APR_INCLUDE_DIR apr.h
+FIND_PATH(APRUTIL_INCLUDE_DIR apu.h
    PATH_SUFFIXES apr-1 apr-1.0
 )
 
-SET(APR_NAMES ${APR_NAMES} libapr-1 apr-1)
-FIND_LIBRARY(APR_LIBRARY
-  NAMES ${APR_NAMES}
+SET(APRUTIL_NAMES ${APRUTIL_NAMES} libaprutil-1 aprutil-1)
+FIND_LIBRARY(APRUTIL_LIBRARY
+  NAMES ${APRUTIL_NAMES}
 )
 
-find_package_handle_standard_args(APR DEFAULT_MSG
-   APR_LIBRARY APR_INCLUDE_DIR)
+find_package_handle_standard_args(APRUTIL DEFAULT_MSG
+   APRUTIL_LIBRARY APRUTIL_INCLUDE_DIR)
 
-MARK_AS_ADVANCED(APR_INCLUDE_DIR APR_LIBRARY)
+MARK_AS_ADVANCED(APRUTIL_INCLUDE_DIR APRUTIL_LIBRARY)
