@@ -74,6 +74,7 @@ esp.eclservices
 esp.eclqueries
 esp.esdl-sandbox
 esp.sql2ecl
+esp.dfs
 roxie.roxie
 thor.thor
 sasha.dfurecovery-archiver
@@ -106,6 +107,7 @@ sasha-dfuwu-archiver-576b978cc7-b47v7         1/1     Running   0          2m6s
 sasha-file-expiry-8496d87879-xct7f            1/1     Running   0          2m6s
 sasha-wu-archiver-5f64594948-xjblh            1/1     Running   0          2m6s
 sql2ecl-5c8c94d55-tj4td                       1/1     Running   0          2m6s
+dfs-4a9f12621-jabc1                           1/1     Running   0          2m6s
 thor-eclagent-6b8f564f9c-qnczz                1/1     Running   0          2m6s
 thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s</programlisting></para>
 
@@ -158,7 +160,8 @@ roxie                 LoadBalancer 10.100.134.125  localhost    9876:30480/TCP  
 roxie-toposerver      ClusterIP    None            &lt;none&gt;       9004/TCP          2m6s
 sasha-dfuwu-archiver  ClusterIP    10.110.200.110  &lt;none&gt;       8877/TCP          2m6s
 sasha-wu-archiver     ClusterIP    10.111.34.240   &lt;none&gt;       8877/TCP          2m6s
-sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP    2m6s</programlisting></para>
+sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP    2m6s
+dfs                   LoadBalancer 10.100.52.9     localhost    8520:30184/TCP    2m6s</programlisting></para>
 
     <para>Observe que o serviço <emphasis role="strong">eclwatch</emphasis>
     está sendo executado em <emphasis role="strong">localhost:8010</emphasis>.
