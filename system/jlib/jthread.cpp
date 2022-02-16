@@ -1614,7 +1614,7 @@ public:
                 throw e;
             }
         }
-        return aborted?((size32_t)-1):((size32_t)sizeRead);
+        return aborted?0:((size32_t)sizeRead);
     }
     ISimpleReadStream *getOutputStream()
     {
@@ -1641,7 +1641,7 @@ public:
                 throw e;
             }
         }
-        return aborted?((size32_t)-1):((size32_t)sizeRead);
+        return aborted?0:((size32_t)sizeRead);
     }
     ISimpleReadStream *getErrorStream()
     {
@@ -2293,7 +2293,7 @@ public:
     {
         CriticalBlock block(sect); 
         if (aborted)
-            return (size32_t)-1;
+            return 0;
         if (hOutput==(HANDLE)-1)
             return 0;
         size32_t sizeRead;
@@ -2311,7 +2311,7 @@ public:
                 throw createPipeErrnoExceptionV(errno,"Pipe: read failed (size %d)", sz);
             }
         }
-        return aborted?((size32_t)-1):((size32_t)sizeRead);
+        return aborted?0:((size32_t)sizeRead);
     }
 
     ISimpleReadStream *getOutputStream()
@@ -2351,7 +2351,7 @@ public:
         if (stderrbufferthread) 
             return stderrbufferthread->read(sz,buf);
         if (aborted)
-            return (size32_t)-1;
+            return 0;
         if (hError==(HANDLE)-1)
             return 0;
         size32_t sizeRead;
@@ -2369,7 +2369,7 @@ public:
                 throw createPipeErrnoExceptionV(errno, "Pipe: readError failed (size %d)", sz);
             }
         }
-        return aborted?((size32_t)-1):((size32_t)sizeRead);
+        return aborted?0:((size32_t)sizeRead);
     }
 
     ISimpleReadStream *getErrorStream()

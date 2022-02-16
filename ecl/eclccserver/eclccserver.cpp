@@ -1320,7 +1320,7 @@ int main(int argc, const char *argv[])
 #ifdef _CONTAINERIZED
             queryCodeSigner().initForContainer();
 
-            useChildProcesses = globals->getPropInt("@useChildProcesses", false);
+            useChildProcesses = globals->getPropBool("@useChildProcesses", false);
             unsigned maxThreads = globals->getPropInt("@maxActive", 4);
             childProcessTimeLimit = useChildProcesses ? 0 : globals->getPropInt("@childProcessTimeLimit", 10);
 #else

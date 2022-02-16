@@ -541,7 +541,7 @@ int main(int argc, const char *argv[])
         queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 #else
         setupContainerizedLogMsgHandler();
-        bool useChildProcesses = configuration->getPropInt("@useChildProcesses", false);
+        bool useChildProcesses = configuration->getPropBool("@useChildProcesses", false);
         if (!useChildProcesses)  // If using eclcc in separate container (useChildProcesses==false),
         {                        // it will need to create a directory for gpg and import keys from secrets
             queryCodeSigner().initForContainer();
