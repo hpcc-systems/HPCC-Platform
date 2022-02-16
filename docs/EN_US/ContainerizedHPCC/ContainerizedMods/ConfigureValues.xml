@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<chapter id="ContainerConfigurationcHAPTER">
-  <title>Containerized Configuration</title>
+<chapter id="ContainerConfigurationValuesCHAPTER">
+  <title>Configuration Values</title>
 
   <para>This chapter describes the configuration of HPCC Systems for a
   Kubernetes Containerized deployment. The following sections detail how
@@ -12,8 +12,8 @@
   the default <emphasis>values.yaml</emphasis> file used in configuring the
   HPCC Systems for a containerized deployment.</para>
 
-  <sect1 id="Intro_Containerized_Environments">
-    <title>Introduction to the Container Environment</title>
+  <sect1 id="Intro_Containerized_Environments" role="nobrk">
+    <title>The Container Environment</title>
 
     <para>One of the ideas behind our move to the cloud was to try and
     simplify the system configuration while also delivering a solution
@@ -25,8 +25,7 @@
     its associated schema file.</para>
 
     <sect2 id="WhatIsValues.Yaml">
-      <title>What is <emphasis>values.yaml</emphasis> and how is it
-      used?</title>
+      <title>The <emphasis>values.yaml</emphasis> and how it is used</title>
 
       <para>The <emphasis>values.yaml</emphasis> file is the delivered
       configuration values for a Helm chart. The
@@ -60,7 +59,7 @@
       customization.</para>
     </sect2>
 
-    <sect2 id="Values-SchemaJSONFile">
+    <sect2 id="Values-SchemaJSONFile" role="brk">
       <title>The values-schema.json</title>
 
       <para>The <emphasis>values-schema.json</emphasis> is a JSON file that
@@ -75,7 +74,7 @@
 
       <para>The schema file typically contains (for a property) a name and a
       description. It will often include details of the type, and the items it
-      can contain if it is a list or dictionary. For instance: </para>
+      can contain if it is a list or dictionary. For instance:</para>
 
       <programlisting>    "roxie": { 
       "description": "roxie process",
@@ -119,7 +118,7 @@
   </sect1>
 
   <sect1 id="TheValuesYaml_FileAndRelated" role="nobrk">
-    <title>The HPCC Components in the <emphasis>values.yaml</emphasis>
+    <title>HPCC Systems Components in the <emphasis>values.yaml</emphasis>
     File</title>
 
     <para>The HPCC Systems Helm charts all ship with stock/default values.
@@ -133,7 +132,7 @@
     <emphasis>values.yaml</emphasis> file.</para>
 
     <sect2 id="YAMLHPCC_Components">
-      <title>The HPCC Components</title>
+      <title>The HPCC Systems Components</title>
 
       <para>One of the key differences between the bare metal and
       container/cloud is that in bare metal storage is directly tied to the
@@ -167,16 +166,15 @@
         very important to define these carefully. Otherwise Kubernetes could
         assign all the pods to the same virtual machine and components
         fighting for memory will crush them. Therefore more memory assigned
-        the better. If you define these wrong and some process starts using
-        too much memory, Kubernetes will kill the pod if it is using much more
-        memory than what it was configured for.</para>
+        the better. If you define these wrong and a process uses more memory
+        than configured, Kubernetes will kill the pod. </para>
       </sect3>
 
       <sect3 id="DAFLESRV_DFURVR_YMLSECT">
         <title>Components: dafilesvrs, dfuserver</title>
 
         <para>The HPCC Systems components of dafilesvrs, eclccservers,
-        dfuserver, are declared as a lists in the yaml, as is the ECL
+        dfuserver, are declared as lists in the yaml, as is the ECL
         Agent.</para>
 
         <para>Consider the dfuserver which is in the delivered HPCC Systems
@@ -228,14 +226,14 @@
         in the same pod (up to the value of <emphasis>maxJobs</emphasis> in
         parallel). Therefore with <emphasis>useChildProcesses</emphasis>
         enabled, the component resources must be defined such that the pod has
-        enough resources to handle the resource demands of all the those jobs
-        to be able to run in parallel.</para>
+        enough resources to handle the resource demands of all those jobs to
+        be able to run in parallel.</para>
 
         <para>With useChildProcess enabled it could be rather expensive in
         most cloud pricing models, and rather wasteful if there aren't any
         jobs running. Instead you can set this
         <emphasis>useChildprocess</emphasis> to false (the default) to start a
-        pod to compile each query with the the required memory for the job
+        pod to compile each query with only the required memory for the job
         which will be disposed of when done. Now this model also has
         overheard, perhaps 20 seconds to a minute to spawn the Kubernetes
         cluster to process the job. Which may not be ideal for an environment
@@ -253,11 +251,11 @@
         compilation.</para>
 
         <para><emphasis role="bold">ChildProcessTimeLimit</emphasis> is the
-        Time limit (in seconds) for child process compilation before aborting
+        time limit (in seconds) for child process compilation before aborting
         and using a separate container, when the
         <emphasis>useChildProcesses</emphasis> is false.</para>
 
-        <para><emphasis role="bold">maxActive</emphasis>: The maximum number
+        <para><emphasis role="bold">maxActive</emphasis> -- The maximum number
         of jobs that can be run in parallel. Again use caution because each
         job will need enough memory to run. For instance, if
         <emphasis>maxActive</emphasis> is set to 2000, you could submit a very
@@ -305,11 +303,11 @@
         the Thor agent listening to the queue, causing all new jobs to use the
         new configuration.</para>
 
-        <para><emphasis role="bold">maxJobs</emphasis>: controls the number of
-        jobs, specifically <emphasis>maxJobs</emphasis> sets the maximum
+        <para><emphasis role="bold">maxJobs</emphasis> -- Controls the number
+        of jobs, specifically <emphasis>maxJobs</emphasis> sets the maximum
         number of jobs.</para>
 
-        <para><emphasis role="bold">maxGraphs</emphasis>: limits the maximum
+        <para><emphasis role="bold">maxGraphs</emphasis> -- Limits the maximum
         amount of graphs. It generally makes sense to keep this value below or
         at the same number as <emphasis>maxJobs</emphasis>, since not all jobs
         submit graphs and when they do the Thor jobs are not executing graphs
@@ -604,8 +602,9 @@
 
         <programlisting>helm install mycluster hpcc/hpcc -f examples/local/values-localfile.yaml</programlisting>
 
-        <para>Note: The settings for the PVC's must be ReadWriteMany, except
-        for Dali which can be ReadWriteOnce.</para>
+        <para><emphasis role="bold">Note: </emphasis>The settings for the
+        PVC's must be ReadWriteMany, except for Dali which can be
+        ReadWriteOnce.</para>
 
         <para>There are a number of resources, blogs, tutorials, even
         developer videos that provide step-by-step detail for creating
