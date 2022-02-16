@@ -155,7 +155,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
                                 <b style={{ color: (titlebarColor !== toolbarThemeDefaults.color) ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
-                                    ECL Watch{environmentTitle !== "" && showEnvironmentTitle ? ` | ${environmentTitle}` : ""}
+                                    ECL Watch - 9{environmentTitle !== "" && showEnvironmentTitle ? ` | ${environmentTitle}` : ""}
                                 </b>
                             </Text>
                         </Link>
@@ -197,7 +197,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             <DefaultButton text="Kibana" href="https://www.elastic.co/kibana/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=www.elastic.co" />} />
             <DefaultButton text="K8s Dashboard" href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=kubernetes.io" />} />
         </Panel>
-        <About show={showAbout} onClose={() => setShowAbout(false)} ></About>
+        <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
         <TitlebarConfig
             toolbarThemeDefaults={toolbarThemeDefaults}
