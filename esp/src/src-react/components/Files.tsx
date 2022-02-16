@@ -166,8 +166,14 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 },
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
-            Cost: {
-                label: nlsHPCC.Cost, width: 100,
+            AtRestCost: {
+                label: nlsHPCC.FileCostAtRest, width: 100,
+                formatter: function (cost, row) {
+                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                }
+            },
+            AccessCost: {
+                label: nlsHPCC.FileAccessCost, width: 100,
                 formatter: function (cost, row) {
                     return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
                 }
