@@ -1182,7 +1182,7 @@ bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &r
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitCompiled: %s", wuid.str());
 
-        secWaitForWorkUnitToCompile(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait());
+        secWaitForWorkUnitToCompile(wuid.str(), context.querySecManager(), context.queryUser(), req.getWait());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
@@ -1225,7 +1225,7 @@ bool CWsWorkunitsEx::onWUCDebug(IEspContext &context, IEspWUDebugRequest &req, I
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUCDebug: %s", wuid.str());
         StringBuffer result;
-        secDebugWorkunit(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getCommand(), result);
+        secDebugWorkunit(wuid.str(), context.querySecManager(), context.queryUser(), req.getCommand(), result);
         resp.setResult(result);
     }
     catch(IException* e)
