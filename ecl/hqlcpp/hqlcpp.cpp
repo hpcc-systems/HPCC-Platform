@@ -1787,6 +1787,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.serializeRowsetInExtract,"serializeRowsetInExtract", false),
         DebugOption(options.testIgnoreMaxLength,"testIgnoreMaxLength", false),
         DebugOption(options.trackDuplicateActivities,"trackDuplicateActivities", false),
+        DebugOption(options.trackRemoveInputs,"trackRemoveInputs", false),
         DebugOption(options.showActivitySizeInGraph,"showActivitySizeInGraph", false),
         DebugOption(options.addLocationToCpp,"addLocationToCpp", false),
         DebugOption(options.alwaysCreateRowBuilder,"alwaysCreateRowBuilder", false),

@@ -19181,8 +19181,21 @@ void HqlCppTranslator::buildActivityFramework(ActivityInstance * instance, bool 
         node_operator op = search->getOperator();
         if ((op != no_select) && (op != no_workunit_dataset))
         {
-            IHqlExpression * searchNorm = queryLocationIndependent(search);
-            unsigned crc = getExpressionCRC(search);
+            LinkedHqlExpr searchNorm = queryLocationIndependent(search);
+            if (options.trackRemoveInputs)
+            {
+                unsigned first = getFirstActivityArgument(searchNorm);
+                unsigned last = first + getNumActivityArguments(searchNorm);
+
+                for (unsigned i=first; i < last; i++)
+                {
+                    IHqlExpression * dataset = searchNorm->queryChild(i);
+                    OwnedHqlExpr nullDataset = createNullExpr(dataset);
+                    searchNorm.setown(replaceChildDataset(searchNorm, nullDataset, i));
+                }
+            }
+            unsigned crc = getExpressionCRC(searchNorm);
+            instance->addAttributeInt("trackCrc", crc);
             ForEachItemIn(i, tracking.activityExprs)
             {
                 if (search == &tracking.activityExprs.item(i))
