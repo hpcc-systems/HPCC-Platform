@@ -143,6 +143,7 @@ class WORKUNIT_API CLocalWorkUnit : implements IWorkUnit , implements IExtendedW
 {
     friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress, bool hidePasswords);
     friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress, bool hidePasswords, bool regressionTest);
+    friend class CLocalWUGraph;
 
 protected:
     Owned<IPropertyTree> p;

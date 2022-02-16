@@ -10085,17 +10085,20 @@ IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
 
 IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatStats) const
 {
-    if (!graph)
     {
-        // NB: although graphBin introduced in wuidVersion==2,
-        // daliadmin can retrospectively compress existing graphs, so need to check for all versions
-        MemoryBuffer mb;
-        if (p->getPropBin("xgmml/graphBin", mb))
-            graph.setown(createPTree(mb, ipt_lowmem));
-        else
-            graph.setown(p->getBranch("xgmml/graph"));
+        CriticalBlock block(owner.crit);
         if (!graph)
-            return NULL;
+        {
+            // NB: although graphBin introduced in wuidVersion==2,
+            // daliadmin can retrospectively compress existing graphs, so need to check for all versions
+            MemoryBuffer mb;
+            if (p->getPropBin("xgmml/graphBin", mb))
+                graph.setown(createPTree(mb, ipt_lowmem));
+            else
+                graph.setown(p->getBranch("xgmml/graph"));
+            if (!graph)
+                return NULL;
+        }
     }
     if (!doMergeProgress)
         return graph.getLink();
