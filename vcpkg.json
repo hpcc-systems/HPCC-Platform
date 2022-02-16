@@ -13,6 +13,7 @@
             "features": []
         },
         "boost-property-tree",
+        "python3",
         "apr",
         "apr-util",
         {

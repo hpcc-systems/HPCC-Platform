@@ -63,13 +63,13 @@ install(
     DESTINATION versioned/python3)
 endif()
 
-target_link_libraries(py3embed ${Python3_LIBRARIES})
-
 target_link_libraries(
     py3embed
     eclrtl
     roxiemem
-    jlib)
+    jlib
+    Python3::Python
+    )
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
