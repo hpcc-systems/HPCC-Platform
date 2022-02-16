@@ -24,7 +24,7 @@
 {{ range $dali := $.Values.dali -}}
 {{- if not $dali.disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
-{{- $daliPlaneIncludeCategories := list "dali" -}}
+{{- $daliPlaneIncludeCategories := list "dali" "debug" -}}
 {{- $commonCtx := dict "root" $ "me" $dali "includeCategories" $daliPlaneIncludeCategories "env" $env -}}
 {{- $sashaServices := $dali.services | default dict -}}
 {{- $daliSecretsCategories := list "system" "authn" -}}
@@ -88,8 +88,8 @@ spec:
       containers:
       - name: {{ $dali.name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ daserver ] 
-        args: [
+        command: [ {{ include "hpcc.componentCommand" (dict "me" $dali "root" $ "process" "daserver") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $dali "root" $ "process" "daserver") | nindent 16 }}
                 {{ include "hpcc.configArg" $dali }}
               ]
         env:

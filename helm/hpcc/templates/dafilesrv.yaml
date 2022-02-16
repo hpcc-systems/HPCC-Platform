@@ -20,7 +20,7 @@ data:
 {{ range $.Values.dafilesrv -}}
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
-{{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility "includeCategories" (list "data") -}}
+{{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility "includeCategories" (list "data" "debug") -}}
 {{- $_ := set $commonCtx "certificatesEnabled" (($.Values.certificates | default dict).enabled) -}}
 {{- if $commonCtx.certificatesEnabled -}}
  {{- $externalCert := ne (include "hpcc.isVisibilityPublic" $commonCtx) "" -}}
@@ -56,8 +56,8 @@ spec:
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ dafilesrv ] 
-        args: [
+        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "dafilesrv") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "dafilesrv") | nindent 16 }}
                 {{ include "hpcc.configArg" . }}
               ]
         env:

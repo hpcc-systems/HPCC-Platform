@@ -127,7 +127,7 @@ data:
 {{- $gitenv := get (fromYaml (include "hpcc.gatherGitEnvironment" (dict "root" $ "me" .))) "value" -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) $gitenv -}}
 {{- $secretsCategories := list "system" "codeVerify" "git" }}
-{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "dll" "git") "secretsCategories" $secretsCategories "env" $env }}
+{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "dll" "git" "debug") "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap" "component" "eclccserver" "excludeKeys" "global,eclccserver.queues")) }}
 apiVersion: apps/v1
 kind: Deployment
@@ -164,8 +164,8 @@ spec:
       containers:
       - name: {{ .name | quote }}
         workingDir: /tmp
-        command: [ eclccserver ] 
-        args: [
+        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "eclccserver") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "eclccserver") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]

@@ -6,8 +6,7 @@ usage() {
   echo "    -f <file>          Specifies a file to preserve on post-mortem"
 }
 
-PMD_DIRECTORYBASE=${HPCC_DEBUG_PATH}
-[[ -z ${PMD_DIRECTORYBASE} ]] && PMD_DIRECTORYBASE=$(pwd)
+PMD_DIRECTORYBASE=$(pwd)
 PMD_PROGNAME=
 PMD_COPYFILES=()
 PMD_DALISERVER=
