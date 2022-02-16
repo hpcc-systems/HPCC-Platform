@@ -48,7 +48,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/jwt-cpp/include"
                     "${HPCC_SOURCE_DIR}/system/mp"
                     "${HPCC_SOURCE_DIR}/system/security/shared"
                     "${HPCC_SOURCE_DIR}/system/jlib"
-                    "${CURL_INCLUDE_DIR}")
+                    "${CURL_INCLUDE_DIRS}")
 
 HPCC_ADD_LIBRARY(jwtSecurity SHARED ${SRCS})
 
@@ -58,4 +58,4 @@ install(TARGETS jwtSecurity
 
 target_link_libraries(jwtSecurity
                       PRIVATE jlib dalibase
-                      PRIVATE ${CURL_LIBRARIES})
+                      PRIVATE CURL::libcurl)
