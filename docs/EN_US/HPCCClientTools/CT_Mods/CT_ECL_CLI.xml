@@ -1674,6 +1674,119 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
           </informaltable></para>
       </sect2>
 
+      <sect2 id="CT_CLI_SyntaxECLQueriesFiles" role="brk">
+        <title>ecl queries files</title>
+
+        <para><emphasis role="bold">ecl queries files &lt;target&gt;
+        &lt;query&gt;</emphasis></para>
+
+        <para>The queries files command displays a list of the files currently
+        in use by the given query.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries files roxie myquery
+</programlisting>
+
+        <para>Example result:</para>
+
+        <para><programlisting> &gt; ecl queries files roxie myquery 
+ ------------------ 
+Query: myquery 
+Files used: 
+  jd::subfile1, 100 bytes, 2 part(s) 
+  jd::subfile2, 100 bytes, 2 part(s) 
+
+SuperFiles used: 
+  jd::mysuperfile 
+  &gt; jd::subfile2 
+  &gt; jd::subfile1 </programlisting></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Name of target cluster on which the query is
+                  published</entry>
+                </row>
+
+                <row>
+                  <entry>query</entry>
+
+                  <entry>Name of the query for which to get a list of files it
+                  uses</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
       <sect2 id="CT_CLI_eclqueriescopy" role="brk">
         <title>ecl queries copy</title>
 
@@ -1850,7 +1963,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>--source-no-ssl </entry>
+                  <entry>--source-no-ssl</entry>
 
                   <entry>Do not use SSL when connecting to source (default if
                   --ssl is NOT enabled)</entry>
