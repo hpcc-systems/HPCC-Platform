@@ -606,12 +606,20 @@ roxie:
     replicas: 1
   #directAccessPlanes: []  #add direct access planes that roxie will read from without copying the data to its default data plane
 
+## The [manager/worker/eclAgent]Resources define the resource limits for each pod.
+## workerMemory defines the memory requirements for each individual worker.
+## If numWorkersPerPod is >1 (must be a factor of numWorkers) then the memory
+## is divided evenly between the workers.
+## In the absence of a workerMemory.query specification, the resourced pod memory
+## will be split evenly between the workers in each worker pod.
+## NB: numWorkersPerPod must be a factor of numWorkers
 thor:
 - name: thor
   prefix: thor
   numWorkers: 2
   maxJobs: 4
   maxGraphs: 2
+  #numWorkersPerPod: 1
   #managerResources:
   #  cpu: "1"
   #  memory: "2G"

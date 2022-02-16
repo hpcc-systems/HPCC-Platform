@@ -39,6 +39,8 @@ Pass in dict with root and me
 {{- $thorManagerJobName := printf "thormanager-_HPCC_JOBNAME_" }}
 {{- $thorWorkerJobName := printf "thorworker-_HPCC_JOBNAME_" }}
 {{- $thorNetworkPolicyName := printf "thornetworkpolicy-_HPCC_JOBNAME_" }}
+{{- $numWorkersPerPod := .me.numWorkersPerPod | default 1 }}
+{{- $configCtx := . -}}
 apiVersion: v1 
 metadata:
   name: {{ $thorScope.name }}-configmap
@@ -226,28 +228,31 @@ data:
 {{- end }}            
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
           containers:
-{{- if $misc.postJobCommandViaSidecar }}
-{{ include "hpcc.addWaitAndRunContainer" (. | merge (dict "command" $misc.postJobCommand)) | indent 10 }}
+{{- range $containerNum := untilStep 1 (int (add1 $numWorkersPerPod)) 1 }}
+{{- $slavePort := add 20100 (mul 100 (sub $containerNum 1)) -}}
+{{- if and ($misc.postJobCommandViaSidecar) (eq $containerNum 1) }}
+{{ include "hpcc.addWaitAndRunContainer" ($configCtx | merge (dict "command" $misc.postJobCommand)) | indent 10 }}
 {{- end }}
-          - name: {{ $thorWorkerJobName }}
-{{- include "hpcc.addSecurityContext" . | indent 12 }}
-{{ include "hpcc.addImageAttrs" . | indent 12 }}
+          - name: {{ $thorWorkerJobName }}-{{ $containerNum }}
+{{- include "hpcc.addSecurityContext" $configCtx | indent 12 }}
+{{ include "hpcc.addImageAttrs" $configCtx | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
-{{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
-{{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
-{{- if .env }}
+{{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" $configCtx.root) $slavePort }}
+{{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
+{{- if $configCtx.me.env }}
             env:
-{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{ include "hpcc.mergeEnvironments" $configCtx.me.env | indent 12 }}
 {{- end }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
-{{ include "hpcc.addVolumeMounts" . | indent 12 }}
-{{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "thorworker") | indent 12 }}
-{{- if $misc.postJobCommandViaSidecar }}
-{{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
+{{ include "hpcc.addConfigMapVolumeMount" $configCtx.me | indent 12 }}
+{{ include "hpcc.addVolumeMounts" $configCtx | indent 12 }}
+{{ include "hpcc.addSecretVolumeMounts" $configCtx | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $configCtx.root "name" $configCtx.me.name "component" "thorworker") | indent 12 }}
+{{- if and ($misc.postJobCommandViaSidecar) (eq $containerNum 1) }}
+{{ include "hpcc.addWaitAndRunVolumeMount" $configCtx | indent 12 }}
 {{- end }}
+{{- end }}{{/* range */}}
           volumes:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addVolumes" . | indent 10 }}

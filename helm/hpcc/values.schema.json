@@ -1927,6 +1927,12 @@
           "description": "The number of worker pods",
           "minimum": 1
         },
+        "numWorkersPerPod": {
+          "type": "integer",
+          "description": "The number of workers to place per pod (must be a factor of numWorkers)",
+          "minimum": 1,
+          "default": 1
+        },
         "maxJobs": {
           "type": "integer",
           "description": "The maximum number of jobs that can be run concurrenly",
