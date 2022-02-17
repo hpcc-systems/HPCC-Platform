@@ -68,7 +68,7 @@ spec:
         server: {{ $servername | quote }}
         accessDali: "yes"
         accessEsp: "yes"
-        helmVersion: 8.6.3-closedown0
+        helmVersion: 8.6.5-closedown0
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
