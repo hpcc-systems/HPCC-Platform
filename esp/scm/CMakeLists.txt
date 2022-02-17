@@ -37,6 +37,8 @@ ADD_CUSTOM_TARGET(
   DEPENDS ${ESP_GENERATED_INCLUDES}
 )
 
-if (WIN32)
-  ADD_DEPENDENCIES(espscm copy_libssl)
+if (NOT VCPKG_APPLOCAL_DEPS)
+  if (WIN32)
+    ADD_DEPENDENCIES(espscm copy_libssl)
+  endif()
 endif()

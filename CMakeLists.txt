@@ -201,9 +201,11 @@ elseif ( NOT MAKE_DOCS_ONLY )
 endif()
 
 HPCC_ADD_SUBDIRECTORY(docs "PLATFORM")
-if(APPLE OR WIN32)
-    HPCC_ADD_SUBDIRECTORY(lib2)
-endif(APPLE OR WIN32)
+if (NOT VCPKG_APPLOCAL_DEPS)
+    if(APPLE OR WIN32)
+        HPCC_ADD_SUBDIRECTORY(lib2)
+    endif(APPLE OR WIN32)
+endif()
 
 if(APPLE)
     HPCC_ADD_SUBDIRECTORY(package)
@@ -493,6 +495,7 @@ if(TOP_LEVEL_PROJECT)
 
             set(CPACK_NSIS_MODIFY_PATH "ON")
 
+            if (EXISTS "${SIGN_DIRECTORY}/passphrase.txt")
 
             file(STRINGS "${SIGN_DIRECTORY}/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
 
@@ -503,6 +506,7 @@ if(TOP_LEVEL_PROJECT)
             )
             add_dependencies(SIGN PACKAGE)
             set_property(TARGET SIGN PROPERTY FOLDER "CMakePredefinedTargets")
+        endif()
         endif()
     endif(PLATFORM OR PLUGIN)
 endif(TOP_LEVEL_PROJECT)
