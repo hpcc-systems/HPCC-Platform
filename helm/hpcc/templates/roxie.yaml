@@ -143,8 +143,8 @@ spec:
 {{- end }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         workingDir: /var/lib/HPCCSystems
-        command: [ toposerver ] 
-        args: [ 
+        command: [ {{ include "hpcc.componentCommand" (dict "me" $toposerver "root" $ "process" "toposerver") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $toposerver "root" $ "process" "toposerver") | nindent 16 }}
                 {{ include "hpcc.configArg" $toposerver }}
               ]
         env:
@@ -259,19 +259,8 @@ spec:
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
-{{- if $roxie.valgrind }}
-        command: [ valgrind ] 
-        args: [
-                "--leak-check=full",
-                "--show-leak-kinds=all",
-                "--track-origins=yes",
-                "--num-callers=8",
-                "--log-fd=1",
-                "roxie",
-{{- else }}
-        command: [ roxie ] 
-        args: [
-{{- end }}
+        command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
                 "--server=true" 
@@ -371,34 +360,14 @@ spec:
       containers:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
-{{- if $roxie.valgrind }}
-        command: [ valgrind ] 
-        args: [
-                "--leak-check=full",
-                "--show-leak-kinds=all",
-                "--track-origins=yes",
-                "--num-callers=8",
-                "--log-fd=1",
-                "roxie",
-{{- else }}
-{{- if (include "hpcc.hasPlaneForCategory" (dict "root" $ "category" "debug")) }}
-        command: [ check_executes ] 
-        args: [
-                "-f", "/etc/config/{{ $roxie.name }}.yaml",
-                "--",
-                "roxie",
-{{- else }}
-        command: [ roxie ] 
-        args: [
-{{- end }}
-{{- end }}
+        command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
                 "--channels={{ $channel }}", 
                 "--server={{ not $roxie.serverReplicas }}",
               ]
         env:
-{{ include "hpcc.printDebugEnvironment" $commonCtx | indent 8 }}
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
         - name: "SENTINEL"
           value: "/tmp/{{ $roxie.name }}.sentinel"

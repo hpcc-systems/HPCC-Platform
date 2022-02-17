@@ -74,7 +74,7 @@ data:
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $application := .application | default "eclwatch" -}}
 {{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify" "authn")  (list "storage" "esp") (eq $application "eclwatch") -}}
-{{- $includeStorageCategories := ternary (list "lz" "data" "dll") (list "data" "dll") (eq $application "eclwatch") -}}
+{{- $includeStorageCategories := ternary (list "lz" "data" "dll" "debug") (list "data" "dll" "debug") (eq $application "eclwatch") -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeCategories" $includeStorageCategories "env" $env -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp.queues")) -}}
 {{- if (ne (include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility)) "") }}
@@ -124,8 +124,8 @@ spec:
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ esp ] 
-        args: [
+        command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "esp") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "esp") | nindent 16 }}
                 {{ printf "--application=%s" $application | quote }},
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}

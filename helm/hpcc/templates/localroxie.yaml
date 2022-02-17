@@ -44,7 +44,7 @@ data:
 {{- if not $roxie.disabled  -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "remote" "spill" "dll") "secretsCategories" $secretsCategories "env" $env }}
+{{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "remote" "spill" "dll" "debug") "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{- if $roxie.localAgent -}}
@@ -86,8 +86,8 @@ spec:
       containers:
       - name: {{ $roxie.name | quote }}
         workingDir: /var/lib/HPCCSystems
-        command: [ roxie ]
-        args: [
+        command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
+        args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
                 "--server=true", 
