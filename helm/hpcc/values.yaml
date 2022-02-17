@@ -495,8 +495,11 @@ esp:
   application: eclwatch
   auth: none
   replicas: 1
+# Add remote clients to generated client certificates and make the ESP require that one of the generated certificates is provided by a client in order to connect
+#   When setting up remote clients make sure that certificates.issuers.remote.enabled is set to true.
 # remoteClients:
-# - name: client333
+# - name: myclient
+#   organization: mycompany
   service:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
     port: 8888

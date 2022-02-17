@@ -311,7 +311,7 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
     if (mtls_secret_.length())
         soapclient.setMtlsSecretName(mtls_secret_);
     if (client_cert_.length() || ca_certs_.length() || accept_self_signed_)
-        soapclient.setSecureSocketConfig(LINK(createSecClientConfig(client_cert_, client_priv_key_, ca_certs_, accept_self_signed_)));
+        soapclient.setSecureSocketConfig(createSecClientConfig(client_cert_, client_priv_key_, ca_certs_, accept_self_signed_));
 
     soapclient.setUsernameToken(soap_getUserId(), soap_getPassword(), soap_getRealm());
 

@@ -150,9 +150,9 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     if(m_transportclient.get() == NULL)
     {
         if (m_sec_config)
-          httpctx.setown(createHttpClientContext(LINK(m_sec_config)));
+            httpctx.setown(createHttpClientContext(LINK(m_sec_config)));
         else
-         httpctx.setown(getHttpClientSecretContext(m_mtls_secret));
+            httpctx.setown(getHttpClientSecretContext(m_mtls_secret));
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
         if (m_disableKeepAlive)
             httpclient->disableKeepAlive();
@@ -363,9 +363,9 @@ int CSoapClient::postRequest(IRpcMessage & rpccall, StringBuffer & responsebuf, 
     {
         Owned<IHttpClientContext> httpctx;
         if (m_sec_config)
-          httpctx.setown(createHttpClientContext(LINK(m_sec_config)));
+            httpctx.setown(createHttpClientContext(LINK(m_sec_config)));
         else
-         httpctx.setown(getHttpClientContext());
+            httpctx.setown(getHttpClientContext());
         IHttpClient* httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
         m_transportclient.setown(httpclient);
         if (m_disableKeepAlive)

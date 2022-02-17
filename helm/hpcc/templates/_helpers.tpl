@@ -1409,40 +1409,45 @@ spec:
 
 {{/*
 Builds the commonName for a client certificate.  Used in creation of both certificate and access control list.
+  Pass in root, client (name), instance (myeclwatch), component (eclwatch), visibility, external (bool, optional)
 */}}
 {{- define "hpcc.getClientCommonName" -}}
-  {{- if (.root.Values.certificates | default dict).enabled -}}
-    {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-    {{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
-    {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-      {{- $_ := fail (printf "Issuer '%s' for client certificates not enabled." $issuerName) -}}
-    {{- else -}}
-      {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
-      {{- if not $issuer -}}
-        {{- $_ := fail (printf "Issuer '%s' for client certificates not found." $issuerName) -}}
-      {{- else -}}
-        {{- $namespace := .root.Release.Namespace -}}
-        {{- $service := (.service | default dict) -}}
-        {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
-        {{- .client }}@{{ .instance }}.{{ .component }}.{{ $domain }}
-      {{- end -}}
-    {{- end -}}
+ {{- if (.root.Values.certificates | default dict).enabled -}}
+  {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+  {{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
+  {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
+   {{- $_ := fail (printf "Issuer '%s' for client certificates not enabled." $issuerName) -}}
+  {{- else -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
+   {{- if not $issuer -}}
+    {{- $_ := fail (printf "Issuer '%s' for client certificates not found." $issuerName) -}}
+   {{- else -}}
+    {{- $namespace := .root.Release.Namespace -}}
+    {{- $service := (.service | default dict) -}}
+    {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
+    {{- .client }}@{{ .instance }}.{{ .component }}.{{ $domain }}
+   {{- end -}}
   {{- end -}}
+ {{- end -}}
 {{- end -}}
 
+{{/*
+Turns an array of remoteClients into a | delemited string to be used for the trusted_peers element of SecureSocket settings.
+  Pass in root, remoteClients, instance (myeclwatch), component (eclwatch), visibility
+*/}}
 {{- define "hpcc.getTrustedPeerString" -}}
-  {{- if not .remoteClients -}}
-    anyone
-  {{- else -}}
-    {{/* Turn remoteClients array into one single array element which is a | delimited string */}}
-    {{- $instance := .instance -}}
-    {{- $component := .component -}}
-    {{- $visibility := .visibility -}}
-    {{- $root := .root }}
-    {{- range $remoteClient := .remoteClients -}}
-      {{- include "hpcc.getClientCommonName" (dict "root" $root "client" $remoteClient.name "instance" $instance "component" $component "visibility" $visibility) -}}|
-    {{- end -}}
+ {{- if not .remoteClients -}}
+  anyone
+ {{- else -}}
+  {{/* Turn remoteClients array into one single array element which is a | delimited string */}}
+  {{- $instance := .instance -}}
+  {{- $component := .component -}}
+  {{- $visibility := .visibility -}}
+  {{- $root := .root }}
+  {{- range $remoteClient := .remoteClients -}}
+   {{- include "hpcc.getClientCommonName" (dict "root" $root "client" $remoteClient.name "instance" $instance "component" $component "visibility" $visibility) -}}|
   {{- end -}}
+ {{- end -}}
 {{- end }}
 
 {{/*
@@ -1452,30 +1457,33 @@ Adding the following to ESP (Roxie support to be added later)
   remoteClients:
   - name: myRemoteClient
 Will generate certificates that can be deployed to the remote client.
-Will cause ESP require client certificates when a socket connects.
-Will create a TLS based access contol list which ESP will check to make sure a connections client certificate is enabled.
+Will cause ESP to require client certificates when a socket connects.
+Will create a TLS based access control list which ESP will check to make sure a connections client certificate is enabled.
+
+Pass in root, client (name), organization (optional), instance (myeclwatch), component (eclwatch), visibility
 */}}
 {{- define "hpcc.addClientCertificate" }}
-{{- if (.root.Values.certificates | default dict).enabled -}}
-{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
-{{- if not $issuer -}}
-  {{- $_ := fail (printf "Issuer %s for client certificates not found." $issuerName) -}}
-{{- else -}}
-{{- if not $issuer.enabled -}}
-  {{- $_ := fail (printf "Issuer %s for client certificates not enabled." $issuerName) -}}
-{{- end }}
-{{- $namespace := .root.Release.Namespace -}}
-{{- $service := (.service | default dict) -}}
-{{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
-{{- $instance := .instance -}}
-{{- $component := .component -}}
-{{- $client := .client -}}
-{{- if not $externalCert -}}
- {{- $_ := fail (printf "Remote certificate defined for non external facing service %s - %s." $component $instance) -}}
-{{- end }}
+ {{- if (.root.Values.certificates | default dict).enabled -}}
+  {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+  {{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
+   {{- if not $issuer -}}
+    {{- $_ := fail (printf "Issuer %s for client certificates not found." $issuerName) -}}
+   {{- else -}}
+    {{- if not $issuer.enabled -}}
+     {{- $_ := fail (printf "Issuer %s for client certificates not enabled." $issuerName) -}}
+    {{- end }}
+    {{- $namespace := .root.Release.Namespace -}}
+    {{- $service := (.service | default dict) -}}
+    {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
+    {{- $instance := .instance -}}
+    {{- $component := .component -}}
+    {{- $client := .client -}}
+    {{- $organization := .organization -}}
+    {{- if not $externalCert -}}
+     {{- $_ := fail (printf "Remote certificate defined for non external facing service %s - %s." $component $instance) -}}
+    {{- end }}
 
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -1489,7 +1497,11 @@ spec:
   renewBefore: 360h # 15d
   subject:
     organizations:
-    - HPCC Systems
+    {{- if $organization }}
+    - {{ $organization }}
+    {{- else }}
+    - HPCC Client
+    {{- end }}
   commonName: {{ include "hpcc.getClientCommonName" . }}
   isCA: false
   privateKey:
@@ -1505,9 +1517,9 @@ spec:
     kind: {{ $issuer.kind }}
     group: cert-manager.io
 ---
-{{- end }}
-{{- end }}
-{{- end }}
+   {{- end }}
+  {{- end }}
+ {{- end }}
 {{- end }}
 
 {{/*

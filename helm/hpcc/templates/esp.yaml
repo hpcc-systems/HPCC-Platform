@@ -198,7 +198,7 @@ kind: ConfigMap
 {{- $instance := .name -}}
 {{- $visibility := .service.visibility -}}
 {{- range $remoteClient := .remoteClients }}
- {{ include "hpcc.addClientCertificate" (dict "root" $ "client" $remoteClient.name "instance" $instance "component" $application "visibility" $visibility) }}
+ {{ include "hpcc.addClientCertificate" (dict "root" $ "client" $remoteClient.name "organization" $remoteClient.organization "instance" $instance "component" $application "visibility" $visibility) }}
 {{- end }}
 {{- end }}
 {{- end }}
