@@ -13,11 +13,20 @@
             "features": []
         },
         "boost-property-tree",
+        "python3",
         "apr",
         "apr-util",
         {
             "name": "libiconv",
             "platform": "osx"
+        },
+        "curl",
+        {
+            "name": "libarchive",
+            "default-features": false,
+            "features": [
+                "bzip2"
+            ]
         },
         {
             "name": "winflexbison",

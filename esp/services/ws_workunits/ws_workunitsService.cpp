@@ -1182,7 +1182,7 @@ bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &r
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUWaitCompiled: %s", wuid.str());
 
-        secWaitForWorkUnitToCompile(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait());
+        secWaitForWorkUnitToCompile(wuid.str(), context.querySecManager(), context.queryUser(), req.getWait());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
         if(!cw)
@@ -1225,7 +1225,7 @@ bool CWsWorkunitsEx::onWUCDebug(IEspContext &context, IEspWUDebugRequest &req, I
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Full);
         PROGLOG("WUCDebug: %s", wuid.str());
         StringBuffer result;
-        secDebugWorkunit(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getCommand(), result);
+        secDebugWorkunit(wuid.str(), context.querySecManager(), context.queryUser(), req.getCommand(), result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -1987,6 +1987,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             info->setExecuteCost(cost_type2money(cw.getExecuteCost()));
         if (version>=1.85)
             info->setFileAccessCost(cost_type2money(cw.getFileAccessCost()));
+        if (version>=1.87)
+            info->setCompileCost(cost_type2money(cw.getCompileCost()));
         results.append(*info.getClear());
     }
 

@@ -541,7 +541,7 @@ int main(int argc, const char *argv[])
         queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 #else
         setupContainerizedLogMsgHandler();
-        bool useChildProcesses = configuration->getPropInt("@useChildProcesses", false);
+        bool useChildProcesses = configuration->getPropBool("@useChildProcesses", false);
         if (!useChildProcesses)  // If using eclcc in separate container (useChildProcesses==false),
         {                        // it will need to create a directory for gpg and import keys from secrets
             queryCodeSigner().initForContainer();
@@ -1542,7 +1542,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     const cost_type cost = money2cost_type(calcCost(getMachineCostRate(), nanoToMilli(totalTimeNs)));
     if (cost)
-        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scopeName, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scopeName, StCostCompile, NULL, cost, 1, 0, StatsMergeReplace);
 
     if (systemFinishTime.getTotal())
     {

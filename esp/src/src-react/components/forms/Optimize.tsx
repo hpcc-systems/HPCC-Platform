@@ -69,7 +69,7 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
                 label={nlsHPCC.Target}
                 placeholder={nlsHPCC.Target}
                 selectedKey={value}
-                optional={false}
+                required={true}
                 onChange={(ev, row) => {
                     return onChange(row.key);
                 }}

@@ -284,6 +284,7 @@ roxie-agent-local-roxie-agent-1-cert      True    roxie-agent-local-roxie-agent-
 roxie-agent-local-roxie-agent-2-cert      True    roxie-agent-local-roxie-agent-2-tls      85s
 roxie-local-roxie-workunit-cert           True    roxie-local-roxie-workunit-tls           85s
 sql2ecl-public-sql2ecl-cert               True    sql2ecl-public-sql2ecl-tls               85s
+dfs-public-dfs-cert                       True    dfs-public-dfs-tls                       85s
 thoragent-local-thor-thoragent-cert       True    thoragent-local-thor-thoragent-tls       85s
 thormanager-local-thormanager-w-cert      True    thormanager-local-thormanager-w-tls      85s
 thorworker-local-thorworker-w-cert        True    thorworker-local-thorworker-w-tls        85s
@@ -331,6 +332,7 @@ roxie-local-roxie-workunit-tls           kubernetes.io/tls                     3
 sh.helm.release.v1.cert-manager.v1       helm.sh/release.v1                    1      3m52s
 sh.helm.release.v1.myhpcc.v1             helm.sh/release.v1                    1      2m58s
 sql2ecl-public-sql2ecl-tls               kubernetes.io/tls                     3      2m55s
+dfs-public-dfs-tls                       kubernetes.io/tls                     3      2m55s
 thoragent-local-thor-thoragent-tls       kubernetes.io/tls                     3      2m52s
 thormanager-local-thormanager-w-tls      kubernetes.io/tls                     3      2m51s
 thorworker-local-thorworker-w-tls        kubernetes.io/tls                     3      2m51s

@@ -137,16 +137,6 @@ Get default git plane
 {{- include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "git") | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "dll")) -}}
 {{- end -}}
 
-{{- define "hpcc.printDebugEnvironment" -}}
-{{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
-{{- if $debugPlane -}}
- {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
- {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
-- name: HPCC_DEBUG_PATH
-  value: {{ $prefix }}
- {{- end -}}
-{{- end -}}
-
 {{/*
 Returns the largest number of workers from all the thors
 */}}
@@ -563,6 +553,40 @@ Check that the storage and spill planes for a component exist
 {{- if (hasKey .me "spillPlane") }}
  {{- $search := .me.spillPlane -}}
  {{- include "hpcc.checkValidStoragePlane" (dict "search" $search "root" .root "category" "spill" "type" "storage spill" "for" .me.name) -}}
+{{- end }}
+{{- end -}}
+
+{{/*
+Add command for a component
+*/}}
+{{- define "hpcc.componentCommand" -}}
+{{- if .me.valgrind -}}
+valgrind
+{{- else if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
+check_executes
+{{- else -}}
+{{ .process }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Add extra args for a component
+*/}}
+{{- define "hpcc.componentStartArgs" -}}
+{{- if .me.valgrind -}}
+"--leak-check=full",
+"--show-leak-kinds=all",
+"--track-origins=yes",
+"--num-callers=8",
+"--log-fd=1",
+{{ .process | quote }},
+{{- else if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
+ {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
+ {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
+ {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
+"-d", {{ $prefix }},
+"--",
+{{ .process | quote }},
 {{- end }}
 {{- end -}}
 
@@ -993,7 +1017,7 @@ A template to translate dali access types into required planes
 Pass in dict with access
 */}}
 {{- define "hpcc.getSashaPlanesFromAccess" }}
-{{- $tmpCtx := dict "planeTypes" list -}}
+{{- $tmpCtx := dict "planeTypes" (list "debug") -}}
 {{- if has "dalidata" .access -}}
  {{- $_ := set $tmpCtx "planeTypes" (append $tmpCtx.planeTypes "dali" ) -}}
 {{- end }}
@@ -1283,8 +1307,15 @@ lifecycle:
 command: ["/bin/bash"]
 args:
 - -c
+{{- $check_cmd := dict "command" .command}}
+{{- if (include "hpcc.hasPlaneForCategory" (dict "root" .root "category" "debug")) -}}
+ {{- $debugPlane := .me.debugPlane | default (include "hpcc.getFirstPlaneForCategory"  (dict "root" .root "category" "debug")) -}}
+ {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $debugPlane) -}}
+ {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $debugPlane) -}}
+ {{- $_ := set $check_cmd "command" (printf "check_executes -d %s -- %s" $prefix .command) -}}
+{{- end }}
 - >-
-    {{ .command }}
+    {{ $check_cmd.command }}
 {{- if $misc.postJobCommandViaSidecar -}} ;
     touch /wait-and-run/{{ .me.name }}.jobdone
 {{- else if $postJobCommand -}} ;

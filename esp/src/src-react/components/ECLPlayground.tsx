@@ -238,7 +238,6 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 onChange={React.useCallback((evt, option) => setCluster(option.key.toString()), [setCluster])}
                 required={true}
                 selectedKey={cluster ? cluster : undefined}
-                options={[]}
             />
             <div className={playgroundStyles.outputButtons}>
                 <IconButton

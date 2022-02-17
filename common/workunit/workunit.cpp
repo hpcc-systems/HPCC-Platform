@@ -3662,6 +3662,7 @@ public:
 
         costExecute = p.getPropInt64("@costExecute");
         costFileAccess = p.getPropInt64("@costFileAccess");
+        costCompile = p.getPropInt64("@costCompile");
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3678,6 +3679,7 @@ public:
     virtual bool isProtected() const { return _isProtected; }
     virtual cost_type getExecuteCost() const { return costExecute; }
     virtual cost_type getFileAccessCost() const { return costFileAccess; }
+    virtual cost_type getCompileCost() const { return costCompile; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -3698,6 +3700,7 @@ protected:
     bool _isProtected;
     unsigned __int64 costExecute;
     unsigned __int64 costFileAccess;
+    unsigned __int64 costCompile;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -4353,6 +4356,8 @@ public:
             { return c->getExecuteCost(); }
     virtual cost_type getFileAccessCost() const
             { return c->getFileAccessCost(); }
+    virtual cost_type getCompileCost() const
+            { return c->getCompileCost(); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -8669,6 +8674,8 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         else if (kind == StCostFileAccess)
             p->setPropInt64("@costFileAccess", value);
     }
+    if (kind == StCostCompile)
+        p->setPropInt64("@costCompile", value);
 }
 
 void CLocalWorkUnit::_loadStatistics() const
@@ -10085,17 +10092,20 @@ IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
 
 IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatStats) const
 {
-    if (!graph)
     {
-        // NB: although graphBin introduced in wuidVersion==2,
-        // daliadmin can retrospectively compress existing graphs, so need to check for all versions
-        MemoryBuffer mb;
-        if (p->getPropBin("xgmml/graphBin", mb))
-            graph.setown(createPTree(mb, ipt_lowmem));
-        else
-            graph.setown(p->getBranch("xgmml/graph"));
+        CriticalBlock block(owner.crit);
         if (!graph)
-            return NULL;
+        {
+            // NB: although graphBin introduced in wuidVersion==2,
+            // daliadmin can retrospectively compress existing graphs, so need to check for all versions
+            MemoryBuffer mb;
+            if (p->getPropBin("xgmml/graphBin", mb))
+                graph.setown(createPTree(mb, ipt_lowmem));
+            else
+                graph.setown(p->getBranch("xgmml/graph"));
+            if (!graph)
+                return NULL;
+        }
     }
     if (!doMergeProgress)
         return graph.getLink();
@@ -12331,6 +12341,12 @@ cost_type CLocalWorkUnit::getFileAccessCost() const
     return p->getPropInt64("@costFileAccess");
 }
 
+cost_type CLocalWorkUnit::getCompileCost() const
+{
+    CriticalBlock block(crit);
+    return p->getPropInt64("@costCompile");
+}
+
 #if 0
 void testConstWorkflow(IConstWorkflowItem * cwf, bool * okay, bool * dep)
 {
@@ -12549,18 +12565,18 @@ extern bool waitForWorkUnitToCompile(const char * wuid, int timeout)
     }
 }
 
-extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout)
+extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char *wuid, ISecManager *secmgr, ISecUser *secuser, int timeout)
 {
-    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Compile", false, true))
+    if (checkWuSecAccess(wuid, secmgr, secuser, SecAccess_Read, "Wait for Compile", false, true))
         return waitForWorkUnitToCompile(wuid, timeout);
     return false;
 }
 
-extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response)
+extern WORKUNIT_API bool secDebugWorkunit(const char *wuid, ISecManager *secmgr, ISecUser *secuser, const char *command, StringBuffer &response)
 {
-    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Debug", false, true))
+    if (strnicmp(command, "<debug:", 7) == 0 && checkWuSecAccess(wuid, secmgr, secuser, SecAccess_Read, "Debug", false, true))
     {
-        Owned<IConstWorkUnit> wu = globalFactory->openWorkUnit(wuid, &secmgr, &secuser);
+        Owned<IConstWorkUnit> wu = globalFactory->openWorkUnit(wuid, secmgr, secuser);
         SCMStringBuffer ip;
         unsigned port = 0;
         try

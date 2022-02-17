@@ -285,6 +285,34 @@ private:
 
     int                  m_timeout;
     bool                 m_isAzureAD = false;
+
+#ifdef _DEBUG
+    void debugPrintout()
+    {
+        DBGLOG("@@LDAP CONFIG--------------");
+        DBGLOG("m_adminGroupDN = %s", m_adminGroupDN.str());
+        DBGLOG("m_protocol = %s", m_protocol.str());
+        DBGLOG("m_basedn = %s", m_basedn.str());
+        DBGLOG("m_domain = %s", m_domain.str());
+        DBGLOG("m_authmethod = %s", m_authmethod.str());
+
+        DBGLOG("m_user_basedn = %s", m_user_basedn.str());
+        DBGLOG("m_group_basedn = %s", m_group_basedn.str());
+        DBGLOG("m_resource_basedn = %s", m_resource_basedn.str());
+        DBGLOG("m_filescope_basedn = %s",m_filescope_basedn.str());
+        DBGLOG("m_view_basedn = %s", m_view_basedn.str());
+        DBGLOG("m_workunitscope_basedn = %s", m_workunitscope_basedn.str());
+
+        DBGLOG("m_sysuser = %s", m_sysuser.str());
+        DBGLOG("m_sysuser_dn = %s", m_sysuser_dn.str());
+        DBGLOG("m_sysuser_commonname = %s", m_sysuser_commonname.str());
+//        DBGLOG("m_sysuser_password = %s", m_sysuser_password.str());
+        DBGLOG("m_sysuser_basedn = %s", m_sysuser_basedn.str());
+        DBGLOG("m_sdfieldname = %s", m_sdfieldname.str());
+        DBGLOG("@@END LDAP CONFIG--------------");
+    }
+#endif
+
 public:
     IMPLEMENT_IINTERFACE
 
@@ -631,6 +659,9 @@ public:
             m_sdfieldname.append("aci");
         else if(m_serverType == OPEN_LDAP)
             m_sdfieldname.append("aci");
+#ifdef _DEBUG
+        debugPrintout();
+#endif
     }
 
     virtual const char * getAdminGroupDN()
@@ -1627,20 +1658,19 @@ public:
 
             //Create base LDAP OU tree. Specify PT_ADMINISTRATORS_ONLY to ensure each OU
             //grants access to Administrators only
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_DEFAULT);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY, nullptr);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT, nullptr);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_ADMINISTRATORS_ONLY, nullptr);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_DEFAULT, nullptr);
+            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY, nullptr);
 
-            createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY);
-            createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY);
+            createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY, nullptr);
+            createLdapBasedn(NULL, m_ldapconfig->getGroupBasedn(), PT_ADMINISTRATORS_ONLY, nullptr);
 
             //Create the HPCC Administrators group and admin user
             if (!adminGroupName.isEmpty())
             {
                 //Create HPCC admin group
-                bool groupExisted = organizationalUnitExists(m_ldapconfig->getAdminGroupDN());
-                if (!groupExisted)
                 {
                     DBGLOG("Adding HPCC Admin group %s", adminGroupName.str());
                     try { addGroup(adminGroupName.str(), nullptr, "HPCC Administrators"); }
@@ -1701,7 +1731,7 @@ public:
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype)
     {
         m_ldapconfig->setResourceBasedn(rbasedn, rtype);
-        createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(rtype), PT_ADMINISTRATORS_ONLY);
+        createLdapBasedn(nullptr, m_ldapconfig->getResourceBasedn(rtype), PT_ADMINISTRATORS_ONLY, nullptr);
     }
 
     void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
@@ -5421,7 +5451,7 @@ private:
         return rc == LDAP_SUCCESS;
     }
 
-    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype)
+    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description)
     {
         if(basedn == NULL || basedn[0] == '\0')
         {
@@ -5451,13 +5481,13 @@ private:
         }
 
         if (ptr && strstr(ptr,"ou=") && !organizationalUnitExists(ptr))
-            createLdapBasedn(user, ptr, ptype);
+            createLdapBasedn(user, ptr, ptype, description);
 
-        addOrganizationalUnit(user, oubuf.str(), ptr, ptype);
+        addOrganizationalUnit(user, oubuf.str(), ptr, ptype, description);
 
     }
 
-    virtual bool addOrganizationalUnit(ISecUser* user, const char* name, const char* basedn, SecPermissionType ptype)
+    virtual bool addOrganizationalUnit(ISecUser* user, const char* name, const char* basedn, SecPermissionType ptype, const char* description)
     {
         if(name == NULL || basedn == NULL)
         {
@@ -5501,6 +5531,14 @@ private:
             oc_values
         };
 
+        char* description_values[] = {(char*)description, NULL};
+        LDAPMod description_attr =
+        {
+            LDAP_MOD_ADD,
+            "description",
+            description_values
+        };
+
         MemoryBuffer sdbuf;
         Owned<CSecurityDescriptor> default_sd = NULL;
         if(m_pp !=  NULL)
@@ -5508,7 +5546,7 @@ private:
         if(default_sd != NULL)
             sdbuf.append(default_sd->getDescriptor());
 
-        LDAPMod *attrs[6];
+        LDAPMod *attrs[7];
         int ind = 0;
         attrs[ind++] = &ou_attr;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -5516,6 +5554,8 @@ private:
             attrs[ind++] = &name_attr;
         }
         attrs[ind++] = &oc_attr;
+        if (!isEmptyString(description))
+            attrs[ind++] = &description_attr;
 
         LDAPMod sd_attr;
         struct berval sd_val;
@@ -5681,7 +5721,7 @@ private:
         {
             StringBuffer extbuf;
             name2dn(rtype, resourcename, rbasedn, extbuf);
-            createLdapBasedn(&user, extbuf.str(), ptype);
+            createLdapBasedn(&user, extbuf.str(), ptype, nullptr);
             return true;
         }
 

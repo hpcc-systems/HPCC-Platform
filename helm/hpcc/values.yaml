@@ -557,6 +557,35 @@ esp:
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
+- name: dfs
+  application: dfs
+  auth: none
+  replicas: 1
+  service:
+    visibility: local
+    servicePort: 8520
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
+
+
+#- name: ldapenvironment
+  #ldapenvironment is a stand alone ESP service used to help stand up new HPCC LDAP Environments
+#  application: ldapenvironment
+#  auth: ldap
+#  #specify the hpcc branch Root Name
+#  hpccRootName: ou=hpcc,dc=myldap,dc=com
+#  #specify all BaseDN with your LDAP Server's "dc=" settings
+#  sharedFilesBaseDN: ou=files,ou=hpcc,dc=myldap,dc=com
+#  sharedGroupsBaseDN: ou=groups,ou=hpcc,dc=myldap,dc=com
+#  sharedUsersBaseDN: ou=users,ou=hpcc,dc=myldap,dc=com
+#  sharedResourcesBaseDN: ou=smc,ou=espservices,ou=hpcc,dc=myldap,dc=com
+#  sharedWorkunitsBaseDN: ou=workunits,ou=hpcc,dc=myldap,dc=com
+#  adminGroupName: HPCCAdmins
+#  replicas: 1
+#  service:
+#    visibility: local
+#    servicePort: 8511
 
 roxie:
 - name: roxie

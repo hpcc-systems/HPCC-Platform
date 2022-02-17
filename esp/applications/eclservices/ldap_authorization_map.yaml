@@ -105,11 +105,6 @@ ldap:
          -  path: DfuAccess
             resource: DfuAccess
             description: Access to DFU
-      ws_dfsservice:
-         Feature:
-         -  path: DfsAccess
-            resource: DfsAccess
-            description: Access to DFS
       WsDfuXRef:
          Feature:
          -  path: DfuXrefAccess

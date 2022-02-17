@@ -143,6 +143,7 @@ class WORKUNIT_API CLocalWorkUnit : implements IWorkUnit , implements IExtendedW
 {
     friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress, bool hidePasswords);
     friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress, bool hidePasswords, bool regressionTest);
+    friend class CLocalWUGraph;
 
 protected:
     Owned<IPropertyTree> p;
@@ -308,6 +309,7 @@ public:
     virtual unsigned __int64 getAbortTimeStamp() const;
     virtual cost_type getExecuteCost() const;
     virtual cost_type getFileAccessCost() const;
+    virtual cost_type getCompileCost() const;
     void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();

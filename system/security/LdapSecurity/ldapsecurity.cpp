@@ -1402,6 +1402,11 @@ void CLdapSecManager::addGroup(const char* groupname, const char * groupOwner, c
     m_ldap_client->addGroup(groupname, groupOwner, groupDesc);
 }
 
+void CLdapSecManager::addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn)
+{
+    m_ldap_client->addGroup(groupname, groupOwner, groupDesc, basedn);
+}
+
 void CLdapSecManager::deleteGroup(const char* groupname)
 {
     m_ldap_client->deleteGroup(groupname);
@@ -1611,6 +1616,16 @@ void CLdapSecManager::queryViewMembers(const char* viewName, StringArray & viewU
 bool CLdapSecManager::userInView(const char * user, const char* viewName)
 {
     return m_ldap_client->userInView(user, viewName);
+}
+
+void CLdapSecManager::createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description)
+{
+    m_ldap_client->createLdapBasedn(user, basedn, ptype, description);
+}
+
+const bool CLdapSecManager::organizationalUnitExists(const char * ou) const
+{
+    return m_ldap_client->organizationalUnitExists(ou);
 }
 
 extern "C"

@@ -303,6 +303,7 @@ interface ILdapClient : extends IInterface
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname, const char * groupDN=nullptr) = 0;
     virtual bool deleteUser(ISecUser* user) = 0;
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) = 0;
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn) = 0;
     virtual void deleteGroup(const char* groupname, const char * groupsDN=nullptr) = 0;
     virtual void getGroupMembers(const char* groupname, StringArray & users, const char * groupsDN=nullptr) = 0;
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn) = 0;
@@ -332,6 +333,8 @@ interface ILdapClient : extends IInterface
     virtual void removeViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
     virtual void queryViewMembers(const char * viewName, StringArray & viewUsers, StringArray & viewGroups) = 0;
     virtual bool userInView(const char * user, const char* viewName) = 0;
+    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description) = 0;
+    virtual const bool organizationalUnitExists(const char * ou) const = 0;
 };
 
 ILdapClient* createLdapClient(IPropertyTree* cfg);

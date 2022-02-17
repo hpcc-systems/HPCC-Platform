@@ -1,0 +1,4 @@
+esp:
+   instance: ldapenvironment
+   description: ldapenvironment Service
+   auth: ldap

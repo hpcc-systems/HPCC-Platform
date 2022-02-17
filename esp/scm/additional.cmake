@@ -29,6 +29,7 @@ set ( ESPSCM_SRCS
       ws_account.ecm
       ws_sql.ecm
       ws_store.ecm
+      ldapenvironment.ecm
       ##### LIST FOR ESPECL
       WsDeploy.ecm
     )

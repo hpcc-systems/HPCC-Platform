@@ -1,0 +1,4 @@
+application:
+  name: dfs
+  services:
+  - ws_dfsservice

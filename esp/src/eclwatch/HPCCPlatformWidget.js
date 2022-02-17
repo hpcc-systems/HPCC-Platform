@@ -486,6 +486,7 @@ define([
         _onAbout: function (evt) {
             var aboutNode = dom.byId(this.id + "AboutDialog");
             srcReact.render(AboutModule.About, {
+                eclwatchVersion: "5",
                 show: true,
                 onClose: function () {
                     srcReact.unrender(aboutNode);

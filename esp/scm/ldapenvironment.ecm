@@ -1,0 +1,103 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+ESPrequest LDAPQueryDefaultsRequest
+{
+};
+
+ESPresponse [exceptions_inline] LDAPQueryDefaultsResponse
+{
+    string  HPCCRootName;
+    string  AdminGroupName;
+    string  sharedFilesBaseDN;
+    string  sharedGroupsBaseDN;
+    string  sharedUsersBaseDN;
+    string  sharedResourcesBaseDN;
+    string  sharedWorkunitsBaseDN;
+};
+
+/*##############################################################################*/
+
+ESPenum OUMode : int
+{
+    GenerateStandAlone(0, "Generate stand alone OU branch, using LDAP Root and Environment name (Recommended)"),
+    UseGlobal(1, "Use configured Global OU specification. Will be shared between HPCC deployments"),
+    CreateCustom(2, "Enter custom OU specification below, including DC specification (Power User)")
+};
+
+/*##############################################################################*/
+
+ESPrequest LDAPCreateEnvironmentRequest
+{
+    bool                                              CreateLDAPEnvironment(false);
+    bool                                              CreateK8sSecret(false);
+    [label("Environment Name"), cols(20)] string      EnvName;
+    [label("Environment Owner"), cols(20)] string     EnvOwnerName;
+    [label("Description"), cols(60)] string           EnvDescription;
+
+    ESPEnum OUMode                                    FilesMode;
+    [label("Custom Files Base DN"), cols(60)] string  CustomFilesBaseDN;
+
+    ESPEnum OUMode                                    GroupsMode;
+    [label("Custom Groups Base DN"), cols(60)] string CustomGroupsBaseDN;
+
+    ESPEnum OUMode                                    UsersMode;
+    [label("Custom Users Base DN"), cols(60)] string  CustomUsersBaseDN;
+
+    ESPEnum OUMode                                    ResourcesMode;
+    [label("Custom Resources Base DN"), cols(60)] string CustomResourcesBaseDN;
+
+    ESPEnum OUMode                                    WorkunitsMode;
+    [label("Custom Workunits Base DN"), cols(60)] string CustomWorkunitsBaseDN;
+};
+
+ESPresponse [exceptions_inline] LDAPCreateEnvironmentResponse
+{
+    string  Notes;
+    string  HPCCAdminUsername;
+    string  HPCCAdminPassword;
+    string  LDAPHelm;
+};
+
+/*##############################################################################*/
+
+ESPrequest EchoRequest
+{
+    string Request;
+};
+
+ESPresponse EchoResponse
+{
+    string Response;
+};
+
+
+/*##############################################################################*/
+
+ESPservice [
+        version("1.00"),
+        default_client_version("1.00"),
+        exceptions_inline("./smc_xslt/exceptions.xslt")
+    ] ldapenvironment
+{
+    ESPmethod [auth_feature("LDAPEnvAccess:READ")] LDAPQueryDefaults(LDAPQueryDefaultsRequest, LDAPQueryDefaultsResponse);
+    ESPmethod [auth_feature("LDAPEnvAccess:FULL")] LDAPCreateEnvironment(LDAPCreateEnvironmentRequest, LDAPCreateEnvironmentResponse);
+};
+
+SCMexportdef(ldapenvironment);
+
+SCMapi(ldapenvironment) IClientldapenvironment *createldapenvironmentClient();
