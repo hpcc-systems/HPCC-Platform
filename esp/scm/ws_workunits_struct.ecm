@@ -441,6 +441,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.78")] ESParray<string> ServiceNames;
     [min_ver("1.84")] double ExecuteCost;
     [min_ver("1.85")] double FileAccessCost;
+    [min_ver("1.87")] double CompileCost;
 };
 
 ESPStruct [nil_remove] WUECLAttribute
