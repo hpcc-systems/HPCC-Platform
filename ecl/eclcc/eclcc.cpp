@@ -1542,7 +1542,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     const cost_type cost = money2cost_type(calcCost(getMachineCostRate(), nanoToMilli(totalTimeNs)));
     if (cost)
-        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scopeName, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scopeName, StCostCompile, NULL, cost, 1, 0, StatsMergeReplace);
 
     if (systemFinishTime.getTotal())
     {
