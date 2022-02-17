@@ -761,6 +761,7 @@ struct HqlCppOptions
     bool                serializeRowsetInExtract;
     bool                testIgnoreMaxLength;
     bool                trackDuplicateActivities;               // for diagnosing problems with code becoming duplicated
+    bool                trackRemoveInputs;
     bool                showActivitySizeInGraph;
     bool                addLocationToCpp;
     bool                alwaysCreateRowBuilder;                 // allow paranoid check to ensure builders are built everywhere

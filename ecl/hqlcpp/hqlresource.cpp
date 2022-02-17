@@ -432,16 +432,12 @@ protected:
 
     void findSplitPoints(IHqlExpression * expr, unsigned pass)
     {
-        //containsNonActiveDataset() would be nice - but that isn't percolated outside assigns etc.
-        if (containsAnyDataset(expr) || containsMustHoist(expr) || !expr->isIndependentOfScope())
+        if (!gathered)
         {
-            if (!gathered)
-            {
-                gatherAmbiguousSelectors(original);
-                gathered = true;
-            }
-            analyse(expr, pass);
+            gatherAmbiguousSelectors(original);
+            gathered = true;
         }
+        analyse(expr, pass);
     }
 
     bool queryHoistDataset(IHqlExpression * ds)
@@ -617,8 +613,11 @@ protected:
                 //if rhs is a new, evaluatable, dataset then we want to add it
                 if ((rhs->isDataset() || rhs->isDictionary()) && isEvaluateable(rhs))
                 {
-                    if (queryNoteDataset(rhs))
-                        return;
+                    if (!rhs->isConstant())
+                    {
+                        if (queryNoteDataset(rhs))
+                            return;
+                    }
                 }
                 break;
             }
