@@ -18,7 +18,7 @@ ldap:
   usersBasedn: ou=users,ou=ecl
   resourcesBasedn: ou=WsEcl,ou=EspServices,ou=ecl
   workunitsBasedn: ou=workunits,ou=ecl
-  ldapAdminSecretKey: "ldapadmincredskey"
+  ldapAdminSecretKey: ""
   ldapAdminVaultId: ""
   hpccAdminSecretKey: ""
   hpccAdminVaultId: ""

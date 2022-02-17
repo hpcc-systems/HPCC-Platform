@@ -429,6 +429,7 @@ public:
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname);
     virtual bool deleteUser(ISecUser* user);
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc);
+    virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn);
     virtual void deleteGroup(const char* groupname);
     virtual void getGroupMembers(const char* groupname, StringArray & users);
     void deleteResource(SecResourceType rtype, const char * name, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
@@ -489,7 +490,9 @@ public:
     bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override;
     bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) override;
     bool removeResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override { return false; }
-
+    virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description);
+    virtual const bool organizationalUnitExists(const char * ou) const;
+    
     //Data View related interfaces
     virtual void createView(const char * viewName, const char * viewDescription);
     virtual void deleteView(const char * viewName);
