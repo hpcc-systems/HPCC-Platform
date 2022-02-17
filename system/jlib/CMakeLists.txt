@@ -87,10 +87,12 @@ set (    SRCS
          jsmartsock.cpp
          jsocket.cpp
          jsort.cpp
+         jsort2.cpp
          jstats.cpp
          jstream.cpp
          jstring.cpp
          jsuperhash.cpp
+         jtask.cpp
          jthread.cpp
          jtime.cpp
          junicode.cpp
@@ -170,6 +172,7 @@ set (    INCLUDES
         jstream.ipp
         jstring.hpp
         jsuperhash.hpp
+        jtask.hpp
         jthread.hpp
         jtime.hpp
         jtime.ipp

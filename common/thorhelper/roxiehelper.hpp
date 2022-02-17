@@ -309,6 +309,8 @@ typedef enum {
     tbbStableQuickSortAlgorithm,        // stable version of tbbQuickSortAlgorithm
     parallelQuickSortAlgorithm,         // parallel version of the internal quicksort implementation (for comparison)
     parallelStableQuickSortAlgorithm,   // stable version of parallelQuickSortAlgorithm
+    parallelTaskQuickSortAlgorithm,      // task based parallel version of the internal quicksort implementation (for comparison)
+    parallelTaskStableQuickSortAlgorithm,// task based stable version of parallelQuickSortAlgorithm
     unknownSortAlgorithm
 } RoxieSortAlgorithm;
 
@@ -331,6 +333,8 @@ extern THORHELPER_API ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compar
 extern THORHELPER_API ISortAlgorithm *createParallelMergeSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createTbbQuickSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createTbbStableQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createParallelTaskQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createParallelTaskStableQuickSortAlgorithm(ICompare *_compare);
 
 extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm algorithm, ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId);
 

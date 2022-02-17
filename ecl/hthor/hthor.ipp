@@ -1169,6 +1169,13 @@ public:
     virtual void performSort();
 };
 
+class CParallelTaskQuickSorter : public CSimpleSorterBase
+{
+public:
+    CParallelTaskQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta) {}
+    virtual void performSort();
+};
+
 class CStableSorter : public CSimpleSorterBase
 {
 public:
@@ -1198,6 +1205,14 @@ class CParallelStableQuickSorter : public CStableSorter
 {
 public:
     CParallelStableQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CStableSorter(_compare, _rowManager, _initialSize, _commitDelta, _rowCB){}
+
+    virtual void performSort();
+};
+
+class CParallelTaskStableQuickSorter : public CStableSorter
+{
+public:
+    CParallelTaskStableQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CStableSorter(_compare, _rowManager, _initialSize, _commitDelta, _rowCB){}
 
     virtual void performSort();
 };
