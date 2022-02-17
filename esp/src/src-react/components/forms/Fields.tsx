@@ -77,7 +77,6 @@ interface AsyncDropdownProps {
     options?: IDropdownOption[];
     selectedKey?: string;
     required?: boolean;
-    optional?: boolean;
     disabled?: boolean;
     errorMessage?: string;
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
@@ -90,7 +89,6 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     options,
     selectedKey,
     required = false,
-    optional = !required,
     disabled,
     errorMessage,
     onChange,
@@ -98,13 +96,12 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     className
 }) => {
 
-    const isOptional = React.useMemo<boolean>(() => isOptionalDropdown(required, optional), [optional, required]);
     const selOptions = React.useMemo<IDropdownOption[]>(() => {
         if (options !== undefined) {
-            return isOptional ? [{ key: "", text: "" }, ...options] : options;
+            return !required ? [{ key: "", text: "" }, ...options] : options;
         }
         return [];
-    }, [isOptional, options]);
+    }, [options, required]);
 
     const [selectedItem, setSelectedItem] = React.useState<IDropdownOption>();
     React.useEffect(() => {
@@ -121,8 +118,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={controlledChange} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
 };
 
-const isOptionalDropdown = (required?: boolean, optional?: boolean) => required === false || optional === true;
-const autoSelectDropdown = (selectedKey?: string, required?: boolean, optional?: boolean) => selectedKey === undefined && isOptionalDropdown(required, optional);
+const autoSelectDropdown = (selectedKey?: string, required?: boolean) => selectedKey === undefined && !required;
 
 export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
@@ -299,7 +295,7 @@ type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | Dat
 
 export type Fields = { [id: string]: Field };
 
-export interface TargetClusterTextFieldProps extends AsyncDropdownProps {
+export interface TargetClusterTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
@@ -318,15 +314,15 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
         }) || [];
         setOptions(options);
 
-        if (autoSelectDropdown(props.selectedKey, props.required, props.optional)) {
+        if (autoSelectDropdown(props.selectedKey, props.required)) {
             setDefaultRow(options.filter(row => row.key === defaultCluster?.Name)[0]);
         }
-    }, [targetClusters, defaultCluster, props.selectedKey, props.required, props.optional]);
+    }, [targetClusters, defaultCluster, props.selectedKey, props.required]);
 
     return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
 };
 
-export interface TargetDropzoneTextFieldProps extends AsyncDropdownProps {
+export interface TargetDropzoneTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneTextFieldProps> = (props) => {
@@ -348,7 +344,7 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
     return <AsyncDropdown {...props} options={targetDropzones} />;
 };
 
-export interface TargetServerTextFieldProps extends AsyncDropdownProps {
+export interface TargetServerTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
     dropzone: string;
 }
 
@@ -372,7 +368,7 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
     return <AsyncDropdown {...props} options={targetServers} />;
 };
 
-export interface TargetServerTextFieldLinkedProps extends AsyncDropdownProps {
+export interface TargetServerTextFieldLinkedProps extends Omit<AsyncDropdownProps, "options"> {
     setSetDropzone?: (setDropzone: (dropzone: string) => void) => void;
 }
 
@@ -389,7 +385,7 @@ export const TargetServerTextLinkedField: React.FunctionComponent<TargetServerTe
     return <TargetServerTextField {...props} dropzone={dropzone} />;
 };
 
-export interface TargetGroupTextFieldProps extends AsyncDropdownProps {
+export interface TargetGroupTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldProps> = (props) => {
@@ -410,7 +406,7 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
     return <AsyncDropdown {...props} options={targetGroups} />;
 };
 
-export interface TargetDfuSprayQueueTextFieldProps extends AsyncDropdownProps {
+export interface TargetDfuSprayQueueTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSprayQueueTextFieldProps> = (props) => {
@@ -433,7 +429,7 @@ export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSpra
     return <AsyncDropdown {...props} options={dfuSprayQueues} />;
 };
 
-export interface EsdlEspProcessesTextFieldProps extends AsyncDropdownProps {
+export interface EsdlEspProcessesTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const EsdlEspProcessesTextField: React.FunctionComponent<EsdlEspProcessesTextFieldProps> = (props) => {
@@ -455,7 +451,7 @@ export const EsdlEspProcessesTextField: React.FunctionComponent<EsdlEspProcesses
 
     return <AsyncDropdown {...props} options={espProcesses} />;
 };
-export interface EsdlDefinitionsTextFieldProps extends AsyncDropdownProps {
+export interface EsdlDefinitionsTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTextFieldProps> = (props) => {
@@ -478,7 +474,7 @@ export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTe
     return <AsyncDropdown {...props} options={definitions} />;
 };
 
-export interface TargetFolderTextFieldProps extends AsyncDropdownProps {
+export interface TargetFolderTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
     pathSepChar?: string;
     machineAddress?: string;
     machineDirectory?: string;
@@ -493,7 +489,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
     const fetchFolders = React.useCallback((pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number): Promise<IDropdownOption[]> => {
         depth = depth || 0;
         let retVal: IDropdownOption[] = [];
-        if (props.optional) {
+        if (!props.required) {
             retVal.push({ key: "", text: "" });
         }
         let _path = [Path, ""].join(pathSepChar).replace(machineDirectory, "");
@@ -530,7 +526,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                 });
             }
         });
-    }, [machineDirectory, props.optional]);
+    }, [machineDirectory, props.required]);
 
     React.useEffect(() => {
         const _fetchFolders = async () => {
@@ -545,7 +541,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
     return <AsyncDropdown {...props} options={folders} />;
 };
 
-export interface UserGroupsProps extends AsyncDropdownProps {
+export interface UserGroupsProps extends Omit<AsyncDropdownProps, "options"> {
     username: string;
 }
 
@@ -571,7 +567,7 @@ export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props)
     return <AsyncDropdown {...props} options={groups} />;
 };
 
-export interface GroupMembersProps extends AsyncDropdownProps {
+export interface GroupMembersProps extends Omit<AsyncDropdownProps, "options"> {
     groupname: string;
 }
 
@@ -596,7 +592,7 @@ export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (pr
     return <AsyncDropdown {...props} options={users} />;
 };
 
-export interface PermissionTypeProps extends AsyncDropdownProps {
+export interface PermissionTypeProps extends Omit<AsyncDropdownProps, "options"> {
 }
 
 export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> = (props) => {
@@ -888,7 +884,6 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetClusterTextField
                         key={fieldID}
                         selectedKey={field.value}
-                        optional
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />

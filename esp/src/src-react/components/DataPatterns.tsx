@@ -85,7 +85,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
                 disabled={!!wu}
                 placeholder={nlsHPCC.Target}
                 className={dpStyles.inlineDropdown}
-                optional={false}
+                required={true}
                 selectedKey={targetCluster}
                 onChange={(ev, row) => {
                     setTargetCluster(row.key as string);
