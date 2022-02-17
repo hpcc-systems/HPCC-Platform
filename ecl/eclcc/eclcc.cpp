@@ -1708,7 +1708,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
     if (queryAttributePackage)
-        mainPackage.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, false));
+        mainPackage.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage));
 
     //Ensure classes are not linked by anything else
     localRepositoryManager.kill();  // help ensure non-shared repositories are freed as soon as possible
@@ -1828,7 +1828,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         if (attributePackage)
         {
             //If attribute package is specified, resolve that package as the source for the query, and pass null to processSingleQuery
-            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, attributePackage, false));
+            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, attributePackage));
         }
         else
         {
@@ -2016,7 +2016,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
     if (queryAttributePackage)
     {
-        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, false));
+        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage));
     }
     else
     {
@@ -2026,7 +2026,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
         if (looksLikeGitPackage(searchPath))
         {
-            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, searchPath, false));
+            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, searchPath));
         }
         else
         {
