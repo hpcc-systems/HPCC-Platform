@@ -756,4 +756,5 @@ extern bool ECLRTL_API containsKeyedSignedInt(const RtlTypeInfo * type);
 
 extern size32_t translateScalar(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, const RtlTypeInfo &destType, const RtlTypeInfo &sourceType, const byte *source);
 
+extern bool incrementBuffer(byte *buff, size32_t size);
 #endif

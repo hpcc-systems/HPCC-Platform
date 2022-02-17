@@ -15,6 +15,8 @@
    limitations under the License.
 ############################################################################## */
 
+#ifndef __LNUID_INCL__
+#define __LNUID_INCL__
 #include <ctime>
 #include <string>
 
@@ -51,3 +53,5 @@ namespace ln_uid {
 
     int get_utc_offset();
 };
+
+#endif

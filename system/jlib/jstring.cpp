@@ -45,9 +45,9 @@
 
 static const char * TheNullStr = "";
 
-#define FIRST_CHUNK_SIZE  8
-#define DOUBLE_LIMIT      0x100000          // must be a power of 2
-#define DETACH_GRANULARITY 16
+constexpr unsigned STRING_FIRST_CHUNK_SIZE=8;
+constexpr unsigned STRING_DOUBLE_LIMIT = 0x100000;          // must be a power of 2
+constexpr unsigned STRING_DETACH_GRANULARITY = 16;
 
 //===========================================================================
 
@@ -136,10 +136,10 @@ void StringBuffer::_realloc(size_t newLen)
     {
         size_t newMax = maxLen;
         if (newMax == 0)
-            newMax = FIRST_CHUNK_SIZE;
-        if (newLen > DOUBLE_LIMIT)
+            newMax = STRING_FIRST_CHUNK_SIZE;
+        if (newLen > STRING_DOUBLE_LIMIT)
         {
-            newMax = (newLen + DOUBLE_LIMIT) & ~(DOUBLE_LIMIT-1);
+            newMax = (newLen + STRING_DOUBLE_LIMIT) & ~(STRING_DOUBLE_LIMIT-1);
             if (newLen >= newMax)
                 throw MakeStringException(MSGAUD_operator, -1, "StringBuffer::_realloc: Request for %zu bytes oldMax = %zu", newLen, maxLen);
         }
@@ -176,7 +176,7 @@ char * StringBuffer::detach()
     }
     else
     {
-        if (maxLen>curLen+1+DETACH_GRANULARITY)
+        if (maxLen>curLen+1+STRING_DETACH_GRANULARITY)
             buffer = (char *)realloc(buffer,curLen+1); // shrink
         result = buffer;
     }

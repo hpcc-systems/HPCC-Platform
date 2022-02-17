@@ -24,6 +24,7 @@
 
 
 project( esdlcmd )
+SET(CMAKE_UNITY_BUILD FALSE)
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 

@@ -31,7 +31,6 @@
 #include "hqltcppc.hpp"
 #include "hqlcpputil.hpp"
 
-#define DEFAULT_NLP_DETAIL              1
 #define DEFAULT_PATTERN_MAX_LENGTH      4096
 #ifdef __64BIT__
 #define __DEFINED_64BIT__ true

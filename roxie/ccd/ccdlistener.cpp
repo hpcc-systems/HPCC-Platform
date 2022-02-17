@@ -675,12 +675,12 @@ public:
     }
 };
 
-static Owned<IActiveQueryLimiterFactory> queryLimiterFactory;
+static Owned<IActiveQueryLimiterFactory> theQueryLimiterFactory;
 IActiveQueryLimiterFactory *ensureLimiterFactory()
 {
-    if (!queryLimiterFactory)
-        queryLimiterFactory.setown(new CActiveQueryLimiterFactory());
-    return queryLimiterFactory;
+    if (!theQueryLimiterFactory)
+        theQueryLimiterFactory.setown(new CActiveQueryLimiterFactory());
+    return theQueryLimiterFactory;
 }
 
 //================================================================================================================================

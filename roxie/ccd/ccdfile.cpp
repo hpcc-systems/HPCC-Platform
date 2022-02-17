@@ -2096,12 +2096,6 @@ public:
     }
 
     virtual StringAttrMapping *queryFileErrorList() { return &fileErrorList; }  // returns list of files that could not be open
-
-    static inline bool validFNameChar(char c)
-    {
-        static const char *invalids = "*\"/:<>?\\|";
-        return (c>=32 && c<127 && !strchr(invalids, c));
-    }
 };
 
 #ifdef _CONTAINERIZED

@@ -58,6 +58,8 @@ set (    INCLUDES
          dautils.hpp
     )   
 
+set_source_files_properties(dasds.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+
 include_directories ( 
          ${HPCC_SOURCE_DIR}/common/deftype 
          ${HPCC_SOURCE_DIR}/fs/dafsclient

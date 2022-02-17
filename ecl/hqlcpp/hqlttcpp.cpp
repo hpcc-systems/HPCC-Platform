@@ -45,7 +45,6 @@
 #include "hqlgram.hpp"
 #include "hqlctrans.hpp"
 
-#define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
 //#define MAP_PROJECT_TO_USERTABLE
 //#define REMOVE_NAMED_SCALARS

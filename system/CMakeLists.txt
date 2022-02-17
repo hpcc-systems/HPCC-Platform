@@ -32,6 +32,7 @@ if (NOT JLIB_ONLY)
    
    if (USE_AERON)
       project (aeron_include)
+      SET(CMAKE_UNITY_BUILD FALSE)
       remove_definitions(-fvisibility=hidden)
       if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
           SET (CMAKE_SAVED_AERON_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

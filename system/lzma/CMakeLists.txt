@@ -23,8 +23,8 @@
 #####################################################
 
 
-project( lzma ) 
-
+project( lzma )
+SET(CMAKE_UNITY_BUILD FALSE)
 set ( SRCS
         LzFind.cpp
         LzmaDec.cpp

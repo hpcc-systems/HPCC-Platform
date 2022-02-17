@@ -24,9 +24,9 @@
 
 #include <assert.h>
 
-#define FIRST_CHUNK_SIZE  8
-#define DOUBLE_LIMIT      0x100000          // must be a power of 2
-#define ALLOCA_LIMIT      64
+constexpr unsigned ARRAY_FIRST_CHUNK_SIZE=8;
+constexpr unsigned ARRAY_CHUNK_DOUBLE_LIMIT=0x100000;          // must be a power of 2
+constexpr unsigned ARRAY_ALLOCA_LIMIT=64;
 
 void Allocator::_space(size32_t iSize)
 {
@@ -55,10 +55,10 @@ void Allocator::_reallocate(aindex_t newLen, size32_t itemSize)
 {
     size32_t newMax = max;
     if (newMax == 0)
-        newMax = FIRST_CHUNK_SIZE;
-    if (newLen > DOUBLE_LIMIT)
+        newMax = ARRAY_FIRST_CHUNK_SIZE;
+    if (newLen > ARRAY_CHUNK_DOUBLE_LIMIT)
     {
-        newMax = (newLen + DOUBLE_LIMIT) & ~(DOUBLE_LIMIT-1);
+        newMax = (newLen + ARRAY_CHUNK_DOUBLE_LIMIT) & ~(ARRAY_CHUNK_DOUBLE_LIMIT-1);
         if (newLen >= newMax) // wraparound
         {
             IERRLOG("Out of memory (overflow) in Array allocator: itemSize = %u, trying to allocate %u items", itemSize, newLen);
@@ -118,13 +118,13 @@ void Allocator::_doRotateR(aindex_t pos1, aindex_t pos2, size32_t iSize, aindex_
     char * head= (char *)_head;
     char * lower = head + pos1 * iSize;
     char * upper = lower + (blockSize - saveSize);
-    char * temp = (char *)((saveSize <= ALLOCA_LIMIT) ? alloca(saveSize) : malloc(saveSize));
+    char * temp = (char *)((saveSize <= ARRAY_ALLOCA_LIMIT) ? alloca(saveSize) : malloc(saveSize));
 
     memcpy(temp, upper, saveSize);
     memmove(lower + saveSize, lower, blockSize-saveSize);
     memcpy(lower, temp, saveSize);
 
-    if (saveSize > ALLOCA_LIMIT)
+    if (saveSize > ARRAY_ALLOCA_LIMIT)
         free(temp);
 }
 
@@ -139,13 +139,13 @@ void Allocator::_doRotateL(aindex_t pos1, aindex_t pos2, size32_t iSize, size32_
     char * head= (char *)_head;
     char * lower = head + pos1 * iSize;
     char * upper = lower + (blockSize - saveSize);
-    char * temp = (char *)((saveSize <= ALLOCA_LIMIT) ? alloca(saveSize) : malloc(saveSize));
+    char * temp = (char *)((saveSize <= ARRAY_ALLOCA_LIMIT) ? alloca(saveSize) : malloc(saveSize));
 
     memcpy(temp, lower, saveSize);
     memmove(lower, lower + saveSize, blockSize - saveSize);
     memcpy(upper, temp, saveSize);
 
-    if (saveSize > ALLOCA_LIMIT)
+    if (saveSize > ARRAY_ALLOCA_LIMIT)
         free(temp);
 }
 

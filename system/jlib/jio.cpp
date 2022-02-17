@@ -38,8 +38,7 @@
 #define MAX_RANDOM_CACHE_SIZE               0x10000
 #define RANDOM_CACHE_DEPTH                  10
 
-#define threshold 1024
-#define timelimit 100
+constexpr unsigned timelimit=100;
 
 #define MINCOMPRESSEDROWSIZE 16
 #define MAXCOMPRESSEDROWSIZE 0x4000

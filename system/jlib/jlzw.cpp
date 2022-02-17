@@ -2662,7 +2662,7 @@ IExpander *createAESExpander(const void *key, unsigned keylen)
     return new CAESExpander(key,keylen);
 }
 
-#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (8 - (n))))
+#define ROTATE_BYTE_LEFT(x, n) (((x) << (n)) | ((x) >> (8 - (n))))
 
 
 inline void padKey32(byte *keyout,size32_t len, const byte *key)
@@ -2671,13 +2671,13 @@ inline void padKey32(byte *keyout,size32_t len, const byte *key)
         memset(keyout,0xcc,32);
     else if (len<=32) {
         for (unsigned i=0;i<32;i++)
-            keyout[i] = (i<len)?key[i%len]:ROTATE_LEFT(key[i%len],i/len);
+            keyout[i] = (i<len)?key[i%len]:ROTATE_BYTE_LEFT(key[i%len],i/len);
     }
     else {
         memcpy(keyout,key,32);
         // xor excess rotated
         for (unsigned i=32;i<len;i++) 
-            keyout[i%32] ^= ROTATE_LEFT(key[i],(i/8)%8);
+            keyout[i%32] ^= ROTATE_BYTE_LEFT(key[i],(i/8)%8);
     }
 }
 

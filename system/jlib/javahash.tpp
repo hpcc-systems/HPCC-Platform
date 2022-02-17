@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#ifndef __JAVAHASH_TPP__
+#define __JAVAHASH_TPP__
 
 template <class ELEMENT>
 void JavaHashTableOf<ELEMENT>::onAdd(void * et)
@@ -102,4 +104,5 @@ ELEMENT *JavaHashTableOf<ELEMENT>::findCompare(ICompare *icmp,void * (ELEMENT::*
     return NULL;
 }
 
+#endif
 #endif

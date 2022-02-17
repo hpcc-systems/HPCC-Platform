@@ -1372,9 +1372,7 @@ ISocket*  ISocket::connect_timeout(const SocketEndpoint &ep,unsigned timeout)
     return sock.getClear();
 }
 
-#define POLLTIME 50
-
-
+#define SOCKET_POLLTIME 50
 
 void CSocket::connect_wait(unsigned timems)
 {
@@ -1485,8 +1483,8 @@ void CSocket::connect_wait(unsigned timems)
                     polltime = timeoutms;
                 Sleep(polltime);                    // sleeps 1-50ms (to let other threads run)
                 timeoutms -= polltime;
-                if (polltime>POLLTIME/2)
-                    polltime = POLLTIME;
+                if (polltime>SOCKET_POLLTIME/2)
+                    polltime = SOCKET_POLLTIME;
                 else
                     polltime *= 2;
     #endif

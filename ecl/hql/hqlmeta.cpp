@@ -53,6 +53,8 @@ static IHqlExpression * cacheUnorderedAttribute;
 static CHqlMetaProperty * nullMetaProperty;
 static CHqlMetaProperty * nullGroupedMetaProperty;
 
+// Spurious comment needed to make unity builds work...
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     IAtom * groupedOrderAtom = createAtom("{group-order}");

@@ -25,6 +25,8 @@
 
 project( zcrypt ) 
 
+SET(CMAKE_UNITY_BUILD FALSE)
+
 set ( SRCS
       aes.cpp
       base64.cpp
