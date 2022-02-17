@@ -85,7 +85,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   doit "git submodule update --init --recursive"
   HPCC_PROJECTS=hpcc-helm
   HPCC_NAME=HPCC
-  if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "4" ]] ; then
+  if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "6" ]] ; then
     doit "rm -rf ./helm"
     doit "cp -rf $HPCC_DIR/helm ./helm" 
     doit "rm -f ./helm/*.bak" 
@@ -100,7 +100,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   doit "git add *.tgz"
   
   doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG-$HPCC_SEQUENCE\""
-  if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "2" ]] ; then
+  if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "6" ]] ; then
     doit "git tag $FORCE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT && git push $REMOTE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT $FORCE"
   fi
   doit "git push $REMOTE master $FORCE"
