@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -170,8 +170,8 @@
         enough that we recommend using a special tool for editing it.</para>
 
         <para>The <emphasis role="strong">values.yaml</emphasis> from the
-        default helm chart is under 100 lines and can be edited in any editor,
-        and/or modified via helm’s command-line overrides. It also is
+        default helm chart is relatively small and can be opened in any
+        editor, and/or modified via helm’s command-line overrides. It also is
         self-documented with extensive comments.</para>
       </sect2>
 
@@ -238,7 +238,7 @@
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/ConfigureValues.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-			  
-			   <!-- xi:include href="ContainerizedHPCC/ContainerizedMods/ContainerLogging.xml"
+
+  <!-- xi:include href="ContainerizedHPCC/ContainerizedMods/ContainerLogging.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" / -->
 </book>
