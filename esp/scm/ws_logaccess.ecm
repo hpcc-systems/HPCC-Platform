@@ -31,6 +31,14 @@ ESPenum LogAccessLogFormat : int
     CSV(2, "CSV")
 } ;
 
+ESPenum LogSelectColumnMode : int
+{
+    MIN(0, "MIN"),
+    DEFAULT(1, "DEFAULT"),
+    ALL(2, "ALL"),
+    CUSTOM(3, "CUSTOM")
+} ;
+
 ESPStruct TimeRange
 {
     xsdDateTime StartDate; //example 1980-03-23T10:20:15
@@ -88,6 +96,7 @@ ESPRequest GetLogsRequest
     ESPStruct TimeRange Range;
     unsigned LogLineLimit(100);
     int64 LogLineStartFrom(0);
+    [min_ver("1.01")] ESPenum LogSelectColumnMode SelectColumnMode(1);
     ESParray<string> Columns;
     LogAccessLogFormat Format("JSON");
 };
@@ -97,7 +106,7 @@ ESPResponse GetLogsResponse
     string LogLines;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.01"), default_client_version("1.01"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);
