@@ -9598,7 +9598,7 @@ void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, uns
 
 jlib_decl IPropertyTree * getCostsConfiguration()
 {
-    return getComponentConfigSP()->getPropTree("costs");
+    return getComponentConfigSP()->getPropTree("cost");
 }
 
 void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
