@@ -55,6 +55,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 set(srcs
   ${CMAKE_CURRENT_SOURCE_DIR}/ElasticStackLogAccess.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/include/elasticlient/client.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/include/elasticlient/scroll.h
 )
 
 include_directories(

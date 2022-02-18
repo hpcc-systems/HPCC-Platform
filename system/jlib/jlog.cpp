@@ -2612,6 +2612,8 @@ public:
 };
 
 static CNullManager nullManager;
+static Singleton<IRemoteLogAccess> logAccessor;
+static CriticalSection logAccessCrit;
 
 MODULE_INIT(INIT_PRIORITY_JLOG)
 {
@@ -2645,6 +2647,7 @@ MODULE_EXIT()
     thePassNoneFilter = nullptr;
     thePassLocalFilter = nullptr;
     thePassAllFilter = nullptr;
+    delete logAccessor.queryExisting();
 }
 
 static constexpr const char * logFieldsAtt = "@fields";
@@ -3482,69 +3485,67 @@ bool fetchLogByClass(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, Log
 //logAccessPluginConfig expected to contain connectivity and log mapping information
 typedef IRemoteLogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
 
-IRemoteLogAccess * queryRemoteLogAccessor()
+IRemoteLogAccess &queryRemoteLogAccessor()
 {
-    Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
-#ifdef LOGACCESSDEBUG
-    if (!logAccessPluginConfig)
-    {
-        const char *simulatedGlobalYaml = R"!!(global:
-          logAccess:
-            name: "localES"
-            type: "elasticstack"
-            connection:
-              protocol: "http"
-              host: "localhost"
-              port: 9200
-            logMaps:
-            - type: "global"
-              storeName: "filebeat-7.9.3-*"
-              searchColumn: "message"
-              timeStampColumn: "created_ts"
-            - type: "workunits"
-              storeName: "filebeat-7.9.3-*"
-              searchColumn: "hpcc.log.jobid"
-            - type: "components"
-              searchColumn: "kubernetes.container.name"
-            - type: "audience"
-              searchColumn: "hpcc.log.audience"
-            - type: "class"
-              searchColumn: "hpcc.log.class"
-        )!!";
-        Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-        logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
-    }
-#endif
+    return *logAccessor.query([]
+        {
+            Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
+    #ifdef LOGACCESSDEBUG
+            if (!logAccessPluginConfig)
+            {
+                const char * simulatedGlobalYaml = R"!!(global:
+                logAccess:
+                    name: "localES"
+                    type: "elasticstack"
+                    connection:
+                    protocol: "http"
+                    host: "elasticsearch-master.default.svc.cluster.local"
+                    port: 9200
+                    logMaps:
+                    - type: "global"
+                    storeName: "filebeat-*"
+                    searchColumn: "message"
+                    timeStampColumn: "created_ts"
+                    - type: "workunits"
+                    storeName: "filebeat-*"
+                    searchColumn: "hpcc.log.jobid"
+                    - type: "components"
+                    searchColumn: "kubernetes.container.name"
+                    - type: "audience"
+                    searchColumn: "hpcc.log.audience"
+                    - type: "class"
+                    searchColumn: "hpcc.log.class"
+                )!!";
+                Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+                logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
+            }
+    #endif
 
-    if (!logAccessPluginConfig)
-        throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
+            if (!logAccessPluginConfig)
+                throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
 
-    constexpr const char * methodName = "queryRemoteLogAccessor";
-    constexpr const char * instFactoryName = "createInstance";
+            constexpr const char * methodName = "queryRemoteLogAccessor";
+            constexpr const char * instFactoryName = "createInstance";
 
-    StringBuffer libName; //lib<type>logaccess.so
-    StringBuffer type;
-    logAccessPluginConfig->getProp("@type", type);
-    if (type.isEmpty())
-        throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
-    libName.append("lib").append(type.str()).append("logaccess");
+            StringBuffer libName; //lib<type>logaccess.so
+            StringBuffer type;
+            logAccessPluginConfig->getProp("@type", type);
+            if (type.isEmpty())
+                throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
+            libName.append("lib").append(type.str()).append("logaccess");
 
-    //Load the DLL/SO
-    HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), true, false);
-    if(logAccessPluginLib == nullptr)
-        throw makeStringExceptionV(-1, "%s cannot load library '%s'", methodName, libName.str());
+            //Load the DLL/SO
+            HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
 
-    newLogAccessPluginMethod_t_ xproc = nullptr;
-    xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
-    if (xproc == nullptr)
-        throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+            newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+            if (xproc == nullptr)
+                throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
 
-    //Call logaccessplugin instance factory and return the new instance
-    DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
-    IRemoteLogAccess * pLogAccessPlugin = dynamic_cast<IRemoteLogAccess*>(xproc(*logAccessPluginConfig));
+            //Call logaccessplugin instance factory and return the new instance
+            DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
 
-    if (pLogAccessPlugin == nullptr)
-        throw makeStringExceptionV(-1, "%s Log Access Plugin '%s' failed to instantiate in call to %s", methodName, libName.str(), instFactoryName);
-
-    return pLogAccessPlugin;
+            return xproc(*logAccessPluginConfig);
+        }
+    );
 }
+

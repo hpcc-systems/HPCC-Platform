@@ -142,28 +142,48 @@ private:
 #define WUINFO_IncludeServiceNames      0x40000
 #define WUINFO_All                      0xFFFFFFFF
 
+static constexpr unsigned defaultMaxLogRecords = 10000;
+static constexpr unsigned defaultWULogSearchTimeBufferSecs = 600;
+static constexpr unsigned microSecsToSecDivisor = 1000000;
+
 class WsWuInfo
 {
     IEspWUArchiveFile* readArchiveFileAttr(IPropertyTree& fileTree, const char* path);
     IEspWUArchiveModule* readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path);
     void readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files);
-#ifndef _CONTAINERIZED
+
     void outputALine(size32_t len, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS);
+#ifndef _CONTAINERIZED
     bool parseLogLine(const char* line, const char* endWUID, unsigned& processID, const unsigned columnNumPID);
     void readWorkunitThorLog(const char* processName, const char* logSpec, const char* slaveIPAddress, unsigned slaveNum, MemoryBuffer& buf, const char* outFile);
     void readWorkunitThorLogOneDay(IFile* ios, unsigned& processID, MemoryBuffer& buf, IFileIOStream* outIOS);
 #endif
-
     void readFileContent(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);
     void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, const char *outFileName);
+    void initWULogReader();
+
 public:
+    /*
+    * Fetches trace log records related to target Workunit
+    *
+    * unsigned maxLogRecords - Limits number of records fetched
+    * LogAccessReturnColsMode retColsMode - Defines the log record fields
+    * LogAccessLogFormat logFormat - Declares the log report format
+    * unsigned wuLogSearchTimeBuffSecs - Defines the query time-window before wu creation and after wu end
+    */
+    void readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode,
+                                   LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
+
     WsWuInfo(IEspContext &ctx, IConstWorkUnit *cw_) :
       context(ctx), cw(cw_)
     {
         version = context.getClientVersion();
         wuid.set(cw->queryWuid());
+#ifdef _CONTAINERIZED
+        initWULogReader();
+#endif
     }
 
     WsWuInfo(IEspContext &ctx, const char *wuid_) :
@@ -175,6 +195,10 @@ public:
         cw.setown(factory->openWorkUnit(wuid_));
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
+
+#ifdef _CONTAINERIZED
+        initWULogReader();
+#endif
     }
 
     bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned long flags);
@@ -246,6 +270,7 @@ public:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
 protected:
     bool hasSubGraphTimings();
+    Owned<IRemoteLogAccess> m_remoteLogAccessor;
 
 public:
     IEspContext &context;
@@ -641,6 +666,7 @@ class CWsWuFileHelper
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
 #endif
+    void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
 public:
@@ -720,7 +746,6 @@ public:
     {
         return true;
     }
-   
 private:
     Owned<CGetThorSlaveLogToFileThreadParam> param;
 };

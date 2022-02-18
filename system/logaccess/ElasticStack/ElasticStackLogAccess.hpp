@@ -35,6 +35,7 @@
 
 #include <cpr/response.h>
 #include <elasticlient/client.h>
+#include <elasticlient/scroll.h>
 
 using namespace elasticlient;
 
@@ -73,13 +74,21 @@ private:
     const IPropertyTree * getTimestampTypeFormat(const char * indexpattern, const char * fieldname);
     const IPropertyTree * performAndLogESRequest(Client::HTTPMethod httpmethod, const char * url, const char * reqbody, const char * logmessageprefix, LogMsgCategory reqloglevel, LogMsgCategory resploglevel);
 
+    void esSearchMetaData(std::string & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, unsigned size, offset_t from);
+    void getMinReturnColumns(std::string & columns);
+    void getDefaultReturnColumns(std::string & columns);
+    void getAllColumns(std::string & columns);
 public:
     ElasticStackLogAccess(const std::vector<std::string> &hostUrlList, IPropertyTree & logAccessPluginConfig);
     virtual ~ElasticStackLogAccess() override = default;
+
+    void populateQueryStringAndQueryIndex(std::string & queryString, std::string & queryIndex, const LogAccessConditions & options);
 
     // IRemoteLogAccess methods
     virtual bool fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) override;
     virtual const char * getRemoteLogAccessType() const override { return type; }
     virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
     virtual const char * fetchConnectionStr() const override { return m_esConnectionStr.str();}
+    virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) override;
+    virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) override;
 };

@@ -1449,11 +1449,20 @@ interface jlib_decl ILogAccessFilter : public IInterface
     virtual LogAccessFilterType filterType() const = 0;
 };
 
+enum LogAccessReturnColsMode
+{
+    RETURNCOLS_MODE_min,
+    RETURNCOLS_MODE_default,
+    RETURNCOLS_MODE_custom,
+    RETURNCOLS_MODE_all
+};
+
 struct LogAccessConditions
 {
 private:
     Owned<ILogAccessFilter> filter;
     StringArray logFieldNames;
+    LogAccessReturnColsMode returnColsMode = RETURNCOLS_MODE_default;
     LogAccessTimeRange timeRange;
     unsigned limit = 100;
     offset_t startFrom = 0;
@@ -1466,8 +1475,18 @@ public:
         timeRange = l.timeRange;
         setFilter(LINK(l.filter));
         startFrom = l.startFrom;
-
+        returnColsMode = l.returnColsMode;
         return *this;
+    }
+
+    LogAccessReturnColsMode getReturnColsMode() const
+    {
+        return returnColsMode;
+    }
+
+    void setReturnColsMode(LogAccessReturnColsMode retColsMode)
+    {
+        returnColsMode = retColsMode;
     }
 
     ILogAccessFilter * queryFilter() const
@@ -1481,6 +1500,7 @@ public:
 
     void appendLogFieldName(const char * fieldname)
     {
+        returnColsMode = RETURNCOLS_MODE_custom;
         if (!logFieldNames.contains(fieldname))
             logFieldNames.append(fieldname);
     }
@@ -1491,11 +1511,6 @@ public:
         {
             appendLogFieldName(fields.item(fieldsindex));
         }
-    }
-
-    inline const StringArray & queryLogFieldNames() const
-    {
-        return logFieldNames;
     }
 
     unsigned getLimit() const
@@ -1561,6 +1576,11 @@ inline LogAccessLogFormat logAccessFormatFromName(const char * name)
         throw makeStringExceptionV(-1, "Encountered unknown Log Access Format name: '%s'", name);
 }
 
+interface IRemoteLogAccessStream : extends IInterface
+{
+    virtual bool readLogEntries(StringBuffer & record, unsigned & recsRead) = 0;
+};
+
 // Log Access Interface - Provides filtered access to persistent logging - independent of the log storage mechanism
 //                      -- Declares method to retrieve log entries based on options set
 //                      -- Declares method to retrieve remote log access type (eg elasticstack, etc)
@@ -1569,7 +1589,8 @@ inline LogAccessLogFormat logAccessFormatFromName(const char * name)
 interface IRemoteLogAccess : extends IInterface
 {
     virtual bool fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) = 0;
-
+    virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) = 0;
+    virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) = 0;
     virtual const char * getRemoteLogAccessType() const = 0;
     virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
@@ -1591,6 +1612,6 @@ extern jlib_decl bool fetchJobIDLog(StringBuffer & returnbuf, IRemoteLogAccess &
 extern jlib_decl bool fetchComponentLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByAudience(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByClass(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
-extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
+extern jlib_decl IRemoteLogAccess & queryRemoteLogAccessor();
 
 #endif
