@@ -1678,10 +1678,12 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
         <title>ecl queries files</title>
 
         <para><emphasis role="bold">ecl queries files &lt;target&gt;
-        &lt;query&gt;</emphasis></para>
+        [&lt;query&gt;]</emphasis></para>
 
         <para>The queries files command displays a list of the files currently
-        in use by the given query.</para>
+        in use by the given query. If the <emphasis>query</emphasis> option is
+        omitted, it returns a list of files for all queries on the specified
+        target. </para>
 
         <para>Examples:</para>
 
@@ -1723,8 +1725,9 @@ SuperFiles used:
                 <row>
                   <entry>query</entry>
 
-                  <entry>Name of the query for which to get a list of files it
-                  uses</entry>
+                  <entry>Optional. Name of the query for which to get a list
+                  of files it uses. If omitted, a list of files for each query
+                  on the specified target is returned.</entry>
                 </row>
 
                 <row>
