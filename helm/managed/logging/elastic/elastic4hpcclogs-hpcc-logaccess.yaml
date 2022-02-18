@@ -21,3 +21,7 @@ global:
           searchColumn: "hpcc.log.audience"          # Field containing audience information
         - type: "class"                              #Search by log class specific log mapping
           searchColumn: "hpcc.log.class"             # Field containing log class information
+        - type: "instance"                           #Search by log source instance specific mapping
+          searchColumn: "kubernetes.pod.name"        # Field containing source instance information
+        - type: "host"                               #Search by log source host specific mapping
+          searchColumn: "kubernetes.node.hostname"   # Field containing source host information

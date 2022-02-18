@@ -92,6 +92,16 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
             logFetchOptions.setFilter(getAudienceLogAccessFilter(targetAud));
             break;
         }
+        case CLogAccessType_BySourceInstance:
+        {
+            logFetchOptions.setFilter(getInstanceLogAccessFilter(searchByValue));
+            break;
+        }
+        case CLogAccessType_BySourceNode:
+        {
+            logFetchOptions.setFilter(getHostLogAccessFilter(searchByValue));
+            break;
+        }
         case LogAccessType_Undefined:
         default:
             throw makeStringException(-1, "Invalid remote log access request type");

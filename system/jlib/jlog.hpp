@@ -1395,6 +1395,8 @@ typedef enum
     LOGACCESS_FILTER_or,
     LOGACCESS_FILTER_and,
     LOGACCESS_FILTER_wildcard,
+    LOGACCESS_FILTER_instance,
+    LOGACCESS_FILTER_host,
     LOGACCESS_FILTER_unknown
 } LogAccessFilterType;
 
@@ -1410,6 +1412,10 @@ inline const char * logAccessFilterTypeToString(LogAccessFilterType field)
         return "audience";
     case LOGACCESS_FILTER_component:
         return "component";
+    case LOGACCESS_FILTER_instance:
+        return "instance";
+    case LOGACCESS_FILTER_host:
+        return "host";
     case LOGACCESS_FILTER_or:
         return "or";
     case LOGACCESS_FILTER_and:
@@ -1434,6 +1440,10 @@ inline unsigned logAccessFilterTypeFromName(char const * name)
         return LOGACCESS_FILTER_audience;
     if(strieq(name, "component"))
         return LOGACCESS_FILTER_component;
+    if(strieq(name, "instance"))
+        return LOGACCESS_FILTER_instance;
+    if(strieq(name, "host"))
+        return LOGACCESS_FILTER_host;
     if(strieq(name, "or"))
         return LOGACCESS_FILTER_or;
     if(strieq(name, "and"))
@@ -1599,6 +1609,8 @@ interface IRemoteLogAccess : extends IInterface
 
 // Helper functions to construct log access filters
 extern jlib_decl ILogAccessFilter * getLogAccessFilterFromPTree(IPropertyTree * tree);
+extern jlib_decl ILogAccessFilter * getInstanceLogAccessFilter(const char * instancename);
+extern jlib_decl ILogAccessFilter * getHostLogAccessFilter(const char * host);
 extern jlib_decl ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId);
 extern jlib_decl ILogAccessFilter * getComponentLogAccessFilter(const char * component);
 extern jlib_decl ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience audience);
