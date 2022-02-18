@@ -431,8 +431,8 @@ protected:
     bool optIgnoreSimplified = false;
     bool optExtraStats = false;
     bool optPruneArchive = true;
-    bool optFetchRepos = false;
-    bool optUpdateRepos = false;
+    bool optFetchRepos = true;
+    bool optUpdateRepos = true;
 
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
