@@ -107,6 +107,38 @@ if (WIN32)
   endif()
 endif ()
 
+if (APPLE)
+  set (update_dynamic_shared_lib_path  "execute_process (COMMAND bash \"-c\"  \"otool -L \\\"\${file}\\\" | egrep \\\"(\\\\s|/)\${dylib_name_only}(.[0-9]{1,})*.dylib\\\" | sed \\\"s/^[[:space:]]//g\\\" | cut -d' ' -f1\"
+                   OUTPUT_VARIABLE otoolOut
+                   ERROR_VARIABLE  otoolErr
+                   OUTPUT_STRIP_TRAILING_WHITESPACE
+                   )
+                   if (\"\${otoolOut}\" STREQUAL \"\")
+                       continue()
+                   endif()
+                   if (NOT \"\${otoolErr}\" STREQUAL \"\")
+                       message(FATAL_ERROR \"Failed to check dependent lib  \${dylib_name_only} for \${file}\")
+                   endif()
+
+                   set(original_dylib_path \${otoolOut})
+
+                   file(GLOB lib2_dylib \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/\${dylib_name_only}*.dylib\")
+                   if (\"\${lib2_dylib}\" STREQUAL \"\")
+                       message(FATAL_ERROR \"Cannot find \${dylib_name_only}*.dylib under \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2\")
+                   endif()
+
+                   get_filename_component(dylib_name_ext \"\${lib2_dylib}\" NAME)
+
+                   execute_process(
+                       COMMAND install_name_tool -change \"\${original_dylib_path}\" \"@loader_path/../lib2/\${dylib_name_ext}\" \"\${file}\"
+                       OUTPUT_VARIABLE out
+                       ERROR_VARIABLE  err
+                   )
+   ")
+
+endif()
+
+
 foreach(dylib ${DYLIBS})
     get_filename_component(dylib_path ${dylib} REALPATH)
     if (WIN32)
@@ -115,37 +147,33 @@ foreach(dylib ${DYLIBS})
         install(PROGRAMS "${dylib_path}" DESTINATION lib2)
         get_filename_component(dylib_name_ext ${dylib_path} NAME)
         get_filename_component(dylib_name_only ${dylib_name_ext} NAME_WE)
-
         install(CODE "
-           file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
+           set(dylib_name_only \"${dylib_name_only}\")
+           file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\")
            foreach(file \${files})
-               execute_process(COMMAND bash \"-c\"  \"otool -L \\\"\${file}\\\" | egrep \\\"(\\\\s|/)${dylib_name_only}(.[0-9]{1,})*.dylib\\\" | sed \\\"s/^[[:space:]]//g\\\" | cut -d' ' -f1\"
-                  OUTPUT_VARIABLE otoolOut
-                  ERROR_VARIABLE  otoolErr
-                  OUTPUT_STRIP_TRAILING_WHITESPACE
-               )
-               if (\"\${otoolOut}\" STREQUAL \"\")
-                  continue()
-               endif()
-               if (NOT \"\${otoolErr}\" STREQUAL \"\")
-                   message(FATAL_ERROR \"Failed to check dependent lib  ${dylib_name_only} for \${file}\")
-               endif()
-
-                  set(original_dylib_path \${otoolOut})
-
-                  file(GLOB lib2_dylib \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/${dylib_name_only}*.dylib\")
-                  if (\"\${otoolOut}\" STREQUAL \"\")
-                      message(FATAL_ERROR \"Cannot find ${dylib_name_only}*.dylib under lib2\")
-                  endif()
-                  get_filename_component(dylib_name_ext \"\${lib2_dylib}\" NAME)
-
-                  execute_process(
-                      COMMAND install_name_tool -change \"\${original_dylib_path}\" \"@loader_path/../lib2/\${dylib_name_ext}\" \"\${file}\"
-                      OUTPUT_VARIABLE out
-                     ERROR_VARIABLE  err
-                  )
-               endif()
+               ${update_dynamic_shared_lib_path}
            endforeach ()
         ")
    endif()
 endforeach(dylib)
+
+# Update dynamic shared library path for libraries under lib2/
+if (APPLE)
+  foreach(dylib ${DYLIBS})
+    get_filename_component(dylib_path ${dylib} REALPATH)
+    get_filename_component(dylib_name_ext ${dylib_path} NAME)
+    get_filename_component(dylib_name_only ${dylib_name_ext} NAME_WE)
+    install(CODE "
+      set(dylib_name_only \"${dylib_name_only}\")
+      file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
+      foreach(file \${files})
+        get_filename_component(file_name_ext \${file} NAME)
+        get_filename_component(file_name_only \${file_name_ext} NAME_WE)
+        if (\"\${file_name_only}\" STREQUAL \"\${dylib_name_only}\" )
+          continue()
+        endif()
+        ${update_dynamic_shared_lib_path}
+      endforeach ()
+    ")
+  endforeach(dylib)
+endif()
