@@ -3011,6 +3011,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             inputFileNames.append("stdin:");
         }
+        else if (iter.matchFlag(tempArg, "--logging.postMortem"))
+        {
+            // Ignore, but may be present
+        }
         else if (arg[0] == '-')
         {
             //If --config has been specified, then ignore any unknown options beginning with -- since they will be added to the globals.
