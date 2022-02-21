@@ -274,7 +274,7 @@
           "type": "string"
         },
         "cost": {
-          "description": "resource cost",
+          "description": "default resource cost",
           "type": "object",
           "properties": {
             "currencyCode": {
@@ -575,6 +575,16 @@
     },
     "resources": {
       "type": "object"
+    },
+    "componentCost": {
+      "description": "component level costs",
+      "type": "object",
+      "properties": {
+        "perCpu": {
+          "description": "cost of a single cpu",
+          "type": "number"
+        }
+      }
     },
     "memory": {
       "type": "object",
@@ -1035,6 +1045,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "cost": {
+          "$ref" : "#/definitions/componentCost"
         }
       }
     },
@@ -1172,6 +1185,9 @@
         },
         "jobMemory": {
           "$ref": "#/definitions/memory"
+        },
+        "cost": {
+          "$ref" : "#/definitions/componentCost"
         }
       }
     },
@@ -2010,6 +2026,9 @@
         },
         "eclAgentResources": {
           "$ref": "#/definitions/resources"
+        },
+        "cost": {
+          "$ref" : "#/definitions/componentCost"
         },
         "expert": {
           "description": "Custom internal options usually reserved for internal testing",
