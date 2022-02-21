@@ -13,6 +13,7 @@
             "features": []
         },
         "boost-property-tree",
+        "boost-regex",
         "python3",
         "apr",
         "apr-util",
