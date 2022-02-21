@@ -3259,7 +3259,8 @@ public:
         StringBuffer lclassPath;
         if (engine)
         {
-            const StringArray &manifestJars = engine->queryManifestFiles("jar");
+            StringArray manifestJars;
+            engine->getManifestFiles("jar", manifestJars);
             ForEachItemIn(idx, manifestJars)
             {
                 lclassPath.append(';').append(manifestJars.item(idx));

@@ -1206,6 +1206,7 @@ protected:
     Owned<IConstWorkUnit> statsWu;
     Owned<IRoxieDaliHelper> daliHelperLink;
     Owned<IDistributedFileTransaction> superfileTransaction;
+    IArrayOf<IQueryFactory> loadedLibraries;
 
     const IRoxieContextLogger &logctx;
 
@@ -1404,7 +1405,10 @@ public:
         return logctx.queryCallerIdHttpHeader();
     }
 
-
+    virtual void noteLibrary(IQueryFactory *library)
+    {
+        loadedLibraries.appendUniq(*LINK(library));
+    }
     virtual void checkAbort()
     {
         // MORE - really should try to apply limits at agent end too
@@ -3037,11 +3041,22 @@ public:
             logctx.getLogPrefix(result);
         return result;
     }
-    virtual const StringArray &queryManifestFiles(const char *type) const override
+    virtual void getManifestFiles(const char *type, StringArray &files) const override
     {
         ILoadedDllEntry *dll = factory->queryDll();
         StringBuffer id;
-        return dll->queryManifestFiles(type, getQueryId(id, true).str());
+        const StringArray &dllFiles = dll->queryManifestFiles(type, getQueryId(id, true).str());
+        ForEachItemIn(idx, dllFiles)
+            files.append(dllFiles.item(idx));
+        ForEachItemIn(lidx, loadedLibraries)
+        {
+            IQueryFactory &lfactory = loadedLibraries.item(lidx);
+            ILoadedDllEntry *ldll = lfactory.queryDll();
+            StringBuffer lid;
+            const StringArray &ldllFiles = ldll->queryManifestFiles(type, getQueryId(lid, true).str());
+            ForEachItemIn(ldidx, ldllFiles)
+                files.append(ldllFiles.item(ldidx));
+        }
     }
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;

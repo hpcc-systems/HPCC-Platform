@@ -1574,9 +1574,11 @@ public:
     {
         return result.append(jobChannel.queryJob().queryWuid());
     }
-    virtual const StringArray &queryManifestFiles(const char *type) const override
+    virtual void getManifestFiles(const char *type, StringArray &files) const override
     {
-        return querySo.queryManifestFiles(type, jobChannel.queryJob().queryWuid());
+        const StringArray &dllFiles = querySo.queryManifestFiles(type, jobChannel.queryJob().queryWuid());
+        ForEachItemIn(idx, dllFiles)
+            files.append(dllFiles.item(idx));
     }
     virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const
     {
