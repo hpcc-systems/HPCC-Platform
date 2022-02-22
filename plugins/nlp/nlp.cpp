@@ -63,9 +63,10 @@ namespace nlp {
                 nlpEng = new NLPEng();
             }
         }
+        StringBuffer anaBuff(anaLen,ana);
         StringBuffer txtBuff(txtLen,txt);
         ostringstream sso;
-        tgtLen = nlpEng->nlpEngAnalyze(ana,txtBuff,sso);
+        tgtLen = nlpEng->nlpEngAnalyze(anaBuff,txtBuff,sso);
         tgt = (char *) CTXMALLOC(parentCtx, tgtLen);
         memcpy_iflen(tgt, sso.str().c_str(), tgtLen);
     }
