@@ -136,6 +136,11 @@ ldap:
          -  path: FileIOAccess
             resource: FileIOAccess
             description: Access to files in dropzone
+      WsCloud:
+         Feature:
+         -  path: CloudAccess
+            resource: CloudAccess
+            description: Access to cloud environment
       ws_config:
          Feature:
          -  path: ConfigAccess
