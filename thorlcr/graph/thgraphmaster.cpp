@@ -1219,19 +1219,35 @@ public:
     virtual char *getFilePart(const char *logicalName, bool create=false) override { assertex(false); return NULL; }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) override
     {
-        unsigned checkSum = 0;
-        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), name, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
+        StringBuffer fullname('~');
+        expandLogicalName(fullname, name);
+        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), fullname, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
         if (iDfsFile.get())
         {
-            if (iDfsFile->getFileCheckSum(checkSum))
+            // NB: if the file or any of the subfiles are compressed, then we cannot rely on the checksum
+            // use the hash of the modified time instead (which is what roxie and hthor do for all files).
+            bool useModifiedTime = false;
+            IDistributedSuperFile * super = iDfsFile->querySuperFile();
+            if (super)
+            {
+                Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
+                ForEach(*iter)
+                {
+                    if (iter->query().isCompressed())
+                    {
+                        useModifiedTime = true;
+                        break;
+                    }
+                }
+            }
+            else if (iDfsFile->isCompressed())
+                useModifiedTime = true;
+
+            unsigned checkSum = 0;
+            if (!useModifiedTime && iDfsFile->getFileCheckSum(checkSum))
                 hash ^= checkSum;
             else
-            {
-                StringBuffer modifiedStr;
-                if (iDfsFile->queryAttributes().getProp("@modified", modifiedStr))
-                    hash = rtlHash64Data(modifiedStr.length(), modifiedStr.str(), hash);
-                // JCS->GH - what's the best thing to do here, if [for some reason] neither are available..
-            }
+                hash = crcLogicalFileTime(iDfsFile, hash, fullname);
         }
         return hash;
     }

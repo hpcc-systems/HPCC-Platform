@@ -39,6 +39,7 @@
 #include "roxiemem.hpp"
 #include "thorstep.hpp"
 #include "roxiemem.hpp"
+#include "dadfs.hpp"
 
 #define ROWAGG_PERROWOVERHEAD (sizeof(AggregateRowBuilder))
 
@@ -2248,3 +2249,26 @@ bool CPersistentTask::join(unsigned timeout, bool throwException)
 }
 #endif
 
+unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
+{
+    IDistributedSuperFile * super = file->querySuperFile();
+    if (super)
+    {
+        Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
+        ForEach(*iter)
+        {
+            IDistributedFile & cur = iter->query();
+            const char * name = cur.queryLogicalName();
+            crc = rtlHash64Data(strlen(name), name, crc);
+            crc = crcLogicalFileTime(&cur, crc, name);
+        }
+    }
+    else
+    {
+        CDateTime dt;
+        file->getModificationTime(dt);
+        unsigned __int64 modifiedTime = dt.getSimple();
+        crc = rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
+    }
+    return crc;
+}

@@ -2738,15 +2738,6 @@ void EclAgent::logException(std::exception & e)
     logException(SeverityError, MSGAUD_programmer, 0, m.str(), false);
 }
 
-static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
-{
-    CDateTime dt;
-    file->getModificationTime(dt);
-    unsigned __int64 modifiedTime = dt.getSimple();
-    IERRLOG("getDatasetHash adding crc %" I64F "u for file %s", modifiedTime, filename);
-    return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
-}
-
 unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __int64 crc)
 {
     IERRLOG("getDatasetHash initial crc %" I64F "x", crc);
@@ -2771,20 +2762,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
     {
         WorkunitUpdate wu = updateWorkUnit();
         wu->noteFileRead(file);
-        IDistributedSuperFile * super = file->querySuperFile();
-        if (super)
-        {
-            Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
-            ForEach(*iter)
-            {
-                IDistributedFile & cur = iter->query();
-                const char * name = cur.queryLogicalName();
-                crc = rtlHash64Data(strlen(name), name, crc);
-                crc = crcLogicalFileTime(&cur, crc, name);
-            }
-        }
-        else
-            crc = crcLogicalFileTime(file, crc, fullname.str());
+        crc = crcLogicalFileTime(file, crc, fullname);
     }
     else
         IERRLOG("getDatasetHash did not find file %s", fullname.str());
