@@ -1624,6 +1624,14 @@
 
                 <entry>Full</entry>
               </row>
+
+              <row>
+                <entry>WsLogAccess </entry>
+
+                <entry>Allows ability to read component logs</entry>
+
+                <entry>Read</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable></para>
