@@ -936,7 +936,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,ctx.srcuser,srcdali, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,ctx.srcuser,srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");

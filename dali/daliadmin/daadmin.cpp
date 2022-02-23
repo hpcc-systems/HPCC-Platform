@@ -481,7 +481,7 @@ bool dfsfile(const char *lname, IUserDescriptor *userDesc, StringBuffer &out, Un
     CDfsLogicalFileName lfn;
     lfn.set(lname);
     if (!lfn.isExternal()) {
-        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,NULL,daliConnectTimeoutMs,true); //,userDesc);
+        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,NULL,daliConnectTimeoutMs,GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign); //,userDesc);
         if (partslist)
             filterParts(tree,*partslist);
         if (!tree) {
