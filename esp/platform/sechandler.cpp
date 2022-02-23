@@ -150,7 +150,7 @@ bool SecHandler::authorizeSecFeature(const char* pszFeatureUrl, SecAccessFlags& 
     if (rc)
     {
         int accessAllowed = pmap->queryValue(pszFeatureUrl);
-        if (accessAllowed == -1)
+        if (accessAllowed == SecAccess_Unavailable)
             rc = false;
         else
             access = (SecAccessFlags) accessAllowed;
@@ -188,7 +188,7 @@ bool SecHandler::validateSecFeaturesAccess(MapStringTo<SecAccessFlags> & accessm
         for(unsigned i = 0; i < features.length(); i++)
         {
             int accessAllowed = pmap->queryValue(features.item(i));
-            if ((accessAllowed == -1) || (reqarray[i] && ((unsigned)accessAllowed < reqarray[i])))
+            if ((accessAllowed == SecAccess_Unavailable) || (reqarray[i] && ((unsigned)accessAllowed < reqarray[i])))
             {
                 if (throwExcpt)
                     throw MakeStringException(-1, "Access Denied!");
@@ -313,7 +313,7 @@ bool SecHandler::validateSecFeatureAccess(const char* pszFeatureUrl, unsigned re
     if (authorizeSecReqFeatures(features, *pmap, reqarray))
     {
         int accessAllowed = pmap->queryValue(pszFeatureUrl);
-        if ((accessAllowed == -1) || (required && (accessAllowed < required)))
+        if ((accessAllowed == SecAccess_Unavailable) || (required && (accessAllowed < required)))
         {
             if (throwExcpt)
                 throw MakeStringException(-1, "Access Denied!");

@@ -1,5 +1,6 @@
 ldap:
   #ldapAddress: "myldapserver"
+  secMgrAdminMode: true
   serverType: ActiveDirectory
   description: LDAP server process
   ldapProtocol: ldaps

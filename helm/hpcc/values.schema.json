@@ -718,6 +718,10 @@
           "type": "string",
           "description": "LDAP Server IP address(es), comma separated"
         },
+        "secMgrAdminMode": {
+          "type": "boolean",
+          "description": "true if Active Directory Administrator User (ldapAdminSecretKey) should be allowed to modify LDAP Directory"
+        },
         "ldapProtocol": {
           "type": "string",
           "description": "The protocol to use - standard \"LDAP\" or secure \"LDAPS\" over SSL"

@@ -247,8 +247,9 @@ inline bool LdapServerDown(int rc)
 class CLdapConfig : implements ILdapConfig, public CInterface
 {
 private:
+    bool                 m_adminMode = false;
     LdapServerType       m_serverType; 
-    StringAttr           m_cfgServerType;//LDAP Server type name (ActiveDirectory, Fedora389, etc)
+    StringAttr           m_cfgServerType;//AD Server type name (ActiveDirectory, AzureActiveDirectory, 389DirectoryServer,  etc)
 
     Owned<IPropertyTree> m_cfg;
 
@@ -291,6 +292,7 @@ private:
     void debugPrintout()
     {
         DBGLOG("@@LDAP CONFIG--------------");
+        DBGLOG("m_adminMode = %s", m_adminMode ? "true" : "false");
         DBGLOG("m_adminGroupDN = %s", m_adminGroupDN.str());
         DBGLOG("m_protocol = %s", m_protocol.str());
         DBGLOG("m_basedn = %s", m_basedn.str());
@@ -382,6 +384,12 @@ public:
             m_ldap_secure_port = atoi(portbuf.str());
 
         m_timeout = cfg->getPropInt(".//@ldapTimeoutSecs", LDAPTIMEOUT);
+
+        //----------------------------------------------
+        //Get operational mode (Admin mode or read-only)
+        //----------------------------------------------
+        m_adminMode = cfg->getPropBool(".//@secMgrAdminMode", true);
+        PROGLOG("LDAP Security Manager IS %sfunctioning in LDAP Admin Mode (secMgrAdminMode)", m_adminMode ? "" : "NOT ");
 
         //------------------------------------------------
         //Get LDAP Admin account username (m_sysuser_commonname) and password (m_sysuser_password)
@@ -654,6 +662,8 @@ public:
                         m_sysuser_dn.append(m_sysuser_commonname.str());//includes FQDN prefix, use as is (likely from initldap)
                 }
             }
+            if (!m_sysuser_dn.isEmpty() && !LdapUtils::containsBasedn(m_sysuser_dn.str()))//@@
+                m_sysuser_dn.append(",").append(m_sysuser_basedn.str());//@@
         }
 
         m_maxConnections = cfg->getPropInt(".//@maxConnections", DEFAULT_LDAP_POOL_SIZE);
@@ -669,6 +679,11 @@ public:
 #ifdef _DEBUG
         debugPrintout();
 #endif
+    }
+
+    virtual bool getIsAdminMode()
+    {
+        return m_adminMode;
     }
 
     virtual const char * getAdminGroupDN()
@@ -1632,6 +1647,8 @@ public:
     {
         m_pp = pp;
 
+        if (!m_ldapconfig->getIsAdminMode())//@@
+        {
         //Isolate optional HPCC Admin group name
         StringBuffer adminGroupName;
         if (!isEmptyString(m_ldapconfig->getAdminGroupDN()))
@@ -1725,6 +1742,7 @@ public:
             try { changePermission(action); }
             catch(...) {}//nothing to do here, so just move on
         }
+        }//if (!m_ldapconfig->getIsAdminMode())
     }
 
     virtual LdapServerType getServerType()
@@ -2998,6 +3016,12 @@ public:
     // Update user's firstname, lastname (plus displayname for active directory).
     virtual bool updateUser(const char* type, ISecUser& user)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::updateUser only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         const char* username = user.getName();
         if(!username || !*username)
         {
@@ -3432,6 +3456,12 @@ public:
 
     virtual bool changePasswordSSL(const char* username, const char* newPassword)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::changePasswordSSL only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         Owned<ILdapConnection> lconn;
         try
         {
@@ -3553,6 +3583,12 @@ public:
 
     virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::updateUserPassword only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         const char* username = user.getName();
         if(!username || !*username)
         {
@@ -3581,6 +3617,12 @@ public:
 
     virtual bool updateUserPassword(const char* username, const char* newPassword)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::updateUserPassword only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         if(!username || !*username)
         {
             DBGLOG("CLdapClient::updateUserPassword username must be provided");
@@ -4173,6 +4215,12 @@ public:
 
     virtual bool changePermission(CPermissionAction& action)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::changePermission only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(action.m_basedn.str(), m_ldapconfig->getBasedn(), basednbuf);
         Owned<CSecurityDescriptor> sd = new CSecurityDescriptor(action.m_rname.str());
@@ -4382,6 +4430,12 @@ public:
 
     virtual bool deleteUser(ISecUser* user)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::deleteUser only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         if(user == NULL)
         {
             DBGLOG("CLdapClient::deleteUser ISecUser must be provided");
@@ -4435,6 +4489,12 @@ public:
 
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::addGroup only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(groupname == NULL || *groupname == '\0')
         {
             DBGLOG("CLdapClient::addGroup groupname must be provided");
@@ -4543,6 +4603,12 @@ public:
 
     virtual void deleteGroup(const char* groupname, const char * groupsDN=nullptr)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::deleteGroup only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(groupname == NULL || *groupname == '\0')
             throw MakeStringException(-1, "group name can't be empty");
 
@@ -4721,6 +4787,12 @@ public:
 
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::deleteResource only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(basedn == NULL || *basedn == '\0')
             basedn = m_ldapconfig->getResourceBasedn(rtype);
 
@@ -4742,6 +4814,12 @@ public:
 
     virtual void renameResource(SecResourceType rtype, const char* oldname, const char* newname, const char* basedn)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::renameResource only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(oldname == NULL || *oldname == '\0' || newname == NULL || *newname == '\0')
             throw MakeStringException(-1, "please specfiy old and new names");
 
@@ -4955,6 +5033,12 @@ private:
     };
     virtual void addDC(const char* dc)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::addDC only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(dc == NULL || *dc == '\0')
         {
             DBGLOG("CLdapClient::addDC dc must be provided");
@@ -5179,6 +5263,12 @@ private:
 
     virtual void changeUserMemberOf(const char* action, const char* userdn, const char* groupdn)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::changeUserMemberOf only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         char *grp_values[] = {(char*)groupdn, NULL};
         LDAPMod grp_attr = {
             (action != NULL && stricmp(action, "delete") == 0)?LDAP_MOD_DELETE:LDAP_MOD_ADD,
@@ -5687,6 +5777,12 @@ private:
 
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::createLdapBasedn only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(basedn == NULL || basedn[0] == '\0')
         {
             DBGLOG("CLdapClient::createLdapBasedn basedn must be provided");
@@ -5723,6 +5819,12 @@ private:
 
     virtual bool addOrganizationalUnit(ISecUser* user, const char* name, const char* basedn, SecPermissionType ptype, const char* description)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::addOrganizationalUnit only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         if(name == NULL || basedn == NULL)
         {
             DBGLOG("CLdapClient::addOrganizationalUnit OU name must be provided");
@@ -5917,6 +6019,12 @@ private:
 
     virtual bool addResource(SecResourceType rtype, ISecUser& user, ISecResource* resource, SecPermissionType ptype, const char* basedn, CSecurityDescriptor* default_sd, bool lessException=true)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::addResource only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         if(resource == NULL)
         {
             DBGLOG("CLdapClient::addResource can't add resource, ISecResource must be specified");
@@ -6124,6 +6232,12 @@ private:
 
     virtual void enableUser(ISecUser* user, const char* dn, LDAP* ld)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::enableUser only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         const char* username = user->getName();
 
         StringBuffer filter;
@@ -6230,6 +6344,12 @@ private:
 
     virtual bool addUser(ISecUser& user)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::addUser only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return false;
+        }
+
         const char* username = user.getName();
         if(username == NULL || *username == '\0')
         {
@@ -6675,6 +6795,12 @@ private:
 
     void updateViewContents(const char * viewName, const char * content)
     {
+        if (!m_ldapconfig->getIsAdminMode())
+        {
+            DBGLOG("CLdapClient::updateViewContents only allowed when LDAP Security Manager is in LDAP Admin Mode (secMgrAdminMode)");
+            return;
+        }
+
         if(viewName == nullptr || *viewName == '\0')
             throw MakeStringException(-1, "Can't updateViewContents, viewName is empty");
 
