@@ -37,7 +37,7 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.16"
+#define ServerVersion    "3.17"
 #define MinClientVersion "1.5"
 
 

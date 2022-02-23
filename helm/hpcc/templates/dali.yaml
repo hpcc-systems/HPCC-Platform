@@ -21,6 +21,26 @@
 ##############################################################################
 
 */}}
+
+{{/*
+Return true if Dali setup as exposed service with directio enabled
+Pass in root and me
+*/}}
+{{- define "hpcc.isForeignAccessConfigured" }}
+{{- $service := .me.service | default dict -}}
+{{- $visibility := $service.visibility | default "cluster" -}}
+{{- if (not (eq $service.visibility "cluster")) -}}
+ {{ range .root.Values.dafilesrv -}}
+  {{- if not .disabled -}}
+   {{- if (eq "directio" .application) -}}
+true
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end }}
+{{- end -}}
+
+
 {{ range $dali := $.Values.dali -}}
 {{- if not $dali.disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
@@ -162,6 +182,7 @@ data:
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
 {{- include "hpcc.generateMetricsConfig" $commonCtx | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}
+      foreignAccess: {{ include "hpcc.isForeignAccessConfigured" (dict "root" $ "me" .) | default "false" }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
@@ -193,20 +214,13 @@ Expose dali as a external service, only if there is a service definition and daf
 {{- $service := deepCopy (.service | default dict) -}}
 {{- $_ := set $service "visibility" ($service.visibility | default "cluster") -}}
 {{- $_ := set $service "servicePort" ($service.servicePort | default 7070) -}}
-{{- if and (hasKey . "service") (not (eq $service.visibility "cluster")) -}}
- {{ range $.Values.dafilesrv -}}
-  {{- if not .disabled -}}
-   {{- if (eq "directio" .application) -}}
-    {{- $_ := set $dafilesrvCtx "directAccess" true -}}
-   {{- end -}}
-  {{- end -}}
- {{- end -}}
-{{- end }}
-{{- if $dafilesrvCtx.directAccess -}}
+{{- if (include "hpcc.isForeignAccessConfigured" (dict "root" $ "me" .)) -}}
  {{- if not (hasKey $service "labels") -}}
   {{- $_ := set $service "labels" dict -}}
  {{- end -}}
  {{- $_ := set $service "labels" (merge $service.labels (dict "server" .name)) -}}
+{{- else -}}
+ {{- $_ := set $service "visibility" "cluster" -}}
 {{- end }}
 {{- include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 7070 ) | nindent 0 }}
 ---

@@ -1042,11 +1042,15 @@ void runKubectlCommand(const char *title, const char *cmd, const char *input, St
         throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
     }
 }
+#endif
 
 static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
 static CriticalSection externalServiceCacheCrit;
 std::pair<std::string, unsigned> getExternalService(const char *serviceName)
 {
+#ifndef _CONTAINERIZED
+    UNIMPLEMENTED_X("getDafileServiceFromConfig");
+#endif
     {
         CriticalBlock b(externalServiceCacheCrit);
         std::pair<std::string, unsigned> cachedExternalSevice;
@@ -1085,9 +1089,11 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
     return servicePair;
 }
 
-
 std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application)
 {
+#ifndef _CONTAINERIZED
+    UNIMPLEMENTED_X("getDafileServiceFromConfig");
+#endif
     /* NB: For now expect 1 dafilesrv in configuration only
      * We could have multiple dafilesrv services with e.g. different specs./replicas etc. that
      * serviced different planes. At the moment dafilesrv mounts all data planes.
@@ -1108,4 +1114,4 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
         throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
     return externalService;
 }
-#endif
+

@@ -42,11 +42,14 @@ static unsigned __int64 getLockId(unsigned __int64 leaseId)
     return ++nextLockID;
 }
 
-static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, IPropertyTree *metaRoot, IPropertyTree *meta)
+static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, bool remap, IPropertyTree *metaRoot, IPropertyTree *meta)
 {
     Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(logicalName, nullptr);
     if (!tree)
         return;
+    if (remap)
+        remapGroupsToDafilesrv(tree, nullptr);
+
     CDfsLogicalFileName lfn;
     lfn.set(logicalName);
     if (lfn.isForeign())
@@ -95,7 +98,7 @@ static void populateLFNMeta(const char *logicalName, unsigned __int64 leaseId, I
             {
                 IPropertyTree &sub = *(orderedSubFiles[f]);
                 sub.getProp("@name", subname.clear());
-                populateLFNMeta(subname, leaseId, metaRoot, fileMeta);
+                populateLFNMeta(subname, leaseId, remap, metaRoot, fileMeta);
             }
         }
     }
@@ -158,7 +161,8 @@ bool CWsDfsEx::onDFSFileLookup(IEspContext &context, IEspDFSFileLookupRequest &r
 
         // populate file meta data and lock id's
         Owned<IPropertyTree> responseTree = createPTree();
-        populateLFNMeta(logicalName, leaseId, responseTree, responseTree);
+        bool remap = req.getAccessViaDafilesrv();
+        populateLFNMeta(logicalName, leaseId, remap, responseTree, responseTree);
 
         // serialize response
         MemoryBuffer respMb, compressedRespMb;

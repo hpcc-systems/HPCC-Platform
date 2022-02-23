@@ -567,6 +567,17 @@ typedef IIteratorOf<IFileRelationship> IFileRelationshipIterator;
 /**
  * A distributed directory. Can created, access and delete files, super-files and logic-files.
  */
+
+enum class GetFileTreeOpts
+{
+    none          = 0,
+    expandNodes    = 0x1,
+    appendForeign  = 0x2,
+    remapToService = 0x4,
+    suppressForeignRemapToService = 0x8
+};
+BITMASK_ENUM(GetFileTreeOpts);
+
 interface IDistributedFileDirectory: extends IInterface
 {
     virtual IDistributedFile *lookup(   const char *logicalname,
@@ -610,7 +621,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual bool exists(const char *logicalname,IUserDescriptor *user,bool notsuper=false,bool superonly=false) = 0;                           // logical name exists
     virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user) = 0;                                                    // physical parts exists
 
-    virtual IPropertyTree *getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, bool expandnodes=true, bool appendForeign=true) =0;
+    virtual IPropertyTree *getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign) =0;
     virtual IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;

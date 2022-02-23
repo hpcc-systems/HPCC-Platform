@@ -3726,3 +3726,49 @@ extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe
         xpath.append(path);
     return conn.getClear();
 }
+
+
+static CriticalSection dafileSrvNodeCS;
+static Owned<INode> dafileSrvNode;
+void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
+{
+    FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(file->getPropInt("Attr/@flags"));
+    Owned<IPropertyTreeIterator> iter = file->getElements("Cluster");
+    ForEach(*iter)
+    {
+        IPropertyTree &cluster = iter->query();
+        const char *planeName = cluster.queryProp("@name");
+        Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+        if (!plane->queryHosts() && isAbsolutePath(plane->queryPrefix())) // if host group, or url, don't touch
+        {
+            {
+                CriticalBlock b(dafileSrvNodeCS);
+                if (nullptr == dafileSrvNode)
+                {
+                    auto externalService = getDafileServiceFromConfig("directio");
+                    VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
+                    dafileSrvNode.setown(createINode(dafilesrvEpStr));
+                }
+            }
+
+            Owned<IGroup> group;
+            if (cluster.hasProp("Group"))
+                group.setown(createIGroup(cluster.queryProp("Group")));
+            else
+            {
+                assertex(resolver);
+                StringBuffer defaultDir;
+                GroupType groupType;
+                group.setown(resolver->lookup(planeName, defaultDir, groupType));
+            }
+
+            std::vector<INode *> nodes;
+            for (unsigned n=0; n<group->ordinality(); n++)
+                nodes.push_back(dafileSrvNode);
+            Owned<IGroup> newGroup = createIGroup((rank_t)group->ordinality(), &nodes[0]);
+            StringBuffer groupText;
+            newGroup->getText(groupText);
+            cluster.setProp("Group", groupText);
+        }
+    }
+}

@@ -544,5 +544,7 @@ extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
 extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
 extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath);
 extern da_decl bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * filename, const char * s, bool iswin, IException **e);
+interface INamedGroupStore;
+extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver);
 
 #endif
