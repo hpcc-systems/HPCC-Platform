@@ -694,4 +694,7 @@ inline bool isActivityCodeSigned(IPropertyTree &graphNode)
     return false;
 }
 
+interface IDistributedFile;
+extern THORHELPER_API unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename);
+
 #endif // THORHELPER_HPP

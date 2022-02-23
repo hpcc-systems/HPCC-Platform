@@ -3798,14 +3798,6 @@ public:
             throw MakeStringException(ROXIE_DALI_ERROR, "doNotify: no dali connection available");
     }
 
-    static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
-    {
-        CDateTime dt;
-        file->getModificationTime(dt);
-        unsigned __int64 modifiedTime = dt.getSimple();
-        return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
-    }
-
     virtual unsigned __int64 getDatasetHash(const char * logicalName, unsigned __int64 crc)
     {
         StringBuffer fullname;
@@ -3815,20 +3807,7 @@ public:
         {
             WorkunitUpdate wu = updateWorkUnit();
             wu->noteFileRead(file);
-            IDistributedSuperFile * super = file->querySuperFile();
-            if (super)
-            {
-                Owned<IDistributedFileIterator> iter = super->getSubFileIterator(true);
-                ForEach(*iter)
-                {
-                    IDistributedFile & cur = iter->query();
-                    const char * name = cur.queryLogicalName();
-                    crc = rtlHash64Data(strlen(name), name, crc);
-                    crc = crcLogicalFileTime(&cur, crc, name);
-                }
-            }
-            else
-                crc = crcLogicalFileTime(file, crc, fullname.str());
+            crc = crcLogicalFileTime(file, crc, fullname);
         }
         return crc;
     }

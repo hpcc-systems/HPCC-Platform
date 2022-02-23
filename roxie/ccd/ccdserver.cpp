@@ -1945,9 +1945,12 @@ public:
 
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
+        //MORE: Could call gatherStats here for child strands and avoid repeated merge and reset of the strand stats
+        //but calc local time would need to extract from merged
+        //ForEachItemIn(i, strands)
+        //    strands.item(i).gatherStats(merged);
+
         CRoxieServerActivity::gatherStats(merged);
-        ForEachItemIn(i, strands)
-            strands.item(i).gatherStats(merged);
     }
 
     virtual void onCreate(IHThorArg *_colocalArg)
@@ -1963,12 +1966,10 @@ public:
     virtual void reset()
     {
         assertex(active==0);
-        activityStats.reset();
+
+        //Stats have already been merged into the stranded activity when the strands were stopped.
         ForEachItemIn(idx, strands)
-        {
             strands.item(idx).reset();
-            activityStats.merge(strands.item(idx).queryTimings());
-        }
         resetJunction(splitter);
         CRoxieServerActivity::reset();
         resetJunction(sourceJunction);

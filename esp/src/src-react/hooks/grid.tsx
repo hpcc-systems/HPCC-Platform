@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, IColumn, ICommandBarItemProps, IDetailsHeaderProps, Selection, TooltipHost } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, IColumn, ICommandBarItemProps, IDetailsHeaderProps, Selection, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
 import { createCopyDownloadSelection } from "../components/Common";
@@ -59,6 +59,14 @@ interface Sorted {
     descending: boolean;
 }
 
+function tooltipItemRenderer(item: any, index: number, column: IColumn) {
+    const id = `${column.key}-${index}`;
+    const value = item[column.fieldName || column.key];
+    return <TooltipHost id={id} content={value} overflowMode={TooltipOverflowMode.Parent}>
+        <span aria-describedby={id}>{value}</span>
+    </TooltipHost>;
+}
+
 function columnsAdapter(columns, sorted: Sorted): IColumn[] {
     const retVal: IColumn[] = [];
     for (const key in columns) {
@@ -75,7 +83,8 @@ function columnsAdapter(columns, sorted: Sorted): IColumn[] {
                 isSortedDescending: key == sorted.column && sorted.descending,
                 iconName: column.headerIcon,
                 isIconOnly: !!column.headerIcon,
-                data: column
+                data: column,
+                onRender: tooltipItemRenderer
             } as IColumn);
         }
     }

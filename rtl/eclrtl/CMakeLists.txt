@@ -74,7 +74,7 @@ include_directories (
          ./../../system/jlib 
          ./../../roxie/roxiemem
          ./../../testing/unittests
-         ${BOOST_REGEX_INCLUDE_DIR}
+         ${Boost_INCLUDE_DIRS}
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DECLRTL_EXPORTS )
@@ -93,7 +93,7 @@ if(CENTOS_6_BOOST)
   add_dependencies(eclrtl boost-regex)
   target_link_libraries( eclrtl boost-regex)
 else()
-  target_link_libraries( eclrtl ${BOOST_REGEX_LIBRARIES} )
+  target_link_libraries( eclrtl ${Boost_REGEX_LIBRARY} )
 endif()
 
 target_link_libraries ( eclrtl 

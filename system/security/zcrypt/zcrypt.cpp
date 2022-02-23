@@ -573,6 +573,7 @@ int RSAZCryptor::zip(int in_len, unsigned char* in, ZBuffer& outbuf)
 
     strm.avail_in = in_len;
     strm.next_in = in;
+    strm.total_out = 0;
     ZBuffer onebuf(buflen);
     do 
     {

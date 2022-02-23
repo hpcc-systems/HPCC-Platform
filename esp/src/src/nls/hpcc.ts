@@ -290,6 +290,7 @@ export = {
         FieldNames: "Field Names",
         File: "File",
         FileAccessCost: "File Access Cost",
+        FileCostAtRest: "File Cost At Rest",
         FileCluster: "File Cluster",
         FileCounts: "File Counts",
         FileName: "File Name",

@@ -22,6 +22,8 @@ const searchboxStyles = { margin: "5px", height: "auto", width: "100%" };
 
 const personaStyles = {
     root: {
+        display: "flex",
+        alignItems: "center",
         "&:hover": { cursor: "pointer" }
     }
 };
@@ -168,8 +170,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             <Stack.Item align="center" >
                 <Stack horizontal>
                     {currentUser?.username &&
-                        <Stack.Item>
-                            <Persona {...personaProps} onClick={() => setShowMyAccount(true)} styles={personaStyles} />
+                        <Stack.Item styles={personaStyles}>
+                            <Persona {...personaProps} onClick={() => setShowMyAccount(true)} />
                         </Stack.Item>
                     }
                     <Stack.Item align="center" >

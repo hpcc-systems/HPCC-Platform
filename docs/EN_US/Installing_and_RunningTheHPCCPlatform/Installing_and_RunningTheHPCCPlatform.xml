@@ -39,7 +39,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -292,8 +292,6 @@
           <para>Optionally you can install the package with rpm (recommended
           using the -Uvh options), however then you would have to negotiate
           installing any additional dependencies.</para>
-
-
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -304,8 +302,8 @@
 
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
-          <para>After installing the package, run the following to
-          update any dependencies.</para>
+          <para>After installing the package, run the following to update any
+          dependencies.</para>
 
           <para><programlisting>sudo apt-get install -f </programlisting></para>
         </sect3>
@@ -1153,7 +1151,7 @@ sudo cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.
                     <entry><para>You may want to use a script to push this
                     command out to every node. A sample script is provided
                     with HPCC Systems. Use the following command to start HPCC
-                    Systems on all nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target</programlisting></para></entry>
+                    Systems on all nodes:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start </programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1850,13 +1848,13 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para>This example starts all components on the nodes</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start 
 </programlisting></para>
 
         <para>This example starts all components on all the nodes, using 8
         concurrent executions</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh systemctl start hpccsystems-platform.target -n 8
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start -n 8
 </programlisting>This example starts all components of the dali type on the
         nodes</para>
 
@@ -1917,7 +1915,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         Systems SSH keys across their cluster. SSH keys are used primarily for
         component startup such as Thor and certain plug-ins such as Spark. SSH
         keys are more important in a physical bare metal environment and less
-        so in a cloud environment. </para>
+        so in a cloud environment.</para>
 
         <para><emphasis role="bold">Examples:</emphasis></para>
 
@@ -1925,7 +1923,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para>This example generates new private/public SSH keys and
         overwrites any existing keys and distributes the keys to the
-        components. </para>
+        components.</para>
       </sect2>
     </sect1>
 
@@ -1940,11 +1938,9 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
       <programlisting>sudo yum remove hpccsystems-platform </programlisting>
 
-
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
       <programlisting>sudo apt-get remove hpccsystems-platform</programlisting>
-
     </sect1>
 
     <sect1 id="Helper-Applications">
@@ -1979,9 +1975,9 @@ init_start_thor--></property></para>
     <sect1 id="hpcc-init">
       <title>hpcc-init</title>
 
-      <para>Systems utilizing System V based init systems do not support
-      the systemd calls utilized by HPCC Systems. We will continue to support
-      the old System V style init.d calls.</para>
+      <para>Systems utilizing System V based init systems do not support the
+      systemd calls utilized by HPCC Systems. We will continue to support the
+      old System V style init.d calls.</para>
 
       <para><emphasis role="bold">hpcc-init
       </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
@@ -2447,7 +2443,7 @@ add1(10);
         <para>By default the Python2 plugin is present but disabled, and the
         Python3 plugin is present and enabled. If you want to use Python2
         modify your environment.conf file according to the example in the
-        file. </para>
+        file.</para>
 
         <para>A cluster updated from an older version may not have the
         appropriate entries in the environment.conf file to support either
