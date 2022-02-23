@@ -11,6 +11,8 @@
     <title>Prerequisites</title>
 
     <para><graphic fileref="../../images/WhatYouNeed.jpg" /></para>
+
+    <para>All third-party tools should be 64-bit versions.</para>
   </sect1>
 
   <sect1 id="addrepo" role="nobrk">
