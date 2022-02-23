@@ -17,7 +17,7 @@ while [ "$#" -gt 0 ]; do
   if [[ ${arg:0:1} == '-' ]]; then
     case "${arg:1:1}" in
       -) shift
-         PROGNAME=$1
+         PMD_PROGNAME=$1
          shift
          break
          ;;
@@ -38,7 +38,7 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-if [[ -z $PMD_PROGNAME} ]] ; then
+if [[ -z ${PMD_PROGNAME} ]] ; then
   usage
   exit
 fi
@@ -49,17 +49,20 @@ for (( arg=1; arg <= "$#"; arg++ )); do
   optval=${!arg#*=}
   if [[ ${optname} == '--config' ]]; then
     PMD_COPYFILES+=(${optval})
-  elif [[] ${optname} == '--daliServer' ]]; then
+  elif [[ ${optname} == '--daliServer' ]]; then
     PMD_DALISERVER=${optval}
-  elif [[] ${optname} == '--workunit' ]]; then
+  elif [[ ${optname} == '--workunit' ]]; then
     PMD_WORKUNIT=${optval}
   fi
 done
 
 ulimit -c unlimited
 
+#Ensure any signals to the script kill the child process
+trap 'echo EXIT via signal ; kill 0; wait; ' EXIT
+
 # Execute the main program, defaulting postmortem logging on (can be overriden by program's config file)
-${PROGNAME} --logging.postMortem=1000 "$@" 
+${PMD_PROGNAME} --logging.postMortem=1000 "$@" 
 
 # If it did not exit cleanly, copy some post-mortem info
 retVal=$?
@@ -77,7 +80,7 @@ if [ $retVal -ne 0 ]; then
   rm /tmp/postmortem.log.*
   if [ -f core ]; then
     echo "Generating info from core file to $POST_MORTEM_DIR/info.log" | tee -a $POST_MORTEM_DIR/info.log
-    gdb -batch -ix /opt/HPCCSystems/bin/.gdbinit -x /opt/HPCCSystems/bin/post-mortem-gdb ${PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
+    gdb -batch -ix /opt/HPCCSystems/bin/.gdbinit -x /opt/HPCCSystems/bin/post-mortem-gdb ${PMD_PROGNAME} core 2>$POST_MORTEM_DIR/info.err >>$POST_MORTEM_DIR/info.log
     echo "Generated info from core file" | tee -a $POST_MORTEM_DIR/info.log
     rm core
   fi
@@ -86,6 +89,7 @@ if [ $retVal -ne 0 ]; then
     echo Updated workunit ${PMD_WORKUNIT}
   fi
 fi
+trap - EXIT
 exit $retVal
 
 
