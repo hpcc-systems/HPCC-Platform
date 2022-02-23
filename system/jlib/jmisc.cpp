@@ -1116,4 +1116,3 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
         throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
     return externalService;
 }
-

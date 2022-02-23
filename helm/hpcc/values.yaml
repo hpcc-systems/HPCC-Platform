@@ -217,7 +217,7 @@ storage:
 ## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We only need to recognize
 ## what a component is, and that it belongs to this cluster.
 ## But a kubernetes secret must be provided for the certificate authority key-pair.  The default name for the secret
-## is "local-issuer-ca-key-pair". The secret is a standard kubernetes.io/tls secret and should provide data values for
+## is "hpcc-local-issuer-key-pair". The secret is a standard kubernetes.io/tls secret and should provide data values for
 ## "tls.crt" and "tls.key".
 ##
 ## The local issuer can also be configured to use an external certificate authority or vault.
