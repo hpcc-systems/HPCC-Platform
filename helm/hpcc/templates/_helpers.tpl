@@ -795,14 +795,18 @@ Generate instance queue names
  {{- if not .disabled -}}
 - name: {{ .name }}
   type: {{ .type | default "hthor" }}
-  prefix: {{ .prefix | default "null" }}
+  {{- if hasKey . "prefix" }}
+  prefix: {{ .prefix }}
+  {{- end }}
  {{- end }}
 {{ end -}}
 {{- range $.Values.roxie -}}
  {{- if not .disabled -}}
 - name: {{ .name }}
   type: roxie 
-  prefix: {{ .prefix | default "null" }}
+  {{- if hasKey . "prefix" }}
+  prefix: {{ .prefix }}
+  {{- end }}
   queriesOnly: true
   dataPlane: {{ .dataPlane | default (include "hpcc.getDefaultDataPlane" $) }}
   {{- if hasKey . "directAccessPlanes" }}
@@ -814,7 +818,9 @@ Generate instance queue names
  {{- if not .disabled -}}
 - name: {{ .name }}
   type: thor
-  prefix: {{ .prefix | default "null" }}
+  {{- if hasKey . "prefix" }}
+  prefix: {{ .prefix }}
+  {{- end }}
   width: {{ mul (.numWorkers | default 1) ( .channelsPerWorker | default 1) }}
  {{- end }}
 {{ end -}}
