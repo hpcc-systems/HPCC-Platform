@@ -1285,7 +1285,8 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         case WUStateAborted:
         case WUStateCompleted:
         case WUStateFailed:
-            factory->deleteWorkUnitEx(wuid.str(), true);
+            if (!req.getPersistWorkunit())
+                factory->deleteWorkUnitEx(wuid.str(), true);
             break;
         default:
             abortWorkUnit(wuid.str(), context.querySecManager(), context.queryUser());
