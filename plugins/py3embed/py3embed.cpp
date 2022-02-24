@@ -754,7 +754,8 @@ void PythonThreadContext::addManifestFiles(ICodeContext *codeCtx)
         IEngineContext *engine = codeCtx->queryEngineContext();
         if (engine)
         {
-            const StringArray &manifestModules = engine->queryManifestFiles("pyzip");
+            StringArray manifestModules;
+            engine->getManifestFiles("pyzip", manifestModules);
             if (manifestModules.length())
             {
                 PyObject *sysPath = PySys_GetObject((char *) "path");

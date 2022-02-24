@@ -1,0 +1,12 @@
+<Dataset name='MatchSmith'>
+ <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
+ <Row><surname>Smith               </surname><forename>Baby      </forename><age>2</age></Row>
+</Dataset>
+<Dataset name='NotHalliday'>
+ <Row><surname>Jones               </surname><forename>John      </forename><age>44</age></Row>
+ <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
+ <Row><surname>Smith               </surname><forename>Baby      </forename><age>2</age></Row>
+</Dataset>
+<Dataset name='OldNotHalliday'>
+ <Row><surname>Smith               </surname><forename>George    </forename><age>75</age></Row>
+</Dataset>

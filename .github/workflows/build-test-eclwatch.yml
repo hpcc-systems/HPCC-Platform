@@ -49,9 +49,13 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-      - name: Upgrade npm
-        working-directory: ./esp/src
-        run: npm upgrade -g
+      - name: Cache node modules
+        uses: actions/cache@v1
+        with:
+          path: node_modules
+          key: npm-deps-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-deps-${{ hashFiles('package-lock.json') }}
       - name: Install Dependencies
         working-directory: ./esp/src
         run: npm ci

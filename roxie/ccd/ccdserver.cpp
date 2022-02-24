@@ -363,7 +363,10 @@ public:
     {
         return ctx->getRowAllocatorEx(meta, activityId, flags);
     }
-
+    virtual void noteLibrary(IQueryFactory *library)
+    {
+        ctx->noteLibrary(library);
+    }
 
 protected:
     IRoxieAgentContext * ctx;
@@ -16376,6 +16379,8 @@ public:
 
     virtual void noteLibrary(IQueryFactory *library) override
     {
+        if (ctx)
+            ctx->noteLibrary(library);
         libraryQuery.set(library);
     }
 

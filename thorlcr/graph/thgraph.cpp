@@ -2757,6 +2757,8 @@ void CJobBase::applyMemorySettings(const char *context)
         unsigned totalRequirementsMB = (unsigned)(memorySpecifications["total"] / 0x100000);
         unsigned recommendedMaxMB = (unsigned)(memorySpecifications["recommendedMaxMemory"] / 0x100000);
         queryMemoryMB = recommendedMaxMB - totalRequirementsMB;
+        unsigned sharedInstances = globals->getPropInt(VStringBuffer("%s/@sharedInstances", memoryContext.str()), 1);
+        queryMemoryMB /= sharedInstances;
     }
 
     // a simple helper used below, to fetch bool from workunit, or the memory settings (either managerMemory or workerMemory) or legacy location

@@ -497,7 +497,7 @@ if(TOP_LEVEL_PROJECT)
             file(STRINGS "${SIGN_DIRECTORY}/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
 
             add_custom_target(SIGN
-                COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx"
+                COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx" /fd "SHA256"
 /p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" "${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"
                 COMMENT "Digital Signature"
             )

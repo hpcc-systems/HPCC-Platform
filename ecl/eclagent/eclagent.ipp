@@ -559,9 +559,11 @@ public:
         result.append("workunit"); // No distinction between global, workunit and query scopes for eclagent
         return result;
     }
-    virtual const StringArray &queryManifestFiles(const char *type) const override
+    virtual void getManifestFiles(const char *type, StringArray &files) const override
     {
-        return dll->queryManifestFiles(type, wuid);
+        const StringArray &dllFiles = dll->queryManifestFiles(type, wuid);
+        ForEachItemIn(idx, dllFiles)
+            files.append(dllFiles.item(idx));
     }
 
     virtual void onTermination(QueryTermCallback callback, const char *key, bool isShared) const

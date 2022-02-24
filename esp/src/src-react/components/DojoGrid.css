@@ -3,8 +3,12 @@
     --row-font-size: 13px;
     --grid-background: transparent;
     --grid-selectionForeground: rgb(50, 49, 48);
+    --grid-selectionForegroundDark: rgb(225, 225, 225);
+    --grid-selectionForgroundHoverDark: rgb(225, 225, 225);
     --grid-selectionBackground: rgb(235, 235, 235);
-    --grid-hoverBackground: rgb(247, 245, 243);
+    --grid-selectionBackgroundDark: rgb(47, 47, 47);
+    --grid-hoverBackground: rgb(215, 237, 248);
+    --grid-hoverBackgroundDark: rgb(176, 176, 176);
     --grid-selectionHoverBackground: rgb(227, 225, 223);
 }
 
@@ -39,14 +43,27 @@
     background-color: var(--grid-hoverBackground);
 }
 
+.flat-dark .dgrid-row:hover {
+    background-color: var(--grid-hoverBackgroundDark);
+}
+
 .flat .dgrid-row.dgrid-selected:hover {
     background-color: var(--grid-selectionHoverBackground);
+}
+
+.flat-dark .dojo-component.dgrid .dgrid-row.dgrid-selected:hover {
+    background-color: var(--grid-hoverBackgroundDark);
 }
 
 .flat .dgrid-row .dgrid-selected {
     background-color: var(--grid-selectionBackground);
     color: var(--grid-selectionForeground);
     border-color: var(--grid-background);
+}
+
+.flat-dark .dgrid-row .dgrid-selected {
+    background-color: var(--grid-selectionBackgroundDark);
+    color: var(--grid-selectionForegroundDark);
 }
 
 .flat .dgrid-cell {

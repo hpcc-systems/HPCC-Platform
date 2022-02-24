@@ -324,6 +324,22 @@ public:
             processGroup.set(&queryProcessGroup());
         else
         {
+            /* sort by {port, ip}
+             * So that workers are not bunched on same node, but striped across the pod ips
+             */
+            auto compareINodeOrder = [](IInterface * const *ll, IInterface * const *rr)
+            {
+                INode *l = (INode *) *ll;
+                INode *r = (INode *) *rr;
+                const SocketEndpoint &lep = l->endpoint();
+                const SocketEndpoint &rep = r->endpoint();
+                if (lep.port < rep.port)
+                    return -1;
+                else if (lep.port > rep.port)
+                    return 1;
+                return lep.ipcompare(rep);
+            };
+            connectedSlaves.sort(compareINodeOrder);
             processGroup.setown(createIGroup(connectedSlaves.ordinality(), connectedSlaves.getArray()));
             setupCluster(queryMyNode(), processGroup, channelsPerWorker, slaveBasePort, localThorPortInc);
         }
@@ -789,6 +805,11 @@ int main( int argc, const char *argv[]  )
         }
         workerMemory->setPropInt("@total", gmemSize);
 
+        // used by slaves in absence of specific workerMemory settings, to split available memory equally between workers
+        unsigned numWorkersPerPod = globals->getPropInt("@numWorkersPerPod");
+        if (numWorkersPerPod)
+            workerMemory->setPropInt("@sharedInstances", numWorkersPerPod);
+
         if (mmemSize)
         {
             if (mmemSize > hdwInfo.totalMemory)
@@ -808,7 +829,7 @@ int main( int argc, const char *argv[]  )
             if (!globals->hasProp("@globalMemorySize"))
             {
                 if (!managerMemory->hasProp("@maxMemPercentage"))
-                    managerMemory->setProp("@maxMemPercentage", VStringBuffer("%.2f", defaultPctSysMemForRoxie));
+                    managerMemory->setPropReal("@maxMemPercentage", defaultPctSysMemForRoxie);
             }
         }
 
@@ -934,6 +955,7 @@ int main( int argc, const char *argv[]  )
         LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
         LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
+        unsigned numWorkersPerPod = 1;
         if (!globals->hasProp("@numWorkers"))
             throw makeStringException(0, "Default number of workers not defined (numWorkers)");
         else
@@ -949,6 +971,14 @@ int main( int argc, const char *argv[]  )
                 numWorkers = globals->getPropInt("@numWorkers", 0);
             if (0 == numWorkers)
                 throw makeStringException(0, "Number of workers must be > 0 (numWorkers)");
+            if (wuRead->hasDebugValue("numWorkersPerPod"))
+                numWorkersPerPod = wuRead->getDebugValueInt("numWorkersPerPod", 1);
+            else
+                numWorkersPerPod = globals->getPropInt("@numWorkersPerPod", 1); // default to 1
+            if (numWorkersPerPod < 1)
+                throw makeStringException(0, "Number of workers per pod must be > 0 (numWorkersPerPod)");
+            if ((numWorkers % numWorkersPerPod) != 0)
+                throw makeStringExceptionV(0, "numWorkersPerPod must be a factor of numWorkers. (numWorkers=%u, numWorkersPerPod=%u)", numWorkers, numWorkersPerPod);
         }
 
         cloudJobName.appendf("%s-%s", workunit, graphName);
@@ -956,7 +986,7 @@ int main( int argc, const char *argv[]  )
         StringBuffer myEp;
         queryMyNode()->endpoint().getUrlStr(myEp);
 
-        applyK8sYaml("thorworker", workunit, cloudJobName, "jobspec", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers)} }, false);
+        applyK8sYaml("thorworker", workunit, cloudJobName, "jobspec", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false);
 #else
         StringBuffer thorEpStr;
         LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());

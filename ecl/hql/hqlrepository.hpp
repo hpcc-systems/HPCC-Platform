@@ -54,7 +54,7 @@ public:
     void kill();
 
     void processArchive(IPropertyTree * archiveTree);
-    IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA);
+    IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl);
     void setOptions(const char * _eclRepoPath, const char * _defaultGitPrefix, bool _fetchRepos, bool _updateRepos, bool _verbose)
     {
         options.eclRepoPath.set(_eclRepoPath);
@@ -64,8 +64,11 @@ public:
         options.optVerbose = _verbose;
     }
 
+    IEclSourceCollection * resolveGitCollection(const char * repoPath, const char * defaultUrl);
+
 protected:
     IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive);
+    IEclRepository * createGitRepository(IErrorReceiver *errs, const char * path, const char * urn, unsigned flags, unsigned trace, bool includeInArchive);
     IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive);
     IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
 

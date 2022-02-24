@@ -271,102 +271,138 @@ define([
             return null;
         },
 
-        loadWUQueryResponse: function (prefix, response) {
-            var workunits = lang.getObject("WUQueryResponse.Workunits.ECLWorkunit", false, response);
-            if (workunits) {
-                var idPrefix = prefix.split(" ").join("_");
-                var context = this;
-                arrayUtil.forEach(workunits, function (item, idx) {
-                    context.store.add({
-                        storeID: ++context._rowID,
-                        id: context.id + item.Wuid,
-                        Type: context.i18n.ECLWorkunit,
-                        Reason: prefix,
-                        Summary: item.Wuid,
-                        _type: "Wuid",
-                        _wuid: item.Wuid
-                    });
-                    context.eclStore.add(ESPWorkunit.Get(item.Wuid, item), { overwrite: true });
-                });
-                this.refreshTab(this.eclTab);
-                return workunits.length;
-            }
-            return 0;
+        parseWuQueryResponse: function (prefix, response) {
+            return response?.WUQueryResponse?.Workunits?.ECLWorkunit.map(item => {
+                return {
+                    storeID: ++this._rowID,
+                    id: item.Wuid,
+                    Type: nlsHPCC.ECLWorkunit,
+                    Reason: prefix,
+                    Summary: item.Wuid,
+                    _type: "Wuid",
+                    _wuid: item.Wuid,
+                    ...item
+                };
+            });
         },
 
-        loadGetDFUWorkunitsResponse: function (prefix, response) {
-            var workunits = lang.getObject("GetDFUWorkunitsResponse.results.DFUWorkunit", false, response);
-            if (workunits) {
-                var idPrefix = prefix.split(" ").join("_");
-                var context = this;
-                arrayUtil.forEach(workunits, function (item, idx) {
-                    context.store.add({
-                        storeID: ++context._rowID,
-                        id: context.id + item.ID,
-                        Type: context.i18n.DFUWorkunit,
+        parseGetDFUWorkunitResponse: function (prefix, response) {
+            const item = response?.GetDFUWorkunitResponse?.result;
+            return (item && item.State !== 999) ? {
+                storeID: ++this._rowID,
+                id: item.ID,
+                Type: nlsHPCC.DFUWorkunit,
+                Reason: prefix,
+                Summary: item.ID,
+                _type: "DFUWuid",
+                _wuid: item.ID,
+                ...item
+            } : undefined;
+        },
+
+        parseGetDFUWorkunitsResponse: function (prefix, response) {
+            return response?.GetDFUWorkunitsResponse?.results?.DFUWorkunit.map(item => {
+                return {
+                    storeID: ++this._rowID,
+                    id: item.ID,
+                    Type: nlsHPCC.DFUWorkunit,
+                    Reason: prefix,
+                    Summary: item.ID,
+                    _type: "DFUWuid",
+                    _wuid: item.ID,
+                    ...item
+                };
+            });
+        },
+
+        parseDFUQueryResponse: function (prefix, response) {
+            return response?.DFUQueryResponse?.DFULogicalFiles?.DFULogicalFile.map(item => {
+                if (item.isSuperfile) {
+                    return {
+                        storeID: ++this._rowID,
+                        id: item.Name,
+                        Type: nlsHPCC.SuperFile,
                         Reason: prefix,
-                        Summary: item.ID,
-                        _type: "DFUWuid",
-                        _wuid: item.ID
-                    });
-                    context.dfuStore.add(ESPDFUWorkunit.Get(item.ID, item), { overwrite: true });
+                        Summary: item.Name,
+                        _type: "SuperFile",
+                        _nodeGroup: item.NodeGroup,
+                        _name: item.Name,
+                        ...item
+                    };
+                }
+                return {
+                    storeID: ++this._rowID,
+                    id: item.NodeGroup + "::" + item.Name,
+                    Type: nlsHPCC.LogicalFile,
+                    Reason: prefix,
+                    Summary: item.Name + " (" + item.NodeGroup + ")",
+                    _type: "LogicalFile",
+                    _nodeGroup: item.NodeGroup,
+                    _name: item.Name,
+                    ...item
+                };
+            });
+        },
+
+        parseWUListQueriesResponse: function (prefix, response) {
+            return response?.WUListQueriesResponse?.QuerysetQueries?.QuerySetQuery.map(item => {
+                return {
+                    storeID: ++this._rowID,
+                    id: item.QuerySetId + "::" + item.Id,
+                    Type: nlsHPCC.Query,
+                    Reason: prefix,
+                    Summary: item.Name + " (" + item.QuerySetId + " - " + item.Id + ")",
+                    _type: "Query",
+                    _querySetId: item.QuerySetId,
+                    _id: item.Id,
+                    ...item
+                };
+            });
+        },
+
+        loadWUQueryResponse: function (prefix, response) {
+            const results = this.parseWuQueryResponse(prefix, response);
+            if (results) {
+                results.forEach((item, idx) => {
+                    this.store.put(item, { overwrite: true });
+                    this.eclStore.put(ESPWorkunit.Get(item._wuid, item), { overwrite: true });
                 });
-                this.refreshTab(this.dfuTab);
-                return workunits.length;
+                this.refreshTab(this.eclTab);
+                return results.length;
             }
             return 0;
         },
 
         loadGetDFUWorkunitResponse: function (prefix, response) {
-            var context = this;
-            var workunit = lang.getObject("GetDFUWorkunitResponse.result", false, response);
-            if (workunit && workunit.State !== 999) {
-                var idPrefix = prefix.split(" ").join("_");
-                this.store.add({
-                    storeID: ++context._rowID,
-                    id: context.id + workunit.ID,
-                    Type: context.i18n.DFUWorkunit,
-                    Reason: prefix,
-                    Summary: workunit.ID,
-                    _type: "DFUWuid",
-                    _wuid: workunit.ID
-                });
-                this.dfuStore.add(ESPDFUWorkunit.Get(workunit.ID, workunit), { overwrite: true });
+            const workunit = this.parseGetDFUWorkunitResponse(prefix, response);
+            if (workunit) {
+                this.store.put(workunit, { overwrite: true });
+                this.dfuStore.put(ESPDFUWorkunit.Get(workunit._wuid, workunit), { overwrite: true });
                 this.refreshTab(this.dfuTab);
                 return 1;
             }
             return 0;
         },
 
+        loadGetDFUWorkunitsResponse: function (prefix, response) {
+            const results = this.parseGetDFUWorkunitsResponse(prefix, response);
+            if (results) {
+                results.forEach((item, idx) => {
+                    this.store.put(item, { overwrite: true });
+                    this.dfuStore.put(ESPDFUWorkunit.Get(item._wuid, item), { overwrite: true });
+                });
+                this.refreshTab(this.dfuTab);
+                return results.length;
+            }
+            return 0;
+        },
+
         loadDFUQueryResponse: function (prefix, response) {
-            var items = lang.getObject("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", false, response);
+            const items = this.parseDFUQueryResponse(prefix, response);
             if (items) {
-                var idPrefix = prefix.split(" ").join("_");
-                var context = this;
-                arrayUtil.forEach(items, function (item, idx) {
-                    if (item.isSuperfile) {
-                        context.store.add({
-                            storeID: ++context._rowID,
-                            id: context.id + item.Name,
-                            Type: context.i18n.SuperFile,
-                            Reason: prefix,
-                            Summary: item.Name,
-                            _type: "SuperFile",
-                            _name: item.Name
-                        });
-                    } else {
-                        context.store.add({
-                            storeID: ++context._rowID,
-                            id: context.id + item.Name,
-                            Type: context.i18n.LogicalFile,
-                            Reason: prefix,
-                            Summary: item.Name + " (" + item.NodeGroup + ")",
-                            _type: "LogicalFile",
-                            _nodeGroup: item.NodeGroup,
-                            _name: item.Name
-                        });
-                    }
-                    context.fileStore.add(ESPLogicalFile.Get(item.NodeGroup, item.Name, item), { overwrite: true });
+                items.forEach((item, idx) => {
+                    this.store.put(item, { overwrite: true });
+                    this.fileStore.put(ESPLogicalFile.Get(item._nodeGroup, item._name, item), { overwrite: true });
                 });
                 this.refreshTab(this.fileTab);
                 return items.length;
@@ -375,22 +411,11 @@ define([
         },
 
         loadWUListQueriesResponse: function (prefix, response) {
-            var items = lang.getObject("WUListQueriesResponse.QuerysetQueries.QuerySetQuery", false, response);
+            const items = this.parseWUListQueriesResponse(prefix, response);
             if (items) {
-                var idPrefix = prefix.split(" ").join("_");
-                var context = this;
-                arrayUtil.forEach(items, function (item, idx) {
-                    context.store.add({
-                        storeID: ++context._rowID,
-                        id: context.id + item.QuerySetId + "::" + item.Id,
-                        Type: context.i18n.Query,
-                        Reason: prefix,
-                        Summary: item.Name + " (" + item.QuerySetId + " - " + item.Id + ")",
-                        _type: "Query",
-                        _querySetId: item.QuerySetId,
-                        _id: item.Id
-                    });
-                    context.queryStore.add(ESPQuery.Get(item.QuerySetId, item.Id, item), { overwrite: true });
+                items.forEach((item, idx) => {
+                    this.store.put(item, { overwrite: true });
+                    this.queryStore.put(ESPQuery.Get(item._querySetId, item._id, item), { overwrite: true });
                 });
                 this.refreshTab(this.queryTab);
                 return items.length;
@@ -422,14 +447,16 @@ define([
                 this.selectChild(tab);
             }
 
-            const specificSearch = ESPSearch.searchAll(this.searchText,
-                (what, response) => { this.loadWUQueryResponse(what, response); },
-                (what, response) => { this.loadGetDFUWorkunitResponse(what, response); },
-                (what, response) => { this.loadGetDFUWorkunitsResponse(what, response); },
-                (what, response) => { this.loadDFUQueryResponse(what, response); },
-                (what, response) => { this.loadWUListQueriesResponse(what, response); },
+            const specificSearch = ESPSearch.searchAll(
+                this.searchText,
+                (prefix, response) => { this.loadWUQueryResponse(prefix, response); },
+                (prefix, response) => { this.loadGetDFUWorkunitResponse(prefix, response); },
+                (prefix, response) => { this.loadGetDFUWorkunitsResponse(prefix, response); },
+                (prefix, response) => { this.loadDFUQueryResponse(prefix, response); },
+                (prefix, response) => { this.loadWUListQueriesResponse(prefix, response); },
                 (searchCount) => { },
-                (success) => { this.standby.hide(); });
+                (success) => { this.standby.hide(); }
+            );
 
             switch (specificSearch) {
                 case "ecl":
