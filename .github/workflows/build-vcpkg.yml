@@ -33,7 +33,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "windows-2019", "macos-11"]
+        os: ["ubuntu-20.04", "windows-2019", "windows-2022", "macos-11"]
         include:
           - os: "ubuntu-20.04"
             triplet: "x64-linux"
@@ -46,6 +46,12 @@ jobs:
             mono: ""
             sudo: ""
             cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64'
+            cmake_build_options: "--config Debug -- -m"
+          - os: "windows-2022"
+            triplet: "x64-windows"
+            mono: ""
+            sudo: ""
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64'
             cmake_build_options: "--config Debug -- -m"
           - os: "macos-11"
             triplet: "x64-osx"
