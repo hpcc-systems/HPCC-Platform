@@ -26,11 +26,11 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
         alphaNumColumns: { Name: true, Value: true },
-        sort: [{ attribute: "Wuid", "descending": true }],
+        sort: { attribute: "Wuid", descending: true },
         filename: "results",
         columns: {
             col1: selector({

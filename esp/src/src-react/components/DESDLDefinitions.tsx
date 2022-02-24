@@ -30,11 +30,10 @@ export const DESDLDefinitions: React.FunctionComponent<DESDLDefinitonsProps> = (
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        query: {},
-        sort: [{ attribute: "Name", "descending": false }],
+        sort: { attribute: "Name", descending: false },
         filename: "esdlDefinitions",
         columns: {
             col1: selector({ width: 30, selectorType: "radio", unhidable: true }),

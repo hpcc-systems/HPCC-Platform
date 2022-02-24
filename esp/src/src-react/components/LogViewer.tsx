@@ -29,7 +29,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "dateTime",
         filename: "errorwarnings",

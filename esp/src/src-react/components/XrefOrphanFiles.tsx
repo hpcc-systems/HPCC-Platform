@@ -26,11 +26,10 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "name",
-        query: {},
-        sort: [{ attribute: "modified", "descending": false }],
+        sort: { attribute: "modified", descending: false },
         filename: "xrefsOrphanFiles",
         columns: {
             check: selector({ width: 27 }, "checkbox"),

@@ -559,6 +559,7 @@ export = {
         PackageMap: "Package Map",
         PackageMaps: "Package Maps",
         PackagesNoQuery: "Packages without matching queries",
+        PageSize: "Page Size",
         ParameterXML: "Parameter XML",
         Part: "Part",
         PartName: "Part Name",

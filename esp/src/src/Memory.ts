@@ -81,6 +81,17 @@ export interface MemoryOptions {
 
 type FetchDataResponse = Promise<any[]>;
 
+export type QueryRequest = { [id: string]: any }
+export type QuerySortFunction = (a: any, b: any) => number;
+export type QuerySortItem = { attribute: string, descending: boolean };
+export type QuerySort = QuerySortFunction | QuerySortItem[];
+
+export interface QueryOptions {
+    start?: number;
+    count?: number;
+    sort?: QuerySort
+}
+
 export class BaseStore {
 
     protected idProperty: string;
@@ -99,7 +110,7 @@ export class BaseStore {
         return Promise.resolve([]);
     }
 
-    query(query, options: { start: number, count: number, sort: { attribute: string, descending: boolean } }): QueryResults<any> {
+    query(query: QueryRequest, options: QueryOptions): QueryResults<any> {
         const retVal = new DeferredList();
         retVal.total = new Deferred();
         this.fetchData().then(response => {
@@ -169,6 +180,10 @@ export class Memory extends BaseStore {
         }
     }
 
+    getData() {
+        return this.data;
+    }
+
     protected fetchData(): FetchDataResponse {
         return Promise.resolve(this.data);
     }
@@ -176,12 +191,16 @@ export class Memory extends BaseStore {
 
 export class AlphaNumSortMemory extends Memory {
 
-    constructor(idProperty: string = "id", protected alphanumSort: { [id: string]: boolean }) {
+    protected alphanumSort: { [id: string]: boolean };
+
+    constructor(idProperty: string = "id", alphanumSort: { [id: string]: boolean } = {}) {
         super(idProperty);
+        this.alphanumSort = alphanumSort;
     }
 
-    query(query, options) {
-        if (options?.sort && options?.sort.length && this.alphanumSort[options.sort[0].attribute]) {
+    query(query: QueryRequest, options?: QueryOptions) {
+        const attr = options?.sort && options?.sort.length ? options?.sort[0].attribute : undefined;
+        if (attr && this.alphanumSort[attr]) {
             const col = options.sort[0].attribute;
             const reverse = options.sort[0].descending;
             return super.query(query, {

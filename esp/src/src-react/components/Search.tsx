@@ -57,10 +57,10 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     const search = useConst(new ESPSearch(() => { progress.value++; }));
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "__hpcc_id" }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "search",
         columns: {
             col1: selector({ width: 27, selectorType: "checkbox" }),

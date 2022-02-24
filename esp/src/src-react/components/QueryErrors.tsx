@@ -24,10 +24,10 @@ export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "__hpcc_id" }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "queryErrors",
         columns: {
             Cluster: { label: nlsHPCC.Cluster, width: 140 },

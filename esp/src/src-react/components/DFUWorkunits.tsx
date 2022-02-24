@@ -60,10 +60,10 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store: store || ESPDFUWorkunit.CreateWUQueryStore({}),
         query: formatQuery(filter),
-        sort: [{ attribute: "Wuid", "descending": true }],
+        sort: { attribute: "Wuid", descending: true },
         filename: "dfuworkunits",
         columns: {
             col1: selector({

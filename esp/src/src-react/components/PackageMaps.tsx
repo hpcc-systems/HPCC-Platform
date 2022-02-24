@@ -183,7 +183,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     }, [activeMapProcess, activeMapTarget]);
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store: store || ESPPackageProcess.CreatePackageMapQueryObjectStore({}),
         query: formatQuery(filter),
         filename: "packageMap",

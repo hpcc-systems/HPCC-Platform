@@ -17,11 +17,11 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
         alphaNumColumns: { Name: true, Value: true },
-        sort: [{ attribute: "Wuid", "descending": true }],
+        sort: { attribute: "Wuid", descending: true },
         filename: "variables",
         columns: {
             Type: { label: nlsHPCC.Type, width: 180 },

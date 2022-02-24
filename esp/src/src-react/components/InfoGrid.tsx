@@ -55,7 +55,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "id",
         filename: "errorwarnings",

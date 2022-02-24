@@ -511,7 +511,6 @@ export function MonitorVisibility(widget, callback) {
 
 const slice = Array.prototype.slice;
 export function override(method) {
-    /** @this target object */
     const proxy = function () {
         const context = this;
         const inherited = (this.getInherited && this.getInherited({

@@ -39,9 +39,9 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
 
     //  Grid ---
     const store = useConst(new Observable(new Memory("Part")));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store,
-        sort: [{ attribute: "Part", "descending": false }],
+        sort: { attribute: "Part", descending: false },
         filename: "packageMapParts",
         columns: {
             col1: selector({ width: 27, selectorType: "checkbox" }),

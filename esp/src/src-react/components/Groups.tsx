@@ -31,7 +31,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
 
     //  Grid ---
     const gridStore = useConst(WsAccess.CreateGroupsStore(null, true));
-    const gridSort = useConst([{ attribute: "name", "descending": false }]);
+    const gridSort = useConst([{ attribute: "name", descending: false }]);
     const gridQuery = useConst({});
     const gridColumns = useConst({
         check: selector({ width: 27, label: " " }, "checkbox"),
