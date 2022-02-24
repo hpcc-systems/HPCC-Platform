@@ -1170,34 +1170,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         return ret.getClear();
     }
 
-    static void deleteTempFiles(const char *targetFilename)
-    {
-        try
-        {
-            StringBuffer destPath;
-            StringBuffer prevTempFile;
-            splitFilename(targetFilename, &destPath, &destPath, &prevTempFile, &prevTempFile);
-            prevTempFile.append("*.$$$");
-            Owned<IDirectoryIterator> iter = createDirectoryIterator(destPath, prevTempFile, false, false);
-            ForEach(*iter)
-            {
-                OwnedIFile thisFile = createIFile(iter->query().queryFilename());
-                if (thisFile->isFile() == fileBool::foundYes)
-                    thisFile->remove();
-            }
-        }
-        catch(IException *E)
-        {
-            StringBuffer err;
-            OERRLOG("Could not remove tmp file %s", E->errorMessage(err).str());
-            E->Release();
-        }
-        catch(...)
-        {
-        }
-    }
-
-    static bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
+    static bool doCopyFile(ILazyFileIO *f, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
     {
         bool fileCopied = false;
         IFile *sourceFile;
@@ -1214,7 +1187,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
 
         unsigned __int64 freeDiskSpace = getFreeSpace(destPath);
-        deleteTempFiles(targetFilename);
         offset_t fileSize = sourceFile->size();
         if ( (fileSize + minFreeDiskSpace) > freeDiskSpace)
         {
@@ -1227,7 +1199,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
         else
         {
-            Owned<IFile> destFile = createIFile(tempFile);
+            Owned<IFile> destFile = createIFile(targetFilename);
 
             bool hardLinkCreated = false;
             unsigned start = msTick();
@@ -1253,11 +1225,11 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
                         TimeSection timing(str.str());
-                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
+                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,true,copyFlags);
                     }
                     else
                     {
-                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
+                        sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,true,copyFlags);
                     }
                 }
                 f->setCopying(false);
@@ -1268,7 +1240,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 f->setCopying(false);
                 EXCLOG(E, "Copy exception - remove templocal");
                 destFile->remove();
-                deleteTempFiles(targetFilename);
                 throw;
             }
             catch(...)
@@ -1276,7 +1247,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 f->setCopying(false);
                 IERRLOG("%s exception - remove templocal", msg);
                 destFile->remove();
-                deleteTempFiles(targetFilename);
                 throw;
             }
             if (!hardLinkCreated)  // for hardlinks no rename needed
@@ -1288,7 +1258,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 catch(IException *)
                 {
                     f->setCopying(false);
-                    deleteTempFiles(targetFilename);
                     throw;
                 }
                 unsigned elapsed = msTick() - start;
@@ -1299,7 +1268,6 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
             f->copyComplete();
         }
-        deleteTempFiles(targetFilename);
         return fileCopied;
     }
 
@@ -1310,9 +1278,8 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         else
         {
             const char *targetFilename = f->queryTarget()->queryFilename();
-            StringBuffer tempFile(targetFilename);
             StringBuffer destPath;
-            splitFilename(tempFile.str(), &destPath, &destPath, NULL, NULL);
+            splitFilename(targetFilename, &destPath, &destPath, NULL, NULL);
             if (destPath.length())
                 recursiveCreateDirectory(destPath.str());
             else
@@ -1322,9 +1289,8 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 return false;
             }
             
-            tempFile.append(".$$$");
             const char *msg = background ? "Background copy" : "Copy";
-            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg, copyFlags);
+            return doCopyFile(f, targetFilename, destPath.str(), msg, copyFlags);
         }
         return false;  // if we get here there was no file copied
     }
