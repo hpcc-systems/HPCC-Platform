@@ -379,8 +379,10 @@ public:
     virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) override;
     virtual IEclSource * getSource(IEclSource * parent, IIdAtom * searchName) override;
 
+
 protected:
     IHqlExpression * createSymbol(IHqlRemoteScope * rScope, IEclSource * source);
+    virtual void ensureCollection() {}
 
 protected:
     EclRepositoryManager * container;
@@ -391,9 +393,9 @@ protected:
 };
 
 
-
 IEclSource * CNewEclRepository::getSource(const char * eclFullname)
 {
+    ensureCollection();
     Owned<IEclSource> parent = nullptr;
     for (;;)
     {
@@ -418,6 +420,7 @@ IEclSource * CNewEclRepository::getSource(const char * eclFullname)
 
 bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *errs, bool forceAll)
 {
+    ensureCollection();
     IEclSource * parent = rScope->queryEclSource();
     CHqlRemoteScope * targetScope = static_cast<CHqlRemoteScope *>(rScope);
     Owned<IEclSourceIterator> iter = collection->getContained(parent);
@@ -435,6 +438,7 @@ bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *err
 
 IEclSource * CNewEclRepository::getSource(IEclSource * parent, IIdAtom * searchName)
 {
+    ensureCollection();
     return collection->getSource(parent, searchName);
 }
 
@@ -509,8 +513,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
         {
             const char * defaultUrl = source->queryPath();
             Owned<IProperties> props = source->getProperties();
-            bool requireSHA = false;    // Should possibly be true (or true if it came from a package-lock.json file)
-            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl, requireSHA);
+            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl);
             IHqlScope * childScope = repo->queryRootScope();
             body.set(queryExpression(childScope));
             break;
@@ -519,6 +522,41 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
         throwUnexpected();
     }
     return ::createSymbol(eclId, scope->queryId(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, 0);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+
+class HQL_API CGitEclRepository : public CNewEclRepository
+{
+public:
+    CGitEclRepository(EclRepositoryManager * _container, const char * rootScopeFullName, bool _addToArchive, const char * _repoPath, const char * _urn)
+     : CNewEclRepository(_container, nullptr, rootScopeFullName, _addToArchive), repoPath(_repoPath), urn(_urn)
+    {
+    }
+
+    virtual void ensureCollection() override;
+
+protected:
+    CriticalSection crit;
+    StringAttr repoPath;
+    StringAttr urn;
+    std::atomic<bool> resolved{false};
+};
+
+
+
+void CGitEclRepository::ensureCollection()
+{
+    if (resolved)
+        return;
+
+    CriticalBlock block(crit);
+    if (resolved)
+        return;
+
+    collection.setown(container->resolveGitCollection(repoPath, urn));
+    resolved = true;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -604,7 +642,7 @@ void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
     addRepository(archiveCollection, nullptr, true);
 }
 
-IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA)
+IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl)
 {
     //Check to see if the reference is to a filename.  Should possibly be disabled on a switch.
     const char * filename = queryExtractFilename(defaultUrl);
@@ -619,6 +657,7 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
     }
 
     StringBuffer path;
+    const char * delayedUrn = nullptr;
     if (!filename)
     {
         StringBuffer repoUrn, repo, version;
@@ -640,76 +679,9 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
 
         if (!filename)
         {
-            //Use repositories that have been cloned to ~/.HPCCSystems/repos or similar.  No branches are checked out.
-            StringBuffer repoPath;
-            addPathSepChar(repoPath.append(options.eclRepoPath)).append(repo);
-
-            bool ok = false;
-            if (checkDirExists(repoPath))
-            {
-                if (options.updateRepos)
-                {
-                    unsigned retCode = runGitCommand(nullptr, "fetch origin", repoPath, true);
-                    if (retCode != 0)
-                        DBGLOG("Failed to download the latest version of %s", defaultUrl);
-                }
-
-                ok = true;
-            }
-            else
-            {
-                if (options.fetchRepos)
-                {
-                    // Ensure the ~/.HPCCSystems/repos directory exists.
-                    if (!recursiveCreateDirectory(options.eclRepoPath) && !checkDirExists(options.eclRepoPath))
-                        throw makeStringExceptionV(99, "Failed to create directory %s'", options.eclRepoPath.str());
-
-                    VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
-                    unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
-                    if (retCode != 0)
-                        throw makeStringExceptionV(99, "Failed to clone dependency '%s'", defaultUrl);
-                    ok = true;
-                }
-            }
-
-            if (!ok)
-                throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);
-
-            if (startsWith(version, "semver:"))
-                throw makeStringExceptionV(99, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
-
-            // Really the version should be a SHA, but for flexibility version could be a sha, a tag or a branch (on origin).
-            // Check for a remote branch first - because it appears that when git clones a repo, it creates a local branch for
-            // remote head.  That never gets updated, and if it matches the branch being resolved it causes problems.
-
-            // Check for a remote branch "origin/<version>"
-            VStringBuffer params("rev-parse --short origin/%s", version.str());
-            StringBuffer sha;
-            unsigned retCode = runGitCommand(&sha, params, repoPath, false);
-            if (retCode != 0)
-            {
-                //Check for a tag (or local sha)
-                params.clear().appendf("rev-parse --short %s", version.str());
-                unsigned retCode = runGitCommand(&sha.clear(), params, repoPath, false);
-                if (retCode != 0)
-                    sha.clear();
-            }
-
-            //Strip any trailing newlines and spaces.
-            sha.clip();
-
-            if (sha.isEmpty())
-                throw makeStringExceptionV(99, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
-
-            if (requireSHA)
-            {
-                //If version was a valid sha then the version should match it (one should match the leading characters of the other)
-                if (!(hasPrefix(sha, version, false) || hasPrefix(version, sha, false)))
-                    throw makeStringExceptionV(99, "Expected a SHA as the git version for dependency '%s'.", defaultUrl);
-            }
-
-            path.append(repoPath).appendf("/.git/{%s}", sha.str());
+            addPathSepChar(path.append(options.eclRepoPath)).append(repo);
             filename = path;
+            delayedUrn = defaultUrl;
         }
     }
 
@@ -719,7 +691,12 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
     ForEachItemIn(iShared, sharedSources)
         allSources.append(OLINK(sharedSources.item(iShared)));
     unsigned flags = ESFdependencies;
-    Owned<IEclRepository> repo = createNewSourceFileEclRepository(errs, filename, flags, 0, true);
+    Owned<IEclRepository> repo;
+    if (delayedUrn)
+        repo.setown(createGitRepository(errs, filename, delayedUrn, flags, 0, true));
+    else
+        repo.setown(createNewSourceFileEclRepository(errs, filename, flags, 0, true));
+
     allSources.append(*repo.getClear());
     Owned<IEclPackage> compound = createPackage(defaultUrl);
     dependencies.emplace_back(repoKey, compound);
@@ -727,10 +704,89 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
 }
 
 
+IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * repoPath, const char * defaultUrl)
+{
+    if (options.optVerbose)
+        printf("Dynamically resolve package '%s' to '%s'\n", defaultUrl, repoPath);
+
+    StringBuffer path;
+    StringBuffer repoUrn, repo, version;
+    if (!splitRepoVersion(repoUrn, repo, version, defaultUrl, options.defaultGitPrefix))
+        throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
+
+    bool ok = false;
+    if (checkDirExists(repoPath))
+    {
+        if (options.updateRepos)
+        {
+            unsigned retCode = runGitCommand(nullptr, "fetch origin", repoPath, true);
+            if (retCode != 0)
+                DBGLOG("Failed to download the latest version of %s", defaultUrl);
+        }
+
+        ok = true;
+    }
+    else
+    {
+        if (options.fetchRepos)
+        {
+            // Ensure the ~/.HPCCSystems/repos directory exists.
+            if (!recursiveCreateDirectory(options.eclRepoPath) && !checkDirExists(options.eclRepoPath))
+                throw makeStringExceptionV(99, "Failed to create directory %s'", options.eclRepoPath.str());
+
+            VStringBuffer params("clone %s \"%s\" --no-checkout", repoUrn.str(), repo.str());
+            unsigned retCode = runGitCommand(nullptr, params, options.eclRepoPath, true);
+            if (retCode != 0)
+                throw makeStringExceptionV(99, "Failed to clone dependency '%s'", defaultUrl);
+            ok = true;
+        }
+    }
+
+    if (!ok)
+        throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);
+
+    if (startsWith(version, "semver:"))
+        throw makeStringExceptionV(99, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
+
+    // Really the version should be a SHA, but for flexibility version could be a sha, a tag or a branch (on origin).
+    // Check for a remote branch first - because it appears that when git clones a repo, it creates a local branch for
+    // remote head.  That never gets updated, and if it matches the branch being resolved it causes problems.
+
+    // Check for a remote branch "origin/<version>"
+    VStringBuffer params("rev-parse --short origin/%s", version.str());
+    StringBuffer sha;
+    unsigned retCode = runGitCommand(&sha, params, repoPath, false);
+    if (retCode != 0)
+    {
+        //Check for a tag (or local sha)
+        params.clear().appendf("rev-parse --short %s", version.str());
+        unsigned retCode = runGitCommand(&sha.clear(), params, repoPath, false);
+        if (retCode != 0)
+            sha.clear();
+    }
+
+    //Strip any trailing newlines and spaces.
+    sha.clip();
+
+    if (sha.isEmpty())
+        throw makeStringExceptionV(99, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
+
+    path.append(repoPath).appendf("/.git/{%s}", sha.str());
+
+    Owned<IErrorReceiver> errs = createThrowingErrorReceiver();
+    unsigned flags = ESFdependencies;
+    return createFileSystemEclCollection(errs, path, flags, 0);
+}
+
 IEclRepository * EclRepositoryManager::createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive)
 {
     Owned<IEclSourceCollection> source = createFileSystemEclCollection(errs, path, flags, trace);
     return createRepository(source, nullptr, includeInArchive);
+}
+
+IEclRepository * EclRepositoryManager::createGitRepository(IErrorReceiver *errs, const char * path, const char * urn, unsigned flags, unsigned trace, bool includeInArchive)
+{
+    return new CGitEclRepository(this, nullptr, includeInArchive, path, urn);
 }
 
 IEclRepository * EclRepositoryManager::createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive)
