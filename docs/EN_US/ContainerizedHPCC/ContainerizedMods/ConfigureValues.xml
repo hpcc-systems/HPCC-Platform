@@ -167,7 +167,7 @@
         assign all the pods to the same virtual machine and components
         fighting for memory will crush them. Therefore more memory assigned
         the better. If you define these wrong and a process uses more memory
-        than configured, Kubernetes will kill the pod. </para>
+        than configured, Kubernetes will kill the pod.</para>
       </sect3>
 
       <sect3 id="DAFLESRV_DFURVR_YMLSECT">
@@ -273,6 +273,16 @@
         or dfuwu-archiver as that is a value limitation, you can choose to
         either have the service or not (set the 'disabled' value to
         true).</para>
+
+        <para>Any service related info needs to be under a service object, for
+        example: </para>
+
+        <para><programlisting>sasha:
+  wu-archiver:
+    service:
+       servicePort: 8877
+</programlisting>This also applies to the ESP services consistent with the
+        Roxie.</para>
       </sect3>
 
       <sect3 id="ValYML_Thor">
@@ -380,35 +390,35 @@
     <para>The delivered HPCC Systems Values file primarily consists of the
     following areas:</para>
 
-    <itemizedlist>
-      <listitem>
-        <para>global</para>
-      </listitem>
+    <para><informaltable>
+        <tgroup cols="3">
+          <tbody>
+            <row>
+              <entry>global</entry>
 
-      <listitem>
-        <para>storage</para>
-      </listitem>
+              <entry>storage</entry>
 
-      <listitem>
-        <para>data planes</para>
-      </listitem>
+              <entry>visibilities</entry>
+            </row>
 
-      <listitem>
-        <para>certificates</para>
-      </listitem>
+            <row>
+              <entry>data planes</entry>
 
-      <listitem>
-        <para>security</para>
-      </listitem>
+              <entry>certificates</entry>
 
-      <listitem>
-        <para>secrets</para>
-      </listitem>
+              <entry>security</entry>
+            </row>
 
-      <listitem>
-        <para>components</para>
-      </listitem>
-    </itemizedlist>
+            <row>
+              <entry>secrets</entry>
+
+              <entry>components</entry>
+
+              <entry></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
 
     <para>The subsequent sections will examine some of these more closely and
     why each of them is there.</para>
@@ -798,6 +808,13 @@
         internally by system components and not exposed directly to ECL
         code.</para>
       </sect3>
+    </sect2>
+
+    <sect2>
+      <title>Visibilities</title>
+
+      <para>The visibilities section can be used to set labels, annotations,
+      and service types for any service with the specified visibility.</para>
     </sect2>
 
     <sect2>
