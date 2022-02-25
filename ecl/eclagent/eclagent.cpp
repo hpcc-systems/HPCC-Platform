@@ -2016,8 +2016,9 @@ void EclAgent::doProcess()
         {
             if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
             {
+                double costPerMs = calculateThorCost(1, getNodes());
                 IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
-                analyseWorkunit(w.get(), analyzerOptions);
+                analyseWorkunit(w.get(), analyzerOptions, costPerMs);
             }
         }
         if(w->queryEventScheduledCount() > 0)

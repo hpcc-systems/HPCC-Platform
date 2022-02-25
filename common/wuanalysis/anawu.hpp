@@ -24,6 +24,6 @@
     #define WUANALYSIS_API DECL_IMPORT
 #endif
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, bool updatewu);
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options, double costPerMs);
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costPerMs, bool updatewu);
 #endif
