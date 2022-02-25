@@ -607,7 +607,7 @@ EXPORT Despray(varstring logicalName, varstring destinationIP='', varstring dest
 /**
  * Copies a distributed file to another distributed file.
  *
- * @param sourceLogicalName The name of the file to despray.
+ * @param sourceLogicalName The name of the file to copy.
  * @param destinationGroup The name of the group to distribute the file across.
  * @param destinationLogicalName The logical name of the file to create.
  * @param sourceDali    The dali that contains the source file (blank implies same dali).  Defaults to same dali.

@@ -220,8 +220,8 @@
 
   <para>The <emphasis role="bold">Copy </emphasis>function takes a logical
   file and copies it to another logical file. This may be done within the same
-  cluster, or to another cluster, or to a cluster in a completely separate
-  Dali.</para>
+  cluster or to another cluster. The Destination cannot be foreign
+  file.</para>
 
   <para>Example:</para>
 
