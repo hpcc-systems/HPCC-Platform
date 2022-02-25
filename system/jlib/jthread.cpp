@@ -673,8 +673,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             Do(0);
         return;
     }
-    Mutex errmutex;
-    IException *e=NULL;
+    AtomicShared<IException> e;
     Owned<IShuffledIterator> shuffler;
     if (shuffled) {
         shuffler.setown(createShuffledIterator(num));
@@ -689,10 +688,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             }
             catch (IException * _e)
             {
-                if (e)
-                    _e->Release();  // only return first
-                else
-                    e = _e;
+                e.setownIfNull(_e);
                 if (abortFollowingException) 
                     break;
             }
@@ -706,15 +702,13 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             class cdothread: public Thread
             {
             public:
-                Mutex *errmutex;
                 Semaphore &ready;
-                IException *&erre;
+                AtomicShared<IException> &erre;
                 unsigned idx;
                 CAsyncFor *self;
-                cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,Mutex *_errmutex,IException *&_e)
+                cdothread(CAsyncFor *_self,unsigned _idx,Semaphore &_ready,AtomicShared<IException> &_e)
                     : Thread("CAsyncFor"),ready(_ready),erre(_e)
                 {
-                    errmutex =_errmutex;
                     idx = _idx;
                     self = _self;
                 }
@@ -725,18 +719,12 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                     }
                     catch (IException * _e)
                     {
-                        synchronized block(*errmutex);
-                        if (erre)
-                            _e->Release();  // only return first
-                        else
-                            erre = _e;
+                        erre.setownIfNull(_e);
                     }
     #ifndef NO_CATCHALL
                     catch (...)
                     {
-                        synchronized block(*errmutex);
-                        if (!erre)
-                            erre = MakeStringException(0, "Unknown exception in Thread %s", getName());
+                        erre.setownIfNull(MakeStringException(0, "Unknown exception in Thread %s", getName()));
                     }
     #endif
                     ready.signal();
@@ -750,8 +738,8 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             started.ensureCapacity(num);
             for (i=0;i<num;i++) {
                 ready.wait();
-                if (abortFollowingException && e) break;
-                Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,&errmutex,e);
+                if (abortFollowingException && e.isSet()) break;
+                Owned<Thread> thread = new cdothread(this,shuffled?shuffler->lookup(i):i,ready,e);
                 thread->start();
                 started.append(*thread.getClear());
             }
@@ -767,14 +755,12 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             class cdothread: public Thread
             {
             public:
-                Mutex *errmutex;
-                IException *&erre;
+                AtomicShared<IException> &erre;
                 unsigned idx;
                 CAsyncFor *self;
-                cdothread(CAsyncFor *_self,unsigned _idx,Mutex *_errmutex,IException *&_e)
+                cdothread(CAsyncFor *_self,unsigned _idx,AtomicShared<IException>&_e)
                     : Thread("CAsyncFor"),erre(_e)
                 {
-                    errmutex =_errmutex;
                     idx = _idx;
                     self = _self;
                 }
@@ -785,18 +771,12 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                     }
                     catch (IException * _e)
                     {
-                        synchronized block(*errmutex);
-                        if (erre)
-                            _e->Release();  // only return first
-                        else
-                            erre = _e;
+                        erre.setownIfNull(_e);
                     }
     #ifndef NO_CATCHALL
                     catch (...)
                     {
-                        synchronized block(*errmutex);
-                        if (!erre)
-                            erre = MakeStringException(0, "Unknown exception in Thread %s", getName());
+                        erre.setownIfNull(MakeStringException(0, "Unknown exception in Thread %s", getName()));
                     }
     #endif
                     return 0;
@@ -806,7 +786,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             started.ensureCapacity(num);
             for (i=0;i<num-1;i++)
             {
-                Owned<Thread> thread = new cdothread(this,i,&errmutex,e);
+                Owned<Thread> thread = new cdothread(this,i,e);
                 thread->start();
                 started.append(*thread.getClear());
             }
@@ -816,18 +796,12 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             }
             catch (IException * _e)
             {
-                synchronized block(errmutex);
-                if (e)
-                    _e->Release();  // only return first
-                else
-                    e = _e;
+                e.setownIfNull(_e);
             }
 #ifndef NO_CATCHALL
             catch (...)
             {
-                synchronized block(errmutex);
-                if (!e)
-                    e = MakeStringException(0, "Unknown exception in main Thread");
+                e.setownIfNull(MakeStringException(0, "Unknown exception in main Thread"));
             }
 #endif
 
@@ -837,8 +811,8 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             }
         }
     }
-    if (e)
-        throw e;
+    if (e.isSet())
+        throw e.getClear();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
