@@ -37,6 +37,7 @@ private:
     StringAttr                  m_realm;
     StringAttr                  m_mtls_secret;
     bool                        m_disableKeepAlive;
+    Owned<IPropertyTree> m_sec_config;
     Owned<ITransportClient> m_transportclient;
     unsigned m_connectTimeoutMs = 0;
     unsigned m_readTimeoutSecs = 0;
@@ -73,6 +74,11 @@ public:
     const char *getMtlsSecretName()
     {
         return m_mtls_secret.str();
+    }
+
+    void setSecureSocketConfig(IPropertyTree *config)
+    {
+        m_sec_config.setown(config);
     }
 
     virtual int setUsernameToken(const char* userid, const char* password, const char* realm);
