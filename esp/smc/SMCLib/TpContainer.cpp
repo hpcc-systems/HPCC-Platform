@@ -496,10 +496,11 @@ class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
     ClusterType platform;
     unsigned clusterWidth;
     StringArray thorProcesses;
+    bool queriesOnly = false;
 
 public:
-    CContainerWUClusterInfo(const char* _name, const char* type, unsigned _clusterWidth)
-        : name(_name), clusterWidth(_clusterWidth)
+    CContainerWUClusterInfo(const char* _name, const char* type, unsigned _clusterWidth, bool _queriesOnly)
+        : name(_name), clusterWidth(_clusterWidth), queriesOnly(_queriesOnly)
     {
         StringBuffer queue;
         if (strieq(type, "thor"))
@@ -553,6 +554,10 @@ public:
     virtual bool isLegacyEclServer() const override
     {
         return false;
+    }
+    virtual bool isQueriesOnly() const override
+    {
+        return queriesOnly;
     }
     virtual IStringVal& getScope(IStringVal& str) const override
     {
@@ -624,7 +629,7 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
     {
         IPropertyTree& queue = queues->query();
         Owned<IConstWUClusterInfo> cluster = new CContainerWUClusterInfo(queue.queryProp("@name"),
-            queue.queryProp("@type"), (unsigned) queue.getPropInt("@width", 1));
+            queue.queryProp("@type"), (unsigned) queue.getPropInt("@width", 1), queue.getPropBool("@queriesOnly"));
         clusters.append(*cluster.getClear());
     }
 
@@ -649,7 +654,7 @@ extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clu
         return nullptr;
 
     return new CContainerWUClusterInfo(queue->queryProp("@name"), queue->queryProp("@type"),
-        (unsigned) queue->getPropInt("@width", 1));
+        (unsigned) queue->getPropInt("@width", 1), queue->getPropBool("@queriesOnly"));
 }
 
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
