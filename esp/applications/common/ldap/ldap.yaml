@@ -9,7 +9,7 @@ ldap:
   maxConnections: 10
   passwordExpirationWarningDays: 10
   cacheTimeout: 5
-  ldapTimeoutSecs: 131
+  ldapTimeoutSecs: 30
   sharedCache: true
   filesBasedn: ou=files,ou=ecl
   groupsBasedn: ou=groups,ou=ecl

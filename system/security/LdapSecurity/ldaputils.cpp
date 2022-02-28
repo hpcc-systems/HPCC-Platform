@@ -231,7 +231,7 @@ LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userD
     *err = LdapSimpleBind(ld, timeout, (char*)userDN, (char*)pwd);
     if (*err != LDAP_SUCCESS)
     {
-        DBGLOG("LdapSimpleBind error (%d) - %s for admin user %s", *err, ldap_err2string(*err), isEmptyString(userDN) ? "NULL" : userDN);
+        DBGLOG("LdapSimpleBind error (%d) - '%s' for admin user %s", *err, ldap_err2string(*err), isEmptyString(userDN) ? "NULL" : userDN);
         if (!isEmptyString(userDN))
             DBGLOG("Please make sure your LDAP configuration 'systemBasedn' contains the complete path, including the complete 'dc=domainComponent'");
         return nullptr;

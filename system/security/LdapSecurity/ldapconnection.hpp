@@ -213,6 +213,7 @@ interface ILdapConfig : extends IInterface
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype = RT_DEFAULT) = 0;
     virtual int getLdapTimeout() = 0;
     virtual bool isAzureAD() = 0;
+    virtual void setUserBasedn(const char * basedn) = 0;
 };
 
 
@@ -301,6 +302,7 @@ interface ILdapClient : extends IInterface
         ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint) = 0;
     virtual bool changePermission(CPermissionAction& action) = 0;
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname, const char * groupDN=nullptr) = 0;
+    virtual void changeGroupMember(const char* action, const char* groupdn, const char* userdn) = 0;
     virtual bool deleteUser(ISecUser* user) = 0;
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc) = 0;
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn) = 0;
@@ -335,6 +337,7 @@ interface ILdapClient : extends IInterface
     virtual bool userInView(const char * user, const char* viewName) = 0;
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description) = 0;
     virtual const bool organizationalUnitExists(const char * ou) const = 0;
+    virtual bool addUser(ISecUser & user, const char* basedn) = 0;
 };
 
 ILdapClient* createLdapClient(IPropertyTree* cfg);
