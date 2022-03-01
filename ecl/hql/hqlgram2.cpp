@@ -2569,13 +2569,18 @@ ITypeInfo * HqlGram::mapAlienType(IHqlSimpleScope * scope, ITypeInfo * type, con
 }
 
 /* In parm e: not linked */
-void HqlGram::addFields(const attribute &errpos, IHqlExpression *e, IHqlExpression * dataset, bool clone)
+void HqlGram::addFields(const attribute &errpos, IHqlExpression * _e, IHqlExpression * dataset, bool clone)
 {
+    LinkedHqlExpr e = _e;
     if (e->getOperator() != no_record)
     {
         //dataset.childrecord or similar!
         clone = true;
-        e = e->queryRecord();
+        e.set(e->queryRecord());
+    }
+    else if (e->hasAttribute(packedAtom))
+    {
+        e.setown(getPackedRecord(e));
     }
 
     //If inside an ifblock this may not match activeRecord.tos()..
