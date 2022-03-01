@@ -546,6 +546,7 @@ public:
                         getPartFilename(*tlkDesc, l, path, true);
                         if (0 == l)
                         {
+                            ensureDirectoryForFile(path.str());
                             OwnedIFile dstIFile = createIFile(path.str());
                             copyFile(dstIFile, existingTlkIFile);
                         }

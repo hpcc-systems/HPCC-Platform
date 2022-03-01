@@ -485,6 +485,8 @@ public:
             desc.setown(createFileDescriptor());
             if (temporary)
                 desc->queryProperties().setPropBool("@temporary", temporary);
+            else
+                desc->setTraceName(logicalName);
             if (persistent)
                 desc->queryProperties().setPropBool("@persistent", persistent);
             desc->queryProperties().setProp("@workunit", wuidStr.str());

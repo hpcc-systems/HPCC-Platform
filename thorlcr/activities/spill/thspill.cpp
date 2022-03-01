@@ -43,7 +43,20 @@ public:
         queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName, true);
         fileName.set(expandedFileName);
 
-        fillClusterArray(container.queryJob(), fileName, clusters, groups);
+        if (TDXtemporary & helper->getFlags())
+        {
+            // NB: these temp IFileDescriptors are not published
+            // but we want to ensure they don't have the default data plane
+            // which would cause the paths to be manipulated if numDevices>1
+            StringBuffer planeName;
+            if (getDefaultSpillPlane(planeName))
+            {
+                clusters.append(planeName);
+                groups.append(*LINK(&queryLocalGroup()));
+            }
+        }
+        if (0 == groups.ordinality()) // may be filled if temp (see above)
+            fillClusterArray(container.queryJob(), fileName, clusters, groups);
         fileDesc.setown(queryThorFileManager().create(container.queryJob(), fileName, clusters, groups, true, TDWnoreplicate+TDXtemporary));
         IPropertyTree &props = fileDesc->queryProperties();
         bool blockCompressed=false;

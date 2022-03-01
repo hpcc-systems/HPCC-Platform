@@ -12336,34 +12336,17 @@ public:
     virtual void setFileProperties(IFileDescriptor *desc) const
     {
         // Now publish to name services
-        StringBuffer dir,base;
+        StringBuffer dir, base;
         offset_t indexFileSize = writer->queryFile()->size();
         if(clusterHandler)
-            clusterHandler->splitPhysicalFilename(dir, base);
-        else
-        {
-            // Check filename is URL and get localpath, only actually necessary if force remote reads are are on
-            RemoteFilename rfn;
-            rfn.setRemotePath(filename);
-            StringBuffer localPath;
-            rfn.getLocalPath(localPath);
-            splitFilename(localPath, &dir, &dir, &base, &base);
-        }
-
-        desc->setDefaultDir(dir.str());
+            clusterHandler->getDirAndFilename(dir, base);
 
         //properties of the first file part.
         Owned<IPropertyTree> attrs;
         if(clusterHandler)
             attrs.setown(createPTree("Part", ipt_fast));  // clusterHandler is going to set attributes
         else
-        {
-            // add cluster
-            StringBuffer mygroupname;
-            desc->setNumParts(1);
-            desc->setPartMask(base.str());
             attrs.set(&desc->queryPart(0)->queryProperties());
-        }
         attrs->setPropInt64("@size", indexFileSize);
         attrs->setPropInt64("@recordCount", reccount);
 

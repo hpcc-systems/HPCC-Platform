@@ -636,5 +636,9 @@ extern jlib_decl bool checkCreateDaemon(unsigned argc, const char * * argv);
 //Createpassword of specified length, containing UpperCaseAlphas, LowercaseAlphas, numerics and symbols
 extern jlib_decl const char * generatePassword(StringBuffer &pwd, int pwdLen);
 
+#ifdef _CONTAINERIZED
+extern jlib_decl bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category);
+#endif
+
 #endif
 
