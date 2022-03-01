@@ -90,7 +90,6 @@ build_ml_images() {
 }
 
 if [[ -n "$BUILD_LN" ]]; then
-  PUSH=0
   GITHUB_TOKEN=${LNB_TOKEN}
   lnBuildTag=${BUILD_TAG/community_/internal_}
   build_image platform-build-ln ${BUILD_LABEL} ${lnBuildTag}
