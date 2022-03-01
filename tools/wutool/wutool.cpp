@@ -222,7 +222,8 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     }
     else if (stricmp(action, "analyze")==0)
     {
-        analyseAndPrintIssues(&w, globals->getPropBool("UPDATEWU"));
+        // can't calculate cost in terms of money (pricing table not available and size of cluster not known here)
+        analyseAndPrintIssues(&w, 0, globals->getPropBool("UPDATEWU"));
     }
     else if (stricmp(action, "dump")==0)
     {

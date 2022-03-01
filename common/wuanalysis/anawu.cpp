@@ -189,7 +189,7 @@ public:
     void check(const char * scope, IWuActivity & activity);
     void analyse(IConstWorkUnit * wu);
     void print();
-    void update(IWorkUnit *wu);
+    void update(IWorkUnit *wu, double costRate);
     void applyConfig(IPropertyTree *cfg);
 
 protected:
@@ -418,9 +418,9 @@ void WorkunitAnalyser::check(const char * scope, IWuActivity & activity)
             Owned<PerformanceIssue> issue (new PerformanceIssue);
             if (rules.item(i).check(*issue, activity, options))
             {
-                if (issue->getCost() >= options.queryOption(watOptMinInterestingCost))
+                if (issue->getTimePenalityCost() >= options.queryOption(watOptMinInterestingCost))
                 {
-                    if (!highestCostIssue || highestCostIssue->getCost() < issue->getCost())
+                    if (!highestCostIssue || highestCostIssue->getTimePenalityCost() < issue->getTimePenalityCost())
                         highestCostIssue.setown(issue.getClear());
                 }
             }
@@ -454,10 +454,10 @@ void WorkunitAnalyser::print()
         issues.item(i).print();
 }
 
-void WorkunitAnalyser::update(IWorkUnit *wu)
+void WorkunitAnalyser::update(IWorkUnit *wu, double costRate)
 {
     ForEachItemIn(i, issues)
-        issues.item(i).createException(wu);
+        issues.item(i).createException(wu, costRate);
 }
 
 
@@ -501,15 +501,15 @@ WuScope * WorkunitAnalyser::selectFullScope(const char * scope)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options)
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options, double costPerMs)
 {
     WorkunitAnalyser analyser;
     analyser.applyConfig(options);
     analyser.analyse(wu);
-    analyser.update(wu);
+    analyser.update(wu, costPerMs);
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, bool updatewu)
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, double costRate, bool updatewu)
 {
     WorkunitAnalyser analyser;
     analyser.analyse(wu);
@@ -518,6 +518,6 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, bool updatewu)
     {
         Owned<IWorkUnit> lockedwu = &(wu->lock());
         lockedwu->clearExceptions("Workunit Analyzer");
-        analyser.update(lockedwu);
+        analyser.update(lockedwu, costRate);
     }
 }
