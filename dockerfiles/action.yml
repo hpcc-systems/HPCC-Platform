@@ -22,6 +22,9 @@ inputs:
   docker_repo:
     description: 'The name of the docker repository to pull and push to/from'
     required: false
+  registry:
+    description: 'The docker image registry to log in to for image pushes'
+    required: false
   latest:
     description: 'Set to 1 to also tag as latest when maturity is release'
     required: false
