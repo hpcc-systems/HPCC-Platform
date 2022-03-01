@@ -6202,6 +6202,13 @@ public:
                     formatTimeCollatable(query, milliToNano(atoi(fv)), false);
                     query.append("\"]");
                 }
+                else if (subfmt==WUSFprotected)
+                {
+                    if (*fv == '1')
+                        query.append("[@protected=\"1\"]");
+                    else
+                        query.append("[@protected!=\"1\"]"); //The @protected is set to '0' or not set.
+                }
                 else if (!*fv)
                 {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
