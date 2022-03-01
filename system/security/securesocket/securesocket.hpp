@@ -48,16 +48,16 @@ enum SecureSocketType
 // One instance per connection
 interface ISecureSocket : implements ISocket
 {
-    virtual int secure_accept(int logLevel=1) = 0;
-    virtual int secure_connect(int logLevel=1) = 0;
+    virtual int secure_accept(int logLevel=0) = 0;
+    virtual int secure_connect(int logLevel=0) = 0;
     virtual StringBuffer& get_ssl_version(StringBuffer& ver) = 0;
 };
 
 // One instance per program running
 interface ISecureSocketContext : implements IInterface
 {
-    virtual ISecureSocket* createSecureSocket(ISocket* sock, int loglevel = SSLogNormal, const char *fqdn = nullptr) = 0;
-    virtual ISecureSocket* createSecureSocket(int sockfd, int loglevel = SSLogNormal, const char *fqdn = nullptr) = 0;
+    virtual ISecureSocket* createSecureSocket(ISocket* sock, int loglevel = 0, const char *fqdn = nullptr) = 0;
+    virtual ISecureSocket* createSecureSocket(int sockfd, int loglevel = 0, const char *fqdn = nullptr) = 0;
 };
 
 interface ICertificate : implements IInterface
@@ -102,4 +102,3 @@ SECURESOCKET_API ISmartSocketFactory *createSecureSmartSocketFactory(IPropertyTr
 SECURESOCKET_API IConversation *createSingletonSecureSocketConnection(unsigned short port,SocketEndpoint *_ep=nullptr);
 
 #endif
-

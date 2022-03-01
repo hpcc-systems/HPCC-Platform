@@ -133,7 +133,6 @@ private:
     bool        m_verify;
     bool        m_address_match;
     CStringSet* m_peers;
-    int         m_loglevel;
     bool        m_isSecure;
     StringBuffer m_fqdn;
     size32_t    nextblocksize = 0;
@@ -150,8 +149,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
-    CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
+    CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=0, const char *fqdn = nullptr);
+    CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=0, const char *fqdn = nullptr);
     ~CSecureSocket();
 
     virtual int secure_accept(int logLevel);
@@ -361,7 +360,7 @@ public:
             if (pending > 0)
                 return SSL_pending(m_ssl);
             // pending < 0 : TODO should handle SSL_ERROR_WANT_READ/WRITE error
-            if (m_loglevel >= SSLogNormal)
+            //if (m_loglevel >= SSLogNormal)
             {
                 int ret = SSL_get_error(m_ssl, pending);
                 char errbuf[512];
@@ -462,7 +461,6 @@ CSecureSocket::CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify, bool addr
     m_verify = verify;
     m_address_match = address_match;
     m_peers = peers;;
-    m_loglevel = loglevel;
     m_isSecure = false;
 
     if(m_ssl == NULL)
@@ -490,7 +488,6 @@ CSecureSocket::CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify, bool address
     m_verify = verify;
     m_address_match = address_match;
     m_peers = peers;;
-    m_loglevel = loglevel;
     m_isSecure = false;
 
     if(m_ssl == NULL)
@@ -662,7 +659,7 @@ int CSecureSocket::secure_accept(int logLevel)
         // which can happen with port scan / VIP ...
         // NOTE: ret could also be SSL_ERROR_ZERO_RETURN if client closed
         // gracefully after ssl neg initiated ...
-        if ( (logLevel >= SSLogNormal) || (ret != SSL_ERROR_SYSCALL) )
+        if (ret != SSL_ERROR_SYSCALL)
         {
             char errbuf[512];
             ERR_error_string_n(ERR_get_error(), errbuf, 512);
@@ -685,8 +682,7 @@ int CSecureSocket::secure_accept(int logLevel)
         return err;
     }
 
-    if (logLevel > SSLogNormal)
-        DBGLOG("SSL accept ok, using %s", SSL_get_cipher(m_ssl));
+    DBGLOG("SSL accept ok, using %s", SSL_get_cipher(m_ssl));
 
     if(m_verify)
     {
@@ -728,8 +724,7 @@ int CSecureSocket::secure_connect(int logLevel)
         throw MakeStringException(-1, "SSL_connect failed: %s", errbuf);
     }
     
-    if (logLevel > SSLogNormal)
-        DBGLOG("SSL connect ok, using %s", SSL_get_cipher (m_ssl));
+    DBGLOG("SSL connect ok, using %s", SSL_get_cipher (m_ssl));
 
     // Currently only do fake verify - simply logging the subject and issuer
     // The verify parameter makes it possible for the application to verify only
@@ -841,8 +836,7 @@ void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size,
             ERR_error_string_n(err, errbuf, 512);
             ERR_clear_error();
             VStringBuffer errmsg("SSL_read error %d - %s", err, errbuf);
-            if (m_loglevel >= SSLogMax)
-                DBGLOG("Warning: %s", errmsg.str());
+            DBGLOG("Warning: %s", errmsg.str());
             if (min_size > 0)
                 throw createJSocketException(JSOCKERR_graceful_close, errmsg);
         }
