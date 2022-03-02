@@ -84,12 +84,20 @@ PUT _ingest/pipeline/hpccpipeline
             "HPCC_LOG_AUDIENCE" : "OPR|USR|PRG|AUD|UNK"
           }
         }
+      },
+      {
+        "date": {
+        "field": "hpcc.log.timestamp",
+        "formats": [
+          "yyyy-MM-dd' 'HH:mm:ss.SSS"
+          ]
+        }
       }
     ],
     "on_failure" : [
       {
         "set" : {
-          "field" : "error.message",
+          "field" : "hpccpipeline.error.message",
           "value" : "{{ _ingest.on_failure_message }}"
         }
       }
