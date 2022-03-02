@@ -23,7 +23,7 @@
 #include "jlog.hpp"
 #include "jqueue.hpp"
 
-constexpr bool traceTasks = false;
+//#define TRACE_TASKS
 
 static std::atomic<ITaskScheduler *> taskScheduler{nullptr};
 static std::atomic<ITaskScheduler *> iotaskScheduler{nullptr};
@@ -291,8 +291,9 @@ protected:
                 task = processors[nextTarget]->stealTask();
                 if (task)
                 {
-                    if (traceTasks)
-                        printf("Stolen for %u on %u\n", id, sched_getcpu());
+#ifdef TRACE_TASKS
+                    printf("Stolen for %u on %u\n", id, sched_getcpu());
+#endif
                     if (waiting)
                         processorsWaiting--;
                     return task;
@@ -303,11 +304,13 @@ protected:
             //anyone stole it.
             if (waiting)
             {
-                if (traceTasks)
-                    printf("Pause %u on %u\n", id, sched_getcpu());
+#ifdef TRACE_TASKS
+                printf("Pause %u on %u\n", id, sched_getcpu());
+#endif
                 avail.wait();
-                if (traceTasks)
-                    printf("Restart %u on %u\n", id, sched_getcpu());
+#ifdef TRACE_TASKS
+                printf("Restart %u on %u\n", id, sched_getcpu());
+#endif
             }
             else
             {
@@ -316,8 +319,9 @@ protected:
             }
         }
 
-        if (traceTasks)
-            printf("Task for %u on %u\n", id, sched_getcpu());
+#ifdef TRACE_TASKS
+        printf("Task for %u on %u\n", id, sched_getcpu());
+#endif
 
         if (waiting)
             processorsWaiting--;
