@@ -43,6 +43,9 @@
 #include "pkgimpl.hpp"
 #include "roxiehelper.hpp"
 
+#include "ws_dfsclient.hpp"
+
+
 //-------------------------------------------------------------------------------------------
 // class CRoxiePluginCtx - provide the environments for plugins loaded by roxie. 
 // Base class handles making sure memory allocation comes from the right heap. 
