@@ -50,6 +50,30 @@ This chart has defined the following HPCC components:
   {{- end -}}
  {{- end -}}
 {{- end }}
+
+{{- range $dali := (.Values.dali | default dict) }}
+ {{- if and (not $dali.disabled) (hasKey $dali "services") -}}
+  {{- $sashaServices := $dali.services | default dict -}}
+  {{- if not $sashaServices.disabled -}}
+   {{- range $serviceName, $_service := $sashaServices }}
+    {{- $service := ($_service | default dict) -}}
+    {{- if not $service.disabled -}}
+     {{- if hasKey $names $serviceName -}}
+      {{- required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
+     {{- else }}
+  dali.sasha.{{ $serviceName }}
+      {{- $_ := set $names $serviceName (printf "dali.%s" $dali.name) -}}
+      {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $dali ) | quote }}
+      {{- if not ( eq $defaultImage $localImage ) -}}
+       {{- printf " using overridden image %s" $localImage -}}
+      {{- end }}
+     {{- end -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+
 {{- $sashaServices := $.Values.sasha | default dict -}}
 {{- if not $sashaServices.disabled -}}
  {{- range $serviceName, $_service := $sashaServices }}
