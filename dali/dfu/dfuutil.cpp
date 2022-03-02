@@ -625,7 +625,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),foreignuserdesc,srcdali, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),foreignuserdesc,srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
@@ -717,7 +717,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
@@ -858,7 +858,7 @@ public:
             srcdali.setown(createINode(ep));
         }
         StringBuffer s;
-        Owned<IPropertyTree> ftree = fdir->getFileTree(srcLFN.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = fdir->getFileTree(srcLFN.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get())
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srcLFN.get(), getDaliEndPointStr(srcdali, s));
         IPropertyTree *attsrc = ftree->queryPropTree("Attr");
@@ -1145,7 +1145,7 @@ public:
                 return;
             }
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,srcnode, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,srcnode, FOREIGN_DALI_TIMEOUT, GetFileTreeOpts::appendForeign);
         if (!ftree.get())
         {
             StringBuffer s;

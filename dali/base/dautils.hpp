@@ -567,4 +567,7 @@ inline unsigned calcStripeNumber(unsigned partNum, const char *lfnName, unsigned
     unsigned lfnHash = getFilenameHash(lfnName);
     return ((partNum+lfnHash)%numStripes)+1;
 }
+interface INamedGroupStore;
+extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver);
+
 #endif

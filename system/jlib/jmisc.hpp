@@ -22,6 +22,8 @@
 
 #include "platform.h"
 #include <stdio.h>
+#include <string>
+#include <utility>
 #include "jiface.hpp"
 #include "jcrc.hpp"
 #include "jlog.hpp"
