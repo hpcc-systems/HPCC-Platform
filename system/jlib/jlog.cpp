@@ -482,9 +482,9 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         out.appendf("%8X ", sysInfo.queryMsgID());
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
     if(fields & MSGFIELD_audience)
-        out.append(LogMsgAudienceToFixString(category.queryAudience()));
+        out.appendf("%s ", LogMsgAudienceToFixString(category.queryAudience()));
     if(fields & MSGFIELD_class)
-        out.append(LogMsgClassToFixString(category.queryClass()));
+        out.appendf("%s ", LogMsgClassToFixString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         out.appendf("%10d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
@@ -569,7 +569,7 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_audience)
         fprintf(handle, "aud=%s", LogMsgAudienceToVarString(category.queryAudience()));
     if(fields & MSGFIELD_class)
-        fprintf(handle, "cls=%s", LogMsgClassToFixString(category.queryClass()));
+        fprintf(handle, "cls=%s ", LogMsgClassToFixString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         fprintf(handle, "det=%d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
@@ -721,9 +721,9 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_msgID)
         fprintf(handle, "%08X ", sysInfo.queryMsgID());
     if(fields & MSGFIELD_audience)
-        fputs(LogMsgAudienceToFixString(category.queryAudience()), handle);
+        fprintf(handle, "%s ", LogMsgAudienceToFixString(category.queryAudience()));
     if(fields & MSGFIELD_class)
-        fputs(LogMsgClassToFixString(category.queryClass()), handle);
+        fprintf(handle, "%s ", LogMsgClassToFixString(category.queryClass()));
     if(fields & MSGFIELD_detail)
         fprintf(handle, "%10d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
