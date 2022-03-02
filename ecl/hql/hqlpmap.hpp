@@ -43,6 +43,7 @@ public:
     bool empty() { return targets.ordinality() == 0 && children.ordinality() == 0; }
     void initSelf(IHqlExpression * dataset);
     bool isMappingKnown();
+    bool mappingCanFilter() const;
     inline IHqlExpression * querySelf() { return self; }
     void setMapping(IHqlExpression * mapping);
     void setUnknownMapping();

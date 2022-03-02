@@ -362,6 +362,12 @@ bool NewProjectMapper2::isMappingKnown()
     return ensureMapping();
 }
 
+bool NewProjectMapper2::mappingCanFilter() const
+{
+    assertex(mapping);
+    return transformContainsSkip(mapping);
+}
+
 void NewProjectMapper2::setRecord(IHqlExpression * record, IHqlExpression * selector)
 {
     unsigned kids = record->numChildren();
