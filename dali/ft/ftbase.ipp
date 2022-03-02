@@ -123,16 +123,16 @@ public:
     CrcIOStream(IFileIOStream * _stream, unsigned startCRC = 0);
     IMPLEMENT_IINTERFACE
 
-    virtual void flush();
-    virtual size32_t read(size32_t len, void * data);
-    virtual void seek(offset_t pos, IFSmode origin);
-    virtual offset_t size();
-    virtual offset_t tell();
-    virtual size32_t write(size32_t len, const void * data);
+    virtual void flush() override;
+    virtual size32_t read(size32_t len, void * data) override;
+    virtual void seek(offset_t pos, IFSmode origin) override;
+    virtual offset_t size() override;
+    virtual offset_t tell() override;
+    virtual size32_t write(size32_t len, const void * data) override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return stream->getStatistic(kind); }
 
     unsigned getCRC()               { return crc; }
     void setCRC(unsigned long _crc)     { crc = _crc; }
-
 protected:
     IFileIOStreamAttr   stream;
     unsigned        crc;
