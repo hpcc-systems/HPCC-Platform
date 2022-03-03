@@ -30,12 +30,11 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "Name",
         alphaNumColumns: { RecordCount: true, Totalsize: true },
-        query: {},
-        sort: [{ attribute: "Modified", "descending": true }],
+        sort: { attribute: "Modified", descending: true },
         filename: "subfiles",
         columns: {
             sel: selector({ width: 27, selectorType: "checkbox" }),

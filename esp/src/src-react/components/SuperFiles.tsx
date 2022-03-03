@@ -25,10 +25,10 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "Name",
-        sort: [{ attribute: "Name", "descending": false }],
+        sort: { attribute: "Name", descending: false },
         filename: "superFiles",
         columns: {
             col1: selector({

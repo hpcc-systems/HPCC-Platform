@@ -25,8 +25,9 @@ import { JsonImportForm } from "./forms/landing-zone/JsonImportForm";
 import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
+import { QueryRequest } from "src/Memory";
 
-function formatQuery(targetDropzones, filter) {
+function formatQuery(targetDropzones, filter): QueryRequest {
     const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
     const machines = targetDropzones[0]?.TpMachines?.TpMachine?.filter(row => row.ConfigNetaddress === filter?.Server);
     return {
@@ -94,10 +95,10 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 
     //  Grid ---
     const store = useConst(FileSpray.CreateLandingZonesStore({}));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store,
         query: formatQuery(targetDropzones, filter),
-        sort: [{ attribute: "modifiedtime", "descending": true }],
+        sort: { attribute: "modifiedtime", descending: true },
         filename: "landingZones",
         getSelected: function () {
             if (filter?.__dropZone) {

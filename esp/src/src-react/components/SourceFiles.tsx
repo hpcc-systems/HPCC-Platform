@@ -25,12 +25,11 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "Name",
         alphaNumColumns: { Name: true, Value: true },
-        sort: [{ attribute: "Name", "descending": false }],
-        query: { __hpcc_parentName: "" },
+        sort: { attribute: "Name", descending: false },
         filename: "sourceFiles",
         columns: {
             col1: selector({

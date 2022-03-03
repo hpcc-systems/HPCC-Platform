@@ -1,14 +1,13 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link, Image } from "@fluentui/react";
 import * as domClass from "dojo/dom-class";
-import * as put from "put-selector/put";
 import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -20,7 +19,7 @@ import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
-import { selector, tree } from "./DojoGrid";
+import { SizeMe } from "react-sizeme";
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -81,65 +80,62 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store: store || ESPLogicalFile.CreateLFQueryStore({}),
-        query: formatQuery(filter),
-        sort: [{ attribute: "Modified", "descending": true }],
+    const gridStore = React.useMemo(() => {
+        return store ? store : ESPLogicalFile.CreateLFQueryStore({});
+    }, [store]);
+
+    const query = React.useMemo(() => {
+        return formatQuery(filter);
+    }, [filter]);
+
+    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        store: gridStore,
+        query,
         filename: "logicalfiles",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 disabled: function (item) {
                     return item ? item.__hpcc_isDir : true;
                 },
                 selectorType: "checkbox"
-            }),
+            },
             IsProtected: {
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
-                },
+                headerIcon: "LockSolid",
                 width: 25,
                 sortable: false,
                 formatter: function (_protected) {
                     if (_protected === true) {
-                        return Utility.getImageHTML("locked.png");
+                        return <Icon iconName="LockSolid" />;
                     }
                     return "";
                 }
             },
             IsCompressed: {
-                width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("compressed.png", nlsHPCC.Compressed);
-                },
+                headerIcon: "ZipFolder",
+                width: 25,
+                sortable: false,
                 formatter: function (compressed) {
                     if (compressed === true) {
-                        return Utility.getImageHTML("compressed.png");
+                        return <Icon iconName="ZipFolder" />;
                     }
                     return "";
                 }
             },
-            __hpcc_displayName: tree({
+            __hpcc_displayName: {
                 label: nlsHPCC.LogicalName, width: 600,
                 formatter: function (name, row) {
                     if (row.__hpcc_isDir) {
                         return name;
                     }
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
-                    return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='" + url + "' class='dgrid-row-url'>" + name + "</a>";
+                    return <>
+                        <Image src={row.getStateImage ? row.getStateImage() : ""} />
+                        &nbsp;
+                        <Link href={url}>{name}</Link>
+                    </>;
                 },
-                renderExpando: function (level, hasChildren, expanded, object) {
-                    const dir = this.grid.isRTL ? "right" : "left";
-                    let cls = ".dgrid-expando-icon";
-                    if (hasChildren) {
-                        cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
-                    }
-                    //@ts-ignore
-                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + (!object.__hpcc_isDir && level === 0 ? ";display: none" : "") + "]");
-                    node.innerHTML = "&nbsp;";
-                    return node;
-                }
-            }),
+            },
             Owner: { label: nlsHPCC.Owner, width: 75 },
             SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
             Description: { label: nlsHPCC.Description, width: 150 },
@@ -271,7 +267,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <SizeMe monitorHeight>{({ size }) =>
+                    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                            <Grid height={`${size.height}px`} />
+                        </div>
+                    </div>
+                }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable} />
                 <CopyFile logicalFiles={selection.map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
@@ -281,5 +283,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 <DeleteConfirm />
             </>
         }
+        footer={<GridPagination />}
     />;
 };

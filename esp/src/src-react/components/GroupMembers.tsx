@@ -29,10 +29,10 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "username",
-        sort: [{ attribute: "name", "descending": false }],
+        sort: { attribute: "name", descending: false },
         filename: "fileParts",
         columns: {
             username: {

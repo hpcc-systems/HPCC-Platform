@@ -19,10 +19,10 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, , copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "FieldNames",
-        sort: [{ attribute: "FieldNames", "descending": false }],
+        sort: { attribute: "FieldNames", descending: false },
         filename: "fileBlooms",
         columns: {
             FieldNames: { label: nlsHPCC.FieldNames, sortable: true, width: 320 },

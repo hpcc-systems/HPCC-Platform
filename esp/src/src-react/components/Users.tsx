@@ -48,10 +48,10 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store: WsAccess.CreateUsersStore(null, true),
         query: formatQuery(filter),
-        sort: [{ attribute: "username", "descending": false }],
+        sort: { attribute: "username", descending: false },
         filename: "users",
         columns: {
             check: selector({ width: 27 }, "checkbox"),

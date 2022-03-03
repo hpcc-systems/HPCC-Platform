@@ -1,21 +1,20 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
+import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
 import * as domClass from "dojo/dom-class";
 import * as ESPWorkunit from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/Workunits.tsx");
 
@@ -85,25 +84,31 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store: store ? store : ESPWorkunit.CreateWUQueryStore({}),
-        query: formatQuery(filter),
-        sort: [{ attribute: "Wuid", "descending": true }],
+    const query = React.useMemo(() => {
+        return formatQuery(filter);
+    }, [filter]);
+
+    const gridStore = React.useMemo(() => {
+        return store ? store : ESPWorkunit.CreateWUQueryStore({});
+    }, [store]);
+
+    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        store: gridStore,
+        query,
+        sort: { attribute: "Wuid", descending: true },
         filename: "workunits",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Protected: {
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
-                },
+                headerIcon: "LockSolid",
                 width: 25,
                 sortable: true,
                 formatter: function (_protected) {
                     if (_protected === true) {
-                        return Utility.getImageHTML("locked.png");
+                        return <Icon iconName="LockSolid" />;
                     }
                     return "";
                 }
@@ -112,7 +117,11 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 label: nlsHPCC.WUID, width: 180,
                 formatter: function (Wuid, row) {
                     const wu = ESPWorkunit.Get(Wuid);
-                    return `${wu.getStateImageHTML()}&nbsp;<a href='#/workunits/${Wuid}'>${Wuid}</a>`;
+                    return <>
+                        <Image src={wu.getStateImage()} />
+                        &nbsp;
+                        <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>
+                    </>;
                 }
             },
             Owner: { label: nlsHPCC.Owner, width: 90 },
@@ -136,7 +145,8 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             FileAccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                    return `${formatCost(cost ?? 0)
+                        } (${currencyCode || "$"})`;
                 }
             }
         }
@@ -242,10 +252,17 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <SizeMe monitorHeight>{({ size }) =>
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                            <Grid height={`${size.height}px`} />
+                        </div>
+                    </div>
+                }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <DeleteConfirm />
             </>
         }
+        footer={<GridPagination />}
     />;
 };

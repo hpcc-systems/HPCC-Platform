@@ -24,10 +24,10 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "__hpcc_id" }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "queryLibraries",
         columns: {
             Name: { label: nlsHPCC.LibrariesUsed }

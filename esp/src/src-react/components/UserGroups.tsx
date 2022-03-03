@@ -34,7 +34,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
 
     //  Grid ---
     const gridStore = useConst(new Observable(new Memory("name")));
-    const gridSort = useConst([{ attribute: "name", "descending": false }]);
+    const gridSort = useConst([{ attribute: "name", descending: false }]);
     const gridQuery = useConst({});
     const gridColumns = useConst({
         check: selector({ width: 27, label: " " }, "checkbox"),

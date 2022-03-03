@@ -32,10 +32,10 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "__hpcc_id" }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "querySuperFiles",
         columns: {
             col1: selector({ selectorType: "checkbox", width: 25 }),

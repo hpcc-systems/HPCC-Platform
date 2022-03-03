@@ -47,10 +47,10 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
 
     //  Grid ---
     const store = useConst(new Observable(new TreeStore("__hpcc_id", { Name: true })));
-    const [Grid, selection, refreshTable] = useGrid({
+    const { Grid, selection, refreshTable } = useGrid({
         store,
         query: { __hpcc_parentName: null },
-        sort: [{ attribute: "__hpcc_id", "descending": false }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "esdlBindings",
         columns: {
             col1: selector({

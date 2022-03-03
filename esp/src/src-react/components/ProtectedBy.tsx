@@ -19,10 +19,10 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "Owner",
-        sort: [{ attribute: "Owner", "descending": false }],
+        sort: { attribute: "Owner", descending: false },
         filename: "protectedBy",
         columns: {
             Owner: { label: nlsHPCC.Owner, width: 320 },

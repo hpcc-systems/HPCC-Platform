@@ -21,11 +21,10 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "name",
-        query: {},
-        sort: [{ attribute: "name", "descending": false }],
+        sort: { attribute: "name", descending: false },
         filename: "xrefsDirectories",
         columns: {
             name: { width: 100, label: nlsHPCC.Name },

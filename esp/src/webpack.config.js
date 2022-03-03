@@ -76,7 +76,8 @@ module.exports = function (env) {
         },
         resolve: {
             alias: {
-                "clipboard": path.resolve(__dirname, "node_modules/clipboard/dist/clipboard")
+                "clipboard": path.resolve(__dirname, "node_modules/clipboard/dist/clipboard"),
+                "@fluentui/react-experiments/lib/Pagination": path.resolve(__dirname, "node_modules/@fluentui/react-experiments/lib/Pagination")
             },
             // WebPack >= v5
             // fallback: {

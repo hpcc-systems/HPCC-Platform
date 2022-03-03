@@ -1,18 +1,18 @@
 import * as React from "react";
 import { Dropdown, IStackItemStyles, IStackStyles, IStackTokens, Overlay, Spinner, SpinnerSize, Stack, Text } from "@fluentui/react";
+import { useConst } from "@fluentui/react-hooks";
 import { Card } from "@fluentui/react-cards";
-import * as Observable from "dojo/store/Observable";
-import * as ESPWorkunit from "src/ESPWorkunit";
 import { WorkunitsService, WUQuery } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
-import { Chip } from "./controls/Chip";
+import * as Observable from "dojo/store/Observable";
+import * as ESPWorkunit from "src/ESPWorkunit";
 import nlsHPCC from "src/nlsHPCC";
 import { Memory } from "src/Memory";
+import { Chip } from "./controls/Chip";
 import { pushParamExact } from "../util/history";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { Workunits } from "./Workunits";
-import { useConst } from "@fluentui/react-hooks";
 
 const stackStyles: IStackStyles = {
     root: {
