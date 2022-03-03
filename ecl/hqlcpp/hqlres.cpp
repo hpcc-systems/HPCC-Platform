@@ -170,7 +170,8 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
 {
     StringBuffer fileContents;
     StringBuffer strippedFileContents;
-    fileContents.loadFile(filename, false);
+    Owned<IFile> manifestFile = createIFile(filename);
+    fileContents.loadFile(manifestFile);
     bool isSigned = false;
     const char *useContents = fileContents;
     // Check for signature
