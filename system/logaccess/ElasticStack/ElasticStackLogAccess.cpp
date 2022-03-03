@@ -205,7 +205,7 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
  * Transform iterator of hits/fields to back-end agnostic response
  *
  */
-void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped)
+void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped, bool reportHeader)
 {
     if (!iter)
         throw makeStringExceptionV(-1, "%s: Detected null 'hits' ElasticSearch response", COMPONENT_NAME);
@@ -254,18 +254,35 @@ void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf,
             ForEach(*iter)
             {
                 IPropertyTree & cur = iter->query();
+                Owned<IPropertyTreeIterator> fieldElementsItr = cur.getElements("*");
+
                 bool first = true;
-                Owned<IPropertyTreeIterator> fieldelementsitr = cur.getElements("*");
-                ForEach(*fieldelementsitr)
+                if (reportHeader)
+                {
+                    ForEach(*fieldElementsItr)
+                    {
+                        if (!first)
+                            returnbuf.append(", ");
+                        else
+                            first = false;
+                        fieldElementsItr->query().getName(returnbuf);
+                    }
+                    returnbuf.newline();
+                    first = true;
+
+                    reportHeader = false;
+                }
+
+                ForEach(*fieldElementsItr)
                 {
                     if (!first)
                         returnbuf.append(", ");
                     else
                         first = false;
 
-                    returnbuf.append(fieldelementsitr->query().queryProp(".")); // commas in data should be escaped
+                    fieldElementsItr->query().getProp(nullptr, returnbuf); // commas in data should be escaped
                 }
-                returnbuf.append("\n");
+                returnbuf.newline();
             }
             break;
         }
@@ -278,7 +295,7 @@ void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf,
  * Transform ES query response to back-end agnostic response
  *
  */
-void processESSearchJsonResp(const cpr::Response & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format)
+void processESSearchJsonResp(const cpr::Response & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format, bool reportHeader)
 {
     if (retrievedDocument.status_code != 200)
         throw makeStringExceptionV(-1, "ElasticSearch request failed: %s", retrievedDocument.text.c_str());
@@ -299,21 +316,21 @@ void processESSearchJsonResp(const cpr::Response & retrievedDocument, StringBuff
     DBGLOG("ES Log Access: hit count: '%d'", tree->getPropInt("hits/total/value"));
 
     Owned<IPropertyTreeIterator> hitsFieldsElements = tree->getElements("hits/hits/fields");
-    processHitsJsonResp(hitsFieldsElements, returnbuf, format, true);
+    processHitsJsonResp(hitsFieldsElements, returnbuf, format, true, reportHeader);
 }
 
 /*
  * Transform ES scroll query response to back-end agnostic response
  *
  */
-void processESScrollJsonResp(const char * retValue, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped)
+void processESScrollJsonResp(const char * retValue, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped, bool header)
 {
     Owned<IPropertyTree> tree = createPTreeFromJSONString(retValue);
     if (!tree)
         throw makeStringExceptionV(-1, "%s: Could not parse ElasticSearch query response", COMPONENT_NAME);
 
     Owned<IPropertyTreeIterator> hitsFieldsElements = tree->getElements("hits/fields");
-    processHitsJsonResp(hitsFieldsElements, returnbuf, format, wrapped);
+    processHitsJsonResp(hitsFieldsElements, returnbuf, format, wrapped, header);
 }
 
 void esTimestampQueryRangeString(std::string & range, const char * timestampfield, std::time_t from, std::time_t to)
@@ -611,7 +628,7 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
 bool ElasticStackLogAccess::fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     cpr::Response esresp = performESQuery(options);
-    processESSearchJsonResp(esresp, returnbuf, format);
+    processESSearchJsonResp(esresp, returnbuf, format, true);
 
     return true;
 }
@@ -631,7 +648,8 @@ public:
                 recsRead = res["hits"].size();
                 std::ostringstream sout;
                 m_jsonWriter->write(res, &sout); // serialize Json object to string for processing
-                processESScrollJsonResp(sout.str().c_str(), record, m_outputFormat, false); // convert Json string to target format
+                processESScrollJsonResp(sout.str().c_str(), record, m_outputFormat, false, !m_hasBeenScrolled); // convert Json string to target format
+                m_hasBeenScrolled = true;
                 return true;
             }
         }
@@ -652,6 +670,7 @@ public:
 private:
     elasticlient::Scroll m_esSroller;
 
+    bool m_hasBeenScrolled = false;
     LogAccessLogFormat m_outputFormat;
     Json::StreamWriterBuilder m_jsonStreamBuilder;
     std::unique_ptr<Json::StreamWriter> m_jsonWriter;
