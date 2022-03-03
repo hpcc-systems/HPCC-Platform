@@ -243,6 +243,12 @@ enum StatisticKind
     StCostFileAccess,
     StNumPods,
     StCostCompile,
+    StTimeNodeLoad,
+    StCycleNodeLoadCycles,
+    StTimeLeafLoad,
+    StCycleLeafLoadCycles,
+    StTimeBlobLoad,
+    StCycleBlobLoadCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
