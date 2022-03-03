@@ -214,8 +214,8 @@ class GitRepositoryFile : implements IFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    GitRepositoryFile(const char *_gitFileName, offset_t _fileSize, bool _isDir, bool _isExisting, GitCommitTree * _commitTree, const git_oid & _oid)
-    : commitTree(_commitTree), oid(_oid), fullName(_gitFileName),fileSize(_fileSize), isDir(_isDir), isExisting(_isExisting)
+    GitRepositoryFile(const char *_gitFileName, bool _isDir, bool _isExisting, GitCommitTree * _commitTree, const git_oid & _oid)
+    : commitTree(_commitTree), oid(_oid), fullName(_gitFileName), isDir(_isDir), isExisting(_isExisting)
     {
         splitGitFileName(fullName, gitDirectory, revision, relFileName);
     }
@@ -263,6 +263,20 @@ public:
     {
         if (!isExisting)
             return (offset_t) -1;
+        if (fileSize != (offset_t) -1)
+            return fileSize;
+        if (isDir)
+            fileSize = 0;
+        else
+        {
+            git_blob *blob = nullptr;
+            int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), &oid);
+            if (error)
+                throw MakeStringException(0, "git git_blob_lookup returned exit status %d", error);
+
+            fileSize = git_blob_rawsize(blob);
+            git_blob_free(blob);
+        }
         return fileSize;
     }
 
@@ -278,10 +292,10 @@ public:
             return createGitRepositoryDirectoryIterator(dirName, mask, sub, includeDirs);
         }
     }
-    virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
+    virtual bool getInfo(bool &isdir,offset_t &_size,CDateTime &modtime)
     {
         isdir = isDir;
-        size = fileSize;
+        _size = size();
         modtime.clear();
         return true;
     }
@@ -329,7 +343,7 @@ protected:
     StringAttr revision;
     StringAttr relFileName;
     StringBuffer fullName;
-    offset_t fileSize;
+    offset_t fileSize = (offset_t) -1;
     bool isDir;
     bool isExisting;
 };
@@ -481,9 +495,9 @@ protected:
             if ((lastChar == '/') || (lastChar == PATHSEPCHAR))
                 gitFileName.append(filename);
             if (size==(offset_t) -1)
-                curFile.setown(new GitRepositoryFile(gitFileName, 0, true, true, commitTree, oid));
+                curFile.setown(new GitRepositoryFile(gitFileName, true, true, commitTree, oid));
             else
-                curFile.setown(new GitRepositoryFile(gitFileName, size, false, true, commitTree, oid));
+                curFile.setown(new GitRepositoryFile(gitFileName, false, true, commitTree, oid));
         }
         else
             curFile.clear();
@@ -508,7 +522,7 @@ static IFile *createGitFile(const char *gitFileName)
     if (relDir.isEmpty())
     {
         // Special case the root - ugly but apparently necessary
-        return new GitRepositoryFile(fname, 0, true, true, nullptr, nullOid);
+        return new GitRepositoryFile(fname, true, true, nullptr, nullOid);
     }
     Owned<IDirectoryIterator> dir = createGitRepositoryDirectoryIterator(fname, NULL, false, true);
     if (dir->first())
@@ -518,7 +532,7 @@ static IFile *createGitFile(const char *gitFileName)
         return file.getClear();
     }
     else
-        return new GitRepositoryFile(gitFileName, (offset_t) -1, false, false, nullptr, nullOid);
+        return new GitRepositoryFile(gitFileName, false, false, nullptr, nullOid);
 }
 
 class CGitRepositoryFileHook : public CInterface, implements IContainedFileHook
