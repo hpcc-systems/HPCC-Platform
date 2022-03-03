@@ -51,10 +51,31 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SERVER_INI "eclWatchIP"
 #define ECLOPT_SERVER_ENV "ECL_WATCH_IP"
 #define ECLOPT_SERVER_DEFAULT "."
+
 #define ECLOPT_SSL "--ssl"
 #define ECLOPT_SSL_S "-ssl"
+#define ECLOPT_SSL_INI "eclSSL"
+#define ECLOPT_SSL_ENV "ECL_SSL"
+
+//The following TLS options could be made more verbose, but these match CURL for convenience
+#define ECLOPT_CLIENT_CERT "--cert"
+#define ECLOPT_CA_CERT "--cacert"
+#define ECLOPT_CLIENT_PRIVATE_KEY "--key"
+
+#define ECLOPT_CLIENT_CERT_INI "eclClientCert"
+#define ECLOPT_CLIENT_CERT_ENV "ECL_CLIENT_CERT"
+#define ECLOPT_CLIENT_PRIVATE_KEY_INI "eclClientPrivateKey"
+#define ECLOPT_CLIENT_PRIVATE_KEY_ENV "ECL_CLIENT_PRIVATE_KEY"
+
+#define ECLOPT_CA_CERT_INI "eclCACert"
+#define ECLOPT_CA_CERT_ENV "ECL_CA_CERT"
+
+#define ECLOPT_ACCEPT_SELFSIGNED "--accept-self-signed"
+#define ECLOPT_ACCEPT_SELFSIGNED_INI "eclAcceptSelfSigned"
+#define ECLOPT_ACCEPT_SELFSIGNED_ENV "ECL_ACCEPT_SELF_SIGNED"
 
 #define ECLOPT_SOURCE_SSL "--source-ssl"
+
 #define ECLOPT_SOURCE_NO_SSL "--source-no-ssl"
 
 #define ECLOPT_PORT "--port"
@@ -264,6 +285,11 @@ public:
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
     virtual bool finalizeOptions(IProperties *globals);
+    inline void setRpcOptions(IEspClientRpcSettings &rpc, unsigned int waitMS = 0)
+    {
+        setRpcRequestTimeouts(rpc, waitMS, optWaitConnectMs, optWaitReadSec);
+        setRpcSSLOptions(rpc, optSSL, optClientCert, optClientPrivateKey, optCACert, optAcceptSelfSigned);
+    }
 
     virtual void usage()
     {
@@ -275,6 +301,10 @@ public:
             fprintf(stdout,
                 "   -s, --server=<ip>      IP of server running ecl services (eclwatch)\n"
                 "   -ssl, --ssl            Use SSL to secure the connection to the server(s)\n"
+                "   --accept-self-signed   Allow SSL servers to use self signed certificates\n"
+                "   --cert                 Path to file containing SSL client certificate\n"
+                "   --key                  Path to file containing SSL client certificate private key\n"
+                "   --cacert               Path to file containing SSL CA certificate\n"
                 "   --port=<port>          ECL services port\n"
                 "   -u, --username=<name>  Username for accessing ecl services\n"
                 "   -pw, --password=<pw>   Password for accessing ecl services\n"
@@ -287,11 +317,18 @@ public:
     StringAttr optPort;
     StringAttr optUsername;
     StringAttr optPassword;
+    StringAttr optClientCert;
+    StringAttr optClientPrivateKey;
+    StringAttr optCACert;
+
     bool optPasswordProvided = false;
     unsigned optWaitConnectMs = 0;
     unsigned optWaitReadSec = 0;
     bool optVerbose;
     bool optSSL;
+    bool sslOptProvided = false;
+    bool optAcceptSelfSigned = false;
+    bool selfsignedOptProvided = false;
     bool usesESP;
 };
 
@@ -420,15 +457,5 @@ template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const 
 
 #define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, NULL);
 #define createCmdClientExt(SN, cmd, urlTail) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, urlTail);
-
-inline void setCmdRequestTimeouts(IEspClientRpcSettings &rpc, unsigned waitMs, unsigned waitConnectMs, unsigned waitReadSec)
-{
-    if (waitMs==(unsigned)-1)
-        waitMs=0;
-    if (waitConnectMs || waitMs)
-        rpc.setConnectTimeOutMs(waitConnectMs ? waitConnectMs : waitMs);
-    if (waitReadSec || waitMs)
-        rpc.setReadTimeOutSecs(waitReadSec ? waitReadSec : (waitMs / 1000));
-}
 
 #endif

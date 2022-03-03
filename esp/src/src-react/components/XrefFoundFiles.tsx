@@ -26,11 +26,10 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "name",
-        query: {},
-        sort: [{ attribute: "modified", "descending": false }],
+        sort: { attribute: "modified", descending: false },
         filename: "xrefsFoundFiles",
         columns: {
             check: selector({ width: 27 }, "checkbox"),

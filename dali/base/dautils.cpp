@@ -3240,6 +3240,7 @@ class CLocalOrDistributedFile: implements ILocalOrDistributedFile, public CInter
     Owned<IDistributedFile> dfile;
     CDfsLogicalFileName lfn;    // set if localpath but prob not useful
     StringAttr localpath;
+    StringAttr fileDescPath;
 public:
     IMPLEMENT_IINTERFACE;
     CLocalOrDistributedFile()
@@ -3247,11 +3248,12 @@ public:
         fileExists = false;
     }
 
-    const char *queryLogicalName()
+    virtual const char *queryLogicalName() override
     {
         return lfn.get();
     }
-    IDistributedFile * queryDistributedFile() 
+
+    virtual IDistributedFile * queryDistributedFile() override
     { 
         return dfile.get(); 
     }
@@ -3309,6 +3311,7 @@ public:
             }
 
             StringBuffer dir;
+            unsigned stripeNum = 0;
 #ifdef _CONTAINERIZED
             StringBuffer cluster;
             if (clusters)
@@ -3321,10 +3324,16 @@ public:
                 getDefaultStoragePlane(cluster);
             Owned<IStoragePlane> plane = getDataStoragePlane(cluster, true);
             dir.append(plane->queryPrefix());
+            unsigned numStripedDevices = plane->numDevices();
+            stripeNum = calcStripeNumber(0, lfn.get(), numStripedDevices);
 #endif
+            StringBuffer descPath;
+            makePhysicalDirectory(descPath, lfn.get(), 0, DFD_OSdefault, dir);
+            fileDescPath.set(descPath);
+
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
             StringBuffer physicalPath;
-            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, 0, DFD_OSdefault, dir, false); // more - may need to override path for roxie
+            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, 0, DFD_OSdefault, dir, false, stripeNum); // more - may need to override path for roxie
             localpath.set(physicalPath);
             fileExists = (dfile != NULL);
             return write;
@@ -3332,11 +3341,12 @@ public:
         return false;
     }
 
-    IFileDescriptor *getFileDescriptor()
+    virtual IFileDescriptor *getFileDescriptor() override
     {
         if (dfile.get())
             return dfile->getFileDescriptor();
         Owned<IFileDescriptor> fileDesc = createFileDescriptor();
+        fileDesc->setTraceName(lfn.get());
         StringBuffer dir;
         if (localpath.isEmpty()) { // e.g. external file
             StringBuffer tail;
@@ -3354,7 +3364,7 @@ public:
             }
         }
         else 
-            splitDirTail(localpath,dir);
+            splitDirTail(fileDescPath,dir);
         fileDesc->setDefaultDir(dir.str());
         RemoteFilename rfn;
         getPartFilename(rfn,0,0);
@@ -3363,7 +3373,7 @@ public:
         return fileDesc.getClear();
     }
 
-    bool getModificationTime(CDateTime &dt)
+    virtual bool getModificationTime(CDateTime &dt) override
     {
         if (dfile.get())
             return dfile->getModificationTime(dt);
@@ -3375,22 +3385,21 @@ public:
         return false;
     }
 
-    virtual unsigned numParts()
+    virtual unsigned numParts() override 
     {
         if (dfile.get()) 
             return dfile->numParts();
         return 1;
     }
 
-
-    unsigned numPartCopies(unsigned partnum)
+    virtual unsigned numPartCopies(unsigned partnum) override
     {
         if (dfile.get()) 
             return dfile->queryPart(partnum).numCopies();
         return 1;
     }
     
-    IFile *getPartFile(unsigned partnum,unsigned copy)
+    virtual IFile *getPartFile(unsigned partnum,unsigned copy) override
     {
         RemoteFilename rfn;
         if ((partnum==0)&&(copy==0))
@@ -3398,7 +3407,29 @@ public:
         return NULL;
     }
     
-    RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy)
+    virtual void getDirAndFilename(StringBuffer &dir, StringBuffer &filename) override
+    {
+        if (dfile.get())
+        {
+            dir.append(dfile->queryDefaultDir());
+            splitFilename(localpath, nullptr, nullptr, &filename, &filename);
+        }
+        else if (localpath.isEmpty())
+        {
+            RemoteFilename rfn;
+            lfn.getExternalFilename(rfn);
+            StringBuffer fullPath;
+            rfn.getLocalPath(fullPath);
+            splitFilename(localpath, nullptr, &dir, &filename, &filename);
+        }
+        else
+        {
+            dir.append(fileDescPath);
+            splitFilename(localpath, nullptr, nullptr, &filename, &filename);
+        }
+    }
+
+    virtual RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy) override
     {
         if (dfile.get()) 
             dfile->queryPart(partnum).getFilename(rfn,copy);
@@ -3425,7 +3456,7 @@ public:
         return path;
     }
 
-    bool getPartCrc(unsigned partnum, unsigned &crc)
+    virtual bool getPartCrc(unsigned partnum, unsigned &crc) override
     {
         if (dfile.get())  
             return dfile->queryPart(partnum).getCrc(crc);
@@ -3437,7 +3468,7 @@ public:
         return false;
     }
 
-    offset_t getPartFileSize(unsigned partnum)
+    virtual offset_t getPartFileSize(unsigned partnum) override
     {
         if (dfile.get()) 
             return dfile->queryPart(partnum).getFileSize(true,false);
@@ -3447,7 +3478,7 @@ public:
         return (offset_t)-1;
     }
 
-    offset_t getFileSize()
+    virtual offset_t getFileSize() override
     {
         if (dfile.get())
             dfile->getFileSize(true,false);
@@ -3458,16 +3489,15 @@ public:
         return ret;
     }
 
-    virtual bool exists() const
+    virtual bool exists() const override
     {
         return fileExists;
     }
 
-    virtual bool isExternal() const
+    virtual bool isExternal() const override
     {
         return lfn.isExternal();
     }
-
 };
 
 ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite, bool isPrivilegedUser, const StringArray *clusters)
@@ -3725,4 +3755,76 @@ extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe
     if (conn.get())
         xpath.append(path);
     return conn.getClear();
+}
+
+void addStripeDirectory(StringBuffer &out, const char *directory, const char *planeName, unsigned partNum, unsigned lfnHash, unsigned numStripes)
+{
+    if (numStripes <= 1)
+        return;
+    /* 'directory' is the prefix+logical file path, we need to know
+    * the plane prefix to manipulate it and insert the stripe directory.
+    */
+    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+    if (plane)
+    {
+        const char *planePrefix = plane->queryPrefix();
+        if (!isEmptyString(planePrefix))
+        {
+            assertex(startsWith(directory, planePrefix));
+            const char *tail = directory+strlen(planePrefix);
+            if (isPathSepChar(*tail))
+                tail++;
+            out.append(planePrefix);
+            assertex(lfnHash);
+            unsigned stripeNum = calcStripeNumber(partNum, lfnHash, numStripes);
+            addPathSepChar(out).append('d').append(stripeNum);
+            if (*tail)
+                addPathSepChar(out).append(tail);
+        }
+    }
+}
+
+static CriticalSection dafileSrvNodeCS;
+static Owned<INode> dafileSrvNode;
+void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
+{
+    FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(file->getPropInt("Attr/@flags"));
+    Owned<IPropertyTreeIterator> iter = file->getElements("Cluster");
+    ForEach(*iter)
+    {
+        IPropertyTree &cluster = iter->query();
+        const char *planeName = cluster.queryProp("@name");
+        Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+        if (!plane->queryHosts() && isAbsolutePath(plane->queryPrefix())) // if host group, or url, don't touch
+        {
+            {
+                CriticalBlock b(dafileSrvNodeCS);
+                if (nullptr == dafileSrvNode)
+                {
+                    auto externalService = getDafileServiceFromConfig("directio");
+                    VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
+                    dafileSrvNode.setown(createINode(dafilesrvEpStr));
+                }
+            }
+
+            Owned<IGroup> group;
+            if (cluster.hasProp("Group"))
+                group.setown(createIGroup(cluster.queryProp("Group")));
+            else
+            {
+                assertex(resolver);
+                StringBuffer defaultDir;
+                GroupType groupType;
+                group.setown(resolver->lookup(planeName, defaultDir, groupType));
+            }
+
+            std::vector<INode *> nodes;
+            for (unsigned n=0; n<group->ordinality(); n++)
+                nodes.push_back(dafileSrvNode);
+            Owned<IGroup> newGroup = createIGroup((rank_t)group->ordinality(), &nodes[0]);
+            StringBuffer groupText;
+            newGroup->getText(groupText);
+            cluster.setProp("Group", groupText);
+        }
+    }
 }

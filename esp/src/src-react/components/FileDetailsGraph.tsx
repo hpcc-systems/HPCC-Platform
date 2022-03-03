@@ -38,7 +38,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "Name",
         filename: "graphs",

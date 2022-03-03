@@ -19,6 +19,7 @@
 
 # Utility script for stopping a local cluster started by startall.sh
 wait=0
+force=0
 CLUSTERNAME=mycluster
 UNINSTALL_ELK=1
 
@@ -26,6 +27,8 @@ while [ "$#" -gt 0 ]; do
   arg=$1
   case "${arg}" in
       -w) wait=1
+         ;;
+      -f) force=1
          ;;
       -n) shift
          CLUSTERNAME=$1
@@ -54,6 +57,13 @@ if [[ $UNINSTALL_ELK == 1 ]] ; then
 
   echo "Deleting Elasticsearch PVC..."
   kubectl delete pvc elasticsearch-master-elasticsearch-master-0
+fi
+
+if [[ $force == 1 ]] ; then
+  sleep 1
+  for f in `kubectl get pods | grep -q ^NAME | awk '{print $1}'` ; do
+    kubectl delete pod $f --force --grace-period=0
+  done
 fi
 
 if [[ $wait == 1 ]] ; then

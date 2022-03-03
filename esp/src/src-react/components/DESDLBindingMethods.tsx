@@ -44,10 +44,10 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
 
     //  Grid ---
     const store = useConst(new Observable(new TreeStore("__hpcc_id", { Name: true })));
-    const [Grid, _selection, refreshTable] = useGrid({
+    const { Grid, refreshTable } = useGrid({
         store,
         query: { __hpcc_parentName: null },
-        sort: [{ attribute: "Name", descending: false }],
+        sort: { attribute: "Name", descending: false },
         filename: "esdlBindingsMethods",
         columns: {
             Name: tree({

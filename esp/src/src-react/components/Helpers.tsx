@@ -102,7 +102,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "id",
         filename: "helpers",

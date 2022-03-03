@@ -1,17 +1,16 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
+import { SizeMe } from "react-sizeme";
 
 const FilterFields: Fields = {
     "QueryID": { type: "string", label: nlsHPCC.ID, placeholder: nlsHPCC.QueryIDPlaceholder },
@@ -65,73 +64,72 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     //  Grid ---
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store: store || ESPQuery.CreateQueryStore({}),
-        query: formatQuery(filter),
-        sort: [{ attribute: "Id" }],
+    const gridStore = React.useMemo(() => {
+        return store || ESPQuery.CreateQueryStore({});
+    }, [store]);
+
+    const query = React.useMemo(() => {
+        return formatQuery(filter);
+    }, [filter]);
+
+    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        store: gridStore,
+        query,
         filename: "roxiequeries",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Suspended: {
+                headerIcon: "Pause",
                 label: nlsHPCC.Suspended,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("suspended.png", nlsHPCC.Suspended);
-                },
                 width: 25,
                 sortable: false,
                 formatter: function (suspended) {
                     if (suspended === true) {
-                        return Utility.getImageHTML("suspended.png");
+                        return <Icon iconName="Pause" />;
                     }
                     return "";
                 }
             },
             ErrorCount: {
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("errwarn.png", nlsHPCC.ErrorWarnings);
-                },
+                headerIcon: "Warning",
                 width: 25,
                 sortable: false,
                 formatter: function (error) {
                     if (error > 0) {
-                        return Utility.getImageHTML("errwarn.png");
+                        return <Icon iconName="Warning" />;
                     }
                     return "";
                 }
             },
             MixedNodeStates: {
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("mixwarn.png", nlsHPCC.MixedNodeStates);
-                },
+                headerIcon: "Error",
                 width: 25,
                 sortable: false,
                 formatter: function (mixed) {
                     if (mixed === true) {
-                        return Utility.getImageHTML("mixwarn.png");
+                        return <Icon iconName="Error" />;
                     }
                     return "";
                 }
             },
             Activated: {
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("active.png", nlsHPCC.Active);
-                },
+                headerIcon: "SkypeCircleCheck",
                 width: 25,
                 formatter: function (activated) {
                     if (activated === true) {
-                        return Utility.getImageHTML("active.png");
+                        return <Icon iconName="SkypeCircleCheck" />;
                     }
-                    return Utility.getImageHTML("inactive.png");
+                    return "";
                 }
             },
             Id: {
                 label: nlsHPCC.ID,
                 width: 380,
                 formatter: function (Id, row) {
-                    return `<a href='#/queries/${row.QuerySetId}/${Id}' class='dgrid-row-url'>${Id}</a>`;
+                    return <Link href={`#/queries/${row.QuerySetId}/${Id}`} >{Id}</Link>;
                 }
             },
             priority: {
@@ -153,7 +151,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 width: 160,
                 label: nlsHPCC.WUID,
                 formatter: function (Wuid, idx) {
-                    return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + Wuid + "</a>";
+                    return <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>;
                 }
             },
             Dll: {
@@ -268,10 +266,17 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <Grid />
+                <SizeMe monitorHeight>{({ size }) =>
+                    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                            <Grid height={`${size.height}px`} />
+                        </div>
+                    </div>
+                }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <DeleteConfirm />
             </>
         }
+        footer={<GridPagination />}
     />;
 };

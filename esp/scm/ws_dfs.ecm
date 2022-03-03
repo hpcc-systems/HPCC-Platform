@@ -31,6 +31,7 @@ ESPrequest DFSFileLookupRequest
     string Name;                        // the logical file name
     int64 LeaseId;                      // lease to associate any locks to
     int RequestTimeout(300);            // Max seconds to block waiting (default = 5 mins)
+    bool AccessViaDafilesrv(false);     // DFS service will return file meta pointing to a dafilesrv service
 };
 
 ESPresponse [exceptions_inline] DFSFileLookupResponse

@@ -439,6 +439,7 @@ interface ILocalOrDistributedFile: extends IInterface
     virtual unsigned numParts() = 0;
     virtual unsigned numPartCopies(unsigned partnum) = 0;
     virtual IFile *getPartFile(unsigned partnum,unsigned copy=0) = 0;
+    virtual void getDirAndFilename(StringBuffer &dir, StringBuffer &filename) = 0;
     virtual RemoteFilename &getPartFilename(RemoteFilename &rfn, unsigned partnum,unsigned copy=0) = 0;
     virtual offset_t getPartFileSize(unsigned partnum)=0;   // NB expanded size             
     virtual bool getPartCrc(unsigned partnum, unsigned &crc) = 0;
@@ -544,5 +545,29 @@ extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
 extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
 extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath);
 extern da_decl bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * filename, const char * s, bool iswin, IException **e);
+extern da_decl void addStripeDirectory(StringBuffer &out, const char *directory, const char *planeName, unsigned partNum, unsigned lfnHash, unsigned numStripes);
+inline unsigned getFilenameHash(size32_t len, const char *filename)
+{
+    return hashc((const unsigned char *)filename, len, 0);
+}
+inline unsigned getFilenameHash(const char *filename)
+{
+    return getFilenameHash(strlen(filename), filename);
+}
+inline unsigned calcStripeNumber(unsigned partNum, unsigned lfnHash, unsigned numStripes)
+{
+    if (numStripes <= 1)
+        return 0;
+    return ((partNum+lfnHash)%numStripes)+1;
+}
+inline unsigned calcStripeNumber(unsigned partNum, const char *lfnName, unsigned numStripes)
+{
+    if (numStripes <= 1)
+        return 0;
+    unsigned lfnHash = getFilenameHash(lfnName);
+    return ((partNum+lfnHash)%numStripes)+1;
+}
+interface INamedGroupStore;
+extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver);
 
 #endif

@@ -651,7 +651,7 @@ void CHThorDiskWriteActivity::publish()
     StringBuffer dir,base;
     offset_t fileSize = file->size();
     if(clusterHandler)
-        clusterHandler->splitPhysicalFilename(dir, base);
+        clusterHandler->getDirAndFilename(dir, base);
     else
         splitFilename(filename, &dir, &dir, &base, &base);
 
@@ -1244,7 +1244,7 @@ void CHThorIndexWriteActivity::execute()
     StringBuffer dir,base;
     offset_t indexFileSize = file->size();
     if(clusterHandler)
-        clusterHandler->splitPhysicalFilename(dir, base);
+        clusterHandler->getDirAndFilename(dir, base);
     else
         splitFilename(filename, &dir, &dir, &base, &base);
 

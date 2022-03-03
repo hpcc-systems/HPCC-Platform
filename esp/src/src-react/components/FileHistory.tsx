@@ -21,10 +21,10 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
     const [history, eraseHistory, refreshData] = useFileHistory(cluster, logicalFile);
     const [data, setData] = React.useState<any[]>([]);
 
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "Name", "descending": false }],
+        sort: { attribute: "Name", descending: false },
         filename: "filehistory",
         columns: {
             Name: { label: nlsHPCC.Name, sortable: false },

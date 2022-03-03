@@ -22,10 +22,10 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "Id",
-        sort: [{ attribute: "Id", "descending": false }],
+        sort: { attribute: "Id", descending: false },
         filename: "fileParts",
         columns: {
             Id: { label: nlsHPCC.Part, sortable: true, width: 80 },

@@ -19,11 +19,10 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "name",
-        query: {},
-        sort: [{ attribute: "name", "descending": false }],
+        sort: { attribute: "name", descending: false },
         filename: "xrefsErrorsWarnings",
         columns: {
             file: { width: 100, label: nlsHPCC.File },

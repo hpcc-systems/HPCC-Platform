@@ -552,6 +552,10 @@
           "description": "the remote DFS service",
           "type": "string"
         },
+        "secret": {
+          "description": "the name of the secret containing the certificates to connect to the service",
+          "type": "string"
+        },
         "planes": {
           "description": "mapping of remote planes to local planes",
           "type": "array",
@@ -568,9 +572,25 @@
               }
             }
           }
-        }
+        },
+        "useDafilesrv": { "const": true }
       },
-      "required": [ "name", "service", "planes" ],
+      "oneOf":[
+        {
+          "required": [
+            "name",
+            "service",
+            "planes"
+          ]
+        },
+        {
+          "required": [
+            "name",
+            "service",
+            "useDafilesrv"
+          ]
+        }
+      ],
       "additionalProperties": false
     },
     "resources": {
@@ -1133,6 +1153,9 @@
         "bindingInfo": {
           "description": "Customizable binding options",
           "type": "object"
+        },
+        "remoteClients": {
+          "$ref": "#/definitions/remoteClients"
         }
       }
     },
@@ -1263,7 +1286,6 @@
           "type": "string",
           "description": "Name of the secret which contains the TLS certificate.  Custom configuration instead of using, or overriding cert-manager certificate."
         },
-        
         "allFilesDynamic": { 
           "type": "boolean",
           "default": false,
@@ -2581,6 +2603,18 @@
           "default": "50m"
         },
         "additionalProperties": false
+      }
+    },
+    "remoteClients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Remote client name"
+          }
+        }
       }
     }
   }

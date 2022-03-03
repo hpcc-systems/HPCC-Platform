@@ -616,7 +616,7 @@ static void testDFSFile(IDistributedFile *legacyDfsFile, const char *logicalName
     const char *dir = legacyDfsFile->queryDefaultDir();
     PROGLOG("dir = %s", dir);
     const char *mask = legacyDfsFile->queryPartMask();
-    PROGLOG("mask = %s", dir);
+    PROGLOG("mask = %s", mask);
     IPropertyTree &attrs = legacyDfsFile->queryAttributes();
     legacyDfsFile->lockProperties();
     legacyDfsFile->unlockProperties();

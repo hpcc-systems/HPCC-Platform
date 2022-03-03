@@ -2711,7 +2711,7 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
 
 
 #ifdef _CONTAINERIZED
-static bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category)
+bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category)
 {
     // If the plane is specified for the component, then use that
     if (getComponentConfigSP()->getProp(componentOption, ret))

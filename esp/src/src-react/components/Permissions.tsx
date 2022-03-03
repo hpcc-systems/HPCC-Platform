@@ -38,7 +38,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
 
     //  Grid ---
     const gridStore = useConst(WsAccess.CreatePermissionsStore(null, null));
-    const gridSort = useConst([{ attribute: "name", "descending": false }]);
+    const gridSort = useConst([{ attribute: "name", descending: false }]);
     const gridQuery = useConst({});
     const gridColumns = useConst({
         check: selector({

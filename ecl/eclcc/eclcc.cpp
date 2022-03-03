@@ -853,7 +853,8 @@ void gatherResourceManifestFilenames(EclCompileInstance & instance, StringArray 
             getFullFileName(filename, true).append(".manifest");
             if (filenames.contains(filename))
                 continue;
-            if (checkFileExists(filename))
+            Owned<IFile> manifest = createIFile(filename);
+            if (manifest->exists())
                 filenames.append(filename);
         }
     }

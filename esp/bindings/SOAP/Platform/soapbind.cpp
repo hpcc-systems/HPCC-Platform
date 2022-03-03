@@ -269,6 +269,30 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
 }
 
 
+static IPropertyTree *createSecClientConfig(const char *clientCertPath, const char *clientPrivateKey, const char *caCertsPath, bool acceptSelfSigned)
+{
+    Owned<IPropertyTree> info = createPTree();
+
+    if (!isEmptyString(clientCertPath))
+    {
+        info->setProp("certificate", clientCertPath);
+        if (!isEmptyString(clientPrivateKey))
+            info->setProp("privatekey", clientPrivateKey);
+    }
+
+    IPropertyTree *verify = ensurePTree(info, "verify");
+    if (!isEmptyString(caCertsPath))
+    {
+        IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
+        ca->setProp("@path", caCertsPath);
+    }
+    verify->setPropBool("@enable", true);
+    verify->setPropBool("@accept_selfsigned", acceptSelfSigned);
+    verify->setProp("trusted_peers", "anyone");
+
+    return info.getClear();
+}
+
 void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *soapaction)
 {
     CRpcCall rpccall;
@@ -286,6 +310,8 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
         soapclient.setReadTimeoutSecs(readTimeoutSecs_);
     if (mtls_secret_.length())
         soapclient.setMtlsSecretName(mtls_secret_);
+    if (client_cert_.length() || ca_certs_.length() || accept_self_signed_)
+        soapclient.setSecureSocketConfig(createSecClientConfig(client_cert_, client_priv_key_, ca_certs_, accept_self_signed_));
 
     soapclient.setUsernameToken(soap_getUserId(), soap_getPassword(), soap_getRealm());
 

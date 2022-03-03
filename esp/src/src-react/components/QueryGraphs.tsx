@@ -37,10 +37,10 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "__hpcc_id" }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "queryGraphs",
         columns: {
             col1: selector({ width: 27, selectorType: "checkbox" }),

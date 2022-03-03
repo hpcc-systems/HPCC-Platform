@@ -84,6 +84,9 @@ public:
         if (width > container.queryJob().querySlaves())
             throw MakeActivityException(this, 0, "Unsupported: keypatch(%s, %s) - Cannot patch a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), patchFile->queryLogicalName(), width, container.queryJob().querySlaves());
 
+        StringBuffer defaultCluster;
+        if (getDefaultStoragePlane(defaultCluster))
+            clusters.append(defaultCluster);
         IArrayOf<IGroup> groups;
         fillClusterArray(container.queryJob(), outputName, clusters, groups);
         newIndexDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));

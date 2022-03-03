@@ -60,12 +60,12 @@ class PerformanceIssue : public CInterface
 public:
     int compareCost(const PerformanceIssue & other) const;
     void print() const;
-    void createException(IWorkUnit * we);
+    void createException(IWorkUnit * we, double costRate);
 
-    void set(AnalyzerErrorCode _errorCode, stat_type _cost, const char * msg, ...) __attribute__((format(printf, 4, 5)));
+    void set(AnalyzerErrorCode _errorCode, stat_type _timePenalty, const char * msg, ...) __attribute__((format(printf, 4, 5)));
     void setLocation(const char * definition);
     void setScope(const char *_scope) { scope.set(_scope); }
-    stat_type getCost() const         { return cost; }
+    stat_type getTimePenalityCost() const { return timePenalty; }
 
 private:
     AnalyzerErrorCode errorCode = ANA_GENERICERROR_ID;
@@ -73,7 +73,7 @@ private:
     unsigned line = 0;
     unsigned column = 0;
     StringAttr scope;
-    stat_type cost = 0;      // number of nanoseconds lost as a result.
+    stat_type timePenalty = 0; // number of nanoseconds lost as a result.
     StringBuffer comment;
 };
 

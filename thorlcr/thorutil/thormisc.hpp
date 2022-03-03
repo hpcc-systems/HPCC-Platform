@@ -534,6 +534,7 @@ extern graph_decl ICommunicator &queryNodeComm();
 extern graph_decl IGroup &queryClusterGroup();
 extern graph_decl IGroup &querySlaveGroup();
 extern graph_decl IGroup &queryDfsGroup();
+extern graph_decl IGroup &queryLocalGroup();
 extern graph_decl unsigned queryClusterWidth();
 extern graph_decl unsigned queryNodeClusterWidth();
 

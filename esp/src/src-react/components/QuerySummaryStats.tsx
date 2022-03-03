@@ -21,10 +21,10 @@ export const QuerySummaryStats: React.FunctionComponent<QuerySummaryStatsProps> 
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, _selection, copyButtons] = useFluentGrid({
+    const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: [{ attribute: "__hpcc_id" }],
+        sort: { attribute: "__hpcc_id", descending: false },
         filename: "querySummaryStats",
         columns: {
             Endpoint: { label: nlsHPCC.EndPoint, width: 72, sortable: true },

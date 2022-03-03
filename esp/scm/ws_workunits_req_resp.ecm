@@ -739,7 +739,7 @@ ESPrequest WUSyntaxCheckRequest
     string Cluster;
     string Snapshot;
     int    TimeToWait(60000);
-
+    [min_ver("1.88")] bool PersistWorkunit(false);
     [min_ver("1.04")] ESParray<ESPstruct DebugValue>       DebugValues;
 };
 

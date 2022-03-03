@@ -87,6 +87,7 @@ enum MDFSRequestKind
     MDFS_SET_FILE_PROTECT,
     MDFS_ITERATE_FILTEREDFILES,
     MDFS_ITERATE_FILTEREDFILES2,
+    MDFS_GET_FILE_TREE2,
     MDFS_MAX
 };
 
@@ -1114,7 +1115,7 @@ public:
     IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope,bool recursive,bool includeempty);
     bool loadScopeContents(const char *scopelfn,StringArray *scopes,    StringArray *supers,StringArray *files, bool includeemptyscopes);
 
-    IPropertyTree *getFileTree(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout,bool expandnodes=false, bool appendForeign=true);
+    IPropertyTree *getFileTree(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout,GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign);
     void setFileAccessed(CDfsLogicalFileName &dlfn, IUserDescriptor *user,const CDateTime &dt,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IDistributedFile *getFile(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
@@ -4311,12 +4312,19 @@ public:
         newdir.append(baseDir).append(newPath);
         StringBuffer fullname;
         CIArrayOf<CIStringArray> newNames;
+        unsigned existingLfnHash = queryAttributes().getPropInt("@lfnHash");
         unsigned i;
-        for (i=0;i<width;i++) {
+        for (i=0;i<width;i++)
+        {
             newNames.append(*new CIStringArray);
             CDistributedFilePart &part = parts.item(i);
-            for (unsigned copy=0; copy<part.numCopies(); copy++) {
-                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart());
+            for (unsigned copy=0; copy<part.numCopies(); copy++)
+            {
+                unsigned cn = copyClusterNum(i, copy, nullptr);
+                unsigned numStripedDevices = queryPartDiskMapping(cn).numStripedDevices;
+                unsigned stripeNum = calcStripeNumber(i, existingLfnHash, numStripedDevices);
+
+                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum);
                 newPath.remove(0, strlen(myBase));
 
                 StringBuffer copyDir(baseDir);
@@ -4519,11 +4527,8 @@ public:
             root->setProp("@partmask",newmask.str());
             partmask.set(newmask.str());
             directory.set(newdir.str());
-            StringBuffer mask;
-            for (unsigned i=0;i<width;i++) {
-                mask.appendf("Part[%d]/@name",i+1);
+            for (unsigned i=0;i<width;i++)
                 parts.item(i).clearOverrideName();
-            }
             savePartsAttr(false);
         }
         else {
@@ -6951,6 +6956,13 @@ unsigned CDistributedFilePart::copyClusterNum(unsigned copy,unsigned *replicate)
 StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned copy)
 {
     const char *defdir = parent.queryDefaultDir();
+    StringBuffer stripeDir;
+    unsigned cn = copyClusterNum(copy, nullptr);
+    unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
+    unsigned lfnHash = parent.queryRoot()->getPropInt("Attr/@lfnHash");
+    addStripeDirectory(stripeDir, defdir, parent.clusters.item(cn).queryGroupName(), partIndex, lfnHash, numStripedDevices);
+    if (stripeDir.isEmpty())
+        stripeDir.append(defdir);
     StringBuffer dir;
     const char *pn;
     if (overridename.isEmpty())
@@ -6966,11 +6978,11 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
         if (odir.length()) {
             if (isAbsolutePath(pn))
                 dir.append(odir);
-            else if (defdir&&*defdir)
-                addPathSepChar(dir.append(defdir)).append(odir);
+            else if (!stripeDir.isEmpty())
+                addPathSepChar(dir.append(stripeDir)).append(odir);
         }
         else
-            dir.append(defdir);
+            dir.append(stripeDir);
     }
     if (dir.length()==0)
         IERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");
@@ -8006,7 +8018,7 @@ bool CDistributedFileDirectory::isSuperFile(    const char *logicalname,
                                                 INode *foreigndali,
                                                 unsigned timeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(logicalname, user, foreigndali,timeout, false);
+    Owned<IPropertyTree> tree = getFileTree(logicalname, user, foreigndali,timeout, GetFileTreeOpts::appendForeign);
     return tree.get()&&(strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0);
 }
 
@@ -10758,33 +10770,59 @@ public:
         }
     }
 
-    void getFileTree(CMessageBuffer &mb,StringBuffer &trc)
+    void getFileTree(CMessageBuffer &mb, StringBuffer &trc, unsigned version)
     {
         TransactionLog transactionLog(*this, MDFS_GET_FILE_TREE, mb.getSender());
+
+        GetFileTreeOpts opts;
+        Owned<IUserDescriptor> udesc;
+
         StringAttr lname;
         mb.read(lname);
-        unsigned ver;
-        if (mb.length()<mb.getPos()+sizeof(unsigned))
-            ver = 0;
-        else
+        if (version >= 2)
         {
-            mb.read(ver);
-            // this is a bit of a mess - for backward compatibility where user descriptor specified
-            if (ver>MDFS_GET_FILE_TREE_V2)
+            unsigned _opts;        
+            mb.read(_opts);
+            opts = static_cast<GetFileTreeOpts>(_opts);
+            bool hasUser;
+            mb.read(hasUser);
+            if (hasUser)
             {
-                mb.reset(mb.getPos()-sizeof(unsigned));
-                ver = 0;
+                udesc.setown(createUserDescriptor());
+                udesc->deserialize(mb);
             }
         }
-        trc.appendf("getFileTree(%s,%d)",lname.str(),ver);
+        else // pre gft versioning/tidyup
+        {
+            // for ancient backward version compatibility
+            if (mb.length()<mb.getPos()+sizeof(unsigned))
+                version = 0;
+            else
+            {
+                mb.read(version);
+                // this is a bit of a mess - for backward compatibility where user descriptor specified
+                if (version>MDFS_GET_FILE_TREE_V2)
+                {
+                    mb.reset(mb.getPos()-sizeof(unsigned));
+                    version = 0;
+                }
+                else
+                {
+                    // NB: just for clarity - MDFS_GET_FILE_TREE_V2 is hardwired to 1
+                    // version >= 2 is cleaned up version.
+                    version = 1;
+                }
+            }
+            if (mb.getPos()<mb.length())
+            {
+                udesc.setown(createUserDescriptor());
+                udesc->deserialize(mb);
+            }
+        }
+        trc.appendf("getFileTree(%s, client gft version=%u)",lname.str(), version);
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
-        Owned<IUserDescriptor> udesc;
-        if (mb.getPos()<mb.length())
-        {
-            udesc.setown(createUserDescriptor());
-            udesc->deserialize(mb);
-        }
+
         mb.clear();
         CDfsLogicalFileName dlfn;
         dlfn.set(lname);
@@ -10797,72 +10835,85 @@ public:
             CScopeConnectLock sconnlock("getFileTree", *logicalname, false, false, false, defaultTimeout);
             IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
             logicalname->getTail(tail);
-            Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
-            if (tree)
+            if (version >= 2)
             {
-                if (ver>=MDFS_GET_FILE_TREE_V2)
+                Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+                if (tree)
                 {
+                    //NB: for new clients, only clients specifically asking for remap
+                    if (hasMask(opts, GetFileTreeOpts::remapToService))
+                        remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
+
                     Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_EXCLUDE_CLUSTERNAMES);
-                    if (fdesc)
+                    mb.append((int)1); // 1 == standard file
+                    fdesc->serialize(mb);
+
+                    /* not sure why this attribute is special/here at top level
+                        and not part of the IFileDescriptor serialization itself */
+                    StringBuffer dts;
+                    tree->getProp("@modified", dts);
+                    unsigned l = dts.length();
+                    mb.append(l).append(l, dts.str());
+
+                    break;
+                }
+                else
+                {
+                    tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
+                    if (tree)
+                    {
+                        mb.append((int)2); // 2 == super
+                        tree->serialize(mb);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
+                if (tree)
+                {
+                    if (version == MDFS_GET_FILE_TREE_V2)
                     {
 #ifdef _CONTAINERIZED
-                        unsigned nc = fdesc->numClusters();
-                        for (unsigned c=0; c<nc; c++)
-                        {
-                            IClusterInfo *clusterInfo = fdesc->queryClusterNum(c);
-                            const char *planeName = clusterInfo->queryGroupName();
-                            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
-                            if (!plane->queryHosts() && isAbsolutePath(plane->queryPrefix())) // if host group, or url, don't touch
-                            {
-                                {
-                                    CriticalBlock b(dafileSrvNodeCS);
-                                    if (nullptr == dafileSrvNode)
-                                    {
-                                        auto externalService = getDafileServiceFromConfig("directio");
-                                        VStringBuffer dafilesrvEpStr("%s:%u", externalService.first.c_str(), externalService.second);
-                                        dafileSrvNode.setown(createINode(dafilesrvEpStr));
-                                    }
-                                }
-                                IGroup *oldGroup = clusterInfo->queryGroup();
-                                std::vector<INode *> nodes;
-                                for (unsigned n=0; n<oldGroup->ordinality(); n++)
-                                    nodes.push_back(dafileSrvNode);
-                                Owned<IGroup> newGroup = createIGroup((rank_t)oldGroup->ordinality(), &nodes[0]);
-                                clusterInfo->setGroup(newGroup); // NB: links
-                            }
-                        }
+                        // NB: to be here, the client is by definition legacy, and should be foreign.
+                        // foreignAccess must also have been configured in this environment
+
+                        if (getComponentConfigSP()->getPropBool("@foreignAccess"))
+                            remapGroupsToDafilesrv(tree, &queryNamedGroupStore());
 #endif
 
-                        ver = MDFS_GET_FILE_TREE_V2;
-                        mb.append((int)-2).append(ver);
+                        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(tree,&queryNamedGroupStore(),IFDSF_EXCLUDE_CLUSTERNAMES);
+
+                        mb.append((int)-2).append(version);
+
                         fdesc->serialize(mb);
                         StringBuffer dts;
-                        if (tree->getProp("@modified",dts)) {
+                        if (tree->getProp("@modified",dts))
+                        {
                             CDateTime dt;
                             dt.setString(dts.str());
                             dt.serialize(mb);
                         }
                     }
-                    else
-                        ver = 0;
-                }
-                if (ver==0)
-                {
-                    tree.setown(createPTreeFromIPT(tree));
-                    StringBuffer cname;
-                    logicalname->getCluster(cname);
-                    expandFileTree(tree,true,cname.str()); // resolve @node values that may not be set
-                    tree->serialize(mb);
-                }
-                break;
-            }
-            else
-            {
-                tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
-                if (tree)
-                {
-                    tree->serialize(mb);
+                    else if (version==0) // ancient version backward compatibility
+                    {
+                        tree.setown(createPTreeFromIPT(tree));
+                        StringBuffer cname;
+                        logicalname->getCluster(cname);
+                        expandFileTree(tree,true,cname.str()); // resolve @node values that may not be set
+                        tree->serialize(mb);
+                    }
                     break;
+                }
+                else
+                {
+                    tree.setown(getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_SuperFile),"@name",tail.str(),false));
+                    if (tree)
+                    {
+                        tree->serialize(mb);
+                        break;
+                    }
                 }
             }
             if (redmatch.get())
@@ -10939,7 +10990,14 @@ public:
                 }
                 case MDFS_GET_FILE_TREE:
                 {
-                    getFileTree(mb, trc);
+                    getFileTree(mb, trc, 0);
+                    break;
+                }
+                case MDFS_GET_FILE_TREE2:
+                {
+                    unsigned clientGFTVersion;
+                    mb.read(clientGFTVersion);
+                    getFileTree(mb, trc, clientGFTVersion);
                     break;
                 }
                 case MDFS_GET_GROUP_TREE:
@@ -11224,14 +11282,20 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDe
     checkDfsReplyException(mb);
 }
 
-IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali,unsigned foreigndalitimeout, bool expandnodes, bool appendForeign)
+IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali,unsigned foreigndalitimeout, GetFileTreeOpts opts)
 {
+    constexpr unsigned gftVersion = 2; // for future use (0 and 1 are reserved for legacy versions)
+    bool expandnodes = hasMask(opts, GetFileTreeOpts::expandNodes);
+    bool appendForeign = hasMask(opts, GetFileTreeOpts::appendForeign);
+
+    bool getFileTree2Support = queryDaliServerVersion().compare("3.17") >= 0;
     // this accepts either a foreign dali node or a foreign lfn
     Owned<INode> fnode;
     CDfsLogicalFileName dlfn;
     SocketEndpoint ep;
     dlfn.set(lname);
-    if (dlfn.isForeign()) {
+    if (dlfn.isForeign())
+    {
         if (!dlfn.getEp(ep))
             throw MakeStringException(-1,"cannot resolve dali ip in foreign file name (%s)",lname);
         fnode.setown(createINode(ep));
@@ -11241,53 +11305,115 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
     if (isLocalDali(foreigndali))
         foreigndali = NULL;
     CMessageBuffer mb;
-    mb.append((int)MDFS_GET_FILE_TREE).append(lname);
-    mb.append(MDFS_GET_FILE_TREE_V2);
-    if (user)
+
+    if (getFileTree2Support)
     {
-        user->serializeWithoutPassword(mb);
-    }
+        mb.append((int)MDFS_GET_FILE_TREE2);
+        mb.append(gftVersion);
+        mb.append(lname);
+        // if it's a foreign dali, and unless explicitly requested to remap or explicitly requested to suppress foreign remapping
+        // ensure the remap flag is sent.
+        if (foreigndali && !hasMask(opts, GetFileTreeOpts::remapToService | GetFileTreeOpts::suppressForeignRemapToService))
+            opts |= GetFileTreeOpts::remapToService;
+
+        mb.append(static_cast<unsigned>(opts));
+
+        if (user)
+        {
+            mb.append(true);
+            user->serializeWithoutPassword(mb);
+        }
+        else
+        {
+            mb.append(false);
 #ifdef NULL_DALIUSER_STACKTRACE
+            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
+            PrintStackReport();
+#endif
+        }
+    }
     else
     {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
-        PrintStackReport();
-    }
+        mb.append((int)MDFS_GET_FILE_TREE).append(lname);
+        mb.append(MDFS_GET_FILE_TREE_V2);
+        if (user)
+            user->serializeWithoutPassword(mb);
+#ifdef NULL_DALIUSER_STACKTRACE
+        else
+        {
+            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
+            PrintStackReport();
+        }
 #endif
+    }
     if (foreigndali)
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
         queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
     if (mb.length()==0)
-        return NULL;
-    unsigned ver = 0;
-    if ((mb.length()>=sizeof(int))&&(*(int *)mb.bufferBase()) == -2) { // version indicator
-        int i;
-        mb.read(i);
-        mb.read(ver);
-    }
+        return nullptr;
+
     Owned<IPropertyTree> ret;
-    if (ver==0)
-        ret.setown(createPTree(mb));
-    else {
-        Owned<IFileDescriptor> fdesc;
-        CDateTime modified;
-        if (ver==MDFS_GET_FILE_TREE_V2) { // no longer in use but support for back compatibility
+    Owned<IFileDescriptor> fdesc;
+    if (getFileTree2Support)
+    {
+        unsigned type; // 1 = regular file, 2 = super
+        mb.read(type);
+        if (1 == type)
+        {
             fdesc.setown(deserializeFileDescriptor(mb));
-            if (mb.remaining()>0)
-                modified.deserialize(mb);
+            ret.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
+            fdesc->serializeTree(*ret,expandnodes?0:CPDMSF_packParts);
+            /* See server-side code, not sure why this attribute is special/here at top level
+            and not part of the IFileDescriptor serialization itself */
+            unsigned l;
+            mb.read(l);
+            if (l)
+            {
+                StringAttr v((const char *)mb.readDirect(l), l);
+                ret->setProp("@modified", v);
+            }
         }
         else
-            throw MakeStringException(-1,"Unknown GetFileTree serialization version %d",ver);
-        ret.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
-        fdesc->serializeTree(*ret,expandnodes?0:CPDMSF_packParts);
-        if (!modified.isNull()) {
-            StringBuffer dts;
-            ret->setProp("@modified",modified.getString(dts).str());
+        {
+            verifyex(2 == type); // no other valid possibility
+            ret.setown(createPTree(mb));
         }
     }
-    if (expandnodes) {
+    else
+    {
+        unsigned ver = 0;
+        if ((mb.length()>=sizeof(int))&&(*(int *)mb.bufferBase()) == -2) // version indicator
+        {
+            int i;
+            mb.read(i);
+            mb.read(ver);
+        }
+        if (ver==0)
+            ret.setown(createPTree(mb));
+        else
+        {
+            CDateTime modified;
+            if (ver==MDFS_GET_FILE_TREE_V2) // no longer in use but support for back compatibility
+            {
+                fdesc.setown(deserializeFileDescriptor(mb));
+                if (mb.remaining()>0)
+                    modified.deserialize(mb);
+            }
+            else
+                throw MakeStringException(-1,"Unknown GetFileTree serialization version %d",ver);
+            ret.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
+            fdesc->serializeTree(*ret,expandnodes?0:CPDMSF_packParts);
+            if (!modified.isNull())
+            {
+                StringBuffer dts;
+                ret->setProp("@modified",modified.getString(dts).str());
+            }
+        }
+    }
+    if (expandnodes)
+    {
         StringBuffer cname;
         dlfn.getCluster(cname);
         expandFileTree(ret,true,cname.str());
@@ -11304,7 +11430,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
 
 IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,false);
+    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,GetFileTreeOpts::appendForeign);
     if (!tree)
         return NULL;
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
@@ -11325,7 +11451,7 @@ IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,
 
 IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,false);
+    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,GetFileTreeOpts::appendForeign);
     if (!tree)
         return NULL;
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
@@ -12761,7 +12887,7 @@ bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &lo
 {
     if (logicalname.isExternal()||logicalname.isForeign()||logicalname.isQuery())
         return false;
-    Owned<IPropertyTree> file = getFileTree(logicalname.get(),user,NULL,FOREIGN_DALI_TIMEOUT,true);
+    Owned<IPropertyTree> file = getFileTree(logicalname.get(),user,NULL,FOREIGN_DALI_TIMEOUT,GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign);
     if (!file.get())
         return false;
     if (strcmp(file->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0)
