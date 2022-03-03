@@ -4885,7 +4885,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_hqlproject:
     case no_projectrow:
         {
-            if (isNullProject(expr, false, false))
+            if (isNullProject(expr, false, false) && !expr->hasAttribute(prefetchAtom))
                 return removeParentNode(expr);
             if (isNull(child))
                 return replaceWithNull(expr);
