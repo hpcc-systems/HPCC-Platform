@@ -55,7 +55,7 @@ spec:
       labels:
         run: {{ .name | quote }}
         accessDali: "yes"
-        helmVersion: 8.6.7-closedown0
+        helmVersion: 8.6.9-closedown0
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
