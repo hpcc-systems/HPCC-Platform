@@ -62,8 +62,9 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
 
     m_globalIndexTimestampField.set(DEFAULT_TS_NAME);
     m_globalIndexSearchPattern.set(DEFAULT_INDEX_PATTERN);
+    m_globalSearchColName.set(DEFAULT_HPCC_LOG_MESSAGE_COL);
 
-    m_classIndexSearchPattern.set(DEFAULT_HPCC_LOG_TYPE_COL);
+    m_classSearchColName.set(DEFAULT_HPCC_LOG_TYPE_COL);
     m_workunitSearchColName.set(DEFAULT_HPCC_LOG_JOBID_COL);
     m_componentsSearchColName.set(DEFAULT_HPCC_LOG_COMPONENT_COL);
     m_audienceSearchColName.set(DEFAULT_HPCC_LOG_AUD_COL);
