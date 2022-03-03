@@ -628,6 +628,8 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
             //efficient.  Delete the following lines once we have a count-diskread activity
             if (!isScalarAggregate && !(options & (HOOcompoundproject|HOOinsidecompound)) && !ds->hasAttribute(_countProject_Atom) )
                 break;
+
+            //NOTE, isPureActivity() will prevent aggregates being merged over PROJECTs that contain skips.
             if (isPureActivity(ds) && !isAggregateDataset(ds))
             {
                 OwnedMapper mapper = getMapper(ds);

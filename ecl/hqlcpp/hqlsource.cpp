@@ -1018,15 +1018,11 @@ void SourceBuilder::analyse(IHqlExpression * expr)
         }
         break;
     case no_hqlproject:
-        needToCallTransform = true;
-        needDefaultTransform = false;
-        if (!firstTransformer)
-            firstTransformer.set(expr);
-        lastTransformer.set(expr);
-        break;
     case no_newusertable:
         needToCallTransform = true;
         needDefaultTransform = false;
+        if (transformContainsSkip(queryNewColumnProvider(expr)))
+            transformCanFilter = true;
         if (!firstTransformer)
             firstTransformer.set(expr);
         lastTransformer.set(expr);
