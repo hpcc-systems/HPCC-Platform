@@ -4470,10 +4470,6 @@ public:
             { c->deleteTempFiles(graph, deleteOwned, deleteJobOwned); }
     virtual void deleteTemporaries()
             { c->deleteTemporaries(); }
-    virtual void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId)
-            { c->addDiskUsageStats(avgNodeUsage, minNode, minNodeUsage, maxNode, maxNodeUsage, graphId); }
-    virtual IPropertyTree * getDiskUsageStats()
-            { return c->getDiskUsageStats(); }
     virtual IPropertyTreeIterator & getFileIterator() const
             { return c->getFileIterator(); }
     virtual IPropertyTreeIterator & getFilesReadIterator() const
@@ -9508,41 +9504,6 @@ bool CLocalWorkUnit::getFieldUsageArray(StringArray & filenames, StringArray & c
     }
 
     return true;
-}
-
-IPropertyTree *CLocalWorkUnit::getDiskUsageStats()
-{
-    return p->getPropTree("DiskUsageStats");
-}
-
-void CLocalWorkUnit::addDiskUsageStats(__int64 _avgNodeUsage, unsigned _minNode, __int64 _minNodeUsage, unsigned _maxNode, __int64 _maxNodeUsage, __int64 _graphId)
-{
-    IPropertyTree *stats = p->queryPropTree("DiskUsageStats");
-    offset_t maxNodeUsage;
-    if (stats)
-        maxNodeUsage = stats->getPropInt64("@maxNodeUsage");
-    else
-    {
-        stats = p->addPropTree("DiskUsageStats");
-        maxNodeUsage = 0;
-    }
-
-    if ((offset_t)_maxNodeUsage > maxNodeUsage)
-    {
-        // record all details at time of max node usage.
-        stats->setPropInt("@minNode", _minNode);
-        stats->setPropInt("@maxNode", _maxNode);
-        stats->setPropInt64("@minNodeUsage", _minNodeUsage);
-        stats->setPropInt64("@maxNodeUsage", _maxNodeUsage);
-        stats->setPropInt64("@graphId", _graphId);
-        if (_avgNodeUsage)
-        {
-            unsigned _skewHi = (unsigned)((100 * (_maxNodeUsage-_avgNodeUsage))/_avgNodeUsage);
-            unsigned _skewLo = (unsigned)((100 * (_avgNodeUsage-_minNodeUsage))/_avgNodeUsage);
-            stats->setPropInt("@skewHi", _skewHi);
-            stats->setPropInt("@skewLo", _skewLo);
-        }
-    }
 }
 
 IPropertyTreeIterator & CLocalWorkUnit::getFileIterator() const

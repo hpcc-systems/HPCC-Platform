@@ -1394,7 +1394,6 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
     querySent = spillsSaved = false;
-    nodeDiskUsageCached = false;
 
     StringBuffer pluginsDir;
     globals->getProp("@pluginsPath", pluginsDir);
@@ -1563,35 +1562,6 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
         bitSet->set((unsigned)sender-1);
         if (respondents == groupSizeExcludingMaster)
             break;
-    }
-}
-
-void CJobMaster::initNodeDUCache()
-{
-    if (!nodeDiskUsageCached)
-    {
-        nodeDiskUsageCached = true;
-        Owned<IPropertyTreeIterator> fileIter = &workunit->getFileIterator();
-        ForEach (*fileIter)
-        {
-            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(fileIter->query().queryProp("@name"), userDesc, false, false, false, nullptr, defaultPrivilegedUser);
-            if (f)
-            {
-                unsigned n = f->numParts();
-                for (unsigned i=0;i<n;i++)
-                {
-                    Owned<IDistributedFilePart> part = f->getPart(i);
-                    offset_t sz = part->getFileSize(false, false);
-                    if (i>=nodeDiskUsage.ordinality())
-                        nodeDiskUsage.append(sz);
-                    else
-                    {
-                        sz += nodeDiskUsage.item(i);
-                        nodeDiskUsage.add(sz, i);
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -1936,28 +1906,6 @@ void CJobMaster::pause(bool doAbort)
         saveSpills();
         fatalHandler->inform(e.getClear());
     }
-}
-
-__int64 CJobMaster::queryNodeDiskUsage(unsigned node)
-{
-    initNodeDUCache();
-    if (!nodeDiskUsage.isItem(node)) return 0;
-    return nodeDiskUsage.item(node);
-}
-
-void CJobMaster::setNodeDiskUsage(unsigned node, __int64 sz)
-{
-    initNodeDUCache();
-    while (nodeDiskUsage.ordinality() <= node)
-        nodeDiskUsage.append(0);
-    nodeDiskUsage.replace(sz, node);
-}
-
-__int64 CJobMaster::addNodeDiskUsage(unsigned node, __int64 sz)
-{
-    sz += queryNodeDiskUsage(node);
-    setNodeDiskUsage(node, sz);
-    return sz;
 }
 
 bool CJobMaster::queryCreatedFile(const char *file)
@@ -2650,10 +2598,6 @@ void CMasterGraph::handleSlaveDone(unsigned node, MemoryBuffer &mb)
 
 void CMasterGraph::getFinalProgress()
 {
-    offset_t totalDiskUsage = 0;
-    offset_t minNodeDiskUsage = 0, maxNodeDiskUsage = 0;
-    unsigned maxNode = (unsigned)-1, minNode = (unsigned)-1;
-
     CMessageBuffer msg;
     mptag_t replyTag = queryJobChannel().queryMPServer().createReplyTag();
     msg.setReplyTag(replyTag);
@@ -2727,26 +2671,7 @@ void CMasterGraph::getFinalProgress()
                     }
                 }
             }
-            offset_t nodeDiskUsage;
-            msg.read(nodeDiskUsage);
-            jobM->setNodeDiskUsage(n, nodeDiskUsage);
-            if (nodeDiskUsage > maxNodeDiskUsage)
-            {
-                maxNodeDiskUsage = nodeDiskUsage;
-                maxNode = n;
-            }
-            if ((unsigned)-1 == minNode || nodeDiskUsage < minNodeDiskUsage)
-            {
-                minNodeDiskUsage = nodeDiskUsage;
-                minNode = n;
-            }
-            totalDiskUsage += nodeDiskUsage;
         }
-    }
-    if (totalDiskUsage)
-    {
-        Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
-        wu->addDiskUsageStats(totalDiskUsage/queryJob().querySlaves(), minNode, minNodeDiskUsage, maxNode, maxNodeDiskUsage, queryGraphId());
     }
 }
 

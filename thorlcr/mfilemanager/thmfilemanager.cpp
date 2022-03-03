@@ -433,21 +433,7 @@ public:
                     }
                 }
                 if (found)
-                {
                     workunit->releaseFile(logicalName);
-                    Owned<IDistributedFile> f = timedLookup(job, dlfn, false, true, job.queryMaxLfnBlockTimeMins() * 60000);
-                    if (f)
-                    {
-                        unsigned p, parts = f->numParts();
-                        for (p=0; p<parts; p++)
-                        {
-                            Owned<IDistributedFilePart> part = f->getPart(p);
-                            offset_t sz = part->getFileSize(false, false);
-                            if ((offset_t)-1 != sz)
-                                job.addNodeDiskUsage(p, -(__int64)sz);
-                        }
-                    }
-                }
             }
             if (efile.get())
             {

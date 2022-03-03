@@ -281,7 +281,7 @@ public:
         start();
 
         if (ensureStartFTLookAhead(0))
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this), false);
 
         if (refactor)
         {
@@ -603,8 +603,6 @@ public:
             Owned<IFile> ifile = createIFile(partFname.str());
             offset_t sz = ifile->size();
             mb.append(sz);
-            if ((offset_t)-1 != sz)
-                container.queryJob().queryIDiskUsage().increase(sz);
             CDateTime createTime, modifiedTime, accessedTime;
             ifile->getTime(&createTime, &modifiedTime, &accessedTime);
             modifiedTime.serialize(mb);
@@ -617,8 +615,6 @@ public:
                 ifile.setown(createIFile(path.str()));
                 sz = ifile->size();
                 mb.append(sz);
-                if ((offset_t)-1 != sz)
-                    container.queryJob().queryIDiskUsage().increase(sz);
                 ifile->getTime(&createTime, &modifiedTime, &accessedTime);
                 modifiedTime.serialize(mb);
             }

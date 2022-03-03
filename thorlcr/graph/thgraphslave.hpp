@@ -480,8 +480,6 @@ class graphslave_decl CJobSlave : public CJobBase
     unsigned actInitWaitTimeMins = DEFAULT_MAX_ACTINITWAITTIME_MINS;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *workUnitInfo, const char *graphName, ILoadedDllEntry *querySo, mptag_t _slavemptag);
 
     virtual CJobChannel *addChannel(IMPServer *mpServer) override;
