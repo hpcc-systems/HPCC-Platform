@@ -31,7 +31,8 @@ public:
     {
         try
         {
-            fileContents.loadFile(filename, false);
+            Owned<IFile> ifile = createIFile(filename);
+            fileContents.loadFile(ifile);
             const char *xml = fileContents.str();
             StringBuffer body;
             // Check for signature
@@ -180,7 +181,8 @@ bool ResourceManifest::checkResourceFilesExist()
     ForEach(*resources)
     {
         const char *filepath = resources->query().queryProp("@originalFilename");
-        if (!checkFileExists(filepath))
+        Owned<IFile> ifile = createIFile(filepath);
+        if (!ifile->exists())
         {
             UERRLOG("Error: RESOURCE file '%s' does not exist", filepath);
             return false;
@@ -272,7 +274,8 @@ void addManifestResourcesToArchive(IPropertyTree *archive, const char *filename)
 
 bool isManifestFileValid(const char *filename)
 {
-    if (!checkFileExists(filename))
+    Owned<IFile> ifile = createIFile(filename);
+    if (!ifile->exists())
     {
         UERRLOG("Error: MANIFEST file '%s' does not exist", filename);
         return false;
