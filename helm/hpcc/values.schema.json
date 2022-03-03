@@ -552,6 +552,10 @@
           "description": "the remote DFS service",
           "type": "string"
         },
+        "secret": {
+          "description": "the name of the secret containing the certificates to connect to the service",
+          "type": "string"
+        },
         "planes": {
           "description": "mapping of remote planes to local planes",
           "type": "array",
@@ -568,9 +572,25 @@
               }
             }
           }
-        }
+        },
+        "useDafilesrv": { "const": true }
       },
-      "required": [ "name", "service", "planes" ],
+      "oneOf":[
+        {
+          "required": [
+            "name",
+            "service",
+            "planes"
+          ]
+        },
+        {
+          "required": [
+            "name",
+            "service",
+            "useDafilesrv"
+          ]
+        }
+      ],
       "additionalProperties": false
     },
     "resources": {

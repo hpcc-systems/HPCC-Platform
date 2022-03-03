@@ -599,21 +599,11 @@ StringBuffer& CSecureSocket::get_cn(X509* cert, StringBuffer& cn)
 
 bool CSecureSocket::verify_cert(X509* cert)
 {
-    DBGLOG ("peer's certificate:\n");
-
     char *s, oneline[1024];
 
     s = X509_NAME_oneline (X509_get_subject_name (cert), oneline, 1024);
-    if(s != NULL)
-    {
-        DBGLOG ("\t subject: %s", oneline);
-    }
 
     s = X509_NAME_oneline (X509_get_issuer_name  (cert), oneline, 1024);
-    if(s != NULL)
-    {
-        DBGLOG ("\t issuer: %s", oneline);
-    }
 
     StringBuffer cn;
     get_cn(cert, cn);
@@ -639,10 +629,7 @@ bool CSecureSocket::verify_cert(X509* cert)
     }
     
     if (m_peers->contains("anyone") || m_peers->contains(cn.str()))
-    {
-        DBGLOG("%s among trusted peers", cn.str());
         return true;
-    }
     else
     {
         DBGLOG("%s not among trusted peers, verification failed", cn.str());

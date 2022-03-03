@@ -26,6 +26,7 @@
 
 #include "eclwatch_errorlist.hpp" // only for ECLWATCH_FILE_NOT_EXIST
 #include "soapmessage.hpp"
+#include "soapbind.hpp"
 
 #include "dafdesc.hpp"
 #include "dadfs.hpp"
@@ -316,70 +317,74 @@ public:
     CServiceDistributedFile(IDFSFile *_dfsFile) : PARENT(_dfsFile)
     {
         IPropertyTree *file = dfsFile->queryFileMeta()->queryPropTree("File");
-        const char *remotePlaneName = file->queryProp("@group");
-        VStringBuffer planeXPath("planes[@name=\"%s\"]", remotePlaneName);
-        IPropertyTree *filePlane = dfsFile->queryCommonMeta()->queryPropTree(planeXPath);
-        assertex(filePlane);
-        const char *remoteName = dfsFile->queryRemoteName(); // NB: null if local
 
+        const char *remoteName = dfsFile->queryRemoteName(); // NB: null if local
         if (!isEmptyString(remoteName))
         {
-            // Path translation is necessary, because the local plane will not necessarily have the same
-            // prefix. In particular, both a local and remote plane may want to use the same prefix/mount.
-            // So, the local plane will be defined with a unique prefix locally.
-            // Files backed by URL's or hostGroups will be access directly, are not mounted, and do not require
-            // this translation.
-            const char *filePlanePrefix = filePlane->queryProp("@prefix");
-            if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("@hosts")) // otherwise assume url
+            Owned<IPropertyTree> remoteStorage = getRemoteStorage(remoteName);
+            if (!remoteStorage)
+                throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName);
+            if (!remoteStorage->getPropBool("@useDafilesrv"))
             {
+                // Path translation is necessary, because the local plane will not necessarily have the same
+                // prefix. In particular, both a local and remote plane may want to use the same prefix/mount.
+                // So, the local plane will be defined with a unique prefix locally.
+                // Files backed by URL's or hostGroups will be access directly, are not mounted, and do not require
+                // this translation.
+
+                const char *remotePlaneName = file->queryProp("@group");
+                VStringBuffer planeXPath("planes[@name=\"%s\"]", remotePlaneName);
+                IPropertyTree *filePlane = dfsFile->queryCommonMeta()->queryPropTree(planeXPath);
+                assertex(filePlane);
+                const char *filePlanePrefix = filePlane->queryProp("@prefix");
+                if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("@hosts")) // otherwise assume url
+                {
 #ifndef _CONTAINERIZED
-                throw makeStringException(0, "Bare metal does not support remote file access to planes without hosts");
+                    throw makeStringException(0, "Bare metal does not support remote file access to planes without hosts");
 #endif
-                // A external plane within another environment backed by a PVC, will need a pre-existing
-                // corresponding plane and PVC in the local environment.
-                // The local plane will be associated with the remote environment, via a storage/remote mapping.
+                    // A external plane within another environment backed by a PVC, will need a pre-existing
+                    // corresponding plane and PVC in the local environment.
+                    // The local plane will be associated with the remote environment, via a storage/remote mapping.
 
-                Owned<IPropertyTree> remoteStorage = getRemoteStorage(remoteName);
-                if (!remoteStorage)
-                    throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName);
-                VStringBuffer remotePlaneXPath("planes[@remote='%s']/@local", remotePlaneName);
-                const char *localMappedPlaneName = remoteStorage->queryProp(remotePlaneXPath);
-                if (isEmptyString(localMappedPlaneName))
-                    throw makeStringExceptionV(0, "Remote plane '%s' not found in remote storage definition '%s'", remotePlaneName, remoteName);
+                    VStringBuffer remotePlaneXPath("planes[@remote='%s']/@local", remotePlaneName);
+                    const char *localMappedPlaneName = remoteStorage->queryProp(remotePlaneXPath);
+                    if (isEmptyString(localMappedPlaneName))
+                        throw makeStringExceptionV(0, "Remote plane '%s' not found in remote storage definition '%s'", remotePlaneName, remoteName);
 
-                Owned<IStoragePlane> localPlane = getRemoteStoragePlane(localMappedPlaneName, false);
-                if (!localPlane)
-                    throw makeStringExceptionV(0, "Local plane not found, mapped to by remote storage '%s' (%s->%s)", remoteName, remotePlaneName, localMappedPlaneName);
+                    Owned<IStoragePlane> localPlane = getRemoteStoragePlane(localMappedPlaneName, false);
+                    if (!localPlane)
+                        throw makeStringExceptionV(0, "Local plane not found, mapped to by remote storage '%s' (%s->%s)", remoteName, remotePlaneName, localMappedPlaneName);
 
-                DBGLOG("Remote logical file '%s' using remote storage '%s', mapping remote plane '%s' to local plane '%s'", logicalName.str(), remoteName, remotePlaneName, localMappedPlaneName);
+                    DBGLOG("Remote logical file '%s' using remote storage '%s', mapping remote plane '%s' to local plane '%s'", logicalName.str(), remoteName, remotePlaneName, localMappedPlaneName);
 
-                StringBuffer filePlanePrefix;
-                filePlane->getProp("@prefix", filePlanePrefix);
-                if (filePlane->hasProp("@subPath"))
-                    filePlanePrefix.append('/').append(filePlane->queryProp("@subPath"));
+                    StringBuffer filePlanePrefix;
+                    filePlane->getProp("@prefix", filePlanePrefix);
+                    if (filePlane->hasProp("@subPath"))
+                        filePlanePrefix.append('/').append(filePlane->queryProp("@subPath"));
 
-                // the plane prefix should match the base of file's base directory
-                // Q: what if the plane has been redefined since the files were created?
+                    // the plane prefix should match the base of file's base directory
+                    // Q: what if the plane has been redefined since the files were created?
 
-                VStringBuffer clusterXPath("Cluster[@name=\"%s\"]", remotePlaneName);
-                IPropertyTree *cluster = file->queryPropTree(clusterXPath);
-                assertex(cluster);
-                const char *clusterDir = cluster->queryProp("@defaultBaseDir");
-                assertex(startsWith(clusterDir, filePlanePrefix));
-                clusterDir += filePlanePrefix.length();
-                StringBuffer newPath(localPlane->queryPrefix());
-                if (strlen(clusterDir))
-                    newPath.append(clusterDir); // add remaining tail of path
-                cluster->setProp("@defaultBaseDir", newPath.str());
+                    VStringBuffer clusterXPath("Cluster[@name=\"%s\"]", remotePlaneName);
+                    IPropertyTree *cluster = file->queryPropTree(clusterXPath);
+                    assertex(cluster);
+                    const char *clusterDir = cluster->queryProp("@defaultBaseDir");
+                    assertex(startsWith(clusterDir, filePlanePrefix));
+                    clusterDir += filePlanePrefix.length();
+                    StringBuffer newPath(localPlane->queryPrefix());
+                    if (strlen(clusterDir))
+                        newPath.append(clusterDir); // add remaining tail of path
+                    cluster->setProp("@defaultBaseDir", newPath.str());
 
-                const char *dir = file->queryProp("@directory");
-                assertex(startsWith(dir, filePlanePrefix));
-                dir += filePlanePrefix.length();
-                newPath.clear().append(localPlane->queryPrefix());
-                if (strlen(dir))
-                    newPath.append(dir); // add remaining tail of path
-                DBGLOG("Remapping logical file directory to '%s'", newPath.str());
-                file->setProp("@directory", newPath.str());
+                    const char *dir = file->queryProp("@directory");
+                    assertex(startsWith(dir, filePlanePrefix));
+                    dir += filePlanePrefix.length();
+                    newPath.clear().append(localPlane->queryPrefix());
+                    if (strlen(dir))
+                        newPath.append(dir); // add remaining tail of path
+                    DBGLOG("Remapping logical file directory to '%s'", newPath.str());
+                    file->setProp("@directory", newPath.str());
+                }
             }
         }
         fileDesc.setown(deserializeFileDescriptorTree(file));
@@ -556,16 +561,67 @@ IClientWsDfs *getDfsClient(const char *serviceUrl, IUserDescriptor *userDesc)
     return dfsClient.getClear();
 }
 
+static CriticalSection localSecretCrit;
+static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretName)
+{
+    /*
+     * This is a bit of a kludge, it gets the certificates from secrets, and writes them to local temp strorage.
+     * It does this so that it can pass the filename paths to rpc ssl / secure socket layer, which currently only
+     * accepts filenames, not binary blobs from memory.
+     */
+    StringBuffer clientCertFilename, clientPrivateKeyFilename, caCertFilename;
+
+    StringBuffer tempDirStr;
+    verifyex(getConfigurationDirectory(getGlobalConfigSP()->queryPropTree("Directories"), "temp", "ssl", "ssl", tempDirStr));
+    addPathSepChar(tempDirStr);
+    tempDirStr.append(secretName);
+    addPathSepChar(tempDirStr);
+
+    clientCertFilename.append(tempDirStr).append("tls.crt");
+    clientPrivateKeyFilename.append(tempDirStr).append("tls.key");
+    caCertFilename.append(tempDirStr).append("ca.crt");
+
+    CriticalBlock b(localSecretCrit);
+    if (!checkDirExists(tempDirStr.str()))
+    {
+        Owned<IFile> dir = createIFile(tempDirStr.str());
+        dir->createDirectory();
+        StringBuffer secretValue;
+
+        Owned<IFile> file = createIFile(clientCertFilename);
+        Owned<IFileIO> io = file->open(IFOcreate);
+        getSecretValue(secretValue, "storage", secretName, "tls.crt", true);
+        io->write(0, secretValue.length(), secretValue.str());
+        io->close();
+
+        file.setown(createIFile(clientPrivateKeyFilename));
+        io.setown(file->open(IFOcreate));
+        getSecretValue(secretValue.clear(), "storage", secretName, "tls.key", true);
+        io->write(0, secretValue.length(), secretValue.str());
+        io->close();
+
+        file.setown(createIFile(caCertFilename));
+        io.setown(file->open(IFOcreate));
+        getSecretValue(secretValue.clear(), "storage", secretName, "ca.crt", true);
+        io->write(0, secretValue.length(), secretValue.str());
+        io->close();
+    }
+    setRpcSSLOptions(rpc, true, clientCertFilename, clientPrivateKeyFilename, caCertFilename, false);
+}
+
 static CriticalSection serviceLeaseMapCS;
 static std::unordered_map<std::string, unsigned __int64> serviceLeaseMap;
-unsigned __int64 ensureClientLease(const char *service, IUserDescriptor *userDesc)
+unsigned __int64 ensureClientLease(IClientWsDfs *dfsClient, const char *service, const char *secretName, IUserDescriptor *userDesc)
 {
     CriticalBlock block(serviceLeaseMapCS);
     auto r = serviceLeaseMap.find(service);
     if (r != serviceLeaseMap.end())
         return r->second;
 
-    Owned<IClientWsDfs> dfsClient = getDfsClient(service, userDesc);
+    Owned<IClientLeaseRequest> leaseReq = dfsClient->createGetLeaseRequest();
+    if (!isEmptyString(secretName))
+        configureClientSSL(leaseReq->rpc(), secretName);
+    leaseReq->setKeepAliveExpiryFrequency(keepAliveExpiryFrequency);
 
     Owned<IClientLeaseResponse> leaseResp;
 
@@ -575,8 +631,6 @@ unsigned __int64 ensureClientLease(const char *service, IUserDescriptor *userDes
     {
         try
         {
-            Owned<IClientLeaseRequest> leaseReq = dfsClient->createGetLeaseRequest();
-            leaseReq->setKeepAliveExpiryFrequency(keepAliveExpiryFrequency);
             leaseResp.setown(dfsClient->GetLease(leaseReq));
 
             unsigned __int64 leaseId = leaseResp->getLeaseId();
@@ -613,21 +667,28 @@ IDFSFile *lookupDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned 
     lfn.set(logicalName);
     StringBuffer remoteName, remoteLogicalFileName;
     StringBuffer serviceUrl;
+    StringBuffer serviceSecret;
+    bool useDafilesrv = false;
     if (lfn.isRemote())
     {
         verifyex(lfn.getRemoteSpec(remoteName, remoteLogicalFileName));
 
-        if (!strieq(remoteName, "local")) // "local" is a reserve remote name, used to mean the local environment.
+        // "local" is a reserved remote name, used to mean the local environment
+        // which will be auto-discovered.
+        if (!strieq(remoteName, "local"))
         {
             Owned<IPropertyTree> remoteStorage = getRemoteStorage(remoteName.str());
             if (!remoteStorage)
                 throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName.str());
             serviceUrl.set(remoteStorage->queryProp("@service"));
+            serviceSecret.set(remoteStorage->queryProp("@secret"));
             logicalName = remoteLogicalFileName;
+            useDafilesrv = remoteStorage->getPropBool("@useDafilesrv");
         }
     }
     if (!serviceUrl.length())
     {
+        // auto-discover local environment dfs service.
 #ifdef _CONTAINERIZED
         // NB: only expected to be here if experimental option #option('dfsesp-localfiles', true); is in use.
         // This finds and uses local dfs service for local read lookukup.
@@ -660,27 +721,31 @@ IDFSFile *lookupDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned 
         remoteName.clear(); // local
 #endif
     }
+    bool useSSL = startsWith(serviceUrl, "https");
+    if (!useSSL)
+        serviceSecret.clear();
 
     DBGLOG("Looking up file '%s' on '%s'", logicalName, serviceUrl.str());
     Owned<IClientWsDfs> dfsClient = getDfsClient(serviceUrl, userDesc);
 
-    Owned<IClientDFSFileLookupResponse> dfsResp;
+    unsigned __int64 clientLeaseId = ensureClientLease(dfsClient, serviceUrl, serviceSecret, userDesc);
 
-    CTimeMon tm(timeoutSecs*1000); // NB: this timeout loop is to cater for *a* esp disappearing.
+    Owned<IClientDFSFileLookupResponse> dfsResp;
+    Owned<IClientDFSFileLookupRequest> dfsReq = dfsClient->createDFSFileLookupRequest();
+    if (useSSL && serviceSecret.length())
+        configureClientSSL(dfsReq->rpc(), serviceSecret.str());
+    dfsReq->setAccessViaDafilesrv(useDafilesrv);
+    dfsReq->setName(logicalName);
+    dfsReq->setLeaseId(clientLeaseId);
+    CTimeMon tm(timeoutSecs*1000); // NB: this timeout loop is to cater for *a* esp disappearing (e.g. if behind load balancer)
     while (true)
     {
         try
         {
-            Owned<IClientDFSFileLookupRequest> dfsReq = dfsClient->createDFSFileLookupRequest();
-
-            dfsReq->setName(logicalName);
             unsigned remaining;
             if (tm.timedout(&remaining))
                 break;
             dfsReq->setRequestTimeout(remaining/1000);
-            unsigned __int64 clientLeaseId = ensureClientLease(serviceUrl, userDesc);
-            dfsReq->setLeaseId(clientLeaseId);
-
             dfsResp.setown(dfsClient->DFSFileLookup(dfsReq));
 
             const IMultiException *excep = &dfsResp->getExceptions(); // NB: warning despite getXX name, this does not Link
