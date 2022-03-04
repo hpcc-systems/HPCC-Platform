@@ -104,12 +104,12 @@ push_image() {
   if [ "$LATEST" = "1" ] ; then
     docker tag ${DEST_DOCKER_REPO}/${name}:${label} ${DEST_DOCKER_REPO}/${name}:latest
     if [ "$PUSH" = "1" ] ; then
-      docker push ${DEST_DOCKER_REPO}/${name}:${label} ${DEST_DOCKER_REGISTRY}
-      docker push ${DEST_DOCKER_REPO}/${name}:latest ${DEST_DOCKER_REGISTRY}
+      docker push ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label}
+      docker push ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:latest
     fi
   else
     if [ "$PUSH" = "1" ] ; then
-      docker push ${DEST_DOCKER_REPO}/${name}:${label} ${DEST_DOCKER_REGISTRY}
+      docker push ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label}
     fi
   fi
 }
