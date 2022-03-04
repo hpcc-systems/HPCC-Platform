@@ -13,17 +13,17 @@ inputs:
   password:
     description: 'The login password for docker hub'
     required: true
-  build_type:
-    description: 'The build type - Debug, RelWithDebInfo, or Release'
-    required: false
-  build_label:
-    description: 'The docker version tag'
-    required: false
   docker_repo:
     description: 'The name of the docker repository to pull and push to/from'
     required: false
   registry:
     description: 'The docker image registry to log in to for image pushes'
+    required: false
+  build_type:
+    description: 'The build type - Debug, RelWithDebInfo, or Release'
+    required: false
+  build_label:
+    description: 'The docker version tag'
     required: false
   latest:
     description: 'Set to 1 to also tag as latest when maturity is release'
@@ -36,6 +36,18 @@ inputs:
     required: false
   build_ln:
     description: 'Build the ln images'
+    required: false
+  ln_username:
+    description: 'The login username for ln repository'
+    required: true
+  ln_password:
+    description: 'The login password for ln repository'
+    required: true
+  ln_docker_repo:
+    description: 'The name of the docker repository to push ln images to'
+    required: false
+  ln_registry:
+    description: 'The docker image registry to log in to for ln image pushes'
     required: false
 outputs:
   tag:

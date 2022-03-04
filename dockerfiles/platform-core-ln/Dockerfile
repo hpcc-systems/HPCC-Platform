@@ -19,7 +19,8 @@
 
 ARG BUILD_LABEL
 ARG DOCKER_REPO
-FROM ${DOCKER_REPO}/platform-build-ln:${BUILD_LABEL} as plugins
+ARG DEST_DOCKER_REPO
+FROM ${DEST_DOCKER_REPO}/platform-build-ln:${BUILD_LABEL} as plugins
 FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 ENV DEBIAN_FRONTEND=noninteractive
 
