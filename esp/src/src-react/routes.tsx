@@ -193,7 +193,7 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["topology"],
-        path: "/monitoring", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="MonitoringWidget" />)
+        path: "/monitoring", action: () => import("./components/Monitoring").then(_ => <_.Monitoring />)
     },
     {
         mainNav: ["topology"],
