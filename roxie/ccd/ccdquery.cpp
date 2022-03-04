@@ -2022,15 +2022,15 @@ IQueryFactory *createAgentQueryFactory(const char *id, const IQueryDll *dll, con
         return cached;
     }
     if (dll)
-    {
-        checkWorkunitVersionConsistency(dll);
-            Owned<IQueryFactory> serverFactory = CQueryFactory::getCachedQuery(hashValue, 0);
-            ret.setown(new CSlaveQueryFactory(id, dll, package, hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic));
-        newFactory->load(stateInfo);
-        return newFactory.getClear();
-    }
-    else
-            ret.setown(new CSlaveQueryFactory(id, NULL, package, hashValue, channel, NULL, isDynamic));
+     {
+         checkWorkunitVersionConsistency(dll);
+         Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, false, forceRetry); // Should always find a cached one
+         Owned<CAgentQueryFactory> newFactory = new CAgentQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic);
+         newFactory->load(stateInfo);
+         return newFactory.getClear();
+     }
+     else
+         return new CAgentQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, NULL, isDynamic);
 }
 
 extern IQueryFactory *createAgentQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo)
