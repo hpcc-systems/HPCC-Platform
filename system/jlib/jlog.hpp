@@ -153,15 +153,15 @@ inline const char * LogMsgAudienceToFixString(LogMsgAudience audience)
     switch(audience)
     {
     case MSGAUD_operator:
-        return("OPR ");
+        return("OPR");
     case MSGAUD_user:
-        return("USR ");
+        return("USR");
     case MSGAUD_programmer:
-        return("PRG ");
+        return("PRG");
     case MSGAUD_audit:
-        return("AUD ");
+        return("AUD");
     default:
-        return("UNK ");
+        return("UNK");
     }
 }
 inline MessageAudience LogMsgAudFromAbbrev(char const * abbrev)
@@ -205,19 +205,19 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
     switch(msgClass)
     {
     case MSGCLS_disaster:
-        return("DIS ");
+        return("DIS");
     case MSGCLS_error:
-        return("ERR ");
+        return("ERR");
     case MSGCLS_warning:
-        return("WRN ");
+        return("WRN");
     case MSGCLS_information:
-        return("INF ");
+        return("INF");
     case MSGCLS_progress:
-        return("PRO ");
+        return("PRO");
     case MSGCLS_metric:
-        return("MET ");
+        return("MET");
     default:
-        return("UNK ");
+        return("UNK");
     }
 }
 
