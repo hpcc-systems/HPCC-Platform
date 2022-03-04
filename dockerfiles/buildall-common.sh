@@ -83,7 +83,7 @@ build_image() {
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
   if [ "$rebuild" = "1" ] || ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
-    docker image build -t ${DEST_DOCKER_REPO}/${name}:${label} \
+    docker image build -t ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
        --build-arg DOCKER_REPO=${DOCKER_REPO} \
        --build-arg BUILD_TAG=${buildTag} \
@@ -102,7 +102,7 @@ push_image() {
   local name=$1
   local label=$2
   if [ "$LATEST" = "1" ] ; then
-    docker tag ${DEST_DOCKER_REPO}/${name}:${label} ${DEST_DOCKER_REPO}/${name}:latest
+    docker tag ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label} ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:latest
     if [ "$PUSH" = "1" ] ; then
       docker push ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label}
       docker push ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:latest
