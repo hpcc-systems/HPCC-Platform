@@ -82,11 +82,11 @@ build_image() {
 
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
-  if [ "$rebuild" = "1" ] || ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
+  if [ "$rebuild" = "1" ] || ! docker pull ${DEST_DOCKER_REGISTRY}/${DOCKER_REPO}/${name}:${label} ; then
     docker image build -t ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
        --build-arg DOCKER_REPO=${DOCKER_REPO} \
-       --build-arg DEST_DOCKER_REPO=${DEST_DOCKER_REPO} \
+       --build-arg DEST_DOCKER_REPO=${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO} \
        --build-arg BUILD_TAG=${buildTag} \
        --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_USER=${BUILD_USER} \
