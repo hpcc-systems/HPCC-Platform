@@ -91,7 +91,7 @@ jobs:
         if: ${{ matrix.os == 'macos-11' }}
         shell: "bash"
         run: |
-          brew install bison flex pkg-config automake libtool cmake
+          brew install bison flex pkg-config automake libtool java
 
       - name: "Remove builtin vcpkg"
         working-directory: .

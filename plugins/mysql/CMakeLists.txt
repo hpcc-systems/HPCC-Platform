@@ -58,7 +58,9 @@ if(MYSQLEMBED)
             ${MYSQL_LIBRARIES}
             eclrtl
             roxiemem
-            jlib)
+            jlib
+            ${ZLIB_LIBRARIES}
+            )
     endif()
 endif()
 
