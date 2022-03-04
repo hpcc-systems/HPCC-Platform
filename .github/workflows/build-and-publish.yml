@@ -55,10 +55,12 @@ jobs:
     - name: Build
       uses: ./dockerfiles
       with:
-        username: ${{ secrets.JFROG_USERNAME }}
-        password: ${{ secrets.JFROG_PASSWORD }}
-        registry: ${{ secrets.JFROG_REGISTRY }}
-        docker_repo: ${{ secrets.JFROG_REPOSITORY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        ln_username: ${{ secrets.JFROG_USERNAME }}
+        ln_password: ${{ secrets.JFROG_PASSWORD }}
+        ln_registry: ${{ secrets.JFROG_REGISTRY }}
+        ln_docker_repo: ${{ secrets.JFROG_REPOSITORY }}
         lnb_token: ${{ secrets.LNB_TOKEN }}
         latest: 1   # this should only be set on the current minor branch
         build_ln: 1

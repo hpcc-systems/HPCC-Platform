@@ -36,6 +36,11 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
+if [[ -n ${INPUT_LN_USERNAME} ]] ; then
+  echo ${INPUT_LN_PASSWORD} | docker login -u ${INPUT_LN_USERNAME} --password-stdin ${INPUT_LN_REGISTRY}
+  PUSH_LN=1
+fi
+
 BUILD_ML=    # all or ml,gnn,gnn-gpu
 [[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
 

@@ -1945,6 +1945,11 @@ public:
         str.set(name.get());
         return str;
     }
+    virtual bool isQueriesOnly() const override
+    {
+        //In bare metal environment, roxie is not QueriesOnly.
+        return false;
+    }
     virtual const StringArray & getThorProcesses() const override
     {
         return thorProcesses;

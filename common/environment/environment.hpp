@@ -274,6 +274,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getChannelsPerNode() const = 0;
     virtual int getRoxieReplicateOffset() const = 0;
     virtual const char *getAlias() const = 0;
+    virtual bool isQueriesOnly() const = 0;
 };
 
 typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
