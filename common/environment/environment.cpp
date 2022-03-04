@@ -2839,6 +2839,11 @@ public:
     {
         return ldapPassword.str();
     }
+    bool isQueriesOnly() const
+    {
+        //In bare metal environment, roxie is not QueriesOnly.
+        return false;
+    }
 };
 
 IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const char *type, const char *suffix)

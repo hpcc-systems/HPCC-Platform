@@ -1271,50 +1271,30 @@ bool CWsPackageProcessEx::onGetPackageMapSelectOptions(IEspContext &context, IEs
             getWUClusterInfo(clusters);
             ForEachItemIn(c, clusters)
             {
-                SCMStringBuffer str;
                 IConstWUClusterInfo &cluster = clusters.item(c);
-                Owned<IEspTargetData> target = createTargetData("", "");
-                target->setName(cluster.getName(str).str());
-                ClusterType clusterType = cluster.getPlatform();
-                if (clusterType == ThorLCRCluster)
-                    target->setType(THORCLUSTER);
-                else if (clusterType == RoxieCluster)
+#ifndef _CONTAINERIZED
+                if (cluster.getPlatform() == RoxieCluster)
+#else
+                if ((cluster.getPlatform() == RoxieCluster) && cluster.isQueriesOnly())
+#endif
+                {
+                    SCMStringBuffer str;
+                    Owned<IEspTargetData> target = createTargetData();
+                    target->setName(cluster.getName(str).str());
                     target->setType(ROXIECLUSTER);
-                else
-                    target->setType(HTHORCLUSTER);
-                if (!includeProcesses)
-                {
-                    targets.append(*target.getClear());
-                    continue;
-                }
-                StringArray processes;
-                if (clusterType == ThorLCRCluster)
-                {
-                    const StringArray &thors = cluster.getThorProcesses();
-                    ForEachItemIn(i, thors)
+                    if (includeProcesses)
                     {
-                        const char* process = thors.item(i);
-                        if (process && *process)
-                            processes.append(process);
+                        SCMStringBuffer process;
+                        cluster.getRoxieProcess(process);
+                        if (process.length())
+                        {
+                            StringArray processes;
+                            processes.append(process.str());
+                            target->setProcesses(processes);
+                        }
                     }
+                    targets.append(*target.getClear());
                 }
-                else if (clusterType == RoxieCluster)
-                {
-                    SCMStringBuffer process;
-                    cluster.getRoxieProcess(process);
-                    if (process.length())
-                        processes.append(process.str());
-                }
-                else if (clusterType == HThorCluster)
-                {
-                    SCMStringBuffer process;
-                    cluster.getAgentQueue(process);
-                    if (process.length())
-                        processes.append(process.str());
-                }
-                if (processes.length())
-                    target->setProcesses(processes);
-                targets.append(*target.getClear());
             }
             resp.setTargets(targets);
         }
