@@ -425,6 +425,7 @@ class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 protected:
     static CResolvedFileCache daliFiles;
     static CriticalSection daliLookupCrits[NUM_DALI_CRITS];
+    mutable CriticalSection fileCacheCrit;
     mutable CResolvedFileCache fileCache;
     IArrayOf<IResolvedFile> files;  // Used when preload set
     IArrayOf<IKeyArray> keyArrays;  // Used when preload set
@@ -541,51 +542,55 @@ protected:
         // Order of resolution: 
         // 1. Files named in package
         // 2. Files named in bases
-
-        IResolvedFile* result = useCache ? fileCache.lookupCache(fileName) : NULL;
-        if (result)
-            return result;
-
-        Owned<const ISimpleSuperFileEnquiry> subFileInfo = resolveSuperFile(fileName);
-        if (subFileInfo)
         {
-            unsigned numSubFiles = subFileInfo->numSubFiles();
-            // Note: do not try to optimize the common case of a single subfile
-            // as we still want to report the superfile info from the resolvedFile
-            Owned<IResolvedFileCreator> super;
-            for (unsigned idx = 0; idx < numSubFiles; idx++)
+            //Protect fileCache with a critical section - if it is going to be read or written
+            CLeavableCriticalBlock block(fileCacheCrit, useCache||cacheResult);
+            IResolvedFile* result = useCache ? fileCache.lookupCache(fileName) : NULL;
+            if (result)
+                return result;
+
+            Owned<const ISimpleSuperFileEnquiry> subFileInfo = resolveSuperFile(fileName);
+            if (subFileInfo)
             {
-                StringBuffer subFileName;
-                subFileInfo->getSubFileName(idx, subFileName);
-                if (subFileName.length())  // Empty subfile names can come from package file - just ignore
+                unsigned numSubFiles = subFileInfo->numSubFiles();
+                // Note: do not try to optimize the common case of a single subfile
+                // as we still want to report the superfile info from the resolvedFile
+                Owned<IResolvedFileCreator> super;
+                for (unsigned idx = 0; idx < numSubFiles; idx++)
                 {
-                    if (subFileName.charAt(0)=='~')
+                    StringBuffer subFileName;
+                    subFileInfo->getSubFileName(idx, subFileName);
+                    if (subFileName.length())  // Empty subfile names can come from package file - just ignore
                     {
-                        // implies that a package file had ~ in subfile names - shouldn't really, but we allow it (and just strip the ~)
-                        subFileName.remove(0,1);
-                    }
-                    if (traceLevel > 9)
-                        DBGLOG("Looking up subfile %s", subFileName.str());
-                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false, false, isPrivilegedUser);  // NOTE - overwriting a superfile does NOT require write access to subfiles
-                    if (subFileInfo)
-                    {
-                        if (!super)
-                            super.setown(createResolvedFile(fileName, NULL, true));
-                        super->addSubFile(subFileInfo);
+                        if (subFileName.charAt(0)=='~')
+                        {
+                            // implies that a package file had ~ in subfile names - shouldn't really, but we allow it (and just strip the ~)
+                            subFileName.remove(0,1);
+                        }
+                        if (traceLevel > 9)
+                            DBGLOG("Looking up subfile %s", subFileName.str());
+                        Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false, false, isPrivilegedUser);  // NOTE - overwriting a superfile does NOT require write access to subfiles
+                        if (subFileInfo)
+                        {
+                            if (!super)
+                                super.setown(createResolvedFile(fileName, NULL, true));
+                            super->addSubFile(subFileInfo);
+                        }
                     }
                 }
+                if (super && cacheResult)
+                    fileCache.addCache(fileName, super);
+                return super.getClear();
             }
-            if (super && cacheResult)
-                fileCache.addCache(fileName, super);
-            return super.getClear();
+            result = resolveLFNusingPackage(fileName);
+            if (result)
+            {
+                if (cacheResult)
+                    fileCache.addCache(fileName, result);
+                return result;
+            }
         }
-        result = resolveLFNusingPackage(fileName);
-        if (result)
-        {
-            if (cacheResult)
-                fileCache.addCache(fileName, result);
-            return result;
-        }
+
         aindex_t count = getBaseCount();
         for (aindex_t i = 0; i < count; i++)
         {
@@ -925,6 +930,9 @@ protected:
     StringAttr querySetName;
     CriticalSection crit;   // For parallel load
 
+    //NOTE: When parallel loading, first all queries are loaded, then all aliases are added.
+    //This means that addAlias only needs to protect aliases with a critical section, since queries cannot change.
+    //Once load is complete queries and aliases are immutable
     void addQuery(const char *id, IQueryFactory *n)
     {
         {
