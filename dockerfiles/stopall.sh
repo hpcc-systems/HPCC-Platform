@@ -61,7 +61,7 @@ fi
 
 if [[ $force == 1 ]] ; then
   sleep 1
-  for f in `kubectl get pods | grep -q ^NAME | awk '{print $1}'` ; do
+  for f in `kubectl get pods | grep -v ^NAME | awk '{print $1}'` ; do
     kubectl delete pod $f --force --grace-period=0
   done
 fi
