@@ -522,6 +522,7 @@ export = {
         NoWarningFound: "No warnings found\n",
         NumberofParts: "Number of Parts",
         NumberofSlaves: "Number of Slaves",
+        Of: "Of",
         Off: "Off",
         OK: "OK",
         Oldest: "Oldest",

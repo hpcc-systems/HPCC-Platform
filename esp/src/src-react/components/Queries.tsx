@@ -279,5 +279,6 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             </>
         }
         footer={<GridPagination />}
+        footerStyles={{}}
     />;
 };
