@@ -38,7 +38,8 @@ Pass in dict with root and me
 {{- $eclAgentJobName := printf "%s-_HPCC_JOBNAME_" $eclAgentType }}
 {{- $thorManagerJobName := printf "thormanager-_HPCC_JOBNAME_" }}
 {{- $thorWorkerJobName := printf "thorworker-_HPCC_JOBNAME_" }}
-{{- $thorNetworkPolicyName := printf "thornetworkpolicy-_HPCC_JOBNAME_" }}
+{{- $thorManagerNetworkPolicyName := printf "thormanager-networkpolicy-_HPCC_JOBNAME_" }}
+{{- $thorWorkerNetworkPolicyName := printf "thorworker-networkpolicy-_HPCC_JOBNAME_" }}
 {{- $numWorkersPerPod := .me.numWorkersPerPod | default 1 }}
 {{- $configCtx := . -}}
 apiVersion: v1 
@@ -268,7 +269,7 @@ data:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: {{ $thorNetworkPolicyName }}
+      name: {{ $thorManagerNetworkPolicyName }}
     spec:
       podSelector:
         matchLabels:
@@ -291,7 +292,7 @@ data:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: {{ $thorNetworkPolicyName }}
+      name: {{ $thorWorkerNetworkPolicyName }}
     spec:
       podSelector:
         matchLabels:

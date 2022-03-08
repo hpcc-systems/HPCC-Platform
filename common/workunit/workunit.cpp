@@ -14471,7 +14471,10 @@ void runK8sJob(const char *componentName, const char *wuid, const char *job, con
         exception.setown(e);        
     }
     if (removeNetwork)
-        deleteK8sResource(componentName, job, "networkpolicy");
+    {
+        VStringBuffer npname("%s-networkpolicy", componentName);
+        deleteK8sResource(npname, job, "networkpolicy");
+    }
     if (exception)
         throw exception.getClear();
 }
