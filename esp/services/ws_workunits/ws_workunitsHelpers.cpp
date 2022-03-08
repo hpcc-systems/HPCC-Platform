@@ -3740,8 +3740,7 @@ void CWsWuFileHelper::cleanFolder(IFile* folder, bool removeFolder)
     ForEach(*iter)
     {
         OwnedIFile thisFile = createIFile(iter->query().queryFilename());
-        if (thisFile->isFile() == fileBool::foundYes)
-            thisFile->remove();
+        thisFile->remove();
     }
     if (removeFolder)
         folder->remove();
@@ -3854,9 +3853,9 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
 #endif
 
 void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, const char* thorIP, const char* problemDesc,
-    const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* pathNameStr)
+    const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* tempDirName)
 {
-    VStringBuffer fileName("%s.txt", pathNameStr);
+    VStringBuffer fileName("%s%c%s.txt", tempDirName, PATHSEPCHAR, cwu->queryWuid());
     Owned<IFileIOStream> outFile = createBufferedIOStreamFromFile(fileName.str(), IFOcreate);
     if(outFile == nullptr)
         throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for ZAP Info file %s", fileName.str());
@@ -3932,15 +3931,15 @@ void CWsWuFileHelper::writeZAPWUInfoToIOStream(IFileIOStream* outFile, const cha
     outFile->write(4, "\r\n\r\n");
 }
 
-void CWsWuFileHelper::createZAPWUXMLFile(WsWuInfo& winfo, const char* pathNameStr)
+void CWsWuFileHelper::createZAPWUXMLFile(WsWuInfo& winfo, const char* tempDirName)
 {
     MemoryBuffer mb;
     winfo.getWorkunitXml(NULL, mb);
-    VStringBuffer fileName("%s.xml", pathNameStr);
+    VStringBuffer fileName("%s%cZAPReport_%s.xml", tempDirName, PATHSEPCHAR, winfo.wuid.get());
     writeToFile(fileName.str(), mb.length(), mb.bufferBase());
 }
 
-void CWsWuFileHelper::createZAPECLQueryArchiveFiles(IConstWorkUnit* cwu, const char* pathNameStr)
+void CWsWuFileHelper::createZAPECLQueryArchiveFiles(IConstWorkUnit* cwu, const char* tempDirName)
 {
     Owned<IConstWUQuery> query = cwu->getQuery();
     if(!query)
@@ -3984,7 +3983,7 @@ void CWsWuFileHelper::createZAPECLQueryArchiveFiles(IConstWorkUnit* cwu, const c
             archiveContents.insert(0, "Error accessing archive file ").appendf("%s: %s\r\n\r\n", ssb.str(), s.str());
             e->Release();
         }
-        fileName.setf("%s.archive", pathNameStr);
+        fileName.setf("%s%c%s.archive", tempDirName, PATHSEPCHAR, ssb.str());
         writeToFile(fileName.str(), archiveContents.length(), archiveContents.str());
         break;
     }
@@ -3994,7 +3993,7 @@ void CWsWuFileHelper::createZAPECLQueryArchiveFiles(IConstWorkUnit* cwu, const c
     query->getQueryText(temp);
     if (temp.length())
     {
-        VStringBuffer fileName("%s.ecl", pathNameStr);
+        VStringBuffer fileName("%s%cZAPReport_%s.ecl", tempDirName, PATHSEPCHAR, cwu->queryWuid());
         writeToFile(fileName.str(), temp.length(), temp.str());
     }
 }
@@ -4153,7 +4152,7 @@ void CWsWuFileHelper::readWUComponentLogOptionsReq(IConstWUFileOption& logOption
 }
 #endif
 
-void CWsWuFileHelper::createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr)
+void CWsWuFileHelper::createZAPWUGraphProgressFile(const char* wuid, const char* tempDirName)
 {
     Owned<IPropertyTree> graphProgress = getWUGraphProgress(wuid, true);
     if (!graphProgress)
@@ -4162,19 +4161,41 @@ void CWsWuFileHelper::createZAPWUGraphProgressFile(const char* wuid, const char*
     StringBuffer graphProgressXML;
     toXML(graphProgress, graphProgressXML, 1, XML_Format);
 
-    VStringBuffer fileName("%s.graphprogress", pathNameStr);
+    VStringBuffer fileName("%s%cZAPReport_%s.graphprogress", tempDirName, PATHSEPCHAR, wuid);
     writeToFile(fileName.str(), graphProgressXML.length(), graphProgressXML.str());
 }
 
-int CWsWuFileHelper::zipAFolder(const char* folder, const char* passwordReq, const char* zipFileNameWithPath)
+void CWsWuFileHelper::zipAllZAPFiles(const char* zapWorkingFolder, StringArray& localFiles, const char* passwordReq, const char* zipFileNameWithFullPath)
 {
-    VStringBuffer archiveInPath("%s%c*", folder, PATHSEPCHAR);
+    VStringBuffer files("%s%c*", zapWorkingFolder, PATHSEPCHAR);
+    ForEachItemIn(i, localFiles)
+    {
+        const char* localFile = localFiles.item(i);
+        if (!isDirectory(localFile))
+            files.append(' ').append(localFile);
+        else
+        {
+            StringBuffer dirPath, dirTail;
+            splitFilename(localFile, &dirPath, &dirPath, &dirTail, nullptr);
+            zipZAPFiles(dirPath, dirTail, passwordReq, zipFileNameWithFullPath);
+        }
+    }
+    zipZAPFiles(nullptr, files, passwordReq, zipFileNameWithFullPath);
+}
+
+void CWsWuFileHelper::zipZAPFiles(const char* parentFolder, const char* zapFiles, const char* passwordReq, const char* zipFileNameWithFullPath)
+{
     StringBuffer zipCommand;
-    if (!isEmptyString(passwordReq))
-        zipCommand.setf("zip -j --password %s %s %s", passwordReq, zipFileNameWithPath, archiveInPath.str());
+    if (isEmptyString(parentFolder))
+        zipCommand.set("zip -j");
     else
-        zipCommand.setf("zip -j %s %s", zipFileNameWithPath, archiveInPath.str());
-    return (system(zipCommand.str()));
+        zipCommand.setf("cd %s\nzip -r", parentFolder);
+    if (!isEmptyString(passwordReq))
+        zipCommand.append(" --password ").append(passwordReq);
+    zipCommand.append(" ").append(zipFileNameWithFullPath).append(" ").append(zapFiles);
+    int zipRet = system(zipCommand);
+    if (zipRet != 0)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_COMPRESS_DATA, "Failed to execute system command '%s'. Please make sure that zip utility is installed.", zipCommand.str());
 }
 
 int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFileNameWithPath)
@@ -4189,46 +4210,43 @@ int CWsWuFileHelper::zipAFolder(const char* folder, bool gzip, const char* zipFi
 }
 
 void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu, CWsWuZAPInfoReq& request,
-    StringBuffer& zipFileName, StringBuffer& zipFileNameWithPath, unsigned _thorSlaveLogThreadPoolSize)
+    const char* tempDirName, StringBuffer& zapFileName, StringBuffer& zipFileNameWithFullPath, unsigned _thorSlaveLogThreadPoolSize)
 {
-    StringBuffer zapReportNameStr, folderToZIP, inFileNamePrefixWithPath;
-    Owned<IFile> zipDir = createWorkingFolder(context, request.wuid.str(), "ZAPReport_", zapReportNameStr, folderToZIP);
-    setZAPFile(request.zapFileName.str(), zapReportNameStr.str(), zipFileName, zipFileNameWithPath);
+    setZAPReportName(request.zapFileName, cwu->queryWuid(), zapFileName);
+
+    zipFileNameWithFullPath.set(tempDirName).append(PATHSEPCHAR).append("zapreport.zip");
     thorSlaveLogThreadPoolSize = _thorSlaveLogThreadPoolSize;
 
     //create WU ZAP files
-    inFileNamePrefixWithPath.set(folderToZIP.str()).append(PATHSEPCHAR).append(zapReportNameStr.str());
     createZAPInfoFile(request.url.str(), request.espIP.str(), request.thorIP.str(), request.problemDesc.str(), request.whatChanged.str(),
-        request.whereSlow.str(), cwu, inFileNamePrefixWithPath.str());
-    createZAPECLQueryArchiveFiles(cwu, inFileNamePrefixWithPath.str());
+        request.whereSlow.str(), cwu, tempDirName);
+    createZAPECLQueryArchiveFiles(cwu, tempDirName);
 
     WsWuInfo winfo(context, cwu);
-    createZAPWUXMLFile(winfo, inFileNamePrefixWithPath.str());
-    createZAPWUGraphProgressFile(request.wuid.str(), inFileNamePrefixWithPath.str());
-    createZAPWUQueryAssociatedFiles(cwu, folderToZIP);
+    createZAPWUXMLFile(winfo, tempDirName);
+    createZAPWUGraphProgressFile(request.wuid.str(), tempDirName);
+
+    StringArray localFiles;
+    createZAPWUQueryAssociatedFiles(cwu, tempDirName, localFiles);
 #ifndef _CONTAINERIZED
-    createProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
-    createProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
+    createProcessLogfile(cwu, winfo, "EclAgent", tempDirName);
+    createProcessLogfile(cwu, winfo, "Thor", tempDirName);
     if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
-        createThorSlaveLogfile(cwu, winfo, folderToZIP.str());
+        createThorSlaveLogfile(cwu, winfo, tempDirName);
 #else
     //These options should ultimately be drawn from req
     unsigned maxLogRecords = defaultMaxLogRecords;
     LogAccessReturnColsMode retColsMode = RETURNCOLS_MODE_default;
     LogAccessLogFormat logFormat = LOGACCESS_LOGFORMAT_csv;
     unsigned wuLogSearchTimeBuffSecs = defaultWULogSearchTimeBufferSecs;
-    createWULogFile(cwu, winfo, folderToZIP.str(), maxLogRecords, retColsMode, LOGACCESS_LOGFORMAT_csv, wuLogSearchTimeBuffSecs);
+    createWULogFile(cwu, winfo, tempDirName, maxLogRecords, retColsMode, LOGACCESS_LOGFORMAT_csv, wuLogSearchTimeBuffSecs);
 #endif
 
     //Write out to ZIP file
-    int zipRet = zipAFolder(folderToZIP.str(), request.password.str(), zipFileNameWithPath);
-    //Remove the temporary files and the folder
-    cleanFolder(zipDir, true);
-    if (zipRet != 0)
-        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"Failed to execute system command 'zip'. Please make sure that zip utility is installed.");
+    zipAllZAPFiles(tempDirName, localFiles, request.password, zipFileNameWithFullPath);
 }
 
-void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* pathToCreate)
+void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const char* tempDirName, StringArray& localFiles)
 {
     Owned<IConstWUQuery> query = cwu->getQuery();
     if (!query)
@@ -4248,6 +4266,11 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
         RemoteFilename rfn;
         SocketEndpoint ep(ip.str());
         rfn.setPath(ep, name.str());
+        if (rfn.isLocal())
+        {
+            localFiles.append(name.str());
+            continue;
+        }
 
         OwnedIFile sourceFile = createIFile(rfn);
         if (!sourceFile)
@@ -4259,8 +4282,7 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
         StringBuffer fileName(name.str());
         getFileNameOnly(fileName, false);
 
-        StringBuffer outFileName(pathToCreate);
-        outFileName.append(PATHSEPCHAR).append(fileName);
+        VStringBuffer outFileName("%s%c%s", tempDirName, PATHSEPCHAR, fileName.str());
 
         OwnedIFile outFile = createIFile(outFileName);
         if (!outFile)
@@ -4273,33 +4295,20 @@ void CWsWuFileHelper::createZAPWUQueryAssociatedFiles(IConstWorkUnit* cwu, const
     }
 }
 
-void CWsWuFileHelper::setZAPFile(const char* zipFileNameReq, const char* zipFileNamePrefix,
-    StringBuffer& zipFileName, StringBuffer& zipFileNameWithPath)
+const char* CWsWuFileHelper::setZAPReportName(const char* zapFileNameReq, const char* wuid, StringBuffer& zapReportName)
 {
-    StringBuffer outFileNameReq(zipFileNameReq);
-    //Clean zipFileNameReq. The zipFileNameReq should not end with PATHSEPCHAR.
-    while (!outFileNameReq.isEmpty() && (outFileNameReq.charAt(outFileNameReq.length() - 1) == PATHSEPCHAR))
-        outFileNameReq.setLength(outFileNameReq.length() - 1);
-
-    if (outFileNameReq.isEmpty())
-        zipFileName.set(zipFileNamePrefix).append(".zip");
+    zapReportName.set(zapFileNameReq);
+    removeTrailingPathSepChar(zapReportName);
+    if (zapReportName.isEmpty())
+        zapReportName.set(wuid).append(".zip");
     else
     {
-        zipFileName.set(outFileNameReq.str());
-        const char* ext = pathExtension(zipFileName.str());
+        //ZAP report should be a zip file.
+        const char* ext = pathExtension(zapReportName);
         if (!ext || !strieq(ext, ".zip"))
-            zipFileName.append(".zip");
+            zapReportName.append(".zip");
     }
-
-    zipFileNameWithPath.set(zipFolder);
-    Owned<IFile> workingDir = createIFile(zipFileNameWithPath.str());
-    if (!workingDir->exists())
-        workingDir->createDirectory();
-
-    zipFileNameWithPath.append(PATHSEPCHAR).append(zipFileName);
-    OwnedIFile thisFile = createIFile(zipFileNameWithPath.str());
-    if (thisFile->isFile() == fileBool::foundYes)
-        thisFile->remove();
+    return zapReportName;
 }
 
 IFile* CWsWuFileHelper::createWorkingFolder(IEspContext& context, const char* wuid, const char* namePrefix,
@@ -4319,10 +4328,10 @@ IFile* CWsWuFileHelper::createWorkingFolder(IEspContext& context, const char* wu
 }
 
 IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, IConstWorkUnit* cwu,
-    CWsWuZAPInfoReq& request, unsigned thorSlaveLogThreadPoolSize)
+    CWsWuZAPInfoReq& request, const char* tempDirName, unsigned thorSlaveLogThreadPoolSize)
 {
-    StringBuffer zapFileName, zapFileNameWithPath;
-    createWUZAPFile(context, cwu, request, zapFileName, zapFileNameWithPath, thorSlaveLogThreadPoolSize);
+    StringBuffer zapFileName, zipFileNameWithFullPath;
+    createWUZAPFile(context, cwu, request, tempDirName, zapFileName, zipFileNameWithFullPath, thorSlaveLogThreadPoolSize);
 
     if (request.sendEmail)
     {
@@ -4340,7 +4349,7 @@ IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, IC
             emailHelper.send(request.emailBody.str(), "", 0, warnings);
         else
         {
-            Owned<IFile> f = createIFile(zapFileNameWithPath.str());
+            Owned<IFile> f = createIFile(zipFileNameWithFullPath);
             Owned<IFileIO> io = f->open(IFOread);
             unsigned zapFileSize = (unsigned) io->size();
             if (zapFileSize > request.maxAttachmentSize)
@@ -4364,9 +4373,9 @@ IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, IC
 
     VStringBuffer headerStr("attachment;filename=%s", zapFileName.str());
     context.addCustomerHeader("Content-disposition", headerStr.str());
-    auto stream = createIOStreamFromFile(zapFileNameWithPath.str(), IFOread);
+    auto stream = createIOStreamFromFile(zipFileNameWithFullPath.str(), IFOread);
     if (stream == nullptr)
-        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unable to create output stream for ZAP file %s", zapFileNameWithPath.str());
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unable to create output stream for ZAP file %s", zipFileNameWithFullPath.str());
     return stream;
 }
 

@@ -477,6 +477,8 @@ extern jlib_decl bool safe_ecvt(size_t len, char * buffer, double value, int num
 extern jlib_decl bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * decimal, int * sign);
 extern jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 extern jlib_decl StringBuffer &getSpillFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
+extern jlib_decl StringBuffer &createUniqueTempDirectoryName(StringBuffer & ret);
+extern jlib_decl IFile *createUniqueTempDirectory();
 
 interface jlib_thrown_decl ICorruptDllException: extends IException
 {

@@ -1440,11 +1440,15 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
     else
         request->getParameter("Password", zapInfoReq.password);
 
+    Owned<IFile> tempDir = createUniqueTempDirectory();
+
     //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
     CWsWuFileHelper helper(directories);
-    response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq, thorSlaveLogThreadPoolSize));
+    response->setContent(helper.createWUZAPFileIOStream(context, cwu, zapInfoReq, tempDir->queryFilename(), thorSlaveLogThreadPoolSize));
     response->setContentType(HTTP_TYPE_OCTET_STREAM);
     response->send();
+
+    recursiveRemoveDirectory(tempDir);
 }
 
 void CWsWorkunitsSoapBindingEx::downloadWUFiles(IEspContext& context, CHttpRequest* request, CHttpResponse* response)
