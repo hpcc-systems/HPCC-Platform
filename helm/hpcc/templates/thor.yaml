@@ -264,7 +264,30 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thor-networkspec.yaml:
+  thormanager-networkspec.yaml:
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: {{ $thorNetworkPolicyName }}
+    spec:
+      podSelector:
+        matchLabels:
+          app: thor
+          job: "_HPCC_JOBNAME_"
+      ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              app: thor
+              job: "_HPCC_JOBNAME_"
+      egress:
+      - to:
+        - podSelector:
+            matchLabels:
+              app: thor
+              job: "_HPCC_JOBNAME_"
+
+  thorworker-networkspec.yaml:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
