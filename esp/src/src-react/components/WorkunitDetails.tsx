@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { Dropdown, DropdownMenuItemType, IDropdownStyles, IDropdownOption, Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunit } from "../hooks/workunit";
@@ -32,10 +32,39 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     queryParams = {}
 }) => {
 
+    const [widget, setWidget] = React.useState();
+    const [metricKey, setMetricKey] = React.useState("TimeLocalExecute");
+    const [metricOptions, setMetricOptions] = React.useState([] as IDropdownOption[]);
+    
+    const metricDropdownStyles: Partial<IDropdownStyles> = {
+        dropdown: { width: 300 },
+    };
+
     const [workunit] = useWorkunit(wuid, true);
 
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;
 
+    const widgetParams = { Wuid: wuid, metricKey, ondatachange: (data)=>{
+        const subtypeMap = {};
+        Object.keys(data.metricTypeMap).forEach(k=>{
+            Object.keys(data.metricTypeMap[k]).forEach(k2=>{
+                if(!subtypeMap[k2])subtypeMap[k2] = [];
+                data.metricTypeMap[k][k2].forEach(n=>{
+                    subtypeMap[k2].push(n.text);
+                });
+            });
+        });
+        const _metricOptions = data.optionArr.map(n=>{
+            if(n.itemType){
+                n.itemType = DropdownMenuItemType[n.itemType];
+            } else {
+                const prefix = data.metricSubTypes[n.text];
+                n.key = `${prefix}${n.text}`;
+            }
+            return n;
+        });
+        setMetricOptions(_metricOptions);
+    }};
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
             <PivotItem headerText={wuid} itemKey="summary" style={pivotItemStyle(size)} >
@@ -72,7 +101,30 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="eclsummary" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />
+                <Dropdown
+                    placeholder="Select a metric"
+                    label="List of line marker metrics"
+                    options={metricOptions}
+                    styles={metricDropdownStyles}
+                    defaultSelectedKeys={[metricKey]}
+                    onChange={(ev, value) => {
+                        setMetricKey(value.key as string);
+                        if(widget) {
+                            const dt = (widget as any).directoryTree;
+                            const d = dt.flattenData(dt.data()).find(n=>n.selected);
+                            widgetParams.metricKey = value.key as string;
+                            (widget as any).updateMetrics(widgetParams);
+                            dt.rowClick(d.content, d.markers);
+                        }
+                    }}
+                />
+                <DojoAdapter
+                    widgetClassID="ECLArchiveWidget"
+                    onWidgetMount={w => {
+                        setWidget(w);
+                    }}
+                    params={widgetParams}
+                />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.XML} itemKey="xml" style={pivotItemStyle(size, 0)}>
                 <WUXMLSourceEditor wuid={wuid} />
