@@ -1037,7 +1037,7 @@ LogMsgDetail mapLegacyEspLogLevelToJlogThreshold(LogLevel level)
     return(LogMaxLegacyThreshold);
 }
 
-LogMsgCategory getEspLogCategoryForContext(IEspContext* ctx, LogMsgCategory defaultLogMsgCategory)
+LogMsgCategory getEspLogCategoryForContext(IEspContext* ctx, const LogMsgCategory &defaultLogMsgCategory)
 {
     if (ctx)
     {

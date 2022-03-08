@@ -32,15 +32,19 @@
 #include "esphttp.hpp"
 
 #ifdef __GNUC__
-#define ESP_DEPRECATED(X) X __attribute__((deprecated))
+//#define ESP_DEPRECATED(X) X __attribute__((deprecated))
+#define ESP_DEPRECATED(X) X
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7)
-#define ESP_DEPRECATED2(X, reason) X __attribute__((deprecated(reason)))
+//#define ESP_DEPRECATED2(X, reason) X __attribute__((deprecated(reason)))
+#define ESP_DEPRECATED2(X, reason) X
 #else
 #define ESP_DEPRECATED2(X, reason) LCB_DEPRECATED(X)
 #endif
 #elif defined(_MSC_VER)
-#define ESP_DEPRECATED(X) __declspec(deprecated) X
-#define ESP_DEPRECATED2(X, reason) __declspec(deprecated(reason)) X
+//#define ESP_DEPRECATED(X) __declspec(deprecated) X
+#define ESP_DEPRECATED(X) X
+//#define ESP_DEPRECATED2(X, reason) __declspec(deprecated(reason)) X
+#define ESP_DEPRECATED2(X, reason)
 #else
 #define ESP_DEPRECATED(X) X
 #define ESP_DEPRECATED2(X, reason)
@@ -157,7 +161,7 @@ esp_http_decl bool getTxSummaryResourceReq();
 esp_http_decl unsigned getSlowProcessingTime();
 esp_http_decl LogMsgDetail mapLegacyEspLogLevelToJlogThreshold(LogLevel level);
 
-esp_http_decl LogMsgCategory getEspLogCategoryForContext(IEspContext* ctx, LogMsgCategory defaultLogMsgCategory);
+esp_http_decl LogMsgCategory getEspLogCategoryForContext(IEspContext* ctx, const LogMsgCategory &defaultLogMsgCategory);
 #ifdef _CONTINEERIZED
 esp_http_decl void ESP_DEPRECATED2(ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4))), "Use native JLog fuctions instead");
 esp_http_decl void ESP_DEPRECATED2(ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3))), "Use native JLog fuctions instead");

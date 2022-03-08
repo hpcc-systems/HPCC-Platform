@@ -20,7 +20,7 @@
 
 #include "espthread.hpp"
 #include "espcfg.ipp"
-#include "jlog.hpp"
+#include "jlog.ipp"
 
 typedef ISocket * isockp;
 
@@ -71,7 +71,7 @@ private:
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;
     ILogMsgHandler * m_pLogMsgHandler;
-    ILogMsgFilter *m_elevatedLoggingFilter;
+    ClassLogMsgFilter *m_elevatedLoggingFilter;
     CriticalSection m_elevatedLoggingCs;
 
 public:
@@ -198,7 +198,7 @@ public:
             if (m_elevatedLoggingFilter == nullptr)
             {
                 // Add custom log monitor to handle elevated context based logging
-                m_elevatedLoggingFilter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_elevated, ExtraneousMsgThreshold);
+                m_elevatedLoggingFilter = new ClassLogMsgFilter(MSGCLS_elevated);
                 queryLogMsgManager()->addMonitorOwn(queryStderrLogMsgHandler(), m_elevatedLoggingFilter);
             }
         }

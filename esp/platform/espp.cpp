@@ -126,7 +126,7 @@ void CEspServer::setLogLevel(LogLevel level)
     m_logLevel = level;
     unsigned newThreshold = mapLegacyEspLogLevelToJlogThreshold(level);
     ILogMsgFilter * espfilter = queryLogMsgManager()->queryMonitorFilter(queryStderrLogMsgHandler());
-    ILogMsgFilter *newfilter = getCategoryLogMsgFilter(espfilter->queryAudienceMask(), espfilter->queryClassMask(),
+    Owned<ILogMsgFilter> newfilter = getCategoryLogMsgFilter(espfilter->queryAudienceMask(), espfilter->queryClassMask(),
                                                        newThreshold, espfilter->queryLocalFlag());
     queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), newfilter);
 
