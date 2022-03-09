@@ -66,6 +66,10 @@ typedef int (* StdCompare)(const void *_e1, const void *_e2);
 class jlib_decl Allocator
 {
 public:
+    Allocator() = default;
+    Allocator(const Allocator & ) = delete;
+    Allocator & operator = (const Allocator & ) = delete;
+
     void  kill();
     inline bool isItem(aindex_t pos = 0) const    { return pos < used; }      /* Is there an item at pos */
     inline aindex_t length() const                 { return used; } /* Return number of items  */

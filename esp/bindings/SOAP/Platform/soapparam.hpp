@@ -598,7 +598,7 @@ public:
     void copy(SoapArrayParam<arraytype,itemtype> &from)
     {
         arr.kill();
-        arraytype fromArray = from.getValue();
+        const arraytype & fromArray = from.getValue();
         ForEachItemIn(idx, fromArray)
           arr.append(fromArray.item(idx));
     }
