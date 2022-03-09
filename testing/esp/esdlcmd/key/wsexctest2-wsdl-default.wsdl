@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wsexctest2" targetNamespace="urn:hpccsystems:ws:wsexctest2">
+  <wsdl:types>
+    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wsexctest2">
+      <xsd:element name="string" nillable="true" type="xsd:string"/>
+      <xsd:complexType name="EspException">
+        <xsd:all>
+          <xsd:element name="Code" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Audience" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Message" type="xsd:string" minOccurs="0"/>
+        </xsd:all>
+      </xsd:complexType>
+      <xsd:complexType name="ArrayOfEspException">
+        <xsd:sequence>
+          <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Exception" type="tns:EspException" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="Exceptions" type="tns:ArrayOfEspException"/>
+      <xsd:element name="WsExcTest2PingRequest">
+        <xsd:complexType>
+          <xsd:all/>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="SoapFaultExceptionsRequest">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="SoapFaultExceptionsTwoRequest">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="WsExcTest2PingResponse">
+        <xsd:complexType>
+          <xsd:all/>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="SoapFaultExceptionsResponse">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="SoapFaultExceptionsTwoResponse">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="EspSoapFault">
+    <wsdl:part name="parameters" element="tns:Exceptions"/>
+  </wsdl:message>
+  <wsdl:message name="PingSoapIn">
+    <wsdl:part name="parameters" element="tns:WsExcTest2PingRequest"/>
+  </wsdl:message>
+  <wsdl:message name="PingSoapOut">
+    <wsdl:part name="parameters" element="tns:WsExcTest2PingResponse"/>
+  </wsdl:message>
+  <wsdl:message name="SoapFaultExceptionsSoapIn">
+    <wsdl:part name="parameters" element="tns:SoapFaultExceptionsRequest"/>
+  </wsdl:message>
+  <wsdl:message name="SoapFaultExceptionsSoapOut">
+    <wsdl:part name="parameters" element="tns:SoapFaultExceptionsResponse"/>
+  </wsdl:message>
+  <wsdl:message name="SoapFaultExceptionsTwoSoapIn">
+    <wsdl:part name="parameters" element="tns:SoapFaultExceptionsTwoRequest"/>
+  </wsdl:message>
+  <wsdl:message name="SoapFaultExceptionsTwoSoapOut">
+    <wsdl:part name="parameters" element="tns:SoapFaultExceptionsTwoResponse"/>
+  </wsdl:message>
+  <wsdl:portType name="WsExcTest2ServiceSoap">
+    <wsdl:operation name="Ping">
+      <wsdl:input message="tns:PingSoapIn"/>
+      <wsdl:output message="tns:PingSoapOut"/>
+      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="SoapFaultExceptions">
+      <wsdl:input message="tns:SoapFaultExceptionsSoapIn"/>
+      <wsdl:output message="tns:SoapFaultExceptionsSoapOut"/>
+      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="SoapFaultExceptionsTwo">
+      <wsdl:input message="tns:SoapFaultExceptionsTwoSoapIn"/>
+      <wsdl:output message="tns:SoapFaultExceptionsTwoSoapOut"/>
+      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="WsExcTest2ServiceSoap" type="tns:WsExcTest2ServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <wsdl:operation name="Ping">
+      <soap:operation style="document" soapAction="WsExcTest2/Ping?ver_=0.000000"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="excfault">
+        <soap:fault name="excfault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="SoapFaultExceptions">
+      <soap:operation style="document" soapAction="WsExcTest2/SoapFaultExceptions?ver_=0.000000"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="excfault">
+        <soap:fault name="excfault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="SoapFaultExceptionsTwo">
+      <soap:operation style="document" soapAction="WsExcTest2/SoapFaultExceptionsTwo?ver_=0.000000"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="excfault">
+        <soap:fault name="excfault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="WsExcTest2">
+    <wsdl:port name="WsExcTest2ServiceSoap" binding="tns:WsExcTest2ServiceSoap">
+      <soap:address location="localhost"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

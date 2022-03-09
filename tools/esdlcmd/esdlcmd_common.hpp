@@ -108,6 +108,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
 #define ESDLOPT_UNVERSIONED_NAMESPACE   "--unversioned-ns"
 #define ESDLOPT_UNVERSIONED_NAMESPACE_S "-uvns"
+#define ESDLOPT_NO_EXCEPT_INLINE        "--no-exceptions-inline"
 
 #define DEFAULT_NAMESPACE_BASE          "urn:hpccsystems:ws"
 #define ESDLOPTLIST_DELIMITER           ";"
