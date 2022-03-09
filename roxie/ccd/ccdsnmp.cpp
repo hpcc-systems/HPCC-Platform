@@ -622,7 +622,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             unsigned *times = (unsigned *) alloca(useStats.size() * sizeof(unsigned));
             QueryStatsAggregateRecord aggregator(from, to);
             unsigned i = 0;
-            for (auto r : useStats)
+            for (auto &r : useStats)
             {
                 aggregator.noteQuery(r.failed, r.elapsedTimeMs, r.memUsed, r.agentsReplyLen, r.bytesOut);
                 times[i++] = r.elapsedTimeMs;
@@ -641,7 +641,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
 
         static void getRawStats(IPropertyTree &result, std::deque<QueryStatsRecord> &useStats)
         {
-            for (auto r : useStats)
+            for (auto &r : useStats)
             {
                 Owned<IPropertyTree> queryStatsRecord = createPTree("QueryStatsRecord", ipt_fast);
                 CDateTime dt;
@@ -834,7 +834,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
 
         static void getRawStats(IPropertyTree &result, std::deque<QueryStatsAggregateRecord> &useStats, time_t from, time_t to)
         {
-            for (auto r : useStats)
+            for (auto &r : useStats)
             {
                 Owned<IPropertyTree> queryStatsAggregateRecord = createPTree("QueryStatsAggregateRecord", ipt_fast);
                 r.getStats(*queryStatsAggregateRecord, true);
@@ -1007,7 +1007,7 @@ public:
             std::deque<QueryStatsRecord> useStats;
             {
                 CriticalBlock b(statsLock);
-                for (auto rec : recent)
+                for (auto &rec : recent)
                 {
                     if (rec.inRange(from, to))
                         useStats.push_back(rec);
@@ -1021,7 +1021,7 @@ public:
             QueryStatsAggregateRecord aggregator(from, to);
             {
                 CriticalBlock b(statsLock);
-                for (auto thisSlot: aggregated)
+                for (auto &thisSlot: aggregated)
                 {
                     if (thisSlot.timeOverlap(from, to))
                         aggregator.mergeStats(thisSlot);
@@ -1042,7 +1042,7 @@ public:
         std::deque<QueryStatsRecord> useStats;
         {
             CriticalBlock b(statsLock);
-            for (auto rec : recent)
+            for (auto &rec : recent)
             {
                 if (rec.inRange(from, to))
                     useStats.push_back(rec);
@@ -1054,7 +1054,7 @@ public:
         std::deque<QueryStatsAggregateRecord> aggregatedStats;
         {
             CriticalBlock b(statsLock);
-            for (auto thisSlot: aggregated)
+            for (auto &thisSlot: aggregated)
             {
                 if (thisSlot.timeOverlap(from, to))
                     aggregatedStats.push_back(thisSlot);
