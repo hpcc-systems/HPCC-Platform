@@ -204,7 +204,7 @@ void ECLEngine::generateSelectECL(HPCCSQLTreeWalker * selectsqlobj, StringBuffer
 
     ForEachItemIn(tableidx, *tables)
     {
-        SQLTable table = tables->item(tableidx);
+        SQLTable & table = tables->item(tableidx);
         const char * tname = table.getName();
 
         HPCCFilePtr file = selectsqlobj->queryHPCCFileCache()->getHpccFileByName(tname);
@@ -710,7 +710,7 @@ bool ECLEngine::processIndex(HPCCFile * indexfiletouse, StringBuffer & keyedandw
     {
         for (int indexfilecolumnindex = 0; indexfilecolumnindex < indexfilecolumns->length(); indexfilecolumnindex++)
         {
-            HPCCColumnMetaData currcol = indexfilecolumns->item(indexfilecolumnindex);
+            HPCCColumnMetaData & currcol = indexfilecolumns->item(indexfilecolumnindex);
             const char * currindexfilecolname = currcol.getColumnName();
             if (currcol.isKeyedField())
             {
@@ -927,7 +927,7 @@ bool ECLEngine::appendTranslatedHavingClause(HPCCSQLTreeWalker * sqlobj, StringB
             const IArrayOf<SQLTable> * tables = sqlobj->getTableList();
             ForEachItemIn(tableidx, *tables)
             {
-                SQLTable table = tables->item(tableidx);
+                SQLTable & table = tables->item(tableidx);
                 translator->appendProp(table.getName(), "LEFT");
             }
 
