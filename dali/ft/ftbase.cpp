@@ -540,6 +540,8 @@ void OutputProgress::reset()
     outputLength = 0;
     hasCompressed = false;
     compressedPartSize = 0;
+    numWrites = 0;
+    numReads = 0;
 }
 
 MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
@@ -556,18 +558,21 @@ MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
     return in;
 }
 
-MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned version)
+MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned & version)
 {
-    if (in.remaining())
+    if (version>=1 && in.remaining())
     {
-        switch (version)
-        {
-        case 1:
-            in.read(hasCompressed);
-            if (hasCompressed)
-                in.read(compressedPartSize);
-            break;
-        }
+        in.read(hasCompressed);
+        if (hasCompressed && in.remaining())
+            in.read(compressedPartSize);
+    }
+    if (version>=2)
+    {
+        constexpr unsigned bytesRequired=sizeof(numWrites)+sizeof(numReads);
+        if (in.remaining()>=bytesRequired)
+            in.read(numWrites).read(numReads);
+        else
+            version=1; //Looks like otherside is version 1, so use version 1 messages from now on
     }
     return in;
 }
@@ -592,13 +597,19 @@ MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)
 
 MemoryBuffer & OutputProgress::serializeExtra(MemoryBuffer & out, unsigned version)
 {
-    switch (version)
+    for (unsigned v=1; v<=version; v++)
     {
-    case 1:
-        out.append(hasCompressed);
-        if (hasCompressed )
-            out.append(compressedPartSize);
-        break;
+        switch (v)
+        {
+        case 1:
+            out.append(hasCompressed);
+            if (hasCompressed )
+                out.append(compressedPartSize);
+            break;
+        case 2:
+            out.append(numWrites).append(numReads);
+            break;
+        }
     }
     return out;
 }
@@ -615,6 +626,8 @@ void OutputProgress::set(const OutputProgress & other)
     resultTime = other.resultTime;
     hasCompressed = other.hasCompressed;
     compressedPartSize = other.compressedPartSize;
+    numWrites = other.numWrites;
+    numReads = other.numReads;
 }
 
 void OutputProgress::restore(IPropertyTree * tree)
@@ -629,6 +642,8 @@ void OutputProgress::restore(IPropertyTree * tree)
     resultTime.setString(tree->queryProp("@modified"));
     hasCompressed = tree->getPropBool("@compressed");
     compressedPartSize = tree->getPropInt64("@compressedPartSize");
+    numWrites = tree->getPropInt64("@numWrites");
+    numReads = tree->getPropInt64("@numReads");
 }
 
 void OutputProgress::save(IPropertyTree * tree)
@@ -647,6 +662,8 @@ void OutputProgress::save(IPropertyTree * tree)
     }
     tree->setPropInt("@compressed", hasCompressed);
     tree->setPropInt64("@compressedPartSize", compressedPartSize);
+    tree->setPropInt64("@numWrites", numWrites);
+    tree->setPropInt64("@numReads", numReads);
 }
 
 

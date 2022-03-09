@@ -466,7 +466,7 @@ public:
     void setProgress(   unsigned percentDone, unsigned secsLeft, const char * timeLeft,
                         unsigned __int64 scaledDone, unsigned __int64 scaledTotal, const char * scale,
                         unsigned kbPerSecAve, unsigned kbPerSecRate,
-                        unsigned slavesDone, bool replicating)
+                        unsigned slavesDone, bool replicating, unsigned __int64 numReads, unsigned __int64 numWrites)
     {
         CriticalBlock block(parent->crit);
         queryRoot()->setPropInt("@percentdone",(int)percentDone);
@@ -479,6 +479,8 @@ public:
         queryRoot()->setPropInt("@kbpersec",(int)kbPerSecRate);
         queryRoot()->setPropInt("@slavesdone",(int)slavesDone);
         queryRoot()->setPropInt("@replicating",replicating?1:0);
+        queryRoot()->setPropInt("@numreads",numReads);
+        queryRoot()->setPropInt("@numwrites",numWrites);
         parent->commit();
     }
     void setPercentDone(unsigned percentDone)
