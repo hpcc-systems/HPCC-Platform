@@ -188,6 +188,8 @@ class ActivityArray : public CInterface
     unsigned libraryGraphId;
     unsigned wfid;
 
+    ActivityArray() = delete;
+
 public:
     ActivityArray(bool _multiInstance, bool _delayed, bool _library, bool _sequential, unsigned _wfid)
      : multiInstance(_multiInstance), delayed(_delayed), library(_library), sequential(_sequential), wfid(_wfid)
