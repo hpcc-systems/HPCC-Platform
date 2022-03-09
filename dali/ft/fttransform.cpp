@@ -827,7 +827,7 @@ processedProgress:
             }
 
             const RemoteFilename & outputFilename = curPartition.outputName;
-            auto fsProperties = outputFilename.queryFileSystemProperties();
+            const auto & fsProperties = outputFilename.queryFileSystemProperties();
             RemoteFilename localTempFilename;
             if (!fsProperties.canRename)
                 localTempFilename.set(outputFilename);

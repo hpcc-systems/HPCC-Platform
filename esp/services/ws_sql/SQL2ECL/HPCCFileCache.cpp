@@ -110,7 +110,7 @@ bool HPCCFileCache::fetchHpccFilesByTableName(IArrayOf<SQLTable> * sqltables)
 
     ForEachItemIn(tableindex, *sqltables)
     {
-       SQLTable table = sqltables->item(tableindex);
+       SQLTable & table = sqltables->item(tableindex);
        const char * cachedKey = cacheHpccFileByName(table.getName());
        allFound &= (cachedKey && *cachedKey);
     }
