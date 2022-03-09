@@ -45,6 +45,10 @@ set ( ESPSCM_SRCS
       ws_resources.ecm
     )
 
+if (CONTAINERIZED)
+    list ( APPEND ESPSCM_SRCS ws_cloud.ecm )
+endif()
+
 foreach ( loop_var ${ESPSCM_SRCS} )
     string(  REGEX REPLACE "[.]ecm" "" result ${loop_var} )
     if (SCM_BUILD)

@@ -2,6 +2,9 @@ eclwatch:
    WsSMC:
       ActivityInfoCacheSeconds: 10
       ActivityInfoCacheAutoRebuildSeconds: 120
+   WsCloud:
+      PODInfoCacheSeconds: 10
+      PODInfoCacheAutoRebuildSeconds: 120
    WsWorkunits:
       ViewTimeout: 1000
       LayoutProgram: dot/dot -Tsvg -Gordering=out
