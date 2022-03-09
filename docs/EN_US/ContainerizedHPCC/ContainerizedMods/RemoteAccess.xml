@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="CustTutorial3" role="nobrk">
+  <title>Create a Custom Configuration Chart for Remote File Access</title>
+
+  <para>This section will configure two separate HPCC Systems Platform
+  environments using Helm, where one (env1) will expose access to its logical
+  files via the Distributed File System (DFS) service to another separate
+  environment (env2).</para>
+
+  <para>These could be in separate Kubernetes (K8s) instances or in separate
+  namespaces in the same K8s. For simplicity, this section assumes that they
+  are in two separate namespaces within the same K8s.</para>
+
+  <para></para>
+
+  <sect3>
+    <title>Setting up the first environment (env1)</title>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Create <emphasis role="bold">env1</emphasis> namespace (if it
+          does not already exist).</para>
+
+          <para><programlisting>kubectl create ns env1</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Switch to the <emphasis role="bold">env1</emphasis>
+          namespace.</para>
+
+          <para><programlisting>kubectl config set-context --current --namespace=env1</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Add the jetstack repo and install the jetstack certificate
+          manager. </para>
+
+          <para><programlisting>helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager --version v1.7.1 --set installCRDs=true</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Set <emphasis role="bold">certificates.enabled</emphasis> to
+          <emphasis>true</emphasis> in a custom values yaml file. </para>
+
+          <para><programlisting>certificates:
+  <emphasis role="red">enabled: true</emphasis></programlisting></para>
+
+          <para>Note: This enables the use of certificates for
+          <emphasis>all</emphasis> esp services and enables mutual TLS (mTLS)
+          between components, too. If you don’t want that (for example, for
+          testing reasons), and only want certificates enabled for the ESP DFS
+          service, then set enabled: false under all other
+          certificates.issuers (such as, “local”, “public”, “signing”, etc.)
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Set <emphasis><emphasis
+          role="bold">certificates.issuers.remote.enabled
+          </emphasis></emphasis>to <emphasis>true</emphasis> in the custom
+          values yaml file.</para>
+
+          <para><programlisting>remote:
+    name: hpcc-remote-issuer
+    <emphasis role="red">enabled: true</emphasis>
+    kind: Issuer
+    spec:
+      ca:
+        secretName: hpcc-remote-issuer-key-pair</programlisting></para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>In the custom values yaml file, add a <emphasis
+          role="bold">remoteClients:</emphasis> section to the Esp dfs service
+          for each client environment that will connect.</para>
+
+          <para><programlisting>- name: dfs
+  application: dfs
+  auth: none
+  replicas: 1
+  <emphasis role="red">remoteClients:
+  - name: env2
+    organization: mycompany</emphasis>
+  service:
+    visibility: local
+    servicePort: 8520
+  resources:
+    cpu: "250m"
+    memory: "1G"</programlisting></para>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a root certificate and private key for the <emphasis
+          role="bold">remote</emphasis> certificates issuer authority</para>
+
+          <para><programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key -sha256 -days 1825 -out ca.crt 
+-subj "/C=US/ST=Florida/L=Boca/O=HPCC Systems/OU=HPCC Example/CN=info@hpccsystems.com"</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create the k8s secrets pointed to by <emphasis
+          role="bold">certificates.issuers.remote.spec.sa.secretName</emphasis>
+          (for the secret named
+          <emphasis>hpcc-remote-issuer-key-pair</emphasis> above) </para>
+
+          <para><programlisting>kubectl create secret tls hpcc-remote-issuer-key-pair --cert=ca.crt --key=ca.key </programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy (or update) the hpcc helm chart with your custom yaml
+          settings.</para>
+
+          <para><programlisting>helm install env1 hpcc/hpcc -f mycustomsettings.yaml</programlisting></para>
+
+          <para>(where mycustomsettings.yaml contains all values and changes
+          discussed above)</para>
+
+          <para>At this point the HPCC cluster named env1 will start up. In
+          doing so, the “remote” certificate authority generates the client
+          certificates defined in step 6. </para>
+
+          <para>The HPCC cluster names env1 is now setup, but you must extract
+          information from it to supply to the client environments, in this
+          example, env2 </para>
+        </listitem>
+
+        <listitem>
+          <para>Extract the client secret certificate(s) and key pair(s) from
+          the deployed cluster. </para>
+
+          <para><programlisting>kubectl get secrets</programlisting></para>
+
+          <para>All those prefixed with <emphasis
+          role="bold">client-remote-</emphasis> and <emphasis
+          role="bold">client-remote-dfs-</emphasis> are the secrets to use for
+          the client(s) configured in step 6</para>
+
+          <para>Extract the certificate and key pairs with these
+          commands:</para>
+
+          <para><programlisting>kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."tls.crt"'| base64 -d &gt; env2tls.crt 
+kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."tls.key"'| base64 -d &gt; env2tls.key 
+kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."ca.crt"' | base64 -d &gt; env2ca.crt </programlisting></para>
+
+          <para><emphasis role="bold">Keep a record of the files created here,
+          the will be needed when configuring the client
+          environment.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Get the DFS service external endpoint.</para>
+
+          <para><programlisting>kubectl get svc</programlisting></para>
+
+          <para>Example output:</para>
+
+          <para><programlisting>NAME                 TYPE          CLUSTER-IP    EXTERNAL-IP    PORT(S)         AGE 
+cert-manager         ClusterIP     10.0.1.53     &lt;none&gt;         9402/TCP        24h 
+cert-manager-webhook ClusterIP     10.0.13.136   &lt;none&gt;         443/TCP         24h 
+dfs                  LoadBalancer  10.0.108.249  <emphasis role="red">192.168.0.36   8520</emphasis>:32469/TCP  23h </programlisting></para>
+
+          <para><emphasis role="bold">Keep a record of the external dfs
+          service end point, in this example, it’s
+          192.168.0.36:8520.</emphasis></para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+</sect2>
