@@ -541,6 +541,8 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
             curProgress.outputLength = out->tell()-startOutputOffset;
+            curProgress.numWrites = out->getStatistic(StNumDiskWrites);
+            curProgress.numReads = input->getStatistic(StNumDiskReads);
             if (crcOut)
                 curProgress.outputCRC = crcOut->getCRC();
             if (calcInputCRC)
@@ -692,6 +694,7 @@ void TransferServer::transferChunk(unsigned chunkIndex)
         curProgress.status = OutputProgress::StatusCopied;
         curProgress.inputLength = fixedTextLength;
         curProgress.outputLength = fixedTextLength;
+        curProgress.numWrites += out->getStatistic(StNumDiskWrites);
         if (crcOut)
             curProgress.outputCRC = crcOut->getCRC();
         sendProgress(curProgress);
@@ -868,7 +871,8 @@ processedProgress:
                     LOG(MCdebugProgress, unknownJob, "Extend length of target file to %" I64F "d", lastOffset);
                 }
             }
-
+            if (out)
+                curProgress.numWrites += out->getStatistic(StNumDiskWrites);
             out.setown(createIOStream(outio));
             out->seek(0, IFSbegin);
             wrapOutInCRC(0);
@@ -885,7 +889,6 @@ processedProgress:
         transferChunk(idx);
         curOutputOffset += curProgress.outputLength;
     }
-
     crcOut.clear();
     out.clear();
     //Once the transfers have completed, rename the files, and sync file times
@@ -997,7 +1000,6 @@ bool TransferServer::push()
             out.clear();
         }
     }
-
     return true;
 }
 

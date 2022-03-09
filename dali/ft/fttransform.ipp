@@ -38,6 +38,7 @@ public:
     virtual bool getInputCRC(crc32_t & value) { return false; }
     virtual bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey) = 0;
     virtual void setInputCRC(crc32_t value);
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return 0; /* TODO*/ }
 
 protected:
     bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length);
@@ -60,6 +61,7 @@ public:
     virtual bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey);
     virtual size32_t getBlock(IFileIOStream * out);
     virtual offset_t tell();
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return input->getStatistic(kind); }
 
 protected:
     size32_t read(size32_t maxLength, void * buffer);

@@ -109,7 +109,8 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 #define FAcrc               "@fileCrc"
 #define FAsize              "@size"
 #define FAcompressedSize    "@compressedSize"
-
+#define FAnumDiskReads      "@numDiskReads"
+#define FAnumDiskWrites      "@numDiskWrites"
 
 const unsigned operatorUpdateFrequency = 5000;      // time between updates in ms
 const unsigned abortCheckFrequency = 20000;         // time between updates in ms
@@ -615,6 +616,8 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     calcedInputCRC = false;
     aborting = false;
     totalLengthRead = 0;
+    totalNumReads = 0;
+    totalNumWrites = 0;
     throttleNicSpeed = 0;
     compressedInput = false;
     compressOutput = options->getPropBool(ANcompress);
@@ -2828,7 +2831,10 @@ void FileSprayer::updateProgress(const OutputProgress & newProgress)
     OutputProgress & curProgress = progress.item(newProgress.whichPartition);
 
     totalLengthRead += (newProgress.inputLength - curProgress.inputLength);
+    totalNumReads += (newProgress.numReads - curProgress.numReads);
+    totalNumWrites += (newProgress.numWrites - curProgress.numWrites);
     curProgress.set(newProgress);
+
     if (curProgress.tree)
         curProgress.save(curProgress.tree);
 
@@ -2853,7 +2859,7 @@ void FileSprayer::updateSizeRead()
         unsigned numCompleted = (sizeReadSoFar == sizeToBeRead) ? transferSlaves.ordinality() : numSlavesCompleted;
         if (done || (nowTick - lastOperatorTick >= operatorUpdateFrequency))
         {
-            progressReport->onProgress(sizeReadSoFar, sizeToBeRead, numCompleted);
+            progressReport->onProgress(sizeReadSoFar, sizeToBeRead, numCompleted, totalNumReads, totalNumWrites);
             lastOperatorTick = nowTick;
             progressDone = done;
         }
@@ -3288,6 +3294,7 @@ void FileSprayer::updateTargetProperties()
 
         DistributedFilePropertyLock lock(distributedTarget);
         IPropertyTree &curProps = lock.queryAttributes();
+        curProps.setPropInt64("@numDiskWrites", totalNumWrites);
         if (calcCRC())
             curProps.setPropInt(FAcrc, totalCRC.get());
         curProps.setPropInt64(FAsize, totalLength);
@@ -3462,6 +3469,10 @@ void FileSprayer::updateTargetProperties()
         int expireDays = options->getPropInt("@expireDays", -1);
         if (expireDays != -1)
             curProps.setPropInt("@expireDays", expireDays);
+    }
+    if (distributedSource)
+    {
+        distributedSource->addAttrValue("@numDiskReads", totalNumReads);
     }
     if (error)
         throw error.getClear();
