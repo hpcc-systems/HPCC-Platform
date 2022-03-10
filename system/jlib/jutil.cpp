@@ -1562,6 +1562,12 @@ static void DelimToStringArray(const char *csl, StringArray &dst, const char *de
     }
 }
 
+void StringArray::appendArray(const StringArray & other)
+{
+    ForEachItemIn(i, other)
+        append(other.item(i));
+}
+
 void StringArray::appendList(const char *list, const char *delim, bool trimSpaces)
 {
     DelimToStringArray(list, *this, delim, false, trimSpaces);
