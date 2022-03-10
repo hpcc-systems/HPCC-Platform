@@ -747,7 +747,8 @@ SQLFunctionExpression::SQLFunctionExpression(const char* funcname)
 SQLFunctionExpression::SQLFunctionExpression(const char* funcname, const IArrayOf<ISQLExpression> &params)
 {
     setFunction(funcname);
-    this->params = params;
+    ForEachItemIn(i, params)
+        this->params.append(OLINK(params.item(i)));
     this->alias = "";
     distinct = false;
 }
