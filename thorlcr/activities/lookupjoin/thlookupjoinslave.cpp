@@ -1390,7 +1390,7 @@ public:
         {
             startInput(0);
             if (ensureStartFTLookAhead(0))
-                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), LOOKUPJOINL_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), LOOKUPJOINL_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, this), false);
             left.set(inputStream); // can be replaced by loader stream
         }
         catch(IException *e)

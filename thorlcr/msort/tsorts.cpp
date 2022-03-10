@@ -775,7 +775,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, IDiskUsage *_iDiskUsage, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
+    CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
         : activity(_activity), myendpoint(ep), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
           rowArray(*_activity, _activity), threaded("CThorSorter", this), spillStats(spillStatistics)
     {
@@ -1363,8 +1363,8 @@ public:
 
 //==============================================================================
 
-THORSORT_API IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC)
+THORSORT_API IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep, ICommunicator *clusterComm, mptag_t _mpTagRPC)
 {
-    return new CThorSorter(activity, ep, iDiskUsage, clusterComm, _mpTagRPC);
+    return new CThorSorter(activity, ep, clusterComm, _mpTagRPC);
 }
 

@@ -1197,7 +1197,6 @@ bool CRowSet::Release() const
 
 class CSharedWriteAheadDisk : public CSharedWriteAheadBase
 {
-    IDiskUsage *iDiskUsage;
     Owned<IFile> spillFile;
     Owned<IFileIO> spillFileIO;
     CIArrayOf<Chunk> freeChunks;
@@ -1316,14 +1315,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         ActPrintLog(activity, "getOutOffset: got new upper offset # = %" I64F "d", highOffset);
 #endif
         Chunk *chunk = new Chunk(highOffset, required);
-        if (iDiskUsage)
-        {
-            iDiskUsage->decrease(highOffset);
-            highOffset += required; // NB next
-            iDiskUsage->increase(highOffset);
-        }
-        else
-            highOffset += required; // NB next
+        highOffset += required; // NB next
         return chunk;
     }
     inline void mergeFreeChunk(Chunk *dst, const Chunk *src)
@@ -1511,8 +1503,8 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         return ssz.size()+1; // space on disk, +1 = eog marker
     }
 public:
-    CSharedWriteAheadDisk(CActivityBase *activity, const char *spillName, unsigned outputCount, IThorRowInterfaces *rowIf, IDiskUsage *_iDiskUsage) : CSharedWriteAheadBase(activity, outputCount, rowIf),
-        allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()), serializeMeta(meta->querySerializedDiskMeta()), iDiskUsage(_iDiskUsage)
+    CSharedWriteAheadDisk(CActivityBase *activity, const char *spillName, unsigned outputCount, IThorRowInterfaces *rowIf) : CSharedWriteAheadBase(activity, outputCount, rowIf),
+        allocator(rowIf->queryRowAllocator()), deserializer(rowIf->queryRowDeserializer()), serializeMeta(meta->querySerializedDiskMeta())
     {
         assertex(spillName);
         spillFile.setown(createIFile(spillName));
@@ -1548,9 +1540,9 @@ public:
     }
 };
 
-ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const char *spillname, unsigned outputs, IThorRowInterfaces *rowIf, IDiskUsage *iDiskUsage)
+ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const char *spillname, unsigned outputs, IThorRowInterfaces *rowIf)
 {
-    return new CSharedWriteAheadDisk(activity, spillname, outputs, rowIf, iDiskUsage);
+    return new CSharedWriteAheadDisk(activity, spillname, outputs, rowIf);
 }
 
 class CSharedWriteAheadMem : public CSharedWriteAheadBase

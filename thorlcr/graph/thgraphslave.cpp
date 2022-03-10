@@ -1320,7 +1320,6 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
                 if (globals->getPropBool("@watchdogProgressEnabled"))
                     jobS->queryProgressHandler()->stopGraph(*this, &doneInfoMb);
             }
-            doneInfoMb.append(job.queryMaxDiskUsage());
         }
         catch (IException *)
         {

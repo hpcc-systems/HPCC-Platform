@@ -160,8 +160,6 @@ public:
         StringBuffer tmpStr;
         Owned<IFile> ifile = createIFile(getPartFilename(*patchPart, 0, tmpStr).str());
         offset_t sz = ifile->size();
-        if ((offset_t)-1 != sz)
-            container.queryJob().queryIDiskUsage().increase(sz);
         mb.append(sz);
 
         CDateTime createTime, modifiedTime, accessedTime;
@@ -177,8 +175,6 @@ public:
         {
             Owned<IFile> ifile = createIFile(getPartFilename(*patchTlkPart, 0, tmpStr.clear()).str());
             offset_t sz = ifile->size();
-            if ((offset_t)-1 != sz)
-                container.queryJob().queryIDiskUsage().increase(sz);
             mb.append(sz);
 
             CDateTime createTime, modifiedTime, accessedTime;

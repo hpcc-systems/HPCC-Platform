@@ -2712,7 +2712,6 @@ public:
 
 CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(_querySo), graphName(_graphName)
 {
-    maxDiskUsage = diskUsage = 0;
     dirty = true;
     aborted = false;
     queryMemoryMB = 0;
@@ -2980,17 +2979,6 @@ void CJobBase::abort(IException *e)
         CJobChannel &jobChannel = queryJobChannel(c);
         jobChannel.abort(e);
     }
-}
-
-void CJobBase::increase(offset_t usage, const char *key)
-{
-    diskUsage += usage;
-    if (diskUsage > maxDiskUsage) maxDiskUsage = diskUsage;
-}
-
-void CJobBase::decrease(offset_t usage, const char *key)
-{
-    diskUsage -= usage;
 }
 
 // these getX methods for property in workunit settings, then global setting, defaulting to provided 'dft' if not present

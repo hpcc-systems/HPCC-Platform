@@ -216,7 +216,7 @@ public:
             portbase = queryJobChannel().allocPort(NUMSLAVEPORTS);
             ActPrintLog("SortJoinSlaveActivity::init portbase = %d, mpTagRPC=%d",portbase,(int)mpTagRPC);
             server.setLocalHost(portbase); 
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
             server.serialize(slaveData);
         }
 
@@ -272,7 +272,7 @@ public:
                 IThorDataLink *secondaryInput = queryInput(secondaryInputIndex);
                 // NB: lookahead told not to preserveGroups
                 setLookAhead(secondaryInputIndex, createRowStreamLookAhead(this, secondaryInputStream, queryRowInterfaces(secondaryInput), JOIN_SMART_BUFFER_SIZE, ::canStall(secondaryInput),
-                             false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+                             false, RCUNBOUND, this), false);
             }
             secondaryInputStream = queryInputStream(secondaryInputIndex); // either lookahead or underlying stream, depending on whether active or not
         }
@@ -402,7 +402,7 @@ public:
         PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!islocal && TAG_NULL != mpTagRPC)
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
     }
     virtual void kill() override
     {

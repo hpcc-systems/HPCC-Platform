@@ -117,12 +117,6 @@ interface ICodeContextExt : extends ICodeContext
     virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) = 0;
 };
 
-interface IDiskUsage : extends IInterface
-{
-    virtual void increase(offset_t usage, const char *key=NULL) = 0;
-    virtual void decrease(offset_t usage, const char *key=NULL) = 0;
-};
-
 interface IBackup;
 interface IFileInProgressHandler;
 interface IThorFileCache;
@@ -834,13 +828,12 @@ interface ILoadedDllEntry;
 interface IConstWorkUnit;
 class CThorCodeContextBase;
 
-class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements IExceptionHandler
+class graph_decl CJobBase : public CInterfaceOf<IInterface>, implements IExceptionHandler
 {
 protected:
     CriticalSection crit;
     Linked<ILoadedDllEntry> querySo;
     IUserDescriptor *userDesc;
-    offset_t maxDiskUsage, diskUsage;
     StringAttr key, graphName;
     bool aborted, pausing, resumed;
     StringBuffer wuid, user, scope, token;
@@ -890,8 +883,6 @@ protected:
     SafePluginMap *pluginMap;
     virtual void endJob();
 public:
-    IMPLEMENT_IINTERFACE;
-
     CJobBase(ILoadedDllEntry *querySo, const char *graphName);
     virtual void beforeDispose() override;
 
@@ -940,9 +931,6 @@ public:
     const char *queryWuid() const { return wuid.str(); }
     const char *queryUser() const { return user.str(); }
     const char *queryScope() const { return scope.str(); }
-    IDiskUsage &queryIDiskUsage() const { return *(IDiskUsage *)this; }
-    void setDiskUsage(offset_t _diskUsage) { diskUsage = _diskUsage; }
-    offset_t queryMaxDiskUsage() const { return maxDiskUsage; }
     mptag_t querySlaveMpTag() const { return slavemptag; }
     unsigned querySlaves() const { return slaveGroup->ordinality(); }
     unsigned queryNodes() const { return nodeGroup->ordinality()-1; }
@@ -968,11 +956,6 @@ public:
 
 //
     virtual void addCreatedFile(const char *file) { assertex(false); }
-    virtual __int64 addNodeDiskUsage(unsigned node, __int64 sz) { assertex(false); return 0; }
-
-// IDiskUsage
-    virtual void increase(offset_t usage, const char *key=NULL);
-    virtual void decrease(offset_t usage, const char *key=NULL);
 
 // IExceptionHandler
     virtual bool fireException(IException *e) = 0;

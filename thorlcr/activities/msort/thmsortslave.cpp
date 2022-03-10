@@ -76,7 +76,7 @@ public:
         ActPrintLog("MSortSlaveActivity::init portbase = %d, mpTagRPC = %d",portbase,(int)mpTagRPC);
         server.setLocalHost(portbase); 
         helper = (IHThorSortArg *)queryHelper();
-        sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
+        sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
         server.serialize(slaveData);
     }
     virtual void start() override
@@ -169,7 +169,7 @@ public:
     {
         PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
-        sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
+        sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
     }
     virtual void kill() override
     {

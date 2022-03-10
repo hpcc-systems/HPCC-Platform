@@ -182,7 +182,7 @@ public:
         if (global)
         {
             if (ensureStartFTLookAhead(0))
-                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), rollup?ROLLUP_SMART_BUFFER_SIZE:DEDUP_SMART_BUFFER_SIZE, ::canStall(input), false, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), rollup?ROLLUP_SMART_BUFFER_SIZE:DEDUP_SMART_BUFFER_SIZE, ::canStall(input), false, RCUNBOUND, NULL), false);
         }
         needFirstRow = true;
         rowif.set(queryRowInterfaces(input));
