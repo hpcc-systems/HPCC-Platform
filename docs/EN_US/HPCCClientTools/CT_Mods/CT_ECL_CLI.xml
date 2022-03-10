@@ -4789,14 +4789,14 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 </row>
 
                 <row>
-                  <entry> --queryids=&lt;csv list&gt;</entry>
+                  <entry>--queryids=&lt;csv list&gt;</entry>
 
                   <entry>The queries for which to get file information
                   (default is all queries)</entry>
                 </row>
 
                 <row>
-                  <entry> --wait=&lt;ms&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
                   <entry>Max time to wait in milliseconds</entry>
                 </row>
@@ -4821,7 +4821,7 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 </row>
 
                 <row>
-                  <entry>-ssl</entry>
+                  <entry>--ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
