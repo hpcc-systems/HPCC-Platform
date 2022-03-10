@@ -1386,9 +1386,8 @@ public:
         return packages->queryPackageId();
     }
 
-    virtual void reload()
+    virtual void reloadIncremental()
     {
-        // Default is to do nothing...
     }
 
     virtual void load(bool forceReload) = 0;
@@ -1552,6 +1551,7 @@ class CRoxieDaliQueryPackageManager : public CRoxieQueryPackageManager, implemen
 {
     Owned<IRoxieDaliHelper> daliHelper;
     Owned<IDaliPackageWatcher> notifier;
+    std::atomic<bool> dirty{false};
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1569,19 +1569,27 @@ public:
 
     virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
 
-    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData) override
     {
-        reload(false);
-        daliHelper->commitCache();
+        //Mark this queryset as potentially modified - and then request an incremental reload
+        dirty = true;
+        globalPackageSetManager->requestReload(false, false, true);
     }
 
-    virtual void load(bool forceReload)
+    virtual void load(bool forceReload) override
     {
         notifier.setown(daliHelper->getQuerySetSubscription(querySet, this));
         reload(forceReload);
     }
 
-    virtual void reload(bool forceRetry)
+    virtual void reloadIncremental() override
+    {
+        if (dirty.exchange(false))
+            reload(false);
+    }
+
+private:
+    void reload(bool forceRetry)
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
@@ -1590,9 +1598,7 @@ public:
         newServerManager->load(newQuerySet, *packages, newHash, forceRetry);
         newAgentManagers->load(newQuerySet, *packages, newHash, forceRetry);
         reloadQueryManagers(newAgentManagers.getClear(), newServerManager.getClear(), newHash);
-        clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
-
 };
 
 class CStandaloneQueryPackageManager : public CRoxieQueryPackageManager
@@ -1610,7 +1616,7 @@ public:
     {
     }
 
-    virtual void load(bool forceReload)
+    virtual void load(bool forceReload) override
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = createPTree("QuerySet", ipt_lowmem);
@@ -1786,6 +1792,13 @@ public:
             throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", id);
     }
 
+    void reloadIncremental()
+    {
+        ForEachItemIn(idx, allQueryPackages)
+        {
+            allQueryPackages.item(idx).reloadIncremental();
+        }
+    }
 private:
     CIArrayOf<CRoxieQueryPackageManager> allQueryPackages;
     Linked<IRoxieDaliHelper> daliHelper;
@@ -1898,9 +1911,6 @@ public:
             daliHelper.setown(connectToDali());
         else
             daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
-        autoPending = 0;
-        autoSignalsPending = 0;
-        forcePending = false;
         pSetsNotifier.setown(daliHelper->getPackageSetsSubscription(this));
         pMapsNotifier.setown(daliHelper->getPackageMapsSubscription(this));
     }
@@ -1917,17 +1927,32 @@ public:
 
     virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
 
-    void requestReload(bool signal, bool force)
+    void requestReload(bool waitUntilComplete, bool forceRetry, bool incremental)
     {
-        if (force)
-            forcePending = true;    
-        if (signal)
+        assertex(!(incremental && forceRetry));
+        if (!incremental)
+            autoAllIncremental = false;
+        if (forceRetry)
+            autoForceRetry = true;
+        if (waitUntilComplete)
             ++autoSignalsPending;
         ++autoPending;
         autoReloadTrigger.signal();
-        if (signal)
+        if (waitUntilComplete)
             autoReloadComplete.wait();
     }
+
+    //Return if there is no active reload, or when a reload has been completed
+    void waitForReload()
+    {
+        if (autoPending == 0)
+            return;
+
+        ++autoSignalsPending;
+        autoReloadTrigger.signal();
+        autoReloadComplete.wait();
+    }
+
 
     virtual void load()
     {
@@ -1989,7 +2014,7 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        requestReload(false, false);
+        requestReload(false, false, false);
     }
 
 private:
@@ -2004,39 +2029,99 @@ private:
 
     Semaphore autoReloadTrigger;
     Semaphore autoReloadComplete;
-    std::atomic<unsigned> autoSignalsPending;
-    std::atomic<unsigned> autoPending;
-    bool forcePending;
+    std::atomic<unsigned> autoSignalsPending{0};
+    std::atomic<unsigned> autoPending{0};
+    std::atomic<bool> autoAllIncremental{true};
+    std::atomic<bool> autoForceRetry{false};
 
     class AutoReloadThread : public Thread
     {
-        std::atomic<bool> closing;
+        static constexpr unsigned waitForReloadDelayMs = 500; // How long to wait for an explicit <control:reload>
+        static constexpr unsigned NotifyMergeDelayMs = 50; // How long to wait for other notifications before reloading the querySet
+        std::atomic<bool> closing{false};
         CRoxiePackageSetManager &owner;
     public:
         AutoReloadThread(CRoxiePackageSetManager &_owner)
         : Thread("AutoReloadThread"), owner(_owner)
         {
-            closing = false;
         }
 
         virtual int run()
         {
             if (traceLevel)
                 DBGLOG("AutoReloadThread %p starting", this);
+
             while (!closing)
             {
                 owner.autoReloadTrigger.wait();
                 if (closing)
                     break;
-                unsigned signalsPending = owner.autoSignalsPending;
-                if (!signalsPending)
-                    Sleep(500); // Typically notifications come in clumps - this avoids reloading too often
-                if (owner.autoPending)
+
+                //If there has been an update to a packagemap or queryset, there may also be a control:reload in quick succession, so wait for it.
+                //NOTE: control:reload generally locks the roxie connection and waits for a response, so it is unlikely that
+                //multiple control:reloads will be received at the same time.
+                CCycleTimer mergeTimer;
+                unsigned elapsedMs = 0;
+                //Keep waiting until we receive an explicit control:reload or the timeout expires
+                while (!owner.autoSignalsPending)
                 {
-                    owner.autoPending = 0;
+                    owner.autoReloadTrigger.wait(waitForReloadDelayMs - elapsedMs);
+                    elapsedMs = mergeTimer.elapsedMs();
+                    if (elapsedMs >= waitForReloadDelayMs)
+                        break;
+                }
+
+                if (closing)
+                    break;
+
+                unsigned prevPending = owner.autoPending.load();
+                unsigned waits = 0;
+                if (prevPending)
+                {
+                    //Often there are many requests to reload query sets, and perform a global reload.
+                    //Iterate in a loop to combine all the requests within a time period to avoid repeated reloads.
+                    for (;;)
+                    {
+                        MilliSleep(NotifyMergeDelayMs);
+                        waits++;
+
+                        unsigned nextPending = owner.autoPending.load();
+                        //Check to see if any other requests came in during the small delay.
+                        if (prevPending == nextPending)
+                        {
+                            //If no more process all the notifications
+                            break;
+                        }
+                        prevPending = nextPending;
+                    }
+                }
+
+                // How many threads are waiting for a completed signal in response to control:reload?
+                // They can all be signalled when the reload is complete, and subsequent iterations will do nothing (but may signal).
+                unsigned signalsPending = owner.autoSignalsPending.exchange(0);
+
+                //Check if there are any requests from last time that have not been processed yet.
+                unsigned requestsPending = owner.autoPending.exchange(0);
+                if (requestsPending)
+                {
+                    //NOTE: Following are read in reverse order from the order they are set to avoid race conditions
+                    bool forceRetry = owner.autoForceRetry.exchange(false);
+                    bool incremental = owner.autoAllIncremental.exchange(true);
+
+                    if (traceLevel)
+                        DBGLOG("AutoReload: [%s] %u changes (%u waits) delayed %ums ", (forceRetry ? "force" : (incremental ? "incremental" : "reload")), requestsPending, waits, mergeTimer.elapsedMs());
+
+                    CCycleTimer timer;
                     try
                     {
-                        owner.reload(owner.forcePending);
+                        //If all the changes are incremental, then only update the querysets that have changed, otherwise reload everything
+                        if (incremental)
+                            owner.reloadIncremental();
+                        else
+                            owner.reload(forceRetry);
+
+                        if (traceLevel)
+                            DBGLOG("AutoReload: took %ums (signal %u threads)", timer.elapsedMs(), signalsPending);
                     }
                     catch (IException *E)
                     {
@@ -2048,13 +2133,15 @@ private:
                     {
                         IERRLOG("Unknown exception in AutoReloadThread");
                     }
-                    owner.forcePending = false;
                 }
-                if (signalsPending)
+                else
                 {
-                    owner.autoSignalsPending--;
-                    owner.autoReloadComplete.signal();
+                    if (traceLevel)
+                       DBGLOG("AutoReload - nothing to do %u requests waiting", signalsPending);
                 }
+
+                if (signalsPending)
+                    owner.autoReloadComplete.signal(signalsPending);
             }
             if (traceLevel)
                 DBGLOG("AutoReloadThread %p exiting", this);
@@ -2094,7 +2181,29 @@ private:
             oldPackages.setown(allQueryPackages.getLink());  // Ensure we don't delete the old packages until after we have loaded the new
             allQueryPackages.setown(newPackages.getClear());
         }
-        daliHelper->commitCache();
+
+        //Release the old packages before clearing any unused entries.
+        oldPackages.clear();
+        completeReload();
+    }
+
+    void reloadIncremental()
+    {
+        {
+            ReadLockBlock b(packageCrit);
+            allQueryPackages->reloadIncremental();
+        }
+        completeReload();
+    }
+
+    void completeReload()
+    {
+        // Avoid clearing keys and updating the cache file if we are just about to reload something
+        if (autoPending.load() == 0)
+        {
+            clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
+            daliHelper->commitCache();
+        }
     }
 
     // Common code used by control:queries and control:getQueryXrefInfo
@@ -2635,7 +2744,7 @@ private:
         case 'R':
             if (stricmp(queryName, "control:reload")==0)
             {
-                requestReload(true, control->getPropBool("@forceRetry", false));
+                requestReload(true, control->getPropBool("@forceRetry", false), false);
                 if (daliHelper && daliHelper->connected())
                     reply.appendf("<Dali connected='1'/>");
                 else
@@ -2875,6 +2984,10 @@ private:
             if (stricmp(queryName, "control:watchActivityId")==0)
             {
                 watchActivityId = control->getPropInt("@id", true);
+            }
+            else if (stricmp(queryName, "control:waitForReload")==0)
+            {
+                waitForReload();
             }
             else
                 unknown = true;

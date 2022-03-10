@@ -2639,7 +2639,7 @@ protected:
                 cached = NULL;
             }
         }
-        globalPackageSetManager->requestReload(false, false);
+        globalPackageSetManager->requestReload(false, false, false);
     }
 
     // We cache all the file maps/arrays etc here. 
