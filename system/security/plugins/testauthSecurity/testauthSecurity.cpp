@@ -28,11 +28,15 @@ class CUserAccess : public CSimpleInterfaceOf<IInterface>
     SecAccessFlags defaulteECLWUScopeAccess = SecAccess_Unavailable;
     SecAccessFlags defaultFileScopeAccess = SecAccess_Unavailable;
     SecAccessFlags defaultFeaturAccess = SecAccess_Unavailable;
-    MapStringTo<int> featureAccesses, eclwuScopeAccesses, fileScopeAccesses;
+    MapStringTo<int> featureAccesses, eclwuScopeAccesses;
+    Owned<IPropertyTree> fileScopeAccesses;
 
 public:
     CUserAccess(const char* _userName, const char* _password)
-        : userName(_userName), password(_password) {};
+        : userName(_userName), password(_password)
+    {
+        fileScopeAccesses.setown(createPTree("filescopes"));
+    };
 
     const char* queryUserName()
     {
@@ -75,9 +79,25 @@ public:
 
     void addFileScopeAccess(const char* scope, const char* access)
     {
-        SecAccessFlags flag = getSecAccessFlagValue(access);
-        if (!fileScopeAccesses.getValue(scope))
-            fileScopeAccesses.setValue(scope, flag);
+        //Convert the scope to xpath.
+        StringArray scopes;
+        if (!convertFileScopeToXPath(scope, true, scopes))
+        {
+            OWARNLOG("Invalid scope %s.", scope);
+            return;
+        }
+
+        //Check duplicate
+        const char* xpath = scopes.item(0);
+        if (fileScopeAccesses->hasProp(xpath))
+        {
+            OWARNLOG("Duplicated accesss settting for scope %s.", scope);
+            return;
+        }
+
+        //Add a tree node for the access.
+        IPropertyTree* accessNode = ensurePTree(fileScopeAccesses, xpath);
+        accessNode->setPropInt("@access", getSecAccessFlagValue(access));
     }
 
     SecAccessFlags queryFeatureAccess(const char* resource)
@@ -86,7 +106,7 @@ public:
         return allow ? (SecAccessFlags) *allow : defaultFeaturAccess;
     }
 
-    /*
+    /* same logic as in LDAP security
     if perms set on 'scopeA::scopeB' only and lookup of 'scopeA::scopeB::scopeC::scopeD'
     need to lookup:
         'scopeA'
@@ -100,15 +120,17 @@ public:
     SecAccessFlags queryFileScopeAccess(const char* scope)
     {
         StringArray scopes;
-        parseFileScope(scope, scopes);
+        if (!convertFileScopeToXPath(scope, false, scopes))
+            return SecAccess_Unavailable;
 
         SecAccessFlags allowed = defaultFileScopeAccess;
         ForEachItemIn(i, scopes)
         {
-            int* allow = fileScopeAccesses.getValue(scopes.item(i));
-            if (allow)
+            VStringBuffer xpath("%s/@access", scopes.item(i));
+            const char* xpathStr = xpath.str();
+            if (fileScopeAccesses->hasProp(xpathStr))
             {
-                allowed = (SecAccessFlags) *allow;
+                allowed = (SecAccessFlags) fileScopeAccesses->getPropInt(xpathStr);
                 if (0 == (allowed & SecAccess_Read))
                     return allowed;
             }
@@ -116,21 +138,27 @@ public:
         return allowed;
     }
 
-    bool parseFileScope(const char* fileScope, StringArray& scopes)
+    bool convertFileScopeToXPath(const char* fileScope, bool fullPathOnly, StringArray& scopes)
     {
         StringBuffer scope;
         const char* p = fileScope;
         while (*p)
         {
-            if (*p == ':')
+            if (*p != ':')
             {
-                if (*(p+1) != ':')
-                    return false;
-                scopes.append(scope);
                 scope.append(*(p++));
+                continue;
             }
-            scope.append(*(p++));
+
+            if (*(p+1) != ':')
+                return false;
+            if (!fullPathOnly)
+                scopes.append(scope);
+            scope.append('/');
+            p += 2;
         }
+        if (scope.charAt(scope.length() - 1) == '/')
+            return false;
         scopes.append(scope);
         return true;
     }

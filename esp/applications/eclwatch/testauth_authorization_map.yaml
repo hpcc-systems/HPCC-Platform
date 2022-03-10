@@ -1,12 +1,12 @@
 authNZ:
-   testauth:
-      name: testauth
-      type: testauth
+   test:
+      name: test
+      type: test
       LibName: libtestauthSecurity.so
       # Define which authorization resources to be tested.
       # As default, the authorization resources defined in
       # ldap_authorization_map.yaml are tested.
-      resources: ldap
+      useResourceMapsFrom: ldap
       useraccess:
       -  username: testadmin
          #secretkey: testauthusercreds1     # optional
@@ -24,7 +24,8 @@ authNZ:
             resource: NONE
          filescopes: # what kinds of file scopes should be given to testuser?
             "testuser": FULL
-            "thor::thor1": READ #TODO: remove
+            "thor::thor1": FULL #TODO: remove
+            "thor::thor1::thor2": READ #TODO: remove
             "thor::thor3": NONE #TODO: remove
          eclwuscopes: # what kinds of eclwu scopes should be given to testuser?
             "testuser": FULL

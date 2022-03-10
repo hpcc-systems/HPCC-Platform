@@ -138,7 +138,7 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
     if (isEmptyString(tag))
         throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set 'auth: none'");
 
-    if (!strieq(name, "testauth"))
+    if (!strieq(name, "test"))//TODO
         legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString("<AuthDomains><AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default' invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png' logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240' unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/></AuthDomains>"));
 
     IPropertyTree *legacy = legacyEsp->addPropTree("SecurityManagers");
@@ -178,8 +178,6 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
     IPropertyTree *appAuth = nullptr;
     if (isEmptyString(auth) || streq(auth, "ldap") || streq(auth, "azure_ldap"))
         appAuth = app->queryPropTree("ldap");
-    else if (streq(auth, "testauth"))
-        appAuth = queryTestAuthResources(app);
     else if (streq(auth, "none"))
         return;
     else
@@ -190,6 +188,9 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
         appAuth = appAuth->queryPropTree(auth);
         if (!appAuth)
             return;
+        const char *useResourceMapsFrom= appAuth->queryProp("@useResourceMapsFrom");
+        if (!isEmptyString(useResourceMapsFrom))
+            appAuth= app->queryPropTree(useResourceMapsFrom);
     }
     if (!appAuth)
         throw MakeStringException(-1, "Can't find application Auth settings.  To run without security set 'auth: none'");

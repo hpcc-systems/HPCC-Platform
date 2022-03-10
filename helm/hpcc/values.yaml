@@ -273,10 +273,10 @@ secrets:
   authn: {}
     ## Category to deploy authentication secrets to container, and to create a key name alias to reference those secrets
     #ldapadmincredskey: "admincredssecretname"  ## Default k/v for LDAP authentication secrets
-    #testauthusercreds1: "testauthusercreds1"            ## Default k/v for testauth authentication secrets
-    #testauthuservaultcreds1: "testauthuservaultcreds1"  ## Default k/v for testauth authentication secrets
-    #testauthusercreds2: "testauthusercreds2"            ## Default k/v for testauth authentication secrets
-    #testauthuservaultcreds2: "testauthuservaultcreds2"  ## Default k/v for testauth authentication secrets
+    #testauthusercreds1: "testauthusercreds1"            ## Default k/v for test authentication secrets
+    #testauthuservaultcreds1: "testauthuservaultcreds1"  ## Default k/v for test authentication secrets
+    #testauthusercreds2: "testauthusercreds2"            ## Default k/v for test authentication secrets
+    #testauthuservaultcreds2: "testauthuservaultcreds2"  ## Default k/v for test authentication secrets
 
   ecl: {}
     ## Category for secrets published to all components that run ecl
@@ -485,7 +485,7 @@ esp:
 - name: eclwatch
   ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
   application: eclwatch
-  auth: testauth
+  auth: test
   replicas: 1
   service:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
