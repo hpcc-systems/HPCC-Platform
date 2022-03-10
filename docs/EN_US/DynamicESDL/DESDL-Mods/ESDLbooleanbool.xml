@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="ESDL_boolean">
+<sect1 id="ESDL_boolean" role="nobrk">
   <title>boolean<indexterm>
       <primary>boolean</primary>
-    </indexterm>bool </title>
+    </indexterm>bool</title>
 
   <para><indexterm>
       <primary>bool</primary>
