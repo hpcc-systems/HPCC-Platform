@@ -234,7 +234,7 @@ void HPCCFile::getFieldsAsDelmitedString(char delim, const char * prefix, String
     bool isFirst = true;
     ForEachItemIn(colidx, columns)
     {
-        HPCCColumnMetaData currcol = columns.item(colidx);
+        HPCCColumnMetaData & currcol = columns.item(colidx);
         if ((onlykeyed && currcol.isKeyedField()) || (!onlykeyed && !currcol.isKeyedField()))
         {
             if (!isFirst)
@@ -276,7 +276,7 @@ void HPCCFile::setKeyCounts()
     keyedCount = 0;
     ForEachItemIn(colidx, columns)
     {
-        HPCCColumnMetaData currcol = columns.item(colidx);
+        HPCCColumnMetaData & currcol = columns.item(colidx);
         if (!currcol.isKeyedField())
             nonKeyedCount++;
         else

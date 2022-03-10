@@ -58,7 +58,7 @@ void FileMetricSink::collectingHasStopped()
 void FileMetricSink::writeMeasurementToFile(const std::shared_ptr<IMetric> &pMetric) const
 {
     std::string name = pMetric->queryName();
-    auto metaData = pMetric->queryMetaData();
+    const auto & metaData = pMetric->queryMetaData();
     for (auto &metaDataIt: metaData)
     {
         name.append(".").append(metaDataIt.value);

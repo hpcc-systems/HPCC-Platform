@@ -592,7 +592,7 @@ public:
             mystats.recordStatistics(builder, reset);
             ForEachItemIn(i, childQueries)
             {
-                auto child = childQueries.item(i);
+                ActivityArray &child = childQueries.item(i);
                 StatsChildGraphScope cc(builder, childQueryIndexes.item(i));
                 child.gatherStats(builder, channel, reset);
             }

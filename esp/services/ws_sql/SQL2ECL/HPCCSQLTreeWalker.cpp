@@ -1201,7 +1201,7 @@ void HPCCSQLTreeWalker::expandWildCardColumn()
             {
                 ForEachItemIn(tableidx, tableList)
                 {
-                    SQLTable tab = (SQLTable)tableList.item(tableidx);
+                    SQLTable & tab = tableList.item(tableidx);
 
                     HPCCFilePtr file = tmpHPCCFileCache->getHpccFileByName(tab.getName());
                     if (file)
@@ -1233,7 +1233,7 @@ void HPCCSQLTreeWalker::expandWildCardColumn()
                     IArrayOf<HPCCColumnMetaData> * cols = file->getColumns();
                     ForEachItemIn(colidx, *cols)
                     {
-                        HPCCColumnMetaData col = cols->item(colidx);
+                        HPCCColumnMetaData & col = cols->item(colidx);
                         Owned<ISQLExpression> fve = new SQLFieldValueExpression(tablename, col.getColumnName());
                         if (colidx == 0)
                         {
@@ -1431,7 +1431,7 @@ bool HPCCSQLTreeWalker::normalizeSQL()
                     if (idxt > 0)
                         normalizedSQL.append(", ");
 
-                    SQLTable tab = (SQLTable)tableList.item(idxt);
+                    SQLTable & tab = tableList.item(idxt);
                     normalizedSQL.append(tab.getName());
 
                     if (tab.hasIndexHint())
