@@ -31,7 +31,7 @@ jobs:
     name: "Check compiles on Win32"
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
       - name: Display build summary
         env:
