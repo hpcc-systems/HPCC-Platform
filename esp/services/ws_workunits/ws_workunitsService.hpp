@@ -102,6 +102,7 @@ public:
 
     virtual void threadmain()
     {
+        subscribe();
         while (!aborting)
         {
             //prepopulate the cache, lazy mode is very slow
