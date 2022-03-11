@@ -197,7 +197,9 @@ define([
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
                     dojoConfig.username = response.MyAccountResponse.username;
-                    cookie("User", response.MyAccountResponse.username);
+                    if (response.MyAccountResponse.username) {
+                        cookie("User", response.MyAccountResponse.username);
+                    }
                     context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
