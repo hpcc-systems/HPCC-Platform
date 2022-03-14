@@ -158,6 +158,27 @@
       functional system, however you should define the component resources in
       a manner that corresponds best to your operational strategy.</para>
 
+      <sect3 id="YML_HPCCSystemsServices">
+        <title>The Systems services</title>
+
+        <para>Most of the HPCC Systems components have a service definition
+        entry, similar to the resources entry. All the components that have
+        service definitions follow this same pattern.</para>
+
+        <para>Any service related info needs to be under a service object, for
+        example:</para>
+
+        <para><programlisting>  service:
+    servicePort: 7200
+    visibility: local
+</programlisting></para>
+
+        <para>This applies to most all of the HPCC Systems components, ESP,
+        Dali, dafilesrv, and Sasha. Roxie's specification is slightly
+        different, in that it has it's service ports defined under
+        "roxieservice" and there can be multiples. (see schema).</para>
+      </sect3>
+
       <sect3 id="DALI_ValueYAML">
         <title>Dali</title>
 
@@ -273,16 +294,6 @@
         or dfuwu-archiver as that is a value limitation, you can choose to
         either have the service or not (set the 'disabled' value to
         true).</para>
-
-        <para>Any service related info needs to be under a service object, for
-        example: </para>
-
-        <para><programlisting>sasha:
-  wu-archiver:
-    service:
-       servicePort: 8877
-</programlisting>This also applies to the ESP services consistent with the
-        Roxie.</para>
       </sect3>
 
       <sect3 id="ValYML_Thor">
