@@ -16,6 +16,8 @@
 ############################################################################## */
 
 #include "xslprocessor.hpp"
+EspInclude(ws_logaccess);
+
 //  ===========================================================================
 
 EspInclude(common);
@@ -64,6 +66,7 @@ ESPenum WUFileType : string
     ThorSlaveLog("ThorSlaveLog"),
     EclAgentLog("EclAgentLog"),
     ArchiveQuery("ArchiveQuery"),
+    ComponentLog("ComponentLog"),
 };
 
 ESPenum WUFileDownloadOption : int
@@ -510,6 +513,14 @@ ESPStruct [nil_remove] ResubmittedWU
     string ParentWUID;
 };
 
+ESPenum LogAccessReturnColsMode : int
+{
+    Min(0, "Min"),
+    Default(1, "Default"),
+    Custom(2, "Custom"),
+    All(3, "All")
+};
+
 ESPStruct WUFileOption
 {
     ESPenum WUFileType FileType;
@@ -522,6 +533,10 @@ ESPStruct WUFileOption
     string PlainText; //XML: optional
     int SlaveNumber(1); //ThorSlaveLog: optional
     int64 SizeLimit(0);
+    [min_ver("1.89"), nil_remove] unsigned MaxLogRecords;
+    [min_ver("1.89"), nil_remove] ESPenum LogAccessReturnColsMode RetColsMode;
+    [min_ver("1.89"), nil_remove] ESPenum LogAccessLogFormat LogFormat;
+    [min_ver("1.89"), nil_remove] unsigned LogSearchTimeBuffSecs;
 };
 
 ESPStruct [nil_remove] ScheduledWU

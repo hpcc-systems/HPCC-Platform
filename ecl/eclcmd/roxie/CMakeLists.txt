@@ -44,6 +44,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/eclcmd
          ${HPCC_SOURCE_DIR}/ecl/eclcc
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

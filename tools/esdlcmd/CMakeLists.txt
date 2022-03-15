@@ -62,6 +62,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/tools/esdlcmd-xml
          ${HPCC_SOURCE_DIR}/esp/esdllib
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

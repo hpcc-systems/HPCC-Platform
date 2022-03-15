@@ -31,6 +31,8 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform   #CSoapRequestBinding
     ${HPCC_SOURCE_DIR}/esp/clients                  #edwin.h in generated/ws_loggingservice.esp
     ${HPCC_SOURCE_DIR}/common/thorhelper
+    ${HPCC_SOURCE_DIR}/rtl/include
+    ${HPCC_SOURCE_DIR}/rtl/eclrtl
 )
 
 ADD_DEFINITIONS ( -D_USRDLL -DLOGGINGCOMMON_EXPORTS )

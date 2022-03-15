@@ -68,6 +68,8 @@ include_directories(
     ./../../../dali/base
     ./../../../common/workunit
     ${HPCC_SOURCE_DIR}/common/thorhelper
+    ${HPCC_SOURCE_DIR}/rtl/include
+    ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN -DTXSUMMARY_EXPORTS)

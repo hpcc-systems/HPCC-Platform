@@ -57,7 +57,9 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
          ${CMAKE_BINARY_DIR}/esp/services/ws_elk
          ${HPCC_SOURCE_DIR}/common/thorhelper
-    )
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+     )
 
 ADD_DEFINITIONS( -D_USRDLL )
 

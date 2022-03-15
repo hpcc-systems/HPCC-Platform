@@ -1622,6 +1622,19 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
                 return CWsWorkunitsSoapBinding::onGet(request,response);
             return 0;
         }
+#ifdef _CONTAINERIZED
+        else if (!strnicmp(path.str(), "/WsWorkunits/WUFile", 19))
+        {
+            StringBuffer type;
+            request->getParameter("Type", type);
+            if (strieq(type.str(), File_ComponentLog))
+            {
+                CWsWuFileHelper helper(nullptr);
+                helper.sendWUComponentLogStreaming(request, response);
+                return 0;
+            }
+        }
+#endif
         else if (!strnicmp(path.str(), REQPATH_CREATEANDDOWNLOADZAP, sizeof(REQPATH_CREATEANDDOWNLOADZAP) - 1))
         {
             createAndDownloadWUZAPFile(*ctx, request, response);

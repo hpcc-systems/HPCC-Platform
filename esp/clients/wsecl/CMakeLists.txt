@@ -45,7 +45,9 @@ include_directories (
          ./../../bindings/SOAP/Platform 
          ./../../bindings/SOAP/ws_ecl_client 
          ${HPCC_SOURCE_DIR}/common/thorhelper
-    )
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_ECL_CLIENT_EXPORTS )
 

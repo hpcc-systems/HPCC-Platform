@@ -49,6 +49,8 @@ include_directories (
          ./../../smc/SMCLib
          ./../../../common/environment
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

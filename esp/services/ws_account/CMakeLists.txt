@@ -47,6 +47,8 @@ include_directories (
          ./../../bindings/SOAP/xpp
          ./../../smc/SMCLib  
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 if (USE_OPENLDAP)

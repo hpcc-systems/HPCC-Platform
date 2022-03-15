@@ -61,6 +61,8 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         ${HPCC_SOURCE_DIR}/common/deftype
         ${ESPSCM_GENERATED_DIR}
         ${HPCC_SOURCE_DIR}/common/thorhelper
+        ${HPCC_SOURCE_DIR}/rtl/include
+        ${HPCC_SOURCE_DIR}/rtl/eclrtl
         )
 
     add_definitions(-D_USRDLL)

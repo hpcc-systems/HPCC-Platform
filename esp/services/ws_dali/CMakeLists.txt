@@ -47,6 +47,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/daliadmin
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

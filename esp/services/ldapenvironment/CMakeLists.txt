@@ -42,6 +42,8 @@ include_directories(
     ${HPCC_SOURCE_DIR}/system/security/securesocket
     ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
     ${HPCC_SOURCE_DIR}/common/thorhelper
+    ${HPCC_SOURCE_DIR}/rtl/include
+    ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
 add_definitions(-D_USRDLL)

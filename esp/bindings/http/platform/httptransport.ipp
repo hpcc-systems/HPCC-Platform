@@ -33,6 +33,7 @@
 #include "bindutil.hpp"
 
 #include "xslprocessor.hpp"
+#include "rtlformat.hpp"
 
 #define POST_METHOD "POST"
 #define GET_METHOD "GET"
@@ -55,6 +56,8 @@ enum MessageLogFlag
 #define HTTP_HEADER_ACCEPT_ENCODING   "Accept-Encoding"
 #define HTTP_HEADER_HPCC_GLOBAL_ID    "Global-Id"
 #define HTTP_HEADER_HPCC_CALLER_ID    "Caller-Id"
+
+static constexpr unsigned defaultResponseFlushThreshold = 8000;
 
 class esp_http_decl CHttpMessage : implements IHttpMessage, public CInterface
 {
@@ -436,6 +439,48 @@ public:
     virtual bool compressContent(StringBuffer* originalContent, int compressType);
     virtual bool shouldDecompress(int& compressType);
     virtual bool decompressContent(StringBuffer* originalContent, int compressType);
+};
+
+class CFlushingHttpResponseBuffer : implements IXmlStreamFlusher, public CInterface
+{
+    CHttpResponse* response = nullptr;
+    size32_t responseFlushThreshold = defaultResponseFlushThreshold;
+    StringBuffer responseBuffer;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CFlushingHttpResponseBuffer(CHttpResponse* _response, size32_t _flushThreshold) :
+        response(_response),  responseFlushThreshold(_flushThreshold)
+    {
+        if (!response)
+            throw makeStringException(-1, "HttpResponse not specified for CFlushingWUFileBuffer");
+    };
+    ~CFlushingHttpResponseBuffer()
+    {
+        try
+        {
+            if (!responseBuffer.isEmpty())
+                response->sendChunk(responseBuffer);
+        }
+        catch (IException* e)
+        {
+            // Ignore any socket errors that we get at termination - nothing we can do about them anyway...
+            e->Release();
+        }
+    }
+    void flushXML(StringBuffer& current, bool closing)
+    {
+        responseBuffer.append(current);
+        current.clear();
+
+        unsigned threshold = closing ? 1 : responseFlushThreshold;
+        if (responseBuffer.length() < threshold)
+            return;
+
+        response->sendChunk(responseBuffer);
+        responseBuffer.clear();
+    }
 };
 
 inline bool canRedirect(CHttpRequest &req)
