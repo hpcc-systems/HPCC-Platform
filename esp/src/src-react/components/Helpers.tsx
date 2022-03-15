@@ -30,6 +30,9 @@ function getURL(item: HelperRow, option) {
         case "res":
             params = "/WUFile/res.txt?Wuid=" + item.workunit.Wuid + "&Type=" + item.Orig.Type;
             break;
+        case "ComponentLog":
+            params = "/WUFile/" + item.Type + "?Wuid=" + item.workunit.Wuid + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
+            break;
         case "EclAgentLog":
             params = "/WUFile/" + item.Type + "?Wuid=" + item.workunit.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
             break;

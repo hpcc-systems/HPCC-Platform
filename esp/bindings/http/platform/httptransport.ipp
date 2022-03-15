@@ -174,6 +174,7 @@ public:
     virtual int getAttachmentCount(){return m_attachCount;}
     virtual IProperties *queryParameters();
     virtual IProperties *getParameters();
+    virtual int getParameterInt(const char* name, int defaultValue);
     virtual MapStrToBuf *queryAttachments()
     {
         return &m_attachments;

@@ -49,6 +49,9 @@ define([
                 case "res":
                     params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + item.Orig.Type;
                     break;
+                case "ComponentLog":
+                    params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
+                    break;
                 case "EclAgentLog":
                     params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
                     break;
