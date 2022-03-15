@@ -1,6 +1,6 @@
 import { Gauge } from "@hpcc-js/chart";
 import { Palette } from "@hpcc-js/common";
-import { GetTargetClusterUsageEx, MachineService, DFUXRefService, WsDFUXRef } from "@hpcc-js/comms";
+import { WsMachineEx, MachineService, DFUXRefService, WsDFUXRef } from "@hpcc-js/comms";
 import { ColumnFormat, Table } from "@hpcc-js/dgrid";
 import { FlexGrid } from "@hpcc-js/layout";
 import * as dojoOn from "dojo/on";
@@ -17,7 +17,7 @@ interface CompontentT {
     max: number;
 }
 
-type DetailsT = GetTargetClusterUsageEx.TargetClusterUsage | CompontentT;
+type DetailsT = WsMachineEx.TargetClusterUsage | CompontentT;
 
 const calcPct = (val, tot) => Math.round((val / tot) * 100);
 
@@ -227,8 +227,8 @@ export class Details extends Table {
             ;
     }
 
-    private _details: GetTargetClusterUsageEx.TargetClusterUsage;
-    private details(_: GetTargetClusterUsageEx.TargetClusterUsage) {
+    private _details: WsMachineEx.TargetClusterUsage;
+    private details(_: WsMachineEx.TargetClusterUsage) {
         this._details = _;
         const data = [];
         this
