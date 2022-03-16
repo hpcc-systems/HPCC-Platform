@@ -647,6 +647,8 @@ int main( int argc, const char *argv[]  )
 
     installDefaultFileHooks(globals);
     ILogMsgHandler *logHandler;
+    const char *workunit = nullptr;
+    const char *graphName = nullptr;
     try
     {
 #ifndef _CONTAINERIZED
@@ -824,7 +826,14 @@ int main( int argc, const char *argv[]  )
         if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
         globals->setProp("@thorPath", thorPath);
 
-#ifndef _CONTAINERIZED
+#ifdef _CONTAINERIZED
+        workunit = globals->queryProp("@workunit");
+        graphName = globals->queryProp("@graphName");
+        if (isEmptyString(workunit))
+            throw makeStringException(0, "missing --workunit");
+        if (isEmptyString(graphName))
+            throw makeStringException(0, "missing --graphName");
+#else
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
         StringBuffer datadir;
@@ -870,6 +879,14 @@ int main( int argc, const char *argv[]  )
                 tempDirStr.append("temp");
             }
         }
+
+#ifdef _CONTAINERIZED
+        // multiple thor jobs can be running on same node, sharing same local disk for temp storage.
+        // make unique by adding wuid+graphName
+        addPathSepChar(tempDirStr).append(workunit);
+        addPathSepChar(tempDirStr).append(graphName);
+#endif
+        // NB: set into globals, serialized and used by worker processes.
         globals->setProp("@thorTempDirectory", tempDirStr);
         logDiskSpace(); // Log before temp space is cleared
         StringBuffer tempPrefix("thtmp");
@@ -918,15 +935,7 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numWorkers = 0;
-        const char *workunit = nullptr;
-        const char *graphName = nullptr;
 #ifdef _CONTAINERIZED
-        workunit = globals->queryProp("@workunit");
-        graphName = globals->queryProp("@graphName");
-        if (isEmptyString(workunit))
-            throw makeStringException(0, "missing --workunit");
-        if (isEmptyString(graphName))
-            throw makeStringException(0, "missing --graphName");
         LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
         thorJob.setJobID(thorJobId);
         setDefaultJobId(thorJobId);
