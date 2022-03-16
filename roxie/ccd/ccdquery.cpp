@@ -1350,6 +1350,12 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     
     virtual void load(const IPropertyTree *stateInfo)
     {
+        // NOTE: stateinfo overrides package info
+        if (stateInfo)
+        {
+            if (stateInfo->getPropBool("@suspended", false))
+                suspend(stateInfo->queryProp("@suspendReason"));
+        }
         if (!dll)
             return;
         IConstWorkUnit *wu = dll->queryWorkUnit();
@@ -1361,13 +1367,6 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
             SCMStringBuffer bStr;
             targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
 
-            // NOTE: stateinfo overrides package info
-
-            if (stateInfo)
-            {
-                // info in querySets can override the defaults from workunit for some limits
-                isSuspended = stateInfo->getPropBool("@suspended", false);
-            }
             if (targetClusterType == RoxieCluster)
             {
                 Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);

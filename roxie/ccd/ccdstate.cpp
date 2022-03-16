@@ -1019,8 +1019,10 @@ public:
                     {
                         StringBuffer emsg;
                         E->errorMessage(emsg);
-                        Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL, false);
-                        dummyQuery->suspend(emsg.str());
+                        Owned<IPropertyTree> stateInfo = createPTree();
+                        stateInfo->setPropBool("@suspended", true);
+                        stateInfo->setProp("@suspendReason", emsg);
+                        Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), stateInfo, false);
                         queryHashes[i] = dummyQuery->queryHash();
                         addQuery(id, dummyQuery.getClear());
                     }
