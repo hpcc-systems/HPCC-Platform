@@ -136,7 +136,6 @@ interface IQueryFactory : extends IInterface
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const = 0;
     virtual hash64_t queryHash() const = 0;
     virtual const char *queryQueryName() const = 0;
-    virtual const char *queryErrorMessage() const = 0;
     virtual void suspend(const char *errMsg) = 0;
     virtual bool loadFailed() const = 0;
     virtual bool suspended() const = 0;

@@ -581,7 +581,7 @@ protected:
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryCache;       // Active and loading queries
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
-    mutable CriticalSection callbacksCrit;
+    mutable CriticalSection crit;
     mutable CRuntimeStatisticCollection stats;
 public:
     static CriticalSection queryCacheCrit;
@@ -1513,6 +1513,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         xref->setProp("@id", id);
         if (suspended())
         {
+            CriticalBlock b(crit);
             xref->setPropBool("@suspended", true);
             xref->setProp("@error", errorMessage);
         }
@@ -1548,10 +1549,6 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
             f->resetNodeProgressInfo();
         }
     }
-    virtual const char *queryErrorMessage() const override
-    {
-        return errorMessage.str();
-    }
     virtual const char *queryQueryName() const override
     {
         return id;
@@ -1566,9 +1563,10 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     }
     virtual void suspend(const char* errMsg) override
     {
+        CriticalBlock b(crit);
         isSuspended = true;
         isLoadFailed = true;
-        errorMessage.append(errMsg);
+        errorMessage.set(errMsg);
     }
 
     virtual bool loadFailed() const override
@@ -1687,6 +1685,7 @@ protected:
     {
         if (isSuspended)
         {
+            CriticalBlock b(crit);
             StringBuffer err;
             if (errorMessage.length())
                 err.appendf(" because %s", errorMessage.str());
@@ -1696,8 +1695,8 @@ protected:
 
     virtual void onTermination(TerminationCallbackInfo *info) const override
     {
-        CriticalBlock b(callbacksCrit);
-        callbacks.append(*info);
+        CriticalBlock b(crit);
+        callbacks.append(*info);  // NOTE - the destructor does the actual work
     }
 };
 
