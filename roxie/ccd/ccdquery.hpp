@@ -137,7 +137,7 @@ interface IQueryFactory : extends IInterface
     virtual hash64_t queryHash() const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual const char *queryErrorMessage() const = 0;
-    virtual void suspend(const char *errMsg) = 0;
+    virtual void setLoadFailed(const char *errMsg) = 0;
     virtual bool loadFailed() const = 0;
     virtual bool suspended() const = 0;
     virtual void resetQueryTimings() = 0;
