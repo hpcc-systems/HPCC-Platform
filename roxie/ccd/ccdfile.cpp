@@ -910,8 +910,14 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             // A temporary fix - files stored on azure don't have an accurate time stamp, so treat them as up to date.
             if (isUrl(f->queryFilename()))
                 return FileIsValid;
+            if (modified.isNull()) 
+                return FileIsValid;
             CDateTime mt;
-            return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
+            if (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))
+                return FileIsValid;
+            StringBuffer s1, s2;
+            DBGLOG("File date mismatch: local %s, DFS %s", mt.getString(s1).str(), modified.getString(s2).str());
+            return FileDateMismatch;
         }
         else
             return FileNotFound;
