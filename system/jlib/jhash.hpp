@@ -620,7 +620,7 @@ public:
  */
 
 template <class KEYTYPE, class VALUETYPE>
-class jlib_decl CTimeLimitedCache
+class CTimeLimitedCache
 {
 public:
     CTimeLimitedCache<KEYTYPE, VALUETYPE>(unsigned timeoutMs=defaultCacheTimeoutMs)
