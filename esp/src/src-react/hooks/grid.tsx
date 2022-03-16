@@ -8,6 +8,7 @@ import { createCopyDownloadSelection } from "../components/Common";
 import { DojoGrid } from "../components/DojoGrid";
 import { useDeepCallback, useDeepEffect } from "./deepHooks";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
+import { useUserStore } from "./store";
 
 interface useGridProps {
     store: any,
@@ -143,6 +144,7 @@ function useFluentStoreGrid({
     const [total, setTotal] = React.useState<number>();
 
     const refreshTable = React.useCallback(() => {
+        if (isNaN(start) || isNaN(count)) return;
         const storeQuery = store.query(query ?? {}, { start, count, sort: sorted ? [sorted] : undefined });
         storeQuery.total.then(total => {
             setTotal(total);
@@ -247,6 +249,7 @@ export function useFluentGrid({
 }
 
 interface useFluentPagedGridProps {
+    persistID: string,
     store: ESPRequest.Store,
     query?: QueryRequest,
     sort?: QuerySortItem,
@@ -263,6 +266,7 @@ interface useFluentPagedGridResponse {
 }
 
 export function useFluentPagedGrid({
+    persistID,
     store,
     query,
     sort,
@@ -271,14 +275,17 @@ export function useFluentPagedGrid({
 }: useFluentPagedGridProps): useFluentPagedGridResponse {
 
     const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(25);
+    const [persistedPageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, "25");
+    const pageSize = React.useMemo(() => {
+        return parseInt(persistedPageSize);
+    }, [persistedPageSize]);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
 
     const dropdownChange = React.useCallback((evt, option) => {
         const newPageSize = option.key as number;
         setPage(Math.floor((page * pageSize) / newPageSize));
-        setPageSize(newPageSize);
-    }, [page, pageSize]);
+        setPersistedPageSize(`${newPageSize}`);
+    }, [page, pageSize, setPersistedPageSize]);
 
     const GridPagination = React.useCallback(() => {
         return <Stack horizontal horizontalAlign="space-between">
@@ -297,7 +304,7 @@ export function useFluentPagedGrid({
                     { key: 250, text: "250" },
                     { key: 500, text: "500" },
                     { key: 1000, text: "1000" }
-                ]} defaultSelectedKey={pageSize} onChange={dropdownChange} />
+                ]} selectedKey={pageSize} onChange={dropdownChange} />
             </Stack.Item>
         </Stack>;
     }, [dropdownChange, page, pageSize, total]);

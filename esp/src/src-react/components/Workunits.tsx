@@ -93,6 +93,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [store]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        persistID: "workunits",
         store: gridStore,
         query,
         sort: { attribute: "Wuid", descending: true },
