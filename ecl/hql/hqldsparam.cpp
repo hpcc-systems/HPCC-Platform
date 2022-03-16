@@ -75,7 +75,8 @@ IHqlExpression* HqlGram::processAbstractDataset(IHqlExpression* _expr, IHqlExpre
         }
         else if (errorIfNotFound)
         {
-            reportError(ERR_DSPARM_MISSINGFIELD,errpos,"Dataset %s has no field named '%s'", str(actual->queryName()), str(mapto));
+            const char * actualName = str(actual->queryName());
+            reportError(ERR_DSPARM_MISSINGFIELD,errpos,"Dataset %s has no field named '%s'", actualName ? actualName : "<unnamed>", str(mapto));
             hadError = true;
         }
     }       
