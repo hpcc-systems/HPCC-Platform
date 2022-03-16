@@ -603,7 +603,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
 void HqlDllGenerator::addWorkUnitAsResource()
 {
-    bool defaultBinaryWorkunit = false;
+    bool defaultBinaryWorkunit = true;
     if (wu->getDebugValueInt("saveBinaryWorkunit", defaultBinaryWorkunit))
     {
         MemoryBuffer wuBinary;
