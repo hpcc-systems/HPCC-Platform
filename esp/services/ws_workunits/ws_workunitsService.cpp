@@ -479,7 +479,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     initContainerRoxieTargets(roxieConnMap);
 #endif
     m_sched.start();
-    filesInUse.subscribe();
 
     //Start thread pool
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ClusterQueryStateThreadPoolSize", process, service);
