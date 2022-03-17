@@ -117,7 +117,7 @@ public:
             barrier.setown(container.queryJobChannel().createBarrier(barrierTag));
             portbase = queryJobChannel().allocPort(NUMSLAVEPORTS);
             server.setLocalHost(portbase);
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
             server.serialize(slaveData);
         }
         compare = helper->queryCompareLeft();                   // NB not CompareLeftRight
@@ -134,7 +134,7 @@ public:
         PARENT::reset();
         if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
         if (!isLocal && TAG_NULL != mpTagRPC)
-            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&queryJobChannel().queryJobComm(),mpTagRPC));
+            sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
     }
     virtual void kill() override
     {

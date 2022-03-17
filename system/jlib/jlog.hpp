@@ -1515,7 +1515,8 @@ public:
 
     void setLogFieldNames(const StringArray &logFieldNames)
     {
-        this->logFieldNames = logFieldNames;
+        this->logFieldNames.kill();
+        this->logFieldNames.appendArray(logFieldNames);
     }
 
     offset_t getStartFrom() const

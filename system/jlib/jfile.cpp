@@ -2816,6 +2816,10 @@ protected:
         return sz;
     }
     virtual offset_t directSize() { return io->size(); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return io->getStatistic(kind);
+    }
 
 protected:
     IFileIOAttr             io;
@@ -2926,6 +2930,7 @@ public:
     virtual size32_t directRead(size32_t len, void * data) { assertex(false); return 0; }           // shouldn't get called
     virtual size32_t directWrite(size32_t len, const void * data) { assertex(false); return 0; }    // shouldn't get called
     virtual offset_t directSize() { waitAsyncWrite(); return io->size(); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) { return io->getStatistic(kind); }
 };
 
 

@@ -108,6 +108,59 @@ const char * CldapenvironmentEx::formatOUname(StringBuffer &ou, const char * env
     return ou.str();
 }
 
+bool CldapenvironmentEx::changePermissions(const char * ou, const char * userFQDN, SecAccessFlags allows, SecAccessFlags denies)
+{
+    // Given an OU such as "ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com", the
+    // 'rName' is 'BocaInsurance' and the baseDN is 'ou=hpcc,dc=myldap,dc=com"
+    StringBuffer baseDN;
+    StringBuffer rName;
+
+    size_t finger = 0;
+    while ('=' != ou[finger++]);//skip over "ou=" or "cn="
+    while (',' != ou[finger])
+        rName.append( (char)ou[finger++] );
+    baseDN.append( ou + finger + 1 );
+
+    CPermissionAction action;
+    action.m_action = "update";
+    action.m_basedn = baseDN;
+    action.m_rname =  rName;
+    action.m_rtype = RT_DEFAULT;
+    action.m_account_name = userFQDN;//fully qualified user DN
+    action.m_account_type = USER_ACT;
+    action.m_allows = allows;
+    action.m_denies = denies;
+    DBGLOG("Setting (%d,%d) permissions for rName %s, baseDN %s, user %s", (int)allows, (int)denies, rName.str(), baseDN.str(), userFQDN);
+    bool ok;
+    try
+    {
+        ok = secmgr->changePermission(action);
+    }
+    catch (...)
+    {
+    }
+    return ok;
+}
+
+bool CldapenvironmentEx::createSecret(const char * secretName, const char * username, const char * pwd, StringBuffer & notes)
+{
+    VStringBuffer cmdLineSafe("kubectl create secret generic %s --from-literal=username=%s --from-literal=password=", secretName, username);
+    VStringBuffer cmdLine("%s%s", cmdLineSafe.str(), pwd);
+    try
+    {
+        DBGLOG("\nExecuting '%s'\n", cmdLineSafe.str());
+        long unsigned int runcode;
+        bool success = invoke_program(cmdLine.str(), runcode) && (runcode==0);
+        if (!success)
+            notes.appendf("\nError executing '%s', please run manually before executing helm install", cmdLineSafe.str());
+    }
+    catch (...)
+    {
+        notes.appendf("\nException executing '%s', please run manually before executing helm install", cmdLineSafe.str());
+    }
+    return true;
+}
+
 
 bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPCreateEnvironmentRequest &req, IEspLDAPCreateEnvironmentResponse &resp)
 {
@@ -142,7 +195,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         if (!req.getWorkunitsMode() == COUMode_CreateCustom && isEmptyString(req.getCustomWorkunitsBaseDN()))
             throw MakeStringException(-1, "CustomWorkunitsBaseDN must be specified (ex. 'ou=workunits,ou=hpcc,dc=myldap,dc=com')");
 
-        // Create OU names
+        // Create OU string names
 
         StringBuffer respFilesBaseDN, respGroupsBaseDN, respUsersBaseDN, respResourcesBaseDN, respWorkunitsBaseDN;
         formatOUname(respFilesBaseDN, req.getEnvName(), req.getFilesMode(), sharedFilesBaseDN.str(), req.getCustomFilesBaseDN(), "ou=files");
@@ -159,77 +212,205 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         }
 
         //Create LDAP resources OU Hierarchy
-
+        VStringBuffer description("%s, created by %s", req.getEnvDescription(), req.getEnvOwnerName());
         if (req.getCreateLDAPEnvironment())
         {
-            VStringBuffer description("%s, created by %s", req.getEnvDescription(), req.getEnvOwnerName());
             //Note that ESP will also try to create these OUs on startup
-            try { secmgr->createLdapBasedn(nullptr, respFilesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str()); }
-            catch(...) { notes.appendf("\nError creating '%s'", respFilesBaseDN.str()); }
-            try { secmgr->createLdapBasedn(nullptr, respGroupsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str()); }
-            catch(...) { notes.appendf("\nError creating '%s'", respGroupsBaseDN.str()); }
-            try { secmgr->createLdapBasedn(nullptr, respUsersBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str()); }
-            catch(...) { notes.appendf("\nError creating '%s'", respUsersBaseDN.str()); }
-            try { secmgr->createLdapBasedn(nullptr, respResourcesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str()); }
-            catch(...) { notes.appendf("\nError creating '%s'", respResourcesBaseDN.str()); }
-            try { secmgr->createLdapBasedn(nullptr, respWorkunitsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str()); }
-            catch(...) { notes.appendf("\nError creating '%s'", respWorkunitsBaseDN.str()); }
+            try
+            {
+                 secmgr->createLdapBasedn(nullptr, respFilesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
+            }
+            catch(...)
+            {
+                  notes.appendf("\nNon Fatal Error creating '%s'", respFilesBaseDN.str());
+            }
+            try
+            {
+                 secmgr->createLdapBasedn(nullptr, respGroupsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
+            }
+            catch(...)
+            {
+                notes.appendf("\nNon Fatal Error creating '%s'", respGroupsBaseDN.str());
+            }
+            try
+            {
+                secmgr->createLdapBasedn(nullptr, respUsersBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
+            }
+            catch(...)
+            {
+                notes.appendf("\nNon Fatal Error creating '%s'", respUsersBaseDN.str());
+            }
+            try
+            {
+                secmgr->createLdapBasedn(nullptr, respResourcesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
+            }
+            catch(...)
+            {
+                notes.appendf("\nNon Fatal Error creating '%s'", respResourcesBaseDN.str());
+            }
+            try
+            {
+                secmgr->createLdapBasedn(nullptr, respWorkunitsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
+            }
+            catch(...)
+            {
+                 notes.appendf("\nNon Fatal Error creating '%s'", respWorkunitsBaseDN.str());
+            }
+
+            //Create HPCCAdmins Group
+            try
+            {
+                secmgr->addGroup(adminGroupName.str(), nullptr, description.str(), respGroupsBaseDN.str());
+            }
+            catch(...)
+            {
+                notes.appendf("\nNon Fatal Error creating '%s,%s'", adminGroupName.str(), respGroupsBaseDN.str());
+            }
         }
         
         //----------------------------------
         // Create HPCC Admin Username/password.
         // Attempt to create the Kubernetes secret for that user
-        // NOTE!  HPCCAdmin LDAP group and HPCCAdmin LDAP user will be
-        // created by ESP when started in Admin mode
-        //----------------------------------        
-        VStringBuffer respHPCCAdminUser("admin_%s", req.getEnvName());
-
-        VStringBuffer  hpccAdminK8sSecretName("hpccadminsecret-%s", req.getEnvName());
-        hpccAdminK8sSecretName.toLowerCase();
-
+        //----------------------------------
+        VStringBuffer respHPCCAdminUser("adminHPCC_%s", req.getEnvName());
         StringBuffer  respHPCCAdminPwd;
         generatePassword(respHPCCAdminPwd, 10);//jutil.hpp
 
-        if (req.getCreateK8sSecret())
+        if (req.getCreateLDAPEnvironment())
         {
-            VStringBuffer cmdLineSafe("kubectl create secret generic %s --from-literal=username=%s --from-literal=password=", hpccAdminK8sSecretName.str(), respHPCCAdminUser.str());
-            VStringBuffer cmdLine("%s%s", cmdLineSafe.str(), respHPCCAdminPwd.str());
-            try
+            //Create the HPCCAdmin user
             {
-                DBGLOG("\nExecuting '%s'\n", cmdLineSafe.str());
-                long unsigned int runcode;
-                bool success = invoke_program(cmdLine.str(), runcode) && (runcode==0);
-                if (!success)
-                    notes.appendf("\nError executing '%s', please run manually before executing helm install", cmdLineSafe.str());
+                Owned<ISecUser> user = secmgr->createUser(respHPCCAdminUser.str());
+                user->credentials().setPassword(respHPCCAdminPwd.str());
+                try
+                {
+                    secmgr->addUser(*user.get(), respUsersBaseDN.str());
+                }
+                catch(...)
+                {
+                    notes.appendf("\nNon Fatal Error creating '%s'", respHPCCAdminUser.str());
+                }
             }
-            catch (...)
+
+            const char * userPrefix = secmgr->getLdapServerType() == ACTIVE_DIRECTORY ? "cn=" : "uid=";
+            const char * resPrefix = secmgr->getLdapServerType() == ACTIVE_DIRECTORY ? "cn=" : "ou=";
+
+            //Add HPCCAdmin user to HPCCAdmins group
             {
-                notes.appendf("\nException executing '%s', please run manually before executing helm install", cmdLineSafe.str());
+                VStringBuffer adminGrpOU("cn=%s,%s", adminGroupName.str(), respGroupsBaseDN.str());
+                VStringBuffer adminUsr("%s%s,%s", userPrefix, respHPCCAdminUser.str(), respUsersBaseDN.str());
+                try
+                {
+                    secmgr->changeGroupMember("add", adminGrpOU.str(), adminUsr.str());
+                }
+                catch(...)
+                {
+                    notes.appendf("\nNon Fatal Error adding '%s' to '%s'", adminUsr.str(), adminGrpOU.str());
+                }
+            }
+
+            //Grant SmcAccess to HPCCAdmins group
+            {
+                VStringBuffer smcAccess("%sSmcAccess,%s", resPrefix, respResourcesBaseDN.str());
+                try
+                {
+                    secmgr->createLdapBasedn(nullptr, smcAccess.str(), PT_ADMINISTRATORS_ONLY, description.str());
+                }
+                catch(...)
+                {
+                    notes.appendf("\nNon Fatal Error creating '%s'", smcAccess.str());
+                }
+
+                CPermissionAction action;
+                action.m_action = "update";
+                action.m_basedn = respResourcesBaseDN.str();
+                action.m_rname = "SmcAccess";
+                action.m_rtype = RT_SERVICE;
+                action.m_account_name = adminGroupName.str();
+                action.m_account_type = GROUP_ACT;
+                action.m_allows = SecAccess_Full;
+                action.m_denies = 0;
+                try
+                {
+                    secmgr->changePermission(action);
+                }
+                catch(...)
+                {
+                    notes.appendf("\nNon Fatal Error setting '%s' permission for '%s'", smcAccess.str(), adminGroupName.str());
+                }
             }
         }
+
+        //Create the secret
+        VStringBuffer  respHPCCAdminK8sSecretName("hpcc-admin-%s", req.getEnvName());
+        respHPCCAdminK8sSecretName.toLowerCase();
+        if (req.getCreateK8sSecrets())
+            createSecret(respHPCCAdminK8sSecretName.str(), respHPCCAdminUser.str(), respHPCCAdminPwd.str(), notes);
+
+        //----------------------------------
+        // Create LDAP Admin Username/password.
+        // Attempt to create the Kubernetes secret for that user
+        //----------------------------------
+        VStringBuffer respLDAPAdminUser("adminLDAP_%s", req.getEnvName());
+        StringBuffer  respLDAPAdminPwd;
+        generatePassword(respLDAPAdminPwd, 10);//jutil.hpp
+
+        if (req.getCreateLDAPEnvironment())
+        {
+            //Create the user
+            Owned<ISecUser> user = secmgr->createUser(respLDAPAdminUser.str());
+            user->credentials().setPassword(respLDAPAdminPwd.str());
+            try {secmgr->addUser(*user.get(), respUsersBaseDN.str()); }
+            catch(...) { notes.appendf("\nNon Fatal Error creating '%s'", respLDAPAdminUser.str()); }
+
+            //Add LDAP R/W permissions for LDAPAdmin user
+            //Only grant access to root of new environment (ex  ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com)
+            VStringBuffer ldapAdminFQDN("uid=%s,%s", respLDAPAdminUser.str(), respUsersBaseDN.str());//@@
+            if (!changePermissions(envOU.str(), ldapAdminFQDN.str(), SecAccess_Full, SecAccess_None))
+                notes.appendf("\nNon Fatal Error setting LDAPAdmin permission for %s'", envOU.str());
+        }
+
+        //Create the secret
+        VStringBuffer respLDAPAdminK8sSecretName("ldap-admin-%s", req.getEnvName());
+        respLDAPAdminK8sSecretName.toLowerCase();
+        if (req.getCreateK8sSecrets())
+            createSecret(respLDAPAdminK8sSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
 
         //----------------------------------
         // Set response
         //----------------------------------
+        VStringBuffer ldapcredskey("ldapcredskey-%s", req.getEnvName());
+        VStringBuffer hpcccredskey("hpcccredskey-%s", req.getEnvName());
+        ldapcredskey.toLowerCase();
+        hpcccredskey.toLowerCase();
+
+        resp.setLDAPAdminUsername(respLDAPAdminUser.str());
+        resp.setLDAPAdminPassword(respLDAPAdminPwd.str());
         resp.setHPCCAdminUsername(respHPCCAdminUser.str());
         resp.setHPCCAdminPassword(respHPCCAdminPwd.str());
-        VStringBuffer ldapHelm("\n"
+        VStringBuffer ldapHelm("\n\n"
                                "secrets:\n"
                                "  authn:\n"
-                               "    myhpcccreds: %s\n\n"
+                               "    %s: %s\n"
+                               "    %s: %s\n\n"
                                "esp:\n"
                                "- name: eclwatch\n"
                                "  auth: ldap\n"
                                "  ldap:\n"
                                "    adminGroupName: %s\n"
-                               "    hpccAdminSecretKey: myhpcccreds\n"
+                               "    ldapAdminSecretKey: %s\n"
+                               "    hpccAdminSecretKey: %s\n"
                                "    filesBasedn: %s\n"
                                "    groupsBasedn: %s\n"
                                "    usersBasedn: %s\n"
                                "    resourcesBasedn: %s\n"
-                               "    workunitsBasedn: %s\n",
-                               hpccAdminK8sSecretName.str(), adminGroupName.str(), respFilesBaseDN.str(), respGroupsBaseDN.str(),
-                               respUsersBaseDN.str(), respResourcesBaseDN.str(), respWorkunitsBaseDN.str());
+                               "    workunitsBasedn: %s\n"
+                               "    systemBasedn: %s\n\n",
+                               ldapcredskey.str(), respLDAPAdminK8sSecretName.str(),
+                               hpcccredskey.str(), respHPCCAdminK8sSecretName.str(),
+                               adminGroupName.str(),
+                               ldapcredskey.str(), hpcccredskey.str(),
+                               respFilesBaseDN.str(), respGroupsBaseDN.str(), respUsersBaseDN.str(), respResourcesBaseDN.str(), respWorkunitsBaseDN.str(), respUsersBaseDN.str());
         resp.setLDAPHelm(ldapHelm.str());
         resp.setNotes(notes.str());
     }

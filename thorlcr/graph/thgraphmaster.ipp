@@ -156,8 +156,6 @@ class graphmaster_decl CJobMaster : public CJobBase
     Linked<IConstWorkUnit> workunit;
     Owned<IFatalHandler> fatalHandler;
     bool querySent, sendSo, spillsSaved;
-    Int64Array nodeDiskUsage;
-    bool nodeDiskUsageCached;
     StringArray createdFiles;
     Owned<CSlaveMessageHandler> slaveMsgHandler;
     SocketEndpoint agentEp;
@@ -214,10 +212,7 @@ public:
     virtual bool fireException(IException *e);
 
     virtual void addCreatedFile(const char *file);
-    virtual __int64 addNodeDiskUsage(unsigned node, __int64 sz);
 
-    __int64 queryNodeDiskUsage(unsigned node);
-    void setNodeDiskUsage(unsigned node, __int64 sz);
     bool queryCreatedFile(const char *file);
 
     virtual IFatalHandler *clearFatalHandler();

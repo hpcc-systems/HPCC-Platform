@@ -84,7 +84,7 @@ protected:
 
                 // NB: this is post base start()
                 if (!hasLookAhead(0))
-                    setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this, &container.queryJob().queryIDiskUsage()), false);
+                    setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), ENTH_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this), false);
                 else
                     startLookAhead(0);
             }

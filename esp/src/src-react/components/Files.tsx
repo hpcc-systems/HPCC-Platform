@@ -89,6 +89,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     }, [filter]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        persistID: "files",
         store: gridStore,
         query,
         filename: "logicalfiles",
@@ -284,5 +285,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             </>
         }
         footer={<GridPagination />}
+        footerStyles={{}}
     />;
 };

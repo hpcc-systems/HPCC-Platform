@@ -18,7 +18,7 @@
     recommend using methods that allow you to best take advantage of the
     configuration as code (CaC) practices. Configuration as code is the
     standard of managing configuration files in a version control system or
-    repository.</para>
+    repository. </para>
 
     <para>The following is a list of common customization techniques:</para>
 
@@ -59,7 +59,7 @@
       </listitem>
     </itemizedlist>
 
-    <sect2 id="CustTutorial1" role="nobrk">
+    <sect2 id="CustTutorial1" role="brk">
       <title>Create a Custom Configuration Chart for Two Roxies</title>
 
       <orderedlist>

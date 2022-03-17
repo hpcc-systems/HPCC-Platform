@@ -1557,6 +1557,61 @@ lock=/var/lock/HPCCSystems</programlisting>
           </variablelist></para>
       </sect2>
 
+      <sect2 id="SysAdm_Java_env.conf">
+        <title>Environment.conf and Java Settings</title>
+
+        <para>Specify the JNI_PATH setting if HPCC cannot find the adequate
+        JNI library (libjvm) or if you want an alternate libjvm. For
+        example:</para>
+
+        <para>
+          <programlisting>JNI_PATH=/absolute/path/to/alternative/libjvm.so
+</programlisting>
+        </para>
+
+        <para>
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>
+                    <inlinegraphic fileref="images/OSSgr3.png" />
+                  </entry>
+
+                  <entry>
+                    <para>When targeting custom classes, all dependencies must
+                    be accessible by declaring their location on the
+                    classpath, or including in the host jar file.</para>
+
+                    <para>Custom java classes should be built using compatible
+                    Java versions. To check the Java version used to build a
+                    given class use:</para>
+
+                    <para>
+                      <programlisting>javap: javap -verbose MyClass | grep "major" </programlisting>
+                    </para>
+
+                    <para>When targeting a given method, ensure the signature
+                    declared in the embedded Java section matches the actual
+                    method signature. To get the signature, use:</para>
+
+                    <para>
+                      <programlisting>javap: javap –s MyClass</programlisting>
+                    </para>
+                  </entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </para>
+      </sect2>
+
       <sect2 id="ConfiguringRemoteAccessOverTLS">
         <title>Remote Access over TLS</title>
 

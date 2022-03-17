@@ -101,7 +101,7 @@ public:
         if (!isLocal && rowN)
         {
             if (ensureStartFTLookAhead(0))
-                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), SELECTN_SMART_BUFFER_SIZE, ::canStall(input), false, rowN, this, &container.queryJob().queryIDiskUsage()), false);
+                setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), SELECTN_SMART_BUFFER_SIZE, ::canStall(input), false, rowN, this), false);
         }
 
         seenNth = false;

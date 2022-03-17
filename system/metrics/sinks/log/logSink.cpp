@@ -42,7 +42,7 @@ void LogMetricSink::doCollection()
 void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
 {
     std::string name = pMetric->queryName();
-    auto metaData = pMetric->queryMetaData();
+    const auto & metaData = pMetric->queryMetaData();
     for (auto &metaDataIt: metaData)
     {
         name.append(".").append(metaDataIt.value);

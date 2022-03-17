@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IStackProps, Label, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IStackProps, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory, QueryRequest, QuerySortItem } from "src/Memory";
 import * as ESPRequest from "src/ESPRequest";
@@ -8,6 +8,8 @@ import { createCopyDownloadSelection } from "../components/Common";
 import { DojoGrid } from "../components/DojoGrid";
 import { useDeepCallback, useDeepEffect } from "./deepHooks";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
+import { useUserStore } from "./store";
+import { useUserTheme } from "./theme";
 
 interface useGridProps {
     store: any,
@@ -143,6 +145,7 @@ function useFluentStoreGrid({
     const [total, setTotal] = React.useState<number>();
 
     const refreshTable = React.useCallback(() => {
+        if (isNaN(start) || isNaN(count)) return;
         const storeQuery = store.query(query ?? {}, { start, count, sort: sorted ? [sorted] : undefined });
         storeQuery.total.then(total => {
             setTotal(total);
@@ -247,6 +250,7 @@ export function useFluentGrid({
 }
 
 interface useFluentPagedGridProps {
+    persistID: string,
     store: ESPRequest.Store,
     query?: QueryRequest,
     sort?: QuerySortItem,
@@ -263,6 +267,7 @@ interface useFluentPagedGridResponse {
 }
 
 export function useFluentPagedGrid({
+    persistID,
     store,
     query,
     sort,
@@ -271,24 +276,70 @@ export function useFluentPagedGrid({
 }: useFluentPagedGridProps): useFluentPagedGridResponse {
 
     const [page, setPage] = React.useState(0);
-    const [pageSize, setPageSize] = React.useState(25);
+    const [persistedPageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, "25");
+    const pageSize = React.useMemo(() => {
+        return parseInt(persistedPageSize);
+    }, [persistedPageSize]);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
+    const [theme] = useUserTheme();
+
+    const paginationStyles = React.useMemo(() => mergeStyleSets({
+        root: {
+            padding: "10px 12px 10px 6px",
+            display: "grid",
+            gridTemplateColumns: "9fr 1fr",
+            gridColumnGap: "10px"
+        },
+        pageControls: {
+            ".ms-Pagination-container": {
+                flexDirection: "row-reverse",
+                justifyContent: "space-between"
+            },
+            ".ms-Pagination-container > :first-child": {
+                display: "flex"
+            },
+            ".ms-Pagination-container .ms-Button-icon": {
+                color: theme.palette.themePrimary
+            },
+            ".ms-Pagination-container .ms-Pagination-pageNumber": {
+                color: theme.palette.neutralDark
+            },
+            ".ms-Pagination-container button:hover": {
+                backgroundColor: theme.palette.neutralLighter
+            },
+            ".ms-Pagination-container .is-disabled .ms-Button-icon": {
+                color: theme.palette.neutralQuaternary
+            }
+        },
+        paginationLabel: {
+            fontWeight: 600,
+            marginLeft: "6px",
+            color: theme.palette.neutralDark,
+        }
+    }), [theme]);
 
     const dropdownChange = React.useCallback((evt, option) => {
         const newPageSize = option.key as number;
         setPage(Math.floor((page * pageSize) / newPageSize));
-        setPageSize(newPageSize);
-    }, [page, pageSize]);
+        setPersistedPageSize(`${newPageSize}`);
+    }, [page, pageSize, setPersistedPageSize]);
 
     const GridPagination = React.useCallback(() => {
-        return <Stack horizontal horizontalAlign="space-between">
-            <Stack.Item>
-            </Stack.Item>
-            <Stack.Item>
-                <Pagination selectedPageIndex={page} itemsPerPage={pageSize} totalItemCount={total} pageCount={Math.ceil(total / pageSize)} format="buttons" onPageChange={index => setPage(Math.round(index))} />
+        return <Stack horizontal className={paginationStyles.root}>
+            <Stack.Item className={paginationStyles.pageControls}>
+                <Pagination
+                    selectedPageIndex={page} itemsPerPage={pageSize} totalItemCount={total}
+                    pageCount={Math.ceil(total / pageSize)} format="buttons" onPageChange={index => setPage(Math.round(index))}
+                    onRenderVisibleItemLabel={props => {
+                        const start = props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
+                        const end = (props.itemsPerPage * (props.selectedPageIndex + 1)) > props.totalItemCount ? props.totalItemCount : props.itemsPerPage * (props.selectedPageIndex + 1);
+                        return <div className={paginationStyles.paginationLabel}>
+                            {start} {props.strings.divider} {end} {nlsHPCC.Of.toLowerCase()} {props.totalItemCount} {nlsHPCC.Rows}
+                        </div>;
+                    }}
+                />
             </Stack.Item>
             <Stack.Item align="center">
-                <Label htmlFor={"pageSize"}>{nlsHPCC.PageSize}</Label>
                 <Dropdown id="pageSize" options={[
                     { key: 10, text: "10" },
                     { key: 25, text: "25" },
@@ -297,10 +348,10 @@ export function useFluentPagedGrid({
                     { key: 250, text: "250" },
                     { key: 500, text: "500" },
                     { key: 1000, text: "1000" }
-                ]} defaultSelectedKey={pageSize} onChange={dropdownChange} />
+                ]} selectedKey={pageSize} onChange={dropdownChange} />
             </Stack.Item>
         </Stack>;
-    }, [dropdownChange, page, pageSize, total]);
+    }, [dropdownChange, page, pageSize, paginationStyles, total]);
 
     return { Grid, GridPagination, selection, refreshTable, copyButtons };
 }

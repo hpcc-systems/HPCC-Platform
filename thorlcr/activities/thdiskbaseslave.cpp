@@ -335,7 +335,7 @@ void CDiskWriteSlaveActivityBase::open()
         if (hasLookAhead(0))
             startLookAhead(0);
         else
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PROCESS_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, NULL, &container.queryJob().queryIDiskUsage()), false);
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), PROCESS_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, NULL), false);
         if (!rfsQueryParallel)
         {
             ActPrintLog("Blocked, waiting for previous part to complete write");
@@ -653,8 +653,6 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     rowcount_t _processed = processed & THORDATALINK_COUNT_MASK;
     Owned<IFile> ifile = createIFile(fName);
     offset_t sz = ifile->size();
-    if ((offset_t)-1 != sz)
-        container.queryJob().queryIDiskUsage().increase(sz);
     mb.append(_processed).append(compress?uncompressedBytesWritten:sz).append(sz);
     // NB: block compressed output has implicit crc of 0.
     unsigned crc = compress?~0:fileCRC.get();

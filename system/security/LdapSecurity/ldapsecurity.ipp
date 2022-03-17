@@ -380,6 +380,7 @@ public:
     virtual void getGroups(const char* username, StringArray & groups);
     virtual bool changePermission(CPermissionAction& action);
     virtual void changeUserGroup(const char* action, const char* username, const char* groupname);
+    virtual void changeGroupMember(const char* action, const char* groupdn, const char* userdn);
     virtual bool deleteUser(ISecUser* user);
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc);
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc, const char* basedn);
@@ -445,6 +446,7 @@ public:
     bool removeResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override { return false; }
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype, const char* description);
     virtual const bool organizationalUnitExists(const char * ou) const;
+    virtual bool addUser(ISecUser & user, const char* basedn);
     
     //Data View related interfaces
     virtual void createView(const char * viewName, const char * viewDescription);

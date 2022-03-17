@@ -1072,7 +1072,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);
         pingInterval = topology->getPropInt("@pingInterval", 0);
         socketCheckInterval = topology->getPropInt("@socketCheckInterval", runOnce ? 0 : 5000);
-        memsize_t totalMemoryLimit = (memsize_t) topology->getPropInt64("@totalMemoryLimit", 0);
+        const char *totalMemoryString = topology->queryProp("@totalMemoryLimit");
+        memsize_t totalMemoryLimit = totalMemoryString ? friendlyStringToSize(totalMemoryString) : 0;
         bool allowHugePages = topology->getPropBool("@heapUseHugePages", false);
         bool allowTransparentHugePages = topology->getPropBool("@heapUseTransparentHugePages", true);
         bool retainMemory = topology->getPropBool("@heapRetainMemory", false);

@@ -295,7 +295,6 @@ public:
     virtual unsigned getCodeVersion() const;
     virtual unsigned getWuidVersion() const;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
-    virtual IPropertyTree * getDiskUsageStats();
     virtual IPropertyTreeIterator & getFileIterator() const;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned,bool exportAssociatedFiles);
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime &val) const;
@@ -373,7 +372,6 @@ public:
     void resetBeforeGeneration();
     void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned);
     void deleteTemporaries();
-    void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId);
     void setTimeScheduled(const IJlibDateTime &val);
     virtual void subscribe(WUSubscribeOptions options) {};
 

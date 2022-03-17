@@ -32,6 +32,8 @@ private:
     StringBuffer    adminGroupName;
 
     const char * formatOUname(StringBuffer &ou, const char * envName, int mode, const char * sharedOU, const char * reqBaseDN, const char * privateOU);
+    bool createSecret(const char * secretName, const char * username, const char * pwd, StringBuffer & notes);
+    bool changePermissions(const char * ou, const char * userFQDN, SecAccessFlags allows, SecAccessFlags denies);
 
 public:
     IMPLEMENT_IINTERFACE;

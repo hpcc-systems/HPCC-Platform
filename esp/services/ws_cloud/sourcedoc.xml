@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,32 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>esp/services/ws_cloud</title>
 
-
-# component: esp/scm
-
-#####################################################
-# Description:
-# ------------
-#    Cmake Input File esp/scm
-#####################################################
-
-project (scm)
-
-set (SCM_BUILD ON)
-include ( ${CMAKE_CURRENT_SOURCE_DIR}/espscm.cmake)
-include ( ${CMAKE_CURRENT_SOURCE_DIR}/smcscm.cmake)
-include ( ${CMAKE_CURRENT_SOURCE_DIR}/additional.cmake)
-set (SCM_BUILD OFF)
-
-
-ADD_CUSTOM_TARGET( 
-  espscm ALL
-  DEPENDS ${ESP_GENERATED_INCLUDES}
-)
-
-if (NOT VCPKG_APPLOCAL_DEPS)
-  if (WIN32)
-    ADD_DEPENDENCIES(espscm copy_libssl)
-  endif()
-endif()
+    <para>
+        The esp/services/ws_cloud directory contains the sources for the esp/services/ws_cloud library.
+    </para>
+</section>

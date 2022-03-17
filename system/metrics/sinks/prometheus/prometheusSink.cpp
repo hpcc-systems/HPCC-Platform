@@ -125,7 +125,7 @@ void PrometheusMetricSink::toPrometheusMetrics(const std::vector<std::shared_ptr
         }
 
         out.append(name.c_str());
-        auto metaData = pMetric->queryMetaData();
+        const auto & metaData = pMetric->queryMetaData();
         if (metaData.size()>0)
         {
             out.append(" {");

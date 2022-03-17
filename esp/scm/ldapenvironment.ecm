@@ -44,7 +44,7 @@ ESPenum OUMode : int
 ESPrequest LDAPCreateEnvironmentRequest
 {
     bool                                              CreateLDAPEnvironment(false);
-    bool                                              CreateK8sSecret(false);
+    bool                                              CreateK8sSecrets(false);
     [label("Environment Name"), cols(20)] string      EnvName;
     [label("Environment Owner"), cols(20)] string     EnvOwnerName;
     [label("Description"), cols(60)] string           EnvDescription;
@@ -68,6 +68,8 @@ ESPrequest LDAPCreateEnvironmentRequest
 ESPresponse [exceptions_inline] LDAPCreateEnvironmentResponse
 {
     string  Notes;
+    string  LDAPAdminUsername;
+    string  LDAPAdminPassword;
     string  HPCCAdminUsername;
     string  HPCCAdminPassword;
     string  LDAPHelm;

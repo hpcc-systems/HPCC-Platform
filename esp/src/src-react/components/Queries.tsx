@@ -73,6 +73,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     }, [filter]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        persistID: "queries",
         store: gridStore,
         query,
         filename: "roxiequeries",
@@ -278,5 +279,6 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             </>
         }
         footer={<GridPagination />}
+        footerStyles={{}}
     />;
 };

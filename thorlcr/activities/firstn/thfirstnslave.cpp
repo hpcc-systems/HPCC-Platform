@@ -270,7 +270,7 @@ public:
             {
                 rowcount_t maxRead = (totallimit>(RCUNBOUND-_skipCount))?RCUNBOUND:totallimit+_skipCount;
                 setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), FIRSTN_SMART_BUFFER_SIZE, ::canStall(input), false,
-                                                                                  maxRead, this, &container.queryJob().queryIDiskUsage()), false); // if a very large limit don't bother truncating
+                                                                                  maxRead, this), false); // if a very large limit don't bother truncating
                 lastTotalLimitState = totallimit;
                 lastSkipCountState = _skipCount;
             }

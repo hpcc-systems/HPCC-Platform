@@ -38,7 +38,7 @@ Pass in dict with root and me
 {{- $eclAgentJobName := printf "%s-_HPCC_JOBNAME_" $eclAgentType }}
 {{- $thorManagerJobName := printf "thormanager-_HPCC_JOBNAME_" }}
 {{- $thorWorkerJobName := printf "thorworker-_HPCC_JOBNAME_" }}
-{{- $thorNetworkPolicyName := printf "thornetworkpolicy-_HPCC_JOBNAME_" }}
+{{- $thorNetworkPolicyName := printf "thormanager-networkpolicy-_HPCC_JOBNAME_" }}
 {{- $numWorkersPerPod := .me.numWorkersPerPod | default 1 }}
 {{- $configCtx := . -}}
 apiVersion: v1 
@@ -264,7 +264,7 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thor-networkspec.yaml:
+  thormanager-networkspec.yaml:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:

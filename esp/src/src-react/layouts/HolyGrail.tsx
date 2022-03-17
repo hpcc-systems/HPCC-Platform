@@ -6,6 +6,7 @@ export interface HolyGrailProps {
     main?: any;
     right?: any;
     footer?: any;
+    footerStyles?: any;
 }
 
 export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
@@ -13,7 +14,8 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
     left,
     main,
     right,
-    footer
+    footer,
+    footerStyles = { flex: "0 0", minWidth: 0 }
 }) => {
 
     return <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: "100%", overflow: "hidden" }}>
@@ -23,6 +25,6 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
             <div style={{ flex: "1 1 auto", minWidth: 1, minHeight: 1 }}>{main}</div>
             <div style={{ flex: "0 2" }}>{right}</div>
         </div>
-        <footer style={{ flex: "0 0", minWidth: 0 }}>{footer}</footer>
+        <footer style={footerStyles}>{footer}</footer>
     </div>;
 };

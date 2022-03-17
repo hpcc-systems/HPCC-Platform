@@ -468,4 +468,8 @@ public:
         }
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return baseio->getStatistic(kind);
+    }
 };

@@ -241,6 +241,7 @@ class jlib_decl StringArray : public ArrayOf<const char *, const char *, StringP
     };
     typedef ArrayOf<const char *, const char *, StringPointerArrayMapper> PARENT;
 public:
+    void appendArray(const StringArray & other);
     // Appends a list in a string delimited by 'delim'
     void appendList(const char *list, const char *delim, bool trimSpaces = true);
     // Appends a list in a string delimited by 'delim' without duplicates
