@@ -143,11 +143,16 @@ struct ITimeReporter : public IInterface
 extern jlib_decl cycle_t oneSecInCycles;
 class CCycleTimer
 {
-    cycle_t start_time;
+    cycle_t start_time = 0;
 public:
     inline CCycleTimer()
     {
         reset();
+    }
+    inline CCycleTimer(bool enabled)
+    {
+        if (enabled)
+            reset();
     }
     inline void reset()
     {
