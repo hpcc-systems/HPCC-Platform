@@ -15,8 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#define da_decl DECL_EXPORT
-
 #include <string>
 #include <unordered_map>
 

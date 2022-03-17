@@ -18,7 +18,9 @@
 #ifndef DADIAGS_HPP
 #define DADIAGS_HPP
 
-#ifndef da_decl
+#ifdef DALI_EXPORTS
+#define da_decl DECL_EXPORT
+#else
 #define da_decl DECL_IMPORT
 #endif
 
