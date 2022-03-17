@@ -10774,7 +10774,7 @@ public:
     {
         TransactionLog transactionLog(*this, MDFS_GET_FILE_TREE, mb.getSender());
 
-        GetFileTreeOpts opts;
+        GetFileTreeOpts opts = GetFileTreeOpts::none;
         Owned<IUserDescriptor> udesc;
 
         StringAttr lname;
