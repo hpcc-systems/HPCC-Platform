@@ -285,5 +285,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             </>
         }
         footer={<GridPagination />}
+        footerStyles={{}}
     />;
 };

@@ -265,5 +265,6 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             </>
         }
         footer={<GridPagination />}
+        footerStyles={{}}
     />;
 };
