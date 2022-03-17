@@ -621,20 +621,30 @@ roxie:
   ## replicas indicates the number of replicas per channel
   replicas: 2
   numChannels: 2
-  ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
-  serverReplicas: 0
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers, each implementing all channels locally
   localAgent: false
   ## Adjust traceLevel to taste (1 is default)
   traceLevel: 1
+  ## set totalMemoryLimit to indicate how much memory is preallocated for roxie row data
+  totalMemoryLimit: "1Gi"
   ## Set mtuPayload to the maximum amount of data Roxie will put in a single packet. This should be just less than the system MTU. Default is 1400
   # mtuPayload: 3800
-  #channelResources:
-  #  cpu: "4"
-  #  memory: "4G"
-  #serverResources:
+
+  ## resources specifies the resources required by each agent pod
+  #resources:
   #  cpu: "1"
   #  memory: "1G"
+
+  ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent pods not acting as servers
+  serverReplicas: 0
+  ## If serverReplicas is set, the resources required for the server pods can be configured separately from the agent (channel) pods
+  #serverResources:
+  #  cpu: "1"
+  #  memory: "4Gi"
+  #channelResources:
+  #  cpu: "2"
+  #  memory: "8Gi"
+
   # Roxie may take a while to start up if there are a lot of queries to load. Yuo may need to 
   #override the default startup/readiness probing by setting these values
   #minStartupTime: 30      # How long to wait before initiating startup probing

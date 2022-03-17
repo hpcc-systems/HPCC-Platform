@@ -1268,6 +1268,9 @@
           "description": "The storage plane to write spill files to",
           "type": "string"
         },
+        "resources": {
+          "$ref": "#/definitions/resources"
+        },
         "serverResources": {
           "$ref": "#/definitions/resources"
         },
@@ -1527,9 +1530,8 @@
           "description": "Time (in seconds) that detailed reporting stats are kept"
         },
         "totalMemoryLimit": { 
-          "type": "integer",
-          "default": 1073741824,
-          "minimum": 0,
+          "type": "string",
+          "default": "1G",
           "description": "Maximum amount of memory available for row data in all active queries"
         },
         "heapUseHugePages": { 

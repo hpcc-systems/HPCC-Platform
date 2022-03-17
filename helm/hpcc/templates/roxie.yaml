@@ -286,7 +286,7 @@ spec:
               command: ["testsocket", ".", "control:closedown"]        
 {{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- include "hpcc.addResources" (dict "me" $roxie.serverResources) | indent 8 }}
+{{- include "hpcc.addResources" (dict "me"  ($roxie.serverResources | default $roxie.resources | default (dict "memory" "4Gi"))) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
@@ -390,7 +390,7 @@ spec:
 {{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- include "hpcc.addResources" (dict "me" $roxie.channelResources) | indent 8 }}
+{{- include "hpcc.addResources" (dict "me" ($roxie.channelResources | default $roxie.resources | default (dict "memory" "4Gi"))) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
