@@ -18,7 +18,9 @@
 #ifndef DACOVEN_HPP
 #define DACOVEN_HPP
 
-#ifndef da_decl
+#ifdef DALI_EXPORTS
+#define da_decl DECL_EXPORT
+#else
 #define da_decl DECL_IMPORT
 #endif
 
@@ -71,6 +73,7 @@ extern da_decl bool isCovenActive();
 extern da_decl const CDaliVersion &queryDaliServerVersion();
 extern da_decl bool verifyCovenConnection(unsigned timeout=5*60*1000);
 extern da_decl DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode);
+extern da_decl void checkForeignDaliVersionInfo(const INode *foreignDali, CDaliVersion &serverVersion, CDaliVersion &minClientVersion);
 
 
 #endif

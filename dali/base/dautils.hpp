@@ -27,7 +27,9 @@
 #include "mpbase.hpp"
 #include "dasess.hpp"
 
-#ifndef da_decl
+#ifdef DALI_EXPORTS
+#define da_decl DECL_EXPORT
+#else
 #define da_decl DECL_IMPORT
 #endif
 
