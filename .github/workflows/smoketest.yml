@@ -29,7 +29,7 @@
 
 name: smoketest
 env:
-  cacheversion: 2
+  cacheversion: 3
 
 on:
   pull_request:
