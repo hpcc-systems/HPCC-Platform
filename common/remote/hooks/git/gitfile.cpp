@@ -150,11 +150,19 @@ protected:
     git_tree * gitRoot = nullptr;
 };
 
+#define LFSsig "version https://git-lfs.github.com/spec/"
+const unsigned LFSsiglen = strlen(LFSsig);
+constexpr unsigned MIN_LFS_POINTER_SIZE=120;
+constexpr unsigned MAX_LFS_POINTER_SIZE=150;
 
 class GitRepositoryFileIO : implements CSimpleInterfaceOf<IFileIO>
 {
+    bool isLFSfile()
+    {
+        return buf.length() > LFSsiglen && memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0;
+    }
 public:
-    GitRepositoryFileIO(GitCommitTree * commitTree, const git_oid * oid)
+    GitRepositoryFileIO(GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid)
     {
         git_blob *blob = nullptr;
         int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), oid);
@@ -164,8 +172,26 @@ public:
         git_object_size_t blobsize = git_blob_rawsize(blob);
         const void * data = git_blob_rawcontent(blob);
         buf.append(blobsize, data);
-
         git_blob_free(blob);
+        if (isLFSfile())
+        {
+            Owned<IPipeProcess> pipe = createPipeProcess();
+            if (pipe->run("git-lfs", "git-lfs smudge", gitDirectory, true, true, false, 0))
+            {
+                pipe->write(blobsize, buf.toByteArray());
+                pipe->closeInput();
+                buf.clear();
+                Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+                readSimpleStream(buf, *pipeReader);
+                pipe->closeOutput();
+            }
+            int retcode = pipe->wait();
+            if (retcode)
+            {
+                buf.clear();  // Can't rely on destructor to clean this for me
+                throw MakeStringException(0, "git-lfs returned exit status %d", retcode);
+            }
+        }
     }
     virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
@@ -275,6 +301,19 @@ public:
                 throw MakeStringException(0, "git git_blob_lookup returned exit status %d", error);
 
             fileSize = git_blob_rawsize(blob);
+            if (fileSize >= MIN_LFS_POINTER_SIZE && fileSize <= MAX_LFS_POINTER_SIZE)
+            {
+                MemoryBuffer buf;
+                const void * data = git_blob_rawcontent(blob);
+                buf.append(fileSize, data);
+                if (memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0)
+                {
+                    buf.append('\0');
+                    const char *sizeptr = strstr(buf.toByteArray(), "size ");
+                    if (sizeptr)
+                        fileSize = atoi64(sizeptr+5);
+                }
+            }
             git_blob_free(blob);
         }
         return fileSize;
@@ -302,12 +341,12 @@ public:
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(commitTree, &oid);
+        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid);
     }
     virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(commitTree, &oid);
+        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid);
     }
 
 
