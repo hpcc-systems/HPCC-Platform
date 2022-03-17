@@ -1429,6 +1429,11 @@ void CLdapSecManager::changeUserGroup(const char* action, const char* username, 
     m_ldap_client->changeUserGroup(action, username, groupname);
 }
 
+void CLdapSecManager::changeGroupMember(const char* action, const char* groupdn, const char* userdn)
+{
+    m_ldap_client->changeGroupMember(action, groupdn, userdn);
+}
+
 bool CLdapSecManager::deleteUser(ISecUser* user)
 {
     return m_ldap_client->deleteUser(user);
@@ -1628,6 +1633,11 @@ void CLdapSecManager::createLdapBasedn(ISecUser* user, const char* basedn, SecPe
 const bool CLdapSecManager::organizationalUnitExists(const char * ou) const
 {
     return m_ldap_client->organizationalUnitExists(ou);
+}
+
+bool CLdapSecManager::addUser(ISecUser & user, const char* basedn)
+{
+    return m_ldap_client->addUser(user, basedn);
 }
 
 extern "C"

@@ -304,6 +304,9 @@ private:
         DBGLOG("m_view_basedn = %s", m_view_basedn.str());
         DBGLOG("m_workunitscope_basedn = %s", m_workunitscope_basedn.str());
 
+        DBGLOG("m_HPCCAdminUser_username = %s", m_HPCCAdminUser_username.str());
+//        DBGLOG("m_HPCCAdminUser_password = %s", m_HPCCAdminUser_password.str());
+
         DBGLOG("m_sysuser = %s", m_sysuser.str());
         DBGLOG("m_sysuser_dn = %s", m_sysuser_dn.str());
         DBGLOG("m_sysuser_commonname = %s", m_sysuser_commonname.str());
@@ -449,7 +452,10 @@ public:
 
             //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
             StringBuffer sysUserDN;
-            sysUserDN.append("cn=").append(m_sysuser_commonname.str()).append(",").append(sysBasedn.str());
+            if(m_serverType == OPEN_LDAP)
+                sysUserDN.append("uid=").append(m_sysuser_commonname).append(",").append(sysBasedn);
+            else
+                sysUserDN.append("cn=").append(m_sysuser_commonname).append(",").append(sysBasedn);
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
@@ -459,7 +465,7 @@ public:
                 sleep(LDAPSEC_RETRY_WAIT);
                 if(retries < LDAPSEC_MAX_RETRIES)
                 {
-                    DBGLOG("Server %s temporarily unreachable, retrying...", hostbuf.str());
+                    DBGLOG("LDAP AD Server %s temporarily unreachable for user %s, retrying...", hostbuf.str(), sysUserDN.str());
                 }
             }
             if (rc != LDAP_SUCCESS)
@@ -649,10 +655,12 @@ public:
                 else
                 {
                     if (nullptr == strchr(m_sysuser_commonname.str(), '='))
-                        m_sysuser_dn.append("uid=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str()).append(",").append(m_basedn.str());
+                        m_sysuser_dn.append("uid=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str());
                     else
                         m_sysuser_dn.append(m_sysuser_commonname.str());//includes FQDN prefix, use as is (likely from initldap)
                 }
+                if (!strstr(m_sysuser_dn.str(), ",dc="))
+                    m_sysuser_dn.append(",").append(m_basedn.str());
             }
         }
 
@@ -747,6 +755,11 @@ public:
     virtual const char* getUserBasedn()
     {
         return m_user_basedn.str();
+    }
+
+    virtual void setUserBasedn(const char * basedn)
+    {
+        m_user_basedn.set(basedn);
     }
 
     virtual const char* getGroupBasedn()
@@ -1687,7 +1700,7 @@ public:
 
                     //Create HPCC Admin user
                     const char * pUser = m_ldapconfig->getHPCCAdminUser_username();
-                    if (pUser)
+                    if (!isEmptyString(pUser))
                     {
                         DBGLOG("Creating HPCC Admin user %s", pUser);
                         Owned<ISecUser> user = new CLdapSecUser(pUser, nullptr);
@@ -4185,13 +4198,17 @@ public:
 
         if(m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
         {
-            StringBuffer act_dn;
-            if(action.m_account_type == GROUP_ACT)
-                getGroupDN(action.m_account_name.str(), act_dn);
-            else
-                getUserDN(action.m_account_name.str(), act_dn);
-            
-            action.m_account_name.clear().append(act_dn.str());
+            //if not already fully qualified
+            if (0 == strstr(action.m_account_name, "dc=") &&
+                0 == strstr(action.m_account_name, "ou="))
+            {
+                StringBuffer act_dn;
+                if(action.m_account_type == GROUP_ACT)
+                    getGroupDN(action.m_account_name.str(), act_dn);
+                else
+                    getUserDN(action.m_account_name.str(), act_dn);
+                action.m_account_name.set(act_dn.str());
+            }
         }
 
         Owned<CSecurityDescriptor> newsd = m_pp->changePermission(sd.get(), action);
@@ -6227,6 +6244,15 @@ private:
 
     }
 
+    //Add new user to the given base DN
+    virtual bool addUser(ISecUser & user, const char* basedn)
+    {
+        StringBuffer prevBaseDN(m_ldapconfig->getUserBasedn());
+        m_ldapconfig->setUserBasedn(basedn);
+        bool rc = addUser(user);
+        m_ldapconfig->setUserBasedn(prevBaseDN.str());
+        return rc;
+    }
 
     virtual bool addUser(ISecUser& user)
     {

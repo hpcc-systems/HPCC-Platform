@@ -3353,25 +3353,29 @@ const char * generatePassword(StringBuffer &pwd, int pwdLen)
 
     //Ensures each character group used at least once
     srand(time(0));
-    pwd.append(alphaUC[rand() % sizeof(alphaUC)]);
-    pwd.append(alphaLC[rand() % sizeof(alphaLC)]);
-    pwd.append(numeric[rand() % sizeof(numeric)]);
-    pwd.append(symbol[rand() % sizeof(symbol)]);
+    pwd.append(alphaUC[rand() % (sizeof(alphaUC) - 1)]);
+    pwd.append(alphaLC[rand() % (sizeof(alphaLC) - 1)]);
+    pwd.append(numeric[rand() % (sizeof(numeric) - 1)]);
+    pwd.append(symbol[rand() % (sizeof(symbol) - 1)]);
 
     for (int i = 4; i < pwdLen; i++)
     {
         switch(rand() % NUM_GROUPS)//select a random character group
         {
         case 0:
-            pwd.append(alphaUC[rand() % sizeof(alphaUC)]);  break;
+            pwd.append(alphaUC[rand() % (sizeof(alphaUC) - 1)]);  break;
         case 1:
-            pwd.append(alphaLC[rand() % sizeof(alphaLC)]);  break;
+            pwd.append(alphaLC[rand() % (sizeof(alphaLC) - 1)]);  break;
         case 2:
-            pwd.append(numeric[rand() % sizeof(numeric)]);  break;
+            pwd.append(numeric[rand() % (sizeof(numeric) - 1)]);  break;
         case 3:
-            pwd.append(symbol[rand() % sizeof(symbol)]);  break;
+            pwd.append(symbol[rand() % (sizeof(symbol) - 1)]);  break;
         }
     }
+#ifdef _DEBUG
+    if (pwd.length() != (size32_t)pwdLen)
+        throw makeStringException(0, "Generated Passwords wrong length!");
+#endif
     return pwd.str();
 }
 
