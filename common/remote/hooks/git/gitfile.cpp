@@ -75,8 +75,17 @@ static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDi
     return fullname;
 }
 
+#define LFSsig "version https://git-lfs.github.com/spec/"
+const unsigned LFSsiglen = strlen(LFSsig);
+constexpr unsigned MIN_LFS_POINTER_SIZE=120;
+constexpr unsigned MAX_LFS_POINTER_SIZE=150;
+
 class GitRepositoryFileIO : implements IFileIO, public CInterface
 {
+    bool isLFSfile()
+    {
+        return buf.length() > LFSsiglen && memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0;
+    }
 public:
     IMPLEMENT_IINTERFACE;
     GitRepositoryFileIO(const char * gitDirectory, const char * revision, const char * relFileName)
@@ -94,6 +103,25 @@ public:
         {
             buf.clear();  // Can't rely on destructor to clean this for me
             throw MakeStringException(0, "git show returned exit status %d", retcode);
+        }
+        if (isLFSfile())
+        {
+            Owned<IPipeProcess> pipe = createPipeProcess();
+            if (pipe->run("git-lfs", "git-lfs smudge", gitDirectory, true, true, false, 0))
+            {
+                pipe->write(buf.length(), buf.toByteArray());
+                pipe->closeInput();
+                buf.clear();
+                Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+                readSimpleStream(buf, *pipeReader);
+                pipe->closeOutput();
+            }
+            int retcode = pipe->wait();
+            if (retcode)
+            {
+                buf.clear();  // Can't rely on destructor to clean this for me
+                throw MakeStringException(0, "git-lfs returned exit status %d", retcode);
+            }
         }
     }
     virtual size32_t read(offset_t pos, size32_t len, void * data)
@@ -202,6 +230,28 @@ public:
     {
         if (!isExisting)
             return (offset_t) -1;
+        if (fileSize >= MIN_LFS_POINTER_SIZE && fileSize <= MAX_LFS_POINTER_SIZE)
+        {
+            MemoryBuffer buf;
+            VStringBuffer gitcmd("git --git-dir=%s show %s:%s", gitDirectory.str(), revision.length() ? revision.str() : "HEAD", relFileName.str());
+            Owned<IPipeProcess> pipe = createPipeProcess();
+            if (pipe->run("git", gitcmd, ".", false, true, false, 0))
+            {
+                Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+                readSimpleStream(buf, *pipeReader);
+                pipe->closeOutput();
+            }
+            int retcode = pipe->wait();
+            if (retcode)
+                throw MakeStringException(0, "git show returned exit status %d", retcode);
+            if (memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0)
+            {
+                buf.append('\0');
+                const char *sizeptr = strstr(buf.toByteArray(), "size ");
+                if (sizeptr)
+                    fileSize = atoi64(sizeptr+5);
+            }
+        }
         return fileSize;
     }
 
