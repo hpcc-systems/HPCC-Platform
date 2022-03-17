@@ -226,7 +226,7 @@ public:
                     if (spill)
                     {
                         StringBuffer tempname;
-                        GetTempName(tempname, "nsplit", true); // use alt temp dir
+                        GetTempFilePath(tempname, "nsplit");
                         smartBuf.setown(createSharedSmartDiskBuffer(this, tempname.str(), numOutputs, queryRowInterfaces(input)));
                         ActPrintLog("Using temp spill file: %s", tempname.str());
                     }

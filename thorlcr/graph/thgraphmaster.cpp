@@ -1420,6 +1420,12 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     slaveMsgHandler.setown(new CSlaveMessageHandler(*this, slavemptag));
     tmpHandler.setown(createTempHandler(true));
     xgmml.set(graphXGMML);
+
+    StringBuffer tempDir(globals->queryProp("@thorTempDirectory"));
+    // multiple thor jobs can be running on same node, sharing same local disk for temp storage.
+    // make unique by adding wuid+graphName+worker-num
+    VStringBuffer uniqueSubDir("%s_%s_0", workunit->queryWuid(), graphName); // 0 denotes master (workers = 1..N)
+    SetTempDir(tempDir, uniqueSubDir, "thtmp");
 }
 
 void CJobMaster::endJob()

@@ -1150,7 +1150,7 @@ public:
         if (allowSpill)
         {
             StringBuffer temp;
-            GetTempName(temp,"hddrecvbuff", true);
+            GetTempFilePath(temp,"hddrecvbuff");
             piperd.setown(createSmartBuffer(activity, temp.str(), pullBufferSize, rowIf));
         }
         else
@@ -1814,7 +1814,7 @@ public:
                 if (!cachefileio.get())
                 {
                     StringBuffer tempname;
-                    GetTempName(tempname,"hashdistspill",true);
+                    GetTempFilePath(tempname,"hashdistspill");
                     cachefile.setown(createIFile(tempname.str()));
                     cachefileio.setown(cachefile->open(IFOcreaterw));
                     if (!cachefileio)
@@ -2257,7 +2257,7 @@ public:
             unsigned rwFlags = DEFAULT_RWFLAGS;
             sz = 0;
             StringBuffer tempname;
-            GetTempName(tempname,"hdprop",true); // use alt temp dir
+            GetTempFilePath(tempname,"hdprop");
             tempfile.setown(createIFile(tempname.str()));
             {
                 ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
@@ -2665,7 +2665,7 @@ public:
         count = 0;
         StringBuffer tempname, prefix("hashdedup_bucket");
         prefix.append(bucketN).append('_').append(desc);
-        GetTempName(tempname, prefix.str(), true);
+        GetTempFilePath(tempname, prefix.str());
         OwnedIFile iFile = createIFile(tempname.str());
         spillFile.setown(new CFileOwner(iFile.getLink()));
         if (owner.getOptBool(THOROPT_COMPRESS_SPILLS, true))

@@ -246,7 +246,7 @@ protected:
 
         StringBuffer tempName;
         VStringBuffer tempPrefix("streamspill_%d", activity.queryId());
-        GetTempName(tempName, tempPrefix.str(), true);
+        GetTempFilePath(tempName, tempPrefix.str());
         spillFile.setown(createIFile(tempName.str()));
 
         VStringBuffer spillPrefixStr("SpillableStream(%u)", spillPriority);
@@ -1653,7 +1653,7 @@ protected:
             tempPrefix.append("srt");
         }
         tempPrefix.appendf("spill_%d", activity.queryId());
-        GetTempName(tempName, tempPrefix.str(), true);
+        GetTempFilePath(tempName, tempPrefix.str());
         Owned<IFile> iFile = createIFile(tempName.str());
         VStringBuffer spillPrefixStr("%sRowCollector(%d)", tracingPrefix.str(), spillPriority);
         spillableRows.save(*iFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows

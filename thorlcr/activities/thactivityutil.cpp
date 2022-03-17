@@ -96,7 +96,7 @@ public:
         {
             StringBuffer temp;
             if (allowspill)
-                GetTempName(temp,"lookahd",true);
+                GetTempFilePath(temp,"lookahd");
             assertex(bufsize);
             if (allowspill)
                 smartbuf.setown(createSmartBuffer(&activity, temp.str(), bufsize, rowIf));
@@ -747,15 +747,18 @@ IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc,
     else
     {
         // use temp name
-        GetTempName(outLocationName, "partial");
         if (rfn.isLocal() || (twFlags & TW_External))
-        { // ensure local tmp in same directory as target
+        {
+            // ensure local tmp in same directory (and plane) as target
             StringBuffer dir;
             splitDirTail(primaryName, dir);
             addPathSepChar(dir);
-            dir.append(pathTail(outLocationName));
+            GetTempFileName(dir, "partial");
             outLocationName.swapWith(dir);
         }
+        else
+            GetTempFilePath(outLocationName, "partial");
+
         assertex(outLocationName.length());
         ensureDirectoryForFile(outLocationName.str());
     }

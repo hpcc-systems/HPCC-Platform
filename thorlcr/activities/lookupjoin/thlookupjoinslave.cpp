@@ -1877,7 +1877,7 @@ protected:
 
                         VStringBuffer tempPrefix("spill_%d", container.queryId());
                         StringBuffer tempName;
-                        GetTempName(tempName, tempPrefix.str(), true);
+                        GetTempFilePath(tempName, tempPrefix.str());
                         file.setown(new CFileOwner(createIFile(tempName.str())));
                         VStringBuffer spillPrefixStr("clearAllNonLocalRows(%d)", SPILL_PRIORITY_SPILLABLE_STREAM);
                         // 3rd param. is skipNulls = true, the row arrays may have had the non-local rows delete already.
@@ -2941,7 +2941,7 @@ public:
             rwFlags |= spillCompInfo;
         }
         StringBuffer tempFilename;
-        GetTempName(tempFilename, "lookup_local", true);
+        GetTempFilePath(tempFilename, "lookup_local");
         ActPrintLog("Overflowing RHS broadcast rows to spill file: %s", tempFilename.str());
         OwnedIFile iFile = createIFile(tempFilename.str());
         overflowWriteFile.setown(new CFileOwner(iFile.getLink()));
