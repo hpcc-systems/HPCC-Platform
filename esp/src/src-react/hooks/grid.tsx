@@ -142,10 +142,10 @@ function useFluentStoreGrid({
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
     const [selection, setSelection] = React.useState([]);
     const [items, setItems] = React.useState<any[]>([]);
-    const [total, setTotal] = React.useState<number>();
+    const [total, setTotal] = React.useState<number>(0);
 
     const refreshTable = React.useCallback(() => {
-        if (isNaN(start) || isNaN(count)) return;
+        if (isNaN(start) || (isNaN(count) || count === 0)) return;
         const storeQuery = store.query(query ?? {}, { start, count, sort: sorted ? [sorted] : undefined });
         storeQuery.total.then(total => {
             setTotal(total);
@@ -278,7 +278,11 @@ export function useFluentPagedGrid({
     const [page, setPage] = React.useState(0);
     const [persistedPageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, "25");
     const pageSize = React.useMemo(() => {
-        return parseInt(persistedPageSize);
+        const retVal = parseInt(persistedPageSize);
+        if (isNaN(retVal)) {
+            return 0;
+        }
+        return retVal;
     }, [persistedPageSize]);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
     const [theme] = useUserTheme();
