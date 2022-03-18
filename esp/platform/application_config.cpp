@@ -92,18 +92,16 @@ static void copyDirectories(IPropertyTree *target, IPropertyTree *src)
 void addAuthDomains(const char *authtype, IPropertyTree *legacyEsp)
 {
     if (isEmptyString(authtype)) //backward compatible
-        legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString("<AuthDomains><AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default' invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png' logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240' unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/></AuthDomains>"));
-    else
-    {
-        VStringBuffer AuthDomains(
-            "<AuthDomains>"
-                "<AuthDomain authType='%s' clientSessionTimeoutMinutes='120' domainName='default'"
-                    " invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png'"
-                    " logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240'"
-                    " unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/>"
-            "</AuthDomains>", authtype);
-        legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString(AuthDomains));
-    }
+        authtype = "AuthPerRequestOnly";
+
+    VStringBuffer AuthDomains(
+        "<AuthDomains>"
+            "<AuthDomain authType='%s' clientSessionTimeoutMinutes='120' domainName='default'"
+                " invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png'"
+                " logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240'"
+                " unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/>"
+        "</AuthDomains>", authtype);
+    legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString(AuthDomains));
 }
 
 bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth, LdapType ldapType)

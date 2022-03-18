@@ -80,15 +80,15 @@ public:
     void addFileScopeAccess(const char* scope, const char* access)
     {
         //Convert the scope to xpath.
-        StringArray scopes;
-        if (!convertFileScopeToXPath(scope, true, scopes))
+        StringArray nodes;
+        if (!convertFileScopeToNodes(scope, true, nodes))
         {
             OWARNLOG("Invalid scope %s.", scope);
             return;
         }
 
         //Check duplicate
-        const char* xpath = scopes.item(0);
+        const char* xpath = nodes.item(0);
         if (fileScopeAccesses->hasProp(xpath))
         {
             OWARNLOG("Duplicated accesss settting for scope %s.", scope);
@@ -119,26 +119,13 @@ public:
     */
     SecAccessFlags queryFileScopeAccess(const char* scope)
     {
-        StringArray scopes;
-        if (!convertFileScopeToXPath(scope, false, scopes))
+        StringArray nodes;
+        if (!convertFileScopeToNodes(scope, false, nodes))  //==>  a::b::c::d becomes nodes[a, b, c, d]
             return SecAccess_Unavailable;
-
-        SecAccessFlags allowed = defaultFileScopeAccess;
-        ForEachItemIn(i, scopes)
-        {
-            VStringBuffer xpath("%s/@access", scopes.item(i));
-            const char* xpathStr = xpath.str();
-            if (fileScopeAccesses->hasProp(xpathStr))
-            {
-                allowed = (SecAccessFlags) fileScopeAccesses->getPropInt(xpathStr);
-                if (0 == (allowed & SecAccess_Read))
-                    return allowed;
-            }
-        }
-        return allowed;
+        return getFileScopeAccess(fileScopeAccesses, nodes, 0, defaultFileScopeAccess, true);
     }
 
-    bool convertFileScopeToXPath(const char* fileScope, bool fullPathOnly, StringArray& scopes)
+    bool convertFileScopeToNodes(const char* fileScope, bool fullPathOnly, StringArray& scopes)
     {
         StringBuffer scope;
         const char* p = fileScope;
@@ -152,15 +139,45 @@ public:
 
             if (*(p+1) != ':')
                 return false;
-            if (!fullPathOnly)
+            if (fullPathOnly)
+                scope.append('/');
+            else
+            {
                 scopes.append(scope);
-            scope.append('/');
+                scope.clear();
+            }
             p += 2;
         }
-        if (scope.charAt(scope.length() - 1) == '/')
+        if (fullPathOnly && (scope.charAt(scope.length() - 1) == '/'))
+            return false;
+        if (!fullPathOnly && scope.isEmpty())
             return false;
         scopes.append(scope);
         return true;
+    }
+
+    SecAccessFlags getFileScopeAccess(IPropertyTree* accessTree, const StringArray& nodes, unsigned pos, SecAccessFlags access, bool first)
+    {
+        if (!nodes.isItem(pos))
+            return access;
+        const char* node = nodes.item(pos);
+        if (isEmptyString(node))
+            return access;
+        IPropertyTree* element = accessTree->queryPropTree(node);
+        if (!element)
+            return access;
+        if (element->hasProp("@access"))
+        {
+            int newAccess = element->getPropInt("@access");
+            if (newAccess < SecAccess_Read)
+                return (SecAccessFlags) newAccess;
+            if (first || newAccess < access) //least access wins
+            {
+                access = (SecAccessFlags) newAccess;
+                first = false;
+            }
+        }
+        return getFileScopeAccess(element, nodes, ++pos, access, first);
     }
 
     SecAccessFlags queryECLWUScopeAccess(const char* resource)
