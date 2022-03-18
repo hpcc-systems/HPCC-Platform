@@ -100,9 +100,7 @@ public:
         StringBuffer scoped;
         OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName, false, false, false, container.activityIsCodeSigned());
-        if (!file)
-            throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
+        Owned<IDistributedFile> file = lookupReadFile(indexFileName, false, false, false);
         if (0 == file->numParts())
             throw MakeActivityException(this, 0, "KeyedDistribute: Can't distribute based on an empty key: %s", scoped.str());
         if (!isFileKey(file))
@@ -123,8 +121,6 @@ public:
 
         tlkMb.append(iFileIO->size());
         ::read(iFileIO, 0, (size32_t)iFileIO->size(), tlkMb);
-
-        addReadFile(file);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {

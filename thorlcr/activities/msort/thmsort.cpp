@@ -91,10 +91,9 @@ protected:
         OwnedRoxieString cosortlogname(helper->getSortedFilename());
         if (cosortlogname&&*cosortlogname)
         {
-            Owned<IDistributedFile> coSortFile = queryThorFileManager().lookup(container.queryJob(), cosortlogname, false, false, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> coSortFile = lookupReadFile(cosortlogname, false, false, false);
             if (isFileKey(coSortFile))
                 throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a flat file: %s", cosortlogname.get());
-            addReadFile(coSortFile);
             Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
             unsigned o;
             for (o=0; o<fileDesc->numParts(); o++)

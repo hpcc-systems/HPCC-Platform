@@ -18,6 +18,8 @@
 #ifndef _THGRAPHMASTER_IPP
 #define _THGRAPHMASTER_IPP
 
+#include <unordered_map>
+
 #include "jmisc.hpp"
 #include "jsuperhash.hpp"
 #include "workunit.hpp"
@@ -238,6 +240,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     MemoryBuffer *data;
     CriticalSection progressCrit;
     IArrayOf<IDistributedFile> readFiles;
+    std::unordered_map<std::string, IDistributedFile *> readFilesMap;
 
 protected:
     std::vector<OwnedPtr<CThorEdgeCollection>> edgeStatsVector;
@@ -245,8 +248,9 @@ protected:
     IBitSet *notedWarnings;
     cost_type diskAccessCost = 0;
 
-    void addReadFile(IDistributedFile *file, bool temp=false);
     IDistributedFile *queryReadFile(unsigned f);
+    IDistributedFile *findReadFile(const char *lfnName);
+    IDistributedFile *lookupReadFile(const char *lfnName, bool jobTemp, bool temp, bool opt);
     void updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCollection>> & subFileStats);
     void updateFileWriteCostStats(IFileDescriptor & fileDesc, IPropertyTree &props, stat_type numDiskWrites);
     virtual void process() { }
@@ -269,7 +273,6 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) { }
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb) { }
 
-    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void startProcess(bool async=true);
     virtual bool wait(unsigned timeout);
     virtual void done();

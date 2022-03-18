@@ -55,10 +55,10 @@ public:
         queryThorFileManager().addScope(container.queryJob(), outputHelperName, expandedFileName.clear(), false);
         outputName.set(expandedFileName);
 
-        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalHelperName, false, false, false, container.activityIsCodeSigned()));
+        originalIndexFile.setown(lookupReadFile(originalHelperName, false, false, false));
         if (!isFileKey(originalIndexFile))
             throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", originalHelperName.get());
-        patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchHelperName, false, false, false, container.activityIsCodeSigned()));
+        patchFile.setown(lookupReadFile(patchHelperName, false, false, false));
         if (isFileKey(patchFile))
             throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a patch file: %s", patchHelperName.get());
         
@@ -67,9 +67,6 @@ public:
         if (originalIndexFile->querySuperFile() || patchFile->querySuperFile())
             throw MakeActivityException(this, 0, "Patching super files not supported");
         
-        addReadFile(originalIndexFile);
-        addReadFile(patchFile);
-
         width = originalIndexFile->numParts();
 
         originalDesc.setown(originalIndexFile->getFileDescriptor());

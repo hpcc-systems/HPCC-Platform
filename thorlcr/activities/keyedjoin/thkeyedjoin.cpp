@@ -303,7 +303,9 @@ public:
         totalIndexParts = 0;
 
         Owned<IDistributedFile> dataFile;
-        Owned<IDistributedFile> indexFile = queryThorFileManager().lookup(container.queryJob(), indexFileName, false, 0 != (helper->getJoinFlags() & JFindexoptional), true, container.activityIsCodeSigned());
+        
+        
+        Owned<IDistributedFile> indexFile = lookupReadFile(indexFileName, false, false, 0 != (helper->getJoinFlags() & JFindexoptional));
         if (indexFile)
         {
             if (!isFileKey(indexFile))
@@ -311,7 +313,12 @@ public:
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
             // One entry for each subfile (unless it is not a superfile => then add one entry for index data file stats)
             unsigned numSuperIndexSubs = superIndex?superIndex->numSubFiles(true):1;
-            for (unsigned i=0; i<numSuperIndexSubs; i++)
+
+            /* JCS->SHAMSER - kludge for now, don't add more than max
+            * But it means updateFileReadCostStats will not be querying the correct files,
+            * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
+            */
+            for (unsigned i=fileStats.size(); i<numSuperIndexSubs; i++)
                 fileStats.push_back(new CThorStatsCollection(indexReadStatistics));
 
             if (helper->diskAccessRequired())
@@ -319,7 +326,7 @@ public:
                 OwnedRoxieString fetchFilename(helper->getFileName());
                 if (fetchFilename)
                 {
-                    dataFile.setown(queryThorFileManager().lookup(container.queryJob(), fetchFilename, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true, container.activityIsCodeSigned()));
+                    dataFile.setown(lookupReadFile(fetchFilename, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
                     if (dataFile)
                     {
                         if (isFileKey(dataFile))
@@ -360,7 +367,12 @@ public:
                         IDistributedSuperFile *super = dataFile->querySuperFile();
                         // One entry for each subfile (unless it is not a superfile => then have 1 entry for data file stats)
                         unsigned numsubs = super?super->numSubFiles(true):1;
-                        for (unsigned i=0; i<numsubs; i++)
+
+                        /* JCS->SHAMSER - kludge for now, don't add more than max
+                        * But it means updateFileReadCostStats will not be querying the correct files,
+                        * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
+                        */
+                        for (unsigned i=fileStats.size(); i<numsubs; i++)
                             fileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
                     }
                 }
@@ -511,12 +523,6 @@ public:
         }
         else
             initMb.append(totalIndexParts); // 0
-        if (indexFile)
-        {
-            addReadFile(indexFile);
-            if (dataFile)
-                addReadFile(dataFile);
-        }
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
