@@ -157,8 +157,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
         items: selection.map(s => s.Wuid),
-        onSubmit: React.useCallback(() => {
-            WsWorkunits.WUAction(selection, "Delete").then(() => refreshTable(true));
+        onSubmit: React.useCallback(async () => {
+            const unknownWUs = selection.filter(wu => wu.State === "unknown");
+            if (unknownWUs.length) {
+                await WsWorkunits.WUAction(unknownWUs, "SetToFailed");
+            }
+            await WsWorkunits.WUAction(selection, "Delete");
+            refreshTable(true);
         }, [refreshTable, selection])
     });
 
