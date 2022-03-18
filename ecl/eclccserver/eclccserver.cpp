@@ -351,6 +351,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         {
             Owned<IPipeProcess> pipe = createPipeProcess();
             AbortPipeWaiter aborter(abortWaiter, pipe);
+            bool timeCompiles = workunit->getDebugValueBool("timeCompiles", true);
+            CCycleTimer compileTimer(timeCompiles);
             int ret = START_FAILURE;
             if (pipe->run(nullptr, cmd, ".", false, true, true, 1024*1024))
             {
@@ -371,6 +373,31 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                     output.append(read, buf);
                 }
             }
+
+            if (timeCompiles)
+            {
+                StringBuffer scope;
+                const char * source = strchr(cmd, '"');
+                const char * end = nullptr;
+                if (source)
+                    source = strchr(source+1, '"');
+                if (source)
+                    source = strchr(source+1, '"');
+                if (source)
+                    end = strchr(source+1, '"');
+
+                //Extract the name of the file being compiled - and spot the link step because the input is a .o.
+                StringBuffer filename;
+                if (end)
+                    filename.append((end - source) - 1, source+1);
+                const char * extension = strrchr(filename, '.');
+                if (!extension || strncmp(extension, ".o", 2) == 0)
+                    filename.set("link");
+
+                scope.append("compile:compile c++:").append(filename);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scope, StTimeElapsed, NULL, compileTimer.elapsedNs(), 1, 0, StatsMergeReplace);
+            }
+
             return ret;
         }
         catch (IException *E)
