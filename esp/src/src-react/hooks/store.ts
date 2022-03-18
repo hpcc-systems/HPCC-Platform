@@ -9,7 +9,7 @@ function useStore(store: IKeyValStore, key: string, defaultValue?: string, monit
     React.useEffect(() => {
         if (!store) return;
         store.get(key).then(value => {
-            setValue(value === undefined ? defaultValue : value);
+            setValue(typeof value !== "string" ? defaultValue : value);
         }).catch(e => {
             setValue(defaultValue);
         });
