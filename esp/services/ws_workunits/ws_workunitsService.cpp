@@ -1050,7 +1050,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
                 throw WsWuHelpers::noteException(wu, MakeStringException(ECLWATCH_INVALID_INPUT,"Queryset and/or query not specified"));
             }
 
-            WsWuHelpers::runWsWuQuery(context, cw, info.queryset.str(), info.query.str(), cluster, NULL);
+            WsWuHelpers::runWsWuQuery(context, cw, info.queryset.str(), info.query.str(), cluster, nullptr, nullptr, nullptr);
         }
         else
             WsWuHelpers::submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), req.getMaxCost(), true, false, false, nullptr, nullptr, nullptr, nullptr);
@@ -1119,7 +1119,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         else if (notEmpty(req.getQuerySet()) && notEmpty(req.getQuery()))
         {
             PROGLOG("WURun: QuerySet %s, Query %s", req.getQuerySet(), req.getQuery());
-            WsWuHelpers::runWsWuQuery(context, wuid, req.getQuerySet(), req.getQuery(), cluster, req.getInput(),
+            WsWuHelpers::runWsWuQuery(context, wuid, req.getQuerySet(), req.getQuery(), cluster, req.getInput(), &req.getVariables(),
                 &req.getApplicationValues());
         }
         else

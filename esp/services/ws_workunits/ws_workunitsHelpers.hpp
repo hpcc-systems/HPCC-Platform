@@ -530,10 +530,10 @@ namespace WsWuHelpers
             IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL, IArrayOf<IConstApplicationValue> *applications=NULL);
     IException * noteException(IWorkUnit *wu, IException *e, ErrorSeverity level=SeverityError);
     StringBuffer & resolveQueryWuid(StringBuffer &wuid, const char *queryset, const char *query, bool notSuspended=true, IWorkUnit *wu=NULL);
-    void runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query, const char *cluster, const char *paramXml=NULL,
-            IArrayOf<IConstApplicationValue> *applications=NULL);
-    void runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml=NULL,
-            IArrayOf<IConstApplicationValue> *applications=NULL);
+    void runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query, const char *cluster, const char *paramXml,
+            IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstApplicationValue> *applications);
+    void runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml,
+            IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstApplicationValue> *applications);
     void checkAndTrimWorkunit(const char* methodName, StringBuffer& input);
 };
 
