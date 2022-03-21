@@ -303,6 +303,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
     const [targetClusters, defaultCluster] = useLogicalClusters();
     const [options, setOptions] = React.useState<IDropdownOption[]>();
     const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
+    const { onChange, required, selectedKey } = { ...props };
 
     React.useEffect(() => {
         const options = targetClusters?.map(row => {
@@ -314,10 +315,14 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
         }) || [];
         setOptions(options);
 
-        if (autoSelectDropdown(props.selectedKey, props.required)) {
-            setDefaultRow(options.filter(row => row.key === defaultCluster?.Name)[0]);
+        if (autoSelectDropdown(selectedKey, required)) {
+            const selectedItem = options.filter(row => row.key === defaultCluster?.Name)[0];
+            if (selectedItem) {
+                setDefaultRow(selectedItem);
+                onChange(undefined, selectedItem);
+            }
         }
-    }, [targetClusters, defaultCluster, props.selectedKey, props.required]);
+    }, [targetClusters, defaultCluster, onChange, required, selectedKey]);
 
     return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
 };
