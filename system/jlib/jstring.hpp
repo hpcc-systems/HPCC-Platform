@@ -26,6 +26,9 @@
 #include "jbuff.hpp"
 
 // A Java compatible String and StringBuffer class - useful for dynamic strings.
+#ifdef _DEBUG
+#define CATCH_USE_AFTER_FREE
+#endif
 
 class String;
 interface IAtom;
@@ -41,7 +44,6 @@ public:
     explicit StringBuffer(StringBuffer && value);
     explicit StringBuffer(size_t len, const char *value);
     explicit StringBuffer(const StringBuffer & value);
-    explicit StringBuffer(bool useInternal);
     explicit StringBuffer(char value);
     ~StringBuffer();
 
@@ -153,12 +155,6 @@ protected:
         curLen = 0;
         maxLen = InternalBufferSize;
     }
-    void initNoInternal()
-    {
-        buffer = NULL;
-        curLen = 0;
-        maxLen = 0;
-    }
     void freeBuffer();
     void _insert(size_t offset, size_t insertLen);
     void _realloc(size_t newLen);
@@ -259,7 +255,13 @@ public:
     StringAttr(StringAttr && src);
     StringAttr& operator = (StringAttr && from);
     StringAttr& operator = (const StringAttr & from);
-    inline ~StringAttr(void) { free(text); }
+    inline ~StringAttr(void)
+    {
+        free(text);
+#ifdef CATCH_USE_AFTER_FREE
+        text = const_cast<char *>("<use-after-free>");
+#endif
+    }
     
     inline operator const char * () const       { return text; }
     inline void clear()                         { setown(NULL); }

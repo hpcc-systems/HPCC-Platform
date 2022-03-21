@@ -100,17 +100,21 @@ StringBuffer::StringBuffer(StringBuffer && value)
     swapWith(value);
 }
 
-StringBuffer::StringBuffer(bool useInternal)
-{
-    if (useInternal)
-        init();
-    else
-        initNoInternal();
-}
-
 StringBuffer::~StringBuffer()
 {
+#ifdef CATCH_USE_AFTER_FREE
+    if (buffer == internalBuffer)
+        strncpy(internalBuffer, "use-after-free", InternalBufferSize-1);
+    else
+        strncpy(buffer, "use-after-free", curLen);
+#endif
     freeBuffer();
+#ifdef CATCH_USE_AFTER_FREE
+    //Try and cause any use after free to access invalid memory
+    curLen = 0;
+    maxLen = (size_t)-1;
+    buffer = nullptr;
+#endif
 }
 
 void StringBuffer::freeBuffer()
@@ -1102,7 +1106,7 @@ VStringBuffer::VStringBuffer(const char* format, ...)
 
 //===========================================================================
 
-StringAttrBuilder::StringAttrBuilder(StringAttr & _target) : StringBuffer(false), target(_target)
+StringAttrBuilder::StringAttrBuilder(StringAttr & _target) : target(_target)
 {
 }
 
@@ -1146,7 +1150,11 @@ String::String(StringBuffer & value)
 
 String::~String()
 {
-  if (text != TheNullStr) free(text);
+    if (text != TheNullStr)
+        free(text);
+#ifdef CATCH_USE_AFTER_FREE
+    text = nullptr;
+#endif
 }
 
 char String::charAt(size32_t index) const
