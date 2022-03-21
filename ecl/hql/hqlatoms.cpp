@@ -285,6 +285,7 @@ IAtom * maxSizeAtom;
 IAtom * mergeAtom;
 IAtom * mergeTransformAtom;
 IAtom * _metadata_Atom;
+IAtom * metaAtom;
 IAtom * methodAtom;
 IAtom * minAtom;
 IAtom * minimalAtom;
@@ -763,6 +764,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(memory);
     MAKEATOM(merge);
     MAKEATOM(mergeTransform);
+    MAKEATOM(meta);
     MAKESYSATOM(metadata);
     MAKEATOM(method);
     MAKEATOM(min);

@@ -892,6 +892,12 @@ void BuildCtx::selectElse(IHqlStmt * stmt)
     }
 }
 
+void BuildCtx::selectPass(IHqlStmt * pass)
+{
+    assertex(pass->getStmt() == pass_stmt);
+    selectCompound(pass);
+}
+
 
 unsigned BuildCtx::setPriority(unsigned newPrio)
 {

@@ -1631,6 +1631,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.evaluateCoLocalRowInvariantInExtract,"evaluateCoLocalRowInvariantInExtract", false),
         DebugOption(options.spanMultipleCpp,"spanMultipleCpp", true),
         DebugOption(options.activitiesPerCpp, "<exception>", 0x7fffffff),
+        DebugOption(options.metaMultipleCpp, "metaMultipleCpp", false),
         DebugOption(options.allowInlineSpill,"allowInlineSpill", true),
         DebugOption(options.optimizeGlobalProjects,"optimizeGlobalProjects", false),
         DebugOption(options.optimizeResourcedProjects,"optimizeResourcedProjects", false),
@@ -1912,6 +1913,11 @@ void HqlCppTranslator::cacheOptions()
         code->cppInfo.append(* new CppFileInfo(0)); // Add an entry for the main file which contains no activities
         options.activitiesPerCpp = wu()->getDebugValueInt("activitiesPerCpp", DEFAULT_ACTIVITIES_PER_CPP);
         curCppFile = 1;
+    }
+    else
+    {
+        options.metaMultipleCpp = false;
+        options.activitiesPerCpp = 0x7fffffff;
     }
 
     code->cppInfo.append(* new CppFileInfo(0));

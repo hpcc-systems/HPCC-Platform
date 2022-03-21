@@ -645,6 +645,7 @@ struct HqlCppOptions
     bool                evaluateCoLocalRowInvariantInExtract;
     bool                allowInlineSpill;
     bool                spanMultipleCpp;
+    bool                metaMultipleCpp;
     bool                optimizeGlobalProjects;
     bool                optimizeResourcedProjects;
     byte                notifyOptimizedProjects;
@@ -1116,7 +1117,7 @@ public:
     unsigned expandRtlRecordFields(StringBuffer & fieldListText, IHqlExpression * record, IHqlExpression * rowRecord, const char * rowTypeName);
     unsigned buildRtlIfBlockField(StringBuffer & instanceName, IHqlExpression * ifblock, IHqlExpression * rowRecord, const char * rowTypeName, bool isPayload);
 
-    void buildMetaInfo(MetaInstance & instance);
+    IHqlExpression * buildMetaInfo(MetaInstance & instance);
     IHqlExpression * buildMetaParameter(IHqlExpression * arg);
     void buildMetaForRecord(StringBuffer & name, IHqlExpression * record);
     void buildMetaForSerializedRecord(StringBuffer & name, IHqlExpression * record, bool isGrouped);
@@ -2075,7 +2076,6 @@ protected:
     unsigned            startCursorSet;
     bool                requireTable;
     BuildCtx *          activeGraphCtx;
-    HqlExprArray        metas;
     Owned<GeneratedGraphInfo> activeGraph;
     unsigned            graphSeqNumber;
     StringAttr          graphLabel;
@@ -2096,6 +2096,7 @@ protected:
     HqlExprArray        internalFunctions;
     HqlExprArray        internalFunctionExternals;
     UniqueSequenceCounter spillSequence;
+    std::vector<IHqlStmt *> metaPassStmts;
     
 #ifdef SPOT_POTENTIAL_COMMON_ACTIVITIES
     LocationArray       savedActivityLocations;
