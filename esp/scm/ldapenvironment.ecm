@@ -43,8 +43,6 @@ ESPenum OUMode : int
 
 ESPrequest LDAPCreateEnvironmentRequest
 {
-    bool                                              CreateLDAPEnvironment(false);
-    bool                                              CreateK8sSecrets(false);
     [label("Environment Name"), cols(20)] string      EnvName;
     [label("Environment Owner"), cols(20)] string     EnvOwnerName;
     [label("Description"), cols(60)] string           EnvDescription;
@@ -63,6 +61,13 @@ ESPrequest LDAPCreateEnvironmentRequest
 
     ESPEnum OUMode                                    WorkunitsMode;
     [label("Custom Workunits Base DN"), cols(60)] string CustomWorkunitsBaseDN;
+
+    bool                                              CreateLDAPEnvironment(false);
+    bool                                              CreateK8sSecrets(false);
+
+    bool                                              CreateVaultSecrets(false);
+    [label("Vault Name"), cols(20)] string            VaultName;
+
 };
 
 ESPresponse [exceptions_inline] LDAPCreateEnvironmentResponse

@@ -142,9 +142,19 @@ bool CldapenvironmentEx::changePermissions(const char * ou, const char * userFQD
     return ok;
 }
 
-bool CldapenvironmentEx::createSecret(const char * secretName, const char * username, const char * pwd, StringBuffer & notes)
+bool CldapenvironmentEx::createSecret(SecretType type, const char * secretName, const char * username, const char * pwd, StringBuffer & notes)
 {
-    VStringBuffer cmdLineSafe("kubectl create secret generic %s --from-literal=username=%s --from-literal=password=", secretName, username);
+    StringBuffer cmdLineSafe;
+    switch (type)
+    {
+        case ST_K8S:
+            cmdLineSafe.appendf("kubectl create secret generic %s --from-literal=username=%s --from-literal=password=", secretName, username);
+            break;
+        case ST_VAULT:
+            cmdLineSafe.appendf("vault kv put secret/authn/%s username=%s password=", secretName, username);
+            break;
+    }
+
     VStringBuffer cmdLine("%s%s", cmdLineSafe.str(), pwd);
     try
     {
@@ -161,6 +171,17 @@ bool CldapenvironmentEx::createSecret(const char * secretName, const char * user
     return true;
 }
 
+void CldapenvironmentEx::createLDAPBaseDN(const char * baseDN, const char * description, StringBuffer & notes)
+{
+    try
+    {
+        secmgr->createLdapBasedn(nullptr, baseDN, PT_ADMINISTRATORS_ONLY, description);
+    }
+    catch(...)
+    {
+        notes.appendf("\nNon Fatal Error creating '%s'", baseDN);
+    }
+}
 
 bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPCreateEnvironmentRequest &req, IEspLDAPCreateEnvironmentResponse &resp)
 {
@@ -195,6 +216,9 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         if (!req.getWorkunitsMode() == COUMode_CreateCustom && isEmptyString(req.getCustomWorkunitsBaseDN()))
             throw MakeStringException(-1, "CustomWorkunitsBaseDN must be specified (ex. 'ou=workunits,ou=hpcc,dc=myldap,dc=com')");
 
+        if (req.getCreateVaultSecrets() && isEmptyString(req.getVaultName()))
+            throw MakeStringException(-1, "Vault Name must be specified to create vault secrets");
+
         // Create OU string names
 
         StringBuffer respFilesBaseDN, respGroupsBaseDN, respUsersBaseDN, respResourcesBaseDN, respWorkunitsBaseDN;
@@ -216,46 +240,11 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         if (req.getCreateLDAPEnvironment())
         {
             //Note that ESP will also try to create these OUs on startup
-            try
-            {
-                 secmgr->createLdapBasedn(nullptr, respFilesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
-            }
-            catch(...)
-            {
-                  notes.appendf("\nNon Fatal Error creating '%s'", respFilesBaseDN.str());
-            }
-            try
-            {
-                 secmgr->createLdapBasedn(nullptr, respGroupsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
-            }
-            catch(...)
-            {
-                notes.appendf("\nNon Fatal Error creating '%s'", respGroupsBaseDN.str());
-            }
-            try
-            {
-                secmgr->createLdapBasedn(nullptr, respUsersBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
-            }
-            catch(...)
-            {
-                notes.appendf("\nNon Fatal Error creating '%s'", respUsersBaseDN.str());
-            }
-            try
-            {
-                secmgr->createLdapBasedn(nullptr, respResourcesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
-            }
-            catch(...)
-            {
-                notes.appendf("\nNon Fatal Error creating '%s'", respResourcesBaseDN.str());
-            }
-            try
-            {
-                secmgr->createLdapBasedn(nullptr, respWorkunitsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str());
-            }
-            catch(...)
-            {
-                 notes.appendf("\nNon Fatal Error creating '%s'", respWorkunitsBaseDN.str());
-            }
+            createLDAPBaseDN(respFilesBaseDN.str(), description.str(), notes);
+            createLDAPBaseDN(respGroupsBaseDN.str(), description.str(), notes);
+            createLDAPBaseDN(respUsersBaseDN.str(), description.str(), notes);
+            createLDAPBaseDN(respResourcesBaseDN.str(), description.str(), notes);
+            createLDAPBaseDN(respWorkunitsBaseDN.str(), description.str(), notes);
 
             //Create HPCCAdmins Group
             try
@@ -312,14 +301,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
             //Grant SmcAccess to HPCCAdmins group
             {
                 VStringBuffer smcAccess("%sSmcAccess,%s", resPrefix, respResourcesBaseDN.str());
-                try
-                {
-                    secmgr->createLdapBasedn(nullptr, smcAccess.str(), PT_ADMINISTRATORS_ONLY, description.str());
-                }
-                catch(...)
-                {
-                    notes.appendf("\nNon Fatal Error creating '%s'", smcAccess.str());
-                }
+                createLDAPBaseDN(smcAccess.str(), description.str(), notes);
 
                 CPermissionAction action;
                 action.m_action = "update";
@@ -342,10 +324,17 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         }
 
         //Create the secret
-        VStringBuffer  respHPCCAdminK8sSecretName("hpcc-admin-%s", req.getEnvName());
-        respHPCCAdminK8sSecretName.toLowerCase();
+        VStringBuffer  respHPCCAdminSecretName("hpcc-admin-%s", req.getEnvName());
+        respHPCCAdminSecretName.toLowerCase();
         if (req.getCreateK8sSecrets())
-            createSecret(respHPCCAdminK8sSecretName.str(), respHPCCAdminUser.str(), respHPCCAdminPwd.str(), notes);
+            createSecret(ST_K8S, respHPCCAdminSecretName.str(), respHPCCAdminUser.str(), respHPCCAdminPwd.str(), notes);
+
+        StringBuffer respVaultID;
+        if (req.getCreateVaultSecrets())
+        {
+            respVaultID.set(req.getVaultName());
+            createSecret(ST_VAULT, respHPCCAdminSecretName.str(), respHPCCAdminUser.str(), respHPCCAdminPwd.str(), notes);
+        }
 
         //----------------------------------
         // Create LDAP Admin Username/password.
@@ -371,10 +360,12 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         }
 
         //Create the secret
-        VStringBuffer respLDAPAdminK8sSecretName("ldap-admin-%s", req.getEnvName());
-        respLDAPAdminK8sSecretName.toLowerCase();
+        VStringBuffer respLDAPAdminSecretName("ldap-admin-%s", req.getEnvName());
+        respLDAPAdminSecretName.toLowerCase();
         if (req.getCreateK8sSecrets())
-            createSecret(respLDAPAdminK8sSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
+            createSecret(ST_K8S, respLDAPAdminSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
+        if (req.getCreateVaultSecrets())
+            createSecret(ST_VAULT, respLDAPAdminSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
 
         //----------------------------------
         // Set response
@@ -399,17 +390,20 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "  ldap:\n"
                                "    adminGroupName: %s\n"
                                "    ldapAdminSecretKey: %s\n"
+                               "    ldapAdminVaultId: %s\n"
                                "    hpccAdminSecretKey: %s\n"
+                               "    hpccAdminVaultId: %s\n"
                                "    filesBasedn: %s\n"
                                "    groupsBasedn: %s\n"
                                "    usersBasedn: %s\n"
                                "    resourcesBasedn: %s\n"
                                "    workunitsBasedn: %s\n"
                                "    systemBasedn: %s\n\n",
-                               ldapcredskey.str(), respLDAPAdminK8sSecretName.str(),
-                               hpcccredskey.str(), respHPCCAdminK8sSecretName.str(),
+                               ldapcredskey.str(), respLDAPAdminSecretName.str(),
+                               hpcccredskey.str(), respHPCCAdminSecretName.str(),
                                adminGroupName.str(),
-                               ldapcredskey.str(), hpcccredskey.str(),
+                               ldapcredskey.str(), respVaultID.str(),
+                               hpcccredskey.str(), respVaultID.str(),
                                respFilesBaseDN.str(), respGroupsBaseDN.str(), respUsersBaseDN.str(), respResourcesBaseDN.str(), respWorkunitsBaseDN.str(), respUsersBaseDN.str());
         resp.setLDAPHelm(ldapHelm.str());
         resp.setNotes(notes.str());
