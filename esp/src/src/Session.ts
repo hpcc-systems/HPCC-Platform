@@ -3,6 +3,7 @@ import * as xhr from "dojo/request/xhr";
 import * as topic from "dojo/topic";
 import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
+import { cookieKeyValStore } from "src/KeyValStore";
 import { singletonDebounce } from "../src-react/util/throttle";
 import * as ESPUtil from "./ESPUtil";
 import { scopedLogger } from "@hpcc-js/util";
@@ -20,21 +21,26 @@ let _prevReset = Date.now();
 
 declare const dojoConfig;
 
+const userStore = cookieKeyValStore();
+
 const smc = new SMCService({ baseUrl: "" });
 
 export type BuildInfo = { [key: string]: string };
 
 export async function getBuildInfo(): Promise<BuildInfo> {
-    const getBuildInfo = singletonDebounce(smc, "GetBuildInfo", 60);
-    return getBuildInfo({}).then(response => {
-        const buildInfo = {};
-        response?.BuildInfo?.NamedValue?.forEach(row => {
-            buildInfo[row.Name] = row.Value;
+    return userStore.getAll().then(userSession => {
+        if (!userSession || !userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked") return {};
+        const getBuildInfo = singletonDebounce(smc, "GetBuildInfo", 60);
+        return getBuildInfo({}).then(response => {
+            const buildInfo = {};
+            response?.BuildInfo?.NamedValue?.forEach(row => {
+                buildInfo[row.Name] = row.Value;
+            });
+            return buildInfo;
+        }).catch(e => {
+            logger.error(e);
+            return {};
         });
-        return buildInfo;
-    }).catch(e => {
-        logger.error(e);
-        return {};
     });
 }
 
@@ -57,8 +63,6 @@ export function formatCost(value?: number | string): string {
 
 export function initSession() {
     if (sessionIsActive > -1) {
-        cookie("Status", "Unlocked");
-        cookie("ECLWatchUser", "true");
 
         idleWatcher.on("active", function () {
             resetESPTime();
@@ -79,10 +83,12 @@ export function initSession() {
 }
 
 export function lock() {
+    cookie("Status", "Locked");
     idleWatcher.stop();
 }
 
 export function unlock() {
+    cookie("Status", "Unlocked");
     idleWatcher.start();
 }
 
@@ -90,7 +96,9 @@ export function fireIdle() {
     idleWatcher.fireIdle();
 }
 
-function resetESPTime() {
+async function resetESPTime() {
+    const userSession = userStore.getAll();
+    if (!userSession || !userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked") return;
     if (Date.now() - _prevReset > SESSION_RESET_FREQ) {
         _prevReset = Date.now();
         xhr("esp/reset_session_timeout", {

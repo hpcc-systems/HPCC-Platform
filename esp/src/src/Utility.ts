@@ -1046,6 +1046,15 @@ export function downloadText(content: string, fileName: string) {
 
 const d3FormatNum = d3Format(",");
 
+export function parseCookies(): Record<string, any> {
+    const cookies = {};
+    document.cookie.split(";").map(pair => {
+        const [key, ...values] = pair.split("=");
+        cookies[key.trim()] = values.join("=");
+    });
+    return cookies;
+}
+
 export function formatNum(str): string {
     if (isNaN(str)) {
         return str;

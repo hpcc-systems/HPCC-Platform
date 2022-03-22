@@ -163,10 +163,11 @@ export function pushUrl(_: string, state?: any) {
     }, state);
 }
 
-export function replaceUrl(_: string, state?: any) {
+export function replaceUrl(_: string, state?: any, refresh: boolean = false) {
     hashHistory.replace({
         pathname: _
     }, state);
+    if (refresh) window.location.reload();
 }
 
 export function pushParam(key: string, val?: string | string[] | number | boolean, state?: any) {
