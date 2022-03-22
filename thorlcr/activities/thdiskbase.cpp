@@ -72,6 +72,7 @@ void CDiskReadMasterBase::init()
             unsigned numsubs = super?super->numSubFiles(true):0;
             if (0 != (helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
             {
+                subfileLogicalFilenames.kill();
                 for (unsigned s=0; s<numsubs; s++)
                 {
                     IDistributedFile &subfile = super->querySubFile(s, true);
