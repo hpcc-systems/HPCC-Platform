@@ -175,8 +175,9 @@
 
         <para>This applies to most all of the HPCC Systems components, ESP,
         Dali, dafilesrv, and Sasha. Roxie's specification is slightly
-        different, in that it has it's service ports defined under
-        "roxieservice" and there can be multiples. (see schema).</para>
+        different, in that it has its service defined under "roxieservice".
+        Each Roxie can then have multiple "roxieservice" definitions. (see
+        schema).</para>
       </sect3>
 
       <sect3 id="DALI_ValueYAML">
