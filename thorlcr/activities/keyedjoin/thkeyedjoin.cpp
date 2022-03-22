@@ -303,8 +303,6 @@ public:
         totalIndexParts = 0;
 
         Owned<IDistributedFile> dataFile;
-        
-        
         Owned<IDistributedFile> indexFile = lookupReadFile(indexFileName, false, false, 0 != (helper->getJoinFlags() & JFindexoptional));
         if (indexFile)
         {

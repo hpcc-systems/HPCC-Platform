@@ -240,7 +240,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     MemoryBuffer *data;
     CriticalSection progressCrit;
     IArrayOf<IDistributedFile> readFiles;
-    std::unordered_map<std::string, IDistributedFile *> readFilesMap;
+    std::unordered_map<std::string, IDistributedFile *> readFilesMap; // NB: IDistributedFile pointers are owned by readFiles
 
 protected:
     std::vector<OwnedPtr<CThorEdgeCollection>> edgeStatsVector;

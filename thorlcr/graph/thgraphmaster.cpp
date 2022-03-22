@@ -606,7 +606,7 @@ void CMasterActivity::updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCol
      * NB: also changed when the expansion of readFiles (from supers to subfiles) happens, a new super was being added
      * each CQ iteration and re-expanded, meaing readFiles kept growing.
      * 
-     * Also, superkey1.ecl hits a dbgasserex whilst deserializaing stats (before and after these PR changes),
+     * Also, superkey1.ecl hits a dbgasserex whilst deserializing stats (before and after these PR changes),
      * but is caught/ignored. I haven't investigated further.
      */
 
