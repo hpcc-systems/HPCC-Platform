@@ -1,7 +1,7 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: check-executes [options] -- cmd args"
+  echo "Usage: check_executes [options] -- cmd args"
   echo "    -d <directory>     Mounted directory to store post-mortem info in"
   echo "    -f <file>          Specifies a file to preserve on post-mortem"
 }
@@ -49,7 +49,7 @@ for (( arg=1; arg <= "$#"; arg++ )); do
   optval=${!arg#*=}
   if [[ ${optname} == '--config' ]]; then
     PMD_COPYFILES+=(${optval})
-  elif [[ ${optname} == '--daliServer' ]]; then
+  elif [[ ${optname} == '--daliServers' ]]; then
     PMD_DALISERVER=${optval}
   elif [[ ${optname} == '--workunit' ]]; then
     PMD_WORKUNIT=${optval}
@@ -85,7 +85,7 @@ if [ $retVal -ne 0 ]; then
     rm core
   fi
   if [[ -n "${PMD_DALISERVER}" ]] && [[ -n "${PMD_WORKUNIT}" ]]; then
-    wutool postmortem ${PMD_WORKUNIT} DALISERVERS=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
+    wutool postmortem ${PMD_WORKUNIT} DALISERVER=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
     echo Updated workunit ${PMD_WORKUNIT}
   fi
 fi
