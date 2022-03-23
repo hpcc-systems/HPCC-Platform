@@ -3059,7 +3059,7 @@ FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
     if (df)
-        return df->getExpire();
+        return df->getExpire(nullptr);
     else
         throw makeStringExceptionV(0, "GetExpireDays: Could not find logical file %s", lfn.str());
 }

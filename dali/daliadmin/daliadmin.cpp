@@ -722,7 +722,7 @@ static void testDFSFile(IDistributedFile *legacyDfsFile, const char *logicalName
         PROGLOG("maxSkewPart: %d", maxSkewPart);
         PROGLOG("minSkewPart: %d", minSkewPart);
     }
-    int expire = legacyDfsFile->getExpire();
+    int expire = legacyDfsFile->getExpire(nullptr);
     PROGLOG("expire: %d", expire);
     try
     {

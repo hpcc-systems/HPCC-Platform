@@ -231,7 +231,7 @@ public:
     virtual IPropertyTree *queryHistory() const override { return legacyDFSFile->queryHistory(); }
     virtual bool isExternal() const override { return false; }
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) override { return legacyDFSFile->getSkewInfo(maxSkew, minSkew, maxSkewPart, minSkewPart, calculateIfMissing); }
-    virtual int getExpire() override { return legacyDFSFile->getExpire(); }
+    virtual int getExpire(StringBuffer *expirationDate) override { return legacyDFSFile->getExpire(expirationDate); }
     virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) override { legacyDFSFile->getCost(cluster, atRestCost, accessCost); }
     
 // setters (change file meta data)
