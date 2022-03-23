@@ -319,15 +319,33 @@ static IFile *createGitFile(const char *gitFileName)
     splitGitFileName(fname, gitDirectory, revision, relDir);
     if (relDir.isEmpty())
         return new GitRepositoryFile(fname, 0, true, true);  // Special case the root - ugly but apparently necessary
-    Owned<IDirectoryIterator> dir = createGitRepositoryDirectoryIterator(fname, NULL, false, true);
-    if (dir->first())
+    VStringBuffer gitcmd("git --git-dir=%s cat-file --batch-check", gitDirectory.get());
+    VStringBuffer lookup("%s:%s", revision.length() ? revision.get() : "HEAD", relDir.length() ? relDir.get() : "");
+    Owned<IPipeProcess> pipe = createPipeProcess();
+    if (pipe->run(nullptr, gitcmd, ".", true, true, false, 0))
     {
-        Linked<IFile> file = &dir->query();
-        assertex(!dir->next());
-        return file.getClear();
+        pipe->write(lookup.length(), lookup.str());
+        pipe->closeInput();
+        StringBuffer result;
+        Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+        readSimpleStream(result, *pipeReader);
+        // Should either be of the form "blobid type size" or "<ref> missing"
+        char *sizeptr = (char *) strrchr(result, ' ');
+        if (sizeptr)
+        {
+            *sizeptr++ = 0;
+            const char *typeptr = strrchr(result, ' ');
+            if (typeptr)
+            {
+                typeptr++;
+                if (streq(typeptr, "tree"))
+                    return new GitRepositoryFile(gitFileName, (offset_t) -1, true, true);
+                else if (streq(typeptr, "blob"))
+                    return new GitRepositoryFile(gitFileName, (offset_t) atoi64(sizeptr), false, true);
+            }
+        }
     }
-    else
-        return new GitRepositoryFile(gitFileName, (offset_t) -1, false, false);
+    return new GitRepositoryFile(gitFileName, (offset_t) -1, false, false);
 }
 
 class GitRepositoryDirectoryIterator : implements IDirectoryIterator, public CInterface
