@@ -617,10 +617,11 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             wuScope.appendf("%s-%s", label, dfuwu.getID());
             ElapsedLabel.append(wuScope).append(" (Elapsed) ");
             RemainingLabel.append(wuScope).append(" (Remaining) ");
-
             //MORE: I think this are intended to replace the timing information, but will currently combine
             updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StTimeElapsed, ElapsedLabel, milliToNano(time.elapsed()));
             updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StTimeRemaining, RemainingLabel, milliToNano(dfuwu.getSecsLeft()*1000));
+            stat_type costFileAccess = money2cost_type(dfuwu.getFileAccessCost());
+            updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StCostFileAccess, "", costFileAccess);
             wu->setApplicationValue(label, dfuwu.getID(), dfuwu.getSummaryMessage(), true);
             wu->commit();
             wu.clear();

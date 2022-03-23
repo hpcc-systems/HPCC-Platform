@@ -351,6 +351,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         if(secs > 0)
             dest.setSecsLeft(secs);
         dest.setPercentDone(prog->getPercentDone());
+        dest.setFileAccessCost(prog->getFileAccessCost());
     }
 
     IConstDFUoptions *options = src->queryOptions();

@@ -96,6 +96,7 @@ ESPStruct [nil_remove] DFUWorkunit
     [min_ver("1.12")] bool preserveCompression(true);
     [min_ver("1.14")] int expireDays;
     [min_ver("1.21")] bool PreserveFileParts;
+    [min_ver("1.23")] double FileAccessCost;
 };
 
 ESPStruct [nil_remove] GroupNode
@@ -692,7 +693,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.22"),
+    version("1.23"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);

@@ -140,7 +140,10 @@ class CDFUengine: public CInterface, implements IDFUengine
             DaftProgress::setRange(sizeReadBefore,totalSize,_totalNodes);
             progress->setTotalNodes(_totalNodes);
         }
-
+        void setFileAccessCost(double fileAccessCost)
+        {
+            progress->setFileAccessCost(fileAccessCost);
+        }
     };
 
     class cAbortNotify : public CInterface, implements IAbortRequestCallback, implements IDFUabortSubscriber

@@ -33,7 +33,7 @@ public:
                             unsigned numNodes, unsigned __int64 numReads, unsigned __int64 numWrites) = 0;
     virtual void displaySummary(const char * timeTaken, unsigned kbPerSecond) = 0;
     virtual void setRange(unsigned __int64 sizeReadBefore, unsigned __int64 totalSize, unsigned _totalNodes);
-
+    virtual void setFileAccessCost(double fileAccessCost) = 0;
 protected:
     void formatTime(char * buffer, unsigned secs);
 
@@ -59,6 +59,7 @@ public:
                             unsigned __int64 scaledDone, unsigned __int64 scaledTotal, const char * scale,
                             unsigned kbPerSecondAve, unsigned kbPerSecondRate, unsigned numNodes);
     virtual void displaySummary(const char * timeTaken, unsigned kbPerSecond);
+    virtual void setFileAccessCost(double fileAccessCost) {};
 };
 
 #endif
