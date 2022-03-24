@@ -139,6 +139,8 @@ bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelQueryLoadThreads = 0;               // Number of threads to use for parallel loading of queries. 0 means don't (may cause CPU starvation on other vms)
 bool alwaysFailOnLeaks = false;
+bool ignoreFileDateMismatches = false;
+int fileTimeFuzzySeconds = 0;
 SinkMode defaultSinkMode = SinkMode::Parallel;
 unsigned continuationCompressThreshold = 1024;
 
@@ -1115,6 +1117,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (!parallelQueryLoadThreads)
             parallelQueryLoadThreads = 1;
         alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
+        ignoreFileDateMismatches = topology->getPropBool("@ignoreFileDateMismatches", false);
+        fileTimeFuzzySeconds = topology->getPropInt("@fileTimeFuzzySeconds", 0);
         const char *sinkModeText = topology->queryProp("@sinkMode");
         if (sinkModeText)
             defaultSinkMode = getSinkMode(sinkModeText);

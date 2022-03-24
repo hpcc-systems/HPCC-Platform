@@ -913,10 +913,23 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             if (modified.isNull()) 
                 return FileIsValid;
             CDateTime mt;
-            if (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))
-                return FileIsValid;
+            if (f->getTime(NULL, &mt, NULL))
+            {
+                if (fileTimeFuzzySeconds)
+                {
+                    time_t mtt = mt.getSimple();
+                    time_t modt = modified.getSimple();
+                    __int64 diff = mtt-modt;
+                    if (std::abs(diff) <= (__int64) fileTimeFuzzySeconds)
+                        return FileIsValid;
+                }
+                else if (mt.equals(modified, false))
+                    return FileIsValid;
+            }
             StringBuffer s1, s2;
             DBGLOG("File date mismatch: local %s, DFS %s", mt.getString(s1).str(), modified.getString(s2).str());
+            if (ignoreFileDateMismatches)
+                return FileIsValid;
             return FileDateMismatch;
         }
         else

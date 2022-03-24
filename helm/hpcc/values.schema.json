@@ -1415,6 +1415,16 @@
           "default": true,
           "description": "Treat out-of-date local files as if they were not present."
         },
+        "ignoreFileDateMismatches": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore mismatched file dates on local files"
+        },
+        "fileTimeFuzzySeconds": { 
+          "type": "integer",
+          "default": 0,
+          "description": "Ignore mismatched file dates of up to this amount"
+        },
         "lazyOpen": {
           "type": "boolean",
           "default": false,
