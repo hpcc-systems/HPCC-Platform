@@ -24,6 +24,9 @@
 #include "jfile.hpp"
 #include "jregexp.hpp"
 #include "gitfile.hpp"
+#include "jlog.hpp"
+
+#include "git2.h"
 
 /*
  * Direct access to files in git repositories, by revision, without needing to check them out first
@@ -47,7 +50,7 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
         throw MakeStringException(0, "Invalid git repository filename - no matching } found");
     revision.set(tail, end - tail);
     tail = end+1;
-    if (*tail==PATHSEPCHAR)
+    if (*tail==PATHSEPCHAR || *tail == '/')
         tail++;
     else if (*tail != 0)
         throw MakeStringException(0, "Invalid git repository filename - " PATHSEPSTR " expected after }");
@@ -69,47 +72,113 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
 static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDir, const char *revision, const char *relPath)
 {
     fullname.append(gitDir);
-    fullname.append('{').append(revision).append('}').append(PATHSEPCHAR);
+    fullname.append('{').append(revision).append('}').append('/');
     if (relPath && *relPath)
         fullname.append(relPath);
     return fullname;
 }
+
+
+//--------------------------------------------------------------------------------------------------------------------
+// New implementation using libgit2
+//--------------------------------------------------------------------------------------------------------------------
+
+static git_oid nullOid;
+
+#define GIT_CHECK(x) check(x, #x)
+class GitCommitTree : public CInterface
+{
+public:
+    GitCommitTree(const char * directory, const char * version)
+    {
+        GIT_CHECK(git_repository_open(&gitRepo, directory));
+
+        if (gitRepo)
+        {
+            //Check to see if the version is a tag/branch etc. - these take precedence if they happen to match a sha prefix
+            git_reference * ref = nullptr;
+            if (git_reference_dwim(&ref, gitRepo, version) == 0)
+            {
+                //Map the symbolic reference to the underlying object
+                git_reference * resolvedRef = nullptr;
+                if (git_reference_resolve(&resolvedRef, ref) == 0)
+                {
+                    const git_oid * oid = git_reference_target(resolvedRef);
+                    GIT_CHECK(git_commit_lookup(&gitCommit, gitRepo, oid));
+                    git_reference_free(resolvedRef);
+                }
+
+                git_reference_free(ref);
+            }
+
+            if (!gitCommit)
+            {
+                git_oid gitOid;
+                if (git_oid_fromstrp(&gitOid, version) == 0)
+                {
+                    //User provided a SHA (possibly shorted) -> resolve it.  Error will be reported later if it does not exist.
+                    GIT_CHECK(git_commit_lookup_prefix(&gitCommit, gitRepo, &gitOid, strlen(version)));
+                }
+            }
+
+            if (gitCommit)
+                GIT_CHECK(git_commit_tree(&gitRoot, gitCommit));
+        }
+    }
+    ~GitCommitTree()
+    {
+        git_tree_free(gitRoot);
+        git_commit_free(gitCommit);
+        git_repository_free(gitRepo);
+    }
+
+    const git_tree * queryTree() const { return gitRoot; }
+
+protected:
+    void check(int code, const char * func)
+    {
+        if (code != 0)
+        {
+            const git_error * err = git_error_last();
+            const char * errmsg = err ? err->message : "<unknown>";
+            WARNLOG("libgit %s returned %u: %s", func, code, errmsg);
+        }
+    }
+protected:
+    git_repository * gitRepo = nullptr;
+    git_commit * gitCommit = nullptr;
+    git_tree * gitRoot = nullptr;
+};
 
 #define LFSsig "version https://git-lfs.github.com/spec/"
 const unsigned LFSsiglen = strlen(LFSsig);
 constexpr unsigned MIN_LFS_POINTER_SIZE=120;
 constexpr unsigned MAX_LFS_POINTER_SIZE=150;
 
-class GitRepositoryFileIO : implements IFileIO, public CInterface
+class GitRepositoryFileIO : implements CSimpleInterfaceOf<IFileIO>
 {
     bool isLFSfile()
     {
         return buf.length() > LFSsiglen && memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0;
     }
 public:
-    IMPLEMENT_IINTERFACE;
-    GitRepositoryFileIO(const char * gitDirectory, const char * revision, const char * relFileName)
+    GitRepositoryFileIO(GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid)
     {
-        VStringBuffer gitcmd("git --git-dir=%s show %s:%s", gitDirectory, (revision && *revision) ? revision : "HEAD", relFileName);
-        Owned<IPipeProcess> pipe = createPipeProcess();
-        if (pipe->run("git", gitcmd, ".", false, true, false, 0))
-        {
-            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-            readSimpleStream(buf, *pipeReader);
-            pipe->closeOutput();
-        }
-        int retcode = pipe->wait();
-        if (retcode)
-        {
-            buf.clear();  // Can't rely on destructor to clean this for me
-            throw MakeStringException(0, "git show returned exit status %d", retcode);
-        }
+        git_blob *blob = nullptr;
+        int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), oid);
+        if (error)
+            throw MakeStringException(0, "git git_blob_lookup returned exit status %d", error);
+
+        git_object_size_t blobsize = git_blob_rawsize(blob);
+        const void * data = git_blob_rawcontent(blob);
+        buf.append(blobsize, data);
+        git_blob_free(blob);
         if (isLFSfile())
         {
             Owned<IPipeProcess> pipe = createPipeProcess();
             if (pipe->run("git-lfs", "git-lfs smudge", gitDirectory, true, true, false, 0))
             {
-                pipe->write(buf.length(), buf.toByteArray());
+                pipe->write(blobsize, buf.toByteArray());
                 pipe->closeInput();
                 buf.clear();
                 Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
@@ -171,8 +240,8 @@ class GitRepositoryFile : implements IFile, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    GitRepositoryFile(const char *_gitFileName, offset_t _fileSize, bool _isDir, bool _isExisting)
-    : fullName(_gitFileName),fileSize(_fileSize), isDir(_isDir), isExisting(_isExisting)
+    GitRepositoryFile(const char *_gitFileName, bool _isDir, bool _isExisting, GitCommitTree * _commitTree, const git_oid & _oid)
+    : commitTree(_commitTree), oid(_oid), fullName(_gitFileName), isDir(_isDir), isExisting(_isExisting)
     {
         splitGitFileName(fullName, gitDirectory, revision, relFileName);
     }
@@ -208,19 +277,9 @@ public:
             return fileBool::notFound;
         return fileBool::foundYes;
     }
-    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone)
-    {
-        assertex(mode==IFOread && isExisting);
-        return new GitRepositoryFileIO(gitDirectory, revision, relFileName);
-    }
     virtual IFileAsyncIO * openAsync(IFOmode mode)
     {
         UNIMPLEMENTED;
-    }
-    virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags=IFEnone)
-    {
-        assertex(mode==IFOread && isExisting);
-        return new GitRepositoryFileIO(gitDirectory, revision, relFileName);
     }
     virtual const char * queryFilename()
     {
@@ -230,27 +289,32 @@ public:
     {
         if (!isExisting)
             return (offset_t) -1;
-        if (fileSize >= MIN_LFS_POINTER_SIZE && fileSize <= MAX_LFS_POINTER_SIZE)
+        if (fileSize != (offset_t) -1)
+            return fileSize;
+        if (isDir)
+            fileSize = 0;
+        else
         {
-            MemoryBuffer buf;
-            VStringBuffer gitcmd("git --git-dir=%s show %s:%s", gitDirectory.str(), revision.length() ? revision.str() : "HEAD", relFileName.str());
-            Owned<IPipeProcess> pipe = createPipeProcess();
-            if (pipe->run("git", gitcmd, ".", false, true, false, 0))
+            git_blob *blob = nullptr;
+            int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), &oid);
+            if (error)
+                throw MakeStringException(0, "git git_blob_lookup returned exit status %d", error);
+
+            fileSize = git_blob_rawsize(blob);
+            if (fileSize >= MIN_LFS_POINTER_SIZE && fileSize <= MAX_LFS_POINTER_SIZE)
             {
-                Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-                readSimpleStream(buf, *pipeReader);
-                pipe->closeOutput();
+                MemoryBuffer buf;
+                const void * data = git_blob_rawcontent(blob);
+                buf.append(fileSize, data);
+                if (memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0)
+                {
+                    buf.append('\0');
+                    const char *sizeptr = strstr(buf.toByteArray(), "size ");
+                    if (sizeptr)
+                        fileSize = atoi64(sizeptr+5);
+                }
             }
-            int retcode = pipe->wait();
-            if (retcode)
-                throw MakeStringException(0, "git show returned exit status %d", retcode);
-            if (memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0)
-            {
-                buf.append('\0');
-                const char *sizeptr = strstr(buf.toByteArray(), "size ");
-                if (sizeptr)
-                    fileSize = atoi64(sizeptr+5);
-            }
+            git_blob_free(blob);
         }
         return fileSize;
     }
@@ -267,13 +331,24 @@ public:
             return createGitRepositoryDirectoryIterator(dirName, mask, sub, includeDirs);
         }
     }
-    virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
+    virtual bool getInfo(bool &isdir,offset_t &_size,CDateTime &modtime)
     {
         isdir = isDir;
-        size = fileSize;
+        _size = size();
         modtime.clear();
         return true;
     }
+    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags) override
+    {
+        assertex(mode==IFOread && isExisting && !isDir);
+        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid);
+    }
+    virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags) override
+    {
+        assertex(mode==IFOread && isExisting && !isDir);
+        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid);
+    }
+
 
     // Not going to be implemented - this IFile interface is too big..
     virtual bool setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime) { UNIMPLEMENTED; }
@@ -301,37 +376,24 @@ public:
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)  { UNIMPLEMENTED; }
 
 protected:
+    Linked<GitCommitTree> commitTree;
+    const git_oid oid;
     StringAttr gitDirectory;
     StringAttr revision;
     StringAttr relFileName;
     StringBuffer fullName;
-    offset_t fileSize;
+    offset_t fileSize = (offset_t) -1;
     bool isDir;
     bool isExisting;
 };
 
-static IFile *createGitFile(const char *gitFileName)
-{
-    StringBuffer fname(gitFileName);
-    assertex(fname.length());
-    removeTrailingPathSepChar(fname);
-    StringAttr gitDirectory, revision, relDir;
-    splitGitFileName(fname, gitDirectory, revision, relDir);
-    if (relDir.isEmpty())
-        return new GitRepositoryFile(fname, 0, true, true);  // Special case the root - ugly but apparently necessary
-    Owned<IDirectoryIterator> dir = createGitRepositoryDirectoryIterator(fname, NULL, false, true);
-    if (dir->first())
-    {
-        Linked<IFile> file = &dir->query();
-        assertex(!dir->next());
-        return file.getClear();
-    }
-    else
-        return new GitRepositoryFile(gitFileName, (offset_t) -1, false, false);
-}
-
 class GitRepositoryDirectoryIterator : implements IDirectoryIterator, public CInterface
 {
+    static int treeCallback(const char *root, const git_tree_entry *entry, void *payload)
+    {
+        GitRepositoryDirectoryIterator * self = reinterpret_cast<GitRepositoryDirectoryIterator *>(payload);
+        return self->noteEntry(root, entry);
+    }
 public:
     IMPLEMENT_IINTERFACE;
     GitRepositoryDirectoryIterator(const char *_gitFileName, const char *_mask, bool _sub, bool _includeDirs)
@@ -339,6 +401,11 @@ public:
     {
         splitGitFileName(_gitFileName, gitDirectory, revision, relDir);
         curIndex = 0;
+
+        const char * version = revision.length() ? revision.get() : "HEAD";
+        commitTree.setown(new GitCommitTree(gitDirectory, version));
+        if (!commitTree->queryTree())
+            throw makeStringExceptionV(9900 , "Cannot resolve git revision %s", _gitFileName);
     }
     virtual StringBuffer &getName(StringBuffer &buf)
     {
@@ -364,53 +431,9 @@ public:
         files.kill();
         curFile.clear();
         curIndex = 0;
-        VStringBuffer gitcmd("git --git-dir=%s ls-tree --long -z %s %s", gitDirectory.get(), revision.length() ? revision.get() : "HEAD", relDir.length() ? relDir.get() : "");
-        Owned<IPipeProcess> pipe = createPipeProcess();
-        if (pipe->run("git", gitcmd, ".", false, true, false, 0))
-        {
-            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-            char c;
-            StringBuffer thisLine;
-            while (pipeReader->read(sizeof(c), &c))
-            {
-                if (!c)
-                {
-                    if (thisLine.length())
-                    {
-                        // info from Git looks like this:
-                        // 100644 blob 6c131b5954   36323  sourcedoc.xml
-                        // 040000 tree 6c131b5954   -    subdir
-                        char size[32];
-                        char filename[1024];
-                        int ret= sscanf(thisLine, "%*s %*s %*s %31s %1023s", &size[0], &filename[0]);
-                        if (ret != 2)
-                            throw MakeStringException(0, "Unexpected data returned from git ls-tree: %s", thisLine.str());
-                        if (includeDirs || size[0]!='-')
-                        {
-                            const char *tail = strrchr(filename, '/'); // Git uses / even on Windows
-                            if (tail)
-                                tail += 1;
-                            else
-                                tail = filename;
-                            if (!mask.length() || WildMatch(tail, mask, false))
-                            {
-                                files.append(tail);
-                                sizes.append(size[0]=='-' ? (offset_t) -1 : _atoi64(size));
-                            }
-                        }
-                    }
-                    thisLine.clear();
-                }
-                else
-                    thisLine.append(c);
-            }
-        }
-        unsigned retCode = pipe->wait();
-        if (retCode)
-        {
-            files.kill();
-            return false; // Or an exception?
-        }
+        matchedPath = 0;
+
+        git_tree_walk(commitTree->queryTree(), GIT_TREEWALK_PRE, treeCallback, this);
         open();
         return isValid();
     }
@@ -422,17 +445,76 @@ public:
     }
     virtual bool isValid()  { return curFile != NULL; }
     virtual IFile & query() { return *curFile; }
+
+protected:
+    int noteEntry(const char *root, const git_tree_entry *entry)
+    {
+        const char * filename = git_tree_entry_name(entry);
+
+        // BLOB is a file revision object, TREE is a nested directory, COMMIT seems to be used for an empty directory.
+        git_object_t kind = git_tree_entry_type(entry);
+        bool isDirectory = kind != GIT_OBJECT_BLOB;
+        if (matchedPath >= relDir.length())
+        {
+            if (relDir)
+            {
+                //Check for the root directory changing - if it does we have finished all the matches => abort recursion
+                size_t lenRoot = strlen(root);
+                if (lenRoot != relDir.length())
+                    return -1;
+                if (!strieq(root, relDir.str()))
+                    return -1;
+            }
+
+            //Currently avoid de-referencing the file sizes - may need to revisit if it is required
+            sizes.append(isDirectory ? (offset_t) -1 : 0);
+            files.append(filename);
+            oids.emplace_back(*git_tree_entry_id(entry));
+            return 1;  // do not recurse - only expand a single level of the directory tree
+        }
+
+        unsigned lenFilename = strlen(filename);
+        unsigned remaining = relDir.length() - matchedPath;
+        if (lenFilename <= remaining)
+        {
+            const char * next = relDir.str() + matchedPath;
+            if (strnicmp(next, filename, lenFilename) == 0)
+            {
+                if (lenFilename == remaining)
+                {
+                    sizes.append(isDirectory ? (offset_t) -1 : 0);
+                    files.append(filename);
+                    oids.emplace_back(*git_tree_entry_id(entry));
+                    return -1;  // found the single match
+                }
+
+                unsigned nextChar = next[lenFilename];
+                if (isPathSepChar(nextChar))
+                {
+                    matchedPath += (lenFilename + 1);
+                    return 0; // recurse
+                }
+
+                // filename only matches a substring of the next directory that needs to match
+            }
+        }
+        return 1;   // skip
+    }
+
 protected:
     StringAttr gitDirectory;
     StringAttr revision;
     StringAttr relDir;
     StringAttr mask;
     Owned<IFile> curFile;
-    unsigned curIndex;
+    unsigned curIndex = 0;
     StringArray files;
     UInt64Array sizes;
-    bool includeDirs;
-    bool sub;
+    std::vector<git_oid> oids;
+    Owned<GitCommitTree> commitTree;
+    bool includeDirs = true;
+    bool sub = false;
+    unsigned matchedPath = 0;
 
     void open()
     {
@@ -440,28 +522,56 @@ protected:
         {
             const char *filename = files.item(curIndex);
             offset_t size = sizes.item(curIndex);
+            const git_oid & oid = oids[curIndex];
             StringBuffer gitFileName;
             buildGitFileName(gitFileName, gitDirectory, revision, relDir);
             // Git ls-tree behaves differently according to whether you put the trailing / on the path you supply.
             // With /, it gets all files in that directory
             // Without, it will return just a single match (for the file or dir with that name)
             // So we are effectively in two different modes according to which we used.
-            if (gitFileName.charAt(gitFileName.length()-1)=='/')   // NOTE: / not PATHSEPCHAR - we translated to git representation
+            char lastChar = gitFileName.charAt(gitFileName.length()-1);
+            // NOTE: / or PATHSEPCHAR - we translated to git representation, but root directory is .git{x}<pathsep>
+            if ((lastChar == '/') || (lastChar == PATHSEPCHAR))
                 gitFileName.append(filename);
             if (size==(offset_t) -1)
-                curFile.setown(new GitRepositoryFile(gitFileName, 0, true, true));
+                curFile.setown(new GitRepositoryFile(gitFileName, true, true, commitTree, oid));
             else
-                curFile.setown(new GitRepositoryFile(gitFileName, size, false, true));
+                curFile.setown(new GitRepositoryFile(gitFileName, false, true, commitTree, oid));
         }
         else
             curFile.clear();
     }
 };
 
+//--------------------------------------------------------------------------------------------------------------------
+
 IDirectoryIterator *createGitRepositoryDirectoryIterator(const char *gitFileName, const char *mask, bool sub, bool includeDirs)
 {
     assertex(sub==false);  // I don't know what it means!
     return new GitRepositoryDirectoryIterator(gitFileName, mask, sub, includeDirs);
+}
+
+static IFile *createGitFile(const char *gitFileName)
+{
+    StringBuffer fname(gitFileName);
+    assertex(fname.length());
+    removeTrailingPathSepChar(fname);
+    StringAttr gitDirectory, revision, relDir;
+    splitGitFileName(fname, gitDirectory, revision, relDir);
+    if (relDir.isEmpty())
+    {
+        // Special case the root - ugly but apparently necessary
+        return new GitRepositoryFile(fname, true, true, nullptr, nullOid);
+    }
+    Owned<IDirectoryIterator> dir = createGitRepositoryDirectoryIterator(fname, NULL, false, true);
+    if (dir->first())
+    {
+        Linked<IFile> file = &dir->query();
+        assertex(!dir->next());
+        return file.getClear();
+    }
+    else
+        return new GitRepositoryFile(gitFileName, false, false, nullptr, nullOid);
 }
 
 class CGitRepositoryFileHook : public CInterface, implements IContainedFileHook
@@ -513,6 +623,7 @@ extern GITFILE_API void removeFileHook()
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    git_libgit2_init();
     cs = new CriticalSection;
     gitRepositoryFileHook = NULL;  // Not really needed, but you have to have a modinit to match a modexit
     return true;
@@ -528,4 +639,5 @@ MODULE_EXIT()
     ::Release(gitRepositoryFileHook);
     delete cs;
     cs = NULL;
+    git_libgit2_shutdown();
 }
