@@ -500,7 +500,7 @@ public:
             StringBuffer dir;
             bool dirPerPart = false;
             if (temporary && !job.queryUseCheckpoints()) 
-                dir.append(queryTempDir(false));
+                dir.append(queryTempDir());
             else
             {
                 StringBuffer planeDir;

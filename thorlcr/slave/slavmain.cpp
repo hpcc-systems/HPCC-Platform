@@ -1866,7 +1866,7 @@ public:
                         if (!rfn.isLocal())
                         {
                             IWARNLOG("Cannot load shared object directly from remote path, creating temporary local copy: %s", soPath.str());
-                            GetTempName(tempSo,"so",true);
+                            GetTempFilePath(tempSo,"so");
                             copyFile(tempSo.str(), soPath.str());
                             soPath.clear().append(tempSo.str());
                         }

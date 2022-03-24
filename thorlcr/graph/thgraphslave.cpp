@@ -1709,6 +1709,12 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
      */
     if (queryMaxLfnBlockTimeMins() >= actInitWaitTimeMins)
         actInitWaitTimeMins = queryMaxLfnBlockTimeMins()+1;
+
+    StringBuffer tempDir(globals->queryProp("@thorTempDirectory"));
+    // multiple thor jobs can be running on same node, sharing same local disk for temp storage.
+    // make unique by adding wuid+graphName+worker-num
+    VStringBuffer uniqueSubDir("%s_%s_%u", wuid.str(), graphName, globals->getPropInt("@slavenum"));
+    SetTempDir(tempDir, uniqueSubDir, "thtmp");
 }
 
 CJobChannel *CJobSlave::addChannel(IMPServer *mpServer)

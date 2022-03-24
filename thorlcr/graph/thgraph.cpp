@@ -2842,7 +2842,6 @@ CActivityBase &CJobBase::queryChannelActivity(unsigned c, graph_id gid, activity
 void CJobBase::startJob()
 {
     LOG(MCdebugProgress, thorJob, "New Graph started : %s", graphName.get());
-    ClearTempDirs();
     perfmonhook.setown(createThorMemStatsPerfMonHook(*this, getOptInt(THOROPT_MAX_KERNLOG, 3)));
     setPerformanceMonitorHook(perfmonhook);
     PrintMemoryStatusLog();
@@ -2922,6 +2921,7 @@ void CJobBase::endJob()
             exceptions.setown(makeMultiException());
         exceptions->append(*LINK(e));
     }
+    ClearTempDir();
     if (exceptions && exceptions->ordinality())
         throw exceptions.getClear();
 }

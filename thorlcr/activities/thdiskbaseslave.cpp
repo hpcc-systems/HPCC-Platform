@@ -236,7 +236,7 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
 
         if (helper->getFlags() & TDXtemporary)
         {
-            // put temp files in individual slave temp dirs (incl port)
+            // put temp files in temp dir
             if (!container.queryJob().queryUseCheckpoints())
                 partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
         }
@@ -520,7 +520,7 @@ void CDiskWriteSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDa
     }
     partDesc.setown(deserializePartFileDescriptor(data));
 
-    // put temp files in individual slave temp dirs (incl port)
+    // put temp files in temp dir
     if ((diskHelperBase->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
         partDesc->queryOwner().setDefaultDir(queryTempDir());
 

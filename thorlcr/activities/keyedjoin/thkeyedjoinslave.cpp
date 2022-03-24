@@ -3634,7 +3634,7 @@ public:
         };
 
         StringBuffer tmpFileName;
-        GetTempName(tmpFileName, "kjgroup");
+        GetTempFilePath(tmpFileName, "kjgroup");
         Owned<IFile> iFile = createIFile(tmpFileName);
         Owned<IRowStreamWithFpos> rowStream = new CRowStreamWithFpos(iFile, keyLookupReplyOutputMetaRowIf, preserveOrder ? totalIndexParts : 0);
 

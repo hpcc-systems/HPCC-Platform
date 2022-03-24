@@ -97,7 +97,7 @@ class CWriteIntercept : public CSimpleInterface
             {
                 // right create idx
                 StringBuffer tempname;
-                GetTempName(tempname.clear(),"srtidx",false);
+                GetTempFilePath(tempname.clear(),"srtidx");
                 idxFile.setown(createIFile(tempname.str()));
                 idxFileIO.setown(idxFile->open(IFOcreaterw));
                 if (!idxFileIO.get())
@@ -185,7 +185,7 @@ public:
     offset_t write(IRowStream *input)
     {
         StringBuffer tempname;
-        GetTempName(tempname,"srtmrg",false);
+        GetTempFilePath(tempname,"srtmrg");
         dataFile.setown(createIFile(tempname.str()));
         Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf);
 
