@@ -72,7 +72,7 @@ jobs:
           echo "Checkout to $Env:GITHUB_WORKSPACE"
 
       - name: Ubuntu Dependencies
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' && matrix.os == 'ubuntu-20.04' }}
         shell: "bash"
         run: |
           sudo apt-get update -y
@@ -88,33 +88,33 @@ jobs:
           sudo apt-get install -y nodejs
 
       - name: OSX Dependencies
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' && matrix.os == 'macos-11' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' && matrix.os == 'macos-11' }}
         shell: "bash"
         run: |
           brew install bison flex pkg-config automake libtool cmake
 
       - name: "Remove builtin vcpkg"
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
         working-directory: .
         shell: "bash"
         run: |
           ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Check out source code
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: "vcpkg Bootstrap"
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
         working-directory: .
         shell: "bash"
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
 
       - name: "Setup NuGet credentials"
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
         working-directory: ./vcpkg
         shell: "bash"
         run: |
@@ -130,7 +130,7 @@ jobs:
             -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
       - name: "Generate HPCC-Platform Build Files"
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
         working-directory: .
         shell: "bash"
         run: |
@@ -139,7 +139,7 @@ jobs:
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_config_options }}
 
       - name: "Build HPCC-Platform"
-        if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+        if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
         working-directory: ./build
         shell: "bash"
         run: |

@@ -58,6 +58,9 @@
 #include "thormeta.hpp"
 #include "thorread.hpp"
 
+#include "ws_dfsclient.hpp"
+
+
 #define EMPTY_LOOP_LIMIT 1000
 
 static unsigned const hthorReadBufferSize = 0x10000;
@@ -1096,7 +1099,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     if (!agent.queryResolveFilesLocally())
     {
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true, false, false, nullptr, defaultNonPrivilegedUser);
+        Owned<IDistributedFile> f = wsdfs::lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true, false, false, nullptr, defaultNonPrivilegedUser, INFINITE);
 
         if (f)
         {

@@ -31,6 +31,7 @@ public:
     virtual void setInputCRC(crc32_t value) = 0;
     virtual bool setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey) = 0;
     virtual offset_t tell() = 0;
+    virtual stat_type getStatistic(StatisticKind kind) = 0;
 };
 
 

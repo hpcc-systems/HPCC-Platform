@@ -910,8 +910,27 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             // A temporary fix - files stored on azure don't have an accurate time stamp, so treat them as up to date.
             if (isUrl(f->queryFilename()))
                 return FileIsValid;
+            if (modified.isNull()) 
+                return FileIsValid;
             CDateTime mt;
-            return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
+            if (f->getTime(NULL, &mt, NULL))
+            {
+                if (fileTimeFuzzySeconds)
+                {
+                    time_t mtt = mt.getSimple();
+                    time_t modt = modified.getSimple();
+                    __int64 diff = mtt-modt;
+                    if (std::abs(diff) <= (__int64) fileTimeFuzzySeconds)
+                        return FileIsValid;
+                }
+                else if (mt.equals(modified, false))
+                    return FileIsValid;
+            }
+            StringBuffer s1, s2;
+            DBGLOG("File date mismatch: local %s, DFS %s", mt.getString(s1).str(), modified.getString(s2).str());
+            if (ignoreFileDateMismatches)
+                return FileIsValid;
+            return FileDateMismatch;
         }
         else
             return FileNotFound;
@@ -1669,31 +1688,9 @@ public:
         }
         else
         {
-            // MORE - not at all sure about this. Foreign files should stay foreign ?
-            CDfsLogicalFileName dlfn;
-            dlfn.set(lfn);
-            if (dlfn.isForeign())
-                dlfn.clearForeign();
-
-            bool defaultDirPerPart = false;
-            StringBuffer defaultDir;
-            unsigned stripeNum = 0;
-#ifdef _CONTAINERIZED
-            if (!dlfn.isExternal())
-            {
-                IFileDescriptor &fileDesc = pdesc->queryOwner();
-                StringBuffer planeName;
-                fileDesc.getClusterGroupName(0, planeName);
-                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
-                defaultDir.append(plane->queryPrefix());
-                unsigned numStripedDevices = plane->numDevices();
-                stripeNum = calcStripeNumber(partNo-1, dlfn.get(), numStripedDevices);
-                FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(fileDesc.queryProperties().getPropInt("@flags"));
-                if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
-                    defaultDirPerPart = true;
-            }
-#endif
-            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir.str(), defaultDirPerPart, stripeNum);
+            RemoteFilename rfn;
+            pdesc->getFilename(replicationLevel, rfn);
+            rfn.getLocalPath(localLocation);
         }
         Owned<ILazyFileIO> ret;
         try

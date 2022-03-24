@@ -2975,7 +2975,7 @@ void GlobalClassBuilder::buildClass(unsigned priority)
     if (baseName)
         s.append(" : public ").append(baseName);
 
-    classctx.set(declareAtom);
+    //classctx was initialised in the constructor - all others ctxs are re-initialized
     if (priority)
         classctx.setNextPriority(priority);
     classStmt = classctx.addQuotedCompound(s, ";");
@@ -3027,8 +3027,8 @@ void GlobalClassBuilder::completeClass(unsigned priority)
         StringBuffer s, prototype;
         prototype.append("extern ECL_API ").append(accessorInterface).append(" * ").append(accessorName).append("(ICodeContext * ctx, unsigned activityId)");
 
-        BuildCtx accessctx(classctx);
-        accessctx.set(declareAtom);
+        BuildCtx accessctx(classctx, classStmt);
+        accessctx.selectContainer();
         if (priority)
             accessctx.setNextPriority(priority);
         accessctx.addQuotedFunction(prototype, true);
@@ -4165,7 +4165,7 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
 }
 
 
-void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
+IHqlExpression * HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
 {
     if (options.spanMultipleCpp)
     {
@@ -4174,29 +4174,56 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
         instance.instanceObject.set(queryFunctionName);
     }
 
-    BuildCtx declarectx(*code, declareAtom);
+    //Currently there are some classes which directly access the meta instances, if not spanning multiple c+ files accessor functions are not generated.
+    //In this case for backward compatibility generate in the declare section rather than the meta section.
+    IAtom * section = options.metaMultipleCpp ? metaAtom : declareAtom;
+    BuildCtx declarectx(*code, section);
 
     OwnedHqlExpr search = instance.getMetaUniqueKey();
-
     // stop duplicate classes being generated.
     // MORE: If this ever includes sorting/grouping, the dependence on a record will need to be revised
     HqlExprAssociation * match = declarectx.queryMatchExpr(search);
     if (match)
-        return;
+        return match->queryExpr(); // Return the source file the meta was generated in (so derived classes can be generated in the same file)
+
+    //This is the location that the meta will actually be defined (the c++ file could differ)
+    BuildCtx definectx(declarectx);
 
     bool savedContextAvailable = contextAvailable;
     contextAvailable = false;
-    metas.append(*search.getLink());
     StringBuffer s;
-    StringBuffer serializerName, deserializerName, prefetcherName, internalSerializerName, internalDeserializerName;
-
-    StringBuffer endText;
-
-    endText.append(" ").append(instance.instanceName).append(";");
-    BuildCtx metactx(declarectx);
+    StringBuffer baseMetaName;
 
     IHqlExpression * record = instance.queryRecord();
+    unsigned pass = 0;
+    if (instance.isGrouped())
+    {
+        MetaInstance ungroupedMeta(*this, record, false);
+        IHqlExpression * passExpr = buildMetaInfo(ungroupedMeta);
+        baseMetaName.set(ungroupedMeta.metaName);
+        pass = getIntValue(passExpr);
+    }
+    else if (options.metaMultipleCpp)
+        pass = beginFunctionGetCppIndex(0, false);
 
+    if (options.metaMultipleCpp)
+    {
+        if (metaPassStmts.size() > pass)
+        {
+            assertex(metaPassStmts[pass]);
+            definectx.selectPass(metaPassStmts[pass]);
+        }
+        else
+        {
+            while (metaPassStmts.size() < pass)
+                metaPassStmts.emplace_back(nullptr);
+
+            OwnedHqlExpr passExpr = getSizetConstant(pass);
+            metaPassStmts.emplace_back(definectx.addGroupPass(passExpr));
+        }
+    }
+
+    BuildCtx metactx(definectx);
     unsigned flags = MDFhasserialize;       // we always generate a serialize since 
     bool useTypeForXML = false;
     if (instance.isGrouped())
@@ -4221,18 +4248,19 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
         useTypeForXML = true;
     }
 
+    StringBuffer endText;
+    endText.append(" ").append(instance.instanceName).append(";");
     if (instance.isGrouped())
     {
-        MetaInstance ungroupedMeta(*this, record, false);
-        buildMetaInfo(ungroupedMeta);
-
-        s.append("struct ").append(instance.metaName).append(" : public ").append(ungroupedMeta.metaName);
+        s.append("struct ").append(instance.metaName).append(" : public ").append(baseMetaName);
         metactx.setNextPriority(RowMetaPrio);
         metactx.addQuotedCompound(s, endText.str());
         doBuildUnsignedFunction(metactx, "getMetaFlags", flags);
     }
     else
     {
+        StringBuffer serializerName, deserializerName, prefetcherName, internalSerializerName, internalDeserializerName;
+
         //Serialization classes need to be generated for all meta information - because they may be called by parent row classes
         //however, the CFixedOutputMetaData base class contains a default implementation - reducing the required code.
         if (record && (isVariableSizeRecord(record) || (flags & MDFneedserializemask)))
@@ -4241,33 +4269,33 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             if (flags & MDFneedserializedisk)
             {
                 serializerName.append("s").append(instance.metaName);
-                buildMetaSerializerClass(declarectx, record, serializerName.str(), diskAtom);
+                buildMetaSerializerClass(definectx, record, serializerName.str(), diskAtom);
             }
             bool needInternalSerializer = ((flags & MDFneedserializeinternal) && recordSerializationDiffers(record, diskAtom, internalAtom));
 
             if (needInternalSerializer)
             {
                 internalSerializerName.append("si").append(instance.metaName);
-                buildMetaSerializerClass(declarectx, record, internalSerializerName.str(), internalAtom);
+                buildMetaSerializerClass(definectx, record, internalSerializerName.str(), internalAtom);
             }
 
             //MORE:
             //still generate a deserialize for the variable width case because it offers protection
             //against accessing out of bounds data
             deserializerName.append("d").append(instance.metaName);
-            buildMetaDeserializerClass(declarectx, record, deserializerName.str(), diskAtom);
+            buildMetaDeserializerClass(definectx, record, deserializerName.str(), diskAtom);
 
             if (needInternalSerializer)
             {
                 internalDeserializerName.append("di").append(instance.metaName);
-                buildMetaDeserializerClass(declarectx, record, internalDeserializerName.str(), internalAtom);
+                buildMetaDeserializerClass(definectx, record, internalDeserializerName.str(), internalAtom);
             }
 
             //The base class implements prefetch using the serialized meta so no need to generate...
             if (!(flags & MDFneedserializemask))
             {
                 prefetcherName.append("p").append(instance.metaName);
-                if (!buildMetaPrefetcherClass(declarectx, record, prefetcherName))
+                if (!buildMetaPrefetcherClass(definectx, record, prefetcherName))
                     prefetcherName.clear();
             }
         }
@@ -4356,17 +4384,19 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     s.append(instance.instanceName).append(".Link(); ");
     s.append("return &").append(instance.instanceName).append("; ");
     s.append("}");
-    declarectx.setNextPriority(RowMetaPrio);
-    declarectx.addQuoted(s);
+    definectx.setNextPriority(RowMetaPrio);
+    definectx.addQuoted(s);
     if (options.spanMultipleCpp)
     {
         StringBuffer temp;
-        createAccessFunctions(temp, declarectx, RowMetaPrio, "IOutputMetaData", instance.instanceName);
+        createAccessFunctions(temp, definectx, RowMetaPrio, "IOutputMetaData", instance.instanceName);
     }
 
+    OwnedHqlExpr passExpr = getSizetConstant(pass);
     OwnedHqlExpr temp = createVariable(instance.metaName, makeVoidType());
-    declarectx.associateExpr(search, temp);
+    declarectx.associateExpr(search, passExpr);
     contextAvailable = savedContextAvailable;
+    return passExpr;
 }
 
 

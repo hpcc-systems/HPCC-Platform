@@ -32,8 +32,15 @@ private:
     StringBuffer    adminGroupName;
 
     const char * formatOUname(StringBuffer &ou, const char * envName, int mode, const char * sharedOU, const char * reqBaseDN, const char * privateOU);
-    bool createSecret(const char * secretName, const char * username, const char * pwd, StringBuffer & notes);
+    void createLDAPBaseDN(const char * baseDN, const char * description, StringBuffer & notes);
     bool changePermissions(const char * ou, const char * userFQDN, SecAccessFlags allows, SecAccessFlags denies);
+
+    enum SecretType : int
+    {
+        ST_K8S = 0,
+        ST_VAULT = 1
+    };
+    bool createSecret(SecretType type, const char * secretName, const char * username, const char * pwd, StringBuffer & notes);
 
 public:
     IMPLEMENT_IINTERFACE;

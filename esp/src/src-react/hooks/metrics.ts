@@ -36,11 +36,11 @@ export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => 
             options[key] = opts[key];
         }
         refresh();
-    }, [options, refresh]);
+    }, [refresh]);
 
     const save = React.useCallback(() => {
         store?.set("MetricOptions", JSON.stringify(options), true);
-    }, [options, store]);
+    }, [store]);
 
     const reset = React.useCallback((toDefaults: boolean = false) => {
         if (toDefaults) {

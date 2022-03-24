@@ -343,7 +343,7 @@ export function searchAll(searchText: string,
         searchParams.text = searchParams.text.trim();
 
         return searchParams;
-    }
+    };
 
     const searchArray = [];
     const searchParams = generateSearchParams(searchText);

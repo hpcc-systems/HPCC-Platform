@@ -901,19 +901,8 @@ int main( int argc, const char *argv[]  )
             }
         }
 
-#ifdef _CONTAINERIZED
-        // multiple thor jobs can be running on same node, sharing same local disk for temp storage.
-        // make unique by adding wuid+graphName
-        addPathSepChar(tempDirStr).append(workunit);
-        addPathSepChar(tempDirStr).append(graphName);
-#endif
         // NB: set into globals, serialized and used by worker processes.
         globals->setProp("@thorTempDirectory", tempDirStr);
-        logDiskSpace(); // Log before temp space is cleared
-        StringBuffer tempPrefix("thtmp");
-        tempPrefix.append(getMasterPortBase()).append("_");
-        SetTempDir(0, tempDirStr.str(), tempPrefix.str(), true);
-        DBGLOG("Temp directory: %s", queryTempDir());
 
         startLogMsgParentReceiver();    
         connectLogMsgManagerToDali();

@@ -320,7 +320,7 @@ public:
         chunkmaxsize = MERGE_TRANSFER_BUFFER_SIZE;
         Owned<IRowStream> merged = createRowStreamMerger(streams.ordinality(), streams.getArray(), helper->queryCompare(),helper->dedup(), linkcounter);
         StringBuffer tmpname;
-        GetTempName(tmpname,"merge",true); // use alt temp dir
+        GetTempFilePath(tmpname,"merge");
         tmpfile.setown(createIFile(tmpname.str()));
         Owned<IRowWriter> writer =  createRowWriter(tmpfile, this);
         CThorKeyArray sample(*this, this, helper->querySerialize(), helper->queryCompare(), helper->queryCompareKey(), helper->queryCompareRowKey());

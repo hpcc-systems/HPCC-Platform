@@ -505,11 +505,11 @@ extern graph_decl IThorException *MakeThorFatal(IException *e, int code, const c
 extern graph_decl IThorException *ThorWrapException(IException *e, const char *msg, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e);
 
-extern graph_decl void GetTempName(StringBuffer &name, const char *prefix=NULL,bool altdisk=false);
-extern graph_decl void SetTempDir(unsigned slaveNum, const char *name, const char *tempPrefix, bool clear);
-extern graph_decl void ClearDir(const char *dir);
-extern graph_decl void ClearTempDirs();
-extern graph_decl const char *queryTempDir(bool altdisk=false);  
+extern graph_decl void GetTempFilePath(StringBuffer &name, const char *suffix);
+extern graph_decl void GetTempFileName(StringBuffer &name, const char *suffix);
+extern graph_decl void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix);
+extern graph_decl void ClearTempDir();
+extern graph_decl const char *queryTempDir();
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
 
 extern graph_decl void ensureDirectoryForFile(const char *fName);

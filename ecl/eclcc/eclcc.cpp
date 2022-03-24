@@ -71,6 +71,8 @@
 #include "zcrypt.hpp"
 #endif
 
+#include "ws_dfsclient.hpp"
+
 //#define TEST_LEGACY_DEPENDENCY_CODE
 
 #define INIFILE "eclcc.ini"
@@ -2500,7 +2502,7 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
         // Look up the file in Dali
         try
         {
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(filename, udesc, false, false, false, nullptr, defaultPrivilegedUser);
+            Owned<IDistributedFile> dfsFile = wsdfs::lookup(filename, udesc, false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
             if (dfsFile)
             {
                 const char *recordECL = dfsFile->queryAttributes().queryProp("ECL");

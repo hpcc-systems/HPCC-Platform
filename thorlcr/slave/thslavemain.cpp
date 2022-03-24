@@ -116,11 +116,13 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         mySlaveNum = (unsigned)processGroup->rank(queryMyNode());
         assertex(NotFound != mySlaveNum);
         mySlaveNum++; // 1 based;
-        unsigned configSlaveNum = globals->getPropInt("@slavenum", NotFound);
-        if (NotFound != configSlaveNum)
-            assertex(mySlaveNum == configSlaveNum);
 
+        unsigned configSlaveNum = globals->getPropInt("@slavenum", NotFound);
         globals.setown(createPTree(msg));
+        if (NotFound == configSlaveNum)
+            globals->setPropInt("@slavenum", mySlaveNum);
+        else
+            assertex(mySlaveNum == configSlaveNum);
 
         /* NB: preserve command line option overrides
          * Not sure if any cmdline options are actually needed by this stage..
@@ -487,18 +489,9 @@ int main( int argc, const char *argv[]  )
             }
 #endif
 
-            // NB: master has set, and serialized in globals
-            StringBuffer tempDirStr(globals->queryProp("@thorTempDirectory"));
-            addPathSepChar(tempDirStr).append(mySlaveNum);
-
-            logDiskSpace(); // Log before temp space is cleared
-            SetTempDir(mySlaveNum, tempDirStr.str(), "thtmp", true);
-
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
             LOG(MCdebugProgress, thorJob, "ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
-            StringBuffer url;
-            LOG(MCdebugProgress, thorJob, "Slave %s - temporary dir set to : %s", slfEp.getUrlStr(url).str(), queryTempDir());
 #ifdef _WIN32
             ULARGE_INTEGER userfree;
             ULARGE_INTEGER total;
@@ -583,7 +576,6 @@ int main( int argc, const char *argv[]  )
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
-    ClearTempDirs();
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);

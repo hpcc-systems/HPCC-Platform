@@ -216,46 +216,52 @@ public:
     virtual void init() override
     {
         CMasterActivity::init();
-        OwnedRoxieString helperFileName = indexBaseHelper->getFileName();
-        StringBuffer expandedFileName;
-        queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
-        fileName.set(expandedFileName);
-        Owned<IDistributedFile> index = queryThorFileManager().lookup(container.queryJob(), helperFileName, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true, container.activityIsCodeSigned());
-        if (index)
+        if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()))
         {
-            checkFileType(this, index, "key", true);
-
-            partitionKey = index->queryAttributes().hasProp("@partitionFieldMask");
-            localKey = index->queryAttributes().getPropBool("@local") && !partitionKey;
-
-            if (container.queryLocalData() && !localKey)
-                throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
-
-            nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
-            if (localKey)
-                nofilter = true;
-            else
+            OwnedRoxieString helperFileName = indexBaseHelper->getFileName();
+            StringBuffer expandedFileName;
+            queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
+            fileName.set(expandedFileName);
+            Owned<IDistributedFile> index = lookupReadFile(helperFileName, false, false, 0 != (TIRoptional & indexBaseHelper->getFlags()));
+            if (index && (0 == index->numParts())) // possible if superfile
+                index.clear();
+            if (index)
             {
-                IDistributedSuperFile *super = index->querySuperFile();
-                IDistributedFile *sub = super ? &super->querySubFile(0,true) : index.get();
-                if (sub && 1 == sub->numParts())
+                checkFileType(this, index, "key", true);
+
+                partitionKey = index->queryAttributes().hasProp("@partitionFieldMask");
+                localKey = index->queryAttributes().getPropBool("@local") && !partitionKey;
+
+                if (container.queryLocalData() && !localKey)
+                    throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
+
+                nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
+                if (localKey)
                     nofilter = true;
-                if (super)
+                else
                 {
-                    unsigned numSubFiles = super->numSubFiles();
-                    for (unsigned i=0; i<numSubFiles; i++)
-                        subIndexFileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
+                    IDistributedSuperFile *super = index->querySuperFile();
+                    IDistributedFile *sub = super ? &super->querySubFile(0,true) : index.get();
+                    if (sub && 1 == sub->numParts())
+                        nofilter = true;
+                    if (super)
+                    {
+                        unsigned numSubFiles = super->numSubFiles(true);
+
+                        /* JCS->SHAMSER - kludge for now, don't add more than max
+                        * But it means updateFileReadCostStats will not be querying the correct files,
+                        * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
+                        */
+                        for (unsigned i=subIndexFileStats.size(); i<numSubFiles; i++)
+                            subIndexFileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
+                    }
                 }
-            }
-            //MORE: Change index getFormatCrc once we support projected rows for indexes.
-            checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
-            if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()) && index->numParts())
-            {
+                //MORE: Change index getFormatCrc once we support projected rows for indexes.
+                checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
                 fileDesc.setown(getConfiguredFileDescriptor(*index));
                 if (container.queryLocalOrGrouped())
                     nofilter = true;
                 prepareKey(index);
-                addReadFile(index);
                 mapping.setown(getFileSlaveMaps(index->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), true, NULL, index->querySuperFile()));
             }
         }

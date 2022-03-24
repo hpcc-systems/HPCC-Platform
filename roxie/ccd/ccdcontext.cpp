@@ -39,6 +39,7 @@
 #include "ccdstate.hpp"
 #include "roxiehelper.hpp"
 #include "enginecontext.hpp"
+#include "ws_dfsclient.hpp"
 
 #include <list>
 #include <string>
@@ -450,7 +451,7 @@ private:
 
     inline bool fileExists(const char *lfn)
     {
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> f = wsdfs::lookup(lfn, queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
         if (f)
             return true;
         return false;
@@ -769,7 +770,7 @@ private:
                     MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                     persistLock.setown(getPersistReadLock(goer));
                 }
-                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser);
+                Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser, INFINITE);
                 if (!f)
                     goto restart; // Persist has been deleted since last checked - repeat the whole process
                 const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
@@ -3817,7 +3818,7 @@ public:
     {
         StringBuffer fullname;
         expandLogicalFilename(fullname, logicalName, workUnit, false, false);
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor(),false,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(),false,false,false,nullptr,defaultPrivilegedUser,INFINITE);
         if (file)
         {
             WorkunitUpdate wu = updateWorkUnit();

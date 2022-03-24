@@ -93,7 +93,7 @@ $?$/* Template for generating thor/hthor/roxie output */
 $?multiFile$#include "$headerName$"
 $?$@literal@
 @declare@
-@helper@
+@meta@@helper@
 
 @go@
 
@@ -134,7 +134,7 @@ $?$/* Template for generating a child module for query */
 
 #include "$headerName$"
 
-@helper@
+@meta@@helper@
 @userFunction@
 )!!";
 

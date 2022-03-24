@@ -625,99 +625,77 @@ class CTempNameHandler
 {
 public:
     unsigned num;
-    StringAttr tempdir, tempPrefix;
-    StringAttr alttempdir; // only set if needed
+    StringBuffer rootDir, subDirName, prefix, subDirPath;
     CriticalSection crit;
-    bool altallowed;
-    bool cleardir;
-    unsigned slaveNum = 0;
 
     CTempNameHandler()
     {
         num = 0;
-        altallowed = false;
-        cleardir = false;
     }
-    ~CTempNameHandler()
-    {
-        if (cleardir) 
-            clearDirs(false);       // don't log as jlog may have closed
-    }
-    const char *queryTempDir(bool alt) 
+    const char *queryTempDir() 
     { 
-        if (alt&&altallowed) 
-            return alttempdir;
-        return tempdir; 
+        return subDirPath; 
     }
-    void setTempDir(unsigned _slaveNum, const char *name, const char *_tempPrefix, bool clear)
+    void setTempDir(const char *_rootDir, const char *_subDirName, const char *_prefix)
     {
-        assertex(name && *name);
+        assertex(!isEmptyString(_rootDir) && !isEmptyString(_prefix) && !isEmptyString(_subDirName));
         CriticalBlock block(crit);
-        slaveNum = _slaveNum;
-        assertex(tempdir.isEmpty()); // should only be called once
-        tempPrefix.set(_tempPrefix);
-        StringBuffer base(name);
-        addPathSepChar(base);
-        tempdir.set(base.str());
-        recursiveCreateDirectory(tempdir);
-#ifdef _WIN32
-        altallowed = false;
-#else
-        altallowed = globals->getPropBool("@thor_dual_drive",true);
-#endif
-        if (altallowed)
-        {
-            unsigned d = getPathDrive(tempdir);
-            if (d>1)
-                altallowed = false;
-            else
-            {
-                StringBuffer p(tempdir);
-                alttempdir.set(setPathDrive(p,d?0:1).str());
-                recursiveCreateDirectory(alttempdir);
-            }
-        }
-        cleardir = clear;
-        if (clear)
-            clearDirs(true);
+        assertex(subDirPath.isEmpty());
+        rootDir.set(_rootDir);
+        addPathSepChar(rootDir);
+        subDirName.set(_subDirName);
+        prefix.set(_prefix);
+        subDirPath.setf("%s%s", rootDir.str(), subDirName.str());
+        recursiveCreateDirectory(subDirPath);
     }
-    static void clearDir(const char *dir, bool log)
+    void clear(bool log)
     {
-        if (dir&&*dir)
+        assertex(subDirPath.length());
+        Owned<IDirectoryIterator> iter = createDirectoryIterator(subDirPath);
+        ForEach (*iter)
         {
-            Owned<IDirectoryIterator> iter = createDirectoryIterator(dir);
-            ForEach (*iter)
+            IFile &file = iter->query();
+            if (file.isFile()==fileBool::foundYes)
             {
-                IFile &file = iter->query();
-                if (file.isFile()==fileBool::foundYes)
+                if (log)
+                    LOG(MCdebugInfo, thorJob, "Deleting %s", file.queryFilename());
+                try { file.remove(); }
+                catch (IException *e)
                 {
                     if (log)
-                        LOG(MCdebugInfo, thorJob, "Deleting %s", file.queryFilename());
-                    try { file.remove(); }
-                    catch (IException *e)
-                    {
-                        if (log)
-                            FLLOG(MCwarning, thorJob, e);
-                        e->Release();
-                    }
+                        FLLOG(MCwarning, thorJob, e);
+                    e->Release();
                 }
             }
         }
+        try
+        {
+            Owned<IFile> dirIFile = createIFile(subDirPath);
+            bool success = dirIFile->remove();
+            if (log)
+                PROGLOG("%s to delete temp directory: %s", subDirPath.str(), success ? "succeeded" : "failed");
+        }
+        catch (IException *e)
+        {
+            if (log)
+                FLLOG(MCwarning, thorJob, e);
+            e->Release();
+        }
+        subDirPath.clear();
     }
-    void clearDirs(bool log)
-    {
-        clearDir(tempdir,log);
-        clearDir(alttempdir,log);
-    }
-    void getTempName(StringBuffer &name, const char *suffix,bool alt)
+    void getTempName(StringBuffer &name, const char *suffix, bool inTempDir)
     {
         CriticalBlock block(crit);
-        assertex(!tempdir.isEmpty()); // should only be called once
-        if (alt && altallowed)
-            name.append(alttempdir);
+        assertex(!subDirPath.isEmpty());
+        if (inTempDir)
+        {
+            name.append(rootDir);
+            name.append(subDirName);
+            addPathSepChar(name);
+        }
         else
-            name.append(tempdir);
-        name.append(tempPrefix).append((unsigned)GetCurrentProcessId()).append('_').append(slaveNum).append('_').append(++num);
+            name.append(subDirName).append('_');
+        name.append(prefix).append('_').append(++num);
         if (suffix)
             name.append("__").append(suffix);
         name.append(".tmp");
@@ -726,31 +704,39 @@ public:
 
 
 
-void GetTempName(StringBuffer &name, const char *prefix,bool altdisk)
+void GetTempFileName(StringBuffer &name, const char *suffix)
 {
-    TempNameHandler.getTempName(name, prefix, altdisk);
+    TempNameHandler.getTempName(name, suffix, false);
 }
 
-void SetTempDir(unsigned slaveNum, const char *name, const char *tempPrefix, bool clear)
+void GetTempFilePath(StringBuffer &name, const char *suffix)
 {
-    TempNameHandler.setTempDir(slaveNum, name, tempPrefix, clear);
+    TempNameHandler.getTempName(name, suffix, true);
 }
 
-void ClearDir(const char *dir)
+void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix)
 {
-    CTempNameHandler::clearDir(dir,true);
+    TempNameHandler.setTempDir(rootTempDir, uniqueSubDir, tempPrefix);
+    LOG(MCdebugProgress, thorJob, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
 }
 
-void ClearTempDirs()
+void ClearTempDir()
 {
-    TempNameHandler.clearDirs(true);
-    LOG(MCthorDetailedDebugInfo, thorJob, "temp directory cleared");
+    try
+    {
+        TempNameHandler.clear(true);
+        LOG(MCthorDetailedDebugInfo, thorJob, "temp directory cleared");
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e, "ClearTempDir");
+        e->Release();
+    }
 }
 
-
-const char *queryTempDir(bool altdisk)
+const char *queryTempDir()
 {
-    return TempNameHandler.queryTempDir(altdisk);
+    return TempNameHandler.queryTempDir();
 }
 
 class DECL_EXCEPTION CBarrierAbortException: public CSimpleInterface, public IBarrierException

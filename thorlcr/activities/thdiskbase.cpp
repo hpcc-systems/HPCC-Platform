@@ -47,59 +47,71 @@ void CDiskReadMasterBase::init()
     fileName.set(expandedFileName);
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
 
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helperFileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true, container.activityIsCodeSigned());
-    if (file)
+    if (container.queryLocal() || helper->canMatchAny()) // if local, assume may match
     {
-        if (file->isExternal() && (helper->getFlags() & TDXcompress))
-            file->queryAttributes().setPropBool("@blockCompressed", true);
-        if (file->numParts() > 1)
-            fileDesc.setown(getConfiguredFileDescriptor(*file));
-        else
-            fileDesc.setown(file->getFileDescriptor());
-        validateFile(file);
-        if (container.queryLocal() || helper->canMatchAny()) // if local, assume may match
+        bool temp = 0 != (TDXtemporary & helper->getFlags());
+        bool jobTemp = 0 != (TDXjobtemp & helper->getFlags());
+        bool opt = 0 != (TDRoptional & helper->getFlags());
+        file.setown(lookupReadFile(helperFileName, jobTemp, temp, opt));
+        if (file)
         {
-            bool temp = 0 != (TDXtemporary & helper->getFlags());
+            if (file->isExternal() && (helper->getFlags() & TDXcompress))
+                file->queryAttributes().setPropBool("@blockCompressed", true);
+            if (file->numParts() > 1)
+                fileDesc.setown(getConfiguredFileDescriptor(*file));
+            else
+                fileDesc.setown(file->getFileDescriptor());
+            validateFile(file);
             bool local;
             if (temp)
                 local = false;
             else
                 local = container.queryLocal();
             mapping.setown(getFileSlaveMaps(file->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), local, false, hash, file->querySuperFile()));
-            addReadFile(file, temp);
-        }
-        IDistributedSuperFile *super = file->querySuperFile();
-        unsigned numsubs = super?super->numSubFiles(true):0;
-        if (0 != (helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
-        {
-            for (unsigned s=0; s<numsubs; s++)
+            IDistributedSuperFile *super = file->querySuperFile();
+            unsigned numsubs = super?super->numSubFiles(true):0;
+            if (0 != (helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
             {
-                IDistributedFile &subfile = super->querySubFile(s, true);
-                subfileLogicalFilenames.append(subfile.queryLogicalName());
+                subfileLogicalFilenames.kill();
+                for (unsigned s=0; s<numsubs; s++)
+                {
+                    IDistributedFile &subfile = super->querySubFile(s, true);
+                    subfileLogicalFilenames.append(subfile.queryLogicalName());
+                }
             }
-        }
-        if (0==(helper->getFlags() & TDXtemporary))
-        {
-            for (unsigned i=0; i<numsubs; i++)
-                subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
-        }
-        void *ekey;
-        size32_t ekeylen;
-        helper->getEncryptKey(ekeylen,ekey);
-        bool encrypted = fileDesc->queryProperties().getPropBool("@encrypted");
-        if (0 != ekeylen)
-        {
-            memset(ekey,0,ekeylen);
-            free(ekey);
-            if (!encrypted)
+            if (0==(helper->getFlags() & TDXtemporary))
             {
-                Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", fileName.get());
-                queryJobChannel().fireException(e);
+                /* JCS->SHAMSER - kludge for now, don't add more than max
+                 * But it means updateFileReadCostStats will not be querying the correct files,
+                 * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
+                 */
+                for (unsigned i=subFileStats.size(); i<numsubs; i++)
+                    subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
             }
+            void *ekey;
+            size32_t ekeylen;
+            helper->getEncryptKey(ekeylen,ekey);
+            bool encrypted = fileDesc->queryProperties().getPropBool("@encrypted");
+            if (0 != ekeylen)
+            {
+                memset(ekey,0,ekeylen);
+                free(ekey);
+                if (!encrypted)
+                {
+                    Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", fileName.get());
+                    queryJobChannel().fireException(e);
+                }
+            }
+            else if (encrypted)
+                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fileName.get());
         }
-        else if (encrypted)
-            throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fileName.get());
     }
+}
+
+void CDiskReadMasterBase::kill()
+{
+    CMasterActivity::kill();
+    file.clear();
 }
 
 void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)

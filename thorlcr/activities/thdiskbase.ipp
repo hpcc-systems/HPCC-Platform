@@ -29,6 +29,7 @@ class CDiskReadMasterBase : public CMasterActivity
 protected:
     StringArray subfileLogicalFilenames;
     Owned<IFileDescriptor> fileDesc;
+    Owned<IDistributedFile> file;
     Owned<CSlavePartMapping> mapping;
     IHash *hash;
     StringAttr fileName;
@@ -37,6 +38,7 @@ protected:
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);
     virtual void init() override;
+    virtual void kill() override;
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override;
     virtual void done() override;
     virtual void validateFile(IDistributedFile *file) { }

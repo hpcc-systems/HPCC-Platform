@@ -236,8 +236,6 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 label={nlsHPCC.Target}
                 className={playgroundStyles.inlineDropdown}
                 onChange={React.useCallback((evt, option) => setCluster(option.key.toString()), [setCluster])}
-                required={true}
-                selectedKey={cluster ? cluster : undefined}
             />
             <div className={playgroundStyles.outputButtons}>
                 <IconButton
@@ -274,6 +272,8 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
     const [workunit, setWorkunit] = React.useState<Workunit>();
     const [editor, setEditor] = React.useState<ECLEditor>();
     const [query, setQuery] = React.useState("");
+    const [selectedEclSample, setSelectedEclSample] = React.useState("");
+    const [eclContent, setEclContent] = React.useState("");
     const [eclSamples, setEclSamples] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
@@ -295,6 +295,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
             .then(response => response.json())
             .then(json => setEclSamples(
                 json.items.map(item => {
+                    if (item.selected) setSelectedEclSample(item.filename);
                     return { key: item.filename, text: item.name };
                 })
             ));
@@ -305,6 +306,24 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
             }
         }
     }, [wuid, editor, theme]);
+
+    React.useEffect(() => {
+        fetch(`/esp/files/eclwatch/ecl/${selectedEclSample}`)
+            .then(response => {
+                if (response.status && response.status === 200 && response.body) {
+                    response.text().then(sample => {
+                        if (sample.toLowerCase().indexOf("<!doctype") < 0) {
+                            setEclContent(sample);
+                        }
+                    });
+                }
+            });
+    }, [selectedEclSample]);
+
+    React.useEffect(() => {
+        if (!editor) return;
+        editor.ecl(eclContent);
+    }, [editor, eclContent]);
 
     const handleThemeToggle = React.useCallback((evt) => {
         if (!editor) return;
@@ -323,16 +342,9 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                 label="Sample"
                 className={`${playgroundStyles.inlineDropdown} ${playgroundStyles.samplesDropdown}`}
                 options={eclSamples}
+                selectedKey={selectedEclSample}
                 placeholder="Select sample ECL..."
-                onChange={(evt, item) => {
-                    fetch(`/esp/files/eclwatch/ecl/${item.key}`)
-                        .then(async response => {
-                            if (response.status && response.status === 200 && response.body) {
-                                const eclSample = await response.text();
-                                editor.ecl(eclSample);
-                            }
-                        });
-                }}
+                onChange={(evt, item) => { setSelectedEclSample(item.key.toString()); }}
             />
         </div>
         <ReflexContainer orientation="horizontal">

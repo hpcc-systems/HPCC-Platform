@@ -32,6 +32,7 @@
 #include "thorplugin.hpp"
 #include "workflow.hpp"
 #include "mpcomm.hpp"
+#include "ws_dfsclient.hpp"
 
 #ifndef _CONTAINERIZED
 #define ROXIE_DALI_CACHE
@@ -626,7 +627,7 @@ public:
             unsigned start = msTick();
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt,false,nullptr,isPrivilegedUser);
+            Owned<IDistributedFile> dfsFile = wsdfs::lookup(lfn, userdesc.get(), writeAccess, cacheIt,false,nullptr,isPrivilegedUser,INFINITE);
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();

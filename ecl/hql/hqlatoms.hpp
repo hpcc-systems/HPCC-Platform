@@ -289,6 +289,7 @@ extern HQL_API IAtom * maxSizeAtom;
 extern HQL_API IAtom * memoryAtom;
 extern HQL_API IAtom * mergeAtom;
 extern HQL_API IAtom * mergeTransformAtom;
+extern HQL_API IAtom * metaAtom;
 extern HQL_API IAtom * _metadata_Atom;
 extern HQL_API IAtom * methodAtom;
 extern HQL_API IAtom * minAtom;

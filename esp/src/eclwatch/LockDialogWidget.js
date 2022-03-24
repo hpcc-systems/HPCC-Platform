@@ -57,6 +57,14 @@ define([
 
         show: function (event) {
             var context = this;
+            if (!cookie("User")) {
+                cookie("Status", "Unlocked");
+                context.storage.setItem("Status", "Unlocked");
+                topic.publish("hpcc/session_management_status", {
+                    status: "Unlocked"
+                });
+                return;
+            }
             on(this.unlockPassword, "keypress", function (event) {
                 if (event.key === "Enter") {
                     context._onUnlock();
@@ -106,7 +114,6 @@ define([
                             status: "Unlocked"
                         });
                         cookie("Status", "Unlocked");
-                        context.storage.removeItem("Status");
                         context.storage.setItem("Status", "Unlocked");
                         if (context.idleFired) {
                             dojo.publish("hpcc/brToaster", {
@@ -144,7 +151,6 @@ define([
                     status: "Locked"
                 });
                 cookie("Status", "Locked");
-                context.storage.removeItem("Status");
                 context.storage.setItem("Status", "Locked");
             } else if (cookie("Status") === "Unlocked") {
                 xhr("esp/lock", {
@@ -158,7 +164,6 @@ define([
                             status: "Locked"
                         });
                         cookie("Status", "Locked");
-                        context.storage.removeItem("Status");
                         context.storage.setItem("Status", "Locked");
                     }
                 });

@@ -150,6 +150,7 @@ public:
     IHqlStmt *                  selectBestContext(IHqlExpression * expr);
     void                        selectContainer();
     void                        selectElse(IHqlStmt * filter);
+    void                        selectPass(IHqlStmt * pass);
     void                        setNextConstructor()    { setNextPriority(ConPrio); }
     void                        setNextDestructor()     { setNextPriority(DesPrio); }
     void                        setNextNormal()         { setNextPriority(NormalPrio); }

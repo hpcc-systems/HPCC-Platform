@@ -34,6 +34,7 @@ class CFetchActivityMaster : public CMasterActivity
     std::vector<OwnedPtr<CThorStatsCollection>> subFileStats;
 
 protected:
+    Owned<IDistributedFile> fetchFile;
     IHThorFetchArg *helper;
 
 public:
@@ -49,11 +50,11 @@ public:
     {
         if (endpoints) free(endpoints);
     }
-    virtual void init()
+    virtual void init() override
     {
         CMasterActivity::init();
         OwnedRoxieString fname(helper->getFileName());
-        Owned<IDistributedFile> fetchFile = queryThorFileManager().lookup(container.queryJob(), fname, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), false, container.activityIsCodeSigned());
+        fetchFile.setown(lookupReadFile(fname, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
         if (fetchFile)
         {
             if (isFileKey(fetchFile))
@@ -77,15 +78,25 @@ public:
                 throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFile->queryLogicalName());
             IDistributedSuperFile *super = fetchFile->querySuperFile();
             unsigned numsubs = super?super->numSubFiles(true):0;
-            for (unsigned i=0; i<numsubs; i++)
-                subFileStats.push_back(new CThorStatsCollection(diskReadPartStatistics));
+
+            /* JCS->SHAMSER - kludge for now, don't add more than max
+                * But it means updateFileReadCostStats will not be querying the correct files,
+                * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
+                */
+            for (unsigned i=subFileStats.size(); i<numsubs; i++)
+                subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
+
 
             mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, super));
             mapping->serializeFileOffsetMap(offsetMapMb);
-            addReadFile(fetchFile);
         }
     }
-    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void kill() override
+    {
+        CMasterActivity::kill();
+        fetchFile.clear();
+    }
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override
     {
         if (mapping)
         {
@@ -120,7 +131,6 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         CFetchActivityMaster::serializeSlaveData(dst, slave);
-        IDistributedFile *fetchFile = queryReadFile(0);
         if (fetchFile)
             fetchFile->queryAttributes().serialize(dst);
     }
