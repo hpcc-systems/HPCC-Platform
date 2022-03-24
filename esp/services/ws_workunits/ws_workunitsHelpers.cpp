@@ -3444,7 +3444,7 @@ StringBuffer & WsWuHelpers::resolveQueryWuid(StringBuffer &wuid, const char *que
 }
 
 void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset, const char *query,
-    const char *cluster, const char *paramXml, IArrayOf<IConstApplicationValue> *applications)
+    const char *cluster, const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstApplicationValue> *applications)
 {
     StringBuffer srcWuid;
 
@@ -3453,11 +3453,11 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const c
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0,  0, false, true, true, paramXml, NULL, NULL, applications);
+    submitWsWorkunit(context, cw, cluster, NULL, 0,  0, false, true, true, paramXml, variables, NULL, applications);
 }
 
 void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query,
-    const char *cluster, const char *paramXml, IArrayOf<IConstApplicationValue> *applications)
+    const char *cluster, const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstApplicationValue> *applications)
 {
     StringBuffer srcWuid;
 
@@ -3467,7 +3467,7 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const c
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0,  0, false, true, true, paramXml, NULL, NULL, applications);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0,  0, false, true, true, paramXml, variables, NULL, applications);
 }
 
 void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& input)
