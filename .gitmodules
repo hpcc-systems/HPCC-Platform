@@ -64,3 +64,7 @@
 [submodule "nlp/nlp-engine"]
 	path = plugins/nlp/nlp-engine
 	url = https://github.com/hpcc-systems/nlp-engine.git
+[submodule "common/remote/hooks/git/libgit2"]
+	path = common/remote/hooks/git/libgit2
+	url = https://github.com/hpcc-systems/libgit2.git
+
