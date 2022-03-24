@@ -383,6 +383,84 @@
         in bare metal we can have jobs that could effect other jobs because
         they are running in the same process space.</para>
       </sect3>
+
+      <sect3 id="YAML_Thor_and_hThor_Memory">
+        <title>Thor and hThor Memory</title>
+
+        <para>The Thor and hThor <emphasis>memory</emphasis> sections allow
+        the resource memory of the component to be refined into different
+        areas.</para>
+
+        <para>For example, the "workerMemory" for a Thor defined as:</para>
+
+        <programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  managerResources:
+    cpu: "1"
+    memory: "2G"
+  workerResources:
+    cpu: "4"
+    memory: "4G"
+  workerMemory:
+    query: "3G"
+    thirdParty: "500M"
+  eclAgentResources:
+    cpu: "1"
+    memory: "2G"</programlisting>
+
+        <para>The "<emphasis>workerResources</emphasis>" section will tell
+        Kubernetes to resource 4G per worker pod. By default Thor will reserve
+        90% of this memory to use for HPCC query memory (roxiemem). The
+        remaining 10% is left for all other non-row based (roxiemem) usage,
+        such as general heap, OS overheads, etc. There is no allowance for any
+        3rd party library, plugins, or embedded language usage within this default. In other words,
+        if for example embedded python allocates 4G, the process will soon
+        fail with an out of memory error, when it starts to use any memory,
+        since it was expecting 90% of that 4G to be freely available to use
+        for itself.</para>
+
+        <para>These defaults can be overridden by the memory sections. In
+        this example, <emphasis>workerMemory.query</emphasis> defines that 3G
+        of the available resourced memory should be assigned to query memory,
+        and 500M to "thirdParty" uses.</para>
+
+        <para>This limits the HPCC Systems memory
+        <emphasis>roxiemem</emphasis> usage to exactly 3G, leaving 1G free
+        other purposes. The "thirdParty" is not actually allocated, but is
+        used solely as part of the running total, to ensure that the
+        configuration doesn't specify a total in this section larger than the
+        resources section, e.g., if "thirdParty" was set to "2G" in the above
+        section, there would be a runtime complaint when Thor ran that the
+        definition exceeded the resource limit.</para>
+
+        <para>It is also possible to override the default recommended
+        percentage (90% by default), by setting
+        <emphasis>maxMemPercentage</emphasis>. If "query" is not defined, then
+        it is calculated to be the recommended max memory minus the defined
+        memory (e.g., "thirdParty").</para>
+
+        <para>In Thor there are 3 resource areas,
+        <emphasis>eclAgent</emphasis>, <emphasis>ThorManager</emphasis>, and
+        <emphasis>ThorWorker</emphasis>(s). Each has a *Resource area that
+        defines their Kubernetes resource needs, and a
+        corresponding *Memory section that can be used to override default
+        memory allocation requirements.</para>
+
+        <para>These settings can also be overridden on a per query basis, via
+        workunit options following the pattern:
+        &lt;memory-section-name&gt;.&lt;property&gt;. For example:
+        #option('workerMemory.thirdParty', "1G");</para>
+
+        <para><emphasis role="bold">Note:</emphasis> Currently there is only
+        "query" (HPCC roxiemem usage) and "thirdParty" for all/any 3rd party
+        usage. It's possible that further categories will be added in future,
+        like "python" or "java" - that specifically define memory uses for
+        those targets.</para>
+      </sect3>
     </sect2>
   </sect1>
 
@@ -497,7 +575,7 @@
   # For persistent storage:
   #   pvc: &lt;name&gt;                           # The name of the persistant volume claim
   #   forcePermissions: false
-  #   hosts: [ &lt;host-list ]                 # Inline list of hosts
+  #   hosts: [ &lt;host-list&gt; ]                 # Inline list of hosts
   #   hostGroup: &lt;name&gt;                     # Name of the host group for bare metal 
   #                                         # must match the name of the storage plane..
   #
