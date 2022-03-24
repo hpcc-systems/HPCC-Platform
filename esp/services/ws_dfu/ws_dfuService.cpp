@@ -3617,22 +3617,28 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
         filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
-    __int64 sizeFrom = req.getFileSizeFrom();
-    __int64 sizeTo = req.getFileSizeTo();
-    if ((sizeFrom > 0) || (sizeTo > 0))
-    {
-        StringBuffer buf;
-        if (sizeFrom > 0)
-            buf.append(sizeFrom);
-        buf.append(DFUQFilterSeparator);
-        if (sizeTo > 0)
-            buf.append(sizeTo);
-        filterBuf.append(DFUQFTinteger64Range).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFattrsize));
-        filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
-    }
+    setInt64RangeFilter(req.getFileSizeFrom(), req.getFileSizeTo(), DFUQFFattrsize, filterBuf);
+    setInt64RangeFilter(req.getMaxSkewFrom(), req.getMaxSkewTo(), DFUQFFattrmaxskew, filterBuf);
+    setInt64RangeFilter(req.getMinSkewFrom(), req.getMinSkewTo(), DFUQFFattrminskew, filterBuf);
 
     setTimeRangeFilter(req.getStartDate(), req.getEndDate(), DFUQFFtimemodified, filterBuf);
     setTimeRangeFilter(req.getStartAccessedTime(), req.getEndAccessedTime(), DFUQFFaccessed, filterBuf);
+}
+
+void CWsDfuEx::setInt64RangeFilter(__int64 from, __int64 to, DFUQFilterField filterID, StringBuffer &filterBuf)
+{
+    if ((from == 0) && (to == 0))
+        return;
+
+    filterBuf.append(DFUQFTinteger64Range).append(DFUQFilterSeparator);
+    filterBuf.append(getDFUQFilterFieldName(filterID)).append(DFUQFilterSeparator);
+    StringBuffer buf;
+    if (from > 0)
+        filterBuf.append(from);
+    filterBuf.append(DFUQFilterSeparator);
+    if (to > 0)
+        filterBuf.append(to);
+    filterBuf.append(DFUQFilterSeparator);
 }
 
 void CWsDfuEx::setTimeRangeFilter(const char *from, const char *to, DFUQFilterField filterID, StringBuffer &filterBuf)
@@ -3691,6 +3697,10 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = DFUQRFkind;
     else if (strieq(sortByPtr, "Cost"))
         sortOrder[0] = (DFUQResultField) (DFUQRFcost | DFUQRFfloat);
+    else if (strieq(sortByPtr, "MaxSkew"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFmaxSkew | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "MinSkew"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFminSkew | DFUQRFnumeric);
     else
         sortOrder[0] = DFUQRFname;
 
