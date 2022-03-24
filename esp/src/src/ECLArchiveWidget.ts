@@ -412,10 +412,10 @@ export class ECLArchiveWidget {
         function updateSummary(markers) {
             const propCounts = {};
             const propFormats = {};
-            const propSums = markers.reduce((ret, n)=>{
-                n.properties.forEach(prop=>{
-                    if(prop.Measure !== undefined){
-                        if(!propCounts[prop.Name]){
+            const propSums = markers.reduce((ret, n) => {
+                n.properties.forEach(prop => {
+                    if (prop.Measure !== undefined) {
+                        if (!propCounts[prop.Name]) {
                             propCounts[prop.Name] = 0;
                             propFormats[prop.Name] = prop.Measure;
                             ret[prop.Name] = 0;
@@ -426,21 +426,21 @@ export class ECLArchiveWidget {
                 });
                 return ret;
             }, {});
-            const propAvgs = Object.keys(propSums).reduce((ret, k)=>{
+            const propAvgs = Object.keys(propSums).reduce((ret, k) => {
                 ret[k] = propSums[k] / propCounts[k];
                 return ret;
             }, {});
             context.summaryTable
                 .columns(["Name", "Cnt", "Avg", "Sum"])
                 .data([
-                    ...Object.keys(propSums).map(k=>{
+                    ...Object.keys(propSums).map(k => {
                         let avg = propAvgs[k];
                         let sum = propSums[k];
 
                         const isTime = propFormats[k] === "ns";
                         const isSize = propFormats[k] === "sz";
 
-                        if(isTime) {
+                        if (isTime) {
                             avg = _formatTime(avg);
                             sum = _formatTime(sum);
                         } else if (isSize) {
@@ -460,17 +460,17 @@ export class ECLArchiveWidget {
                 ])
                 .lazyRender()
                 ;
-            function _formatTime(v){
-                if(v > 1000000000) {
+            function _formatTime(v) {
+                if (v > 1000000000) {
                     return (v / 1000000000).toFixed(3) + "s";
                 }
                 return (v / 1000000).toFixed(3) + "ms";
             }
-            function _formatSize(v){
-                if(v > 1000000000) {
+            function _formatSize(v) {
+                if (v > 1000000000) {
                     return (v * 0.000000000931).toFixed(3) + "Gb";
                 }
-                else if(v > 1000000) {
+                else if (v > 1000000) {
                     return (v * 0.0000009537).toFixed(3) + "Mb";
                 }
                 return (v * 0.000977).toFixed(3) + "Kb";
@@ -579,10 +579,10 @@ export class ECLArchiveWidget {
                     marker.color,
                     "Verdana",
                     "12px",
-                    () => {},
-                    () => {},
+                    () => { },
+                    () => { },
                     () => {
-                        if(context.selectedMarker === marker.lineNum) {
+                        if (context.selectedMarker === marker.lineNum) {
                             updateSummary(markers);
                             context.selectedMarker = -1;
                             const columnArr = context.summaryTable.columns();
@@ -594,9 +594,9 @@ export class ECLArchiveWidget {
                         } else {
 
                             const _data = markerTableData(marker);
-                            
+
                             context.summaryTable
-                                .columns(["Line: "+marker.lineNum, ...Array(_data[0].length).fill("")])
+                                .columns(["Line: " + marker.lineNum, ...Array(_data[0].length).fill("")])
                                 .data(_data)
                                 .lazyRender()
                                 ;
@@ -675,16 +675,16 @@ export class ECLArchiveWidget {
             return ret;
 
             function nsToTime(nanoseconds) {
-                let subSecond:string|number = Math.floor(nanoseconds % 100000000);
-                let seconds:string|number = Math.floor((nanoseconds / 1000000000) % 60);
-                let minutes:string|number = Math.floor((nanoseconds / (1000000000 * 60)) % 60);
-                let hours:string|number = Math.floor((nanoseconds / (1000000000 * 60 * 60)) % 24);
-                
+                const subSecond: string | number = Math.floor(nanoseconds % 100000000);
+                let seconds: string | number = Math.floor((nanoseconds / 1000000000) % 60);
+                let minutes: string | number = Math.floor((nanoseconds / (1000000000 * 60)) % 60);
+                let hours: string | number = Math.floor((nanoseconds / (1000000000 * 60 * 60)) % 24);
+
                 hours = (hours < 10) ? "0" + hours : hours;
                 minutes = (minutes < 10) ? "0" + minutes : minutes;
                 seconds = (seconds < 10) ? "0" + seconds : seconds;
-                
-                return String(hours).padStart(2,"0") + ":" + String(minutes) + ":" + String(seconds) + "." + String(subSecond).padStart(9,"0");
+
+                return String(hours).padStart(2, "0") + ":" + String(minutes) + ":" + String(seconds) + "." + String(subSecond).padStart(9, "0");
             }
         }
     }
