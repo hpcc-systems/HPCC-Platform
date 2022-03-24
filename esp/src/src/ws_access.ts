@@ -21,7 +21,7 @@ class UsersStore extends ESPRequest.Store {
     startProperty = "PageStartFrom";
     countProperty = "PageSize";
 
-    SortbyProperty = "SortBy"
+    SortbyProperty = "SortBy";
 
     groupname: string;
 
@@ -398,7 +398,7 @@ class PermissionsStore extends Memory {
         const tmp = id.split(CONCAT_SYMBOL);
         if (tmp.length > 0) {
             const parentID = tmp[0];
-            const parent = super.get(parentID);  
+            const parent = super.get(parentID);
             if (tmp.length === 1) {
                 return parent;
             }

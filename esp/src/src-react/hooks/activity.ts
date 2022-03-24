@@ -23,7 +23,7 @@ export function useActivity(): [Activity, number, () => void] {
         return () => {
             active = false;
             handle.release();
-        }
+        };
     }, [count]);
 
     return [activity, lastUpdate, increment];

@@ -125,7 +125,7 @@ interface useFluentStoreGridResponse {
     selection: any[],
     copyButtons: ICommandBarItemProps[],
     total: number,
-    refreshTable: () => void
+    refreshTable: (clearSelection?: boolean) => void
 }
 
 function useFluentStoreGrid({
@@ -144,8 +144,17 @@ function useFluentStoreGrid({
     const [items, setItems] = React.useState<any[]>([]);
     const [total, setTotal] = React.useState<number>(0);
 
-    const refreshTable = React.useCallback(() => {
+    const selectionHandler = useConst(new Selection({
+        onSelectionChanged: () => {
+            setSelection(selectionHandler.getSelection());
+        }
+    }));
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
         if (isNaN(start) || (isNaN(count) || count === 0)) return;
+        if (clearSelection) {
+            selectionHandler.setItems([], true);
+        }
         const storeQuery = store.query(query ?? {}, { start, count, sort: sorted ? [sorted] : undefined });
         storeQuery.total.then(total => {
             setTotal(total);
@@ -153,7 +162,7 @@ function useFluentStoreGrid({
         storeQuery.then(items => {
             setItems(items);
         });
-    }, [count, query, sorted, start, store]);
+    }, [count, query, selectionHandler, sorted, start, store]);
 
     React.useEffect(() => {
         refreshTable();
@@ -182,12 +191,6 @@ function useFluentStoreGrid({
             descending: sorted ? isSortedDescending : false
         });
     }, [constColumns]);
-
-    const selectionHandler = useConst(new Selection({
-        onSelectionChanged: () => {
-            setSelection(selectionHandler.getSelection());
-        }
-    }));
 
     const renderDetailsHeader = React.useCallback((props: IDetailsHeaderProps, defaultRender?: any) => {
         return defaultRender({
@@ -262,7 +265,7 @@ interface useFluentPagedGridResponse {
     Grid: React.FunctionComponent<{ height?: string }>,
     GridPagination: React.FunctionComponent<Partial<IStackProps>>,
     selection: any[],
-    refreshTable: (full?: boolean) => void,
+    refreshTable: (clearSelection?: boolean) => void,
     copyButtons: ICommandBarItemProps[]
 }
 
