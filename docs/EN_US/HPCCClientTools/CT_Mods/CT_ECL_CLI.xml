@@ -1683,7 +1683,7 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
         <para>The queries files command displays a list of the files currently
         in use by the given query. If the <emphasis>query</emphasis> option is
         omitted, it returns a list of files for all queries on the specified
-        target. </para>
+        target.</para>
 
         <para>Examples:</para>
 
@@ -4685,6 +4685,143 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                 <row>
                   <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+
+                  <entry>Max time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable><parameter></parameter></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxiexref" role="brk">
+        <title>ecl roxie xref</title>
+
+        <para><emphasis role="bold">ecl roxie xref
+        &lt;cluster&gt;</emphasis></para>
+
+        <para>The <emphasis role="bold">roxie xref</emphasis> command returns
+        file information for the specified queries on the specified cluster.
+        If the <emphasis>queryids</emphasis> option is omitted, file
+        information about all queries is returned. The result is in XML
+        format.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie xref myroxie
+ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
+
+        <para>Example result:</para>
+
+        <programlisting>&lt;QueryXrefInfo&gt;
+ &lt;Endpoint ep="192.168.56.1:9876"&gt;
+  &lt;Queries reporting="1"&gt;
+   &lt;Query id="myquery.1"/&gt;
+     &lt;SuperFile name="jd::mysuperfile"&gt;
+       &lt;File name="jd::subfile1"/&gt;
+       &lt;File name="jd::subfile2"/&gt;
+   &lt;Query id="myotherquery.1"/&gt;
+     &lt;SuperFile name="jd::myothersuperfile"&gt;
+       &lt;File name="jd::subfile1"/&gt;
+       &lt;File name="jd::subfile2"/&gt;
+       &lt;File name="jd::subfile3"/&gt;
+  &lt;/Queries&gt;
+  &lt;Status&gt;ok&lt;/Status&gt;
+ &lt;/Endpoint&gt;
+&lt;/QueryXrefInfo&gt;
+</programlisting>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie xref</entry>
+
+                  <entry>Returns file information for the selected queries in
+                  XML format.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--check-all-nodes</entry>
+
+                  <entry>Gets query file information from all nodes. This can
+                  be slow.</entry>
+                </row>
+
+                <row>
+                  <entry>--queryids=&lt;csv list&gt;</entry>
+
+                  <entry>The queries for which to get file information
+                  (default is all queries)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>Max time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>--ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
