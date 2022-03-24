@@ -46,31 +46,32 @@ set (    INCLUDES
 include_directories (
          .
          ${HPCC_SOURCE_DIR}/common/remote
-         ${HPCC_SOURCE_DIR}/system/jhtree
-         ${HPCC_SOURCE_DIR}/system/hrpc
-         ${HPCC_SOURCE_DIR}/system/mp
-         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
          ${HPCC_SOURCE_DIR}/common/deftype
-         ${HPCC_SOURCE_DIR}/system/include
-         ${HPCC_SOURCE_DIR}/dali/base
-         ${HPCC_SOURCE_DIR}/rtl/include
-         ${HPCC_SOURCE_DIR}/ecl/eclagent
-         ${HPCC_SOURCE_DIR}/system/jlib
-         ${HPCC_SOURCE_DIR}/common/thorhelper
-         ${HPCC_SOURCE_DIR}/rtl/eclrtl
-         ${HPCC_SOURCE_DIR}/roxie/roxiemem
-         ${HPCC_SOURCE_DIR}/roxie/roxie
-         ${HPCC_SOURCE_DIR}/roxie/ccd
          ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/common/environment
-         ${HPCC_SOURCE_DIR}/ecl/schedulectrl
+         ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/common/wuanalysis
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/dali/ft
+         ${HPCC_SOURCE_DIR}/ecl/eclagent
          ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/ecl/schedulectrl
          ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/roxie/ccd
+         ${HPCC_SOURCE_DIR}/roxie/roxie
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/system/hrpc
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/security/shared
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${HPCC_SOURCE_DIR}/dali/ft
-         ${HPCC_SOURCE_DIR}/system/security/shared
-         ${HPCC_SOURCE_DIR}/common/wuanalysis
     )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
@@ -82,20 +83,21 @@ ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
 HPCC_ADD_LIBRARY( hthorlib SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS hthorlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 target_link_libraries ( hthorlib
-         jlib
-         mp
-         hrpc
          dafsclient
          dalibase
          dllserver
-         nbcd
          eclrtl
          deftype
-         workunit
+         hrpc
          jhtree
-         thorhelper
+         jlib
+         mp
+         nbcd
          roxiemem
          schedulectrl
+         thorhelper
+         workunit
+         ws_dfsclient
          wuanalysis
     )
 

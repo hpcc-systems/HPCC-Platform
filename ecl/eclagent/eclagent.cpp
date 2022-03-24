@@ -55,6 +55,8 @@
 #include "anawu.hpp"
 #include "hpccconfig.hpp"
 
+#include "ws_dfsclient.hpp"
+
 using roxiemem::OwnedRoxieString;
 
 #include <memory>
@@ -1438,7 +1440,7 @@ bool EclAgent::fileExists(const char *name)
     StringBuffer lfn;
     expandLogicalName(lfn, name);
 
-    Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn.str(),queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> f = wsdfs::lookup(lfn.str(), queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (f)
         return true;
     return false;
@@ -2758,7 +2760,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
         return crc;
     }
 
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fullname.str(),queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (file)
     {
         WorkunitUpdate wu = updateWorkUnit();
@@ -3068,7 +3070,7 @@ restart:     // If things change beneath us as we are deleting, repeat the proce
                 MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                 persistLock.setown(getPersistReadLock(goer));
             }
-            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser);
+            Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser, INFINITE);
             if (!f)
                 goto restart; // Persist has been deleted since last checked - repeat the whole process
             const char *newAccessTime = f->queryAttributes().queryProp("@accessed");

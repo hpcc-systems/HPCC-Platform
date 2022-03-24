@@ -33,22 +33,23 @@ set (    SRCS
 include_directories ( 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../ecl/hqlcpp 
-         ./../../common/environment
-         ./../../common/workunit 
-         ./../../common/dllserver 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../ecl/hql
-         ./../../dali/base
-         ./../../system/mp
-         ./../../rtl/include 
-         ./../../rtl/eclrtl 
-         ./../../system/jlib 
-         ./../../fs/dafsclient
-         ./../../system/security/shared
-         ./../../system/security/zcrypt
+         ${HPCC_SOURCE_DIR}/ecl/hqlcpp 
+         ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/common/workunit 
+         ${HPCC_SOURCE_DIR}/common/dllserver 
+         ${HPCC_SOURCE_DIR}/common/deftype 
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/rtl/include 
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl 
          ${HPCC_SOURCE_DIR}/system/codesigner
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/zcrypt
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -61,17 +62,18 @@ endif()
 HPCC_ADD_EXECUTABLE ( eclcc ${SRCS} )
 install ( TARGETS eclcc RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclcc 
-         jlib
-         nbcd 
          eclrtl 
          deftype 
          dafsclient 
          dalibase 
-         workunit 
-         thorhelper 
+         dllserver
          hql
          hqlcpp
-         dllserver
+         jlib
+         nbcd 
+         thorhelper 
+         workunit 
+         ws_dfsclient
     )
 
 if (NOT CONTAINERIZED)

@@ -1669,31 +1669,9 @@ public:
         }
         else
         {
-            // MORE - not at all sure about this. Foreign files should stay foreign ?
-            CDfsLogicalFileName dlfn;
-            dlfn.set(lfn);
-            if (dlfn.isForeign())
-                dlfn.clearForeign();
-
-            bool defaultDirPerPart = false;
-            StringBuffer defaultDir;
-            unsigned stripeNum = 0;
-#ifdef _CONTAINERIZED
-            if (!dlfn.isExternal())
-            {
-                IFileDescriptor &fileDesc = pdesc->queryOwner();
-                StringBuffer planeName;
-                fileDesc.getClusterGroupName(0, planeName);
-                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
-                defaultDir.append(plane->queryPrefix());
-                unsigned numStripedDevices = plane->numDevices();
-                stripeNum = calcStripeNumber(partNo-1, dlfn.get(), numStripedDevices);
-                FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(fileDesc.queryProperties().getPropInt("@flags"));
-                if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
-                    defaultDirPerPart = true;
-            }
-#endif
-            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir.str(), defaultDirPerPart, stripeNum);
+            RemoteFilename rfn;
+            pdesc->getFilename(replicationLevel, rfn);
+            rfn.getLocalPath(localLocation);
         }
         Owned<ILazyFileIO> ret;
         try

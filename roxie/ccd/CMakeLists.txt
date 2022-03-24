@@ -64,34 +64,35 @@ set (   SRCS
 
 include_directories ( 
          .
-         ${HPCC_SOURCE_DIR}/fs/dafsclient
-         ${HPCC_SOURCE_DIR}/system/jhtree
-         ${HPCC_SOURCE_DIR}/system/mp
-         ${HPCC_SOURCE_DIR}/common/workunit
-         ${HPCC_SOURCE_DIR}/roxie/udplib
-         ${HPCC_SOURCE_DIR}/roxie/ccdcache
-         ${HPCC_SOURCE_DIR}/roxie/roxie
-         ${HPCC_SOURCE_DIR}/common/environment
-         ${HPCC_SOURCE_DIR}/ecl/hthor
-         ${HPCC_SOURCE_DIR}/ecl/schedulectrl
-         ${HPCC_SOURCE_DIR}/rtl/nbcd
          ${HPCC_SOURCE_DIR}/common/deftype
-         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/common/dllserver
+         ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/dfu
-         ${HPCC_SOURCE_DIR}/roxie/roxiemem
-         ${HPCC_SOURCE_DIR}/common/dllserver
-         ${HPCC_SOURCE_DIR}/system/jlib
-         ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/dali/ft
+         ${HPCC_SOURCE_DIR}/ecl/hthor
+         ${HPCC_SOURCE_DIR}/ecl/schedulectrl
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
+         ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/roxie/ccdcache
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/nbcd
+         ${HPCC_SOURCE_DIR}/roxie/roxie
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/roxie/udplib
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/libbase58
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${HPCC_SOURCE_DIR}/testing/unittests
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${HPCC_SOURCE_DIR}/dali/ft
-         ${HPCC_SOURCE_DIR}/system/security/shared
-         ${HPCC_SOURCE_DIR}/system/security/securesocket
-         ${HPCC_SOURCE_DIR}/system/libbase58
     )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
@@ -112,20 +113,21 @@ HPCC_ADD_LIBRARY( ccd SHARED ${SRCS} )
 install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 
 target_link_libraries ( ccd 
-         jlib
-         nbcd
-         roxiemem 
-         udplib 
          dafsclient 
-         eclrtl 
          dalibase 
          deftype 
-         thorhelper 
-         jhtree 
-         schedulectrl
          dllserver 
-         workunit 
+         eclrtl 
+         jhtree 
+         jlib
          libbase58
+         nbcd
+         roxiemem 
+         schedulectrl
+         thorhelper 
+         udplib 
+         workunit 
+         ws_dfsclient
     )
 
 if (NOT CONTAINERIZED)
