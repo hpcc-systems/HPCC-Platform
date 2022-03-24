@@ -491,8 +491,11 @@ public:
 
         if ((RCMAX != keyedLimit) && (keyedLimit+1 < remoteLimit))
             remoteLimit = keyedLimit+1; // 1 more to ensure triggered when received back.
-        if ((RCMAX != rowLimit) && (rowLimit+1 < remoteLimit))
-            remoteLimit = rowLimit+1; // 1 more to ensure triggered when received back.
+        if (!mayFilter)
+        {
+            if ((RCMAX != rowLimit) && (rowLimit+1 < remoteLimit))
+                remoteLimit = rowLimit+1; // 1 more to ensure triggered when received back.
+        }
     }
     void calcKeyedLimitCount()
     {
@@ -1208,7 +1211,8 @@ public:
         ActivityTimer s(slaveTimerStats, timeActivities);
 
         // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
-        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasMatchFilter());
+        // NB2: I'm not sure if hasMatchFilter() can ever actually be generated.
+        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasFilter() || helper->hasMatchFilter());
         calcKeyedLimitCount();
 
         PARENT::start();
@@ -1384,7 +1388,8 @@ public:
         ActivityTimer s(slaveTimerStats, timeActivities);
 
         // NB: initLimits sets up remoteLimit before base start() call, because if parts are remote PARENT::start() will use remoteLimit
-        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), helper->hasMatchFilter());
+        // NB2: mayFilter=true assumed, because there is no flag to indicate post-filtering
+        initLimits(helper->getChooseNLimit(), helper->getKeyedLimit(), helper->getRowLimit(), true);
         calcKeyedLimitCount();
 
         PARENT::start();
