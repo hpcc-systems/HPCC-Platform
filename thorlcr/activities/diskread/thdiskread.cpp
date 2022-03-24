@@ -106,9 +106,12 @@ public:
     virtual void done() override
     {
         CDiskReadMasterVF::done();
-        IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
-        if (0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
-            container.queryTempHandler()->deregisterFile(fileName, fileDesc->queryProperties().getPropBool("@pausefile"));
+        if (file)
+        {
+            IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
+            if (0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
+                container.queryTempHandler()->deregisterFile(fileName, fileDesc->queryProperties().getPropBool("@pausefile"));
+        }
     }
     virtual void init() override
     {
@@ -192,7 +195,6 @@ public:
         {
             if (!helper->hasSegmentMonitors() && !helper->hasFilter() && !(helper->getFlags() & TDXtemporary))
             {
-                IDistributedFile *file = queryReadFile(0);
                 if (file && canMatch)
                 {
                     if (0 != (TDRunfilteredcount & helper->getFlags()) && file->queryAttributes().hasProp("@recordCount"))
