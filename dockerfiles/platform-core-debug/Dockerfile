@@ -22,6 +22,7 @@ ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-build:${BUILD_LABEL}
 
 # Set the locale
+RUN apt-get update -y
 RUN apt-get install -y locales
 RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8  
