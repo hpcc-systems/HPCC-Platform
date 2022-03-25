@@ -150,12 +150,12 @@ bool CldapenvironmentEx::createSecret(SecretType type, const char * secretName, 
         case ST_K8S:
             cmdLineSafe.appendf("kubectl create secret generic %s --from-literal=username=%s --from-literal=password=", secretName, username);
             break;
-        case ST_VAULT:
+        case ST_AUTHN_VAULT:
             cmdLineSafe.appendf("vault kv put secret/authn/%s username=%s password=", secretName, username);
             break;
     }
 
-    VStringBuffer cmdLine("%s%s", cmdLineSafe.str(), pwd);
+    VStringBuffer cmdLine("%s\"%s\"", cmdLineSafe.str(), pwd);
     try
     {
         DBGLOG("\nExecuting '%s'\n", cmdLineSafe.str());
@@ -191,7 +191,9 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
         
         StringBuffer notes;//contains interesting but non-fatal notes about environment creation attempt
-        
+        const char * userPrefix = secmgr->getLdapServerType() == ACTIVE_DIRECTORY ? "cn=" : "uid=";
+        const char * resPrefix = secmgr->getLdapServerType() == ACTIVE_DIRECTORY ? "cn=" : "ou=";
+
         //Verify request
 
         if (isEmptyString(req.getEnvName()))
@@ -281,9 +283,6 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                 }
             }
 
-            const char * userPrefix = secmgr->getLdapServerType() == ACTIVE_DIRECTORY ? "cn=" : "uid=";
-            const char * resPrefix = secmgr->getLdapServerType() == ACTIVE_DIRECTORY ? "cn=" : "ou=";
-
             //Add HPCCAdmin user to HPCCAdmins group
             {
                 VStringBuffer adminGrpOU("cn=%s,%s", adminGroupName.str(), respGroupsBaseDN.str());
@@ -300,15 +299,25 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
 
             //Grant SmcAccess to HPCCAdmins group
             {
-                VStringBuffer smcAccess("%sSmcAccess,%s", resPrefix, respResourcesBaseDN.str());
-                createLDAPBaseDN(smcAccess.str(), description.str(), notes);
+                try
+                {
+                    //Create the SmcAccess resource (OU on 389DS, CN on AD)
+                    Owned<ISecUser> usr = secmgr->createUser(nullptr);
+                    secmgr->addResourceEx(RT_DEFAULT, *usr.get(), "SmcAccess", PT_ADMINISTRATORS_ONLY, respResourcesBaseDN.str());
+                }
+                catch(...)
+                {
+                    notes.appendf("\nNon Fatal Error creating 'SmcAccess' resource at %s", respResourcesBaseDN.str());
+                }
 
+                //Grant the permission
+                VStringBuffer adminGrp("cn=%s,%s", adminGroupName.str(), respGroupsBaseDN.str());
                 CPermissionAction action;
                 action.m_action = "update";
                 action.m_basedn = respResourcesBaseDN.str();
                 action.m_rname = "SmcAccess";
                 action.m_rtype = RT_SERVICE;
-                action.m_account_name = adminGroupName.str();
+                action.m_account_name = adminGrp.str();
                 action.m_account_type = GROUP_ACT;
                 action.m_allows = SecAccess_Full;
                 action.m_denies = 0;
@@ -318,7 +327,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                 }
                 catch(...)
                 {
-                    notes.appendf("\nNon Fatal Error setting '%s' permission for '%s'", smcAccess.str(), adminGroupName.str());
+                    notes.appendf("\nNon Fatal Error setting 'SmcAccess' permission for '%s'", adminGroupName.str());
                 }
             }
         }
@@ -333,7 +342,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         if (req.getCreateVaultSecrets())
         {
             respVaultID.set(req.getVaultName());
-            createSecret(ST_VAULT, respHPCCAdminSecretName.str(), respHPCCAdminUser.str(), respHPCCAdminPwd.str(), notes);
+            createSecret(ST_AUTHN_VAULT, respHPCCAdminSecretName.str(), respHPCCAdminUser.str(), respHPCCAdminPwd.str(), notes);
         }
 
         //----------------------------------
@@ -354,7 +363,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
 
             //Add LDAP R/W permissions for LDAPAdmin user
             //Only grant access to root of new environment (ex  ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com)
-            VStringBuffer ldapAdminFQDN("uid=%s,%s", respLDAPAdminUser.str(), respUsersBaseDN.str());//@@
+            VStringBuffer ldapAdminFQDN("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
             if (!changePermissions(envOU.str(), ldapAdminFQDN.str(), SecAccess_Full, SecAccess_None))
                 notes.appendf("\nNon Fatal Error setting LDAPAdmin permission for %s'", envOU.str());
         }
@@ -365,13 +374,25 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         if (req.getCreateK8sSecrets())
             createSecret(ST_K8S, respLDAPAdminSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
         if (req.getCreateVaultSecrets())
-            createSecret(ST_VAULT, respLDAPAdminSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
+            createSecret(ST_AUTHN_VAULT, respLDAPAdminSecretName.str(), respLDAPAdminUser.str(), respLDAPAdminPwd.str(), notes);
 
         //----------------------------------
         // Set response
         //----------------------------------
-        VStringBuffer ldapcredskey("ldapcredskey-%s", req.getEnvName());
-        VStringBuffer hpcccredskey("hpcccredskey-%s", req.getEnvName());
+        StringBuffer ldapcredskey;
+        StringBuffer hpcccredskey;
+        if (respVaultID.isEmpty())
+        {
+            //No vault, create K8s authn key name
+            ldapcredskey.appendf("ldapcredskey-%s", req.getEnvName());
+            hpcccredskey.appendf("hpcccredskey-%s", req.getEnvName());
+        }
+        else
+        {
+            //Vault, specify the secret name as the key
+            ldapcredskey.set(respLDAPAdminSecretName.str());
+            hpcccredskey.set(respHPCCAdminSecretName.str());
+        }
         ldapcredskey.toLowerCase();
         hpcccredskey.toLowerCase();
 
@@ -379,11 +400,27 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         resp.setLDAPAdminPassword(respLDAPAdminPwd.str());
         resp.setHPCCAdminUsername(respHPCCAdminUser.str());
         resp.setHPCCAdminPassword(respHPCCAdminPwd.str());
-        VStringBuffer ldapHelm("\n\n"
-                               "secrets:\n"
+
+        StringBuffer helmSecrets;
+        if (req.getCreateK8sSecrets())
+        {
+            helmSecrets.appendf("secrets:\n"
                                "  authn:\n"
                                "    %s: %s\n"
-                               "    %s: %s\n\n"
+                               "    %s: %s\n",
+                               ldapcredskey.str(), respLDAPAdminSecretName.str(),
+                               hpcccredskey.str(), respHPCCAdminSecretName.str());
+        }
+        if (req.getCreateVaultSecrets())
+        {
+            helmSecrets.appendf("\nvaults:\n"
+                                "  authn:\n"
+                                "    - name: my-authn-vault\n"
+                                "      url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/authn/${secret}\n"
+                                "      kind: kv-v2");
+        }
+        VStringBuffer ldapHelm("\n\n"
+                               "%s\n"
                                "esp:\n"
                                "- name: eclwatch\n"
                                "  auth: ldap\n"
@@ -399,8 +436,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "    resourcesBasedn: %s\n"
                                "    workunitsBasedn: %s\n"
                                "    systemBasedn: %s\n\n",
-                               ldapcredskey.str(), respLDAPAdminSecretName.str(),
-                               hpcccredskey.str(), respHPCCAdminSecretName.str(),
+                               helmSecrets.str(),
                                adminGroupName.str(),
                                ldapcredskey.str(), respVaultID.str(),
                                hpcccredskey.str(), respVaultID.str(),

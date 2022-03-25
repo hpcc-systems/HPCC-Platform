@@ -62,6 +62,7 @@ esp:
 ### Note that the vault name, my-authn-vault, was defined in the "secrets" tutorial, in the HPCC-Platform/helm/examples/secrets/values-secrets.yaml file as follows
 
 ```bash
+vaults:
   authn:
     - name: my-authn-vault
       #Note the data node in the URL is there for the REST APIs use. The path inside the vault starts after /data
