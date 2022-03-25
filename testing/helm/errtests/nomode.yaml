@@ -1,0 +1,41 @@
+storage:
+  planes:
+  - name: dali
+    pvc: dali-localmany-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+  - name: dll
+    pvc: dll-localmany-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+  - name: sasha
+    pvc: sasha-localmany-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/sasha"
+    category: sasha
+  - name: debug
+    pvc: debug-localmany-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/debug"
+    category: debug
+  - name: manydata
+    pvc: manydata-localmany-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/manydata"
+    category: data
+    numDevices: 5
+    aliases:
+    - pvc: cachedata-localmany-hpcc-localfile-pvc
+      mode: [ random ]
+      numMounts: 1
+    - pvc: cachedata-localmany-hpcc-localfile-pvc
+      prefix: "/var/lib/HPCCSystems/manydatacache2"
+      numMounts: 3
+  - name: mydropzone
+    pvc: mydropzone-localmany-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    category: lz
+
+
+sasha:
+  wu-archiver:
+    plane: sasha
+  dfuwu-archiver:
+    plane: sasha

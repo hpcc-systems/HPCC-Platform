@@ -12,6 +12,9 @@ storage:
     pvc: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-localfile.fullname" $) }}
     prefix: {{ printf "%s%s%s" $.Values.common.mountPrefix (regexMatch ".*/$" $.Values.common.mountPrefix | ternary "" "/") $plane.subPath | quote }}
     category: {{ $plane.category }}
+{{- if hasKey $plane "numDevices" }}
+    numDevices: {{ $plane.numDevices }}
+{{- end }}
 {{- end }}
 
 {{ range $plane := .Values.planes -}}

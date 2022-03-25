@@ -38,7 +38,7 @@ storage:
     hostGroup: thor100_4
     replication: [ azureBlobPlane ]
 
-  - name: azureBlobPlane
+  - name: azureblobplane
     category: data
     prefix: azure://ghallidaystorage      # Not sure if this should be different from the mount.
     secret: azure-ghallidaystorage

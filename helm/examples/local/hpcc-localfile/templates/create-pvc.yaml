@@ -1,11 +1,15 @@
 {{- range $plane := .Values.planes -}}
+ {{- $num := int ( $plane.numDevices | default 1 ) -}}
+ {{- range $elem := untilStep 1 (int (add $num 1)) 1 }}
+  {{- $pvcsuffix := (eq $num 1) | ternary "" (printf "-%d" $elem) -}}
+  {{- $suffix := (eq $num 1) | ternary "" (printf "-many-%d" $elem) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-localfile.fullname" $) }}
+  name: {{ printf "%s-%s-pvc%s" $plane.name (include "hpcc-localfile.fullname" $) $pvcsuffix }}
 spec:
   storageClassName: "manual"
-  volumeName: {{ printf "%s-%s-pv" $plane.name (include "hpcc-localfile.fullname" $) }}
+  volumeName: {{ printf "%s-%s-pv%s" $plane.name (include "hpcc-localfile.fullname" $) $suffix }}
   accessModes:
     - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
   resources:
@@ -13,6 +17,7 @@ spec:
       storage: {{ $plane.size }}
   selector:
     matchLabels:
-      store: {{ printf "%s-%s-pv" $plane.name (include "hpcc-localfile.fullname" $) }}
+      store: {{ printf "%s-%s-pv%s" $plane.name (include "hpcc-localfile.fullname" $) $suffix }}
 ---
+ {{ end -}}
 {{ end }}
