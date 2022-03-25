@@ -344,7 +344,17 @@ replicate=1</programlisting>
 
                     <entry>Optional. The IP address of the source machine. If
                     omitted, the information must be supplied by the
-                    <emphasis>srcxml</emphasis> parameter.</entry>
+                    <emphasis>srcxml</emphasis> or
+                    <emphasis>srcplane</emphasis> parameter.</entry>
+                  </row>
+
+                  <row>
+                    <entry>srcplane</entry>
+
+                    <entry>Optional. The source storage plane containing the
+                    source file. Note: <emphasis>srcplane</emphasis> should
+                    not be used at the same time as
+                    <emphasis>srcip</emphasis>.</entry>
                   </row>
 
                   <row>
@@ -584,7 +594,14 @@ dfuplus action=spray srcip=10.150.51.26
 imageRecord := RECORD
 STRING filename;
 DATA image; //first 4 bytes contain the length of the image data
-END;</programlisting>
+END;
+// using srcplane
+dfuplus action=spray srcplane=lzstorageplane 
+        srcfile=/var/lib/HPCCSystems/dropzone/largedata1 
+        dstname=mytest::test:spraytest 
+        dstcluster=mydatastorageplane recordsize=58 overwrite=1 server=127.0.0.1:8010
+
+</programlisting>
         </sect3>
 
         <sect3 id="CLI_DFU_DeSprayOperations">
@@ -618,7 +635,16 @@ END;</programlisting>
 
                   <entry>Optional. The IP address of the destination machine.
                   If omitted, the information must be supplied by the
-                  <emphasis>dstxml</emphasis> parameter.</entry>
+                  <emphasis>dstxml</emphasis> or <emphasis>dstplane</emphasis>
+                  parameter.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>dstplane</emphasis></entry>
+
+                  <entry>Optional. The destination storage plane. Note:
+                  <emphasis>dstplane</emphasis> should not be used at the same
+                  time as <emphasis>dstip</emphasis>.</entry>
                 </row>
 
                 <row>
@@ -737,6 +763,12 @@ DATA image; //first 4 bytes contain the length of the image data
 dfuplus action=dspray srcname=le::imagedb
           dstip=10.150.51.26 dstfile=/var/lib/HPCCSystems/mydropzone/
           splitprefix=FILENAME,FILESIZE
+
+// using dstplane
+dfuplus action=despray srcname=mytest::test:spraytest 
+        dstplane=lzstorageplane 
+        dstfile=mydespraytest server=127.0.0.1:8010
+
 </programlisting>
         </sect3>
 
