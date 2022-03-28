@@ -113,6 +113,8 @@ public:
         StringAttr oneOption;
         if (iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH) || iter.matchOption(oneOption, ESDLOPT_INCLUDE_PATH_S))
             return false;  //Return false to negate allowing the include path options from parent class
+        if (iter.matchFlag(optNoExceptionsInline, ESDLOPT_NO_EXCEPT_INLINE))
+            return true;
 
         if (EsdlConvertCmd::parseCommandLineOption(iter))
             return true;
@@ -276,6 +278,7 @@ public:
         puts("   --no-arrayof                         Supresses the use of the arrrayof element. arrayof optimizes the XML output to include 'ArrayOf...'" );
         puts("                                        structure definitions for those EsdlArray elements with no item_tag attribute. Works in conjunction" );
         puts("                                        with an optimized stylesheet that doesn't generate these itself. This defaults to on.");
+        puts("   --no-exceptions-inline               Do not modify the interface to include an Exceptions element inline in the response.");
     }
 
     virtual void usage()
@@ -341,6 +344,11 @@ public:
         if( optNoAnnot )
         {
             params->setProp( "no_annot_Param", "true()" );
+        }
+
+        if( optNoExceptionsInline )
+        {
+            params->setProp( "no_exceptions_inline", "true()" );
         }
     }
 
@@ -449,6 +457,7 @@ public:
     bool optNoCollapse;
     bool optNoArrayOf;
     bool optUnversionedNamespace;
+    bool optNoExceptionsInline;
 
 protected:
     StringBuffer outputBuffer;
@@ -578,6 +587,11 @@ public:
 
         params->setProp( "create_wsdl", "true()" );
         setXpathQuotedParam(params, "location", optWsdlAddress.str());
+
+        if( optNoExceptionsInline )
+        {
+            params->setProp( "no_exceptions_inline", "true()" );
+        }
     }
 
 public:

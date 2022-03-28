@@ -2168,12 +2168,14 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
 
     IProperties *xsdparams = createProperties(false);
     xsdparams->setProp( "all_annot_Param", "true()" );
+    xsdparams->setProp( "no_exceptions_inline", "true()" );
     m_xsdgen->setTransformParams(EsdlXslToXsd, xsdparams);
 
     IProperties *wsdlparams = createProperties(false);
     wsdlparams->setProp( "location", StringBuffer().append('\'').append(getWsdlAddress()).append('\'').str() );
     wsdlparams->setProp( "create_wsdl", "true()");
     wsdlparams->setProp( "all_annot_Param", "true()" );
+    wsdlparams->setProp( "no_exceptions_inline", "true()" );
     m_xsdgen->setTransformParams(EsdlXslToWsdl, wsdlparams);
 
     StringBuffer xsltpath(getCFD());

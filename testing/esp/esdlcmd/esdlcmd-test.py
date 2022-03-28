@@ -351,7 +351,32 @@ def main():
 
         # cpp
         TestCaseCode(run_settings, 'wstest-cpp-installdir', 'cpp', 'ws_test.ecm', 'WsTest',
-                     xsl_base_path)
+                     xsl_base_path),
+
+        # Testing exceptions_inline output
+        TestCaseXSD(run_settings, 'wsexctest1-wsdl-default', 'wsdl', 'ws_exc_test_1.ecm', 'WsExcTest1',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wsexctest2-wsdl-default', 'wsdl', 'ws_exc_test_2.ecm', 'WsExcTest2',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wsexctest3-wsdl-default', 'wsdl', 'ws_exc_test_3.ecm', 'WsExcTest3',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wsexctest3-wsdl-no-exc', 'wsdl', 'ws_exc_test_3.ecm', 'WsExcTest3',
+                    xsl_base_path, ['--no-exceptions-inline']),
+
+        TestCaseXSD(run_settings, 'wsexctest1-xsd-default', 'xsd', 'ws_exc_test_1.ecm', 'WsExcTest1',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wsexctest2-xsd-default', 'xsd', 'ws_exc_test_2.ecm', 'WsExcTest2',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wsexctest3-xsd-default', 'xsd', 'ws_exc_test_3.ecm', 'WsExcTest3',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wsexctest3-xsd-no-exc', 'xsd', 'ws_exc_test_3.ecm', 'WsExcTest3',
+                    xsl_base_path, ['--no-exceptions-inline']),
 
     ]
 
