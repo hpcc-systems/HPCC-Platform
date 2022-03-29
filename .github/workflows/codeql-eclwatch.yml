@@ -24,16 +24,15 @@ on:
 
 jobs:
   pre_job:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
     steps:
       - id: skip_check
-        uses: hpcc-systems/skip-duplicate-actions@master
+        uses: hpcc-systems/github-actions/changed-modules@main
         with:
           github_token: ${{ github.token }}
-          paths: '["esp/eclwatch/**/*", "esp/src/**/*", ".github/workflows/codeql-eclwatch.yml"]'
 
   analyze:
     name: Analyze
@@ -47,8 +46,8 @@ jobs:
         # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
 
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' && github.repository == 'hpcc-systems/HPCC-Platform' }}
-    runs-on: ubuntu-latest
+    if: ${{ needs.pre_job.outputs.eclwatch && github.repository == 'hpcc-systems/HPCC-Platform' }}
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout repository

@@ -25,21 +25,20 @@ on:
 jobs:
   pre_job:
      # continue-on-error: true # Uncomment once integration is finished
-     runs-on: ubuntu-latest
+     runs-on: ubuntu-20.04
      # Map a step output to a job output
      outputs:
-       should_skip: ${{ steps.skip_check.outputs.should_skip }}
+       helm: ${{ steps.skip_check.outputs.helm }}
      steps:
        - id: skip_check
-         uses: hpcc-systems/skip-duplicate-actions@master
+         uses: hpcc-systems/github-actions/changed-modules@main
          with:
            github_token: ${{ github.token }}
-           paths: '["helm/**/*", "testing/helm/**/*" ]'
   build:
     name: "Check helm chart lint"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: pre_job
-    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.should_skip != 'true' }}
+    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.helm }}
     steps:
       - uses: actions/checkout@v2
         with:

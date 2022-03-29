@@ -18,21 +18,20 @@ on:
 jobs:
   check-skip:
     # continue-on-error: true # Uncomment once integration is finished
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      changed: ${{ steps.skip_check.outputs.dockerfiles || steps.skip_check.outputs.platform }}
     steps:
       - id: skip_check
-        uses: hpcc-systems/skip-duplicate-actions@master
+        uses: hpcc-systems/github-actions/changed-modules@main
         with:
           github_token: ${{ github.token }}
-          paths_ignore: '["clienttools/**", "devdoc/**", "docs/**", "helm/**", "initfiles/**" ]'
 
   build-images:
     needs: check-skip
-    if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
+    if: ${{ needs.check-skip.outputs.changed }}
+    runs-on: ubuntu-20.04
     steps:
       - name: vars
         id: vars
