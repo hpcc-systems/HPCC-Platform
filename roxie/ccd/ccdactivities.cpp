@@ -2976,9 +2976,9 @@ public:
                                 if (steppingOffset && !steppingRow && stepExtra.returnMismatches())
                                 {
                                     transformedSize = readHelper->unfilteredTransform(rowBuilder, keyRow);
+                                    callback.finishedRow();
                                     if (transformedSize) // will only be zero in odd situations where codegen can't work out how to transform (eg because of a skip)
                                     {
-                                        callback.finishedRow();
                                         rowBuilder.writeToOutput(transformedSize, true);
 
                                         totalSizeSent += transformedSize;
@@ -3209,6 +3209,7 @@ public:
                     }
                     else
                     {
+                        callback.finishedRow(); // first() could have filtered
                         postFiltered++;
                         skipped++;
                     }

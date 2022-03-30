@@ -104,6 +104,7 @@ protected:
     protected:
         CIndexReadSlaveBase &activity;
         IKeyManager *keyManager = nullptr;
+        bool needsBlobCleaning = false;
     public:
         TransformCallback(CIndexReadSlaveBase &_activity) : activity(_activity) { };
         IMPLEMENT_IINTERFACE_O_USING(CSimpleInterface)
@@ -114,6 +115,7 @@ protected:
             size32_t dummy;
             if (!keyManager)
                 throw MakeActivityException(&activity, 0, "Callback attempting to read blob with no key manager - index being read remotely?");
+            needsBlobCleaning = true;
             return (byte *) keyManager->loadBlob(id, dummy); 
         }
         void prepareManager(IKeyManager *_keyManager)
@@ -123,8 +125,11 @@ protected:
         }
         void finishedRow()
         {
-            if (keyManager)
+            if (needsBlobCleaning)
+            {
+                needsBlobCleaning = false;
                 keyManager->releaseBlobs(); 
+            }
         }
         void resetManager()
         {
@@ -763,11 +768,9 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                 if (needTransform)
                 {
                     size32_t sz = helper->transform(ret, r);
+                    callback.finishedRow();
                     if (sz)
-                    {
-                        callback.finishedRow();
                         return ret.finalizeRowClear(sz);
-                    }
                     else
                         ++postFiltered;
                 }
@@ -846,11 +849,9 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                 if (needTransform)
                 {
                     size32_t sz = helper->transform(ret, r);
+                    callback.finishedRow();
                     if (sz)
-                    {
-                        callback.finishedRow();
                         return ret.finalizeRowClear(sz);
-                    }
                     else
                     {
                         if (optimizeSteppedPostFilter && stepExtra.returnMismatches())
@@ -858,10 +859,10 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
                             if (memcmp(ret.getSelf() + seekGEOffset, seek, seekSize) != 0)
                             {
                                 size32_t sz = helper->unfilteredTransform(ret, r);
+                                callback.finishedRow();
                                 if (sz)
                                 {
                                     wasCompleteMatch = false;
-                                    callback.finishedRow();
                                     return ret.finalizeRowClear(sz);
                                 }
                                 else
@@ -1388,6 +1389,7 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
     {
         RtlDynamicRowBuilder row(allocator);
         size32_t sz = helper->transform(row);
+        callback.finishedRow();
         if (sz==0)
             return NULL;
         if (getDataLinkCount() >= rowLimit)
@@ -1471,7 +1473,10 @@ public:
                 {
                     expanding = helper->next();
                     if (!expanding)
+                    {
+                        callback.finishedRow(); // next() could filter?
                         break;
+                    }
 
                     OwnedConstThorRow row = createNextRow();
                     if (row)
@@ -1481,7 +1486,6 @@ public:
 
             for (;;)
             {
-                callback.finishedRow();
                 const void *rec = nextKey();
                 if (rec)
                 {
@@ -1494,6 +1498,8 @@ public:
                             return row.getClear();
                         break;
                     }
+                    else
+                        callback.finishedRow(); // first() could filter?
                 }
                 else
                 {
