@@ -918,7 +918,13 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(AgentWait) },
     { COSTSTAT(FileAccess) },
     { NUMSTAT(Pods) },
-    { COSTSTAT(Compile) }
+    { COSTSTAT(Compile) },
+    { TIMESTAT(NodeLoad) },
+    { CYCLESTAT(NodeLoad) },
+    { TIMESTAT(LeafLoad) },
+    { CYCLESTAT(LeafLoad) },
+    { TIMESTAT(BlobLoad) },
+    { CYCLESTAT(BlobLoad) },
 };
 
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?
@@ -2413,7 +2419,15 @@ void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __
 {
     CRuntimeStatistic * target = queryOptStatistic(kind);
     if (target)
+    {
         target->merge(value, queryMergeMode(kind));
+    }
+    else
+    {
+        StatisticKind serialKind= querySerializedKind(kind);
+        if (kind != serialKind)
+            mergeStatistic(serialKind, convertMeasure(kind, serialKind, value));
+    }
 }
 
 void CRuntimeStatisticCollection::sumStatistic(StatisticKind kind, unsigned __int64 value)

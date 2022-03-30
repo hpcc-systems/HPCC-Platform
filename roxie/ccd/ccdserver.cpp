@@ -399,12 +399,14 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                     StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                     StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                    StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                     StNumDiskRejected, StSizeAgentReply, StTimeAgentWait}, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                 StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait}, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                StNumDiskRejected, StSizeAgentReply, StTimeAgentWait }, actStatistics);
@@ -415,7 +417,6 @@ static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys }, actS
 
 // These ones get accumulated and reported in COMPLETE: line (and workunit).
 // Excludes ones that are not sensible to sum across activities, other than StTimeTotalExecute which must be explicitly overwritten at global level before we report it
-
 extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                                       StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
                                                       StNumScansPerRow, StNumAllocations, StNumAllocationScans,
@@ -427,6 +428,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                       StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                       StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                      StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,  // If time and cycles are not included they are not serialized from agents
                                                       StNumDiskRejected, StSizeAgentReply, StTimeAgentWait,
                                                       StTimeSoapcall,
                                                       StNumGroups,

@@ -2417,6 +2417,7 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 
 constexpr StatisticKind addStatId[CacheMax] = { StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds };
 constexpr StatisticKind hitStatId[CacheMax] = { StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits };
+constexpr StatisticKind loadStatId[CacheMax] = { StCycleNodeLoadCycles, StCycleLeafLoadCycles, StCycleBlobLoadCycles };
 constexpr RelaxedAtomic<unsigned> * hitMetric[CacheMax] = { &nodeCacheHits, &leafCacheHits, &blobCacheHits };
 constexpr RelaxedAtomic<unsigned> * addMetric[CacheMax] = { &nodeCacheAdds, &leafCacheAdds, &blobCacheAdds };
 constexpr RelaxedAtomic<unsigned> * dupMetric[CacheMax] = { &nodeCacheDups, &leafCacheDups, &blobCacheDups };
@@ -2537,20 +2538,24 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
             unsigned hashcode = hashc(reinterpret_cast<const byte *>(&key), sizeof(key), 0x811C9DC5);
             unsigned whichCs = hashcode % numLoadCritSects;
 
+            cycle_t startCycles = get_cycles_now();
             //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
             //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
             //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
-            CriticalBlock loadBlock(loadCs[whichCs]);
-            if (!ownedNode->isReady())
             {
-                keyIndex->loadNode(ownedNode, pos);
+                CriticalBlock loadBlock(loadCs[whichCs]);
+                if (!ownedNode->isReady())
+                {
+                    keyIndex->loadNode(ownedNode, pos);
 
-                //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
-                cache[cacheType].noteReady(*ownedNode);
-                ownedNode->noteReady();
+                    //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
+                    cache[cacheType].noteReady(*ownedNode);
+                    ownedNode->noteReady();
+                }
+                else
+                    (*dupMetric[cacheType])++; // Would have previously loaded the page twice
             }
-            else
-                (*dupMetric[cacheType])++; // Would have previously loaded the page twice
+            if (ctx) ctx->noteStatistic(loadStatId[cacheType], get_cycles_now() - startCycles);
 
             return ownedNode.getClear();
         }
