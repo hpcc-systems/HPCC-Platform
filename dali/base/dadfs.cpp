@@ -8989,7 +8989,7 @@ const char* DFUQFilterFieldNames[] = { "", "@description", "@directory", "@group
     "@partmask", "@OrigName", "Attr", "Attr/@job", "Attr/@owner", "Attr/@recordCount", "Attr/@recordSize", "Attr/@size",
     "Attr/@compressedsize", "Attr/@workunit", "Cluster", "Cluster/@defaultBaseDir", "Cluster/@defaultReplDir", "Cluster/@mapFlags",
     "Cluster/@name", "Part", "Part/@name", "Part/@num", "Part/@size", "SuperOwner", "SuperOwner/@name",
-    "SubFile", "SubFile/@name", "SubFile/@num", "Attr/@kind", "Attr/@accessed" };
+    "SubFile", "SubFile/@name", "SubFile/@num", "Attr/@kind", "Attr/@accessed", "Attr/@maxSkew", "Attr/@minSkew" };
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild)
 {
@@ -13013,7 +13013,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
     "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
     "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
-    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost" };
+    "@cost", "@numDiskReads", "@numDiskWrites", "@atRestCost", "@accessCost", "@maxSkew", "@minSkew", "@maxSkewPart", "@minSkewPart" };
 
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 {

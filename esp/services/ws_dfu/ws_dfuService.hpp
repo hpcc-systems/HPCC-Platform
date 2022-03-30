@@ -257,6 +257,7 @@ private:
     void exportRecordDefinitionBinaryType(const char *recordDefinition, MemoryBuffer &layoutBin);
     void appendTimeString(const char *in, StringBuffer &out);
     void setTimeRangeFilter(const char *from, const char *to, DFUQFilterField filterID, StringBuffer &filterBuf);
+    void setInt64RangeFilter(__int64 from, __int64 to, DFUQFilterField filterID, StringBuffer &filterBuf);
 
     bool attachServiceToDali() override
     {
