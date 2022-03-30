@@ -74,7 +74,7 @@ SEQUENTIAL(
  OUTPUT(COUNT(LIMIT(fi, 4, KEYED, ONFAIL(TRANSFORM(RECORDOF(fi), SELF.info := '**KEYED LIMIT HIT IN INDEXCOUNT**'; SELF := [])))));
 
 // indexnormalize
- //OUTPUT(LIMIT(fi.kkeys(ckey>=992), 2, ONFAIL(TRANSFORM(RECORDOF(crec), SELF.info := '**ROW LIMIT HIT IN INDEXNORMALIZE**'; SELF := []))));
+ OUTPUT(LIMIT(fi.kkeys(ckey>=992), 2, ONFAIL(TRANSFORM(RECORDOF(crec), SELF.info := '**ROW LIMIT HIT IN INDEXNORMALIZE**'; SELF := []))));
 
 
 // Under limits
