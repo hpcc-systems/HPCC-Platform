@@ -37,10 +37,16 @@ const navLinkGroups: INavLinkGroup[] = [
                 key: "queries"
             },
             {
-                name: nlsHPCC.Operations,
+                name: nlsHPCC.Topology,
                 url: "#/topology",
-                icon: "Admin",
+                icon: "Org",
                 key: "topology"
+            },
+            {
+                name: nlsHPCC.Operations,
+                url: "#/topology-old",
+                icon: "Admin",
+                key: "topology-old"
             }
         ]
     }
@@ -98,7 +104,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
         </Stack.Item>
         <Stack.Item>
             <IconButton iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }} onClick={() => setTheme(isDark ? "light" : "dark")} />
-            <IconButton iconProps={{ iconName: "Settings" }} onClick={() => { }} />
+            <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => { }} />
         </Stack.Item>
     </Stack>;
 };
@@ -132,7 +138,11 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.PackageMaps, itemKey: "/packagemaps" }
     ],
     "topology": [
-        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology" },
+        { headerText: nlsHPCC.Configuration, itemKey: "/topology/configuration" },
+        { headerText: nlsHPCC.Pods, itemKey: "/topology/pods" },
+    ],
+    "topology-old": [
+        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology-old" },
         { headerText: nlsHPCC.DiskUsage + " (L)", itemKey: "/diskusage" },
         { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/clusters" },
         { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/processes" },

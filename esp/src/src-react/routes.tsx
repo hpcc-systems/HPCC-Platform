@@ -9,7 +9,7 @@ const ToDo: React.FunctionComponent<ToDoProps> = () => {
     return <h1>TODO</h1>;
 };
 
-export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology";
+export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-old";
 
 export interface RouteEx<R = any, C extends RouterContext = RouterContext> extends Route<R, C> {
     mainNav: MainNav[];
@@ -41,7 +41,7 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["activities", "topology"],
+        mainNav: ["activities", "topology-old"],
         path: "/clusters",
         children: [
             { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
@@ -49,7 +49,7 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/machines",
         children: [
             { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
@@ -168,26 +168,36 @@ export const routes: RoutesEx = [
     {
         mainNav: ["topology"],
         path: "/topology",
+        children: [
+            { path: "", action: (ctx, params) => import("./components/Configuration").then(_ => <_.Configuration />) },
+            { path: "/configuration", action: (ctx, params) => import("./components/Configuration").then(_ => <_.Configuration />) },
+            { path: "/pods", action: (ctx, params) => import("./components/Pods").then(_ => <_.Pods />) },
+            { path: "/pods-json", action: (ctx, params) => import("./components/Pods").then(_ => <_.PodsJSON />) },
+        ]
+    },
+    {
+        mainNav: ["topology-old"],
+        path: "/topology-old",
         action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TopologyWidget" />)
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/diskusage", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DiskUsageWidget" />)
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/clusters", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TargetClustersQueryWidget" />)
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />)
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />)
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/security",
         children: [
             { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} />) },
@@ -200,11 +210,11 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/monitoring", action: () => import("./components/Monitoring").then(_ => <_.Monitoring />)
     },
     {
-        mainNav: ["topology"],
+        mainNav: ["topology-old"],
         path: "/desdl",
         children: [
             { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },
@@ -220,10 +230,6 @@ export const routes: RoutesEx = [
     {
         mainNav: [],
         path: "/log", action: () => import("./components/LogViewer").then(_ => <_.LogViewer />)
-    },
-    {
-        mainNav: [],
-        path: "/config", action: () => import("./components/Configuration").then(_ => <_.Configuration />)
     },
     //  Other
     {
