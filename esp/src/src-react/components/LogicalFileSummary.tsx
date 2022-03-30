@@ -1,9 +1,8 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
-import { DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
+import { DFUService, DFUArrayActions, DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 import { formatCost } from "src/Session";
-import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useConfirm } from "../hooks/confirm";
@@ -17,6 +16,8 @@ import { ReplicateFile } from "./forms/ReplicateFile";
 import { replaceUrl } from "../util/history";
 
 import "react-reflex/styles.css";
+
+const dfuService = new DFUService({ baseUrl: "" });
 
 interface LogicalFileSummaryProps {
     cluster?: string;
@@ -45,8 +46,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToDeleteThisFile,
         onSubmit: React.useCallback(() => {
-            WsDfu.DFUArrayAction([file], "Delete").then(response => {
-                const actionInfo = response?.DFUArrayActionResponse?.ActionResults?.DFUActionInfo;
+            dfuService.DFUArrayAction({ Type: DFUArrayActions.Delete, LogicalFiles: { Item: [file.Filename] } }).then(({ ActionResults }) => {
+                const actionInfo = ActionResults?.DFUActionInfo;
                 if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
                     replaceUrl("/files");
                 }

@@ -1,13 +1,15 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link, Image } from "@fluentui/react";
-import * as domClass from "dojo/dom-class";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link, mergeStyleSets } from "@fluentui/react";
+import { DFUService } from "@hpcc-js/comms";
+import { SizeMe } from "react-sizeme";
 import * as WsDfu from "src/WsDfu";
-import * as ESPLogicalFile from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentPagedGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
+import { useUserTheme } from "../hooks/theme";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
@@ -18,7 +20,6 @@ import { Filter } from "./forms/Filter";
 import { RemoteCopy } from "./forms/RemoteCopy";
 import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
-import { SizeMe } from "react-sizeme";
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -35,38 +36,45 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter) {
-    const filter = { ..._filter };
-    if (filter.Index) {
-        filter.ContentType = "key";
-        delete filter.Index;
-    }
-    if (filter.StartDate) {
-        filter.StartDate = new Date(filter.StartDate).toISOString();
-    }
-    if (filter.EndDate) {
-        filter.EndDate = new Date(filter.StartDate).toISOString();
-    }
-    return filter;
-}
+const dfuService = new DFUService({ baseUrl: "" });
 
 const defaultUIState = {
     hasSelection: false,
 };
 
-interface FilesProps {
+interface ScopesProps {
     filter?: object;
-    store?: any;
+    scope?: any;
 }
 
 const emptyFilter = {};
 
-export const Files: React.FunctionComponent<FilesProps> = ({
+const mergeFileData = (DFULogicalFiles, files) => {
+    const data = [];
+    const scopes = DFULogicalFiles?.DFULogicalFile?.filter(file => file.isDirectory && file.Directory !== ".") ?? [];
+
+    scopes.forEach((scope, idx) => {
+        scope["__hpcc_id"] = scope.Directory + "_" + idx;
+        data.push(scope);
+    });
+    files.forEach((file, idx) => {
+        file["__hpcc_id"] = file.Name + "_" + idx;
+        file["Name"] = file.Name.split("::").pop();
+        data.push(file);
+    });
+
+    return data;
+};
+
+export const Scopes: React.FunctionComponent<ScopesProps> = ({
     filter = emptyFilter,
-    store
+    scope
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+
+    const [data, setData] = React.useState<any[]>([]);
+    const [scopePath, setScopePath] = React.useState<string[]>([]);
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [showRemoteCopy, setShowRemoteCopy] = React.useState(false);
@@ -75,36 +83,43 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
-    const [viewByScope, setViewByScope] = React.useState(false);
+    const [viewByScope, setViewByScope] = React.useState(true);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [, { currencyCode }] = useBuildInfo();
+
+    React.useEffect(() => {
+        if (scope === ".") {
+            setScopePath([]);
+            dfuService.DFUFileView({ Scope: "" }).then(async ({ DFULogicalFiles }) => {
+                const rootFiles = await dfuService.DFUFileView({ Scope: "." });
+                const files = rootFiles.DFULogicalFiles.DFULogicalFile ?? [];
+                setData(mergeFileData(DFULogicalFiles, files));
+            });
+        } else {
+            setScopePath(scope.split("::"));
+            dfuService.DFUFileView({ Scope: scope }).then(({ DFULogicalFiles }) => {
+                const files = DFULogicalFiles?.DFULogicalFile?.filter(file => !file.isDirectory) ?? [];
+                setData(mergeFileData(DFULogicalFiles, files));
+            });
+        }
+    }, [scope]);
 
     //  Grid ---
-    const gridStore = React.useMemo(() => {
-        return store ? store : ESPLogicalFile.CreateLFQueryStore({});
-    }, [store]);
-
-    const query = React.useMemo(() => {
-        return formatQuery(filter);
-    }, [filter]);
-
-    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
-        persistID: "files",
-        store: gridStore,
-        query,
+    const { Grid, selection, refreshTable, copyButtons } = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
         filename: "logicalfiles",
         columns: {
             col1: {
                 width: 27,
-                disabled: function (item) {
-                    return item ? item.__hpcc_isDir : true;
-                },
+                disabled: (item) => item ? item.__hpcc_isDir : true,
                 selectorType: "checkbox"
             },
             IsProtected: {
                 headerIcon: "LockSolid",
                 width: 25,
                 sortable: false,
-                formatter: function (_protected) {
+                formatter: (_protected) => {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
@@ -115,7 +130,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 headerIcon: "ZipFolder",
                 width: 25,
                 sortable: false,
-                formatter: function (compressed) {
+                formatter: (compressed) => {
                     if (compressed === true) {
                         return <Icon iconName="ZipFolder" />;
                     }
@@ -124,17 +139,21 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             },
             __hpcc_displayName: {
                 label: nlsHPCC.LogicalName, width: 600,
-                formatter: function (name, row) {
-                    if (row.__hpcc_isDir) {
-                        return name;
+                formatter: React.useCallback((_, row) => {
+                    let name = row.Name;
+                    let url = `#/files/${row.NodeGroup ? row.NodeGroup + "/" : ""}${[].concat(".", scopePath, name).join("::")}`;
+                    if (row.isDirectory) {
+                        name = row.Directory;
+                        let path = [].concat(scopePath, row.Directory).join("::");
+                        path = (path.startsWith("::")) ? path.substring(2) : path;
+                        url = "#/scopes/" + path;
+                        return <div style={{ display: "flex", alignItems: "center" }}>
+                            <Icon iconName={"FabricFolder"} style={{ fontSize: "1.5em", marginRight: "8px" }} />
+                            <Link href={url}>{name}</Link>
+                        </div>;
                     }
-                    const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
-                    return <>
-                        <Image src={row.getStateImage ? row.getStateImage() : ""} />
-                        &nbsp;
-                        <Link href={url}>{name}</Link>
-                    </>;
-                },
+                    return <Link href={url}>{name}</Link>;
+                }, [scopePath])
             },
             Owner: { label: nlsHPCC.Owner, width: 75 },
             SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
@@ -142,43 +161,24 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 85,
-                renderCell: function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
-                },
+                formatter: (value, row) => Utility.valueCleanUp(value),
             },
             IntSize: {
                 label: nlsHPCC.Size, width: 100,
-                renderCell: function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.convertedSize(value);
-                },
+                formatter: (value, row) => Utility.convertedSize(value),
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 60,
-                renderCell: function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
-                },
-            },
-            MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ?? ""
-            },
-            MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ?? ""
+                formatter: (value, row) => Utility.valueCleanUp(value),
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest, width: 100,
-                formatter: function (cost, row) {
-                    return `${formatCost(cost)}`;
-                }
+                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`,
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: function (cost, row) {
-                    return `${formatCost(cost)}`;
-                }
+                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`,
             }
         }
     });
@@ -186,7 +186,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedFiles,
-        items: selection.map(s => s.Name),
+        items: selection.filter(s => s.isDirectory === false).map(s => s.Name),
         onSubmit: React.useCallback(() => {
             WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
         }, [refreshTable, selection])
@@ -202,11 +202,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
-                if (selection.length === 1) {
+                if (selection.length === 1 && selection[0].isDirectory === false) {
                     window.location.href = "#/files/" + (selection[0].NodeGroup ? selection[0].NodeGroup + "/" : "") + selection[0].Name;
                 } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open("#/files/" + (selection[i].NodeGroup ? selection[i].NodeGroup + "/" : "") + selection[i].Name, "_blank");
+                    const _files = selection.filter(s => s.isDirectory === false);
+                    for (let i = _files.length - 1; i >= 0; --i) {
+                        window.open("#/files/" + (_files[i].NodeGroup ? _files[i].NodeGroup + "/" : "") + _files[i].Name, "_blank");
                     }
                 }
             }
@@ -239,26 +240,22 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
-            onClick: () => {
-                setShowFilter(true);
-            }
+            key: "filter", text: nlsHPCC.Filter, disabled: !!data, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            onClick: () => setShowFilter(true)
         },
         {
             key: "viewByScope", text: nlsHPCC.ViewByScope, iconProps: { iconName: "BulletedTreeList" }, iconOnly: true, canCheck: true, checked: viewByScope,
             onClick: () => {
                 setViewByScope(!viewByScope);
-                window.location.href = "#/scopes";
+                window.location.href = "#/files";
             }
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
-            onClick: () => {
-                setMine(!mine);
-            }
+            onClick: () => setMine(!mine)
         },
-    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
+    ], [data, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -269,8 +266,9 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
+        const _selection = selection.filter(s => s.isDirectory === false);
 
-        for (let i = 0; i < selection.length; ++i) {
+        for (let i = 0; i < _selection.length; ++i) {
             state.hasSelection = true;
             //  TODO:  More State
         }
@@ -278,7 +276,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        header={
+            <>
+                <CommandBar items={buttons} farItems={copyButtons} />
+                <ScopesBreadcrumb scope={scope} />
+            </>
+        }
         main={
             <>
                 <SizeMe monitorHeight>{({ size }) =>
@@ -290,14 +293,62 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable} />
-                <CopyFile logicalFiles={selection.map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
-                <RenameFile logicalFiles={selection.map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable} />
-                <AddToSuperfile logicalFiles={selection.map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable} />
-                <DesprayFile logicalFiles={selection.map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
+                <CopyFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
+                <RenameFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable} />
+                <AddToSuperfile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable} />
+                <DesprayFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
                 <DeleteConfirm />
             </>
         }
-        footer={<GridPagination />}
-        footerStyles={{}}
     />;
+};
+
+interface ScopesBreadcrumbProps {
+    scope: string;
+}
+
+export const ScopesBreadcrumb: React.FunctionComponent<ScopesBreadcrumbProps> = ({
+    scope
+}) => {
+
+    const [theme] = useUserTheme();
+    const breadcrumbStyles = React.useMemo(() => mergeStyleSets({
+        wrapper: {
+            padding: "1em 2.5em",
+            borderTop: `1px solid ${theme.palette.neutralLight}`,
+            borderBottom: `1px solid ${theme.palette.neutralLight}`,
+        },
+        separator: {
+            margin: "0 0.5em"
+        }
+    }), [theme]);
+
+    const [scopePath, setScopePath] = React.useState([]);
+
+    React.useEffect(() => {
+        setScopePath(scope.split("::"));
+    }, [scope]);
+
+    return <div className={breadcrumbStyles.wrapper}>
+        <Link href="#/scopes">Root Scope</Link>
+        {(scope !== ".") &&
+            <>
+                {scopePath.map((scope, idx) => {
+                    if (idx === scopePath.length - 1) {
+                        return <span key={`${scope}_${idx}`}>
+                            <span className={breadcrumbStyles.separator}>::</span>
+                            <span>{scope}</span>
+                        </span>;
+                    }
+                    const path = scopePath.slice(0, idx + 1).join("::");
+                    return <span key={`${scope}_${idx}`}>
+                        <span className={breadcrumbStyles.separator}>::</span>
+                        <Link href={`#/scopes/${path}`}>{scope}</Link>
+                    </span>;
+
+                })}
+            </>
+        }
+    </div>;
+
 };
