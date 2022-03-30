@@ -48,22 +48,22 @@ on:
 jobs:
   check-skip:
     # continue-on-error: true # Uncomment once integration is finished
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+      platform: ${{ steps.skip_check.outputs.platform }}
+      eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
     steps:
       - id: skip_check
         if: ${{ ! contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') }}
-        uses: hpcc-systems/skip-duplicate-actions@master
+        uses: hpcc-systems/github-actions/changed-modules@main
         with:
           github_token: ${{ github.token }}
-          paths_ignore: '["clienttools/**", "devdoc/**", "dockerfiles/**", "docs/**", "helm/**" ]'
 
   build-and-setup:
     name: Build platform and regress setup
     needs: check-skip
-    if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
+    if: ${{ needs.check-skip.outputs.platform || needs.check-skip.outputs.eclwatch }}
     runs-on: ubuntu-20.04
     timeout-minutes: 150 # the build step has its own timeout, however the job can sometimes take time to download dependencies
     outputs:
@@ -388,7 +388,7 @@ jobs:
   # TODO: needs to process results, capture report, to be assembled by workflow when all jobs done
   regression-jobs:
     needs: build-and-setup
-    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' }}
+    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' && needs.check-skip.outputs.platform }}
     timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     strategy:
@@ -518,7 +518,7 @@ jobs:
   # but as this is relatively quick and in parallel with others, it probably doesn't matter
   eclwatch-ui-tests:
     needs: build-and-setup
-    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' }}
+    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' && needs.check-skip.outputs.eclwatch }}
     timeout-minutes: 30 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     steps:
@@ -601,4 +601,3 @@ jobs:
         name: ECLWatchUiTest
         path: install/test-ui/eclWatchUiTest.log
         if-no-files-found: error
-
