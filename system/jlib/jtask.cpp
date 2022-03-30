@@ -18,9 +18,12 @@
 #include "platform.h"
 #include <string.h>
 #include <limits.h>
+#include <algorithm>
 #include "jtask.hpp"
 #include "jlog.hpp"
 #include "jqueue.hpp"
+
+//#define TRACE_TASKS
 
 static std::atomic<ITaskScheduler *> taskScheduler{nullptr};
 static std::atomic<ITaskScheduler *> iotaskScheduler{nullptr};
@@ -36,69 +39,9 @@ MODULE_EXIT()
     ::Release(iotaskScheduler.load());
 }
 
-class ATaskProcessors;
-static thread_local ATaskProcessor * activeTaskProcessor = nullptr;
-
-//---------------------------------------------------------------------------------------------------------------------
-
-void CTask::setException(IException * e)
-{
-    IException * expected = nullptr;
-    if (exception.compare_exchange_strong(expected, e))
-        e->Link();
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-void CCompletionTask::decAndWait()
-{
-    if (notePredDone())
-    {
-        //This is the last predecessor - skip signalling the semaphore and then waiting for it
-        //common if no child tasks have been created...
-    }
-    else
-        sem.wait();
-
-    if (exception)
-        throw LINK(exception.load());
-}
-
-void CCompletionTask::spawn(std::function<void ()> func)
-{
-    // Avoid spawning a new child task if a different child task has failed
-    if (!hasException())
-    {
-        CTask * task = new CFunctionTask(func, this);
-        enqueueOwnedTask(scheduler, task);
-    }
-}
-
-
-//---------------------------------------------------------------------------------------------------------------------
-
-CFunctionTask::CFunctionTask(std::function<void ()> _func, CTask * _successor)
-: CPredecessorTask(0, _successor), func(_func)
-{
-}
-
-CTask * CFunctionTask::execute()
-{
-    //Avoid starting a new subtask if one of the subtasks has already failed
-    if (!successor->hasException())
-    {
-        try
-        {
-            func();
-        }
-        catch (IException * e)
-        {
-            successor->setException(e);
-            e->Release();
-        }
-    }
-    return checkNextTask();
-}
+class CTaskProcessor;
+class TaskScheduler;
+static thread_local CTaskProcessor * activeTaskProcessor = nullptr;
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -260,38 +203,16 @@ static_assert(sizeof(CasTaskStack::pair_type) == 2 * sizeof(CasTaskStack::seq_ty
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void notifyPredDone(Owned<CTask> && successor)
-{
-    if (successor->notePredDone())
-        activeTaskProcessor->enqueueOwnedChildTask(successor.getClear());
-}
-
-void notifyPredDone(CTask * successor)
-{
-    if (successor->notePredDone())
-        activeTaskProcessor->enqueueOwnedChildTask(LINK(successor));
-}
-
-void enqueueOwnedTask(ITaskScheduler & scheduler, CTask * ownedTask)
-{
-    if (activeTaskProcessor)
-        activeTaskProcessor->enqueueOwnedChildTask(ownedTask);
-    else
-        scheduler.enqueueOwnedTask(ownedTask);
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-class TaskScheduler;
-class CTaskProcessor final : public ATaskProcessor
+class CTaskProcessor final : public Thread
 {
     using TaskStack = CasTaskStack;
 public:
     CTaskProcessor(TaskScheduler * _scheduler, unsigned _id);
 
-    virtual void enqueueOwnedChildTask(CTask * ownedTask) override;
+// Thread
     virtual int run();
 
+    void enqueueOwnedChildTask(CTask & ownedTask);
     bool isAborting() const { return abort; }
     void stopProcessing() { abort = true; }
     CTask * stealTask() { return tasks.stealTask(); }
@@ -313,12 +234,12 @@ public:
     TaskScheduler(unsigned _numThreads);
     ~TaskScheduler();
 
-    virtual void enqueueOwnedTask(CTask * ownedTask) override final
+    virtual void enqueueOwnedTask(CTask & ownedTask) override final
     {
-        assertex(!ownedTask || ownedTask->isReady());
+        assertex(ownedTask.isReady());
         {
             CriticalBlock block(cs);
-            queue.enqueue(ownedTask);
+            queue.enqueue(&ownedTask);
         }
         if (processorsWaiting)
             avail.signal();
@@ -370,6 +291,9 @@ protected:
                 task = processors[nextTarget]->stealTask();
                 if (task)
                 {
+#ifdef TRACE_TASKS
+                    printf("Stolen for %u on %u\n", id, sched_getcpu());
+#endif
                     if (waiting)
                         processorsWaiting--;
                     return task;
@@ -379,13 +303,25 @@ protected:
             //Nothing was found - probably another processor added a child but then processed it before
             //anyone stole it.
             if (waiting)
+            {
+#ifdef TRACE_TASKS
+                printf("Pause %u on %u\n", id, sched_getcpu());
+#endif
                 avail.wait();
+#ifdef TRACE_TASKS
+                printf("Restart %u on %u\n", id, sched_getcpu());
+#endif
+            }
             else
             {
                 waiting = true;
                 processorsWaiting++;
             }
         }
+
+#ifdef TRACE_TASKS
+        printf("Task for %u on %u\n", id, sched_getcpu());
+#endif
 
         if (waiting)
             processorsWaiting--;
@@ -419,9 +355,9 @@ CTaskProcessor::CTaskProcessor(TaskScheduler * _scheduler, unsigned _id)
 {
 }
 
-void CTaskProcessor::enqueueOwnedChildTask(CTask * ownedTask)
+void CTaskProcessor::enqueueOwnedChildTask(CTask & ownedTask)
 {
-    tasks.pushTask(ownedTask);
+    tasks.pushTask(&ownedTask);
     scheduler->noteChildEqueued();
 }
 
@@ -473,12 +409,112 @@ int CTaskProcessor::run()
     return 0;
 }
 
-ATaskProcessor * queryCurrentTaskProcessor()
+//---------------------------------------------------------------------------------------------------------------------
+
+void notifyPredDone(Owned<CTask> && successor)
 {
-    return activeTaskProcessor;
+    if (successor->notePredDone())
+        activeTaskProcessor->enqueueOwnedChildTask(*successor.getClear());
+}
+
+void notifyPredDone(CTask & successor)
+{
+    if (successor.notePredDone())
+        activeTaskProcessor->enqueueOwnedChildTask(OLINK(successor));
+}
+
+void enqueueOwnedTask(ITaskScheduler & scheduler, CTask & ownedTask)
+{
+    if (activeTaskProcessor)
+        activeTaskProcessor->enqueueOwnedChildTask(ownedTask);
+    else
+        scheduler.enqueueOwnedTask(ownedTask);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+
+void CTask::spawnOwnedChildTask(CTask & ownedTask)
+{
+    assertex(activeTaskProcessor);
+    activeTaskProcessor->enqueueOwnedChildTask(ownedTask);
+}
+
+void CTask::setException(IException * e)
+{
+    IException * expected = nullptr;
+    if (exception.compare_exchange_strong(expected, e))
+        e->Link();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void CCompletionTask::decAndWait()
+{
+    if (notePredDone())
+    {
+        //This is the last predecessor - skip signalling the semaphore and then waiting for it
+        //common if no child tasks have been created...
+        if (!tasksLinkedOnSchedule)
+            Release();
+    }
+    else
+        sem.wait();
+
+    if (exception)
+        throw LINK(exception.load());
+}
+
+void CCompletionTask::setMinimalLinking()
+{
+    Link();     // This will be release either when the task is scheduled, or when waiting for completion.
+    tasksLinkedOnSchedule = false;
+}
+
+void CCompletionTask::spawn(std::function<void ()> func, bool ignoreParallelExceptions)
+{
+    // Avoid spawning a new child task if a different child task has failed
+    if (ignoreParallelExceptions || !hasException())
+    {
+        CTask * task = new CFunctionTask(func, this, ignoreParallelExceptions);
+        enqueueOwnedTask(scheduler, *task);
+    }
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+CFunctionTask::CFunctionTask(std::function<void ()> _func, CTask * _successor, bool _ignoreParallelExceptions)
+: CPredecessorTask(0, _successor), func(_func), ignoreParallelExceptions(_ignoreParallelExceptions)
+{
+}
+
+CTask * CFunctionTask::execute()
+{
+    //Avoid starting a new subtask if one of the subtasks has already failed
+    if (ignoreParallelExceptions || !successor->hasException())
+    {
+        try
+        {
+            func();
+        }
+        catch (IException * e)
+        {
+            successor->setException(e);
+            e->Release();
+        }
+    }
+    return checkNextTask();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+static unsigned maxTasks = (unsigned)-1;
+static unsigned maxIOTasks = (unsigned)-1;
+
+void setTaskLimits(unsigned _maxCpuTasks, unsigned _maxIOTasks)
+{
+    maxTasks = _maxCpuTasks;
+    maxIOTasks = _maxIOTasks;
+}
 
 TaskScheduler::TaskScheduler(unsigned _numThreads) : numThreads(_numThreads)
 {
@@ -497,24 +533,29 @@ TaskScheduler::~TaskScheduler()
     for (unsigned i1 = 0; i1 < numThreads; i1++)
         processors[i1]->stopProcessing();
 
-    //Add null entries to the task queue so the processors can terminate
+    //Start all the processors
     avail.signal(numThreads);
+
+    //Join all processors before deleting - just in case something tries to steal from a deleted processor
+    //(only possible if this is terminating while tasks are currently being processed)
+    for (unsigned i2 = 0; i2 < numThreads; i2++)
+        processors[i2]->join();
+
     for (unsigned i3 = 0; i3 < numThreads; i3++)
-    {
-        processors[i3]->join();
         delete processors[i3];
-    }
     delete [] processors;
 }
 
 extern jlib_decl ITaskScheduler & queryTaskScheduler()
 {
-    return *querySingleton(taskScheduler, singletonCs, [] { return new TaskScheduler(getAffinityCpus()); });
+    unsigned numTasks = std::min(maxTasks, getAffinityCpus());
+    return *querySingleton(taskScheduler, singletonCs, [ numTasks ] { return new TaskScheduler(numTasks); });
 }
 
 extern jlib_decl ITaskScheduler & queryIOTaskScheduler()
 {
-    return *querySingleton(iotaskScheduler, singletonCs, [] { return new TaskScheduler(getAffinityCpus() * 2); });
+    unsigned numTasks = std::min(maxIOTasks, getAffinityCpus() * 2);
+    return *querySingleton(iotaskScheduler, singletonCs, [ numTasks ] { return new TaskScheduler(numTasks); });
 }
 
 //---------------------------------------------------------------------------------------------------------------------

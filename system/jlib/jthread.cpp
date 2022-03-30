@@ -26,6 +26,8 @@
 #include "jregexp.hpp"
 #include "jlog.ipp"
 #include "jisem.hpp"
+#include "jtask.hpp"
+
 #include <assert.h>
 #ifdef _WIN32
 #include <process.h>
@@ -839,6 +841,22 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
     }
     if (e)
         throw e;
+}
+
+void CAsyncFor::TaskFor(unsigned num, ITaskScheduler & scheduler)
+{
+    if (num <= 1)
+    {
+        if (num == 1)
+            Do(0);
+        return;
+    }
+
+    Owned<CCompletionTask> completed = new CCompletionTask(scheduler);
+    for (unsigned i=0; i < num; i++)
+        completed->spawn([i, this]() { Do(i); });
+
+    completed->decAndWait();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
