@@ -801,7 +801,7 @@ static void remoteTest(const char *logicalName, bool withDali)
         if (!withDali)
             throw makeStringExceptionV(0, "remotetest for non-remote files needs Dali.");
 
-        legacyDfsFile.setown(queryDistributedFileDirectory().lookup(dlfn, userDesc, false, false, false, nullptr, false));
+        legacyDfsFile.setown(queryDistributedFileDirectory().lookup(dlfn, userDesc, AccessMode::tbdRead, false, false, nullptr, false));
     }
 
     if (!legacyDfsFile)

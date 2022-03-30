@@ -1378,7 +1378,7 @@ bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalNa
     return useScope;
 }
 
-ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, bool isWrite, StringBuffer * expandedlfn, bool isPrivilegedUser)
+ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser)
 {
     StringBuffer lfn;
     expandLogicalFilename(lfn, fname, queryWorkUnit(), resolveFilesLocally, false);
@@ -1403,7 +1403,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
      * hthor doesn't use it to write, but instead uses createClusterWriteHandler to handle cluster writing.
      * See code in e.g.: CHThorDiskWriteActivity::resolve
      */
-    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite, isPrivilegedUser, nullptr);
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, accessMode, isPrivilegedUser, nullptr);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1440,7 +1440,7 @@ bool EclAgent::fileExists(const char *name)
     StringBuffer lfn;
     expandLogicalName(lfn, name);
 
-    Owned<IDistributedFile> f = wsdfs::lookup(lfn.str(), queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> f = wsdfs::lookup(lfn.str(), queryUserDescriptor(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (f)
         return true;
     return false;
@@ -2760,7 +2760,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
         return crc;
     }
 
-    Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(), false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+    Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
     if (file)
     {
         WorkunitUpdate wu = updateWorkUnit();
@@ -3070,7 +3070,7 @@ restart:     // If things change beneath us as we are deleting, repeat the proce
                 MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                 persistLock.setown(getPersistReadLock(goer));
             }
-            Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), true, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+            Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, INFINITE);
             if (!f)
                 goto restart; // Persist has been deleted since last checked - repeat the whole process
             const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
@@ -3165,7 +3165,7 @@ char * EclAgent::getGroupName()
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
 {
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "IndexMetaData", false, true, false, nullptr, defaultPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "IndexMetaData", false, true, AccessMode::tbdRead, nullptr, defaultPrivilegedUser);
     IDistributedFile * dFile = ldFile->queryDistributedFile();
     if (!dFile)
         return NULL;
@@ -3254,7 +3254,7 @@ char *EclAgent::getFilePart(const char *lfn, bool create)
     }
     else
     {
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "l2p", false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFN(lfn, "l2p", false, false, AccessMode::tbdRead, nullptr, defaultPrivilegedUser);
         if (!ldFile)
             return NULL;
         unsigned numParts = ldFile->numParts();

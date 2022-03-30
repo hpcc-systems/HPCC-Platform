@@ -163,7 +163,7 @@ bool HPCCFileCache::updateHpccFileDescription(const char * filename, const char 
 
         //queryDistributedFileDirectory returns singleton
         IDistributedFileDirectory & dfd = queryDistributedFileDirectory();
-        Owned<IDistributedFile> df = dfd.lookup(filename, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = dfd.lookup(filename, userdesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
 
         if(!df)
             return false;
@@ -201,7 +201,7 @@ HPCCFile * HPCCFileCache::fetchHpccFileByName(const char * filename, const char 
 
         //queryDistributedFileDirectory returns singleton
         IDistributedFileDirectory & dfd = queryDistributedFileDirectory();
-        Owned<IDistributedFile> df = dfd.lookup(filename, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = dfd.lookup(filename, userdesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
 
         if(!df)
             throw MakeStringException(-1,"Cannot find file %s.",filename);

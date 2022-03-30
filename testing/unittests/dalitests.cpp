@@ -211,7 +211,7 @@ void checkFiles(const char *fn)
     if (fn) {
         checker.title(1,fn);
         try {
-            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fn,user,false,false,false,nullptr,defaultNonPrivilegedUser);
+            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fn,user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
             if (!file)
                 printf("file '%s' not found\n",fn);
             else
@@ -610,7 +610,7 @@ public:
         for (i=0;i<100;i++) {
             s.clear().append("daregress::test").append(t);
             ASSERT(dir.exists(s.str(),user) && "Could not find sub-file");
-            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, false, false, false, nullptr, false);
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, AccessMode::tbdRead, false, false, nullptr, false);
             ASSERT(dfile && "Could not find sub-file");
             offset_t totsz = 0;
             n = 11;
@@ -711,7 +711,7 @@ public:
         t = 39;
         for (i=0;i<100;i++) {
             ASSERT(!dir.exists(s.str(),user) && "Found dir after deletion");
-            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, false, false, false, nullptr, false);
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(), user, AccessMode::tbdRead, false, false, nullptr, false);
             ASSERT(!dfile && "Found file after deletion");
             t = (t+39)%100;
         }
@@ -1948,7 +1948,7 @@ public:
          * the super files, this should _not_ cause an issue, as no single super file will contain
          * mismatched subfiles.
         */
-        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, false, timeout);
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
         assertex(sub1);
         sub1->lockProperties();
         sub1->queryAttributes().setPropBool("@local", true);
@@ -2030,7 +2030,7 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub1") == 0 && "promote failed, outlinked expected to be sub1");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, false, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
@@ -2052,9 +2052,9 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub2") == 0 && "promote failed, outlinked expected to be sub2");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, false, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
-            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, false, NULL, false, timeout);
+            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, AccessMode::tbdRead, false, false, NULL, false, timeout);
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
@@ -2083,16 +2083,16 @@ public:
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,false,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup("test::testfile1@testgrp1",user,false,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup("test::testfile1@testgrp1",user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
         file.clear();
         removeLogical("test::testfile1@testgrp2", user);
-        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,false,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup("test::testfile1",user,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
         for (i=0;i<file->numClusters();i++)
             PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     }
@@ -2614,7 +2614,7 @@ public:
         }
         virtual void threadmain() override
         {
-            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName,nullptr,false,false,false,nullptr,defaultNonPrivilegedUser);
+            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName,nullptr,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
 
             if (!file)
             {

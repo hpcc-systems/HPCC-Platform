@@ -1083,10 +1083,10 @@ public:
     }
     unsigned queryDefaultTimeout() const { return defaultTimeout; }
 
-    IDistributedFile *dolookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout);
+    IDistributedFile *dolookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout);
 
-    IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout) override;
-    IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout) override;
+    IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout) override;
+    IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout) override;
 
     /* createNew always creates an unnamed unattached distributed file
      * The caller must associated it with a name and credentials when it is attached (attach())
@@ -1425,7 +1425,7 @@ public:
         for (;;)
         {
             // Transaction files have already been unlocked at this point, delete all remaining files
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, true, false, true, nullptr, defaultPrivilegedUser, SDS_SUB_LOCK_TIMEOUT);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::tbdWrite, false, true, nullptr, defaultPrivilegedUser, SDS_SUB_LOCK_TIMEOUT);
             if (!file.get())
                 return;
             StringBuffer reason;
@@ -1733,7 +1733,7 @@ public:
             return LINK(ret);
         else
         {
-            ret = queryDistributedFileDirectory().lookup(name, udesc, false, false, false, this, defaultPrivilegedUser, timeout);
+            ret = queryDistributedFileDirectory().lookup(name, udesc, AccessMode::tbdRead, false, false, this, defaultPrivilegedUser, timeout);
             if (ret)
                 queryCreate(name, ret, true);
             return ret;
@@ -2550,7 +2550,7 @@ class CDistributedFileIterator: public CDistributedFileIteratorBase<IDistributed
     bool set()
     {
         while (isValid()) {
-            cur.setown(parent->lookup(queryName(),udesc, false, false, false, nullptr, isPrivilegedUser));
+            cur.setown(parent->lookup(queryName(),udesc, AccessMode::tbdRead, false, false, nullptr, isPrivilegedUser));
             if (cur)
                 return true;
             index++;
@@ -5304,7 +5304,7 @@ protected:
                 IPropertyTree &sub = *(orderedSubFiles[f]);
                 sub.getProp("@name",subname.clear());
                 Owned<IDistributedFile> subfile;
-                subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(), udesc, false, false, false, transaction, defaultPrivilegedUser, timeout));
+                subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(), udesc, AccessMode::tbdRead, false, false, transaction, defaultPrivilegedUser, timeout));
                 if (!subfile.get())
                     subfile.setown(transaction?transaction->lookupSuperFile(subname.str(),timeout):parent->lookupSuperFile(subname.str(),udesc,transaction,timeout));
                 // Some files are ok not to exist
@@ -7884,14 +7884,14 @@ INamedGroupStore  &queryNamedGroupStore()
 
 // --------------------------------------------------------
 
-IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(_logicalname);
-    return lookup(logicalname, user, writeattr, hold, lockSuperOwner, transaction, privilegedUser, timeout);
+    return lookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, privilegedUser, timeout);
 }
 
-IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout)
 {
     CDfsLogicalFileName *logicalname = &_logicalname;
     if (logicalname->isMulti())
@@ -7902,7 +7902,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     Owned<IDfsLogicalFileNameIterator> redmatch;
     for (;;)
     {
-        checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
+        checkLogicalName(*logicalname,user,true,isWrite(accessMode),true,NULL);
         if (logicalname->isExternal()) {
             Owned<IFileDescriptor> fDesc = getExternalFileDescriptor(logicalname->get());
             if (!fDesc)
@@ -7989,11 +7989,11 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     return NULL;
 }
 
-IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool privilegedUser, unsigned timeout)
 {
-    Owned <IDistributedFile>distributedFile = dolookup(logicalname, user, writeattr, hold, lockSuperOwner, transaction, timeout);
+    Owned <IDistributedFile>distributedFile = dolookup(logicalname, user, accessMode, hold, lockSuperOwner, transaction, timeout);
     // Restricted access is currently designed to stop users viewing sensitive information. It is not designed to stop users deleting or overwriting existing restricted files
-    if (writeattr==false && distributedFile && distributedFile->isRestrictedAccess() && !privilegedUser)
+    if (!isWrite(accessMode) && distributedFile && distributedFile->isRestrictedAccess() && !privilegedUser)
         throw new CDFS_Exception(DFSERR_RestrictedFileAccessDenied,logicalname.get());
     return distributedFile.getClear();
 }
@@ -8002,7 +8002,7 @@ IDistributedSuperFile *CDistributedFileDirectory::lookupSuperFile(const char *_l
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(_logicalname);
-    IDistributedFile *file = dolookup(logicalname, user, false, false, false, transaction, timeout);
+    IDistributedFile *file = dolookup(logicalname, user, AccessMode::tbdRead, false, false, transaction, timeout);
     if (file) {
         IDistributedSuperFile *sf = file->querySuperFile();
         if (sf)
@@ -8036,7 +8036,7 @@ bool CDistributedFileDirectory::exists(const char *_logicalname,IUserDescriptor 
     if (foreign) {
         // Restricted access is currently designed to stop users viewing sensitive information. Assuming privileged user rights to allow
         // exists() operation to succeed regardless of user rights
-        Owned<IDistributedFile> file = lookup(_logicalname, user, false, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+        Owned<IDistributedFile> file = lookup(_logicalname, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
         if (file.get()==NULL)
             return false;
         if (file->querySuperFile()) {
@@ -8073,7 +8073,7 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
 {
     // Restricted access is currently designed to stop users viewing sensitive information. Assuming privileged user rights to allow
     // existsPhysical() operation to succeed regardless of user rights
-    Owned<IDistributedFile> file = lookup(_logicalname, user, false, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+    Owned<IDistributedFile> file = lookup(_logicalname, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
     if (!file)
         return false;
     return file->existsPhysicalPartFiles(0);
@@ -11745,8 +11745,8 @@ DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *
     StringBuffer msg;
     try
     {
-        Owned<IDistributedFile> file1 = lookup(lfn1, user, false, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
-        Owned<IDistributedFile> file2 = lookup(lfn2, user, false, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+        Owned<IDistributedFile> file1 = lookup(lfn1, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+        Owned<IDistributedFile> file2 = lookup(lfn2, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
         if (!file1)
         {
             errstr.appendf("File %s not found",lfn1);
@@ -11893,7 +11893,7 @@ DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *
 bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescriptor *user, bool includecrc, StringBuffer &errstr)
 {
     bool differs = false;
-    Owned<IDistributedFile> file = lookup(lfn, user, false, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
+    Owned<IDistributedFile> file = lookup(lfn, user, AccessMode::tbdRead, false, false, NULL, defaultPrivilegedUser, defaultTimeout);
     if (!file)
     {
         errstr.appendf("Could not find file: %s",lfn);
@@ -13428,7 +13428,7 @@ bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName,
  */
 extern da_decl void removeLogical(const char *fname, IUserDescriptor *user) {
     if (queryDistributedFileDirectory().exists(fname, user)) {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fname, user, true, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fname, user, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
         CDistributedFile *f = QUERYINTERFACE(file.get(),CDistributedFile);
         assert(f);
         f->detachLogical();

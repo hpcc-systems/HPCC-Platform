@@ -137,7 +137,7 @@ IndexDataSource::IndexDataSource(const char * _logicalName, IHqlExpression * _di
         udesc->set(_username, _password);
     }
 
-    df.setown(queryDistributedFileDirectory().lookup(logicalName, udesc.get(),false,false,false,nullptr,defaultPrivilegedUser));
+    df.setown(queryDistributedFileDirectory().lookup(logicalName, udesc.get(),AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser));
     filtered = false;
 }
 

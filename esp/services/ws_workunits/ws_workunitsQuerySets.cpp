@@ -207,7 +207,7 @@ bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cl
                         foreign.append(*info.getClear());
                     else
                     {
-                        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalname, udesc, false, false, false, nullptr, defaultPrivilegedUser);
+                        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalname, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
                         if(!df)
                             notFound.append(*info.getClear());
                         else if (df->findCluster(cluster)!=NotFound)

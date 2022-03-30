@@ -600,7 +600,7 @@ public:
             {
                 if (traceLevel > 1)
                     DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
-                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, false, isPrivilegedUser);
+                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, AccessMode::tbdRead, isPrivilegedUser);
                 if (cloneFile)
                 {
                     Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
@@ -620,14 +620,14 @@ public:
         return NULL;
     }
 
-    virtual IDistributedFile *resolveLFN(const char *logicalName, bool cacheIt, bool writeAccess, bool isPrivilegedUser)
+    virtual IDistributedFile *resolveLFN(const char *logicalName, bool cacheIt, AccessMode accessMode, bool isPrivilegedUser)
     {
         if (isConnected)
         {
             unsigned start = msTick();
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = wsdfs::lookup(lfn, userdesc.get(), writeAccess, cacheIt,false,nullptr,isPrivilegedUser,INFINITE);
+            Owned<IDistributedFile> dfsFile = wsdfs::lookup(lfn, userdesc.get(), accessMode, cacheIt,false,nullptr,isPrivilegedUser,INFINITE);
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();

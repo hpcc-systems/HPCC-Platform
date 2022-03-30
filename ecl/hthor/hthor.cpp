@@ -169,7 +169,7 @@ const void * CRowBuffer::next()
 
 ILocalOrDistributedFile *resolveLFNFlat(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, false, nullptr, isPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, true, AccessMode::tbdRead, nullptr, isPrivilegedUser);
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -464,7 +464,7 @@ void CHThorDiskWriteActivity::resolve()
     assertex(mangledHelperFileName.str());
     if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
     {
-        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,true,&lfn,defaultPrivilegedUser);
+        Owned<ILocalOrDistributedFile> f = agent.resolveLFN(mangledHelperFileName.str(),"Cannot write, invalid logical name",true,false,AccessMode::tbdWrite,&lfn,defaultPrivilegedUser);
         if (f)
         {
             if (f->queryDistributedFile())
@@ -1100,7 +1100,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
     if (!agent.queryResolveFilesLocally())
     {
-        Owned<IDistributedFile> f = wsdfs::lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true, false, false, nullptr, defaultNonPrivilegedUser, INFINITE);
+        Owned<IDistributedFile> f = wsdfs::lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), AccessMode::tbdWrite, false, false, nullptr, defaultNonPrivilegedUser, INFINITE);
 
         if (f)
         {

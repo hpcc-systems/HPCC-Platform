@@ -258,7 +258,7 @@ struct ReplicateFileItem: extends CInterface
             OERRLOG(LOGPFX "Cannot replicate foreign file %s",lfn);
             return;
         }
-        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,userdesc,false,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,userdesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
         if (!dfile) {
             UWARNLOG(LOGPFX "Cannot find file %s, perhaps deleted",lfn);
             return;
@@ -332,7 +332,7 @@ struct ReplicateFileItem: extends CInterface
         }
         bool abort = true;
         try {
-            dfile.setown(queryDistributedFileDirectory().lookup(dlfn,userdesc,false,false,false,nullptr,defaultPrivilegedUser));
+            dfile.setown(queryDistributedFileDirectory().lookup(dlfn,userdesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser));
             if (dfile) {
                 CDateTime newfiledt;
                 dfile->getModificationTime(newfiledt);

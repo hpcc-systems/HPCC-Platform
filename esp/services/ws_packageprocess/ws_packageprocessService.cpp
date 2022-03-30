@@ -104,7 +104,7 @@ const unsigned roxieQueryRoxieTimeOut = 60000;
 
 bool isFileKnownOnCluster(const char *logicalname, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
 {
-    Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, true, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
     if (dst)
     {
         SCMStringBuffer processName;

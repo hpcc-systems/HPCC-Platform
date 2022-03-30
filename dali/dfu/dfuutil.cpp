@@ -510,7 +510,7 @@ public:
         CDfsLogicalFileName dstlfn;
         if (!dstlfn.setValidate(destfilename,true))
             throw MakeStringException(-1,"Logical name %s invalid",destfilename);
-        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,true,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             ClusterPartDiskMapSpec spec = spec1;
             const char * kind = ftree->queryProp("Attr/@kind");
@@ -532,7 +532,7 @@ public:
         CDfsLogicalFileName dstlfn;
         if (!dstlfn.setValidate(destfilename,true))
             throw MakeStringException(-1,"Logical name %s invalid",destfilename);
-        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,true,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             ClusterPartDiskMapSpec spec = spec1;
             const char * kind = ftree->queryProp("Attr/@kind");
@@ -667,7 +667,7 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,true,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             if (!checkOverwrite(DALI_UPDATEF_REPLACE_FILE))
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -743,7 +743,7 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,true,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dlfn,userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             if (!checkOverwrite(DALI_UPDATEF_REPLACE_FILE))
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -881,7 +881,7 @@ public:
         }
 
         //see if target already exists
-        Owned<IDistributedFile> dfile = fdir->lookup(dlfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = fdir->lookup(dlfn, userdesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
         if (dfile)
         {
             if (!checkOverwrite(DALI_UPDATEF_SUBFILE_MASK))
@@ -1018,7 +1018,7 @@ public:
 
     StringBuffer &getFileXML(const char *lfn, StringBuffer &out, IUserDescriptor *user)
     {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if (!file) {
             INamedGroupStore  &grpstore= queryNamedGroupStore();
             Owned<IGroup> grp = grpstore.lookup(lfn);
@@ -1152,7 +1152,7 @@ public:
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
         }
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(lfn,user,true,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(lfn,user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
         if (dfile)
         {
             if (!overwrite)

@@ -709,7 +709,7 @@ struct CLogicalNameEntry: public CInterface
     bool remove(IUserDescriptor *user)
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
-        Owned<IDistributedFile> file = fdir.lookup(lname.get(),user, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = fdir.lookup(lname.get(),user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if (!file)
             return false;
         file->detach();
@@ -1774,7 +1774,7 @@ class CXRefManager: public CXRefManagerBase
         ForEachItemIn(i,logicalnamelist) {
             CLogicalNameEntry &item = logicalnamelist.item(i);
             if (!item.done&&item.nummismatchedsizes) {
-                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(item.lname.get(), UNKNOWN_USER, false, false, false, nullptr, defaultPrivilegedUser);
+                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(item.lname.get(), UNKNOWN_USER, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
                 if (file) {
                     outf("checking %s\n",item.lname.get());
                     Owned<IDistributedFilePartIterator> partiter = file->getIterator();
@@ -2272,7 +2272,7 @@ class CXRefManager: public CXRefManagerBase
             ForEachItemIn(i,logicalnamelist) {
                 CLogicalNameEntry &item = logicalnamelist.item(i);
                 if (item.unknowngrp||item.mismatchgrp.get()||item.missinggrp) {
-                    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(item.lname.get(),UNKNOWN_USER, false, false, false, nullptr, defaultPrivilegedUser);
+                    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(item.lname.get(),UNKNOWN_USER, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
                     if (file) {
                         if (item.missinggrp)
                             outf("WARNING: Missing group for %s\n",item.lname.get());

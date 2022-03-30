@@ -564,7 +564,7 @@ void testRoxieCopies()
         queryDistributedFileDirectory().removeEntry(fn.str(),UNKNOWN_USER);
         file->attach(fn.str(),UNKNOWN_USER);
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup(fn.str(),UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser));
+        file.setown(queryDistributedFileDirectory().lookup(fn.str(),UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser));
         Owned<IFileDescriptor> fdesc4 = file->getFileDescriptor();
         printDesc(fdesc4);
     }
