@@ -23,6 +23,7 @@
 #####################################################
 
 project(nlp)
+SET(CMAKE_UNITY_BUILD FALSE)
 
 if(USE_NLP)
 

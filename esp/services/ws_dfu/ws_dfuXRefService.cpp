@@ -28,7 +28,7 @@
 #include "roxiecontrol.hpp"
 
 
-static const char* FEATURE_URL = "DfuXrefAccess";
+static const char* XREF_FEATURE_URL = "DfuXrefAccess";
 
 static void appendReplyMessage(bool json, StringBuffer &reply, const char *href,const char *format,...) __attribute__((format(printf, 4, 5)));
 static void appendReplyMessage(bool json, StringBuffer &reply, const char *href,const char *format,...)
@@ -126,7 +126,7 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefArrayAction: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefArrayAction: Permission denied.");
 
         const char *action = req.getAction();
         const char *type = req.getType();
@@ -251,7 +251,7 @@ bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFiles
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefLostFiles: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefLostFiles: Permission denied.");
 
         Owned<IXRefNode> xRefNode = getXRefNodeByCluster(req.getCluster());
         Owned<IXRefFilesNode> lostFiles = xRefNode->getLostFiles();
@@ -278,7 +278,7 @@ bool CWsDfuXRefEx::onDFUXRefFoundFiles(IEspContext &context, IEspDFUXRefFoundFil
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefFoundFiles: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefFoundFiles: Permission denied.");
 
         Owned<IXRefNode> xRefNode = getXRefNodeByCluster(req.getCluster());
         Owned<IXRefFilesNode> foundFiles = xRefNode->getFoundFiles();
@@ -304,7 +304,7 @@ bool CWsDfuXRefEx::onDFUXRefOrphanFiles(IEspContext &context, IEspDFUXRefOrphanF
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefOrphanFiles: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefOrphanFiles: Permission denied.");
 
         Owned<IXRefNode> xRefNode = getXRefNodeByCluster(req.getCluster());
         Owned<IXRefFilesNode> orphanFiles = xRefNode->getOrphanFiles();
@@ -330,7 +330,7 @@ bool CWsDfuXRefEx::onDFUXRefMessages(IEspContext &context, IEspDFUXRefMessagesQu
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefMessages: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefMessages: Permission denied.");
 
         StringBuffer buf;
         Owned<IXRefNode> xRefNode = getXRefNodeByCluster(req.getCluster());
@@ -352,7 +352,7 @@ bool CWsDfuXRefEx::onDFUXRefCleanDirectories(IEspContext &context, IEspDFUXRefCl
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefCleanDirectories: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Write, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefCleanDirectories: Permission denied.");
 
         StringBuffer err;
         Owned<IXRefNode> xRefNode = getXRefNodeByCluster(req.getCluster());
@@ -373,7 +373,7 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefDirectories: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefDirectories: Permission denied.");
 
         StringBuffer buf;
         Owned<IXRefNode> xRefNode = getXRefNodeByCluster(req.getCluster());
@@ -439,7 +439,7 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefBuild: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefBuild: Permission denied.");
 
         const char *cluster = req.getCluster();
         if (isEmptyString(cluster))
@@ -490,7 +490,7 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
 {
     try
     {
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefBuildCancel: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefBuildCancel: Permission denied.");
 
         m_XRefbuilder->cancel();
         StringBuffer returnStr;
@@ -556,7 +556,7 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 #ifdef _CONTAINERIZED
         IERRLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
 #else
-        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
+        context.ensureFeatureAccess(XREF_FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(clusters);

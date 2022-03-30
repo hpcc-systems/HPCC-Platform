@@ -127,6 +127,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/codesigner
     )
 
+set_source_files_properties(hqlgram.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+
 if (WIN32)
     add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.h
         #${bisonopt} is used to force s/r and r/r errors to abort compiling

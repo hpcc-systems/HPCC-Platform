@@ -84,11 +84,9 @@
 //#define _SR6_
 
 #define MAX_CSV_RECORD_SIZE     4096
-
 #define ECLRTL_LIB          "eclrtl"
 
 //===========================================================================
-
 
 #ifdef _GATHER_USAGE_STATS
 unsigned activityCounts[TAKlast][TAKlast];

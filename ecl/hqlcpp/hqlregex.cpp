@@ -2217,7 +2217,7 @@ static inline int compareState(HqlDfaState * left, HqlDfaState * right)
     return left->position.compare(right->position);
 }
 
-static int compareState(CInterface * const * left, CInterface * const * right)
+static int compareDfaState(CInterface * const * left, CInterface * const * right)
 { 
     return compareState((HqlDfaState *)*left, (HqlDfaState *)*right);
 }
@@ -2281,7 +2281,7 @@ void HqlRegexExpr::generateDFAs()
             {
                 bool isNew = false;
                 CInterface * castState = nextState;
-                unsigned matchIndex = dfa->orderedStates.bAdd(castState, compareState, isNew);
+                unsigned matchIndex = dfa->orderedStates.bAdd(castState, compareDfaState, isNew);
                 if (isNew)
                     dfa->states.append(*LINK(nextState));
                 else

@@ -954,12 +954,6 @@ void getClusterInfo(IPropertyTree &pt, INamedGroupStore *resolver, unsigned flag
     }
 }
 
-inline bool validFNameChar(char c)
-{
-    static const char *invalids = "*\"/:<>?\\|";
-    return (c>=32 && c<127 && !strchr(invalids, c));
-}
-
 inline const char *skipRoot(const char *lname)
 {
     for (;;) {

@@ -24,6 +24,7 @@
 
 
 project( libgit2helper )
+SET(CMAKE_UNITY_BUILD FALSE)
 
 remove_definitions(-fvisibility=hidden)
 

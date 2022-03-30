@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#pragma once
 #include "jiface.hpp"
 #include "jlib.hpp"
 #include "esp.hpp"

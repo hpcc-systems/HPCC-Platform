@@ -72,7 +72,7 @@ inline const char * queryName(const RtlFieldInfo * field) { return field ? field
 
 //-------------------------------------------------------------------------------------------------------------------
 
-static bool incrementBuffer(byte *buf, size32_t size)
+bool incrementBuffer(byte *buf, size32_t size)
 {
     int i = size;
     while (i--)

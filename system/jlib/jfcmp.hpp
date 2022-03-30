@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#ifndef __JFCMP__
+#define __JFCMP__
+
 #include "platform.h"
 #include "jlzw.hpp"
 
@@ -473,3 +476,5 @@ public:
         return baseio->getStatistic(kind);
     }
 };
+
+#endif

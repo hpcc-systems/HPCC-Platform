@@ -147,7 +147,7 @@ inline bool write_data(int fd, const void *buf, size_t nbytes)
     return true;
 }
 
-#define POLLTIME (1000*15)
+constexpr unsigned MUTEX_POLLTIME=(1000*15);
 
 static bool lock_file(const char *lfpath) 
 {
@@ -232,7 +232,7 @@ void NamedMutex::lock()
     for (;;) {
         if (lock_file(mutexfname))
             return;
-        Sleep(POLLTIME);
+        Sleep(MUTEX_POLLTIME);
     }
 }
 
@@ -251,7 +251,7 @@ bool NamedMutex::lockWait(unsigned timeout)
             threadmutex.unlock();
             break;
         }
-        Sleep((timeout-elapsed)>POLLTIME?POLLTIME:(timeout-elapsed));
+        Sleep((timeout-elapsed)>MUTEX_POLLTIME ? MUTEX_POLLTIME : (timeout-elapsed));
     }
     return false;
 

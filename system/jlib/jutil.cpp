@@ -2196,11 +2196,11 @@ static inline void encode3_64(byte *in,StringBuffer &out)
 
 
 
-static NonReentrantSpinLock lock;
+static NonReentrantSpinLock uuidLock;
 static unsigned uuidbin[5] = {0,0,0,0,0};
 StringBuffer &genUUID(StringBuffer &out, bool nocase)
 { // returns a 24 char UUID for nocase=false or 32 char for nocase=true
-    lock.enter();
+    uuidLock.enter();
     // could be quicker using statics
     if (uuidbin[0]==0) {
         queryHostIP().getNetAddress(sizeof(uuidbin[0]),uuidbin);
@@ -2230,7 +2230,7 @@ StringBuffer &genUUID(StringBuffer &out, bool nocase)
         encode3_64(tmp,out);
         encode3_64(in+17,out);
     }
-    lock.leave();
+    uuidLock.leave();
     return out;
 }
 

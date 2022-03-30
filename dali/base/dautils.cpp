@@ -113,7 +113,7 @@ inline void skipSp(const char *&s)
         s++;
 }
 
-inline bool validFNameChar(char c)
+bool validFNameChar(char c)
 {
     static const char *invalids = "*\"/:<>?\\|";
     return (c>=32 && c<127 && !strchr(invalids, c));

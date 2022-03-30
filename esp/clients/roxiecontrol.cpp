@@ -98,7 +98,7 @@ bool sendRoxieControlLock(ISocket *sock, bool allOrNothing, unsigned wait)
     return resp->getPropInt("Lock", 0) != 0;
 }
 
-static inline unsigned remainingMsWait(unsigned wait, unsigned start)
+static inline unsigned remainingMsWaitX(unsigned wait, unsigned start)
 {
     if (wait==0 || wait==(unsigned)-1)
         return wait;
@@ -111,7 +111,7 @@ IPropertyTree *sendRoxieControlAllNodes(ISocket *sock, const char *msg, bool all
     unsigned start = msTick();
     if (!sendRoxieControlLock(sock, allOrNothing, wait))
         throw MakeStringException(-1, "Roxie is too busy (control:lock failed) - please try again later.");
-    return sendRoxieControlQuery(sock, msg, remainingMsWait(wait, start));
+    return sendRoxieControlQuery(sock, msg, remainingMsWaitX(wait, start));
 }
 
 IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *msg, bool allOrNothing, unsigned wait)

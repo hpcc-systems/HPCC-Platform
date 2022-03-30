@@ -27,10 +27,6 @@
 #include "thortparse.ipp"
 #include "hqlregex.ipp"
 
-//#define DEFAULT_DFA_COMPLEXITY    0
-#define DEFAULT_UNICODE_DFA_COMPLEXITY  0
-#define DEFAULT_DFA_COMPLEXITY  2000
-
 //===========================================================================
 
 template <class T> 
@@ -1636,7 +1632,7 @@ static inline int compareState(HqlLRState * left, HqlLRState * right)
     return left->items.compare(right->items);
 }
 
-static int compareState(CInterface * const * left, CInterface * const * right)
+static int compareLRState(CInterface * const * left, CInterface * const * right)
 { 
     return compareState((HqlLRState *)*left, (HqlLRState *)*right);
 }
@@ -1670,7 +1666,7 @@ HqlLRState * TomitaContext::addState(HqlLRState * state)
 {
     bool isNew = false;
     CInterface * castState = state;
-    unsigned matchIndex = orderedStates.bAdd(castState, compareState, isNew);
+    unsigned matchIndex = orderedStates.bAdd(castState, compareLRState, isNew);
     if (isNew)
         states.append(*LINK(state));
     else
