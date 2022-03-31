@@ -1226,7 +1226,10 @@ const void *CHThorIndexNormalizeActivity::nextRow()
                 {
                     expanding = helper.next();
                     if (!expanding)
+                    {
+                        callback.finishedRow(); // next could filter
                         break;
+                    }
 
                     const void * ret = createNextRow();
                     if (ret)
@@ -1234,7 +1237,6 @@ const void *CHThorIndexNormalizeActivity::nextRow()
                 }
             }
 
-            callback.finishedRow();
             while (!klManager->lookup(true))
             {
                 keyedProcessed++;
@@ -1253,6 +1255,8 @@ const void *CHThorIndexNormalizeActivity::nextRow()
                 if (ret)
                     return ret;
             }
+            else
+                callback.finishedRow(); // first could filter
         }
     }
 }
@@ -1263,6 +1267,7 @@ const void * CHThorIndexNormalizeActivity::createNextRow()
     {
         outBuilder.ensureRow();
         size32_t thisSize = helper.transform(outBuilder);
+        callback.finishedRow();
         if (thisSize == 0)
         {
             return NULL;
