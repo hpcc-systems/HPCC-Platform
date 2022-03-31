@@ -709,7 +709,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                         workunit->setJobName(jobname);
                     if (!workunit->getDebugValueBool("obfuscateOutput", false))
                     {
-                        StringBuffer wuXML;
+                        StringBuffer wuXML; // Not sure this is a good idea.... better to always get it from the dll resource
                         Owned<IWUQuery> query = workunit->updateQuery();
                         if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))  // MORE - if what was submitted was an archive, this is probably pointless?
                             query->setQueryText(wuXML.str());
