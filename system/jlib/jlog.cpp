@@ -2647,7 +2647,7 @@ MODULE_EXIT()
     thePassNoneFilter = nullptr;
     thePassLocalFilter = nullptr;
     thePassAllFilter = nullptr;
-    delete logAccessor.queryExisting();
+    logAccessor.destroy([](IRemoteLogAccess * _logAccessor) { ::Release(_logAccessor); });
 }
 
 static constexpr const char * logFieldsAtt = "@fields";

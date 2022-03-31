@@ -24,7 +24,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 MODULE_EXIT()
 {
-    delete metricsManager.queryExisting();
+    metricsManager.destroy();
 }
 
 

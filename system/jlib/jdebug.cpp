@@ -1963,7 +1963,7 @@ MODULE_INIT(INIT_PRIORITY_JDEBUG2)
 }
 MODULE_EXIT()
 {
-    delete globalOsDiskInfo.queryExisting();
+    globalOsDiskInfo.destroy();
 }
 
 const OsDiskInfo & queryGlobalOsDiskInfo()

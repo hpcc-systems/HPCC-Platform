@@ -3524,12 +3524,12 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 MODULE_EXIT()
 { 
-    auto cache = fileCache.queryExisting();
-    if (cache)
+    auto cleanup = [](CRoxieFileCache *cache)
     {
         cache->join();
         cache->Release();
-    }
+    };
+    fileCache.destroy(cleanup);
 }
 
 extern IRoxieFileCache &queryFileCache()
