@@ -603,9 +603,19 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
 void HqlDllGenerator::addWorkUnitAsResource()
 {
-    StringBuffer wuXML;
-    exportWorkUnitToXML(wu, wuXML, false, false, false);
-    code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
+    bool defaultBinaryWorkunit = false;
+    if (wu->getDebugValueInt("saveBinaryWorkunit", defaultBinaryWorkunit))
+    {
+        MemoryBuffer wuBinary;
+        exportWorkUnitToBinary(wu, wuBinary);
+        code->addCompressResource("BINWORKUNIT", wuBinary.length(), wuBinary.bytes(), NULL, 1000);
+    }
+    else
+    {
+        StringBuffer wuXML;
+        exportWorkUnitToXML(wu, wuXML, false, false, false);
+        code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
+    }
 }
 
 void HqlDllGenerator::addArchiveAsResource(StringBuffer &buf)

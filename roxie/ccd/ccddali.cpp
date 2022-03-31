@@ -644,11 +644,10 @@ public:
             w->resetWorkflow();
         if (source)
         {
-            StringBuffer wuXML;
-            if (getEmbeddedWorkUnitXML(source, wuXML))
+            Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(source);
+            if (embeddedWU)
             {
-                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
-                queryExtendedWU(w)->copyWorkUnit(localWU, true, true);
+                queryExtendedWU(w)->copyWorkUnit(embeddedWU, true, true);
             }
             else
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to locate dll workunit info");
