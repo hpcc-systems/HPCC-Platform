@@ -6627,19 +6627,27 @@ public:
 
     void fillClustersCache()
     {
-        if (clusterscache.ordinality()==0) {
-            StringBuffer name;
-            ForEachItemIn(i,subfiles) {
+        if (clusterscache.ordinality()==0)
+        {
+            ForEachItemIn(i,subfiles)
+            {
                 StringArray clusters;
                 IDistributedFile &f=subfiles.item(i);
                 Owned<IFileDescriptor> fdesc = f.getFileDescriptor();
+                StringArray clusterNames;
+                f.getClusterNames(clusterNames);
                 unsigned nc = f.numClusters();
-                for(unsigned j=0;j<nc;j++) {
-                    f.getClusterName(j,name.clear());
-                    if (clusterscache.find(name.str())==NotFound)
+                for(unsigned j=0;j<nc;j++)
+                {
+                    const char *name = clusterNames.item(j);
+                    if (clusterscache.find(name)==NotFound)
                     {
-                        IClusterInfo &cluster = OLINK(*fdesc->queryClusterNum(j));
-                        clusterscache.append(cluster);
+                        IClusterInfo *cluster;
+                        if (f.querySuperFile()) // because super descriptor has a combined single cluster
+                            cluster = createClusterInfo(name, f.queryClusterGroup(j), f.queryPartDiskMapping(j));
+                        else
+                            cluster = LINK(fdesc->queryClusterNum(j));
+                        clusterscache.append(*cluster);
                     }
                 }
             }
