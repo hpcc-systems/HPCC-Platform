@@ -1713,9 +1713,9 @@ void CJobMaster::sendQuery()
     compressToBuffer(msg, tmp.length(), tmp.toByteArray());
 
     CTimeMon queryToSlavesTimer;
+    querySent = true;
     broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
     PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
-    querySent = true;
 }
 
 void CJobMaster::jobDone()
