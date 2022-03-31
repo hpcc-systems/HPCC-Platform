@@ -57,7 +57,7 @@ data:
           labels:
             accessDali: "yes"
             accessEsp: "yes"
-            helmVersion: 8.6.15-closedown0
+            helmVersion: 8.6.16-rc1
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
@@ -131,7 +131,7 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
-        helmVersion: 8.6.15-closedown0
+        helmVersion: 8.6.16-rc1
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
