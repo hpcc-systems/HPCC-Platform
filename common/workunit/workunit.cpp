@@ -11743,20 +11743,67 @@ unsigned __int64 CLocalWUStatistic::getTimestamp() const
 
 //==========================================================================================
 
-extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(const char *xml)
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
 {
     Owned<CLocalWorkUnit> cw = new CLocalWorkUnit((ISecManager *) NULL, NULL);
-    if (xml)
-        cw->loadPTree(createPTreeFromXMLString(xml, ipt_lowmem));
-    else
-    {
-        Owned<IPropertyTree> p = createPTree("W_LOCAL", ipt_lowmem);
-        p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
-        cw->loadPTree(p.getClear());
-    }
+    Owned<IPropertyTree> p = createPTree("W_LOCAL", ipt_lowmem);
+    p->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+    cw->loadPTree(p.getClear());
 
-    ILocalWorkUnit* ret = QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
-    return ret;
+    return QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
+}
+
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromXml(const char *xml)
+{
+    if (!xml)
+        return createLocalWorkUnit();
+
+    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit((ISecManager *) NULL, NULL);
+    cw->loadPTree(createPTreeFromXMLString(xml, ipt_lowmem));
+    return QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
+}
+
+static ILocalWorkUnit * createLocalWorkUnitFromBinary(MemoryBuffer & serialized)
+{
+    byte version;
+    serialized.read(version);
+
+    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit((ISecManager *) NULL, NULL);
+    switch (version)
+    {
+    case 1:
+        cw->loadPTree(createPTree(serialized, ipt_lowmem));
+        break;
+    default:
+        throwUnexpectedX("Unsupported binary workunit format");
+    }
+    return QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
+}
+
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(ILoadedDllEntry * dll)
+{
+    MemoryBuffer serialized;
+    if (getEmbeddedWorkUnitBinary(dll, serialized))
+        return createLocalWorkUnitFromBinary(serialized);
+
+    StringBuffer dllXML;
+    if (!getEmbeddedWorkUnitXML(dll, dllXML))
+        return nullptr;
+
+    return createLocalWorkUnitFromXml(dllXML.str());
+}
+
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromFile(const char * filename)
+{
+    MemoryBuffer serialized;
+    if (getWorkunitBinaryFromFile(filename, serialized))
+        return createLocalWorkUnitFromBinary(serialized);
+
+    StringBuffer dllXML;
+    if (!getWorkunitXMLFromFile(filename, dllXML))
+        return nullptr;
+
+    return createLocalWorkUnitFromXml(dllXML.str());
 }
 
 extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromPTree(IPropertyTree *ptree)
@@ -11862,6 +11909,18 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
     }
     else
         return str.append("Unrecognized workunit format");
+}
+
+extern WORKUNIT_API void exportWorkUnitToBinary(const IConstWorkUnit *wu, MemoryBuffer & serialized)
+{
+    // MORE - queryPTree isn't really safe without holding CLocalWorkUnit::crit - really need to move these functions into CLocalWorkunit
+    const IExtendedWUInterface *ewu = queryExtendedWU(wu);
+    if (!ewu)
+        throwUnexpectedX("Unrecognized workunit format");
+
+    byte version = 1;
+    serialized.append(version);
+    ewu->queryPTree()->serialize(serialized);
 }
 
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool regressionTest)

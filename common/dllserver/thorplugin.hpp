@@ -38,15 +38,18 @@ interface ILoadedDllEntry : extends IInterface
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *name, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly);
 extern DLLSERVER_API ILoadedDllEntry * createExeDllEntry(const char *name);
 extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuffer &xml);
+extern DLLSERVER_API bool getEmbeddedWorkUnitBinary(ILoadedDllEntry *dll, MemoryBuffer &result);
 extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, StringBuffer &xml);
 extern DLLSERVER_API bool getEmbeddedArchiveXML(ILoadedDllEntry *dll, StringBuffer &xml);
 
+
 extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll);
 
-extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll);
+extern DLLSERVER_API bool containsEmbeddedWorkUnit(ILoadedDllEntry *dll);
 extern DLLSERVER_API bool getResourceFromFile(const char *filename, MemoryBuffer &data, const char * type, unsigned id);
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml);
 extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuffer &xml);
+extern DLLSERVER_API bool getWorkunitBinaryFromFile(const char *filename, MemoryBuffer &result);
 extern DLLSERVER_API bool getArchiveXMLFromFile(const char *filename, StringBuffer &xml);
 extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml);
 

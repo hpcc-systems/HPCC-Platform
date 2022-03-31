@@ -68,14 +68,19 @@ int main(int argc, char **argv)
                 {
                     const char *filename = argv[i];
                     const char *ext = pathExtension(filename);
-                    StringBuffer xml;
+                    Owned<ILocalWorkUnit> wu;
                     if (strisame(ext, ".xml"))
-                        xml.loadFile(filename, false);
-                    else
-                        getWorkunitXMLFromFile(filename, xml);
-                    if (xml.length())
                     {
-                        Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
+                        StringBuffer xml;
+                        xml.loadFile(filename, false);
+                        wu.setown(createLocalWorkUnitFromXml(xml));
+                    }
+                    else
+                        wu.setown(createLocalWorkUnitFromFile(filename));
+
+                    if (wu)
+                    {
+                        StringBuffer xml;
                         if (doArchive && getArchiveXMLFromFile(filename, xml.clear()))
                         {
                             Owned<IWUQuery> q = wu->updateQuery();

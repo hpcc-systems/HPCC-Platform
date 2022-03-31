@@ -681,9 +681,18 @@ extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuf
 {
     size32_t len = 0;
     const void * data = NULL;
-    if (!dll->getResource(len, data, "WORKUNIT", 1000))
+    if (!dll->getResource(len, data, "WORKUNIT", 1000, false))
         return false;
     return decompressResource(len, data, xml);
+}
+
+extern DLLSERVER_API bool getEmbeddedWorkUnitBinary(ILoadedDllEntry *dll, MemoryBuffer &result)
+{
+    size32_t len = 0;
+    const void * data = NULL;
+    if (!dll->getResource(len, data, "BINWORKUNIT", 1000, false))
+        return false;
+    return decompressResource(len, data, result);
 }
 
 extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, StringBuffer &xml)
@@ -710,11 +719,12 @@ extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEnt
     return getEmbeddedManifestXML(dll, xml) ? createPTreeFromXMLString(xml.str()) : createPTree();
 }
 
-extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll)
+extern DLLSERVER_API bool containsEmbeddedWorkUnit(ILoadedDllEntry *dll)
 {
     size32_t len = 0;
     const void * data = NULL;
-    return dll->getResource(len, data, "WORKUNIT", 1000, false);
+    return dll->getResource(len, data, "BINWORKUNIT", 1000, false) ||
+           dll->getResource(len, data, "WORKUNIT", 1000, false);
 }
 
 extern DLLSERVER_API bool getResourceXMLFromFile(const char *filename, const char *type, unsigned id, StringBuffer &xml)
@@ -739,6 +749,15 @@ extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuf
 {
     return getResourceXMLFromFile(filename, "MANIFEST", 1000, xml);
 }
+
+extern DLLSERVER_API bool getWorkunitBinaryFromFile(const char *filename, MemoryBuffer &result)
+{
+    MemoryBuffer data;
+    if (!getResourceFromFile(filename, data, "BINWORKUNIT", 1000))
+        return false;
+    return decompressResource(data.length(), data.toByteArray(), result);
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------
 

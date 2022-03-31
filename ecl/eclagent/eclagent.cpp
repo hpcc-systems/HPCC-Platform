@@ -3537,7 +3537,7 @@ hthor:
 )!!";
 
 
-extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * wuXML, bool standAloneExe)
+extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWorkUnit> & standAloneWorkUnit, bool standAloneExe)
 {
 #ifdef _DEBUG
 #ifdef _WIN32
@@ -3671,14 +3671,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #ifdef MONITOR_ECLAGENT_STATUS
         std::unique_ptr<CSDSServerStatus> serverstatus;
 #endif
-        Owned<ILocalWorkUnit> standAloneWorkUnit;
-        if (wuXML)
-        {
-            //Create workunit from XML
-            standAloneWorkUnit.setown(createLocalWorkUnit(wuXML->str()));
-            wuXML->kill();  // free up text as soon as possible.
-        }
-
         Owned<IUserDescriptor> standAloneUDesc;
         if (daliServers)
         {
@@ -3905,6 +3897,12 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     return retcode;
 }
 
+extern int HTHOR_API eclagent_main(int argc, const char *argv[])
+{
+    Owned<ILocalWorkUnit> nullWu;
+    return eclagent_main(argc, argv, nullWu, false);
+}
+
 //=======================================================================================
 
 void standalone_usage(const char * exeName)
@@ -3948,11 +3946,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     try
     {
         Owned<ILoadedDllEntry> exeEntry = createExeDllEntry(argv[0]);
-        StringBuffer wuXML;
-        if (!getEmbeddedWorkUnitXML(exeEntry, wuXML))
+        Owned<ILocalWorkUnit> localWu = createLocalWorkUnit(exeEntry);
+        if (!localWu)
             throw MakeStringException(0, "Could not locate workunit resource");
 
-        ret = eclagent_main(argc, argv, &wuXML, true);
+        ret = eclagent_main(argc, argv, localWu, true);
     }
     catch (IException *E)
     {
