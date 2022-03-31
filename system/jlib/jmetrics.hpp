@@ -51,6 +51,8 @@ enum MetricType
  */
 interface IMetric
 {
+    virtual ~IMetric() = default;
+
     /*
      * Returns the metric name
      */
