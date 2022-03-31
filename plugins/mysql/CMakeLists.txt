@@ -25,8 +25,10 @@
 project(mysqlembed)
 
 if(MYSQLEMBED)
-    ADD_PLUGIN(mysqlembed PACKAGES MYSQL)
+    ADD_PLUGIN(mysqlembed)
     if(MAKE_MYSQLEMBED)
+        find_package(MYSQL REQUIRED)
+        find_package(ZLIB REQUIRED)
         set(
             SRCS
             mysqlembed.cpp)
@@ -58,7 +60,9 @@ if(MYSQLEMBED)
             ${MYSQL_LIBRARIES}
             eclrtl
             roxiemem
-            jlib)
+            jlib
+            ZLIB::ZLIB
+        )
     endif()
 endif()
 
