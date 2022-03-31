@@ -932,12 +932,11 @@ bool WuWebView::getEmbeddedArchive(StringBuffer &ret)
         return false;
     if (getEmbeddedArchiveXML(dll, ret))
         return true;
-    // Try the old way, in case it's an older dll
-    StringBuffer dllXML;
-    if (!getEmbeddedWorkUnitXML(dll, dllXML))
+
+    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dll);
+    if (!embeddedWU)
         return false;
 
-    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
     Owned<IConstWUQuery> embeddedQuery = embeddedWU->getQuery();
     if (!embeddedQuery)
         return false;

@@ -4755,11 +4755,10 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
     wu->setClusterName(cluster);
     wu->commit();
 
-    StringBuffer dllXML;
-    if (getWorkunitXMLFromFile(dllpath.str(), dllXML))
     {
-        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
-        queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true, true);
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnitFromFile(dllpath.str());
+        if (embeddedWU)
+            queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true, true);
     }
 
     wu.associateDll(dllpath.str(), dllname.str());

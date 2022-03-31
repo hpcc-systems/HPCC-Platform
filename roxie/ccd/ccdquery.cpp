@@ -99,13 +99,16 @@ private:
         {
             try
             {
+                CCycleTimer elapsed;
                 dll.setown(isExe ? createExeDllEntry(dllName) : queryRoxieDllServer().loadDll(dllName, DllLocationDirectory));
-                StringBuffer wuXML;
-                if (!selfTestMode && getEmbeddedWorkUnitXML(dll, wuXML))
+                if (!selfTestMode)
                 {
-                    Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
-                    wu.setown(localWU->unlock());
+                    Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(dll);
+                    if (localWU)
+                        wu.setown(localWU->unlock());
                 }
+                if (traceLevel)
+                    DBGLOG("Loading dll %s took %" I64F "uus", dllName.str(), elapsed.elapsedNs()/1000);
             }
             catch (IException *E)
             {

@@ -1576,6 +1576,8 @@ protected:
     const char * defaultWho;
 };
 
+interface ILoadedDllEntry;
+
 typedef IWorkUnitFactory * (* WorkUnitFactoryFactory)(const IPropertyTree *);
 
 extern WORKUNIT_API IStatisticGatherer * createGlobalStatisticGatherer(IWorkUnit * wu);
@@ -1593,9 +1595,13 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, ErrorSeverity se
 extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
-extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit();
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromXml(const char *XML);
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(ILoadedDllEntry * dll);
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromFile(const char * filename);
 extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
+extern WORKUNIT_API void exportWorkUnitToBinary(const IConstWorkUnit *wu, MemoryBuffer & serialized);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
 extern WORKUNIT_API void abortWorkUnit(const char *wuid);
