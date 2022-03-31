@@ -155,10 +155,26 @@ public:
     }
     inline bool setownIfNull(CLASS * _ptr)
     {
+        if (!_ptr)
+            return false;
+
         CLASS * expected = nullptr;
         if (ptr.compare_exchange_strong(expected, _ptr))
             return true;
-        ::Release(_ptr);
+        _ptr->Release();
+        return false;
+    }
+    inline bool setIfNull(CLASS * _ptr)
+    {
+        if (!_ptr)
+            return false;
+
+        CLASS * expected = nullptr;
+        if (ptr.compare_exchange_strong(expected, _ptr))
+        {
+            _ptr->Link();
+            return true;
+        }
         return false;
     }
     inline void setown(CLASS * _ptr)
