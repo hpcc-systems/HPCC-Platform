@@ -2,40 +2,40 @@ storage:
   planes:
   #Some examples of the different kinds of storage planes that are supported
   #Store data on azure blobs
-  - name: azureBlobPlane
+  - name: azureblobplane
     prefix: azure://ghallidaystorage      # Not sure if this should be different from the mount.
     secret: azure-ghallidaystorage
     category: data
 
   #Store data on aws s3 buckets
-  - name: s3BucketPlane
+  - name: s3bucketplane
     prefix: s3://...
     category: data
 
   #Single node with data mounted, and mirror mounted at a different locations (could be a different disk)
-  - name: localDataPlane
+  - name: localdataplane
     prefix: /var/lib/hpccsystems/hpcc-data
     replication: [ localMirrorPlane, localMirror2Plane ]
     pvc: local-data-pvc
     category: data
-  - name: localMirrorPlane
+  - name: localmirrorplane
     prefix: /var/lib/hpccsystems/hpcc-mirror
     pvc: local-mirror-pvc
     category: data
-  - name: localMirror2Plane
+  - name: localmirror2plane
     prefix: /var/lib/hpccsystems/hpcc-mirror2
     pvc: local-mirror2-pvc
     category: data
 
   #Multiple nodes, data on a local mounts (all nodes mount the same logical file system).
   #Essentially identical to localDataPlane above
-  - name: nasPlane
-    prefix: /var/lib/hpccsystems/hpcc-data
+  - name: nasplane
+    prefix: /var/lib/hpccsystems/hpcc-data2
     replication: [ nasMirrorPlane ]
     pvc: nas-data-pvc
     category: data
-  - name: nasMirrorPlane
-    prefix: /var/lib/hpccsystems/hpcc-mirror
+  - name: nasmirrorplane
+    prefix: /var/lib/hpccsystems/hpcc-mirror3
     pvc: nas-mirror-pvc
     category: data
 
@@ -43,8 +43,8 @@ storage:
   #Allows an array of NFS servers to be used to store the data.  Would also potentially work for
   #local case with large numbers of local disks.
   #Mount point is /var/lib/hpccsystems/hpcc-data/d<device-number>
-  - name: nasArrayPlane
-    prefix: /var/lib/hpccsystems/hpcc-data
+  - name: nasarrayplane
+    prefix: /var/lib/hpccsystems/hpcc-data3
     pvc: nas-array-data-pvc
     numDevices: 100
     includeDeviceInPath: true
@@ -55,3 +55,14 @@ storage:
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/sashastorage"
     category: sasha
+
+  - name: dali
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    category: dali
+  - name: dll
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    category: dll

@@ -444,15 +444,80 @@
     "storagePlane": {
       "description": "information about an individual storage plane",
       "type": "object",
+      "allOf": [
+        { "$ref": "#/definitions/storagePlaneCommon" },
+        {
+          "properties": {
+            "name": {
+              "description": "the name of the storage plane",
+              "type": "string"
+            },
+            "disabled": {
+              "description": "disable this plane definition",
+              "type": "boolean"
+            },
+            "numDevices": {
+              "description": "optional number of devices in the storage plane (default 1)",
+              "type": "integer"
+            },
+            "includeDeviceInPath": {
+              "description": "is a directory based on the part number appended to the path.  May not be needed",
+              "type": "boolean"
+            },
+            "replication": {
+              "description": "which planes (if any) the data is replicated onto (primarily bare metal)",
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "category": {
+              "description": "the category this plane is used for, e.g. lz, data",
+              "type": "string",
+              "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git", "remote", "debug" ]
+            },
+            "defaultSprayParts" : {
+              "description": "Number of parts sprayed by default",
+              "type" : "integer"
+            },
+            "subDirPerFilePart" : {
+              "description": "Place each logical file part in its own subdirectory",
+              "type": "boolean",
+              "default": true
+            },
+            "aliases" : {
+              "description": "A list of additional ways of accessing the data, along with the reasons why",
+              "type": "array",
+              "items": { "$ref": "#/definitions/storagePlaneAlias" }
+            },
+            "storageSize": {
+              "type": "string"
+            },
+            "storageClass": {
+              "type": "string"
+            },
+            "storageMode": {
+              "type": "string"
+            },
+            "forcePermissions": {
+              "type": "boolean"
+            },
+            "prefix": {},
+            "subPath": {},
+            "secret": {},
+            "pvc": {},
+            "hostGroup": {},
+            "hosts": {},
+            "umask": {},
+            "numMounts": {},
+            "cost": {}
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [ "name", "prefix", "category" ]
+    },
+    "storagePlaneCommon": {
+      "$comment": "The following properties make sense either on a storage plane or an an alias.  For that reason they do not include properties that are used to create implement pvcs e.g. storageClass.  All new entries must be added as null entries in storagePlane and storagePlaneAlias",
       "properties": {
-        "name": {
-          "description": "the name of the storage plane",
-          "type": "string"
-        },
-        "disabled": {
-          "description": "disable this plane definition",
-          "type": "boolean"
-        },
         "prefix": {
           "description": "either the path for a local mount, or the url prefix",
           "type": "string"
@@ -478,43 +543,13 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "numDevices": {
-          "description": "optional number of devices in the storage plane (default 1)",
-          "type": "integer"
-        },
-        "includeDeviceInPath": {
-          "description": "is a directory based on the part number appended to the path.  May not be needed",
-          "type": "boolean"
-        },
-        "replication": {
-          "description": "which planes (if any) the data is replicated onto (primarily bare metal)",
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "category": {
-          "description": "the category this plane is usd for, e.g. lz, data",
-          "type": "string",
-          "enum": ["data", "lz", "dali", "sasha", "dll", "spill", "temp", "git", "remote", "debug" ]
-        },
         "umask" : {
           "description": "file creation mask (used by despray)",
           "type" : "string"
         },
-        "defaultSprayParts" : {
-          "description": "Number of parts sprayed by default",
-          "type" : "integer"
-        },
-        "storageSize": {
-          "type": "string"
-        },
-        "storageClass": {
-          "type": "string"
-        },
-        "storageMode": {
-          "type": "string"
-        },
-        "forcePermissions": {
-          "type": "boolean"
+        "numMounts": {
+          "description": "the number of mounts for this pvc - defaults to numDevices",
+          "type": "integer"
         },
         "cost" : {
           "description": "Costs associated with the storage and use of the plane",
@@ -525,15 +560,41 @@
               "type": "number"
             }
           }
-        },
-        "subDirPerFilePart" : {
-          "description": "Place each logical file part in its own subdirectory",
-          "type": "boolean",
-          "default": true
         }
-      },
-      "required": [ "name", "prefix", "category" ],
-      "additionalProperties": false
+      }
+    },
+    "storagePlaneAlias": {
+      "$comment": "The following properties are required for providing an alternative path to a data plane",
+      "allOf": [
+        { "$ref": "#/definitions/storagePlaneCommon" },
+        {
+          "properties": {
+            "name": {
+              "description": "the name of the alias",
+              "type": "string"
+            },
+            "mode": {
+              "description": "A list of access modes the engines would use to select this alias",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [ "write", "sequential", "random", "api"]
+              }
+            },
+            "prefix": {},
+            "subPath": {},
+            "secret": {},
+            "pvc": {},
+            "hostGroup": {},
+            "hosts": {},
+            "umask": {},
+            "numMounts": {},
+            "cost": {}
+          },
+          "additionalProperties": false,
+          "required": [ "name", "mode", "prefix" ]
+        }
+      ]
     },
     "remoteStorage": {
       "description": "remote storage definitions",

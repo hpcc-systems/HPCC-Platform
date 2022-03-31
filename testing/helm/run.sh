@@ -25,6 +25,15 @@ do
       cat errors.txt
       cat results.txt
       failed=1
+   else
+      helm template $hpccchart ${options} --values $file > results.txt 2> errors.txt
+      if [ $? -ne 0 ]
+      then
+         echo $file failed
+         cat errors.txt
+         cat results.txt
+         failed=1
+      fi
    fi
 done
 
