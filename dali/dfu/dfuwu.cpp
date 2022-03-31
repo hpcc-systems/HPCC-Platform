@@ -580,7 +580,11 @@ public:
         queryRoot()->getProp("@subdone",str);
         return str;
     }
-
+    double getFileAccessCost() const
+    {
+        CriticalBlock block(parent->crit);
+        return queryRoot()->getPropInt64("@fileAccessCost");
+    }
     void setSubInProgress(const char *str)
     {
         CriticalBlock block(parent->crit);
@@ -592,7 +596,11 @@ public:
         CriticalBlock block(parent->crit);
         queryRoot()->setProp("@subdone",str);
     }
-
+    void setFileAccessCost(double fileAccessCost)
+    {
+        CriticalBlock block(parent->crit);
+        queryRoot()->setPropReal("@fileAccessCost", fileAccessCost);
+    }
 };
 
 class CDFUmonitor: public CLinkedDFUWUchild, implements IDFUmonitor

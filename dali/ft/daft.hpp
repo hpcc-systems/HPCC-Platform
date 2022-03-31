@@ -33,6 +33,7 @@ interface IDaftProgress
 {
     virtual void onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize, unsigned numNodes, unsigned __int64 numReads, unsigned __int64 numWrites) = 0;          // how much has been done
     virtual void setRange(unsigned __int64 sizeReadBefore, unsigned __int64 totalSize, unsigned totalNodes) = 0;          // how much has been done
+    virtual void setFileAccessCost(double fileAccessCost) = 0;
 };
 
 interface IDaftCopyProgress

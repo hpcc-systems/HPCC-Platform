@@ -3105,6 +3105,24 @@ void FileSprayer::spray()
 
     //If got here then we have succeeded
     updateTargetProperties();
+
+    //Calculate and store file access cost
+    double fileAccessCost = 0.0;
+    if (distributedTarget)
+    {
+        StringBuffer cluster;
+        distributedTarget->getClusterName(0, cluster);
+        if (!cluster.isEmpty())
+            fileAccessCost += calcFileAccessCost(cluster, totalNumWrites, 0);
+    }
+    if (distributedSource && distributedSource->querySuperFile()==nullptr)
+    {
+        StringBuffer cluster;
+        distributedSource->getClusterName(0, cluster);
+        if (!cluster.isEmpty())
+            fileAccessCost += calcFileAccessCost(cluster, 0, totalNumReads);
+    }
+    progressReport->setFileAccessCost(fileAccessCost);
     StringBuffer copyEventText;     // [logical-source] > [logical-target]
     if (distributedSource)
         copyEventText.append(distributedSource->queryLogicalName());
