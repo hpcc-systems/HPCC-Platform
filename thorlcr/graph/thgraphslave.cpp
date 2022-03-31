@@ -233,6 +233,18 @@ bool CSlaveActivity::isLookAheadActive(unsigned index) const
     return _input.isLookAheadActive();
 }
 
+void CSlaveActivity::setupSpace4FileStats(unsigned where, bool statsForMultipleFiles, bool isSuper, unsigned numSubs, const StatisticsMapping & statsMapping)
+{
+    unsigned slotsNeeded = 0;
+    if (statsForMultipleFiles) // for variable filenames: filestats will track stats from multiple files
+        slotsNeeded = isSuper ? numSubs : 1;
+    else // filename fixed so only use need filestats for super files as activity stats can track file stats
+        // (n.b. where == 0 when single file stats tracking)
+        slotsNeeded = isSuper ? numSubs : 0;
+    for (unsigned i=fileStats.size(); i<where+slotsNeeded; i++)
+        fileStats.push_back(new CRuntimeStatisticCollection(statsMapping));
+}
+
 bool CSlaveActivity::isInputFastThrough(unsigned index) const
 {
     CThorInput &input = inputs.item(index);

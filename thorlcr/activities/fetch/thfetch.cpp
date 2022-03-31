@@ -31,7 +31,7 @@ class CFetchActivityMaster : public CMasterActivity
     Owned<CSlavePartMapping> mapping;
     MemoryBuffer offsetMapMb;
     SocketEndpoint *endpoints;
-    std::vector<OwnedPtr<CThorStatsCollection>> subFileStats;
+    unsigned fileStatsTableStart = NotFound;
 
 protected:
     Owned<IDistributedFile> fetchFile;
@@ -54,7 +54,7 @@ public:
     {
         CMasterActivity::init();
         OwnedRoxieString fname(helper->getFileName());
-        fetchFile.setown(lookupReadFile(fname, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
+        fetchFile.setown(lookupReadFile(fname, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), reInit, diskReadRemoteStatistics, &fileStatsTableStart));
         if (fetchFile)
         {
             if (isFileKey(fetchFile))
@@ -77,16 +77,6 @@ public:
             else if (encrypted)
                 throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFile->queryLogicalName());
             IDistributedSuperFile *super = fetchFile->querySuperFile();
-            unsigned numsubs = super?super->numSubFiles(true):0;
-
-            /* JCS->SHAMSER - kludge for now, don't add more than max
-                * But it means updateFileReadCostStats will not be querying the correct files,
-                * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
-                */
-            for (unsigned i=subFileStats.size(); i<numsubs; i++)
-                subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
-
-
             mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, super));
             mapping->serializeFileOffsetMap(offsetMapMb);
         }
@@ -110,16 +100,20 @@ public:
         }
         if (!container.queryLocalOrGrouped())
             dst.append((int)mpTag);
+        dst.append(fileStatsTableStart);
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
     {
         CMasterActivity::deserializeStats(node, mb);
-        for (auto &stats: subFileStats)
-            stats->deserialize(node, mb);
+        unsigned numFilesToRead;
+        mb.read(numFilesToRead);
+        assertex(numFilesToRead<=fileStats.size());
+        for (unsigned i=0; i<numFilesToRead; i++)
+            fileStats[i]->deserialize(node, mb);
     }
     virtual void done() override
     {
-        updateFileReadCostStats(subFileStats);
+        updateFileReadCostStats();
         CMasterActivity::done();
     }
 };

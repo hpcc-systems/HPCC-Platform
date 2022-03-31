@@ -1243,7 +1243,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             if (limiter)
                 limiter->dec(); // unblocks any requests to start lookup threads
         }
-        virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) = 0;
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) = 0;
     };
 
     class CKeyLookupLocalBase : public CLookupHandler
@@ -1392,7 +1392,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
             processRows(processing, partNo, keyManager);
         }
-        virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
         {
             for (size_t i=0; i<parts.size(); i++)
             {
@@ -1402,10 +1402,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 if (isSuper)
                 {
                     unsigned subfile = subFileNum[i];
-                    keyManager->mergeStats(*subFileStats[subfile]);
+                    keyManager->mergeStats(*fileStats[startOffset+subfile]);
                 }
                 else
-                    keyManager->mergeStats(*subFileStats[0]);
+                    keyManager->mergeStats(*fileStats[startOffset]);
             }
         }
     };
@@ -1442,7 +1442,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
             processRows(processing, 0, keyManager);
         }
-        virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
         {
             if (keyManager)
             {
@@ -1451,10 +1451,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     if (isSuper)
                     {
                         unsigned subfile = subFileNum[i];
-                        (*keyManager).mergeStats(*subFileStats[subfile]);
+                        (*keyManager).mergeStats(*fileStats[startOffset+subfile]);
                     }
                     else
-                        (*keyManager).mergeStats(*subFileStats[0]);
+                        (*keyManager).mergeStats(*fileStats[startOffset]);
                 }
             }
         }
@@ -1547,7 +1547,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             for (auto &h: handles)
                 h = 0;
         }
-        virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
         {
             /* Note: currently, stats from remote file not tracked */
         }
@@ -1871,7 +1871,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 diskSeeks++;
             }
         }
-        virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
+        virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset) override
         {
             for (size_t i=0; i<parts.size(); i++)
             {
@@ -1881,10 +1881,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     if (isSuper)
                     {
                         unsigned subfile = subFileNum[i];
-                        mergeStats(*subFileStats[subfile], partIO.iFileIO);
+                        mergeStats(*fileStats[startOffset+subfile], partIO.iFileIO);
                     }
                     else
-                        mergeStats(*subFileStats[0], partIO.iFileIO);
+                        mergeStats(*fileStats[startOffset], partIO.iFileIO);
                 }
             }
         }
@@ -2198,10 +2198,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     lookupHandler->end();
             }
         }
-        void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats)
+        void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned startOffset)
         {
             ForEachItemIn(h, handlers)
-                handlers.item(h)->getSubFileStats(subFileStats);
+                handlers.item(h)->getFileStats(fileStats, startOffset);
         }
     };
 
@@ -2297,8 +2297,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
     CriticalSection fetchFileCrit;
     std::vector<PartIO> openFetchParts;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> dataFileStats;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> indexFileStats;
+    unsigned indexFileStatsTableEntry = NotFound;
+    unsigned dataFileStatsTableEntry = NotFound;
 
     PartIO getFetchPartIO(unsigned partNo, unsigned copy, bool compressed, bool encrypted)
     {
@@ -3044,8 +3044,6 @@ public:
             dataPartToSlaveMap.clear();
             tlkKeyManagers.kill();
             partitionKey = false;
-            dataFileStats.clear();
-            indexFileStats.clear();
         }
         // decode data from master. NB: can be resent and differ if in global loop
         data.read(indexName);
@@ -3117,14 +3115,11 @@ public:
                 }
                 else if (container.queryLocalData())
                     totalIndexParts = numIndexParts; // will be same unless local data only
+                data.read(indexFileStatsTableEntry);
             }
             ISuperFileDescriptor *superFdesc = numIndexParts?allIndexParts.item(0).queryOwner().querySuperFileDescriptor():nullptr;
-            // One entry in indexFileStats vector for each index file's subfile
-            // Unless it is not a superfile => then the indexFileStats[0] will be used for the index file's stats
-            unsigned numIndexSubFiles = superFdesc?superFdesc->querySubFiles():1;
-            for (unsigned n=0; n<numIndexSubFiles; ++n)
-                indexFileStats.push_back(new CRuntimeStatisticCollection(indexReadStatistics));
-
+            unsigned numIndexSubFiles = superFdesc?superFdesc->querySubFiles():0;
+            setupSpace4FileStats(indexFileStatsTableEntry, true, superFdesc!=nullptr, numIndexSubFiles, indexReadActivityStatistics);
             setupLookupHandlers(keyLookupHandlers, totalIndexParts, superFdesc, localIndexParts, indexPartToSlaveMap, localKey, forceRemoteKeyedLookup ? ht_remotekeylookup : ht_localkeylookup, ht_remotekeylookup);
             data.read(totalDataParts);
             if (totalDataParts)
@@ -3160,11 +3155,6 @@ public:
                     e->index = f;
                 }
                 std::sort(globalFPosToSlaveMap.begin(), globalFPosToSlaveMap.end(), [](const FPosTableEntry &a, const FPosTableEntry &b) { return a.base < b.base; });
-                // One entry in dataFileStats vector for each data file's subfile
-                // Unless it is not a superfile => then the dataFileStats[0] will be used for the data file's stats
-                unsigned numDataSubFiles = superFdesc?superFdesc->querySubFiles():1;
-                for (unsigned n=0; n<numDataSubFiles; ++n)
-                    dataFileStats.push_back(new CRuntimeStatisticCollection(diskReadRemoteStatistics));
 #ifdef _DEBUG
                 for (unsigned c=0; c<totalDataParts; c++)
                 {
@@ -3172,6 +3162,9 @@ public:
                     ActPrintLog("Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
                 }
 #endif
+                data.read(dataFileStatsTableEntry);
+                unsigned numDataSubFiles = superFdesc?superFdesc->querySubFiles():0;
+                setupSpace4FileStats(dataFileStatsTableEntry, true, superFdesc!=nullptr, numDataSubFiles, diskReadRemoteStatistics);
             }
         }
         ActPrintLog("Remote Keyed Lookups = %s (forced = %s), remote fetch = %s (forced = %s)", boolToStr(remoteKeyedLookup), boolToStr(forceRemoteKeyedLookup), boolToStr(remoteKeyedFetch), boolToStr(forceRemoteKeyedFetch));
@@ -3799,14 +3792,12 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        keyLookupHandlers.getSubFileStats(indexFileStats);
-        if (dataFileStats.size()>0)
-            fetchLookupHandlers.getSubFileStats(dataFileStats);
+        keyLookupHandlers.getFileStats(fileStats, indexFileStatsTableEntry);
+        fetchLookupHandlers.getFileStats(fileStats, dataFileStatsTableEntry);
 
         PARENT::serializeStats(mb);
-        for (auto &stats: indexFileStats)
-            stats->serialize(mb);
-        for (auto &stats: dataFileStats)
+        mb.append((unsigned)fileStats.size());
+        for (auto &stats: fileStats)
             stats->serialize(mb);
     }
 };

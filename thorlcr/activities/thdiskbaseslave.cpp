@@ -228,6 +228,7 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
         data.read(subfile);
         subfileLogicalFilenames.append(subfile);
     }
+    data.read(fileTableStart);
     unsigned parts;
     data.read(parts);
     if (parts)
@@ -242,28 +243,31 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
         }
         else
         {
-            ISuperFileDescriptor *super = partDescs.item(0).queryOwner().querySuperFileDescriptor();
-            if (super)
+            if ((TDXjobtemp & helper->getFlags())==0)
             {
-                unsigned numSubFiles = super->querySubFiles();
-                for (unsigned i=0; i<numSubFiles; i++)
-                    subFileStats.push_back(new CRuntimeStatisticCollection(diskReadRemoteStatistics));
+                ISuperFileDescriptor *super = partDescs.item(0).queryOwner().querySuperFileDescriptor();
+                setupSpace4FileStats(fileTableStart, reInit, super!=nullptr, super?super->querySubFiles():0, diskReadRemoteStatistics);
             }
         }
     }
     gotMeta = false; // if variable filename and inside loop, need to invalidate cached meta
 }
-void CDiskReadSlaveActivityBase::mergeSubFileStats(IPartDescriptor *partDesc, IExtRowStream *partStream)
+void CDiskReadSlaveActivityBase::mergeFileStats(IPartDescriptor *partDesc, IExtRowStream *partStream)
 {
-    if (subFileStats.size()>0)
+    if (fileStats.size()>0)
     {
         ISuperFileDescriptor * superFDesc = partDesc->queryOwner().querySuperFileDescriptor();
-        dbgassertex(superFDesc);
-        unsigned subfile, lnum;
-        if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
-            mergeStats(*subFileStats[subfile], partStream);
+        if (superFDesc)
+        {
+            unsigned subfile, lnum;
+            if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
+                mergeStats(*fileStats[subfile+fileTableStart], partStream);
+        }
+        else
+            mergeStats(*fileStats[fileTableStart], partStream);
     }
 }
+
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
 {
     return subfileLogicalFilenames.item(index);
@@ -320,7 +324,8 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
         stats.set(activePartStats); // replace disk read stats
     }
     PARENT::serializeStats(mb);
-    for (auto &stats: subFileStats)
+    mb.append((unsigned)fileStats.size());
+    for (auto &stats: fileStats)
         stats->serialize(mb);
 }
 

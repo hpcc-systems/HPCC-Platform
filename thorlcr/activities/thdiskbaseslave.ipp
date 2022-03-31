@@ -91,13 +91,12 @@ protected:
     mutable ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> subFileStats;
-
+    unsigned fileTableStart = NotFound;
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper);
     const char *queryLogicalFilename(unsigned index);
     IThorRowInterfaces * queryProjectedDiskRowInterfaces();
-    void mergeSubFileStats(IPartDescriptor *partDesc, IExtRowStream *partStream);
+    void mergeFileStats(IPartDescriptor *partDesc, IExtRowStream *partStream);
     virtual void start() override;
 
 // IThorSlaveActivity

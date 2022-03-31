@@ -33,8 +33,7 @@ protected:
     Owned<CSlavePartMapping> mapping;
     IHash *hash;
     StringAttr fileName;
-    std::vector<OwnedPtr<CThorStatsCollection>> subFileStats;
-
+    unsigned fileStatsTableStart = NotFound;
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);
     virtual void init() override;
