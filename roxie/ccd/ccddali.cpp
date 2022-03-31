@@ -600,7 +600,7 @@ public:
             {
                 if (traceLevel > 1)
                     DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
-                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, AccessMode::tbdRead, isPrivilegedUser);
+                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, AccessMode::readRandom, isPrivilegedUser);
                 if (cloneFile)
                 {
                     Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();

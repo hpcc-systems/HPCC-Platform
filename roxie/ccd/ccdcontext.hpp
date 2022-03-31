@@ -55,7 +55,7 @@ interface IRoxieAgentContext : extends IRoxieContextLogger
     virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends) = 0;
     virtual const char *queryAuthToken() = 0;
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser) = 0;
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser) = 0;
+    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser) = 0;
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser) = 0;
     virtual IActivityGraph * getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity) = 0;
     virtual IProbeManager *queryProbeManager() const = 0;

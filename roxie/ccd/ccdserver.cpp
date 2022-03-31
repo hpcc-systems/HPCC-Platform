@@ -311,9 +311,9 @@ public:
     {
         return ctx->resolveLFN(filename, isOpt, isPrivilegedUser);
     }
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
+    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
-        return ctx->createLFN(filename, overwrite, extend, clusters, isPrivilegedUser);
+        return ctx->createWriteHandler(filename, overwrite, extend, clusters, isPrivilegedUser);
     }
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
     {
@@ -11660,7 +11660,7 @@ protected:
                 clusters.append(".");
         }
         // Using defaultPrivilegedUser as restricted files applies to limits reading of file (not writing of files)
-        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters, defaultPrivilegedUser));
+        writer.setown(ctx->createWriteHandler(rawLogicalName, overwrite, extend, clusters, defaultPrivilegedUser));
         // MORE - need to check somewhere that single part if it's an existing file or an external one...
     }
 
@@ -12144,7 +12144,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         }
 
         OwnedRoxieString fname(helper.getFileName());
-        writer.setown(ctx->createLFN(fname, overwrite, false, clusters, defaultPrivilegedUser)); // MORE - if there's a workunit, use if for scope.
+        writer.setown(ctx->createWriteHandler(fname, overwrite, false, clusters, defaultPrivilegedUser)); // MORE - if there's a workunit, use if for scope.
         filename.set(writer->queryFile()->queryFilename());
         if (writer->queryFile()->exists())
         {

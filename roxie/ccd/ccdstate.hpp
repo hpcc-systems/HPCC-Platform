@@ -56,7 +56,7 @@ interface IRoxiePackage : public IHpccPackage
     // Lookup information in package to resolve existing logical file name
     virtual const IResolvedFile *lookupFileName(const char *fileName, bool opt, bool useCache, bool cacheResults, IConstWorkUnit *wu, bool ignoreForeignPrefix, bool isPrivilegedUser) const = 0;
     // Lookup information in package to create new logical file name
-    virtual IRoxieWriteHandler *createFileName(const char *fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu, bool isPrivilegedUser) const = 0;
+    virtual IRoxieWriteHandler *createWriteHandler(const char *fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu, bool isPrivilegedUser) const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
     // Set the hash to be used for this package
