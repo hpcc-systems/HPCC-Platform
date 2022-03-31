@@ -797,12 +797,12 @@ IDistributedFile *lookupLegacyDFSFile(const char *logicalName, unsigned timeoutS
     return createLegacyDFSFile(dfsFile);
 }
 
-IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool write, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)
+IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)
 {
     bool viaDali = false;
 
     // DFS service currently only supports remote files 
-    if (write)
+    if (isWrite(accessMode))
         viaDali = true;
     else
     {
@@ -814,16 +814,16 @@ IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool w
         }
     }
     if (viaDali)
-        return queryDistributedFileDirectory().lookup(lfn, user, write, hold, lockSuperOwner, transaction, priviledged, timeout);
+        return queryDistributedFileDirectory().lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout);
 
     return wsdfs::lookupLegacyDFSFile(lfn.get(), timeout, wsdfs::keepAliveExpiryFrequency, user);
 }
 
-IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, bool write, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)
+IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)
 {
     CDfsLogicalFileName lfn;
     lfn.set(logicalFilename);
-    return lookup(lfn, user, write, hold, lockSuperOwner, transaction, priviledged, timeout);
+    return lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout);
 }
 
 
@@ -854,13 +854,14 @@ public:
         return dfile.get(); 
     }
 
-    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write, bool isPrivilegedUser, const StringArray *clusters)
+    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters)
     {
         fileExists = false;
         if (!onlydfs)
             lfn.allowOsPath(true);
         if (!lfn.setValidate(fname))
             return false;
+        bool write = isWrite(accessMode);
         if (!onlydfs)
         {
             bool gotlocal = true;
@@ -877,7 +878,7 @@ public:
             if (gotlocal)
             {
                 if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
-                    dfile.setown(wsdfs::lookup(lfn, user, write, false, false, nullptr, isPrivilegedUser, INFINITE));
+                    dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE));
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
@@ -901,7 +902,7 @@ public:
             }
             else
             {
-                dfile.setown(wsdfs::lookup(lfn, user, write, false, false, nullptr, isPrivilegedUser, INFINITE));
+                dfile.setown(wsdfs::lookup(lfn, user, accessMode, false, false, nullptr, isPrivilegedUser, INFINITE));
                 if (dfile.get())
                     return true;
             }
@@ -1097,10 +1098,10 @@ public:
 };
 
 
-ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite, bool isPrivilegedUser, const StringArray *clusters)
+ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters)
 {
     Owned<CLocalOrDistributedFile> ret = new CLocalOrDistributedFile();
-    if (ret->init(fname,user,onlylocal,onlydfs,iswrite,isPrivilegedUser,clusters))
+    if (ret->init(fname,user,onlylocal,onlydfs,accessMode,isPrivilegedUser,clusters))
         return ret.getClear();
     return NULL;
 }

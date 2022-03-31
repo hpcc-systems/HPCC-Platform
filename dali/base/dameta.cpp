@@ -243,7 +243,7 @@ void LogicalFileResolver::processFilename(CDfsLogicalFileName & logicalFilename)
     }
     else
     {
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(logicalFilename, user, true, false, false, nullptr, defaultNonPrivilegedUser);
+        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(logicalFilename, user, AccessMode::tbdWrite, false, false, nullptr, defaultNonPrivilegedUser);
         if (f)
             processFile(*f);
         else

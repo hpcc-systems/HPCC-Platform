@@ -261,7 +261,7 @@ void Test_SuperFile2()
             StringBuffer name(TEST_SUB_FILE);
             name.append(i+1);
             addTestFile(name.str(),i+2);
-            Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+            Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
             printf("adding size = %" I64F "d\n",sbfile->getFileSize(false,false));
             sfile->addSubFile(name);
             printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
@@ -277,7 +277,7 @@ void Test_SuperFile2()
             for (i = 0;i<3;i++) {
                 StringBuffer name(TEST_SUB_FILE);
                 name.append(i+1);
-                Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+                Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
                 printf("removing size = %" I64F "d\n",sbfile->getFileSize(false,false));
                 sfile->removeSubFile(name,false);
                 printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
@@ -291,7 +291,7 @@ void Test_SuperFile2()
 void Test_PartIter()
 {
     unsigned start = msTick();
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup("nhtest::file_name_ssn20030805",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup("nhtest::file_name_ssn20030805",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     Owned<IDistributedFilePartIterator> parts = file->getIterator();
     ForEach(*parts) {
         IDistributedFilePart & thisPart = parts->query(); 
@@ -517,19 +517,19 @@ void Test_DFS()
     dfile->attach("nigel::test::testfile3",UNKNOWN_USER);
     dfile->Release();
     fdesc->Release();
-    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     if (!f)
         printf("failed 1");
     ::Release(f);
-    f = queryDistributedFileDirectory().lookup("nigel::zest::testfile1",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    f = queryDistributedFileDirectory().lookup("nigel::zest::testfile1",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     assertex(!f);
-    f = queryDistributedFileDirectory().lookup("nigel::test::zestfile1",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    f = queryDistributedFileDirectory().lookup("nigel::test::zestfile1",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     assertex(!f);
-    f = queryDistributedFileDirectory().lookup("nigel::test::testfile1",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    f = queryDistributedFileDirectory().lookup("nigel::test::testfile1",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     if (!f)
         printf("failed 2 ");
     ::Release(f);
-    f = queryDistributedFileDirectory().lookup("nigel::test::testfile3",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    f = queryDistributedFileDirectory().lookup("nigel::test::testfile3",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     if (!f)
         printf("failed 3");
     StringBuffer str;
@@ -624,7 +624,7 @@ void Test_DFSU()
     dfile->attach("nigel::test::testfile3u",UNKNOWN_USER);
     dfile->Release();
     fdesc->Release();
-    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2u",UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2u",UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     if (!f)
         printf("failed 1");
     StringBuffer str;
@@ -3310,8 +3310,8 @@ void testMultiConnect()
 
 void testlockprop(const char *lfn)
 {
-    Owned<IDistributedFile> f1 = queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
-    Owned<IDistributedFile> f2 = queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);
+    Owned<IDistributedFile> f1 = queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
+    Owned<IDistributedFile> f2 = queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER,AccessMode::tbdRead,false,false,nullptr,defaultNonPrivilegedUser);
     f1->lockProperties();
     f1->unlockProperties();
     printf("done\n");

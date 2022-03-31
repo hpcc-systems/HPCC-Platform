@@ -2502,7 +2502,7 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
         // Look up the file in Dali
         try
         {
-            Owned<IDistributedFile> dfsFile = wsdfs::lookup(filename, udesc, false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+            Owned<IDistributedFile> dfsFile = wsdfs::lookup(filename, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
             if (dfsFile)
             {
                 const char *recordECL = dfsFile->queryAttributes().queryProp("ECL");

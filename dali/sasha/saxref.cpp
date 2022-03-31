@@ -1503,7 +1503,7 @@ public:
             }
             Owned<IDistributedFile> file;
             try {
-                file.setown(queryDistributedFileDirectory().lookup(lfn,udesc,false,false,false,nullptr,defaultPrivilegedUser));
+                file.setown(queryDistributedFileDirectory().lookup(lfn,udesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser));
             }
             catch (IException *e) {
                 EXCLOG(e,"CNewXRefManager::listLost");

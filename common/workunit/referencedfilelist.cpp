@@ -364,7 +364,7 @@ void ReferencedFile::resolveLocal(const StringArray &locations, const char *srcC
         return;
     }
     reset();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if(df)
         processLocalFileInfo(df, locations, srcCluster, subfiles);
     else
@@ -433,7 +433,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     reset();
     if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if(df)
         {
             processLocalFileInfo(df, locations, NULL, subfiles);
@@ -519,7 +519,7 @@ void ReferencedFile::cloneSuperInfo(unsigned updateFlags, ReferencedFileList *li
             return;
 
         IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-        Owned<IDistributedFile> df = dir.lookup(logicalName.str(), user, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = dir.lookup(logicalName.str(), user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if(df)
         {
             if (!(updateFlags & DALI_UPDATEF_SUPERFILES))

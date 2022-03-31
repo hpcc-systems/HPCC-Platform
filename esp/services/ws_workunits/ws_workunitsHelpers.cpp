@@ -142,7 +142,7 @@ void ensureWsCreateWorkunitAccess(IEspContext& ctx)
 
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid)
 {
-    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName);
     return wuid.append(df->queryAttributes().queryProp("@workunit"));
@@ -1455,7 +1455,7 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned long flags)
 
 IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent)
 {
-    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         return nullptr;
 

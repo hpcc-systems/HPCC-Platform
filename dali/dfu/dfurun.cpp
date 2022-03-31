@@ -954,7 +954,7 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,ctx.user,true,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,ctx.user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
         if (dfile) {
             if (!ctx.superoptions->getOverwrite())
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -1235,7 +1235,7 @@ public:
                         }
                     }
                     srcFile.setown(fdir.lookup(tmp.str(),userdesc,
-                            (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert),
+                            (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert) ? AccessMode::tbdWrite : AccessMode::tbdRead,
                             false,false,nullptr,true));
 
                     if (!srcFile)
@@ -1385,7 +1385,7 @@ public:
                             }
                             else if (multiclustermerge)
                             {
-                                dstFile.setown(fdir.lookup(tmp.str(),userdesc,true,false,false,nullptr,defaultPrivilegedUser));
+                                dstFile.setown(fdir.lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser));
                                 if (!dstFile)
                                     throw MakeStringException(-1,"Destination for merge %s does not exist",tmp.str());
                                 StringBuffer err;
@@ -1394,7 +1394,7 @@ public:
                             }
                             else
                             {
-                                Owned<IDistributedFile> oldfile = fdir.lookup(tmp.str(),userdesc,true,false,false,nullptr,defaultPrivilegedUser);
+                                Owned<IDistributedFile> oldfile = fdir.lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
                                 if (oldfile)
                                 {
                                     StringBuffer reason;
@@ -1596,7 +1596,7 @@ public:
                     destination->getLogicalName(toname);
                     if (toname.length()) {
                         unsigned start = msTick();
-                        Owned<IDistributedFile> newfile = fdir.lookup(toname.str(),userdesc,true,false,false,nullptr,defaultPrivilegedUser);
+                        Owned<IDistributedFile> newfile = fdir.lookup(toname.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
                         if (newfile) {
                             // check for rename into multicluster
                             CDfsLogicalFileName dstlfn;

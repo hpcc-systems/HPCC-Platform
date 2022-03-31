@@ -516,7 +516,7 @@ class CFuseDaliDFS: public CFuseBase
                 stbuf->st_nlink = dci->scopes.ordinality()+2;
             }
             else {
-                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,user,false,false,false,nullptr,defaultPrivilegedUser);
+                Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
                 if (file) {
                     stbuf->st_mode = S_IFREG | 0444;
                     stbuf->st_nlink = 1;
@@ -610,7 +610,7 @@ class CFuseDaliDFS: public CFuseBase
         if (!pathToLFN(path,lfn))
             return -ENOENT;
         try {
-            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,user,false,false,false,nullptr,defaultPrivilegedUser);
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
             if (!file)
                 return -ENOENT;
             if((info->flags & 3) != O_RDONLY ) 
@@ -647,7 +647,7 @@ class CFuseDaliDFS: public CFuseBase
                 CDfsLogicalFileName lfn;
                 if (!pathToLFN(path,lfn))
                     return -ENOENT;
-                file.setown(queryDistributedFileDirectory().lookup(lfn,user,false,false,false,nullptr,defaultPrivilegedUser));
+                file.setown(queryDistributedFileDirectory().lookup(lfn,user,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser));
                 if (!file)
                     return -ENOENT;
             }
