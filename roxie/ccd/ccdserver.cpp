@@ -22499,7 +22499,6 @@ public:
             }
             transformedSize = normalizeHelper->transform(rowBuilder);
             firstPending = !normalizeHelper->next();
-            reader->finishedRow();
             if (transformedSize)
                 break;
         }
