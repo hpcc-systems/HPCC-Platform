@@ -63,7 +63,7 @@ spec:
         run: {{ $dali.name | quote }}
         server: {{ $dali.name | quote }}
         app: dali
-        helmVersion: 8.4.37-closedown0
+        helmVersion: 8.4.39-closedown0
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
 {{- end }}
@@ -190,7 +190,7 @@ kind: Service
 metadata:
   name: {{ .name | quote }}
   labels:
-    helmVersion: 8.4.37-closedown0
+    helmVersion: 8.4.39-closedown0
 spec:
   ports:
   - port: 7070
