@@ -1181,12 +1181,9 @@ public:
         if (standalone)
         {
             Owned<ILoadedDllEntry> standAloneDll = createExeDllEntry(wuid.get()+1);
-            StringBuffer wuXML;
-            if (getEmbeddedWorkUnitXML(standAloneDll, wuXML))
-            {
-                wu.setown(createLocalWorkUnit(wuXML));
+            wu.setown(createLocalWorkUnit(standAloneDll));
+            if (wu)
                 dll.setown(createExeQueryDll(wuid.get()+1));
-            }
         }
         else
         {

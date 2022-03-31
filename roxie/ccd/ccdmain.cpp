@@ -744,7 +744,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         else
         {
             Owned<ILoadedDllEntry> dll = createExeDllEntry(argv[0]);
-            if (checkEmbeddedWorkUnitXML(dll))
+            if (containsEmbeddedWorkUnit(dll))
                 standAloneDll.setown(createExeQueryDll(argv[0]));
         }
         if (standAloneDll || wuid)
@@ -1279,8 +1279,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         writeSentinelFile(sentinelFile);
 #endif
         createDelayedReleaser();
+        CCycleTimer loadPackageTimer;
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
+        if (traceLevel)
+            DBGLOG("Loading all packages took %ums", loadPackageTimer.elapsedMs());
+
         ROQ = createOutputQueueManager(numAgentThreads, encryptInTransit);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();

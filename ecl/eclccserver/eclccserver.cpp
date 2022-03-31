@@ -698,11 +698,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                     StringBuffer realdllfilename;
                     realdllfilename.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
 
-                    StringBuffer wuXML;
-                    if (!getWorkunitXMLFromFile(realdllfilename, wuXML))
+                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnitFromFile(realdllfilename);
+                    if (!embeddedWU)
                         throw makeStringException(999, "Failed to extract workunit from query dll");
 
-                    Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(wuXML);
                     queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, false, true);
                     workunit->setIsClone(false);
                     const char *jobname = embeddedWU->queryJobName();
@@ -710,6 +709,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                         workunit->setJobName(jobname);
                     if (!workunit->getDebugValueBool("obfuscateOutput", false))
                     {
+                        StringBuffer wuXML;
                         Owned<IWUQuery> query = workunit->updateQuery();
                         if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))  // MORE - if what was submitted was an archive, this is probably pointless?
                             query->setQueryText(wuXML.str());
