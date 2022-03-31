@@ -1485,10 +1485,16 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
     xgmml.set(graphXGMML);
 
     StringBuffer tempDir(globals->queryProp("@thorTempDirectory"));
+#ifdef _CONTAINERIZED
     // multiple thor jobs can be running on same node, sharing same local disk for temp storage.
     // make unique by adding wuid+graphName+worker-num
     VStringBuffer uniqueSubDir("%s_%s_0", workunit->queryWuid(), graphName); // 0 denotes master (workers = 1..N)
-    SetTempDir(tempDir, uniqueSubDir, "thtmp");
+    SetTempDir(tempDir, uniqueSubDir, "thtmp", false); // no point in clearing as dir. is unique per job+graph
+#else
+    // in bare-metal where only 1 Thor instance of each name, re-use same dir, in order to guarantee it will be cleared on startup
+    VStringBuffer uniqueSubDir("%s_0", globals->queryProp("@name")); // 0 denotes master (workers = 1..N)
+    SetTempDir(tempDir, uniqueSubDir, "thtmp", true);
+#endif
 }
 
 void CJobMaster::endJob()

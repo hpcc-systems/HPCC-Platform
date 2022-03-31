@@ -1713,8 +1713,14 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     StringBuffer tempDir(globals->queryProp("@thorTempDirectory"));
     // multiple thor jobs can be running on same node, sharing same local disk for temp storage.
     // make unique by adding wuid+graphName+worker-num
+#ifdef _CONTAINERIZED
     VStringBuffer uniqueSubDir("%s_%s_%u", wuid.str(), graphName, globals->getPropInt("@slavenum"));
-    SetTempDir(tempDir, uniqueSubDir, "thtmp");
+    SetTempDir(tempDir, uniqueSubDir, "thtmp", false); // no point in clearing as dir. is unique per job+graph
+#else
+    // in bare-metal where only 1 Thor instance of each name, re-use same dir, in order to guarantee it will be cleared on startup
+    VStringBuffer uniqueSubDir("%s_%u", globals->queryProp("@name"), globals->getPropInt("@slavenum"));
+    SetTempDir(tempDir, uniqueSubDir, "thtmp", true);
+#endif
 }
 
 CJobChannel *CJobSlave::addChannel(IMPServer *mpServer)

@@ -507,7 +507,7 @@ extern graph_decl void setExceptionActivityInfo(CGraphElementBase &container, IT
 
 extern graph_decl void GetTempFilePath(StringBuffer &name, const char *suffix);
 extern graph_decl void GetTempFileName(StringBuffer &name, const char *suffix);
-extern graph_decl void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix);
+extern graph_decl void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix, bool clearDir);
 extern graph_decl void ClearTempDir();
 extern graph_decl const char *queryTempDir();
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);

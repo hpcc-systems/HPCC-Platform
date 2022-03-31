@@ -636,19 +636,7 @@ public:
     { 
         return subDirPath; 
     }
-    void setTempDir(const char *_rootDir, const char *_subDirName, const char *_prefix)
-    {
-        assertex(!isEmptyString(_rootDir) && !isEmptyString(_prefix) && !isEmptyString(_subDirName));
-        CriticalBlock block(crit);
-        assertex(subDirPath.isEmpty());
-        rootDir.set(_rootDir);
-        addPathSepChar(rootDir);
-        subDirName.set(_subDirName);
-        prefix.set(_prefix);
-        subDirPath.setf("%s%s", rootDir.str(), subDirName.str());
-        recursiveCreateDirectory(subDirPath);
-    }
-    void clear(bool log)
+    void clearTempDirectory(bool log)
     {
         assertex(subDirPath.length());
         Owned<IDirectoryIterator> iter = createDirectoryIterator(subDirPath);
@@ -668,6 +656,24 @@ public:
                 }
             }
         }
+    }
+    void setTempDir(const char *_rootDir, const char *_subDirName, const char *_prefix, bool clearDir)
+    {
+        assertex(!isEmptyString(_rootDir) && !isEmptyString(_prefix) && !isEmptyString(_subDirName));
+        CriticalBlock block(crit);
+        assertex(subDirPath.isEmpty());
+        rootDir.set(_rootDir);
+        addPathSepChar(rootDir);
+        subDirName.set(_subDirName);
+        prefix.set(_prefix);
+        subDirPath.setf("%s%s", rootDir.str(), subDirName.str());
+        recursiveCreateDirectory(subDirPath);
+        if (clearDir)
+            clearTempDirectory(true);
+    }
+    void clear(bool log)
+    {
+        clearTempDirectory(log);
         try
         {
             Owned<IFile> dirIFile = createIFile(subDirPath);
@@ -714,9 +720,9 @@ void GetTempFilePath(StringBuffer &name, const char *suffix)
     TempNameHandler.getTempName(name, suffix, true);
 }
 
-void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix)
+void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix, bool clearDir)
 {
-    TempNameHandler.setTempDir(rootTempDir, uniqueSubDir, tempPrefix);
+    TempNameHandler.setTempDir(rootTempDir, uniqueSubDir, tempPrefix, clearDir);
     LOG(MCdebugProgress, thorJob, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
 }
 
