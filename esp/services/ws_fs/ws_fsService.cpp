@@ -351,6 +351,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         if(secs > 0)
             dest.setSecsLeft(secs);
         dest.setPercentDone(prog->getPercentDone());
+        dest.setFileAccessCost(prog->getFileAccessCost());
     }
 
     IConstDFUoptions *options = src->queryOptions();
@@ -2702,7 +2703,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             logicalName.setForeign(ep,false);
         }
 
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, udesc, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if (!file)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", logicalName.get());
 

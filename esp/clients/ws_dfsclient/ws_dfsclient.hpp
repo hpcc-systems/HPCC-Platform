@@ -51,13 +51,13 @@ WS_DFSCLIENT_API IDFSFile *lookupDFSFile(const char *logicalName, unsigned timeo
 WS_DFSCLIENT_API IDistributedFile *createLegacyDFSFile(IDFSFile *dfsFile);
 WS_DFSCLIENT_API IDistributedFile *lookupLegacyDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned keepAliveExpiryFrequency, IUserDescriptor *userDesc);
 
-WS_DFSCLIENT_API IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, bool write, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
-WS_DFSCLIENT_API IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, bool write, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
+WS_DFSCLIENT_API IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
+WS_DFSCLIENT_API IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout);
 
 
 } // end of namespace wsdfs
 
 interface ILocalOrDistributedFile;
-WS_DFSCLIENT_API ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,bool iswrite, bool isPrivilegedUser, const StringArray *clusters);
+WS_DFSCLIENT_API ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs,AccessMode accessMode, bool isPrivilegedUser, const StringArray *clusters);
 
 #endif // _WS_DFSCLIENT_HPP

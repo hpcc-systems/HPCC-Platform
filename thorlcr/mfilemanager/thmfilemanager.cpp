@@ -311,22 +311,22 @@ public:
         LOG(MCauditInfo,"%s",outs.str());
     }
 
-    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, bool write, bool privilegedUser=false, unsigned timeout=INFINITE)
+    IDistributedFile *timedLookup(CJobBase &job, CDfsLogicalFileName &lfn, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE)
     {
-        auto func = [&job, &lfn, write, privilegedUser](unsigned timeout)
+        auto func = [&job, &lfn, accessMode, privilegedUser](unsigned timeout)
         {
-            return wsdfs::lookup(lfn, job.queryUserDescriptor(), write, false, false, nullptr, privilegedUser, timeout);
+            return wsdfs::lookup(lfn, job.queryUserDescriptor(), accessMode, false, false, nullptr, privilegedUser, timeout);
         };
 
-        VStringBuffer blockedMsg("lock file '%s' for %s access", lfn.get(), write ? "WRITE" : "READ");
+        VStringBuffer blockedMsg("lock file '%s' for %s access", lfn.get(), isWrite(accessMode) ? "WRITE" : "READ");
         return blockReportFunc<IDistributedFile *>(job, func, timeout, blockedMsg);
     }
     
-    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, bool write, bool privilegedUser=false, unsigned timeout=INFINITE)
+    IDistributedFile *timedLookup(CJobBase &job, const char *logicalName, AccessMode accessMode, bool privilegedUser=false, unsigned timeout=INFINITE)
     {
         CDfsLogicalFileName lfn;
         lfn.set(logicalName);
-        return timedLookup(job, lfn, write, privilegedUser, timeout);
+        return timedLookup(job, lfn, accessMode, privilegedUser, timeout);
     }
     IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true)
     {
@@ -348,7 +348,7 @@ public:
         if (fileMapping)
             return &fileMapping->get();
 
-        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), false, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000);
+        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), AccessMode::tbdRead, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000);
         if (file && 0 == file->numParts())
         {
             if (file->querySuperFile())
@@ -398,7 +398,7 @@ public:
                 throw MakeStringException(99, "Cannot publish %s, invalid logical name", logicalName);
             if (dlfn.isForeign())
                 throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", logicalName);
-            efile.setown(timedLookup(job, dlfn, true, true, job.queryMaxLfnBlockTimeMins() * 60000));
+            efile.setown(timedLookup(job, dlfn, AccessMode::tbdWrite, true, job.queryMaxLfnBlockTimeMins() * 60000));
             if (efile)
             {
                 if (!extend && !overwriteok)
@@ -441,7 +441,7 @@ public:
                 }
                 remove(job, *efile, job.queryMaxLfnBlockTimeMins() * 60000);
                 efile.clear();
-                efile.setown(timedLookup(job, dlfn, true, true, job.queryMaxLfnBlockTimeMins() * 60000));
+                efile.setown(timedLookup(job, dlfn, AccessMode::tbdWrite, true, job.queryMaxLfnBlockTimeMins() * 60000));
                 if (!efile.get())
                 {
                     ForEachItemIn(c, clusters)

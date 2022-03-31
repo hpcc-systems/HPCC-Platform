@@ -132,7 +132,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
                     {
                         if (stricmp(method, "CopyInput") == 0)
                         {
-                            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(sourceLogicalFile.str(), userdesc.get(), false, false, false, nullptr, defaultPrivilegedUser);
+                            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(sourceLogicalFile.str(), userdesc.get(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
                             if(!df)
                             {
                                 throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.",sourceLogicalFile.str());

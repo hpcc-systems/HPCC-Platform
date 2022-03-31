@@ -310,6 +310,7 @@ interface IConstDFUprogress: extends IInterface
     virtual unsigned getTotalNodes() const = 0;
     virtual StringBuffer &getSubInProgress(StringBuffer &str) const = 0;    // sub-DFUWUs in progress
     virtual StringBuffer &getSubDone(StringBuffer &str) const = 0;          // sub-DFUWUs done (list)
+    virtual double getFileAccessCost() const = 0;
 };
 
 interface IDFUprogress: extends IConstDFUprogress
@@ -325,6 +326,7 @@ interface IDFUprogress: extends IConstDFUprogress
     virtual void setSubInProgress(const char *str) = 0;     // set sub-DFUWUs in progress
     virtual void setSubDone(const char *str) = 0;           // set sub-DFUWUs done
     virtual void clearProgress() = 0;
+    virtual void setFileAccessCost(double fileAccessCost) = 0;
 };
 
 interface IDFUprogressSubscriber: extends IInterface

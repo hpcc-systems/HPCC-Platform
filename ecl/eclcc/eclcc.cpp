@@ -1748,7 +1748,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
-    instance.wu.setown(createLocalWorkUnit(NULL));
+    instance.wu.setown(createLocalWorkUnit());
     //Record the version of the compiler in the workunit, but not when regression testing (to avoid spurious differences)
     if (!optBatchMode)
         instance.wu->setDebugValue("eclcc_compiler_version", LANGUAGE_VERSION, true);
@@ -2007,7 +2007,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 {
     const char * outputFilename = instance.outputFilename;
 
-    instance.wu.setown(createLocalWorkUnit(NULL));
+    instance.wu.setown(createLocalWorkUnit());
     if (optArchive || optGenerateDepend || optSaveQueryArchive)
         instance.archive.setown(createAttributeArchive());
 
@@ -2502,7 +2502,7 @@ IHqlExpression *EclCC::lookupDFSlayout(const char *filename, IErrorReceiver &err
         // Look up the file in Dali
         try
         {
-            Owned<IDistributedFile> dfsFile = wsdfs::lookup(filename, udesc, false, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+            Owned<IDistributedFile> dfsFile = wsdfs::lookup(filename, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
             if (dfsFile)
             {
                 const char *recordECL = dfsFile->queryAttributes().queryProp("ECL");

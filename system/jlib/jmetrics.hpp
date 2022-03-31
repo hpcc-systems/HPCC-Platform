@@ -64,6 +64,8 @@ typedef std::vector<MetricMetaDataItem> MetricMetaData;
  */
 interface IMetric
 {
+    virtual ~IMetric() = default;
+
     /*
      * Returns the metric name
      */

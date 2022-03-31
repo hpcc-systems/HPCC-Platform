@@ -55,4 +55,8 @@ ESPStruct DFULogicalFile
     [min_ver("1.61"), max_ver("1.61")] double Cost;
     [min_ver("1.62")] double AtRestCost;
     [min_ver("1.62")] double AccessCost;
+    [min_ver("1.63"), nil_remove] int64 MinSkew;
+    [min_ver("1.63"), nil_remove] int64 MaxSkew;
+    [min_ver("1.63"), nil_remove] int64 MinSkewPart;
+    [min_ver("1.63"), nil_remove] int64 MaxSkewPart;
 };

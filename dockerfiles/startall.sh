@@ -25,6 +25,7 @@ scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
 CLUSTERNAME=mycluster
 PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
+MKDIR=1
 
 MANAGED_ELK_SUBPATH="managed/logging/elastic"
 MANAGED_PROM_SUBPATH="managed/metrics/prometheus"
@@ -87,12 +88,18 @@ while [ "$#" -gt 0 ]; do
          ;;
       u) CMD="upgrade"
          ;;
-      p) shift
-         if [[ $arg == '-pv' ]] ; then
-           PERSISTVALUES="--values=$1"
-           PVFILE=$1
+      p) if [[ $arg == '-pm' ]] ; then
+           #Option for minikube to avoid trying to create the directories (because they are mounted elsewhere)
+           MKDIR=0
          else
-           PERSIST=$1
+           shift
+           if [[ $arg == '-pv' ]] ; then
+             PERSISTVALUES="--values=$1"
+             echo $PERSISTVALUES
+             PVFILE=$1
+           else
+             PERSIST=$1
+           fi
          fi
          ;;
       c) DEP_UPDATE=1
@@ -143,10 +150,12 @@ fi
 if [[ -n ${PERSIST} ]] ; then
   PERSIST=$(realpath -q $PERSIST || echo $PERSIST)
   PERSIST_PATH=$(echo $PERSIST | sed 's/\\//g')
-  for subdir in `grep subPath: $PVFILE | awk '{ print $2 }'` ; do
-    echo mkdir -p ${PERSIST_PATH}/$subdir
-    mkdir -p ${PERSIST_PATH}/$subdir
-  done
+  if [[ $MKDIR == '1' ]] ; then
+    for subdir in `grep subPath: $PVFILE | awk '{ print $2 }'` ; do
+      echo mkdir -p ${PERSIST_PATH}/$subdir
+      mkdir -p ${PERSIST_PATH}/$subdir
+    done
+  fi
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
   helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG}

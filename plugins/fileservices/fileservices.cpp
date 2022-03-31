@@ -405,7 +405,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsFileValidate(ICodeContext *ctx, const 
     constructLogicalName(ctx, name, lfn);
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (df)
     {
         Owned<IDistributedFilePartIterator> partIter = df->getIterator();
@@ -446,7 +446,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetReadOnly(ICodeContext *ctx, const c
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IException> error;
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, true, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
     if (df)
     {
         LOG(MCauditInfo, "Set ReadOnly:  %s", name);
@@ -617,10 +617,11 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
             wuScope.appendf("%s-%s", label, dfuwu.getID());
             ElapsedLabel.append(wuScope).append(" (Elapsed) ");
             RemainingLabel.append(wuScope).append(" (Remaining) ");
-
             //MORE: I think this are intended to replace the timing information, but will currently combine
             updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StTimeElapsed, ElapsedLabel, milliToNano(time.elapsed()));
             updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StTimeRemaining, RemainingLabel, milliToNano(dfuwu.getSecsLeft()*1000));
+            stat_type costFileAccess = money2cost_type(dfuwu.getFileAccessCost());
+            updateWorkunitStat(wu, SSTdfuworkunit, wuScope, StCostFileAccess, "", costFileAccess);
             wu->setApplicationValue(label, dfuwu.getID(), dfuwu.getSummaryMessage(), true);
             wu->commit();
             wu.clear();
@@ -1978,7 +1979,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, 
     constructLogicalName(ctx, logicalfilename, lfn);
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (df) {
         DistributedFilePropertyLock lock(df);
         lock.queryAttributes().setProp("@description",value);
@@ -1993,7 +1994,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetFileDescription(ICodeContext *ct
     constructLogicalName(ctx, logicalfilename, lfn);
 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw MakeStringException(0, "GetFileDescription: Could not locate file %s", lfn.str());
     const char * ret = df->queryAttributes().queryProp("@description");
@@ -2155,7 +2156,7 @@ FILESERVICES_API void FILESERVICES_CALL fsLogicalFileSuperOwners(ICodeContext *c
     }
     else {
         Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc,false,false,true, nullptr, defaultPrivilegedUser); // lock super-owners
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc,AccessMode::tbdRead,false,true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (df) {
             Owned<IDistributedSuperFileIterator> iter = df->getOwningSuperFiles();
             ForEach(*iter) {
@@ -2562,7 +2563,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetColumnMapping(ICodeContext * ctx,co
 {
     StringBuffer lfn;
     constructLogicalName(ctx, filename, lfn);
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),true,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
     if (df)
         df->setColumnMapping(mapping);
     else
@@ -2573,7 +2574,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfGetColumnMapping(ICodeContext * ct
 {
     StringBuffer lfn;
     constructLogicalName(ctx, filename, lfn);
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),true,false,false,nullptr,defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),ctx->queryUserDescriptor(),AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
     if (df) {
         StringBuffer mapping;
         df->getColumnMapping(mapping);
@@ -2731,7 +2732,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
     StringBuffer ret;
     if (df) {
         if (strcmp(attrname,"ECL")==0)
@@ -2780,7 +2781,7 @@ FILESERVICES_API void FILESERVICES_CALL fsProtectLogicalFile(ICodeContext * ctx,
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(), udesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(), udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (df)
     {
         StringBuffer uname;
@@ -3056,7 +3057,7 @@ FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
     if (df)
         return df->getExpire();
     else
@@ -3071,7 +3072,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSetExpireDays(ICodeContext * ctx, cons
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
     if (df)
         df->setExpire(expireDays);
     else
@@ -3083,7 +3084,7 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
     StringBuffer lfn;
     constructLogicalName(ctx, _lfn, lfn);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, AccessMode::tbdRead,false, false, nullptr, defaultPrivilegedUser);
     if (df)
         df->setExpire(-1);
     else

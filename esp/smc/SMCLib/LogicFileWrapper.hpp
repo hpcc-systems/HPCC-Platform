@@ -125,7 +125,7 @@ struct DeleteTask: public CInterface, implements ITask
     Linked<IDistributedFilePart> part;
 };
 
-extern LFWRAPPER_API IDistributedFile* lookupLogicalName(IEspContext& contcontext, const char* logicalName, bool writeattr,
+extern LFWRAPPER_API IDistributedFile* lookupLogicalName(IEspContext& contcontext, const char* logicalName, AccessMode accessMode,
     bool hold, bool lockSuperOwner, IDistributedFileTransaction* transaction, bool privilegedUser, unsigned timeout=INFINITE);
 extern LFWRAPPER_API void getNodeGroupFromLFN(IEspContext& context, const char* lfn, StringBuffer& nodeGroup);
 

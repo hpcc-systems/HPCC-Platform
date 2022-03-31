@@ -25,6 +25,7 @@
     <xsl:param name="version" select="/esxdl/@version"/>
     <xsl:param name="no_annot_Param" select="false()"/>
     <xsl:param name="all_annot_Param" select="false()"/>
+    <xsl:param name="no_exceptions_inline" select="false()"/>
 
     <!--
         Note: This version of the stylesheet assumes that the XML input has been processed
@@ -349,6 +350,9 @@
             <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
             <xsd:complexType>
                 <xsd:all>
+                    <xsl:if test="@exceptions_inline and not($no_exceptions_inline)">
+                        <xsd:element name="Exceptions" type="tns:ArrayOfEspException" minOccurs="0" maxOccurs="1"/>
+                    </xsl:if>
                     <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlList|EsdlEnum"/>
                 </xsd:all>
             </xsd:complexType>
@@ -449,7 +453,7 @@
         </xsd:schema>
     </xsl:template>
     <xsl:template name="CreateWsdl">
-        <wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/">
+        <wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
             <xsl:attribute name="targetNamespace"><xsl:value-of select="$tnsParam"/></xsl:attribute>
             <xsl:copy-of select="namespace::tns"/>
             <wsdl:types>

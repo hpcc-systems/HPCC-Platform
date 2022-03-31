@@ -108,9 +108,9 @@ protected:
 
 //-------------------------------------------------------------------------------------------------------------
 
-ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, bool isPrivilegedUser)
+static ILocalOrDistributedFile *resolveLFNIndex(IAgentContext &agent, const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, bool isPrivilegedUser)
 {
-    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, write, nullptr, isPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(logicalName, errorTxt, optional, noteRead, accessMode, nullptr, isPrivilegedUser);
     if (!ldFile)
         return nullptr;
     IDistributedFile *dFile = ldFile->queryDistributedFile();
@@ -385,7 +385,7 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
     OwnedRoxieString lfn(helper.getFileName());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, false, defaultPrivilegedUser);
+    Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "IndexRead", 0 != (helper.getFlags() & TIRoptional),true, AccessMode::tbdRead, defaultPrivilegedUser);
     df.set(ldFile ? ldFile->queryDistributedFile() : NULL);
     if (!df)
     {
@@ -1226,7 +1226,10 @@ const void *CHThorIndexNormalizeActivity::nextRow()
                 {
                     expanding = helper.next();
                     if (!expanding)
+                    {
+                        callback.finishedRow(); // next could filter
                         break;
+                    }
 
                     const void * ret = createNextRow();
                     if (ret)
@@ -1234,7 +1237,6 @@ const void *CHThorIndexNormalizeActivity::nextRow()
                 }
             }
 
-            callback.finishedRow();
             while (!klManager->lookup(true))
             {
                 keyedProcessed++;
@@ -1253,6 +1255,8 @@ const void *CHThorIndexNormalizeActivity::nextRow()
                 if (ret)
                     return ret;
             }
+            else
+                callback.finishedRow(); // first could filter
         }
     }
 }
@@ -1263,6 +1267,7 @@ const void * CHThorIndexNormalizeActivity::createNextRow()
     {
         outBuilder.ensureRow();
         size32_t thisSize = helper.transform(outBuilder);
+        callback.finishedRow();
         if (thisSize == 0)
         {
             return NULL;
@@ -3999,7 +4004,7 @@ public:
     virtual void start()
     {
         OwnedRoxieString lfn(helper.getIndexFileName());
-        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, false, isCodeSigned);
+        Owned<ILocalOrDistributedFile> ldFile = resolveLFNIndex(agent, lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional), true, AccessMode::tbdRead, isCodeSigned);
         dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         if (dFile)
         {

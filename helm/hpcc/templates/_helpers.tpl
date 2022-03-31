@@ -214,15 +214,25 @@ storage:
 {{- range $plane := $planes }}
  {{- if not $plane.disabled }}
   - name: {{ $plane.name | quote }}
-  {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "storageSize" "subPath" -}}
+  {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "storageSize" "subPath" "numMounts" -}}
   {{- if $plane.subPath -}}
    {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
   {{- end -}}
   {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
    {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
   {{- end -}}
+
+  {{- /* Remove pvc-related properties from the aliases*/ -}}
+  {{- if $plane.aliases }}
+   {{- $_ := set $planeYaml "aliases" (deepCopy $plane.aliases) -}}
+   {{- range $alias := $planeYaml.aliases -}}
+    {{- $_ := unset $alias "pvc" }}
+    {{- $_ := unset $alias "numMounts" }}
+   {{- end -}}
+  {{- end -}}
   {{- toYaml $planeYaml | nindent 4 }}
  {{- end }}
+
 {{- end }}
 {{- if not (include "hpcc.hasPlaneForCategory" (dict "root" $ "category" "spill")) }}
   - name: hpcc-spill-plane
@@ -314,24 +324,49 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 {{- $includeNames := .includeNames | default list -}}
 {{- $previousMounts := dict -}}
 {{- range $plane := $planes -}}
- {{- if not $plane.disabled -}}
-  {{- if or ($plane.pvc) (hasKey $plane "storageClass") -}}
-   {{- if not (hasKey $previousMounts $plane.prefix) -}}
-    {{- $mountpath := $plane.prefix -}}
-    {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) }}
-     {{- $num := int ( $plane.numDevices | default 1 ) -}}
-     {{- if le $num 1 }}
+ {{- if not $plane.disabled }}
+  {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) }}
+
+   {{- /*This plane is required - generate a mount if it has not already been created, and any aliases*/ -}}
+   {{- if or ($plane.pvc) (hasKey $plane "storageClass") }}
+    {{- if not (hasKey $previousMounts $plane.prefix) }}
+     {{- $mountPath := $plane.prefix }}
+     {{- $numMounts := int ( $plane.numMounts | default $plane.numDevices | default 1 ) }}
+     {{- if le $numMounts 1 }}
 - name: {{ lower $plane.name }}-pv
-  mountPath: {{ $mountpath | quote }}
+  mountPath: {{ $mountPath | quote }}
      {{- else }}
-      {{- range $elem := untilStep 1 (int (add $num 1)) 1 }}
-- name: {{ lower $plane.name }}-pv-many-{{- $elem }}
-  mountPath: {{ printf "%s/d%d" $mountpath $elem | quote }}
+      {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 }}
+- name: {{ lower $plane.name }}-pv-many-{{ $elem }}
+  mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
       {{- end }}
      {{- end }}
     {{- end }}
     {{- $_ := set $previousMounts $plane.prefix true -}}
    {{- end }}
+
+   {{- /*Generate entries for each alias of the plane*/ -}}
+   {{- $curAlias := dict "num" 1 -}}
+   {{- range $alias := $plane.aliases | default list }}
+    {{- if $alias.pvc }}
+     {{- if not (hasKey $previousMounts $alias.prefix) }}
+      {{- $mountPath := $alias.prefix }}
+      {{- $numMounts := int ( $alias.numMounts | default $plane.numDevices | default 1 ) }}
+      {{- if le $numMounts 1 }}
+- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}
+  mountPath: {{ $mountPath | quote }}
+      {{- else }}
+       {{- range $elem := untilStep 1 (int (add $numMounts 1)) 1 }}
+- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}-many-{{ $elem }}
+  mountPath: {{ printf "%s/d%d" $mountPath $elem | quote }}
+       {{- end }}
+      {{- end }}
+     {{- end }}
+     {{- $_ := set $previousMounts $plane.prefix true -}}
+     {{- $_ := set $curAlias "num" (add $curAlias.num 1) }}
+    {{- end }}
+   {{- end }}
+
   {{- end }}
  {{- end }}
 {{- end }}
@@ -351,26 +386,51 @@ The plane will generate a volume if it matches either an includeLabel or an incl
 {{- $previousMounts := dict -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled -}}
-  {{- if or ($plane.pvc) (hasKey $plane "storageClass") -}}
-   {{- if not (hasKey $previousMounts $plane.prefix) -}}
-    {{- $mountpath := $plane.prefix -}}
-    {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) }}
-     {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) -}}
-     {{- $num := int ( $plane.numDevices | default 1 ) -}}
-     {{- if le $num 1 }}
+  {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) }}
+
+   {{- if or ($plane.pvc) (hasKey $plane "storageClass") -}}
+    {{- if not (hasKey $previousMounts $plane.prefix) }}
+     {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) }}
+     {{- $numMounts := int ( $plane.numMounts | default $plane.numDevices | default 1 ) }}
+     {{- if le $numMounts 1 }}
 - name: {{ lower $plane.name }}-pv
   persistentVolumeClaim:
     claimName: {{ $pvc }}
      {{- else }}
-      {{- range $elem := until $num }}
-- name: {{ lower $plane.name }}-pv-many-{{- add $elem 1 }}
+      {{- range $elem := until $numMounts }}
+- name: {{ lower $plane.name }}-pv-many-{{ add $elem 1 }}
   persistentVolumeClaim:
-    claimName: {{ $pvc }}-{{- add $elem 1 }}
+    claimName: {{ $pvc }}-{{ add $elem 1 }}
       {{- end }}
-     {{- end -}}
+     {{- end }}
+     {{- $_ := set $previousMounts $plane.prefix true }}
     {{- end }}
-    {{- $_ := set $previousMounts $plane.prefix true -}}
    {{- end }}
+
+   {{- /*Generate entries for each alias of the plane*/ -}}
+   {{- $curAlias := dict "num" 1 -}}
+   {{- range $alias := $plane.aliases | default list }}
+    {{- if $alias.pvc -}}
+     {{- if not (hasKey $previousMounts $alias.prefix) }}
+      {{- $pvc := $alias.pvc }}
+      {{- $numMounts := int ( $alias.numMounts | default $plane.numDevices | default 1 ) }}
+      {{- if le $numMounts 1 }}
+- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}
+  persistentVolumeClaim:
+    claimName: {{ $pvc }}
+      {{- else }}
+       {{- range $elem := until $numMounts }}
+- name: {{ lower $plane.name }}-pv-alias-{{ $curAlias.num }}-many-{{ add $elem 1 }}
+  persistentVolumeClaim:
+    claimName: {{ $pvc }}-{{ add $elem 1 }}
+       {{- end }}
+      {{- end }}
+      {{- $_ := set $previousMounts $alias.prefix true }}
+      {{- $_ := set $curAlias "num" (add $curAlias.num 1) }}
+     {{- end }}
+    {{- end }}
+   {{- end }}
+
   {{- end }}
  {{- end }}
 {{- end -}}

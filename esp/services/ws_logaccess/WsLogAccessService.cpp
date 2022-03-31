@@ -28,7 +28,7 @@ void Cws_logaccessEx::init(const IPropertyTree *cfg, const char *process, const 
 
     try
     {
-        m_remoteLogAccessor.set(queryRemoteLogAccessor());
+        m_remoteLogAccessor.set(&queryRemoteLogAccessor());
 
         if (m_remoteLogAccessor == nullptr)
             LOG(MCerror,"WsLogAccessService could not load remote log access plugin!");

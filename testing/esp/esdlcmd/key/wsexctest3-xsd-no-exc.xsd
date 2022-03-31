@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wsexctest3" elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wsexctest3">
+  <xsd:element name="string" nillable="true" type="xsd:string"/>
+  <xsd:complexType name="EspException">
+    <xsd:all>
+      <xsd:element name="Code" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Audience" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Message" type="xsd:string" minOccurs="0"/>
+    </xsd:all>
+  </xsd:complexType>
+  <xsd:complexType name="ArrayOfEspException">
+    <xsd:sequence>
+      <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Exception" type="tns:EspException" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="Exceptions" type="tns:ArrayOfEspException"/>
+  <xsd:element name="InlineExceptionsRequest">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="WsExcTest3PingRequest">
+    <xsd:complexType>
+      <xsd:all/>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="SoapFaultExceptionsRequest">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="InlineExceptionsResponse">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="WsExcTest3PingResponse">
+    <xsd:complexType>
+      <xsd:all/>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="SoapFaultExceptionsResponse">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

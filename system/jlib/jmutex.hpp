@@ -22,6 +22,7 @@
 
 #include <assert.h>
 #include <atomic>
+#include <functional>
 #include "jiface.hpp"
 #include "jsem.hpp"
 
@@ -1002,7 +1003,19 @@ class Singleton
 {
 public:
     template <typename FUNC> X * query(FUNC factory) { return querySingleton(singleton, cs, factory); }
-    X * queryExisting() const { return singleton.load(std::memory_order_acquire); }
+
+    //destroy() is designed to be called from a static destructor, not thread safe with calls to query() ...
+    void destroy(std::function<void (X*)> destructor)
+    {
+        X * value = singleton.exchange(nullptr, std::memory_order_acq_rel);
+        if (value)
+            destructor(value);
+    }
+    void destroy()
+    {
+        X * value = singleton.exchange(nullptr, std::memory_order_acq_rel);
+        delete value;
+    }
 private:
     std::atomic<X *> singleton = {nullptr};
     CriticalSection cs;

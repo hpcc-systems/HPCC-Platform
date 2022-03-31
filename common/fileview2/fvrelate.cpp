@@ -426,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc,false,false,true,nullptr,defaultPrivilegedUser); // lock super-owners
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc,AccessMode::tbdRead,false,true,nullptr,defaultPrivilegedUser); // lock super-owners
     if (!resolved)
         return NULL;
 

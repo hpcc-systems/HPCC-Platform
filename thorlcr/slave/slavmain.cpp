@@ -1916,6 +1916,8 @@ public:
                         StringAttr key;
                         msg.read(key);
                         CJobSlave *job = jobs.find(key.get());
+                        if (!job)
+                            throw makeStringException(0, "QueryDone: job not found"); // can happen if job failed during initialization on some slaves
                         StringAttr wuid = job->queryWuid();
                         StringAttr graphName = job->queryGraphName();
 

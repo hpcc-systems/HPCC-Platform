@@ -1113,7 +1113,7 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     if (!autocreatesuper)
     {//a file lock created by the lookup() will be released after '}'
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
         if (existingSuperfile)
         {
             if (!df)
@@ -1375,7 +1375,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 if (emptyOwningSuperFiles.contains(lfn))
                     continue;
 
-                Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, true, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
+                Owned<IDistributedFile> df = fdir.lookup(lfn, userdesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, 30000); // 30 sec timeout
                 if (!df)
                 {
                     VStringBuffer message("Could not delete file %s: file not found.", lfn);
@@ -1519,7 +1519,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
 
             try
             {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), true, false, false, nullptr, defaultPrivilegedUser);
+                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(curfile, userdesc.get(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser);
                 if (df)
                 {
                     if (subfiles.length() > 0)
@@ -1611,7 +1611,7 @@ bool CWsDfuEx::changeFileProtections(IEspContext &context, IEspDFUArrayActionReq
         if (isEmptyString(file))
             continue;
 
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (!df)
         {
             addFileActionResult(file, nullptr, true, "Cannot find file.", actionResults);
@@ -1671,7 +1671,7 @@ bool CWsDfuEx::changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRe
         if (isEmptyString(file))
             continue;
 
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(file, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
         if (!df)
         {
             addFileActionResult(file, nullptr, true, "Cannot find file.", actionResults);
@@ -1756,7 +1756,7 @@ IHqlExpression * getEclRecordDefinition(const char * ecl)
 
 IHqlExpression * getEclRecordDefinition(IUserDescriptor* udesc, const char* FileName)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(FileName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",FileName);
     if(!df->queryAttributes().hasProp("ECL"))
@@ -1831,7 +1831,7 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
         PROGLOG("DFURecordTypeInfo file: %s", fileName);
 
-        Owned<IDistributedFile> df = lookupLogicalName(context, fileName, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = lookupLogicalName(context, fileName, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if (!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",fileName);
 
@@ -1907,7 +1907,7 @@ void CWsDfuEx::getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuf
 
 bool CWsDfuEx::checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster)
 {
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         return false;
 
@@ -2196,7 +2196,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             return;
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser); // lock super-owners
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
 
@@ -3617,22 +3617,28 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
         filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
 
-    __int64 sizeFrom = req.getFileSizeFrom();
-    __int64 sizeTo = req.getFileSizeTo();
-    if ((sizeFrom > 0) || (sizeTo > 0))
-    {
-        StringBuffer buf;
-        if (sizeFrom > 0)
-            buf.append(sizeFrom);
-        buf.append(DFUQFilterSeparator);
-        if (sizeTo > 0)
-            buf.append(sizeTo);
-        filterBuf.append(DFUQFTinteger64Range).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFattrsize));
-        filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
-    }
+    setInt64RangeFilter(req.getFileSizeFrom(), req.getFileSizeTo(), DFUQFFattrsize, filterBuf);
+    setInt64RangeFilter(req.getMaxSkewFrom(), req.getMaxSkewTo(), DFUQFFattrmaxskew, filterBuf);
+    setInt64RangeFilter(req.getMinSkewFrom(), req.getMinSkewTo(), DFUQFFattrminskew, filterBuf);
 
     setTimeRangeFilter(req.getStartDate(), req.getEndDate(), DFUQFFtimemodified, filterBuf);
     setTimeRangeFilter(req.getStartAccessedTime(), req.getEndAccessedTime(), DFUQFFaccessed, filterBuf);
+}
+
+void CWsDfuEx::setInt64RangeFilter(__int64 from, __int64 to, DFUQFilterField filterID, StringBuffer &filterBuf)
+{
+    if ((from == 0) && (to == 0))
+        return;
+
+    filterBuf.append(DFUQFTinteger64Range).append(DFUQFilterSeparator);
+    filterBuf.append(getDFUQFilterFieldName(filterID)).append(DFUQFilterSeparator);
+    StringBuffer buf;
+    if (from > 0)
+        filterBuf.append(from);
+    filterBuf.append(DFUQFilterSeparator);
+    if (to > 0)
+        filterBuf.append(to);
+    filterBuf.append(DFUQFilterSeparator);
 }
 
 void CWsDfuEx::setTimeRangeFilter(const char *from, const char *to, DFUQFilterField filterID, StringBuffer &filterBuf)
@@ -3691,6 +3697,10 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = DFUQRFkind;
     else if (strieq(sortByPtr, "Cost"))
         sortOrder[0] = (DFUQResultField) (DFUQRFcost | DFUQRFfloat);
+    else if (strieq(sortByPtr, "MaxSkew"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFmaxSkew | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "MinSkew"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFminSkew | DFUQRFnumeric);
     else
         sortOrder[0] = DFUQRFname;
 
@@ -5071,7 +5081,7 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5110,7 +5120,7 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5711,7 +5721,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     Owned<IDistributedFile> df;
     try
     {
-        df.setown(lookupLogicalName(context, indexName, false, false, false, nullptr, defaultPrivilegedUser));
+        df.setown(lookupLogicalName(context, indexName, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser));
         if(!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", indexName);
 
@@ -6041,7 +6051,7 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
 
     checkLogicalName(fileName, userDesc, true, false, false, nullptr); // check for read permissions
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, false, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs); // lock super-owners
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser, lockTimeoutMs); // lock super-owners
     if (!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file '%s'.", fileName.str());
 
@@ -6638,7 +6648,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             userDesc->set(userId.str(), context.queryPassword(), context.querySignature());
             fileDesc->queryProperties().setProp("@owner", userId);
         }
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, false, false, true, nullptr, defaultPrivilegedUser, req.getLockTimeoutMs());
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(newFileName, userDesc, AccessMode::tbdRead, false, true, nullptr, defaultPrivilegedUser, req.getLockTimeoutMs());
         if (df)
         {
             if (!req.getOverwrite())

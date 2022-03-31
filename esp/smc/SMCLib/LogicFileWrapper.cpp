@@ -42,7 +42,7 @@ LogicFileWrapper::~LogicFileWrapper()
 void LogicFileWrapper::FindClusterName(const char* logicalName, StringBuffer& returnCluster, IUserDescriptor* udesc)
 {
     try {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, false, false, false, nullptr, defaultPrivilegedUser) ;
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser) ;
         if(!df)
             throw MakeStringException(-1,"Could not find logical file");
         df->getClusterName(0,returnCluster);    // ** TBD other cluster
@@ -72,7 +72,7 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
         {
-            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, true, false, false, nullptr, defaultPrivilegedUser) ;
+            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser) ;
             if(!df)
             {
                 returnStr.appendf("<Message><Value>File %s not found</Value></Message>", cname.str());
@@ -95,7 +95,7 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
     return false;
 }
 
-IDistributedFile* lookupLogicalName(IEspContext& context, const char* logicalName, bool writeattr, bool hold,
+IDistributedFile* lookupLogicalName(IEspContext& context, const char* logicalName, AccessMode accessMode, bool hold,
     bool lockSuperOwner, IDistributedFileTransaction* transaction, bool privilegedUser, unsigned timeout)
 {
     StringBuffer userID;
@@ -107,14 +107,14 @@ IDistributedFile* lookupLogicalName(IEspContext& context, const char* logicalNam
         userDesc->set(userID, context.queryPassword(), context.querySignature());
     }
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userDesc, writeattr,
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userDesc, accessMode,
         hold, lockSuperOwner, transaction, privilegedUser, timeout);
     return df.getClear();
 }
 
 void getNodeGroupFromLFN(IEspContext& context, const char* lfn, StringBuffer& nodeGroup)
 {
-    Owned<IDistributedFile> df = lookupLogicalName(context, lfn, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = lookupLogicalName(context, lfn, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
     df->getClusterGroupName(0, nodeGroup);

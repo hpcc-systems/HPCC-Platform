@@ -1,0 +1,22 @@
+storage:
+  planes:
+  - name: dali
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+  - name: sasha
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    category: sasha
+  - name: dll
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+  - name: mydropzone
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/mydropzone"
+    category: lz

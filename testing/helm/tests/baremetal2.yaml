@@ -18,31 +18,31 @@ storage:
       delta: 1
 
   planes:
-  - name: demoOne
+  - name: demo-one
     category: data
     prefix: /home/gavin/temp
     hostGroup: demoOne
-  - name: myDropZone
+  - name: my-drop-zone
     prefix: /home/gavin/temp
     hosts: [ '192.168.86.202']
     category: 'lz'
-  - name: demoTwo
+  - name: demo-two
     prefix: /home/gavin/temp/demoTwo
     hostGroup: demoTwo
     category: data
-  - name: demoTwoReplica
+  - name: demo-two-replica
     prefix: /home/gavin/temp/demoTwo
     hostGroup: demoThree
     category: data
-  - name: demoTwoA
+  - name: demo-two-a
     prefix: /home/gavin/temp/demoTwoA
     hostGroup: demoTwoA
     category: data
-  - name: demoTwoB
+  - name: demo-two-b
     prefix: /home/gavin/temp/demoTwoB
     hostGroup: demoTwoB
     category: data
-  - name: myInlinePlane
+  - name: my-inline-plane
     prefix: /home/gavin/temp
     hosts: [ 'here', 'there', 'everywhere']
     category: data

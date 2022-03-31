@@ -55,6 +55,10 @@
         "category": {
           "description": "the category this plane is usd for, e.g. lz, data",
           "type": "string"
+        },
+        "numDevices": {
+          "description": "the number of pvcs to create (allowing sub-directories on different devices)",
+          "type": "integer"
         }
       },
       "required": [ "name", "subPath", "size" ],

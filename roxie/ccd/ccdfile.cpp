@@ -2630,7 +2630,7 @@ protected:
                 cached = NULL;
             }
         }
-        globalPackageSetManager->requestReload(false, false);
+        globalPackageSetManager->requestReload(false, false, false);
     }
 
     // We cache all the file maps/arrays etc here. 
@@ -2643,9 +2643,10 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* _daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
+    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* _daliHelper, bool isDynamic, bool cacheIt, AccessMode accessMode, bool _isSuperFile)
     : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile), daliHelper(_daliHelper)
     {
+        //accessMode not used?
         cached = NULL;
         fileSize = 0;
         fileCheckSum = 0;
@@ -3294,7 +3295,7 @@ public:
 
 public:
     CAgentDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverId(header->serverId)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, AccessMode::tbdRead, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverId(header->serverId)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
@@ -3409,13 +3410,13 @@ private:
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile)
 {
-    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, true, false, false, isSuperFile);
+    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, true, false, AccessMode::tbdRead, isSuperFile);
 }
 
-extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, bool writeAccess)
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, AccessMode accessMode)
 {
     const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
-    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, isDynamic, cacheIt, writeAccess, false);
+    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, isDynamic, cacheIt, accessMode, false);
 }
 
 class CAgentDynamicFileCache : implements IAgentDynamicFileCache, public CInterface
@@ -3517,12 +3518,12 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 MODULE_EXIT()
 { 
-    auto cache = fileCache.queryExisting();
-    if (cache)
+    auto cleanup = [](CRoxieFileCache *cache)
     {
         cache->join();
         cache->Release();
-    }
+    };
+    fileCache.destroy(cleanup);
 }
 
 extern IRoxieFileCache &queryFileCache()

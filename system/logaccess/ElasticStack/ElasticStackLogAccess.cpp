@@ -19,6 +19,7 @@
 #include <vector>
 #include <iostream>
 #include <json/json.h>
+#include <json/writer.h>
 
 
 #ifdef _CONTAINERIZED
@@ -52,6 +53,26 @@ static constexpr const char * DEFAULT_HPCC_LOG_AUD_COL         = "hpcc.log.audie
 static constexpr const char * LOGMAP_INDEXPATTERN_ATT = "@storename";
 static constexpr const char * LOGMAP_SEARCHCOL_ATT = "@searchcolumn";
 static constexpr const char * LOGMAP_TIMESTAMPCOL_ATT = "@timestampcolumn";
+
+static constexpr const char * DEFAULT_SCROLL_TIMEOUT = "1m"; //Elastic Time Units (i.e. 1m = 1 minute).
+static constexpr std::size_t  DEFAULT_MAX_RECORDS_PER_FETCH = 100;
+
+void ElasticStackLogAccess::getMinReturnColumns(std::string & columns)
+{
+    //timestamp, source component, message
+    columns.append(" \"").append(DEFAULT_HPCC_LOG_TIMESTAMP_COL).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"").append(m_globalSearchColName).append("\" ");
+}
+
+void ElasticStackLogAccess::getDefaultReturnColumns(std::string & columns)
+{
+    //timestamp, source component, all hpcc.log fields
+    columns.append(" \"").append(DEFAULT_HPCC_LOG_TIMESTAMP_COL).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"hpcc.log.*\" ");
+}
+
+void ElasticStackLogAccess::getAllColumns(std::string & columns)
+{
+    columns.append( " \"*\" ");
+}
 
 ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hostUrlList, IPropertyTree & logAccessPluginConfig) : m_esClient(hostUrlList)
 {
@@ -181,33 +202,20 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
 }
 
 /*
- * Transform ES query response to back-end agnostic response
+ * Transform iterator of hits/fields to back-end agnostic response
  *
  */
-void processESJsonResp(const cpr::Response & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format)
+void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped)
 {
-    if (retrievedDocument.status_code != 200)
-        throw makeStringExceptionV(-1, "ElasticSearch request failed: %s", retrievedDocument.status_line.c_str());
+    if (!iter)
+        throw makeStringExceptionV(-1, "%s: Detected null 'hits' ElasticSearch response", COMPONENT_NAME);
 
-    DBGLOG("Retrieved ES JSON DOC: %s", retrievedDocument.text.c_str());
-
-    Owned<IPropertyTree> tree = createPTreeFromJSONString(retrievedDocument.text.c_str());
-    if (!tree)
-        throw makeStringExceptionV(-1, "%s: Could not parse ElasticSearch query response", COMPONENT_NAME);
-
-    if (tree->getPropBool("timed_out", 0))
-        LOG(MCuserProgress,"ES Log Access: timeout reported");
-    if (tree->getPropInt("_shards/failed",0) > 0)
-        LOG(MCuserProgress,"ES Log Access: failed _shards reported");
-
-    DBGLOG("ES Log Access: hit count: '%d'", tree->getPropInt("hits/total/value"));
-
-    Owned<IPropertyTreeIterator> iter = tree->getElements("hits/hits/fields");
     switch (format)
     {
         case LOGACCESS_LOGFORMAT_xml:
         {
-            returnbuf.append("<lines>");
+            if (wrapped)
+                returnbuf.append("<lines>");
 
             ForEach(*iter)
             {
@@ -216,12 +224,15 @@ void processESJsonResp(const cpr::Response & retrievedDocument, StringBuffer & r
                 toXML(&cur,returnbuf);
                 returnbuf.append("</line>");
             }
-            returnbuf.append("</lines>");
+            if (wrapped)
+                returnbuf.append("</lines>");
             break;
         }
         case LOGACCESS_LOGFORMAT_json:
         {
-            returnbuf.append("{\"lines\": [");
+            if (wrapped)
+                returnbuf.append("{\"lines\": [");
+
             StringBuffer hitchildjson;
             bool first = true;
             ForEach(*iter)
@@ -234,7 +245,8 @@ void processESJsonResp(const cpr::Response & retrievedDocument, StringBuffer & r
                 first = false;
                 returnbuf.appendf("{\"fields\": [ %s ]}", hitchildjson.str());
             }
-            returnbuf.append("]}");
+            if (wrapped)
+                returnbuf.append("]}");
             break;
         }
         case LOGACCESS_LOGFORMAT_csv:
@@ -260,6 +272,48 @@ void processESJsonResp(const cpr::Response & retrievedDocument, StringBuffer & r
         default:
             break;
     }
+}
+
+/*
+ * Transform ES query response to back-end agnostic response
+ *
+ */
+void processESSearchJsonResp(const cpr::Response & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format)
+{
+    if (retrievedDocument.status_code != 200)
+        throw makeStringExceptionV(-1, "ElasticSearch request failed: %s", retrievedDocument.text.c_str());
+
+#ifdef _DEBUG
+    DBGLOG("Retrieved ES JSON DOC: %s", retrievedDocument.text.c_str());
+#endif
+
+    Owned<IPropertyTree> tree = createPTreeFromJSONString(retrievedDocument.text.c_str());
+    if (!tree)
+        throw makeStringExceptionV(-1, "%s: Could not parse ElasticSearch query response", COMPONENT_NAME);
+
+    if (tree->getPropBool("timed_out", false))
+        LOG(MCuserProgress,"ES Log Access: timeout reported");
+    if (tree->getPropInt("_shards/failed",0) > 0)
+        LOG(MCuserProgress,"ES Log Access: failed _shards reported");
+
+    DBGLOG("ES Log Access: hit count: '%d'", tree->getPropInt("hits/total/value"));
+
+    Owned<IPropertyTreeIterator> hitsFieldsElements = tree->getElements("hits/hits/fields");
+    processHitsJsonResp(hitsFieldsElements, returnbuf, format, true);
+}
+
+/*
+ * Transform ES scroll query response to back-end agnostic response
+ *
+ */
+void processESScrollJsonResp(const char * retValue, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped)
+{
+    Owned<IPropertyTree> tree = createPTreeFromJSONString(retValue);
+    if (!tree)
+        throw makeStringExceptionV(-1, "%s: Could not parse ElasticSearch query response", COMPONENT_NAME);
+
+    Owned<IPropertyTreeIterator> hitsFieldsElements = tree->getElements("hits/fields");
+    processHitsJsonResp(hitsFieldsElements, returnbuf, format, wrapped);
 }
 
 void esTimestampQueryRangeString(std::string & range, const char * timestampfield, std::time_t from, std::time_t to)
@@ -331,7 +385,7 @@ void esMatchQueryString(std::string & search, const char *searchval, const char 
 /*
  * Construct Elasticsearch query directives string
  */
-void esSearchMetaData(std::string & search, const  StringArray & selectcols, unsigned size = DEFAULT_ES_DOC_LIMIT, offset_t from = DEFAULT_ES_DOC_START)
+void ElasticStackLogAccess::esSearchMetaData(std::string & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, unsigned size = DEFAULT_ES_DOC_LIMIT, offset_t from = DEFAULT_ES_DOC_START)
 {
     //Query parameters:
     //https://www.elastic.co/guide/en/elasticsearch/reference/6.8/search-request-body.html
@@ -339,25 +393,40 @@ void esSearchMetaData(std::string & search, const  StringArray & selectcols, uns
     //_source: https://www.elastic.co/guide/en/elasticsearch/reference/6.8/search-request-source-filtering.html
     search += "\"_source\": false, \"fields\": [" ;
 
-    if (selectcols.length() > 0)
+    switch (retcolmode)
     {
-        StringBuffer sourcecols;
-        ForEachItemIn(idx, selectcols)
+    case RETURNCOLS_MODE_all:
+        getAllColumns(search);
+        break;
+    case RETURNCOLS_MODE_min:
+        getMinReturnColumns(search);
+        break;
+    case RETURNCOLS_MODE_default:
+        getDefaultReturnColumns(search);
+        break;
+    case RETURNCOLS_MODE_custom:
+    {
+        if (selectcols.length() > 0)
         {
-            sourcecols.appendf("\"%s\"", selectcols.item(idx));
-            if (idx < selectcols.length() -1)
-                sourcecols.append(",");
-        }
+            StringBuffer sourcecols;
+            ForEachItemIn(idx, selectcols)
+            {
+                sourcecols.appendf("\"%s\"", selectcols.item(idx));
+                if (idx < selectcols.length() -1)
+                    sourcecols.append(",");
+            }
 
-        if (!sourcecols.isEmpty())
-            search += sourcecols.str() ;
+            search += sourcecols.str();
+        }
         else
-            search += "\"*\"";
-            //search += "!*.keyword"; //all fields ignoring the .keyword postfixed fields
+        {
+            throw makeStringExceptionV(-1, "%s: Custom return columns specified, but no columns provided", COMPONENT_NAME);
+        }
+        break;
     }
-    else
-        //search += "!*.keyword"; //all fields ignoring the .keyword postfixed fields
-        search += "\"*\"";
+    default:
+        throw makeStringExceptionV(-1, "%s: Could not determine return colums mode", COMPONENT_NAME);
+    }
 
     search += "],";
     search += "\"from\": ";
@@ -367,16 +436,13 @@ void esSearchMetaData(std::string & search, const  StringArray & selectcols, uns
     search += ", ";
 }
 
-/*
- * Construct ES query string, execute query
- */
-cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & options)
+void ElasticStackLogAccess::populateQueryStringAndQueryIndex(std::string & queryString, std::string & queryIndex, const LogAccessConditions & options)
 {
     try
     {
         StringBuffer queryValue;
         std::string queryField = m_globalSearchColName.str();
-        std::string queryIndex = m_globalIndexSearchPattern.str();
+        queryIndex = m_globalIndexSearchPattern.str();
 
         bool fullTextSearch = true;
         bool wildCardSearch = false;
@@ -464,14 +530,14 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
             throw makeStringExceptionV(-1, "%s: Unknown query criteria type encountered: '%s'", COMPONENT_NAME, queryValue.str());
         }
 
-        std::string fullRequest = "{";
-        esSearchMetaData(fullRequest, options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
+        queryString = "{";
+        esSearchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
 
-        fullRequest += "\"query\": { \"bool\": {";
+        queryString += "\"query\": { \"bool\": {";
 
         if(!wildCardSearch)
         {
-            fullRequest += " \"must\": { ";
+            queryString += " \"must\": { ";
 
             std::string criteria;
             if (fullTextSearch) //are we performing a query on a blob, or exact term match?
@@ -479,8 +545,8 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
             else
                 esTermQueryString(criteria, queryValue.str(), queryField.c_str());
 
-            fullRequest += criteria;
-            fullRequest += "}, "; //end must, expect filter to follow
+            queryString += criteria;
+            queryString += "}, "; //end must, expect filter to follow
         }
 
         std::string filter = "\"filter\": {";
@@ -496,12 +562,37 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
         filter += range;
         filter += "}"; //end filter
 
-        fullRequest += filter;
-        fullRequest += "}}}"; //end bool and query
+        queryString += filter;
+        queryString += "}}}"; //end bool and query
 
-        DBGLOG("%s: Search string '%s'", COMPONENT_NAME, fullRequest.c_str());
+        DBGLOG("%s: Search string '%s'", COMPONENT_NAME, queryString.c_str());
+    }
+    catch (std::runtime_error &e)
+    {
+        const char * wha = e.what();
+        throw makeStringExceptionV(-1, "%s: fetchLog: Error searching doc: %s", COMPONENT_NAME, wha);
+    }
+    catch (IException * e)
+    {
+        StringBuffer mess;
+        e->errorMessage(mess);
+        e->Release();
+        throw makeStringExceptionV(-1, "%s: fetchLog: Error searching doc: %s", COMPONENT_NAME, mess.str());
+    }
+}
 
-        return m_esClient.search(queryIndex.c_str(), DEFAULT_ES_DOC_TYPE, fullRequest);
+/*
+ * Construct ES query string, execute query
+ */
+cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & options)
+{
+    try
+    {
+        std::string queryString;
+        std::string queryIndex;
+        populateQueryStringAndQueryIndex(queryString, queryIndex, options);
+
+        return m_esClient.search(queryIndex.c_str(), DEFAULT_ES_DOC_TYPE, queryString);
     }
     catch (std::runtime_error &e)
     {
@@ -520,9 +611,63 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
 bool ElasticStackLogAccess::fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     cpr::Response esresp = performESQuery(options);
-    processESJsonResp(esresp, returnbuf, format);
+    processESSearchJsonResp(esresp, returnbuf, format);
 
     return true;
+}
+
+class ELASTICSTACKLOGACCESS_API ElasticStackLogStream : public CInterfaceOf<IRemoteLogAccessStream>
+{
+public:
+    virtual bool readLogEntries(StringBuffer & record, unsigned & recsRead) override
+    {
+        Json::Value res;
+        recsRead = 0;
+
+        if (m_esSroller.next(res))
+        {
+            if (!res["hits"].empty())
+            {
+                recsRead = res["hits"].size();
+                std::ostringstream sout;
+                m_jsonWriter->write(res, &sout); // serialize Json object to string for processing
+                processESScrollJsonResp(sout.str().c_str(), record, m_outputFormat, false); // convert Json string to target format
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    ElasticStackLogStream(std::string & queryString, const char * connstr, const char * indexsearchpattern, LogAccessLogFormat format,  std::size_t pageSize, std::string scrollTo)
+     : m_esSroller(std::make_shared<elasticlient::Client>(std::vector<std::string>({connstr})), pageSize, scrollTo)
+    {
+        m_outputFormat = format;
+        m_esSroller.init(indexsearchpattern, DEFAULT_ES_DOC_TYPE, queryString);
+        m_jsonWriter.reset(m_jsonStreamBuilder.newStreamWriter());
+    }
+
+    virtual ~ElasticStackLogStream() override = default;
+
+private:
+    elasticlient::Scroll m_esSroller;
+
+    LogAccessLogFormat m_outputFormat;
+    Json::StreamWriterBuilder m_jsonStreamBuilder;
+    std::unique_ptr<Json::StreamWriter> m_jsonWriter;
+};
+
+IRemoteLogAccessStream * ElasticStackLogAccess::getLogReader(const LogAccessConditions & options, LogAccessLogFormat format)
+{
+    return getLogReader(options, format, DEFAULT_MAX_RECORDS_PER_FETCH);
+}
+
+IRemoteLogAccessStream * ElasticStackLogAccess::getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize)
+{
+    std::string queryString;
+    std::string queryIndex;
+    populateQueryStringAndQueryIndex(queryString, queryIndex, options);
+    return new ElasticStackLogStream(queryString, m_esConnectionStr.str(), queryIndex.c_str(), format, pageSize, DEFAULT_SCROLL_TIMEOUT);
 }
 
 extern "C" IRemoteLogAccess * createInstance(IPropertyTree & logAccessPluginConfig)

@@ -78,6 +78,7 @@ struct IEclLoopGraph : public IInterface
 interface IOrderedOutputSerializer;
 
 typedef enum { ofSTD, ofXML, ofRAW } outputFmts;
+enum class AccessMode : unsigned;
 
 struct IAgentContext : extends IGlobalCodeContext
 {
@@ -92,7 +93,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
     
-    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser) = 0;
+    virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, AccessMode accessMode, StringBuffer * expandedlfn, bool isPrivilegedUser) = 0;
     virtual StringBuffer & getTempfileBase(StringBuffer & buff) = 0;
     virtual const char *noteTemporaryFile(const char *fname) = 0;
     virtual const char *noteTemporaryFilespec(const char *fname) = 0;

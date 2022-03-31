@@ -436,7 +436,7 @@ void loadLFS(const char * lfs, IUserDescriptor * user, StringBuffer &sb)
     lfn.set(lfs);
     try
     {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, user, false, false, false, nullptr, defaultPrivilegedUser);//scope checks
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, user, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);//scope checks
         if (!df)
         {
             throw makeStringExceptionV(-1, "File %s Not Found", lfs);
