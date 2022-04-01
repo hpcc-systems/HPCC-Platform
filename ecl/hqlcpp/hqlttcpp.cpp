@@ -10306,7 +10306,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
             if (!isAlwaysActiveRow(ds))
             {
                 StringBuffer exprText;
-                VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
+                VStringBuffer msg("%s - Need to use ROW(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
                 reportError(CategoryError, msg);
             }
         }
@@ -10318,7 +10318,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
         if (!isActiveOk)
         {
             StringBuffer exprText;
-            VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
+            VStringBuffer msg("%s - Need to use ROW(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
             reportError(CategoryError, msg);
         }
 

@@ -2411,7 +2411,10 @@ void ActivityInstance::buildSuffix()
         if (options.spotComplexClasses && (approxSize >= options.complexClassesThreshold))
         {
             if ((options.complexClassesActivityFilter == 0) || (kind == options.complexClassesActivityFilter))
+            {
                 translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
+                addAttributeInt(WaComplexHelperSize, approxSize);
+            }
         }
         if (!options.obfuscateOutput && options.showActivitySizeInGraph)
             addAttributeInt(WaSizeClassApprox, approxSize);

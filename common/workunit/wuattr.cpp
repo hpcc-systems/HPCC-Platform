@@ -150,6 +150,7 @@ const static WuAttrInfo attrInfo[] = {
     CHILD(DiskFormat, SMeasureText, "diskFormat"),
     CHILD(RecordFormat, SMeasureText, "recordFormat"),
     CHILD(ServiceName, SMeasureText, "serviceName"),
+    CHILD(ComplexHelperSize, SMeasureSize, "complexHelperSize"),
     { WaMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr, nullptr, WaNone, WaNone }
 };
 
