@@ -110,8 +110,6 @@ public:
     bool            hasInputCRC;
     bool            hasCompressed;
     offset_t        compressedPartSize;
-    stat_type       numWrites;
-    stat_type       numReads;
 
 //Not saved/serialized - should probably be in a Sprayer-only class that contains an outputProgress.
     Owned<IPropertyTree> tree;

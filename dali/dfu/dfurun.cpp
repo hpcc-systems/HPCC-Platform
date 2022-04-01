@@ -117,7 +117,7 @@ class CDFUengine: public CInterface, implements IDFUengine
         void displayProgress(unsigned percentDone, unsigned secsLeft, const char * timeLeft,
                                 unsigned __int64 scaledDone, unsigned __int64 scaledTotal, const char * scale,
                                 unsigned kbPerSecondAve, unsigned kbPerSecondRate,
-                                unsigned slavesDone, unsigned __int64 numReads, unsigned __int64 numWrites)
+                                unsigned slavesDone)
         {
             if (repmode==REPbefore)
                 percentDone /= 2;
@@ -125,7 +125,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                 if (repmode==REPduring)
                     percentDone = percentDone/2+50;
             progress->setProgress(percentDone, secsLeft, timeLeft, scaledDone, scaledTotal, scale,
-                                 kbPerSecondAve, kbPerSecondRate, slavesDone, repmode==REPduring, numReads, numWrites);
+                                 kbPerSecondAve, kbPerSecondRate, slavesDone, repmode==REPduring);
         }
         void displaySummary(const char * timeTaken, unsigned kbPerSecond)
         {
@@ -1000,7 +1000,7 @@ public:
                 numdone++;
                 subfiles.append(dlfnres.get());
                 if ((ctx.level==1)&&ctx.feedback)
-                    ctx.feedback->displayProgress(numtodo?(numdone*100/numtodo):0,0,"unknown",0,0,"",0,0,0,0,0);
+                    ctx.feedback->displayProgress(numtodo?(numdone*100/numtodo):0,0,"unknown",0,0,"",0,0,0);
             }
             // now construct the superfile
             Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false);
