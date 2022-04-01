@@ -540,15 +540,13 @@ void OutputProgress::reset()
     outputLength = 0;
     hasCompressed = false;
     compressedPartSize = 0;
-    numWrites = 0;
-    numReads = 0;
 }
 
 MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
 {
     unsigned _inputCRC, _outputCRC;
     bool hasTime;
-    in.read(status).read(whichPartition).read(hasInputCRC).read(_inputCRC).read(inputLength).read(_outputCRC).read(outputLength).read(hasTime).read(numWrites).read(numReads);
+    in.read(status).read(whichPartition).read(hasInputCRC).read(_inputCRC).read(inputLength).read(_outputCRC).read(outputLength).read(hasTime);
     inputCRC = _inputCRC;
     outputCRC = _outputCRC;
     if (hasTime)
@@ -586,7 +584,7 @@ MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)
     bool hasTime = !resultTime.isNull();
     unsigned _inputCRC = inputCRC;
     unsigned _outputCRC = outputCRC;
-    out.append(status).append(whichPartition).append(hasInputCRC).append(_inputCRC).append(inputLength).append(_outputCRC).append(outputLength).append(hasTime).append(numWrites).append(numReads);
+    out.append(status).append(whichPartition).append(hasInputCRC).append(_inputCRC).append(inputLength).append(_outputCRC).append(outputLength).append(hasTime);
     if (hasTime)
         resultTime.serialize(out);
     return out;
@@ -617,8 +615,6 @@ void OutputProgress::set(const OutputProgress & other)
     resultTime = other.resultTime;
     hasCompressed = other.hasCompressed;
     compressedPartSize = other.compressedPartSize;
-    numWrites = other.numWrites;
-    numReads = other.numReads;
 }
 
 void OutputProgress::restore(IPropertyTree * tree)
@@ -633,8 +629,6 @@ void OutputProgress::restore(IPropertyTree * tree)
     resultTime.setString(tree->queryProp("@modified"));
     hasCompressed = tree->getPropBool("@compressed");
     compressedPartSize = tree->getPropInt64("@compressedPartSize");
-    numWrites = tree->getPropInt64("@numWrites");
-    numReads = tree->getPropInt64("@numReads");
 }
 
 void OutputProgress::save(IPropertyTree * tree)
@@ -653,8 +647,6 @@ void OutputProgress::save(IPropertyTree * tree)
     }
     tree->setPropInt("@compressed", hasCompressed);
     tree->setPropInt64("@compressedPartSize", compressedPartSize);
-    tree->setPropInt64("@numWrites", numWrites);
-    tree->setPropInt64("@numReads", numReads);
 }
 
 
