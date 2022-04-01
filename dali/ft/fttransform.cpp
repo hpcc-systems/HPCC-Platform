@@ -499,6 +499,7 @@ TransferServer::TransferServer(ISocket * _masterSocket)
     compressOutput = false;
     transferBufferSize = DEFAULT_STD_BUFFER_SIZE;
     fileUmask = -1;
+    version = SUPPORTED_MSG_VERSION;
 }
 
 void TransferServer::sendProgress(OutputProgress & curProgress)
@@ -506,7 +507,7 @@ void TransferServer::sendProgress(OutputProgress & curProgress)
     MemoryBuffer msg;
     msg.setEndian(__BIG_ENDIAN);
     curProgress.serializeCore(msg.clear().append(false));
-    curProgress.serializeExtra(msg, 1);
+    curProgress.serializeExtra(msg, version);
     if (!catchWriteBuffer(masterSocket, msg))
         throwError(RFSERR_TimeoutWaitMaster);
 
@@ -647,15 +648,24 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         tgtFormat.deserializeExtra(msg, 1);
     }
 
+    unsigned ver = 1; //Using ver=1 to avoid breaking old clients
     ForEachItemIn(i1, progress)
-        progress.item(i1).deserializeExtra(msg, 1);
+        progress.item(i1).deserializeExtra(msg, ver);
 
     if (msg.remaining())
         msg.read(fileUmask);
+    // End of version 1 format. Now version 2 (or later) formats
+    if (msg.remaining())
+    {
+        msg.read(ver);
+        version = std::min(ver, (unsigned) SUPPORTED_MSG_VERSION); // select the lowest version compatible with me and the client
+    }
+    else
+        version = 1; // nothing sent, so default to version 1 as the old client does not send this
 
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
-    PROGLOG("encrypt(%d), decrypt(%d)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1);
+    PROGLOG("encrypt(%d), decrypt(%d) version(%u)", encryptKey.isEmpty()?0:1, decryptKey.isEmpty()?0:1, version);
     if (fileUmask != -1)
         PROGLOG("umask(0%o)", fileUmask);
     else
@@ -947,7 +957,7 @@ processedProgress:
                     msg.setEndian(__BIG_ENDIAN);
                     curProgress.status = OutputProgress::StatusRenamed;
                     curProgress.serializeCore(msg.clear().append(false));
-                    curProgress.serializeExtra(msg, 1);
+                    curProgress.serializeExtra(msg, version);
                     if (!catchWriteBuffer(masterSocket, msg))
                         throwError(RFSERR_TimeoutWaitMaster);
                 }

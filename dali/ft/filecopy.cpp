@@ -387,12 +387,13 @@ bool FileTransferThread::performTransfer()
         sprayer.tgtFormat.serializeExtra(msg, 1);
 
         ForEachItemIn(i2, progress)
-            progress.item(i2).serializeExtra(msg, 1);
+            progress.item(i2).serializeExtra(msg, 1); //must use version==1 to be compatible with old clients
 
         //NB: Any extra data must be appended at the end...
 
         msg.append(sprayer.fileUmask);
-
+        unsigned version = SUPPORTED_MSG_VERSION;
+        msg.append(version);
         if (!catchWriteBuffer(socket, msg))
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
@@ -410,7 +411,7 @@ bool FileTransferThread::performTransfer()
 
             OutputProgress newProgress;
             newProgress.deserializeCore(msg);
-            newProgress.deserializeExtra(msg, 1);
+            newProgress.deserializeExtra(msg, version);
             sprayer.updateProgress(newProgress);
 
             LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);

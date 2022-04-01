@@ -49,6 +49,8 @@
 #define FPheaderLength      "@headerLength"
 #define FPfooterLength      "@footerLength"
 
+//The dfuserver-ftslave communnication version number supported
+#define SUPPORTED_MSG_VERSION 2
 class DALIFT_API PartitionPoint : public CInterface
 {
 public:
@@ -91,7 +93,7 @@ public:
     void set(const OutputProgress & other);
 
     MemoryBuffer & deserializeCore(MemoryBuffer & in);
-    MemoryBuffer & deserializeExtra(MemoryBuffer & in, unsigned version);
+    MemoryBuffer & deserializeExtra(MemoryBuffer & in, unsigned & version);
     void restore(IPropertyTree * tree);
     void save(IPropertyTree * tree);
     MemoryBuffer & serializeCore(MemoryBuffer & out);

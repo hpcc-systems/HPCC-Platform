@@ -548,7 +548,7 @@ MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
 {
     unsigned _inputCRC, _outputCRC;
     bool hasTime;
-    in.read(status).read(whichPartition).read(hasInputCRC).read(_inputCRC).read(inputLength).read(_outputCRC).read(outputLength).read(hasTime).read(numWrites).read(numReads);
+    in.read(status).read(whichPartition).read(hasInputCRC).read(_inputCRC).read(inputLength).read(_outputCRC).read(outputLength).read(hasTime);
     inputCRC = _inputCRC;
     outputCRC = _outputCRC;
     if (hasTime)
@@ -558,18 +558,21 @@ MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
     return in;
 }
 
-MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned version)
+MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned & version)
 {
-    if (in.remaining())
+    if (version>=1 && in.remaining())
     {
-        switch (version)
-        {
-        case 1:
-            in.read(hasCompressed);
-            if (hasCompressed)
-                in.read(compressedPartSize);
-            break;
-        }
+        in.read(hasCompressed);
+        if (hasCompressed && in.remaining())
+            in.read(compressedPartSize);
+    }
+    if (version>=2)
+    {
+        constexpr unsigned bytesRequired=sizeof(numWrites)+sizeof(numReads);
+        if (in.remaining()>=bytesRequired)
+            in.read(numWrites).read(numReads);
+        else
+            version=1; //Looks like otherside is version 1, so use version 1 messages from now on
     }
     return in;
 }
@@ -586,7 +589,7 @@ MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)
     bool hasTime = !resultTime.isNull();
     unsigned _inputCRC = inputCRC;
     unsigned _outputCRC = outputCRC;
-    out.append(status).append(whichPartition).append(hasInputCRC).append(_inputCRC).append(inputLength).append(_outputCRC).append(outputLength).append(hasTime).append(numWrites).append(numReads);
+    out.append(status).append(whichPartition).append(hasInputCRC).append(_inputCRC).append(inputLength).append(_outputCRC).append(outputLength).append(hasTime);
     if (hasTime)
         resultTime.serialize(out);
     return out;
@@ -594,13 +597,19 @@ MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)
 
 MemoryBuffer & OutputProgress::serializeExtra(MemoryBuffer & out, unsigned version)
 {
-    switch (version)
+    for (unsigned v=1; v<=version; v++)
     {
-    case 1:
-        out.append(hasCompressed);
-        if (hasCompressed )
-            out.append(compressedPartSize);
-        break;
+        switch (v)
+        {
+        case 1:
+            out.append(hasCompressed);
+            if (hasCompressed )
+                out.append(compressedPartSize);
+            break;
+        case 2:
+            out.append(numWrites).append(numReads);
+            break;
+        }
     }
     return out;
 }

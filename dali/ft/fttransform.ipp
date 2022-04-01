@@ -246,6 +246,7 @@ protected:
     StringAttr              encryptKey;
     StringAttr              decryptKey;
     int                     fileUmask;
+    unsigned                version;
 };
 
 
