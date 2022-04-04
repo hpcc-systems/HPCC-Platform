@@ -114,8 +114,8 @@ interface useFluentStoreGridProps {
     store: any,
     query?: QueryRequest,
     sort?: QuerySortItem,
-    start?: number,
-    count?: number,
+    start: number,
+    count: number,
     columns: object,
     filename: string
 }
@@ -242,7 +242,7 @@ export function useFluentGrid({
 }: useFluentGridProps): useFluentStoreGridResponse {
 
     const constStore = useConst(new AlphaNumSortMemory(primaryID, alphaNumColumns));
-    const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store: constStore, columns, sort, filename });
+    const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store: constStore, columns, sort, filename, start: 0, count: data.length });
 
     React.useEffect(() => {
         constStore.setData(data);
