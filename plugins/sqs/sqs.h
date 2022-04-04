@@ -115,7 +115,7 @@ extern "C++"
       Aws::String queueUrl;
       std::ofstream handlelog;
       AtomicCounter counter;
-      Aws::SQS::SQSClient* sqsClient;
+      Aws::SQS::SQSClient* sqsClient = nullptr;
       Aws::SDKOptions options;
       Aws::Auth::AWSCredentials* credentials=nullptr;
       bool RegionExists(const std::string& region);
