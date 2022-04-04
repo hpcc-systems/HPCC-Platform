@@ -108,7 +108,29 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
     }
 
     LogAccessTimeRange range = requestedRangeToLARange(req.getRange());
-    const StringArray & cols = req.getColumns();
+    double version = context.getClientVersion();
+    if (version > 1.0)
+    {
+        switch (req.getSelectColumnMode())
+        {
+        case 0:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_min);
+            break;
+        case 1:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
+            break;
+        case 2:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_all);
+            break;
+        case 3:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_custom);
+            logFetchOptions.copyLogFieldNames(req.getColumns());
+            break;
+        default:
+            logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
+            break;
+        }
+    }
 
     unsigned limit = req.getLogLineLimit();
 
@@ -117,7 +139,6 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
         throw makeStringExceptionV(-1, "WsLogAccess: Encountered invalid LogLineStartFrom value: '%lld'", startFrom);
 
     logFetchOptions.setTimeRange(range);
-    logFetchOptions.copyLogFieldNames(cols);
     logFetchOptions.setLimit(limit);
     logFetchOptions.setStartFrom((offset_t)startFrom);
 
