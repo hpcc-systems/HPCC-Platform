@@ -3411,6 +3411,16 @@ ILogAccessFilter * getWildCardLogAccessFilter()
     return new FieldLogAccessFilter("", LOGACCESS_FILTER_wildcard);
 }
 
+ILogAccessFilter * getHostLogAccessFilter(const char * host)
+{
+    return new FieldLogAccessFilter(host, LOGACCESS_FILTER_host);
+}
+
+ILogAccessFilter * getInstanceLogAccessFilter(const char * instancename)
+{
+    return new FieldLogAccessFilter(instancename, LOGACCESS_FILTER_instance);
+}
+
 ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId)
 {
     return new FieldLogAccessFilter(jobId, LOGACCESS_FILTER_jobid);
@@ -3515,6 +3525,10 @@ IRemoteLogAccess &queryRemoteLogAccessor()
                     searchColumn: "hpcc.log.audience"
                     - type: "class"
                     searchColumn: "hpcc.log.class"
+                    - type: "instance"
+                    searchColumn: "kubernetes.pod.name"
+                    - type: "host"
+                    searchColumn: "kubernetes.node.hostname"
                 )!!";
                 Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
                 logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));

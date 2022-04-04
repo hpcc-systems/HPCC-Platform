@@ -21,7 +21,9 @@ ESPenum LogAccessType : int
     ByJobIdID(1, "ByJobIdID"),
     ByComponent(2, "ByComponent"),
     ByLogType(3, "ByLogType"),
-    ByTargetAudience(4, "ByTargetAudience")
+    ByTargetAudience(4, "ByTargetAudience"),
+    BySourceInstance(5, "BySourceInstance"),
+    BySourceNode(6, "BySourceNode")
 };
 
 ESPenum LogAccessLogFormat : int

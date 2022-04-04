@@ -50,9 +50,9 @@ static constexpr const char * DEFAULT_HPCC_LOG_COMPONENT_COL   = "kubernetes.con
 static constexpr const char * DEFAULT_HPCC_LOG_TYPE_COL        = "hpcc.log.class";
 static constexpr const char * DEFAULT_HPCC_LOG_AUD_COL         = "hpcc.log.audience";
 
-static constexpr const char * LOGMAP_INDEXPATTERN_ATT = "@storename";
-static constexpr const char * LOGMAP_SEARCHCOL_ATT = "@searchcolumn";
-static constexpr const char * LOGMAP_TIMESTAMPCOL_ATT = "@timestampcolumn";
+static constexpr const char * LOGMAP_INDEXPATTERN_ATT = "@storeName";
+static constexpr const char * LOGMAP_SEARCHCOL_ATT = "@searchColumn";
+static constexpr const char * LOGMAP_TIMESTAMPCOL_ATT = "@timeStampColumn";
 
 static constexpr const char * DEFAULT_SCROLL_TIMEOUT = "1m"; //Elastic Time Units (i.e. 1m = 1 minute).
 static constexpr std::size_t  DEFAULT_MAX_RECORDS_PER_FETCH = 100;
@@ -131,6 +131,24 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
                 m_audienceIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
             if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
                 m_audienceSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
+        }
+        else if (streq(logMapType, "instance"))
+        {
+            if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
+                m_instanceIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
+            if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
+                m_instanceSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
+        }
+        else if (streq(logMapType, "host"))
+        {
+            if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
+                m_hostIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);
+            if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
+                m_hostSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
+        }
+        else
+        {
+            ERRLOG("Encountered invalid LogAccess field map type: '%s'", logMapType);
         }
     }
 
@@ -512,6 +530,38 @@ void ElasticStackLogAccess::populateQueryStringAndQueryIndex(std::string & query
             }
 
             DBGLOG("%s: Searching '%s' component log entries...", COMPONENT_NAME, queryValue.str() );
+            break;
+        }
+        case LOGACCESS_FILTER_host:
+        {
+            if (!m_hostSearchColName.isEmpty())
+            {
+                queryField = m_hostSearchColName.str();
+                fullTextSearch = false; //found dedicated components column
+            }
+
+            if (!m_hostIndexSearchPattern.isEmpty())
+            {
+                queryIndex = m_hostIndexSearchPattern.str();
+            }
+
+            DBGLOG("%s: Searching log entries by host: '%s'", COMPONENT_NAME, queryValue.str() );
+            break;
+        }
+        case LOGACCESS_FILTER_instance:
+        {
+            if (!m_instanceSearchColName.isEmpty())
+            {
+                queryField = m_instanceSearchColName.str();
+                fullTextSearch = false; //found dedicated components column
+            }
+
+            if (!m_instanceIndexSearchPattern.isEmpty())
+            {
+                queryIndex = m_instanceIndexSearchPattern.str();
+            }
+
+            DBGLOG("%s: Searching log entries by HPCC component instance: '%s'", COMPONENT_NAME, queryValue.str() );
             break;
         }
         case LOGACCESS_FILTER_wildcard:
