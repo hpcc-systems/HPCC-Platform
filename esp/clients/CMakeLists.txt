@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (wsecl)
-add_subdirectory (WUManager)
-add_subdirectory (wsdfuaccess)
+HPCC_ADD_SUBDIRECTORY (wsecl "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (WUManager "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (wsdfuaccess "PLATFORM")
 add_subdirectory (ws_dfsclient)

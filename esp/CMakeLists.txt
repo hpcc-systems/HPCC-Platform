@@ -15,7 +15,7 @@
 ################################################################################
 include_directories (${SCM_GENERATED_DIR})
 HPCC_ADD_SUBDIRECTORY (bindings)
-HPCC_ADD_SUBDIRECTORY (clients "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (clients)
 HPCC_ADD_SUBDIRECTORY (eclwatch "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (files "PLATFORM")
 if (NOT SKIP_ECLWATCH)
