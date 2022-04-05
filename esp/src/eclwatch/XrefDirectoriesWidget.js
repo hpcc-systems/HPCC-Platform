@@ -10,11 +10,12 @@ define([
 
     "hpcc/GridDetailsWidget",
     "src/WsDFUXref",
-    "src/ESPUtil"
+    "src/ESPUtil",
+    "src/Utility"
 
 ], function (declare, lang, nlsHPCCMod, arrayUtil, domClass,
     registry, Button,
-    GridDetailsWidget, WsDFUXref, ESPUtil) {
+    GridDetailsWidget, WsDFUXref, ESPUtil, Utility) {
 
     var nlsHPCC = nlsHPCCMod.default;
     return declare("XrefDirectoriesWidget", [GridDetailsWidget], {
@@ -61,6 +62,22 @@ define([
                 label: this.i18n.DeleteEmptyDirectories
             }).placeAt(this.openButton.domNode, "after");
             dojo.destroy(this.id + "Open");
+
+            this.newPageButton = registry.byId(this.id + "NewPage");
+            this.downloadCsv = new Button({
+                id: this.id + "DownloadToList",
+                disabled: false,
+                onClick: function (val) {
+                    context._onDownloadToList();
+                },
+                label: this.i18n.DownloadToCSV
+            }).placeAt(this.newPageButton.domNode, "after");
+            dojo.addClass(this.downloadCsv.domNode, "right");
+
+            this.downloadToList = registry.byId(this.id + "DownloadToList");
+            this.downloadToListDialog = registry.byId(this.id + "DownloadToListDialog");
+            this.downListForm = registry.byId(this.id + "DownListForm");
+            this.fileName = registry.byId(this.id + "FileName");
 
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
@@ -127,6 +144,28 @@ define([
                 context.store.setData(newRows);
                 context.grid.set("query", {});
             });
+        },
+
+        _onDownloadToListCancelDialog: function (event) {
+            this.downloadToListDialog.hide();
+        },
+
+        _onDownloadToList: function (event) {
+            this.downloadToListDialog.show();
+        },
+
+        _buildCSV: async function (event) {
+            let data = await this.grid.store.query({});
+            let row = [];
+            let fileName = this.fileName.get("value") + ".csv";
+
+            arrayUtil.forEach(data, function (cell, idx) {
+                let rowData = [cell.Name, cell.Num, cell.Size, cell.MaxIP, cell.MaxSize, cell.MinIP, cell.MinSize, cell.PositiveSkew, cell.NegativeSkew];
+                row.push(rowData);
+            });
+
+            Utility.downloadToCSV(this.grid, row, fileName);
+            this._onDownloadToListCancelDialog();
         }
     });
 });
