@@ -49,7 +49,7 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
 
     const theme = useTheme();
     const contentStyles = React.useMemo(() => mergeStyleSets({
-        container: { overflowY: "hidden", minWidth: minWidth },
+        container: { display: "flex", overflowY: "hidden", minWidth: minWidth },
         header: { borderTop: `4px solid ${theme.palette.themePrimary}`, cursor: "move" },
         body: { padding: "12px 24px 12px 24px", overflowY: "hidden" },
     }), [theme.palette.themePrimary, minWidth]);

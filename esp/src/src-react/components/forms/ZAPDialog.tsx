@@ -121,7 +121,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         }).catch(err => logger.error(err));
     }, [wuid, reset]);
 
-    return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} show={showForm} setShow={closeForm}
+    return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} minWidth={440} show={showForm} setShow={closeForm}
         footer={<>
             <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
