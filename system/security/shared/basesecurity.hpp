@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include "seclib.hpp"
 #include "jliball.hpp"
-
+#include "authmap.ipp"
 
 #include "SecureUser.hpp"
 #include "SecurityResource.hpp"
@@ -31,6 +31,71 @@ class CBaseSecurityManager : implements ISecManager, public CInterface
 {
     static const SecFeatureSet s_implementedFeatureMask = SMF_CreateUser | SMF_CreateResourceList;
     static const SecFeatureSet s_safeFeatureMask = s_implementedFeatureMask | SMF_CreateSettingMap;
+
+protected:
+    void createAuthMapImpl(IAuthMap *authMap, const char *name, bool setAccessFlag, SecAccessFlags accessFlag,
+        IPropertyTree *authconfig, IEspSecureContext *secureContext)
+    {
+        Owned<IPropertyTreeIterator> iter = authconfig->getElements(".//Location");
+        ForEach(*iter)
+        {
+            IPropertyTree& location = iter->query();
+            StringBuffer pathStr, rstr, required, description;
+            location.getProp("@path", pathStr);
+            location.getProp("@resource", rstr);
+            location.getProp("@required", required);
+            location.getProp("@description", description);
+
+            if (pathStr.length() == 0)
+                throw makeStringException(-1, "path empty in Authenticate/Location");
+            if (rstr.length() == 0)
+                throw makeStringException(-1, "resource empty in Authenticate/Location");
+
+            ISecResourceList *rlist = authMap->queryResourceList(pathStr);
+            if (rlist == nullptr)
+            {
+                rlist = createResourceList(name, secureContext);
+                authMap->add(pathStr, rlist);
+            }
+            ISecResource *rs = rlist->addResource(rstr);
+            SecAccessFlags requiredaccess = str2perm(required);
+            rs->setRequiredAccessFlags(requiredaccess);
+            rs->setDescription(description);
+            if (setAccessFlag)
+                rs->setAccessFlags(accessFlag);//grant an access to authenticated users
+        }
+    }
+
+    void createFeatureMapImpl(IAuthMap *featureMap, bool setAccessFlag, SecAccessFlags accessFlag,
+        IPropertyTree *authconfig, IEspSecureContext *secureContext)
+    {
+        Owned<IPropertyTreeIterator> iter = authconfig->getElements(".//Feature");
+        ForEach(*iter)
+        {
+            IPropertyTree& feature = iter->query();
+            StringBuffer pathStr, rstr, required, description;
+            feature.getProp("@path", pathStr);
+            feature.getProp("@resource", rstr);
+            feature.getProp("@required", required);
+            feature.getProp("@description", description);
+            ISecResourceList* rlist = featureMap->queryResourceList(pathStr);
+            if(rlist == nullptr)
+            {
+                rlist = createResourceList(pathStr, secureContext);
+                featureMap->add(pathStr, rlist);
+            }
+            if (!rstr.isEmpty())
+            {
+                ISecResource* rs = rlist->addResource(rstr);
+                SecAccessFlags requiredaccess = str2perm(required);
+                rs->setRequiredAccessFlags(requiredaccess);
+                rs->setDescription(description);
+                if (setAccessFlag)
+                    rs->setAccessFlags(accessFlag);//grant an access to authenticated users
+            }
+        }
+    }
+
 public:
     IMPLEMENT_IINTERFACE
 
@@ -287,9 +352,11 @@ public:
         throwUnexpected();
     }
 
-    bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
+    virtual bool logoutUser(ISecUser& user, IEspSecureContext* secureContext = nullptr) override
     {
-        throwUnexpected();
+        user.setAuthenticateStatus(AS_UNKNOWN);
+        user.credentials().setSessionToken(0);
+        return true;
     }
 
     bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) override
