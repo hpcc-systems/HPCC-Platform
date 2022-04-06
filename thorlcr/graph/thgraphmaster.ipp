@@ -250,7 +250,7 @@ protected:
 
     IDistributedFile *queryReadFile(unsigned f);
     IDistributedFile *findReadFile(const char *lfnName);
-    IDistributedFile *lookupReadFile(const char *lfnName, bool jobTemp, bool temp, bool opt);
+    IDistributedFile *lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt);
     void updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCollection>> & subFileStats);
     void updateFileWriteCostStats(IFileDescriptor & fileDesc, IPropertyTree &props, stat_type numDiskWrites);
     virtual void process() { }

@@ -791,7 +791,7 @@ static void remoteTest(const char *logicalName, bool withDali)
     Owned<IDistributedFile> legacyDfsFile;
     if (dlfn.isRemote())
     {
-        Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(logicalName, timeoutSecs, keepAliveExpiryFrequency, userDesc);
+        Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(logicalName, AccessMode::readSequential, timeoutSecs, keepAliveExpiryFrequency, userDesc);
 
         if (dfsFile)
             legacyDfsFile.setown(createLegacyDFSFile(dfsFile));

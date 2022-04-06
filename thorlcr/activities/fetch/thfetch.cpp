@@ -54,7 +54,7 @@ public:
     {
         CMasterActivity::init();
         OwnedRoxieString fname(helper->getFileName());
-        fetchFile.setown(lookupReadFile(fname, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
+        fetchFile.setown(lookupReadFile(fname, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
         if (fetchFile)
         {
             if (isFileKey(fetchFile))

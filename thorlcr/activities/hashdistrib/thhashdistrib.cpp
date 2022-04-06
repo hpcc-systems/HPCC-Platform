@@ -100,7 +100,7 @@ public:
         StringBuffer scoped;
         OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
-        Owned<IDistributedFile> file = lookupReadFile(indexFileName, false, false, false);
+        Owned<IDistributedFile> file = lookupReadFile(indexFileName, AccessMode::readRandom, false, false, false);
         if (0 == file->numParts())
             throw MakeActivityException(this, 0, "KeyedDistribute: Can't distribute based on an empty key: %s", scoped.str());
         if (!isFileKey(file))

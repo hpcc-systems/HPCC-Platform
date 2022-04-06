@@ -63,7 +63,7 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
         // ii) It publishes immediately not when done!
         // iii) it is not removing existing physicals first
         // If we really want this, it should replicate when done somehow, and only publish at end.
-        Owned<IDistributedFile> file = lookup(job, logicalName, false, true, false, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookup(job, logicalName, AccessMode::writeSequential, false, true, false, defaultPrivilegedUser);
         StringBuffer scopedName;
         addScope(job, logicalName, scopedName);
         if (group) // publishing
@@ -328,7 +328,7 @@ public:
         lfn.set(logicalName);
         return timedLookup(job, lfn, accessMode, privilegedUser, timeout);
     }
-    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true)
+    IDistributedFile *lookup(CJobBase &job, const char *logicalName, AccessMode mode, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true)
     {
         StringBuffer scopedName;
         bool paused = false;
@@ -348,7 +348,7 @@ public:
         if (fileMapping)
             return &fileMapping->get();
 
-        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), AccessMode::tbdRead, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000);
+        Owned<IDistributedFile> file = timedLookup(job, scopedName.str(), mode, privilegedUser, job.queryMaxLfnBlockTimeMins() * 60000);
         if (file && 0 == file->numParts())
         {
             if (file->querySuperFile())
@@ -512,6 +512,8 @@ public:
 #ifdef _CONTAINERIZED
                     if (!globals->getPropBool("@_dafsStorage"))
                     {
+// JCSMORE->GH - I think this needs to change to pass in accessMode to get correct aliased plane
+// and similarly for anywhere else that has placeholder of AccessMode::tbdWrite
                         Owned<IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
                         thisPlaneDir.append(plane->queryPrefix());
                         thisDirPerPart = plane->queryDirPerPart();
@@ -614,7 +616,7 @@ public:
 
     unsigned __int64 getFileOffset(CJobBase &job, const char *logicalName, unsigned partno)
     {
-        Owned<IDistributedFile> file = lookup(job, logicalName, false, false, false, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookup(job, logicalName, AccessMode::readMeta, false, false, false, defaultPrivilegedUser);
         StringBuffer scopedName;
         addScope(job, logicalName, scopedName);
         if (!file)

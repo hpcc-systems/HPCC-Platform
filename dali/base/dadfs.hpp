@@ -586,33 +586,6 @@ enum class GetFileTreeOpts
 };
 BITMASK_ENUM(GetFileTreeOpts);
 
-enum class AccessMode : unsigned
-{
-
-    none            = 0x00000000,
-    read            = 0x00000001,
-    write           = 0x00000002,
-    sequential      = 0x00000004,
-    random          = 0x00000008,           // corresponds to "random" reason in alias reasons
-    noMount         = 0x01000000,           // corresponds to "api" reason in alias reasons
-
-    readRandom      = read | random,
-    readSequential  = read | sequential,
-    readNoMount     = read | noMount,
-    writeSequential = write | sequential,
-
-    readMeta        = read,                  // read access - may not actually read the contents
-    writeMeta       = write,                 // write access - may also be used for delete
-
-//The following are used for mechanical replacement of writeattr to update the function prototypes but not change
-//the behaviour but allow all the calls to be revisited later to ensure the correct parameter is used.
-
-    tbdRead          = read,                 // writeattr was false
-    tbdWrite         = write,                // writeattr was true
-};
-BITMASK_ENUM(AccessMode);
-inline bool isWrite(AccessMode mode) { return (mode & AccessMode::write) != AccessMode::none; }
-
 interface IDistributedFileDirectory: extends IInterface
 {
     virtual IDistributedFile *lookup(   const char *logicalname,
@@ -657,7 +630,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user) = 0;                                                    // physical parts exists
 
     virtual IPropertyTree *getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, GetFileTreeOpts opts = GetFileTreeOpts::expandNodes|GetFileTreeOpts::appendForeign) =0;
-    virtual IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
+    virtual IFileDescriptor *getFileDescriptor(const char *lname, AccessMode accessMode, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
     virtual IDistributedSuperFile *createNewSuperFile(IPropertyTree *tree, const char *optionamName=nullptr, IArrayOf<IDistributedFile> *subFiles=nullptr) = 0;

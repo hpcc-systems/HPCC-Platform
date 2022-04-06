@@ -1110,7 +1110,7 @@ public:
         if (daliep.port==0)
             daliep.port= DALI_SERVER_PORT;
         Owned<INode> node = createINode(daliep);
-        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn,srcuser,node);
+        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn, AccessMode::tbdRead, srcuser, node);
         if (!fdesc) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
