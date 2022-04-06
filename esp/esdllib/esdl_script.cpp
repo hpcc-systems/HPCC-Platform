@@ -54,19 +54,65 @@ public: // IEsdlScriptContext
     virtual IEsdlFunctionRegister* queryFunctionRegister() const override { return functionRegister; }
     virtual void setTraceToStdout(bool val) override
     {
-        traceToStdout = val;
+        if (val != traceToStdout)
+        {
+            traceToStdout = val;
+            if (val)
+            {
+                if (!consoleSink)
+                    consoleSink.setown(new CConsoleTraceMsgSink());
+                tracer->setSink(consoleSink);
+            }
+            else
+                tracer->setSink(jlogSink);
+        }
     }
     virtual bool getTraceToStdout() const override { return traceToStdout; }
     virtual void setTestMode(bool val) override { testMode = val; }
     virtual bool getTestMode() const override { return testMode; }
+    virtual ITracer& tracerRef() const override { return *tracer; }
+    virtual bool enableMasking(const char* domainId, uint8_t version) override
+    {
+        if (!maskingEngine)
+        {
+            tracerRef().uwarnlog("enable masking request not completed - no masking engine");
+            return false;
+        }
+        if (maskingEnabled())
+        {
+            domainId = (isEmptyString(domainId) ? maskingEngine->inspector().queryDefaultDomain() : domainId);
+            version = (0 == version ? maskingEngine->inspector().queryDefaultVersion() : version);
+            IDataMaskingProfileContext* ctx = maskerStack.front();
+            if (ctx->inspector().acceptsDomain(domainId) && ctx->queryVersion() == version)
+                return true;
+            tracerRef().uwarnlog("enable masking request using %s:%hhu not completed - already enabled using %s:%hhu", domainId, version, ctx->queryDomain(), ctx->queryVersion());
+            return false;
+        }
+        Owned<IDataMaskingProfileContext> ctx(maskingEngine->getContext(domainId, version, tracer));
+        if (!ctx)
+        {
+            tracerRef().uwarnlog("enable masking request not completed - no context for '%s:%hhu'", domainId, version);
+            return false;
+        }
+        maskerStack.emplace_back(ctx.getClear());
+        return maskingEnabled();
+    }
+    virtual bool maskingEnabled() const override { return !maskerStack.empty(); }
+    virtual IDataMaskingProfileContext* getMasker() const override { return maskerStack.empty() ? nullptr : maskerStack.back().getLink(); }
 private:
     Owned<IEspContext>            espCtx;
     IEsdlFunctionRegister*        functionRegister = nullptr;
     Owned<ISectionalXmlDocModel>  docModel;
     bool                          traceToStdout = false;
     bool                          testMode = false;
+    Owned<CModularTracer>         tracer;
+    Owned<IModularTraceMsgSink>   jlogSink;
+    Owned<IModularTraceMsgSink>   consoleSink;
+    Owned<IDataMaskingEngine>     maskingEngine;
+    using MaskerStack = std::list<Owned<IDataMaskingProfileContext> >;
+    MaskerStack                   maskerStack;
 public:
-    CEsdlScriptContext(IEspContext* _espCtx, IEsdlFunctionRegister* _functionRegister)
+    CEsdlScriptContext(IEspContext* _espCtx, IEsdlFunctionRegister* _functionRegister, IDataMaskingEngine* _engine)
         : functionRegister(_functionRegister)
     {
         if (_espCtx)
@@ -74,6 +120,9 @@ public:
         else
             espCtx.setown(createEspContext(nullptr));
         docModel.setown(createSectionalXmlDocModel(this));
+        tracer.setown(new CModularTracer());
+        jlogSink.setown(tracer->getSink());
+        maskingEngine.setown(_engine);
     }
 };
 
@@ -1548,6 +1597,8 @@ protected:
     StringAttr m_label;
     Owned<ICompiledXpath> m_test; //optional, if provided trace only if test evaluates to true
     Owned<ICompiledXpath> m_select;
+    StringAttr m_contentType;
+    Owned<ICompiledXpath> m_skipMask;
 
 public:
     CEsdlTransformOperationTrace(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
@@ -1562,6 +1613,11 @@ public:
         const char *test = stag.getValue("test");
         if (!isEmptyString(test))
             m_test.setown(compileXpath(test));
+        
+        m_contentType.set(stag.getValue("content_type"));
+        const char* skipMask = stag.getValue("skip_mask");
+        if (!isEmptyString(skipMask))
+            m_skipMask.setown(compileXpath(skipMask));
     }
 
     virtual void toDBGLog() override
@@ -1583,22 +1639,22 @@ public:
                 return false;
             StringBuffer    content;
             bool            isValue;
+            ITracer& tracer = scriptContext->tracerRef();
             if (targetContext->selectText(m_select, content, isValue))
             {
-                if (scriptContext->getTraceToStdout())
+                Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+                if (masker && (!m_skipMask || !sourceContext->evaluateAsBoolean(m_skipMask)))
                 {
-                    if (m_label.isEmpty())
-                        printf("%s\n", content.str());
-                    else
-                        printf("%s %s\n", m_label.str(), content.str());
+                    // Assume for now that all selectText content should be handled by maskContent.
+                    // Values may be serialized node sets.
+                    // TODO: Use maskValue when isValue is true and a value type is set.
+                    char* buffer = const_cast<char*>(content.str());
+                    masker->maskContent(m_contentType.get(), buffer, 0, content.length());
                 }
+                if (m_label.isEmpty())
+                    tracer.log(MCuserInfo, "%s", content.str());
                 else
-                {
-                    if (m_label.isEmpty())
-                        LOG(MCuserInfo, "%s", content.str());
-                    else
-                        LOG(MCuserInfo, "%s %s", m_label.str(), content.str());
-                }
+                    tracer.log(MCuserInfo, "%s %s", m_label.str(), content.str());
             }
         }
         catch (IException* e)
@@ -3446,9 +3502,9 @@ public:
     }
 };
 
-esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister)
+esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine)
 {
-    return new CEsdlScriptContext(espCtx, functionRegister);
+    return new CEsdlScriptContext(espCtx, functionRegister, engine);
 }
 esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap()
 {

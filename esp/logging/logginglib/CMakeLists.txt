@@ -24,6 +24,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/system/include
     ${HPCC_SOURCE_DIR}/system/jlib
     ${HPCC_SOURCE_DIR}/system/xmllib
+    ${HPCC_SOURCE_DIR}/system/masking/include
     ${HPCC_SOURCE_DIR}/system/security/shared       #seclib.hpp in generated/ws_loggingservice_esp.ipp
     ${HPCC_SOURCE_DIR}/esp/platform                 #EspCoreErrors
     ${HPCC_SOURCE_DIR}/esp/bindings                 #mime.hpp in generated/ws_loggingservice_esp.ipp
