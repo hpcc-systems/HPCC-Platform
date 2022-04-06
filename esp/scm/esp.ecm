@@ -71,8 +71,7 @@ typedef enum AuthError_
     EspAuthErrorUserNotFoundInContext,
     EspAuthErrorNoAuthMechanism,
     EspAuthErrorEmptySecResource,
-    EspAuthErrorNotAuthenticated,
-    EspAuthErrorNotAuthorized
+    EspAuthErrorNotAuthenticated
 } AuthError;
 
 typedef enum LogRequest_
