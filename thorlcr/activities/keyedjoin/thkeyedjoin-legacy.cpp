@@ -59,7 +59,7 @@ public:
     {
         CMasterActivity::init();
         OwnedRoxieString indexFileName(helper->getIndexFileName());
-        indexFile.setown(lookupReadFile(indexFileName, false, false, 0 != (helper->getJoinFlags() & JFindexoptional)));
+        indexFile.setown(lookupReadFile(indexFileName, AccessMode::readRandom, false, false, 0 != (helper->getJoinFlags() & JFindexoptional)));
 
         unsigned keyReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJKRR", 0);
         if (!keyReadWidth || keyReadWidth>container.queryJob().querySlaves())
@@ -207,7 +207,7 @@ public:
                     OwnedRoxieString fetchFilename(helper->getFileName());
                     if (fetchFilename)
                     {
-                        dataFile.setown(lookupReadFile(fetchFilename, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
+                        dataFile.setown(lookupReadFile(fetchFilename, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
                         if (dataFile)
                         {
                             if (isFileKey(dataFile))

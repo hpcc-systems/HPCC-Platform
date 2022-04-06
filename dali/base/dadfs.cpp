@@ -3319,6 +3319,7 @@ protected:
     StringAttr partmask;
     FileClusterInfoArray clusters;
     FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
+    AccessMode accessMode = AccessMode::none;
 
     void savePartsAttr(bool force) override
     {
@@ -3528,9 +3529,10 @@ public:
     IMPLEMENT_IINTERFACE_O;
 
     // NB: this form is used for pre-existing file, by dolookup
-    CDistributedFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &lname,IUserDescriptor *user) // takes ownership of conn
+    CDistributedFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &lname,AccessMode _accessMode,IUserDescriptor *user) // takes ownership of conn
     {
         setUserDescriptor(udesc,user);
+        accessMode = _accessMode;
         logicalName.set(lname);
         parent = _parent;
         conn.setown(_conn);
@@ -3653,6 +3655,7 @@ public:
     {
         CriticalBlock block (sect);
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
+        fdesc->queryProperties().setPropInt("@accessMode", static_cast<int>(accessMode));
         fdesc->setTraceName(logicalName.get());
         StringArray cnames;
         if (_clusterName&&*_clusterName)
@@ -3695,7 +3698,8 @@ public:
             else
                 resetFileAttr(createPTreeFromIPT(t));
         }
-        fileFlags = static_cast<FileDescriptorFlags>(root->getPropInt("Attr/@flags"));
+        // this change was not required, but it is more consistent to get the property from the deserialized passed in file descriptor
+        fileFlags = static_cast<FileDescriptorFlags>(fdesc->queryProperties().getPropInt("@flags"));
     }
 
     void setClusters(IFileDescriptor *fdesc)
@@ -5215,6 +5219,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
 protected:
     int interleaved; // 0 not interleaved, 1 interleaved old, 2 interleaved new
     IArrayOf<IDistributedFile> subfiles;
+    AccessMode accessMode = AccessMode::none;
 
     void clearSuperOwners(unsigned timeoutMs, ICodeContext *ctx)
     {
@@ -5580,9 +5585,10 @@ public:
         init(_parent,_root,_name,user,NULL);
     }
 
-    CDistributedSuperFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &_name,IUserDescriptor* user, IDistributedFileTransaction *transaction,unsigned timeout)
+    CDistributedSuperFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &_name,AccessMode _accessMode,IUserDescriptor* user, IDistributedFileTransaction *transaction,unsigned timeout)
     {
         conn.setown(_conn);
+        accessMode = _accessMode;
         init(_parent,conn->queryRoot(),_name,user,transaction,timeout);
     }
 
@@ -6963,13 +6969,6 @@ unsigned CDistributedFilePart::copyClusterNum(unsigned copy,unsigned *replicate)
 StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned copy)
 {
     const char *defdir = parent.queryDefaultDir();
-    StringBuffer stripeDir;
-    unsigned cn = copyClusterNum(copy, nullptr);
-    unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
-    unsigned lfnHash = parent.queryRoot()->getPropInt("Attr/@lfnHash");
-    addStripeDirectory(stripeDir, defdir, parent.clusters.item(cn).queryGroupName(), partIndex, lfnHash, numStripedDevices);
-    if (stripeDir.isEmpty())
-        stripeDir.append(defdir);
     StringBuffer dir;
     const char *pn;
     if (overridename.isEmpty())
@@ -6985,20 +6984,55 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
         if (odir.length()) {
             if (isAbsolutePath(pn))
                 dir.append(odir);
-            else if (!stripeDir.isEmpty())
-                addPathSepChar(dir.append(stripeDir)).append(odir);
+            else if (!isEmptyString(defdir))
+                addPathSepChar(dir.append(defdir)).append(odir);
         }
         else
-            dir.append(stripeDir);
+            dir.append(defdir);
     }
     if (dir.length()==0)
         IERRLOG("IDistributedFilePart::getPartDirectory unable to determine part directory");
-    else {
+    else
+    {
         parent.adjustClusterDir(partIndex,copy,dir);
+
+// NB: could be compiled in bare-metal,
+// but bare-metal components without a config would complain as this calls getGlobalConfig()
+#ifdef _CONTAINERIZED
+        unsigned cn = copyClusterNum(copy, nullptr);
+        IClusterInfo &cluster = parent.clusters.item(cn);
+        const char *planeName = cluster.queryGroupName();
+        if (!isEmptyString(planeName))
+        {
+            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+            if (plane)
+            {
+                StringBuffer planePrefix(plane->queryPrefix());
+                Owned<IStoragePlaneAlias> alias = plane->getAliasMatch(parent.accessMode);
+                if (alias)
+                {
+                    StringBuffer tmp;
+                    StringBuffer newPlanePrefix(alias->queryPrefix());
+                    if (setReplicateDir(dir, tmp, false, planePrefix, newPlanePrefix))
+                    {
+                        planePrefix.swapWith(newPlanePrefix);
+                        dir.swapWith(tmp);
+                    }
+                }
+
+                StringBuffer stripeDir;
+                unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
+                unsigned lfnHash = parent.queryRoot()->getPropInt("Attr/@lfnHash");
+                addStripeDirectory(stripeDir, dir, planePrefix, partIndex, lfnHash, numStripedDevices);
+                if (!stripeDir.isEmpty())
+                    dir.swapWith(stripeDir);
+            }
+        }
+#endif
+        if (parent.hasDirPerPart())
+            addPathSepChar(ret).append(partIndex+1); // part subdir 1 based
         ret.append(dir);
     }
-    if (parent.hasDirPerPart())
-        addPathSepChar(ret).append(partIndex+1); // part subdir 1 based
     return ret;
 }
 
@@ -7952,7 +7986,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                                 break;
                         }
                     }
-                    CDistributedFile *ret = new CDistributedFile(this,fcl.detach(),*logicalname,user);  // found
+                    CDistributedFile *ret = new CDistributedFile(this,fcl.detach(),*logicalname,accessMode,user);  // found
                     ret->setSuperOwnerLock(superOwnerLock.detach());
                     return ret;
                 }
@@ -7964,7 +7998,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
                 unsigned elapsed;
                 try
                 {
-                    CDistributedSuperFile *ret = new CDistributedSuperFile(this,fcl.detach(),*logicalname,user,transaction,SDS_SUB_LOCK_TIMEOUT);
+                    CDistributedSuperFile *ret = new CDistributedSuperFile(this,fcl.detach(),*logicalname,accessMode,user,transaction,SDS_SUB_LOCK_TIMEOUT);
                     ret->setSuperOwnerLock(superOwnerLock.detach());
                     return ret;
                 }

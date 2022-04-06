@@ -403,14 +403,14 @@ IDistributedFile *CMasterActivity::findReadFile(const char *lfnName)
     return nullptr;
 }
 
-IDistributedFile *CMasterActivity::lookupReadFile(const char *lfnName, bool jobTemp, bool temp, bool opt)
+IDistributedFile *CMasterActivity::lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt)
 {
     StringBuffer normalizedFileName;
     queryThorFileManager().addScope(container.queryJob(), lfnName, normalizedFileName, jobTemp|temp);
     Owned<IDistributedFile> file = findReadFile(normalizedFileName);
     if (!file)
     {
-        file.setown(queryThorFileManager().lookup(container.queryJob(), lfnName, jobTemp|temp, opt, true, container.activityIsCodeSigned()));
+        file.setown(queryThorFileManager().lookup(container.queryJob(), lfnName, mode, jobTemp|temp, opt, true, container.activityIsCodeSigned()));
         if (file)
         {
             readFiles.append(*LINK(file));
@@ -709,7 +709,7 @@ bool CMasterGraphElement::checkUpdate()
     if (doCheckUpdate)
     {
         StringAttr lfn;
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, temporary, true, false, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(queryJob(), filename, AccessMode::readMeta, temporary, true, false, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree &props = file->queryAttributes();
@@ -1284,7 +1284,7 @@ public:
     {
         StringBuffer fullname('~');
         expandLogicalName(fullname, name);
-        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), fullname, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
+        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(jobChannel.queryJob(), fullname, AccessMode::readMeta, false, true, false, defaultPrivilegedUser); // NB: do not update accessed
         if (iDfsFile.get())
         {
             // NB: if the file or any of the subfiles are compressed, then we cannot rely on the checksum

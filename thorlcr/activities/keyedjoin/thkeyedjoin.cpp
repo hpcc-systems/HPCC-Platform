@@ -303,7 +303,7 @@ public:
         totalIndexParts = 0;
 
         Owned<IDistributedFile> dataFile;
-        Owned<IDistributedFile> indexFile = lookupReadFile(indexFileName, false, false, 0 != (helper->getJoinFlags() & JFindexoptional));
+        Owned<IDistributedFile> indexFile = lookupReadFile(indexFileName, AccessMode::readRandom, false, false, 0 != (helper->getJoinFlags() & JFindexoptional));
         if (indexFile)
         {
             if (!isFileKey(indexFile))
@@ -324,7 +324,7 @@ public:
                 OwnedRoxieString fetchFilename(helper->getFileName());
                 if (fetchFilename)
                 {
-                    dataFile.setown(lookupReadFile(fetchFilename, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
+                    dataFile.setown(lookupReadFile(fetchFilename, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
                     if (dataFile)
                     {
                         if (isFileKey(dataFile))
