@@ -3480,30 +3480,25 @@ extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe
     return conn.getClear();
 }
 
-void addStripeDirectory(StringBuffer &out, const char *directory, const char *planeName, unsigned partNum, unsigned lfnHash, unsigned numStripes)
+void addStripeDirectory(StringBuffer &out, const char *directory, const char *planePrefix, unsigned partNum, unsigned lfnHash, unsigned numStripes)
 {
     if (numStripes <= 1)
         return;
     /* 'directory' is the prefix+logical file path, we need to know
-    * the plane prefix to manipulate it and insert the stripe directory.
+    * the base plane prefix to manipulate it and insert the stripe directory.
     */
-    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
-    if (plane)
+    if (!isEmptyString(planePrefix))
     {
-        const char *planePrefix = plane->queryPrefix();
-        if (!isEmptyString(planePrefix))
-        {
-            assertex(startsWith(directory, planePrefix));
-            const char *tail = directory+strlen(planePrefix);
-            if (isPathSepChar(*tail))
-                tail++;
-            out.append(planePrefix);
-            assertex(lfnHash);
-            unsigned stripeNum = calcStripeNumber(partNum, lfnHash, numStripes);
-            addPathSepChar(out).append('d').append(stripeNum);
-            if (*tail)
-                addPathSepChar(out).append(tail);
-        }
+        assertex(startsWith(directory, planePrefix));
+        const char *tail = directory+strlen(planePrefix);
+        if (isPathSepChar(*tail))
+            tail++;
+        out.append(planePrefix);
+        assertex(lfnHash);
+        unsigned stripeNum = calcStripeNumber(partNum, lfnHash, numStripes);
+        addPathSepChar(out).append('d').append(stripeNum);
+        if (*tail)
+            addPathSepChar(out).append(tail);
     }
 }
 

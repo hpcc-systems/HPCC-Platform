@@ -3945,7 +3945,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
             Owned<IUserDescriptor> udesc;
             udesc.setown(createUserDescriptor());
             udesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,udesc);
+            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile, udesc, AccessMode::tbdWrite);
             if (!fp)
                 resp.setRetcode(-1); //Superfile has been removed.
         }
