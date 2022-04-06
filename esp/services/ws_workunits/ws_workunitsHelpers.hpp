@@ -680,7 +680,6 @@ public:
     IFileIOStream* createWUFileIOStream(IEspContext &context, const char *wuid, IArrayOf<IConstWUFileOption> &wuFileOptions,
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
 
-    IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
     void validateFilePath(const char *file, WsWuInfo &winfo, CWUFileType wuFileType, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
     bool validateWUFile(const char *file, WsWuInfo &winfo, CWUFileType wuFileType);
 };

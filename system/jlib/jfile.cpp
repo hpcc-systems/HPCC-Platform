@@ -4331,6 +4331,24 @@ IFileIOStream * createBufferedAsyncIOStream(IFileAsyncIO * io, unsigned bufsize)
     return new CBufferedAsyncIOStream(io, bufsize);
 }
 
+IFileIOStream * createIOStreamFromFile(const char *fileNameWithPath, IFOmode mode)
+{
+    Owned<IFile> iFile = createIFile(fileNameWithPath);
+    Owned<IFileIO> iFileIO = iFile->open(mode);
+    if (!iFileIO)
+        return nullptr;
+    return createIOStream(iFileIO);
+}
+
+IFileIOStream * createBufferedIOStreamFromFile(const char *fileNameWithPath, IFOmode mode, unsigned bufsize)
+{
+    Owned<IFile> iFile = createIFile(fileNameWithPath);
+    Owned<IFileIO> iFileIO = iFile->open(mode);
+    if (!iFileIO)
+        return nullptr;
+    return createBufferedIOStream(iFileIO, bufsize);
+}
+
 IReadSeq *createReadSeq(IFileIOStream * stream, offset_t offset, size32_t size)
 {
     return new CIOStreamReadWriteSeq(stream, offset, size);

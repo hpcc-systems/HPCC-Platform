@@ -254,10 +254,9 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
     logFetchOptions.setLimit(maxLogRecords);
 
     Owned<IFileIOStream> outIOS;
-    CWsWuFileHelper helper(nullptr);
-    outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+    outIOS.setown(createBufferedIOStreamFromFile(outFile, IFOcreate));
 
-    if(!outIOS)
+    if (!outIOS)
         throw makeStringException(ECLWATCH_CANNOT_OPEN_FILE, "WsWuInfo: Could not create target log file!");
 
     Owned<IRemoteLogAccessStream> logreader = m_remoteLogAccessor->getLogReader(logFetchOptions, logFormat);
@@ -2026,8 +2025,9 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* processName, const char* fileN
     Owned<IFileIOStream> outIOS;
     if (!isEmptyString(outFile))
     {
-        CWsWuFileHelper helper(nullptr);
-        outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+        outIOS.setown(createBufferedIOStreamFromFile(outFile, IFOcreate));
+        if (!outIOS)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for file %s", outFile);
     }
 
     StringBuffer line;
@@ -2181,8 +2181,9 @@ void WsWuInfo::readWorkunitThorLog(const char* processName, const char* log, con
     Owned<IFileIOStream> outIOS;
     if (!isEmptyString(outFile))
     {
-        CWsWuFileHelper helper(nullptr);
-        outIOS.setown(helper.createIOStreamWithFileName(outFile, IFOcreate));
+        outIOS.setown(createBufferedIOStreamFromFile(outFile, IFOcreate));
+        if (!outIOS)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for file %s", outFile);
     }
 
     StringArray logSpecs;
@@ -2445,9 +2446,11 @@ void WsWuInfo::getWorkunitQueryShortText(MemoryBuffer& buf, const char* outFile)
         buf.append(queryText.length(), queryText.str());
     else
     {
-        CWsWuFileHelper helper(nullptr);
-        Owned<IFileIOStream> outIOS = helper.createIOStreamWithFileName(outFile, IFOcreate);
-        outIOS->write(queryText.length(), queryText.str());
+        Owned<IFileIOStream> outIOS = createIOStreamFromFile(outFile, IFOcreate);
+        if (outIOS)
+            outIOS->write(queryText.length(), queryText.str());
+        else
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Failed to open FileIOStream for %s.", outFile);
     }
 }
 
@@ -3589,16 +3592,6 @@ void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& inp
     return;
 }
 
-IFileIOStream* CWsWuFileHelper::createIOStreamWithFileName(const char* fileNameWithPath, IFOmode mode)
-{
-    if (isEmptyString(fileNameWithPath))
-        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA, "File name not specified.");
-    Owned<IFile> wuInfoIFile = createIFile(fileNameWithPath);
-    Owned<IFileIO> wuInfoIO = wuInfoIFile->open(mode);
-    if (!wuInfoIO)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Failed to open %s.", fileNameWithPath);
-    return createIOStream(wuInfoIO);
-}
 
 void CWsWuFileHelper::writeToFile(const char* fileName, size32_t contentLength, const void* content)
 {
@@ -3619,8 +3612,7 @@ void CWsWuFileHelper::writeToFileIOStream(const char* folder, const char* file, 
     if (isEmptyString(file))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty file name is not allowed to create FileIOStream.");
     VStringBuffer fileNameWithPath("%s%c%s", folder, PATHSEPCHAR, file);
-    CWsWuFileHelper helper(nullptr);
-    Owned<IFileIOStream> outIOS = helper.createIOStreamWithFileName(fileNameWithPath.str(), IFOcreate);
+    Owned<IFileIOStream> outIOS = createIOStreamFromFile(fileNameWithPath.str(), IFOcreate);
     if (outIOS)
         outIOS->write(mb.length(), mb.toByteArray());
     else
@@ -3752,7 +3744,9 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, cons
     const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* pathNameStr)
 {
     VStringBuffer fileName("%s.txt", pathNameStr);
-    Owned<IFileIOStream> outFile = createIOStreamWithFileName(fileName.str(), IFOcreate);
+    Owned<IFileIOStream> outFile = createBufferedIOStreamFromFile(fileName.str(), IFOcreate);
+    if(outFile == nullptr)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for ZAP Info file %s", fileName.str());
 
     StringBuffer sb;
     sb.set("Workunit:     ").append(cwu->queryWuid()).append("\r\n");
@@ -4133,7 +4127,10 @@ IFileIOStream* CWsWuFileHelper::createWUZAPFileIOStream(IEspContext& context, IC
 
     VStringBuffer headerStr("attachment;filename=%s", zapFileName.str());
     context.addCustomerHeader("Content-disposition", headerStr.str());
-    return createIOStreamWithFileName(zapFileNameWithPath.str(), IFOread);
+    auto stream = createIOStreamFromFile(zapFileNameWithPath.str(), IFOread);
+    if (stream == nullptr)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unable to create output stream for ZAP file %s", zapFileNameWithPath.str());
+    return stream;
 }
 
 IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const char* wuid, IArrayOf<IConstWUFileOption>& wuFileOptions,
@@ -4175,7 +4172,10 @@ IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const
         }
 
         zipFileNameWithPath.set(zipFolder).append(fileName.str());
-        return createIOStreamWithFileName(zipFileNameWithPath.str(), IFOread);
+        auto stream = createIOStreamFromFile(zipFileNameWithPath.str(), IFOread);
+        if (stream == nullptr)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Unable to create output stream for zip file %s", zipFileNameWithPath.str());
+        return stream;
     }
 
     if (downloadOptions == CWUFileDownloadOption_ZIP)
@@ -4197,7 +4197,10 @@ IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const
     contentType.set(HTTP_TYPE_OCTET_STREAM);
     VStringBuffer headerStr("attachment;filename=%s", fileName.str());
     context.addCustomerHeader("Content-disposition", headerStr.str());
-    return createIOStreamWithFileName(zipFileNameWithPath.str(), IFOread);
+    auto stream = createIOStreamFromFile(zipFileNameWithPath.str(), IFOread);
+    if (stream == nullptr)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for zip file %s", zipFileNameWithPath.str());
+    return stream;
 }
 
 void CWsWuFileHelper::validateFilePath(const char* file, WsWuInfo& winfo, CWUFileType wuFileType, bool UNCFileName, const char* fileType, const char* compType, const char* compName)
