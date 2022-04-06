@@ -150,7 +150,7 @@ const static WuAttrInfo attrInfo[] = {
     CHILD(DiskFormat, SMeasureText, "diskFormat"),
     CHILD(RecordFormat, SMeasureText, "recordFormat"),
     CHILD(ServiceName, SMeasureText, "serviceName"),
-    CHILD(ComplexHelperSize, SMeasureSize, "complexHelperSize"),
+    CHILD(SizeComplexHelper, SMeasureSize, "complexHelperSize"),
     { WaMax, SMeasureNone, nullptr, nullptr, nullptr, nullptr, nullptr, WaNone, WaNone }
 };
 
@@ -175,7 +175,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         if (info.name && prefix && *prefix)
         {
             if (!startsWith(info.name, prefix))
-                printf("Mismatched prefix %s %s\n", info.name, prefix);
+                printf("Mismatched prefix of the attribute name:'%s'. The expected prefix is: '%s'\n", info.name, prefix);
         }
 #endif
 
