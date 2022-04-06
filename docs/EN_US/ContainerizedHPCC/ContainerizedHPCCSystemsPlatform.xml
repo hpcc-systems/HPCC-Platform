@@ -230,9 +230,6 @@
   <xi:include href="ContainerizedHPCC/ContainerizedMods/LocalDeployment.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="ContainerizedHPCC/ContainerizedMods/PVCStorage.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
-
   <xi:include href="ContainerizedHPCC/ContainerizedMods/CustomConfig.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
