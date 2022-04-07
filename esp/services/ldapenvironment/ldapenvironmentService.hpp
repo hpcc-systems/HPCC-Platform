@@ -38,7 +38,7 @@ private:
     enum SecretType : int
     {
         ST_K8S = 0,
-        ST_VAULT = 1
+        ST_AUTHN_VAULT = 1
     };
     bool createSecret(SecretType type, const char * secretName, const char * username, const char * pwd, StringBuffer & notes);
 
