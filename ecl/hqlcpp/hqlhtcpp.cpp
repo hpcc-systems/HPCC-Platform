@@ -2411,7 +2411,7 @@ void ActivityInstance::buildSuffix()
             if ((options.complexClassesActivityFilter == 0) || (kind == options.complexClassesActivityFilter))
             {
                 translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
-                addAttributeInt(WaComplexHelperSize, approxSize);
+                addAttributeInt(WaSizeComplexHelper, approxSize);
             }
         }
         if (!options.obfuscateOutput && options.showActivitySizeInGraph)
