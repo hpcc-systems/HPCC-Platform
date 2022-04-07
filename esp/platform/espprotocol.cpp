@@ -29,8 +29,10 @@
 
 static RelaxedAtomic<unsigned> gActiveRequests;
 
+#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
 static auto pActiveRequests = hpccMetrics::registerCustomMetric("esp.requests.active", "Number of active requests",
                                                                 hpccMetrics::METRICS_GAUGE, gActiveRequests, SMeasureCount);
+#endif
 
 typedef IXslProcessor * (*getXslProcessor_func)();
 
