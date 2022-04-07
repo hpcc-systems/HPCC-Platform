@@ -10,6 +10,8 @@ esp:
    enableSEHMapping: true
    httpConfigAccess: true
    logLevel: 1
+   # matching previous hard coded k8s default for maxRequestEntityLength here (rather than bare metal), but it is now configurable
+   maxRequestEntityLength: 60M
    maxBacklogQueueSize: 200
    portalurl: http://hpccsystems.com/download
    logDir: "-"
