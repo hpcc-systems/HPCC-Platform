@@ -45,7 +45,6 @@ class QueryFilesInUse : public CInterface, implements ISDSSubscription, implemen
     CThreaded threaded;
     Semaphore sem;
     MapStringTo<IUserDescriptor *> roxieUserMap;
-    IArrayOf<IUserDescriptor> roxieUsers;
 
     Owned<IPropertyTree> tree;
     SubscriptionId qsChange;
@@ -64,25 +63,7 @@ private:
         tree.setown(t.getClear());
     }
 
-    void updateUsers()
-    {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(QueryFilesInUse::updateUsers)");
-#else
-        Owned<IStringIterator> clusters = getTargetClusters("RoxieCluster", NULL);
-        ForEach(*clusters)
-        {
-            SCMStringBuffer target;
-            clusters->str(target);
-
-            Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target.str());
-            Owned<IUserDescriptor> user = createUserDescriptor();
-            user->set(info->getLdapUser(), info->getLdapPassword());
-            roxieUserMap.setValue(target.str(), user);
-            roxieUsers.append(*user.getClear());
-        }
-#endif
-    }
+    void updateUsers();
 
 public:
     IMPLEMENT_IINTERFACE;
