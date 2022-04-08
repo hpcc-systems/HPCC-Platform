@@ -72,6 +72,7 @@ filebeat:
     filebeat.yml: |
       filebeat.inputs:
       - type: container
+        pipeline: 'hpccpipeline'
         paths:
           - /var/log/containers/esdl-sandbox-*.log
           - /var/log/containers/eclwatch-*.log
