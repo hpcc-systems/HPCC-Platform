@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsDfu from "src/WsDfu";
@@ -69,8 +70,8 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
                 file?.update({
                     UpdateDescription: true,
                     FileDesc: description,
-                    Protect: _protected ? "1" : "2",
-                    Restrict: restricted ? "1" : "2",
+                    Protect: _protected ? DFUChangeProtection.Protect : DFUChangeProtection.Unprotect,
+                    Restrict: restricted ? DFUChangeRestriction.Restrict : DFUChangeRestriction.Unrestricted,
                 })
                     .catch(err => logger.error(err))
                     ;

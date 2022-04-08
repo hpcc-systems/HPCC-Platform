@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
+import { DFUDefFileFormat } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { FileParts } from "./FileParts";
@@ -39,8 +40,8 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             replaceUrl(`/files/${file.NodeGroup}/${logicalFile}`);
         }
     }, [cluster, file?.NodeGroup, logicalFile]);
-    const [defFile] = useDefFile(cluster, logicalFile, "def");
-    const [xmlFile] = useDefFile(cluster, logicalFile, "xml");
+    const [defFile] = useDefFile(cluster, logicalFile, DFUDefFileFormat.Def);
+    const [xmlFile] = useDefFile(cluster, logicalFile, DFUDefFileFormat.Xml);
 
     const isDFUWorkunit = file?.Wuid?.length && file?.Wuid[0] === "D";
 

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 import { formatCost } from "src/Session";
 import * as WsDfu from "src/WsDfu";
@@ -7,7 +8,6 @@ import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
-import { useBuildInfo } from "../hooks/platform";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
@@ -32,7 +32,6 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
 
     const [file, isProtected, , refresh] = useFile(cluster, logicalFile);
     const [description, setDescription] = React.useState("");
-    const [, { currencyCode }] = useBuildInfo();
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
     const [canReplicateFlag, setCanReplicateFlag] = React.useState(false);
@@ -105,8 +104,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 file?.update({
                     UpdateDescription: true,
                     FileDesc: description,
-                    Protect: _protected ? "1" : "2",
-                    Restrict: restricted ? "1" : "2",
+                    Protect: _protected ? DFUChangeProtection.Protect : DFUChangeProtection.Unprotect,
+                    Restrict: restricted ? DFUChangeRestriction.Restrict : DFUChangeRestriction.Unrestricted,
                 });
             }
         },
@@ -160,7 +159,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
                 "Description": { label: nlsHPCC.Description, type: "string", value: description },
                 "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
-                "Cost": { label: nlsHPCC.Cost, type: "string", value: `${formatCost(file?.Cost ?? 0)} (${currencyCode})`, readonly: true },
+                "AccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(file?.AccessCost)}`, readonly: true },
+                "AtRestCost": { label: nlsHPCC.FileCostAtRest, type: "string", value: `${formatCost(file?.AtRestCost)}`, readonly: true },
                 "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { LogicalFile, WsDfu } from "@hpcc-js/comms";
+import { LogicalFile, WsDfu, DFUDefFileFormat } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./workunit";
@@ -41,7 +41,7 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
     return [file, isProtected, lastUpdate, increment];
 }
 
-export function useDefFile(cluster: string, name: string, format: "def" | "xml"): [string, () => void] {
+export function useDefFile(cluster: string, name: string, format: DFUDefFileFormat): [string, () => void] {
 
     const [file] = useFile(cluster, name);
     const [defFile, setDefFile] = React.useState("");
@@ -59,10 +59,10 @@ export function useDefFile(cluster: string, name: string, format: "def" | "xml")
     return [defFile, increment];
 }
 
-export function useFileHistory(cluster: string, name: string): [WsDfu.Origin2[], () => void, () => void] {
+export function useFileHistory(cluster: string, name: string): [WsDfu.Origin[], () => void, () => void] {
 
     const [file] = useFile(cluster, name);
-    const [history, setHistory] = React.useState<WsDfu.Origin2[]>([]);
+    const [history, setHistory] = React.useState<WsDfu.Origin[]>([]);
     const [count, increment] = useCounter();
 
     const eraseHistory = React.useCallback(() => {

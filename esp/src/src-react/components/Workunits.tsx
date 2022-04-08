@@ -9,7 +9,6 @@ import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
-import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
@@ -81,7 +80,6 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -140,14 +138,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             ExecuteCost: {
                 label: nlsHPCC.ExecuteCost, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                    return `${formatCost(cost)}`;
                 }
             },
             FileAccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)
-                        } (${currencyCode || "$"})`;
+                    return `${formatCost(cost)}`;
                 }
             }
         }
