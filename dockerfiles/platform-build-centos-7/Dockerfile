@@ -103,7 +103,6 @@ RUN bash -c "`/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc
     -DSUPPRESS_SPARK=ON \
     -DUSE_GIT=OFF \
     -DUSE_AZURE=OFF \
-    -DUSE_AWS=OFF \
     -DUSE_ELASTICSTACK_CLIENT=OFF \
     -DUSE_CASSANDRA=OFF \
     -DSUPPRESS_V8EMBED=ON \

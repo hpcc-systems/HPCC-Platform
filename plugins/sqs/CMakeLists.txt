@@ -4,6 +4,10 @@ PROJECT(sqs
 
 if(SQS AND USE_AWS)
     ADD_PLUGIN(sqs)
+
+    find_package(aws-cpp-sdk-core REQUIRED)
+    find_package(aws-cpp-sdk-sqs REQUIRED)
+    
     set(AWS_SDK_CPP_SOURCE_DIR ${HPCC_SOURCE_DIR}/system/aws/aws-sdk-cpp)
 
     add_definitions(-DUSE_IMPORT_EXPORT)
@@ -18,8 +22,8 @@ if(SQS AND USE_AWS)
         ./../../rtl/include
         ./../../common/deftype
         ./../../system/jlib
-        ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-core/include
-        ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-sqs/include
+        aws-cpp-sdk-core
+        aws-cpp-sdk-sqs
         ${CMAKE_BINARY_DIR})
 
     add_definitions(-D_USRDLL -DECL_SQS_EXPORTS)

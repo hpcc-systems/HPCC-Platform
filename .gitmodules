@@ -31,9 +31,6 @@
 [submodule "system/tbb_sm/tbb"]
     path = system/tbb_sm/tbb
     url = https://github.com/hpcc-systems/tbb.git
-[submodule "plugins/sqs/aws-sdk-cpp"]
-	path = system/aws/aws-sdk-cpp
-	url = https://github.com/hpcc-systems/aws-sdk-cpp
 [submodule "configuration/configmgr/RapidJSON"]
         path = configuration/configmgr/RapidJSON
         url = https://github.com/hpcc-systems/rapidjson
