@@ -34,6 +34,14 @@
             "platform": "windows"
         },
         "librdkafka",
-        "openblas"
+        "openblas",
+        {
+            "name": "aws-sdk-cpp",
+            "default-features": false,
+            "features": [
+                "s3",
+                "sqs"
+            ]
+        }
     ]
 }
