@@ -407,8 +407,8 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
     {
         if (!name.isEmpty())
         {
-            Owned<IStoragePlane> plane = getDataStoragePlane(name, false);
 #ifdef _CONTAINERIZED
+            Owned<IStoragePlane> plane = getDataStoragePlane(name, false);
             mspec.numStripedDevices = plane ? plane->numDevices() : 1;
             if (mspec.numStripedDevices>1)
                 mspec.flags |= CPDMSF_striped;
