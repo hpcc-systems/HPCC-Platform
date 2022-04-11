@@ -26,10 +26,11 @@
 project(javaembed)
 
 if(JAVAEMBED AND USE_JAVA)
-    ADD_PLUGIN(javaembed PACKAGES JNI)
+    ADD_PLUGIN(javaembed)
     if(MAKE_JAVAEMBED)
-        find_package(Java 1.8 COMPONENTS Development)
-        set(
+    find_package(Java 1.8 COMPONENTS Development)
+    find_package(JNI)
+    set(
             SRCS
             javaembed.cpp)
 

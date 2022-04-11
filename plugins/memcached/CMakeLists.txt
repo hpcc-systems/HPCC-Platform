@@ -25,8 +25,10 @@
 project( memcachedplugin )
 
 if (MEMCACHED)
-    ADD_PLUGIN(memcached PACKAGES LIBMEMCACHED MINVERSION ${LIBMEMCACHED_MINVERSION})
+    ADD_PLUGIN(memcached)
     if(MAKE_MEMCACHED)
+
+        find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION} REQUIRED)
 
         set(
             SRCS

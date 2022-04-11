@@ -36,25 +36,25 @@ jobs:
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON"
             cmake_build_options: "-- -j$(nproc)"
           - os: "windows-2019"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
             cmake_build_options: "--config Debug -- -m"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
             cmake_build_options: "--config Debug -- -m"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
             cmake_build_options: "-- -j$(nproc)"
       fail-fast: false
 
@@ -77,7 +77,7 @@ jobs:
           sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
             zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
             libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
-            default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config libtool autotools-dev automake \
+            default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config uuid-dev libtool autotools-dev automake \
             libssl-dev xmlstarlet
 
           curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
@@ -89,7 +89,7 @@ jobs:
         if: ${{ needs.check-skip.outputs.platform && matrix.os == 'macos-11' }}
         shell: "bash"
         run: |
-          brew install bison flex pkg-config automake libtool cmake
+          brew install bison flex pkg-config automake libtool cmake openjdk@11
 
       - name: "Remove builtin vcpkg"
         if: ${{ needs.check-skip.outputs.platform }}
@@ -134,7 +134,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_config_options }}
+          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
 
       - name: "Build HPCC-Platform"
         if: ${{ needs.check-skip.outputs.platform }}

@@ -25,8 +25,9 @@
 project(mysqlembed)
 
 if(MYSQLEMBED)
-    ADD_PLUGIN(mysqlembed PACKAGES MYSQL)
+    ADD_PLUGIN(mysqlembed)
     if(MAKE_MYSQLEMBED)
+        find_package(MYSQL REQUIRED)
         set(
             SRCS
             mysqlembed.cpp)

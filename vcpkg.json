@@ -32,6 +32,8 @@
         {
             "name": "winflexbison",
             "platform": "windows"
-        }
+        },
+        "librdkafka",
+        "openblas"
     ]
 }
