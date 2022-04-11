@@ -34,6 +34,7 @@
             "platform": "windows"
         },
         "librdkafka",
-        "openblas"
+        "openblas",
+        "libgit2"
     ]
 }

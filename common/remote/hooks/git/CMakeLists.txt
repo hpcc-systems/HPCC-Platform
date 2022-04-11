@@ -24,7 +24,7 @@
 
 project( gitfile )
 
-include (libgit2.cmake)
+find_package(unofficial-git2 CONFIG REQUIRED)
 
 set (    SRCS
          gitfile.cpp
@@ -34,7 +34,6 @@ set (    SRCS
 include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
-         ${HPCC_SOURCE_DIR}/common/remote/hooks/git/libgit2/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DGITFILE_EXPORTS )
@@ -44,5 +43,5 @@ install ( TARGETS gitfile DESTINATION filehooks )
 
 target_link_libraries ( gitfile
     jlib
-    git2
+    unofficial::git2::git2
     )
