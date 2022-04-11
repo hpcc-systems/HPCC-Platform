@@ -1884,6 +1884,9 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
+    CWUProtectFilter protectedFilter = req.getProtected();
+    if (protectedFilter != CWUProtectFilter_All)
+        addWUQueryFilter(filters, filterCount, filterbuf, (protectedFilter == CWUProtectFilter_Protected) ? "1" : "0", WUSFprotected);
 
     addWUQueryFilterTotalClusterTime(filters, filterCount, filterbuf, req.getTotalClusterTimeThresholdMilliSec(), WUSFtotalthortime);
 
