@@ -897,9 +897,6 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 </roxie>
               </xsl:if>
             </xsl:when>
-            <xsl:when test="$serviceType='ws_thing_finder'">
-                <LanguageDirectory><xsl:value-of select="@LanguageDirectory"/></LanguageDirectory>
-            </xsl:when>
             <xsl:when test="$serviceType='ws_ecl'">
                 <xsl:if test="string(@roxieTimeout)!=''">
                     <RoxieTimeout><xsl:value-of select="@roxieTimeout"/></RoxieTimeout>
