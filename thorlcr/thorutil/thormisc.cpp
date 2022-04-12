@@ -332,9 +332,19 @@ public:
             }
             if (slave)
             {
-                str.appendf("SLAVE #%d [", slave);
-                queryClusterGroup().queryNode(slave).endpoint().getUrlStr(str);
-                str.append("]: ");
+                if (((int)slave) < 0)
+                {
+                    unsigned node = (unsigned)-slave;
+                    str.appendf("NODE #%d [", node);
+                    queryNodeGroup().queryNode(node).endpoint().getUrlStr(str);
+                    str.append("]: ");
+                }
+                else
+                {
+                    str.appendf("SLAVE #%d [", slave);
+                    queryClusterGroup().queryNode(slave).endpoint().getUrlStr(str);
+                    str.append("]: ");
+                }
             }
         }
         str.append(msg);

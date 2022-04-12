@@ -526,7 +526,7 @@ public:
     {
         CMessageBuffer msg;
         msg.append((int)smt_errorMsg);
-        msg.append(queryMyRank()-1);
+        msg.append(queryMyRank()); // leave as 1-based. 0 means channel unknown (see CThreadExceptionCatcher)
         IThorException *te = QUERYINTERFACE(e, IThorException);
         bool userOrigin = false;
         if (te)
