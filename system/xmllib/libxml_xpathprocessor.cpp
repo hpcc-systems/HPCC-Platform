@@ -915,6 +915,75 @@ public:
         xmlXPathFreeObject(obj);
     }
 
+    StringBuffer &toXML(xmlNodePtr node, StringBuffer &xml)
+    {
+        if (!node)
+            return xml;
+
+        xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
+        xmlNodeDumpOutput(xmlOut, node->doc, node, 0, 1, nullptr);
+        xmlOutputBufferFlush(xmlOut);
+        xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
+        if (xmlBufUse(buf))
+            xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        xmlOutputBufferClose(xmlOut);
+        return xml;
+    }
+
+    StringBuffer &toXMLNodeSet(xmlXPathObjectPtr obj, StringBuffer &xml)
+    {
+        if (!obj || !obj->type==XPATH_NODESET || !obj->nodesetval || !obj->nodesetval->nodeTab || obj->nodesetval->nodeNr<1)
+            return xml;
+        xmlNodePtr *nodes = obj->nodesetval->nodeTab;
+        for (int i = 0; i < obj->nodesetval->nodeNr; i++)
+        {
+            xmlNodePtr node = obj->nodesetval->nodeTab[i];
+            toXML(node, xml);
+        }
+        return xml;
+    }
+
+
+    virtual void trace(const char *label, ICompiledXpath *select, bool useStdOut) override
+    {
+        xmlNodePtr current = m_xpathContext->node;
+        if (!current || !select)
+            return;
+        CLibCompiledXpath * ccXpath = static_cast<CLibCompiledXpath *>(select);
+        xmlXPathObjectPtr obj = primaryContext->evaluate(ccXpath->getCompiledXPathExpression(), ccXpath->getXpath());
+        if (!obj)
+            throw MakeStringException(XPATHERR_InvalidState, "XpathContext:trace xpath syntax error '%s'", ccXpath->getXpath());
+        StringBuffer content;
+        switch (obj->type)
+        {
+            case XPATH_NODESET:
+                toXMLNodeSet(obj, content);
+                break;
+            case XPATH_BOOLEAN:
+            case XPATH_NUMBER:
+            case XPATH_STRING:
+                append(content, obj);
+                break;
+            default:
+                break;
+        }
+        if (useStdOut)
+        {
+            if (!isEmptyString(label))
+                printf("%s %s\n", label, content.str());
+            else if (content.length())
+                printf("%s\n", content.str());
+        }
+        else
+        {
+            if (!isEmptyString(label))
+                LOG(MCuserInfo, "%s %s", label, content.str());
+            else if (content.length())
+                LOG(MCuserInfo, "%s", content.str());
+        }
+
+        xmlXPathFreeObject(obj);
+    }
 
     virtual bool addObjectVariable(const char * name, xmlXPathObjectPtr obj, CLibXpathScope *scope)
     {
@@ -1520,6 +1589,7 @@ private:
     xmlDocPtr doc = nullptr;
     xmlNodePtr root = nullptr;
     xmlXPathContextPtr xpathCtx = nullptr;
+    bool traceToStdout = false;
 
 public:
     CEsdlScriptContext(void *ctx) : espCtx(ctx)
@@ -1885,6 +1955,14 @@ private:
     virtual void cleanupBetweenScripts() override
     {
         removeSection("temporaries");
+    }
+    void setTraceToStdout(bool val) override //keep it simple for now.  default is to use jlog.  This flag may go away when we give more control over tracing
+    {
+        traceToStdout = val;
+    }
+    bool getTraceToStdout() override
+    {
+        return traceToStdout;
     }
 };
 

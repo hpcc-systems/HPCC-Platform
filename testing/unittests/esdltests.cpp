@@ -342,11 +342,11 @@ public:
             //printf("starting %s:\n", testname);  //uncomment to help debug
             Owned<IEspContext> ctx = createEspContext(nullptr);
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, xml, config);
+            scriptContext->setTraceToStdout(true);
             runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname, code);
 
             StringBuffer output;
             scriptContext->toXML(output.clear(), ESDLScriptCtxSection_FinalRequest);
-
 
             if (result && !areEquivalentTestXMLStrings(result, output.str()))
             {
@@ -970,6 +970,13 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
            <es:param name="ForIdPath"/>
            <es:param name="section"/>
            <es:param name="garbage"/>
+
+           <es:trace test="false()" label="will not show" select="'this will not show up'"/>
+           <es:trace test="true()" label="will show" select="'this will show up'"/>
+           <es:trace label="string" select="'this is some text'"/>
+           <es:trace label="boolean" select="true()"/>
+           <es:trace label="number" select="90"/>
+           <es:trace label="FOR nodeset" select="$ForBuildListPath"/>
            <es:for-each select="$ForBuildListPath">
                <es:variable name="q" select="str:decode-uri('%27')"/>
                <es:variable name="path" select="concat($section, '/Name[First=', $q, First, $q, ']/Aliases', $garbage)"/>

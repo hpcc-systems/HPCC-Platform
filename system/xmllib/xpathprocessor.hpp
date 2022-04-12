@@ -76,6 +76,7 @@ interface XMLLIB_API IXpathContext : public IInterface
     virtual StringBuffer &toXml(const char *xpath, StringBuffer & xml) = 0;
     virtual void addXmlContent(const char *xml) = 0;
     virtual IXmlWriter *createXmlWriter() = 0;
+    virtual void trace(const char *label, ICompiledXpath * compiledXpath, bool useStdOut) = 0;
 };
 
 interface IXpathContextIterator : extends IIteratorOf<IXpathContext> { };
@@ -164,6 +165,8 @@ interface IEsdlScriptContext : extends IInterface
     virtual void toXML(StringBuffer &xml) = 0;
     virtual IPropertyTree *createPTreeFromSection(const char *section) = 0;
     virtual void cleanupBetweenScripts() = 0;
+    virtual void setTraceToStdout(bool val) = 0; //keep it simple for now.  default is to use jlog.  This flag may go away when we give more control over tracing
+    virtual bool getTraceToStdout() = 0;
 };
 
 extern "C" XMLLIB_API IEsdlScriptContext *createEsdlScriptContext(void * espContext);
