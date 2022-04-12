@@ -127,6 +127,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         Owned<IPropertyTree> mergedGlobals = createPTreeFromIPT(globals);
         mergeConfiguration(*mergedGlobals, *masterComponentConfig);
         replaceComponentConfig(mergedGlobals);
+        globals.set(mergedGlobals);
 
 #ifdef _DEBUG
         unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
