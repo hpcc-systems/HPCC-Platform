@@ -12607,6 +12607,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
+    if (instance->isLocal && !joinToSelf)
+    {
+        if (hasKnownDistribution(dataset1) && hasKnownDistribution(dataset2))
+        {
+            if (!isDistributedCoLocally(dataset1, dataset2, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
+            {
+                reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_DistributionNotMatchLocalJoin));
+            }
+        }
+    }
+
     //bool couldBeKeepOne = keepLimit && (!keepLimit->queryValue() || (keepLimit->queryValue()->getIntValue() <= 1));
     if (dataset1->queryRecord() == dataset2->queryRecord())
     {
