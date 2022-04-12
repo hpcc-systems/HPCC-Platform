@@ -33,7 +33,7 @@ filebeat:
             matchers:
             - logs_path:
                 logs_path: "/var/log/containers/"
-       #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}, etc.
+       #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpcc-log-%{+yyyy.MM.dd}, etc.
        #setup.ilm.enabled: false
        #setup.template.overwrite: true
       output.elasticsearch:

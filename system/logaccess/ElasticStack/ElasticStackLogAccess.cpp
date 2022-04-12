@@ -38,7 +38,7 @@ static constexpr int DEFAULT_ES_DOC_LIMIT = 100;
 static constexpr int DEFAULT_ES_DOC_START = 0;
 
 static constexpr const char * DEFAULT_TS_NAME = "@timestamp";
-static constexpr const char * DEFAULT_INDEX_PATTERN = "filebeat*";
+static constexpr const char * DEFAULT_INDEX_PATTERN = "hpcc-logs*";
 
 static constexpr const char * DEFAULT_HPCC_LOG_SEQ_COL         = "hpcc.log.sequence";
 static constexpr const char * DEFAULT_HPCC_LOG_TIMESTAMP_COL   = "hpcc.log.timestamp";

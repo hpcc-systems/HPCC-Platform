@@ -3513,11 +3513,11 @@ IRemoteLogAccess &queryRemoteLogAccessor()
                     port: 9200
                     logMaps:
                     - type: "global"
-                    storeName: "filebeat-*"
+                    storeName: "hpcc-logs*"
                     searchColumn: "message"
                     timeStampColumn: "created_ts"
                     - type: "workunits"
-                    storeName: "filebeat-*"
+                    storeName: "hpcc-logs*"
                     searchColumn: "hpcc.log.jobid"
                     - type: "components"
                     searchColumn: "kubernetes.container.name"

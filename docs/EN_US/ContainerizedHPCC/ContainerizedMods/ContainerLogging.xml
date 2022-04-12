@@ -90,7 +90,7 @@
       a simple index pattern).</para>
 
       <para>Out of the box, the Filebeat forwards the HPCC component log
-      entries to a generically named index: 'filebeat'-&lt;VERSION&gt;-
+      entries to a generically named index: 'hpcc-logs'-
       &lt;DATE_STAMP&gt; and writes the log data into 'hpcc.log.*' prefixed
       fields. It also aggregates k8s, Docker, and system metadata to help the
       user query the log entries of their interest.</para>

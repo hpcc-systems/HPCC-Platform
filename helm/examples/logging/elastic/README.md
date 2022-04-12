@@ -28,7 +28,7 @@ Port forwarding might be required to expose the Kibana interface
 
     > kubectl port-forward service/kibana-kibana 5601
 
-Once all the components are working successfully, the logs will be written to a filebeat prefixed index on ElasticSearch, and it can be managed from the Kibana interface. Some index content retention policy rules can be configured here.
+Once all the components are working successfully, the logs will be written to a 'hpcc-logs' prefixed index on ElasticSearch, and it can be managed from the Kibana interface. Some index content retention policy rules can be configured here.
 
 The default filebeat configuration aggregates several Kubernetes metadata fields to each log entry forwarded to ElasticSearch. The Kubernetes fields can be used to identify the HPCC component responsible for each entry, and the source pod and or node on which the event was reported. 
 

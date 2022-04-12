@@ -70,8 +70,17 @@ filebeat:
   ## such as filebeat.yml
   filebeatConfig:
     filebeat.yml: |
+      #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}, etc.
+      setup.template.name: "hpcc-logs"
+      setup.template.pattern: "hpcc-logs-*"
+      setup.ilm.enabled: true
+      setup.ilm.rollover_alias: "hpcc-logs"
+      setup.ilm.pattern: "{now/d}-000001"
+      setup.ilm.policy_name: "Standard-Index"
+      #setup.template.overwrite: true
       filebeat.inputs:
       - type: container
+        pipeline: 'hpccpipeline'
         paths:
           - /var/log/containers/esdl-sandbox-*.log
           - /var/log/containers/eclwatch-*.log
@@ -97,9 +106,6 @@ filebeat:
         multiline.pattern: '^([A-Z-0-9]{8})\s+'
         multiline.negate: true
         multiline.match: after
-      #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}, etc.
-       #setup.ilm.enabled: false
-       #setup.template.overwrite: true
       output.elasticsearch:
         host: '${NODE_NAME}'
         hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
@@ -108,9 +114,7 @@ filebeat:
       #      See https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/managed/logging/elastic/README.md
         pipeline: 'hpccpipeline'
       #  index: "hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
-      #setup.template.name: hpccsystems
-      #setup.template.pattern: hpccsystems-*
-      #setup.template.enabled: true
+        index: "hpcc-logs-%{+yyyy.MM.dd}"
 
 ##The kibana component can be customized by modifying helm chart values here.
 kibana:
@@ -180,9 +184,16 @@ kibana:
               echo 'hpcc-filebeat-pattern not found, will create index pattern!'
 
               httpcode=$(curl -s -w "%{http_code}" -X POST "$KIBANA_URL/api/saved_objects/index-pattern/hpcc-filebeat-pattern" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' \
-              -d'{ "attributes":{"title":"filebeat*","timeFieldName":"@timestamp"}}')
+              -d'{ "attributes":{"title":"hpcc-logs*","timeFieldName":"@timestamp"}}')
               echo Index pattern creation response:  ${httpcode}
             else
               echo Failed to retrieve index pattern information from Kibana: ${httpcode}
             fi
-            curl -X PUT "$KIBANA_URL/s/default/api/saved_objects/config/7.17.1" -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{"attributes": {"defaultRoute": "/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(kubernetes.container.name,hpcc.log.message,hpcc.log.audience,hpcc.log.class,hpcc.log.jobid,hpcc.log.timestamp),filters:!(),index:hpcc-filebeat-pattern,interval:auto)"}}'
+            #curl -X PUT "$KIBANA_URL/s/default/api/saved_objects/config/7.17.1" -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{"attributes": {"defaultRoute": "/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(kubernetes.container.name,hpcc.log.message,hpcc.log.audience,hpcc.log.class,hpcc.log.jobid,hpcc.log.timestamp),filters:!(),index:hpcc-filebeat-pattern,interval:auto)"}}'
+            #Set default route via Kibana advanced setting API (experimental)
+            curl -X POST "$KIBANA_URL/api/kibana/settings/defaultRoute" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"value":"/app/discover#/?_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now%2Fd,to:now%2Fd))&_a=(columns:!(kubernetes.container.name,hpcc.log.message,hpcc.log.audience,hpcc.log.class,hpcc.log.jobid,hpcc.log.timestamp),filters:!(),index:hpcc-filebeat-pattern,interval:auto)"}'
+            #Set default discover fields via Kibana advanced setting API (experimental)
+            curl -X POST "$KIBANA_URL/api/kibana/settings/defaultColumns" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"value": ["kubernetes.container.name","hpcc.log.message","hpcc.log.audience","hpcc.log.class","hpcc.log.jobid","hpcc.log.timestamp"]}'
+            #Notify Kibana users of new indexing scheme via Kibana advanced setting API (experimental)
+            curl -X POST "$KIBANA_URL/api/kibana/settings/notifications:banner" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"value": "HPCC users please note: Log data now stored in 'hpcc-logs' prefixed indices, use 'hpcc-logs*' index pattern!"}'
+
