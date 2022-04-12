@@ -667,7 +667,17 @@ public:
         subDirName.set(_subDirName);
         prefix.set(_prefix);
         subDirPath.setf("%s%s", rootDir.str(), subDirName.str());
-        recursiveCreateDirectory(subDirPath);
+        bool ret = recursiveCreateDirectory(subDirPath);
+        VStringBuffer msg("%s to create temp directory %s", ret ? "Succeeded" : "Failed", subDirPath.str());
+        DBGLOG("%s", msg.str());
+        if (!ret)
+        {
+            // temp dir. should not exist, but if it does issue warning only.
+            if (checkDirExists(subDirPath))
+                WARNLOG("Existing temp directory %s already exists", subDirPath.str());
+            else
+                throw MakeThorException(0, "%s", msg.str());
+        }
         if (clearDir)
             clearTempDirectory(true);
     }
