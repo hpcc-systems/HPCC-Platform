@@ -724,7 +724,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         type="datetime-local"
                         name={fieldID}
-                        value={field.value}
+                        defaultValue={field.value}
                         onChange={ev => {
                             field.value = ev.target.value;
                         }}

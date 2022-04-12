@@ -84,6 +84,7 @@ export = {
         Cancel: "Cancel",
         CancelAll: "Cancel All",
         CancelAllMessage: "Abort running jobs and clear queue. Do you wish to continue?",
+        Category: "Category",
         Chart: "Chart",
         Channel: "Channel",
         CheckAllNodes: "Check All Nodes",
