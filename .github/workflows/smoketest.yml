@@ -51,11 +51,11 @@ jobs:
     runs-on: ubuntu-20.04
     # Map a step output to a job output
     outputs:
-      platform: ${{ steps.skip_check.outputs.platform }}
-      eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
+      platform: ${{ contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') || steps.skip_check.outputs.platform }}
+      eclwatch: ${{ contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') || steps.skip_check.outputs.eclwatch }}
+
     steps:
       - id: skip_check
-        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') }}
         uses: hpcc-systems/github-actions/changed-modules@main
         with:
           github_token: ${{ github.token }}
