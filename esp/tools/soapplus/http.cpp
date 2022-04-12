@@ -136,10 +136,10 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
 
     Owned<IFileIOStream> full_stream = NULL;
     if(full_output)
-        full_stream.setown(createIOStream(full_output));
+        full_stream.setown(createBufferedIOStream(full_output));
     Owned<IFileIOStream> content_stream = NULL;
     if(content_output)
-        content_stream.setown(createIOStream(content_output));
+        content_stream.setown(createBufferedIOStream(content_output));
 
     char oneline[2049];
     bsocket->read(oneline, 4);
@@ -2215,4 +2215,3 @@ int SimpleServer::start()
 
     return 0;
 }
-

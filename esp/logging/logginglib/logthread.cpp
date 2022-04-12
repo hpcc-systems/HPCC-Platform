@@ -737,7 +737,7 @@ void CLogRequestReader::readAcked(const char* fileName, std::set<std::string>& a
         if (io)
         {
             StringBuffer line;
-            OwnedIFileIOStream ios = createIOStream(io);
+            OwnedIFileIOStream ios = createBufferedIOStream(io);
             Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
             while(!lineReader->readLine(line.clear()))
             {

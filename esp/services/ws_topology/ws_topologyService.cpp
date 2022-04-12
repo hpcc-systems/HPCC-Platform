@@ -782,7 +782,7 @@ void CWsTopologyEx::readLogFileToArray(const char *logname, OwnedIFileIO rIO, Re
     }
 
     StringBuffer logLine, textLine, logFieldTime, logFieldTimeNextLine; //A logLine may has multiple textLines.
-    Owned<IFileIOStream> ios = createIOStream(rIO);
+    Owned<IFileIOStream> ios = createBufferedIOStream(rIO);
     Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
     bool eof = lineReader->readLine(logLine);
     if (eof)
