@@ -617,6 +617,7 @@ const char * cppSystemText[]  = {
     
     //MORE: Should this be utf8?
     "   varstring getenv(const varstring name, const varstring defaultValue) : pure,ctxmethod,entrypoint='getEnv';",
+    "   data getsecret(const varstring name, const varstring key) : eclrtl,pure,library='eclrtl',entrypoint='rtlGetEclUserSecret';",
 
     "   integer4 queryFailCode()    : gctxmethod,entrypoint='queryLastFailCode';",
     "   string getFailMessage(const varstring tag)  : gctxmethod,entrypoint='getLastFailMessage';",

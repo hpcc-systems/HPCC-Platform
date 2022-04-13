@@ -338,6 +338,7 @@ extern IIdAtom * getClusterSizeId;
 extern IIdAtom * getDatasetHashId;
 extern IIdAtom * getECLId;
 extern IIdAtom * getEnvId;
+extern IIdAtom * getSecretId;
 extern IIdAtom * getEventExtraId;
 extern IIdAtom * getEventNameId;
 extern IIdAtom * getExpandLogicalNameId;

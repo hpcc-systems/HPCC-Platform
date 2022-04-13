@@ -2002,6 +2002,7 @@ const char *getOpString(node_operator op)
     case no_selectindirect: return ".<>";
     case no_isomitted: return "no_isomitted";
     case no_getenv: return "GETENV";
+    case no_getsecret: return "GETSECRET";
     case no_once: return "ONCE";
     case no_persist_check: return "no_persist_check";
     case no_create_initializer: return "no_create_initializer";
@@ -2026,7 +2027,7 @@ const char *getOpString(node_operator op)
     case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
-    case no_unused80: case no_unused81:
+    case no_unused80:
     case no_unused102:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
@@ -4226,6 +4227,7 @@ void CHqlRealExpression::initFlagsBeforeOperands()
     case no_sectioninput:
     case no_wuid:
     case no_getenv:
+    case no_getsecret:
         infoFlags2 &= ~HEF2constant;
         break;
     case no_counter:

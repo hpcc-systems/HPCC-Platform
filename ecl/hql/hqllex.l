@@ -760,6 +760,7 @@ FROMXML             { RETURNSYM(FROMXML); }
 FULL                { RETURNSYM(FULL); }
 FUNCTION            { RETURNHARD(FUNCTION); }
 GETENV              { RETURNSYM(GETENV); }
+GETSECRET           { RETURNSYM(GETSECRET); }
 GLOBAL              { RETURNSYM(GLOBAL); }
 GRAPH               { RETURNSYM(GRAPH); }
 GROUP               { RETURNSYM(GROUP); }

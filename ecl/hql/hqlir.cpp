@@ -644,7 +644,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,sectioninput);
     EXPAND_CASE(no,forcegraph);
     EXPAND_CASE(no,eventextra);
-    EXPAND_CASE(no,unused81);
+    EXPAND_CASE(no,getsecret);
     EXPAND_CASE(no,related);
     EXPAND_CASE(no,executewhen);
     EXPAND_CASE(no,definesideeffect);

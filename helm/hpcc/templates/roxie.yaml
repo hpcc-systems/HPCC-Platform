@@ -80,7 +80,7 @@ data:
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
-{{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
+{{- $secretsCategories := list "system" "eclUser" "ecl" "storage" }}
 {{- $toposerver := ($roxie.topoServer | default dict) -}}
 {{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "remote" "spill" "dll" "debug") "secretsCategories" $secretsCategories "toposerver" $toposerver "env" $env }}
 {{- $_ := set $commonCtx "toponame" (printf "%s-toposerver" $roxie.name) -}}

@@ -764,6 +764,8 @@ ECLRTL_API void rtlFreeException(IException * e);
 
 ECLRTL_API IAtom * rtlCreateFieldNameAtom(const char * name);
 
+ECLRTL_API void rtlGetEclUserSecret(size32_t & outlen, void * & out, const char *name, const char *key);
+
 /**
  * Wrapper function to encode input binary data with base 64 code.
  *

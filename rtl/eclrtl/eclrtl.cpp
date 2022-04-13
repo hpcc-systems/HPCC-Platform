@@ -25,6 +25,7 @@
 #include "jlib.hpp"
 #include "jptree.hpp"
 #include "junicode.hpp"
+#include "jsecrets.hpp"
 #include "eclrtl.hpp"
 #include "rtlbcd.hpp"
 #include "eclhelper.hpp"
@@ -6269,6 +6270,22 @@ void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * 
     }
 }
 
+void rtlGetEclUserSecret(size32_t & outlen, void * & out, const char *name, const char *key)
+{
+    Owned<IPropertyTree> secret = getSecret("eclUser", name);
+    if (secret)
+    {
+        MemoryBuffer data;
+        if (secret->getPropBin(key, data))
+        {
+            outlen = data.length();
+            out = data.detach();
+            return;
+        }
+    }
+    out = nullptr;
+    outlen = 0;
+}
 
 //---------------------------------------------------------------------------
 
