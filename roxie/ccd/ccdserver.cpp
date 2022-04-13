@@ -22958,9 +22958,9 @@ public:
             }
         }
         isSimple = isLocal;
-        maySkip = (flags & (TIRkeyedlimitskips|TIRlimitskips|TIRlimitcreates|TIRkeyedlimitcreates)) != 0;
+        maySkip = (flags & (TIRkeyedlimitskips | TIRlimitskips | TIRlimitcreates | TIRkeyedlimitcreates)) != 0;
 
-        if (keySet && keySet->length()==1 && !isLocal && (flags & (TIRlimitskips|TIRlimitcreates|TIRkeyedlimitskips|TIRkeyedlimitcreates))==0)
+        if (keySet && keySet->length()==1 && !isLocal && (flags & (TIRkeyedlimitskips|TIRkeyedlimitcreates))==0)
         {
             IKeyIndexBase *thisBase = keySet->queryKeyPart(0);
             if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.queryOptions().disableLocalOptimizations)
