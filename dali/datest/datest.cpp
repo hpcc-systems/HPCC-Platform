@@ -116,7 +116,7 @@ void Test_SuperFile()
     queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"3",UNKNOWN_USER);
     queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"2",UNKNOWN_USER);
 #if 1
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1",UNKNOWN_USER));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1", UNKNOWN_USER, AccessMode::tbdWrite));
     if (sfile) {
         sfile->removeSubFile(NULL,true);
         sfile.clear();
@@ -131,7 +131,7 @@ void Test_SuperFile()
     }
     sfile.clear();
 #endif
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1",UNKNOWN_USER));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1", UNKNOWN_USER, AccessMode::tbdRead));
     printf("NumSubFiles = %d\n",sfile->numSubFiles());
 #if 1
     i=0;
@@ -185,7 +185,7 @@ void Test_SuperFile()
     }
     sfile.clear();  // mustn't have owner open when commit transaction
     transaction->rollback();
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"2",UNKNOWN_USER));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"2", UNKNOWN_USER, AccessMode::tbdWrite));
     transaction->start();
     sfile->removeSubFile(TEST_SUB_FILE"1",false,false,transaction);
     StringBuffer name(TEST_SUB_FILE"4");
@@ -200,7 +200,7 @@ void Test_SuperFile()
     sfile->addSubFile(TEST_SUPER_FILE"3",false,NULL,false,transaction);
     sfile.clear();  // mustn't have owner open when commit transaction
     transaction->commit();
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"4",UNKNOWN_USER));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"4", UNKNOWN_USER, AccessMode::tbdRead));
     i=0;
     iter.setown(sfile->getSubFileIterator());
     ForEach(*iter) {
@@ -267,7 +267,7 @@ void Test_SuperFile2()
             printf("sfile size = %" I64F "d\n",sfile->getFileSize(false,false));
         }
         sfile.clear();
-        sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"B1",UNKNOWN_USER));
+        sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"B1", UNKNOWN_USER, AccessMode::tbdWrite));
         printf("NumSubFiles = %d\n",sfile->numSubFiles());
         if (tst==1) {
             sfile->removeSubFile(NULL,false);

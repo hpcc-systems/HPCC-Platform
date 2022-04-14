@@ -925,7 +925,7 @@ public:
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         transaction->start();
 
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname, AccessMode::writeMeta);
         if (!superfile)
         {
             if (!autocreatesuper)
@@ -953,7 +953,7 @@ public:
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
         // MORE - abstract this with DFSAccess, or at least enable caching with a flag
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname, AccessMode::writeMeta);
 
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
@@ -1005,7 +1005,7 @@ public:
 
     void listSubFiles(const char *superfname,StringAttrArray &out,IUserDescriptor *user)
     {
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user);
+        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname, user, AccessMode::readMeta);
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
         Owned<IDistributedFileIterator> iter=superfile->getSubFileIterator();
@@ -1110,7 +1110,7 @@ public:
         if (daliep.port==0)
             daliep.port= DALI_SERVER_PORT;
         Owned<INode> node = createINode(daliep);
-        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn,srcuser,node);
+        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn, AccessMode::tbdRead, srcuser, node);
         if (!fdesc) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());

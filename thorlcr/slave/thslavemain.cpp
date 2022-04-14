@@ -118,16 +118,16 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         mySlaveNum++; // 1 based;
 
         unsigned configSlaveNum = globals->getPropInt("@slavenum", NotFound);
-        globals.setown(createPTree(msg));
+        Owned<IPropertyTree> masterComponentConfig = createPTree(msg);
         if (NotFound == configSlaveNum)
             globals->setPropInt("@slavenum", mySlaveNum);
         else
             assertex(mySlaveNum == configSlaveNum);
 
-        /* NB: preserve command line option overrides
-         * Not sure if any cmdline options are actually needed by this stage..
-         */
-        loadArgsIntoConfiguration(globals, cmdArgs);
+        Owned<IPropertyTree> mergedGlobals = createPTreeFromIPT(globals);
+        mergeConfiguration(*mergedGlobals, *masterComponentConfig);
+        replaceComponentConfig(mergedGlobals);
+        globals.set(mergedGlobals);
 
 #ifdef _DEBUG
         unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
@@ -371,7 +371,7 @@ int main( int argc, const char *argv[]  )
 #ifdef _CONTAINERIZED
         globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #else
-        loadArgsIntoConfiguration(globals, cmdArgs);
+        globals.setown(loadConfiguration(globals, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #endif
 
         const char *master = globals->queryProp("@master");

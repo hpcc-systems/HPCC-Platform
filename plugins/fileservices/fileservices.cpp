@@ -1444,7 +1444,7 @@ public:
 };
 
 
-static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDistributedSuperFile> &file, bool throwerr, StringBuffer &lsfn, bool allowforeign, bool cacheFiles=false)
+static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, AccessMode accessMode, Owned<IDistributedSuperFile> &file, bool throwerr, StringBuffer &lsfn, bool allowforeign, bool cacheFiles=false)
 {
     lsfn.clear();
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
@@ -1456,7 +1456,7 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
         if (dlfn.isForeign())
             throw MakeStringException(0, "Foreign superfile not allowed: %s", lsfn.str());
     }
-    file.setown(transaction->lookupSuperFile(lsfn.str()));
+    file.setown(transaction->lookupSuperFile(lsfn.str(), accessMode));
     if (file.get())
         return true;
     if (throwerr)
@@ -1513,7 +1513,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, con
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    bool found = lookupSuperFile(ctx, lsuperfn, file, false, lsfn, false);
+    bool found = lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, false, lsfn, false);
     file.clear(); // MORE: this should really be exists(file)
     StringBuffer s("DeleteSuperFile ('");
     s.append(lsfn).appendf("')");
@@ -1539,7 +1539,7 @@ FILESERVICES_API unsigned FILESERVICES_CALL fsGetSuperFileSubCount(ICodeContext 
     CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
+    lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
     return file->numSubFiles();
 }
 
@@ -1557,7 +1557,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetSuperFileSubName(ICodeContext *c
     CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
+    lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
     if (!filenum||filenum>file->numSubFiles())
         return CTXSTRDUP(parentCtx, "");
     ret.append(file->querySubFile(filenum-1).queryLogicalName());
@@ -1576,7 +1576,7 @@ FILESERVICES_API unsigned FILESERVICES_CALL fsFindSuperFileSubName(ICodeContext 
     CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
+    lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
     unsigned n = 0;
     // could do with better version of this TBD
     Owned<IDistributedFileIterator> iter = file->getSubFileIterator();
@@ -1612,10 +1612,10 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     // NB: if adding contents, tell lookupSuperFile to cache the subfiles in the transaction
-    if (!lookupSuperFile(ctx, lsuperfn, file, strict, lsfn, false, addcontents)) {
+    if (!lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, strict, lsfn, false, addcontents)) {
         // auto create
         fsCreateSuperFile(ctx,lsuperfn,false,false);
-        lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, addcontents);
+        lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, true, lsfn, false, addcontents);
     }
     // Never add super file to itself
     StringBuffer lfn;
@@ -1627,7 +1627,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     assertex(transaction);
     if  (strict||addcontents) {
         Owned<IDistributedSuperFile> subfile;
-        subfile.setown(transaction->lookupSuperFile(lfn.str()));
+        subfile.setown(transaction->lookupSuperFile(lfn.str(), AccessMode::writeMeta));
         if (!subfile.get())
             throw MakeStringException(0, "AddSuperFile%s: Could not locate super file %s", addcontents?"(addcontents)":"",lfn.str());
         if (strict&&(subfile->numSubFiles()<1))
@@ -1669,7 +1669,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     StringBuffer lfn;
     if (_lfn)
         constructLogicalName(ctx, _lfn, lfn);
-    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, true);
+    lookupSuperFile(ctx, lsuperfn, AccessMode::writeMeta, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
     {
@@ -1717,7 +1717,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
 {
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
-    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, true);
+    lookupSuperFile(ctx, lsuperfn, AccessMode::tbdWrite, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
     {
@@ -1753,8 +1753,8 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
     StringBuffer lsfn2;
     Owned<IDistributedSuperFile> file1;
     Owned<IDistributedSuperFile> file2;
-    lookupSuperFile(ctx, lsuperfn1, file1, true, lsfn1,false);
-    lookupSuperFile(ctx, lsuperfn2, file2, true,lsfn2,false);
+    lookupSuperFile(ctx, lsuperfn1, AccessMode::writeMeta, file1, true, lsfn1,false);
+    lookupSuperFile(ctx, lsuperfn2, AccessMode::writeMeta, file2, true,lsfn2,false);
 
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
@@ -2124,7 +2124,7 @@ FILESERVICES_API void FILESERVICES_CALL fsSuperFileContents(ICodeContext *ctx, s
         CImplicitSuperTransaction implicitTransaction(ctx->querySuperFileTransaction());
         Owned<IDistributedSuperFile> file;
         StringBuffer lsfn;
-        lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true);
+        lookupSuperFile(ctx, lsuperfn, AccessMode::readMeta, file, true, lsfn, true);
         Owned<IDistributedFileIterator> iter = file->getSubFileIterator(recurse);
         StringBuffer name;
         ForEach(*iter) {

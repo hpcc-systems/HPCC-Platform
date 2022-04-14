@@ -58,6 +58,35 @@ enum DFD_Replicate
 
 enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_unknown, __grp_size };
 
+enum class AccessMode : unsigned
+{
+
+    none            = 0x00000000,
+    read            = 0x00000001,
+    write           = 0x00000002,
+    sequential      = 0x00000004,
+    random          = 0x00000008,           // corresponds to "random" reason in alias reasons
+    noMount         = 0x01000000,           // corresponds to "api" reason in alias reasons
+
+    readRandom      = read | random,
+    readSequential  = read | sequential,
+    readNoMount     = read | noMount,
+    writeSequential = write | sequential,
+
+    readMeta        = read,                  // read access - may not actually read the contents
+    writeMeta       = write,                 // write access - may also be used for delete
+
+//The following are used for mechanical replacement of writeattr to update the function prototypes but not change
+//the behaviour but allow all the calls to be revisited later to ensure the correct parameter is used.
+
+    tbdRead          = read,                 // writeattr was false
+    tbdWrite         = write,                // writeattr was true
+};
+BITMASK_ENUM(AccessMode);
+inline bool isWrite(AccessMode mode) { return (mode & AccessMode::write) != AccessMode::none; }
+
+extern da_decl AccessMode getAccessModeFromString(const char *access); // single access mode
+
 
 // ==CLUSTER PART MAPPING ==============================================================================================
 
@@ -285,7 +314,12 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
     virtual void getBaseDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual void getReplicateDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // node group name
+};
 
+interface IStoragePlaneAlias: extends IInterface
+{
+    virtual AccessMode queryModes() const = 0;
+    virtual const char *queryPrefix() const = 0 ;
 };
 
 //I'm not sure if this should be used in place of an IGroup, probably as system gradually changes
@@ -297,6 +331,7 @@ interface IStoragePlane: extends IInterface
     virtual const char * querySingleHost() const = 0;
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
+    virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set

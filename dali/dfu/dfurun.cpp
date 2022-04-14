@@ -1453,13 +1453,13 @@ public:
                         if (diffNameSrc.get()||diffNameDst.get())
                         {
                             Owned<IFileDescriptor> oldf;
-                            oldf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameSrc,foreigncopy?foreignuserdesc:userdesc,foreigncopy?foreigndalinode:NULL));
+                            oldf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameSrc,AccessMode::readRandom,foreigncopy?foreignuserdesc:userdesc,foreigncopy?foreigndalinode:NULL));
                             if (!oldf.get())
                             {
                                 StringBuffer s;
                                 throw MakeStringException(-1,"Old key file %s could not be found in source",diffNameSrc.get());
                             }
-                            olddstf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameDst,userdesc,NULL));
+                            olddstf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameDst,AccessMode::writeSequential,userdesc,NULL));
                             if (!olddstf.get())
                             {
                                 StringBuffer s;
