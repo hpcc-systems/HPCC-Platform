@@ -3612,7 +3612,15 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
     setFileTypeFilter(req.getFileType(), filterBuf);
     WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
-    WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
+
+    if (req.getInvertContent_isNull() || !req.getInvertContent())
+    {
+        WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTwildcardMatch, req.getContentType(), filterBuf);
+    }
+    else
+    {
+        WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFkind), DFUQFTinverseWildcardMatch, req.getContentType(), filterBuf);
+    }
     WsDFUHelpers::appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
     if (!req.getIncludeSuperOwner_isNull() && req.getIncludeSuperOwner())
         filterBuf.append(DFUQFTincludeFileAttr).append(DFUQFilterSeparator).append(DFUQSFAOincludeSuperOwner).append(DFUQFilterSeparator);
