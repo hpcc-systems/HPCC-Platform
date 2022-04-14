@@ -26,7 +26,7 @@ limitations under the License.
 void CldapenvironmentEx::init(IPropertyTree *_cfg, const char *_process, const char *_service)
 {
     cfg = _cfg;
-    try
+
     {
 #ifdef _DEBUG
         StringBuffer sb;
@@ -71,11 +71,6 @@ void CldapenvironmentEx::init(IPropertyTree *_cfg, const char *_process, const c
         cfg->getProp(xpath.str(), sharedWorkunitsBaseDN);
         if (sharedWorkunitsBaseDN.isEmpty())
             throw MakeStringException(-1, "sharedWorkunitsBaseDN must be specified in configuration (ex. 'ou=workunits,ou=shared,ou=hpcc,dc=myldap,dc=com')");
-
-    }
-    catch (...)
-    {
-        throw MakeStringException(-1, "ldapenvironment: Error querying environment settings");
     }
 }
 
@@ -125,7 +120,7 @@ bool CldapenvironmentEx::changePermissions(const char * ou, const char * userFQD
     action.m_action = "update";
     action.m_basedn = baseDN;
     action.m_rname =  rName;
-    action.m_rtype = RT_DEFAULT;
+    action.m_rtype = RT_FILE_SCOPE;
     action.m_account_name = userFQDN;//fully qualified user DN
     action.m_account_type = USER_ACT;
     action.m_allows = allows;
@@ -155,7 +150,7 @@ bool CldapenvironmentEx::createSecret(SecretType type, const char * secretName, 
             break;
     }
 
-    VStringBuffer cmdLine("%s\"%s\"", cmdLineSafe.str(), pwd);
+    VStringBuffer cmdLine("%s%s", cmdLineSafe.str(), pwd);
     try
     {
         DBGLOG("\nExecuting '%s'\n", cmdLineSafe.str());
@@ -332,7 +327,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
             }
         }
 
-        //Create the secret
+        //Create the HPCCAdmin secret
         VStringBuffer  respHPCCAdminSecretName("hpcc-admin-%s", req.getEnvName());
         respHPCCAdminSecretName.toLowerCase();
         if (req.getCreateK8sSecrets())
@@ -358,17 +353,24 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
             //Create the user
             Owned<ISecUser> user = secmgr->createUser(respLDAPAdminUser.str());
             user->credentials().setPassword(respLDAPAdminPwd.str());
-            try {secmgr->addUser(*user.get(), respUsersBaseDN.str()); }
-            catch(...) { notes.appendf("\nNon Fatal Error creating '%s'", respLDAPAdminUser.str()); }
+            try
+            {
+                secmgr->addUser(*user.get(), respUsersBaseDN.str());
+            }
+            catch(...)
+            {
+                notes.appendf("\nNon Fatal Error creating '%s'", respLDAPAdminUser.str());
+            }
 
             //Add LDAP R/W permissions for LDAPAdmin user
             //Only grant access to root of new environment (ex  ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com)
             VStringBuffer ldapAdminFQDN("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
             if (!changePermissions(envOU.str(), ldapAdminFQDN.str(), SecAccess_Full, SecAccess_None))
                 notes.appendf("\nNon Fatal Error setting LDAPAdmin permission for %s'", envOU.str());
+            notes.appendf("\nEnsure LDAPAdmin user '%s' has full access permissions to environment OU '%s', including 'This object and all descendant objects'", respLDAPAdminUser.str(), envOU.str());
         }
 
-        //Create the secret
+        //Create the LDAPAdmin secret
         VStringBuffer respLDAPAdminSecretName("ldap-admin-%s", req.getEnvName());
         respLDAPAdminSecretName.toLowerCase();
         if (req.getCreateK8sSecrets())
@@ -419,6 +421,12 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                 "      url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/authn/${secret}\n"
                                 "      kind: kv-v2");
         }
+
+        VStringBuffer ldapAdminKey( !ldapcredskey.isEmpty() ?   "    ldapAdminSecretKey: %s\n" : "", ldapcredskey.str());
+        VStringBuffer ldapAdminVKey(!respVaultID.isEmpty() ?    "    ldapAdminVaultId: %s\n" : "",   respVaultID.str());
+        VStringBuffer hpccAdminKey( !hpcccredskey.isEmpty() ?   "    hpccAdminSecretKey: %s\n" : "", hpcccredskey.str());
+        VStringBuffer hpccAdminVKey(!respVaultID.isEmpty() ?   "     hpccAdminVaultId: %s\n" : "",   respVaultID.str());
+
         VStringBuffer ldapHelm("\n\n"
                                "%s\n"
                                "esp:\n"
@@ -426,10 +434,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "  auth: ldap\n"
                                "  ldap:\n"
                                "    adminGroupName: %s\n"
-                               "    ldapAdminSecretKey: %s\n"
-                               "    ldapAdminVaultId: %s\n"
-                               "    hpccAdminSecretKey: %s\n"
-                               "    hpccAdminVaultId: %s\n"
+                               "%s%s%s%s"
                                "    filesBasedn: %s\n"
                                "    groupsBasedn: %s\n"
                                "    usersBasedn: %s\n"
@@ -438,10 +443,12 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "    systemBasedn: %s\n\n",
                                helmSecrets.str(),
                                adminGroupName.str(),
-                               ldapcredskey.str(), respVaultID.str(),
-                               hpcccredskey.str(), respVaultID.str(),
+                               ldapAdminKey.str(), ldapAdminVKey.str(),
+                               hpccAdminKey.str(), hpccAdminVKey.str(),
                                respFilesBaseDN.str(), respGroupsBaseDN.str(), respUsersBaseDN.str(), respResourcesBaseDN.str(), respWorkunitsBaseDN.str(), respUsersBaseDN.str());
         resp.setLDAPHelm(ldapHelm.str());
+        if (!notes.isEmpty())
+            notes.append("\n");
         resp.setNotes(notes.str());
     }
     catch(IException* e)

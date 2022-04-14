@@ -1682,7 +1682,6 @@ public:
             //grants access to Administrators only
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY, nullptr);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT, nullptr);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_ADMINISTRATORS_ONLY, nullptr);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_DEFAULT, nullptr);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_SUDOERS), PT_ADMINISTRATORS_ONLY, nullptr);
 
