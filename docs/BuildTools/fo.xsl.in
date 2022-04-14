@@ -381,6 +381,8 @@
       <xsl:attribute name="background-color">#bcbec0</xsl:attribute>
     </xsl:if>
    </xsl:when>
+     <xsl:when test="$tabstyle = 'greyHead' and ancestor::thead">
+       <xsl:attribute name="background-color">#bcbec0</xsl:attribute></xsl:when>
  </xsl:choose>
 </xsl:template>
 
