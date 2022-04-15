@@ -66,15 +66,18 @@
       declares what is valid and what is not within the sum total of the
       merged values that are passed into Helm at install time. It defines what
       values are allowed, and validates the values file against them. All the
-      core items are declared in the schema file, while the default
-      <emphasis>values.yaml</emphasis> file also contains comments on the most
-      important elements. If you wanted to know what options are available for
-      any particular component then the schema is a good place to
-      start.</para>
+      core items are declared in the schema file, which contains comments and
+      descriptions. While the default <emphasis>values.yaml</emphasis> file
+      also contains comments on the most important elements.</para>
+
+      <para>If you wanted to know what options are available for any
+      particular component then the schema is a good place to start. If the
+      value exists and is allowed per the schema it can then be added when you
+      install.</para>
 
       <para>The schema file typically contains (for a property) a name and a
-      description. It will often include details of the type, and the items it
-      can contain if it is a list or dictionary. For instance:</para>
+      description. It will often include details of the type, and items it can
+      contain, or if it is a list or dictionary. For instance:</para>
 
       <programlisting>    "roxie": { 
       "description": "roxie process",
@@ -86,9 +89,9 @@
       containing a prefix (path), a subpath (subpath), and additional
       properties. For example, for a storage plane the schema file has a list
       of properties including the prefix. The "planes" in this case are a
-      reference ($ref) to another section of the schema. The schema file
-      should be complete, and contain everything required including
-      descriptions which should be relatively self-explanatory.</para>
+      reference ($ref) to another section. The schema file is complete, and
+      contains everything required including descriptions which should be
+      relatively self-explanatory.</para>
 
       <programlisting>    "storage": {
       "type": "object",
@@ -417,16 +420,16 @@
         90% of this memory to use for HPCC query memory (roxiemem). The
         remaining 10% is left for all other non-row based (roxiemem) usage,
         such as general heap, OS overheads, etc. There is no allowance for any
-        3rd party library, plugins, or embedded language usage within this default. In other words,
-        if for example embedded python allocates 4G, the process will soon
-        fail with an out of memory error, when it starts to use any memory,
-        since it was expecting 90% of that 4G to be freely available to use
-        for itself.</para>
+        3rd party library, plugins, or embedded language usage within this
+        default. In other words, if for example embedded Python allocates 4G,
+        the process will soon fail with an out of memory error, when it starts
+        to use any memory, since it was expecting 90% of that 4G to be freely
+        available to use for itself.</para>
 
-        <para>These defaults can be overridden by the memory sections. In
-        this example, <emphasis>workerMemory.query</emphasis> defines that 3G
-        of the available resourced memory should be assigned to query memory,
-        and 500M to "thirdParty" uses.</para>
+        <para>These defaults can be overridden by the memory sections. In this
+        example, <emphasis>workerMemory.query</emphasis> defines that 3G of
+        the available resourced memory should be assigned to query memory, and
+        500M to "thirdParty" uses.</para>
 
         <para>This limits the HPCC Systems memory
         <emphasis>roxiemem</emphasis> usage to exactly 3G, leaving 1G free
@@ -446,9 +449,9 @@
         <para>In Thor there are 3 resource areas,
         <emphasis>eclAgent</emphasis>, <emphasis>ThorManager</emphasis>, and
         <emphasis>ThorWorker</emphasis>(s). Each has a *Resource area that
-        defines their Kubernetes resource needs, and a
-        corresponding *Memory section that can be used to override default
-        memory allocation requirements.</para>
+        defines their Kubernetes resource needs, and a corresponding *Memory
+        section that can be used to override default memory allocation
+        requirements.</para>
 
         <para>These settings can also be overridden on a per query basis, via
         workunit options following the pattern:

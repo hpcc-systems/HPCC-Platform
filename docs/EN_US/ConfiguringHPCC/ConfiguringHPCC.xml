@@ -1148,15 +1148,15 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <tgroup cols="3">
             <colspec align="left" colwidth="122.40pt" />
 
-            <tbody>
+            <thead>
               <row>
                 <entry>Name</entry>
 
                 <entry>Directory</entry>
 
                 <entry>Description</entry>
-              </row>
-
+              </row></thead>
+  <tbody>
               <row>
                 <entry>
                   <emphasis role="bold">log</emphasis>
