@@ -129,6 +129,22 @@
 
         <listitem>
           <para>Install the client tools software to your machine.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>For large ECL workunits, the 32-bit compiler (eclcc)
+                could run out of memory quicker than the 64-bit version.
+                Therefore in most cases, you should install the 64-bit
+                version. However, for machines with 4GB memory or less, you
+                should use the 32-bit client tools. If you have both versions
+                on your local machine, the IDE will give preference to the
+                64-bit version.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
         </listitem>
       </orderedlist>
 
@@ -150,9 +166,11 @@
       the package, use:</para>
 
       <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
-	  <para>After installing the package, run the following to update any dependencies:</para>
 
-        <programlisting>sudo apt-get install -f </programlisting>
+      <para>After installing the package, run the following to "fix" any
+      missing dependencies:</para>
+
+      <programlisting>sudo apt-get install -f </programlisting>
 
       <para><emphasis role="bold">Mac OSX:</emphasis></para>
 

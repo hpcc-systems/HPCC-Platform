@@ -112,6 +112,20 @@
 
         <listitem>
           <para>Install the client tools software to your machine.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>For large ECL workunits, the 32-bit compiler (eclcc)
+                  could run out of memory quicker than the 64-bit version.
+                  Therefore in most cases, you should install the 64-bit
+                  version. However, for machines with 4GB memory or less, you
+                  should use the 32-bit client tools.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
         </listitem>
       </orderedlist>
 
@@ -135,7 +149,9 @@
       the package, use:</para>
 
       <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
-	  <para>After installing the package, run the following to update any dependencies:</para>
+
+      <para>After installing the package, run the following to "fix" any
+      missing dependencies:</para>
 
       <programlisting>sudo apt-get install -f </programlisting>
 
