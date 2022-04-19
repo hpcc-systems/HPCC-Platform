@@ -119,6 +119,7 @@ protected:
     void createGetSessionTimeoutResponse(StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void resetSessionTimeout(EspAuthRequest& authReq, unsigned sessionID, StringBuffer& resp, ESPSerializationFormat format, IPropertyTree* sessionTree);
     void sendException(EspAuthRequest& authReq, unsigned code, const char* msg);
+    void sendInternalError(bool loggedDetails);
     void sendMessage(const char* msg, const char* msgType);
     void sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* msg);
     bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
