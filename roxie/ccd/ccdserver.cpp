@@ -1246,6 +1246,7 @@ public:
 
         activityStats.addStatistics(merged);
         merged.mergeStatistic(StCycleLocalExecuteCycles, queryLocalCycles());
+        merged.mergeStatistic(StNumRowsProcessed, processed);
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
