@@ -406,6 +406,8 @@ IDistributedFile *CMasterActivity::findReadFile(const char *lfnName)
 IDistributedFile *CMasterActivity::lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt)
 {
     StringBuffer normalizedFileName;
+    DBGLOG("CMasterActivity::lookupReadFile(%s)", lfnName);
+    normalizedFileName.clear();
     queryThorFileManager().addScope(container.queryJob(), lfnName, normalizedFileName, jobTemp|temp);
     Owned<IDistributedFile> file = findReadFile(normalizedFileName);
     if (!file)
