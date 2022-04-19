@@ -262,8 +262,11 @@ public:
     }
     virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) override
     {
-        StringBuffer out;
-        outputXmlUnicode(len, field, nullptr, out);
+        char * buff = 0;
+        unsigned bufflen = 0;
+        rtlUnicodeToCodepageX(bufflen, buff, len, field, "utf-8");
+        StringBuffer out(bufflen, buff);
+        rtlFree(buff);
         addNameValue(fieldname, out.str());
     }
     virtual void outputQString(unsigned len, const char *field, const char *fieldname) override
@@ -304,8 +307,8 @@ public:
     }
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) override
     {
-        StringBuffer out;
-        outputXmlUtf8(len, field, nullptr, out);
+        unsigned bytes = rtlUtf8Size(len, field);
+        StringBuffer out(bytes, field);
         addNameValue(fieldname, out.str());
     }
     virtual void outputBeginArray(const char *fieldname){} //no op for libxml structure
@@ -1546,7 +1549,7 @@ private:
     inline void sanityCheckSectionName(const char *name)
     {
         //sanity check the name, not a full validation
-        if (strpbrk(name, "/[]()*?"))
+        if (isEmptyString(name) || strpbrk(name, "/[]()*?"))
             throw MakeStringException(-1, "CEsdlScriptContext:removeSection invalid section name %s", name);
     }
     xmlNodePtr getSectionNode(const char *name, const char *xpath="*[1]")
@@ -1897,3 +1900,74 @@ extern IXpathContext* getXpathContext(const char * xmldoc, bool strictParameterD
 {
     return new CLibXpathContext(xmldoc, strictParameterDeclaration, removeDocNamespaces);
 }
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class LibXml2XPathProcessorTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( LibXml2XPathProcessorTests );
+        CPPUNIT_TEST(testWriteUTF8);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void testWriteUTF8()
+    {
+        bool failed = false;
+        if (!checkXmlWriterUtf8("testWriteUTF8", "an_element", R"!!!(contains "quoted" text)!!!"))
+            failed = true;
+        if (!checkXmlWriterUtf8("testWriteUTF8", "@an_attribute", R"!!!(contains "quoted" text)!!!"))
+            failed = true;
+        CPPUNIT_ASSERT(!failed);
+    }
+
+private:
+    IEsdlScriptContext* createScriptContext(const char* section, const char* content)
+    {
+        Owned<IEsdlScriptContext> ctx(createEsdlScriptContext(nullptr)); // context holds but does not use IEspContext* parameter
+        ctx->setContent(section, content);
+        return ctx.getClear();
+    }
+    IXpathContext* createXPathContext(IEsdlScriptContext* scriptCtx, const char* section)
+    {
+        Owned<IXpathContext> xpathCtx;
+        try
+        {
+            xpathCtx.setown(scriptCtx->createXpathContext(nullptr, section, true));
+        }
+        catch (IException* e)
+        {
+            StringBuffer msg;
+            fprintf(stdout, "\nexception creating XPath context for section '%s' [%s]\n", section, e->errorMessage(msg).str());
+            throw;
+        }
+        catch (...)
+        {
+            fprintf(stdout, "\nunknown exception creating XPath context for section '%s'\n", section);
+            throw;
+        }
+        return xpathCtx.getClear();
+    }
+    bool checkXmlWriterUtf8(const char* test, const char* name, const char* value)
+    {
+        static constexpr const char* section = "writer";
+        Owned<IEsdlScriptContext>    scriptCtx(createScriptContext(section, "<this_node_is_required_to_satisfy_createXPathContext/>"));
+        Owned<IXpathContext>         xpathCtx(createXPathContext(scriptCtx, section));
+        Owned<IXmlWriter>            writer(xpathCtx->createXmlWriter());
+        StringBuffer                 stored;
+    
+        writer->outputUtf8(rtlUtf8Length(unsigned(strlen(value)), value), value, name);
+        if (!xpathCtx->evaluateAsString(name, stored))
+            fprintf(stdout, "\n%s: evaluation of '%s' failed\n", test, name);
+        else if (!streq(stored, value))
+            fprintf(stdout, "\n%s: expected '%s' but got '%s'\n", test, value, stored.str());
+        else
+            return true;
+        return false;
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( LibXml2XPathProcessorTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( LibXml2XPathProcessorTests, "libxml2xpath" );
+
+#endif // _USE_CPPUNIT
