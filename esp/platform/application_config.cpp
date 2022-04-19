@@ -266,10 +266,15 @@ void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *applic
 
 bool addProtocol(IPropertyTree *legacyEsp, IPropertyTree *app)
 {
+    const char *maxReqLenStr = app->queryProp("@maxRequestEntityLength");
+    if (isEmptyString(maxReqLenStr))
+        maxReqLenStr = "8M";
+    offset_t maxReqLen = friendlyStringToSize(maxReqLenStr);
+
     bool useTls = app->getPropBool("@tls", true);
     if (useTls)
     {
-        StringBuffer protocolXml("<EspProtocol name='https' type='secure_http_protocol' plugin='esphttp' maxRequestEntityLength='60000000'/>");
+        VStringBuffer protocolXml("<EspProtocol name='https' type='secure_http_protocol' plugin='esphttp' maxRequestEntityLength='%llu'/>", maxReqLen);
         IPropertyTree *protocol = legacyEsp->addPropTree("EspProtocol", createPTreeFromXMLString(protocolXml));
         IPropertyTree *tls = app->queryPropTree("tls_config");
         if (protocol && tls)
@@ -292,7 +297,7 @@ bool addProtocol(IPropertyTree *legacyEsp, IPropertyTree *app)
     }
     else
     {
-        StringBuffer protocolXml("<EspProtocol name='http' type='http_protocol' plugin='esphttp' maxRequestEntityLength='60000000'/>");
+        VStringBuffer protocolXml("<EspProtocol name='http' type='http_protocol' plugin='esphttp' maxRequestEntityLength='%llu'/>", maxReqLen);
         legacyEsp->addPropTree("EspProtocol", createPTreeFromXMLString(protocolXml));
     }
     return useTls;

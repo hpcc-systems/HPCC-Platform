@@ -147,7 +147,7 @@ public:
         {
             assertex(!isLocal);
             buildTlk = false;
-            Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName, false, false, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName, AccessMode::writeSequential, false, false, false, container.activityIsCodeSigned());
             checkFormatCrc(this, _f, helper->getFormatCrc(), nullptr, helper->getFormatCrc(), nullptr, true);
             IDistributedFile *f = _f->querySuperFile();
             if (!f) f = _f;
@@ -222,7 +222,7 @@ public:
                     assertex(diName.get());
                     IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
                     tlkDesc->serialize(dst);
-                    Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName, false, false, false, container.activityIsCodeSigned());
+                    Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName, AccessMode::readSequential, false, false, false, container.activityIsCodeSigned());
                     IDistributedFile *f = _f->querySuperFile();
                     if (!f) f = _f;
                     Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
@@ -339,7 +339,7 @@ public:
         if (0 == (TIWvarfilename & helper->getFlags()))
         {
             OwnedRoxieString fname(helper->getFileName());
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, AccessMode::readMeta, false, true, false, container.activityIsCodeSigned());
             if (file)
             {
                 if (0 == (TIWoverwrite & helper->getFlags()))

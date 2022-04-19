@@ -62,6 +62,12 @@ private:
     StringBuffer m_classSearchColName;
     StringBuffer m_classIndexSearchPattern;
 
+    StringBuffer m_instanceSearchColName;
+    StringBuffer m_instanceIndexSearchPattern;
+
+    StringBuffer m_hostSearchColName;
+    StringBuffer m_hostIndexSearchPattern;
+
     StringBuffer m_defaultDocType; //default doc type to query
 
     elasticlient::Client m_esClient;

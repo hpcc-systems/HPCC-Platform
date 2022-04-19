@@ -468,6 +468,10 @@ public:
         else
         {
             userdesc.setown(createUserDescriptor());
+#ifdef _CONTAINERIZED
+            const char *ldapUser = topology->queryProp("@ldapUser");
+            userdesc->set(isEmptyString(ldapUser) ? "roxie" : ldapUser, "");
+#else
             const char *roxieUser = NULL;
             const char *roxiePassword = NULL;
             if (topology)
@@ -482,6 +486,7 @@ public:
             StringBuffer password;
             decrypt(password, roxiePassword);
             userdesc->set(roxieUser, password.str());
+#endif
         }
         if (fileNameServiceDali.length())
             connectWatcher.start();

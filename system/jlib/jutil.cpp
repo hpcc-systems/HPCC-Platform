@@ -3349,7 +3349,7 @@ const char * generatePassword(StringBuffer &pwd, int pwdLen)
     const char alphaUC[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const char alphaLC[] = "abcdefghijklmnopqrstuvwxyz";
     const char numeric[] = "0123456789";
-    const char symbol[] = "~`!@#$%^&*()_-+={[}]|:;<,>.?/";
+    const char symbol[] = "~@#$%^*()_-+={[}]:,.?";
 
     //Ensures each character group used at least once
     srand(time(0));

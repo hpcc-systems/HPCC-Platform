@@ -2630,16 +2630,28 @@ public:
     {
         StringBuffer filter;
         const char* basedn;
+
+        if (strchr(act_name, '='))//passed in a fully qualified DN?
+        {
+            int finger = 0;
+            while (',' != act_name[finger])
+                filter.append((char)act_name[finger++]);
+            basedn = act_name + finger + 1;
+        }
+
         if(act_type == USER_ACT)
         {
-            if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
-                filter.append("sAMAccountName=").append(act_name);
-            else
-                filter.append("uid=").append(act_name);
+            if (filter.isEmpty())
+            {
+                if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
+                    filter.append("sAMAccountName=").append(act_name);
+                else
+                    filter.append("uid=").append(act_name);
+                basedn = m_ldapconfig->getUserBasedn();
+                if (m_ldapconfig->isAzureAD() && strieq(act_name, m_ldapconfig->getSysUser()))
+                    basedn = m_ldapconfig->getSysUserBasedn();
+            }
 
-            basedn = m_ldapconfig->getUserBasedn();
-            if (m_ldapconfig->isAzureAD() && strieq(act_name, m_ldapconfig->getSysUser()))
-                basedn = m_ldapconfig->getSysUserBasedn();
             lookupSid(basedn, filter.str(), act_sid);
             if(act_sid.length() == 0)
             {
@@ -2656,8 +2668,11 @@ public:
         }
         else
         {
-            filter.append("cn=").append(act_name);
-            basedn = m_ldapconfig->getGroupBasedn();
+            if (filter.isEmpty())
+            {
+                filter.append("cn=").append(act_name);
+                basedn = m_ldapconfig->getGroupBasedn();
+            }
             lookupSid(basedn, filter.str(), act_sid);
             if(act_sid.length() == 0)
             {

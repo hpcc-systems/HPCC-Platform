@@ -445,8 +445,7 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
         UserName.append(username);
     }
 
-    if(hostptr)
-        host.append(hostptr);
+    host.append(hostptr);
 
     if(portptr)
         port.append(portptr);
@@ -914,39 +913,36 @@ public:
         }
 
         Owned<CSimpleSocket> persistent_socket = nullptr;
-        if(m_client)
+        for(;;)
         {
-            for(;;)
+            IArrayOf<CRequest>& requests = m_client->queryStressRequests();
+            ForEachItemIn(x, requests)
             {
-                IArrayOf<CRequest>& requests = m_client->queryStressRequests();
-                ForEachItemIn(x, requests)
-                {
-                    if(m_client->queryStopStress())
-                        break;
-
-                    CRequest& req = requests.item(x);
-                    if(STRESS_USE_JSOCKET)
-                        m_client->sendRequest(req.queryReqbuf(), req.getName(), m_stat.get());
-                    else
-                        m_client->sendStressRequest(req.queryReqbuf(), m_stat.get(), persistent_socket);
-                    if(delaymax > 0 && !m_client->queryStopStress())
-                    {
-                        int delay = 0;
-                        if(delaymin < delaymax)
-                        {
-                            delay = delaymin + (fastRand() % (delaymax - delaymin));
-                        }
-                        else
-                        {
-                            delay = delaymin;
-                        }
-
-                        Sleep(delay);
-                    }
-                }
                 if(m_client->queryStopStress())
                     break;
+
+                CRequest& req = requests.item(x);
+                if(STRESS_USE_JSOCKET)
+                    m_client->sendRequest(req.queryReqbuf(), req.getName(), m_stat.get());
+                else
+                    m_client->sendStressRequest(req.queryReqbuf(), m_stat.get(), persistent_socket);
+                if(delaymax > 0 && !m_client->queryStopStress())
+                {
+                    int delay = 0;
+                    if(delaymin < delaymax)
+                    {
+                        delay = delaymin + (fastRand() % (delaymax - delaymin));
+                    }
+                    else
+                    {
+                        delay = delaymin;
+                    }
+
+                    Sleep(delay);
+                }
             }
+            if(m_client->queryStopStress())
+                break;
         }
 
         return 0;
@@ -1650,7 +1646,7 @@ int HttpClient::validate(StringBuffer& xml)
                 int line = 0, col =0;
                 const char* pElemStr = bptr;
 
-                if (msg.length() > 0 && pElemStr)
+                if (msg.length() > 0)
                 {
                     sscanf(strstr(msg.str(), "line"), "line %d, char %d:",&line, &col);
 

@@ -223,10 +223,12 @@ data:
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
+          initContainers:
+          {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
+          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
-          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
           containers:
 {{- range $containerNum := untilStep 1 (int (add1 $numWorkersPerPod)) 1 }}
 {{- $slavePort := add 20100 (mul 100 (sub $containerNum 1)) -}}

@@ -36,8 +36,9 @@
 #include "SOAP/xpp/xjx/xjxpp.hpp"
 #include "jmetrics.hpp"
 
-
+#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
 static auto pSoapRequestCount = hpccMetrics::registerCounterMetric("esp.soap_requests.received", "Number of JSON and SOAP POST requests received", SMeasureCount);
+#endif
 
 
 #define ESP_FACTORY DECL_EXPORT
@@ -102,7 +103,9 @@ static CSoapFault* makeSoapFault(CHttpRequest* request, IMultiException* me, con
 
 int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* response)
 {
+#ifdef _SOLVED_DYNAMIC_METRIC_PROBLEM
     pSoapRequestCount->inc(1);
+#endif
     IEspContext* ctx = request->queryContext();
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {

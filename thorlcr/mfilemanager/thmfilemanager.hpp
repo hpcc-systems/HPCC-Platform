@@ -41,7 +41,7 @@ interface IDistributedFile;
 interface IThorFileManager : extends IInterface
 {
     virtual void noteFileRead(CJobBase &job, IDistributedFile *file, bool extended=false) = 0;
-    virtual IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true) = 0;
+    virtual IDistributedFile *lookup(CJobBase &job, const char *logicalName, AccessMode mode, bool temporary, bool optional, bool reportOptional, bool privilegedUser, bool updateAccessed=true) = 0;
     virtual IFileDescriptor *create(CJobBase &job, const char *logicalName, StringArray &groupNames, IArrayOf<IGroup> &groups, bool overwriteok, unsigned helperFlags=0, bool nonLocalIndex=false, unsigned restrictedWidth=0) = 0;
     virtual void publish(CJobBase &job, const char *logicalName, IFileDescriptor &file, Owned<IDistributedFile> *publishedFile=NULL) = 0;
     virtual void clearCacheEntry(const char *name) = 0;

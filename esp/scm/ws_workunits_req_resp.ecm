@@ -80,6 +80,7 @@ ESPrequest [nil_remove] WUQueryRequest
     [min_ver("1.03")] int64 PageStartFrom(0);
     [min_ver("1.03")] int64 PageEndAt;
     [min_ver("1.26"), depr_ver("1.72")] int LastNDays;
+    [min_ver("1.89")] ESPenum WUProtectFilter Protected("All");
 
     string Sortby;
     bool Descending(false);

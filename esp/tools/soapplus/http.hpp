@@ -153,7 +153,7 @@ private:
     Owned<CAddress> m_serveraddr;
     StringBuffer m_protocol;
     StringBuffer m_host;
-    int          m_port;
+    int          m_port = 0;
     StringBuffer m_path;
     StringBuffer m_user;
     StringBuffer m_password;
@@ -273,12 +273,12 @@ public:
 class HttpProxy
 {
 private:
-    int          m_localport;
+    int          m_localport = 0;
     StringBuffer m_host;
     StringBuffer m_url_prefix;
-    int          m_port;
-    FILE*        m_ofile;
-    bool         m_use_ssl;
+    int          m_port = 0;
+    FILE*        m_ofile = nullptr;
+    bool         m_use_ssl = false;
     Owned<ISecureSocketContext> m_ssctx;
 
 public:

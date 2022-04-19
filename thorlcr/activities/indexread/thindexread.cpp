@@ -222,7 +222,7 @@ public:
             StringBuffer expandedFileName;
             queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
             fileName.set(expandedFileName);
-            Owned<IDistributedFile> index = lookupReadFile(helperFileName, false, false, 0 != (TIRoptional & indexBaseHelper->getFlags()));
+            Owned<IDistributedFile> index = lookupReadFile(helperFileName, AccessMode::readRandom, false, false, 0 != (TIRoptional & indexBaseHelper->getFlags()));
             if (index && (0 == index->numParts())) // possible if superfile
                 index.clear();
             if (index)

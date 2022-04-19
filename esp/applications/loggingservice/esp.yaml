@@ -11,6 +11,7 @@ esp:
    enableSEHMapping: true
    httpConfigAccess: true
    logLevel: 1
+   maxRequestEntityLength: 8M
    maxBacklogQueueSize: 200
    logDir: "-"
 

@@ -420,6 +420,28 @@ void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
     }
 }
 
+void QueryFilesInUse::updateUsers()
+{
+    SCMStringBuffer target;
+
+#ifdef _CONTAINERIZED
+    Owned<IStringIterator> clusters = getContainerTargetClusters("roxie", nullptr);
+#else
+    Owned<IStringIterator> clusters = getTargetClusters("RoxieCluster", nullptr);
+#endif
+    ForEach(*clusters)
+    {
+        Owned<IConstWUClusterInfo> info = getWUClusterInfoByName(clusters->str(target).str());
+        Owned<IUserDescriptor> user = createUserDescriptor();
+        const char *ldapUser = info->getLdapUser();
+        if (!isEmptyString(ldapUser))
+            user->set(ldapUser, info->getLdapPassword());
+        else
+            user->set("roxie", "");
+        roxieUserMap.setValue(target.str(), user.getClear());
+    }
+}
+
 IPropertyTreeIterator *QueryFilesInUse::findAllQueriesUsingFile(const char *lfn)
 {
     if (!lfn || !*lfn)

@@ -407,8 +407,8 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
     {
         if (!name.isEmpty())
         {
-            Owned<IStoragePlane> plane = getDataStoragePlane(name, false);
 #ifdef _CONTAINERIZED
+            Owned<IStoragePlane> plane = getDataStoragePlane(name, false);
             mspec.numStripedDevices = plane ? plane->numDevices() : 1;
             if (mspec.numStripedDevices>1)
                 mspec.flags |= CPDMSF_striped;
@@ -616,6 +616,7 @@ public:
     StringAttr directory;
     StringAttr partmask;
     FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
+    AccessMode accessMode = AccessMode::none;
     virtual unsigned numParts() = 0;                                            // number of parts
     virtual unsigned numCopies(unsigned partnum) = 0;                           // number of copies
     virtual INode *doQueryNode(unsigned partidx, unsigned copy, unsigned rn) = 0;               // query machine node
@@ -1194,13 +1195,6 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     {
         unsigned n = numParts();
         if (idx<n) {
-            StringBuffer stripeDir;
-            unsigned lcopy;
-            IClusterInfo * cluster = queryCluster(idx,copy,lcopy);
-            if (cluster)
-                addStripeDirectory(stripeDir, directory, cluster->queryGroupName(), idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices);
-            if (stripeDir.isEmpty())
-                stripeDir.append(directory);
             StringBuffer fullpath;
             StringBuffer tmp1;
             CPartDescriptor &pt = *part(idx);
@@ -1211,23 +1205,23 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                     StringBuffer tmpon; // bit messy but need to ensure dir put back on before removing!
                     const char *on = pt.overridename.get();
                     if (on&&*on&&!isAbsolutePath(on)&&!directory.isEmpty())
-                        on = addPathSepChar(tmpon.append(stripeDir)).append(on).str();
+                        on = addPathSepChar(tmpon.append(directory)).append(on).str();
                     StringBuffer tmp2;
                     splitDirMultiTail(on,tmp1,tmp2);
                 }
                 else
                     splitDirTail(pt.overridename,tmp1);
-                if (stripeDir.isEmpty()||(isAbsolutePath(tmp1.str())||(stdIoHandle(tmp1.str())>=0)))
+                if (directory.isEmpty()||(isAbsolutePath(tmp1.str())||(stdIoHandle(tmp1.str())>=0)))
                     fullpath.swapWith(tmp1);
                 else {
-                    fullpath.append(stripeDir);
+                    fullpath.append(directory);
                     if (fullpath.length())
                         addPathSepChar(fullpath);
                     fullpath.append(tmp1);
                 }
             }
             else if (!partmask.isEmpty()) {
-                fullpath.append(stripeDir);
+                fullpath.append(directory);
                 if (containsPathSepChar(partmask)) {
                     if (fullpath.length())
                         addPathSepChar(fullpath);
@@ -1235,16 +1229,49 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 }
             }
             else
-                fullpath.append(stripeDir);
+                fullpath.append(directory);
             replaceClusterDir(idx,copy, fullpath);
-            StringBuffer baseDir, repDir;
+
+            unsigned lcopy;
+            IClusterInfo * cluster = queryCluster(idx,copy,lcopy);
             if (cluster)
             {
+                StringBuffer baseDir, repDir;
                 DFD_OS os = SepCharBaseOs(getPathSepChar(fullpath));
                 cluster->getBaseDir(baseDir, os);
                 cluster->getReplicateDir(repDir, os);
+                setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
+
+// NB: could be compiled in bare-metal,
+// but bare-metal components without a config would complain as this calls getGlobalConfig()
+#ifdef _CONTAINERIZED
+                const char *planeName = cluster->queryGroupName();
+                if (!isEmptyString(planeName))
+                {
+                    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                    if (plane)
+                    {
+                        StringBuffer planePrefix(plane->queryPrefix());
+                        Owned<IStoragePlaneAlias> alias = plane->getAliasMatch(accessMode);
+                        if (alias)
+                        {
+                            StringBuffer tmp;
+                            StringBuffer newPlanePrefix(alias->queryPrefix());
+                            if (setReplicateDir(fullpath, tmp, false, planePrefix, newPlanePrefix))
+                            {
+                                planePrefix.swapWith(newPlanePrefix);
+                                fullpath.swapWith(tmp);
+                            }
+                        }
+                        StringBuffer stripeDir;
+                        addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices);
+                        if (!stripeDir.isEmpty())
+                            fullpath.swapWith(stripeDir);
+                    }
+                }
+#endif
             }
-            setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
+
             if ((fullpath.length()>3)&&isPathSepChar(fullpath.charAt(fullpath.length()-1)))
                 fullpath.setLength(fullpath.length()-1);
             if (buf.length())
@@ -1413,6 +1440,7 @@ public:
         else
             attr.setown(createPTree("Attr")); // doubt can happen
         fileFlags = static_cast<FileDescriptorFlags>(attr->getPropInt("@flags"));
+        accessMode = static_cast<AccessMode>(attr->getPropInt("@accessMode"));
         if (version == SERIALIZATION_VERSION2)
         {
             if (subcounts)
@@ -1457,6 +1485,7 @@ public:
         partmask.set(pt.queryProp("@partmask"));
         unsigned np = pt.getPropInt("@numparts");
         fileFlags = static_cast<FileDescriptorFlags>(pt.getPropInt("Attr/@flags"));
+        accessMode = static_cast<AccessMode>(pt.getPropInt("Attr/@accessMode"));
         StringBuffer query;
         IPropertyTree **trees = NULL;
         Owned<IPropertyTreeIterator> piter;
@@ -3575,10 +3604,35 @@ bool getDefaultSpillPlane(StringBuffer &ret)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+class CStoragePlaneAlias : public CInterfaceOf<IStoragePlaneAlias>
+{
+public:
+    CStoragePlaneAlias(IPropertyTree *_xml) : xml(_xml)
+    {
+        Owned<IPropertyTreeIterator> modeIter = xml->getElements("mode");
+        ForEach(*modeIter)
+        {
+            const char *modeStr = modeIter->query().queryProp(nullptr);
+            modes |= getAccessModeFromString(modeStr);
+        }
+    }
+    virtual AccessMode queryModes() const override { return modes; }
+    virtual const char *queryPrefix() const override { return xml->queryProp("@prefix"); }
+
+private:
+    Linked<IPropertyTree> xml;
+    AccessMode modes = AccessMode::none;
+};
+
 class CStoragePlaneInfo : public CInterfaceOf<IStoragePlane>
 {
 public:
-    CStoragePlaneInfo(IPropertyTree * _xml) : xml(_xml) {}
+    CStoragePlaneInfo(IPropertyTree * _xml) : xml(_xml)
+    {
+        Owned<IPropertyTreeIterator> srcAliases = xml->getElements("aliases");
+        ForEach(*srcAliases)
+            aliases.push_back(new CStoragePlaneAlias(&srcAliases->query()));
+    }
 
     virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
     virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
@@ -3586,9 +3640,34 @@ public:
     virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
     virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
-
+    virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
+    {
+        if (AccessMode::none == desiredModes)
+            return nullptr;
+        // go through and return one with most mode matches (should there be any other weighting?)
+        unsigned bestScore = 0;
+        IStoragePlaneAlias *bestMatch = nullptr;
+        for (const auto & alias : aliases)
+        {
+            AccessMode aliasModes = alias->queryModes();
+            unsigned match = static_cast<unsigned>(aliasModes & desiredModes);
+            unsigned score = 0;
+            while (match)
+            {
+                score += match & 1;
+                match >>= 1;
+            }
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestMatch = alias;
+            }
+        }
+        return LINK(bestMatch);
+    }
 private:
     Linked<IPropertyTree> xml;
+    std::vector<Owned<IStoragePlaneAlias>> aliases;
 };
 
 
@@ -3628,4 +3707,23 @@ IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
     StringBuffer group;
     group.append(name).toLowerCase();
     return getStoragePlane(group, { "remote" }, required);
+}
+
+
+AccessMode getAccessModeFromString(const char *access)
+{
+    // use a HT?
+    if (streq(access, "read"))
+        return AccessMode::read;
+    else if (streq(access, "write"))
+        return AccessMode::write;
+    else if (streq(access, "random"))
+        return AccessMode::random;
+    else if (streq(access, "sequential"))
+        return AccessMode::sequential;
+    else if (streq(access, "noMount"))
+        return AccessMode::noMount;
+    else if (isEmptyString(access))
+        return AccessMode::none;
+    throwUnexpectedX("getAccessModeFromString : unrecognized access mode string");
 }

@@ -56,8 +56,8 @@ public:
         queryThorFileManager().addScope(container.queryJob(), outputHelperName, expandedFileName.clear(), false);
         outputName.set(expandedFileName);
 
-        originalIndexFile.setown(lookupReadFile(originalHelperName, false, false, false));
-        newIndexFile.setown(lookupReadFile(updatedHelperName, false, false, false));
+        originalIndexFile.setown(lookupReadFile(originalHelperName, AccessMode::readRandom, false, false, false));
+        newIndexFile.setown(lookupReadFile(updatedHelperName, AccessMode::readRandom, false, false, false));
         if (!isFileKey(originalIndexFile))
             throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", originalHelperName.get());
         if (!isFileKey(newIndexFile))
@@ -217,7 +217,7 @@ public:
         {
             if (KDPvaroutputname & helper->getFlags()) return;
             OwnedRoxieString outputHelperName(helper->getOutputName());
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputHelperName, false, true, false, container.activityIsCodeSigned());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputHelperName, AccessMode::readMeta, false, true, false, container.activityIsCodeSigned());
             if (file)
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }

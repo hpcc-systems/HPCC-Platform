@@ -3013,22 +3013,27 @@ protected:
         rowidx_t initSize = HASHDEDUP_HT_INIT_MAX_SIZE / _numHashTables;
         if (initSize > HASHDEDUP_HT_INC_SIZE)
             initSize = HASHDEDUP_HT_INC_SIZE;
-        if (_numHashTables <= numHashTables)
+
+        unsigned min = _numHashTables <= numHashTables ? _numHashTables : numHashTables;
+        unsigned i=0;
+
+        // initialize existing hash tables below new limit
+        for (; i<min; i++)
+            hashTables[i]->init(initSize);
+
+        if (_numHashTables < numHashTables) // free existing hash tables above new limit
         {
-            unsigned i=0;
-            for (; i<_numHashTables; i++)
-                hashTables[i]->init(initSize);
             for (; i<numHashTables; i++)
             {
                 ::Release(hashTables[i]);
                 hashTables[i] = NULL;
             }
         }
-        else if (_numHashTables > numHashTables)
+        else if (_numHashTables > numHashTables) // create new hash tables above old limit
         {
             _hashTables.ensureCapacity(_numHashTables);
             hashTables = (CHashTableRowTable **)_hashTables.getArray();
-            for (unsigned i=numHashTables; i<_numHashTables; i++)
+            for (; i<_numHashTables; i++)
             {
                 hashTables[i] = new CHashTableRowTable(*this, keyRowInterfaces, iKeyHash, rowKeyCompare);
                 hashTables[i]->init(initSize);

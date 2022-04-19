@@ -526,6 +526,9 @@ esp:
     #  url: "http://abc.com/def?g=1"
     ## CIDRS allowed to access this service.
     #loadBalancerSourceRanges: [1.2.3.4/32, 5.6.7.8/32]
+  # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
+  #  default for EclWatch is 60M, default for other services is 8M
+  #maxRequestEntityLength: 70M
   #resources:
   #  cpu: "1"
   #  memory: "2G"
@@ -536,6 +539,9 @@ esp:
   service:
     servicePort: 8010
     visibility: cluster
+  # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
+  #  default for EclWatch is 60M, default for other services is 8M
+  #maxRequestEntityLength: 9M
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -550,6 +556,9 @@ esp:
     #  hpcc.eclwatch.io/enabled: "true"
     #  hpcc.eclwatch.io/description: "Roxie Test page"
     #  hpcc.eclwatch.io/port: "8002"
+  # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
+  #  default for EclWatch is 60M, default for other services is 8M
+  #maxRequestEntityLength: 9M
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -560,6 +569,9 @@ esp:
   service:
     visibility: local
     servicePort: 8899
+  # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
+  #  default for EclWatch is 60M, default for other services is 8M
+  #maxRequestEntityLength: 9M
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -573,6 +585,9 @@ esp:
     visibility: local
     servicePort: 8510
   #domain: hpccsql.com
+  # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
+  #  default for EclWatch is 60M, default for other services is 8M
+  #maxRequestEntityLength: 9M
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -583,6 +598,9 @@ esp:
   service:
     visibility: local
     servicePort: 8520
+  # Increase maxRequestEntityLength when query deployments (or similar actions) start to fail because they surpass the maximum size
+  #  default for EclWatch is 60M, default for other services is 8M
+  #maxRequestEntityLength: 9M
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -652,6 +670,7 @@ roxie:
   topoServer:
     replicas: 1
   #directAccessPlanes: []  #add direct access planes that roxie will read from without copying the data to its default data plane
+  #ldapUser: roxie_file_access    #add system username for accessing files
 
 ## The [manager/worker/eclAgent]Resources define the resource limits for each pod.
 ## workerMemory defines the memory requirements for each individual worker.

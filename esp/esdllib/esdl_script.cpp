@@ -2129,6 +2129,7 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
 
         auto it = statusLabels.find(user->getStatus());
 
+        sourceContext->addInputValue("espTransactionID", context->queryTransactionID());
         sourceContext->addInputValue("espUserName", user->getName());
         sourceContext->addInputValue("espUserRealm", user->getRealm() ? user->getRealm() : "");
         sourceContext->addInputValue("espUserPeer", user->getPeer() ? user->getPeer() : "");
@@ -2141,6 +2142,7 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
     else
     {
         // enable transforms to distinguish secure versus insecure requests
+        sourceContext->addInputValue("espTransactionID", "");
         sourceContext->addInputValue("espUserName", "");
         sourceContext->addInputValue("espUserRealm", "");
         sourceContext->addInputValue("espUserPeer", "");

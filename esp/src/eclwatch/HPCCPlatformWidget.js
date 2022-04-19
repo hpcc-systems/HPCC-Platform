@@ -586,7 +586,7 @@ define([
 
                 if (theme.text !== "") {
                     var searchUserMoreComponents = dom.byId(this.id + "searchUserMoreComponents");
-                    var parent = domConstruct.create("div", { id: this.id + "BannerInnerText", class: "envrionmentText" }, searchUserMoreComponents, "before");
+                    var parent = domConstruct.create("div", { id: this.id + "BannerInnerText", class: "environmentText" }, searchUserMoreComponents, "before");
                     domConstruct.create("span", { id: this.id + "BannerContent", style: { color: Utility.textColor(theme.color) }, innerHTML: theme.text }, parent);
                     document.title = theme.text;
                 } else {

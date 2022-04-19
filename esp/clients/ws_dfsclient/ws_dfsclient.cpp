@@ -80,11 +80,12 @@ protected:
         Owned<IDistributedSuperFile> cur;
         std::vector<std::string> owners;
         unsigned which = 0;
+        AccessMode accessMode = AccessMode::none;
 
         void setCurrent(unsigned w)
         {
             VStringBuffer lfn("~remote::%s::%s", source->queryRemoteName(), owners[w].c_str());
-            Owned<IDFSFile> dfsFile = lookupDFSFile(lfn, source->queryTimeoutSecs(), keepAliveExpiryFrequency, source->queryUserDescriptor());
+            Owned<IDFSFile> dfsFile = lookupDFSFile(lfn, accessMode, source->queryTimeoutSecs(), keepAliveExpiryFrequency, source->queryUserDescriptor());
             if (!dfsFile)
                 throw makeStringExceptionV(0, "Failed to open superfile %s", lfn.str());
             if (!dfsFile->numSubFiles())
@@ -97,6 +98,7 @@ protected:
     public:
         CDistributedSuperFileIterator(IDFSFile *_source, std::vector<std::string> _owners) : source(_source), owners(_owners)
         {
+            accessMode = static_cast<AccessMode>(source->queryCommonMeta()->getPropInt("@accessMode"));
         }
         virtual bool first() override
         {
@@ -387,10 +389,12 @@ public:
                 }
             }
         }
+        AccessMode accessMode = static_cast<AccessMode>(dfsFile->queryCommonMeta()->getPropInt("@accessMode"));
         fileDesc.setown(deserializeFileDescriptorTree(file));
-        if (fileDesc)
-            fileDesc->setTraceName(logicalName);
-
+        fileDesc->setTraceName(logicalName);
+        // NB: the accessMode is being defined by the client call, and has been stored in the IDFSFile common meta
+        // it is stored in turn into the IFileDescriptor properties for use by clients accessing paths
+        fileDesc->queryProperties().setPropInt("@accessMode", static_cast<int>(accessMode));
         legacyDFSFile.setown(queryDistributedFileDirectory().createNew(fileDesc, logicalName));
     }
 };
@@ -661,7 +665,7 @@ static std::atomic<unsigned> currentDfsServiceUrl{0};
 static bool dfsServiceUrlsDiscovered = false;
 #endif
 
-IDFSFile *lookupDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned keepAliveExpiryFrequency, IUserDescriptor *userDesc)
+IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned timeoutSecs, unsigned keepAliveExpiryFrequency, IUserDescriptor *userDesc)
 {
     CDfsLogicalFileName lfn;
     lfn.set(logicalName);
@@ -735,6 +739,8 @@ IDFSFile *lookupDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned 
     if (useSSL && serviceSecret.length())
         configureClientSSL(dfsReq->rpc(), serviceSecret.str());
     dfsReq->setAccessViaDafilesrv(useDafilesrv);
+    // JCSMORE may want to pass accessMode to server, for it to decide and pre-filter the aliases/
+    // For now, set into IDFSFile created locally (see below)
     dfsReq->setName(logicalName);
     dfsReq->setLeaseId(clientLeaseId);
     CTimeMon tm(timeoutSecs*1000); // NB: this timeout loop is to cater for *a* esp disappearing (e.g. if behind load balancer)
@@ -761,6 +767,7 @@ IDFSFile *lookupDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned 
             IPropertyTree *fileMeta = meta->queryPropTree("FileMeta");
             if (!fileMeta) // file not found
                 return nullptr;
+            meta->setPropInt("@accessMode", static_cast<unsigned>(accessMode));
             // remoteName empty if local
             return createDFSFile(meta, fileMeta, remoteName.length()?remoteName.str():nullptr, timeoutSecs, userDesc);
         }
@@ -789,9 +796,9 @@ IDistributedFile *createLegacyDFSFile(IDFSFile *dfsFile)
         return new CServiceDistributedFile(dfsFile);
 }
 
-IDistributedFile *lookupLegacyDFSFile(const char *logicalName, unsigned timeoutSecs, unsigned keepAliveExpiryFrequency, IUserDescriptor *userDesc)
+IDistributedFile *lookupLegacyDFSFile(const char *logicalName, AccessMode accessMode, unsigned timeoutSecs, unsigned keepAliveExpiryFrequency, IUserDescriptor *userDesc)
 {
-    Owned<IDFSFile> dfsFile = lookupDFSFile(logicalName, timeoutSecs, keepAliveExpiryFrequency, userDesc);
+    Owned<IDFSFile> dfsFile = lookupDFSFile(logicalName, accessMode, timeoutSecs, keepAliveExpiryFrequency, userDesc);
     if (!dfsFile)
         return nullptr;
     return createLegacyDFSFile(dfsFile);
@@ -816,7 +823,7 @@ IDistributedFile *lookup(CDfsLogicalFileName &lfn, IUserDescriptor *user, Access
     if (viaDali)
         return queryDistributedFileDirectory().lookup(lfn, user, accessMode, hold, lockSuperOwner, transaction, priviledged, timeout);
 
-    return wsdfs::lookupLegacyDFSFile(lfn.get(), timeout, wsdfs::keepAliveExpiryFrequency, user);
+    return wsdfs::lookupLegacyDFSFile(lfn.get(), accessMode, timeout, wsdfs::keepAliveExpiryFrequency, user);
 }
 
 IDistributedFile *lookup(const char *logicalFilename, IUserDescriptor *user, AccessMode accessMode, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, bool priviledged, unsigned timeout)

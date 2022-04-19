@@ -546,7 +546,8 @@ extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
 extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath);
 extern da_decl bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * filename, const char * s, bool iswin, IException **e);
 extern da_decl bool validFNameChar(char c); 
-extern da_decl void addStripeDirectory(StringBuffer &out, const char *directory, const char *planeName, unsigned partNum, unsigned lfnHash, unsigned numStripes);
+extern da_decl void addStripeDirectory(StringBuffer &out, const char *directory, const char *planePrefix, unsigned partNum, unsigned lfnHash, unsigned numStripes);
+
 inline unsigned getFilenameHash(size32_t len, const char *filename)
 {
     return hashc((const unsigned char *)filename, len, 0);

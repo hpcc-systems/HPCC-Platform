@@ -46,12 +46,6 @@ h1 {
     height:20px;
 }
 
-form {
-    margin:0;
-    padding:0;
-    width:100%;
-}
-
 form label{
     margin: 0 8px 0 0;
     font-weight:bold;
@@ -131,8 +125,9 @@ hr.dashedLine {
     padding: 0;
     padding-left: 6px;
     padding-right: 6px;
-    width:100%;
     overflow: hidden;
+    display: flex;
+    justify-content: space-between;
 }
 
 .flat #stubStackController{
@@ -140,12 +135,10 @@ hr.dashedLine {
     margin-top: 6px;
 }
 
-.flat .envrionmentText {
-    float:left;
+.flat .environmentText {
     margin-top: 12px;
-    width:40%;
-    text-align: center;
     font: bold 22px Lucida Sans, Lucida Grande, Arial;
+    flex-grow: 1;
 }
 
 .flat .glow :hover{
@@ -398,10 +391,8 @@ hr.dashedLine {
 
 #search-form{
     padding:0;
-    margin:0;
-    float:left;
-    width:290px;
-    margin-top:12px;
+    margin: 10px 10px 0 0;
+    min-width: 230px;
 }
 
 #search-form :focus{
@@ -879,7 +870,7 @@ table.miniSelect span {
 }
 
 .searchUserMoreComponents{
-    float:right;
+    display: flex;
 }
 
 .navBarLoggedin{

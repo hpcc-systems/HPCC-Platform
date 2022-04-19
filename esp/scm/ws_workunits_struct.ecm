@@ -866,3 +866,10 @@ ESPStruct WUEclPluginsInFolder
     string Path;
     ESParray<string, Plugin> Plugins;
 };
+
+ESPenum WUProtectFilter : string
+{
+    All("All"),
+    Protected("Protected"),
+    NotProtected("NotProtected")
+};

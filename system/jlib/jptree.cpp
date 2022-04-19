@@ -9006,6 +9006,12 @@ jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char
     return loadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute, monitor);
 }
 
+void replaceComponentConfig(IPropertyTree *newComponentConfig)
+{
+    CriticalBlock b(configCS);
+    componentConfiguration.set(newComponentConfig);
+}
+
 class CYAMLBufferReader : public CInterfaceOf<IPTreeReader>
 {
 protected:
