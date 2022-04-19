@@ -5,7 +5,7 @@
   <title>Local Deployment (Development and Testing)</title>
 
   <para>While there are many ways to install a local single node HPCC Systems
-  Platform, this section focuses on using Docker Desktop.</para>
+  Platform, this section focuses on using Docker Desktop locally.</para>
 
   <sect1 id="prereq" role="nobrk">
     <title>Prerequisites</title>
@@ -16,7 +16,7 @@
   </sect1>
 
   <sect1 id="addrepo" role="nobrk">
-    <title>Add a repository</title>
+    <title>Add a Repository</title>
 
     <para>To use the HPCC Systems helm chart, you must add it to the helm
     repository list, as shown below:</para>
@@ -31,44 +31,58 @@
 
     <para><programlisting>helm repo update</programlisting></para>
 
+    <para>You should update your local repo before any deployment to ensure
+    you have the latest code available.</para>
+
     <para>Expected response:</para>
 
-    <para><programlisting>Update Complete. Happy Helming!</programlisting></para>
+    <para><programlisting>Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "hpcc" chart repository
+Update Complete. Happy Helming!</programlisting></para>
   </sect1>
 
   <sect1 id="startdefault">
-    <title>Start a default system</title>
+    <title>Start a Default System</title>
 
     <para>The default helm chart starts a simple test system with Dali, ESP,
-    eclccserver, two eclagent queues (ROXIE and hThor mode), and one Thor
+    ECL CC Server, two ECL Agent queues (ROXIE and hThor mode), and one Thor
     queue.</para>
 
     <para><emphasis role="bold">To start this simple system:</emphasis></para>
 
-    <para><programlisting>helm install mycluster hpcc/hpcc --version=8.2.2 </programlisting></para>
+    <para><programlisting>helm install mycluster hpcc/hpcc --version=8.6.14</programlisting></para>
 
-    <para><emphasis role="bold">The --version argument is optional, but
-    recommended. It ensures that you know which version you are installing. If
-    omitted, the latest non-development version is installed. This example
-    uses 8.2.2, but you should use the version you want. </emphasis></para>
+    <variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>The --version argument is optional, but recommended. It
+          ensures that you know which version you are installing. If omitted,
+          the latest non-development version is installed. This example uses
+          8.6.14, but you should use the version you want.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
 
     <para>Expected response:</para>
 
     <para><programlisting>NAME: mycluster
-LAST DEPLOYED: Tue Mar 23 13:26:55 2021
+LAST DEPLOYED: Tue Apr 5 14:45:08 2022
 NAMESPACE: default
 STATUS: deployed
 REVISION: 1
 TEST SUITE: None
 NOTES:
-Thank you for installing the HPCC chart.
-
+Thank you for installing the HPCC chart version 8.6.14 using image "hpccsystems/platform-core:8.6.14"
+**** WARNING: The configuration contains ephemeral planes: [dali sasha dll data mydropzone debug] ****
 This chart has defined the following HPCC components:
 dali.mydali
 dfuserver.dfuserver
 eclagent.hthor
 eclagent.roxie-workunit
 eclccserver.myeclccserver
+eclscheduler.eclscheduler
 esp.eclwatch
 esp.eclservices
 esp.eclqueries
@@ -77,10 +91,17 @@ esp.sql2ecl
 esp.dfs
 roxie.roxie
 thor.thor
+dali.sasha.coalescer
 sasha.dfurecovery-archiver
 sasha.dfuwu-archiver
 sasha.file-expiry
 sasha.wu-archiver</programlisting></para>
+
+    <para>Notice the warning about ephemeral planes. This is because this
+    deployment has created temporary, ephemeral storage to use. When the
+    cluster is uninstalled, the storage will no longer exist. This is useful
+    for a quick test, but for more involved work, you will want more
+    persistent storage. This is covered in a later section.</para>
 
     <para><emphasis role="bold">To check status:</emphasis></para>
 
@@ -125,7 +146,7 @@ thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s<
   </sect1>
 
   <sect1 id="usedefault">
-    <title>Use the default system</title>
+    <title>Access the Default System</title>
 
     <para>Your system is now ready to use. The usual first step is to open ECL
     Watch.</para>
@@ -152,7 +173,8 @@ thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s<
     <para><programlisting>NAME                  TYPE         CLUSTER-IP      EXTERNAL-IP  PORT(S)           AGE
 eclqueries            LoadBalancer 10.108.171.35   localhost    8002:31615/TCP    2m6s
 eclservices           ClusterIP    10.107.121.158  &lt;none&gt;       8010/TCP          2m6s
-eclwatch              LoadBalancer 10.100.81.69    localhost    8010:30173/TCP    2m6s
+<emphasis role="bold">eclwatch</emphasis>              LoadBalancer 10.100.81.69    <emphasis
+          role="bold">localhost    8010</emphasis>:30173/TCP    2m6s
 esdl-sandbox          LoadBalancer 10.100.194.33   localhost    8899:30705/TCP    2m6s
 kubernetes            ClusterIP    10.96.0.1       &lt;none&gt;       443/TCP           2m6s
 mydali                ClusterIP    10.102.80.158   &lt;none&gt;       7070/TCP          2m6s
@@ -163,12 +185,11 @@ sasha-wu-archiver     ClusterIP    10.111.34.240   &lt;none&gt;       8877/TCP  
 sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP    2m6s
 dfs                   LoadBalancer 10.100.52.9     localhost    8520:30184/TCP    2m6s</programlisting></para>
 
-    <para>Notice the <emphasis role="strong">eclwatch</emphasis> service is
-    running on <emphasis role="strong">localhost:8010</emphasis>. Use that
-    address in your browser to access ECL Watch.</para>
+    <para>Locate the ECL Watch service and identify the EXTERNAL-IP and
+    PORT(S) for eclwatch. In this case, it is localhost:8010.</para>
 
-    <para>Inside ECL Watch, press the ECL button and go to the Playground
-    tab.</para>
+    <para>Open a browser and access ECLWatch, press the ECL button, and select
+    the Playground tab.</para>
 
     <para>From here you can use the example ECL or enter other test queries
     and pick from the available clusters available to submit your
@@ -176,12 +197,15 @@ dfs                   LoadBalancer 10.100.52.9     localhost    8520:30184/TCP  
   </sect1>
 
   <sect1 id="terminatedefault">
-    <title>Terminate (Decommission) the system</title>
+    <title>Terminate (Decommission) the System</title>
 
     <para>To check which Helm charts are currently installed, run this
     command:</para>
 
     <para><programlisting>helm list</programlisting></para>
+
+    <para>This displays the installed charts and their names. In this example,
+    mycluster.</para>
 
     <para>To stop the HPCC Systems pods, use helm to uninstall:</para>
 
@@ -189,5 +213,261 @@ dfs                   LoadBalancer 10.100.52.9     localhost    8520:30184/TCP  
 
     <para>This stops the cluster, deletes the pods, and with the default
     settings and persistent volumes, it also deletes the storage used.</para>
+  </sect1>
+
+  <sect1 id="PVCsLocal">
+    <title>Persistent Storage for a Local Deployment</title>
+
+    <para>When running on a single-node test system such as Docker Desktop,
+    the default storage class normally means that all persistent volume claims
+    (PVCs) map to temporary local directories on the host machine. These are
+    typically removed when the cluster is stopped. This is fine for simple
+    testing but for any real application, you want persistent storage.</para>
+
+    <para>To persist data with a Docker Desktop deployment, the first step is
+    to make sure the relevant directories exist:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Create data directories using a terminal interface:</para>
+
+        <para>For Windows, use this command:</para>
+
+        <para><programlisting>mkdir c:\hpccdata
+mkdir c:\hpccdata\dalistorage
+mkdir c:\hpccdata\hpcc-data
+mkdir c:\hpccdata\debug
+mkdir c:\hpccdata\queries
+mkdir c:\hpccdata\sasha
+mkdir c:\hpccdata\dropzone</programlisting></para>
+
+        <para>For macOS, use this command:</para>
+
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,hpcc-data,debug,queries,sasha,dropzone}</programlisting></para>
+
+        <para>For Linux, use this command:</para>
+
+        <para><programlisting>mkdir -p ~/hpccdata/{dalistorage,hpcc-data,debug,queries,sasha,dropzone}</programlisting></para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>If all of these directories do not exist, your pods may
+              not start.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </listitem>
+
+      <listitem>
+        <para>Install the hpcc-localfile Helm chart.</para>
+
+        <para>This chart creates persistent volumes based on host directories
+        you created earlier.<programlisting># for a WSL2 deployment:
+helm install hpcc-localfile hpcc/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
+
+# for a Hyper-V deployment:
+helm install hpcc-localfile hpcc/hpcc-localfile --set common.hostpath=/c/hpccdata
+
+# for a macOS deployment:
+helm install hpcc-localfile hpcc/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
+
+# for a Linux deployment:
+helm install hpcc-localfile hpcc/hpcc-localfile --set common.hostpath=~/hpccdata</programlisting></para>
+
+        <para>The <emphasis role="bold">--set common.hostpath=
+        </emphasis>option specifies the base directory:</para>
+
+        <para>The path <emphasis
+        role="bold">/run/desktop/mnt/host/c/hpccdata</emphasis> provides
+        access to the host file system for WSL2.</para>
+
+        <para>The path <emphasis role="bold">/c/hpccdata</emphasis> provides
+        access to the host file system for Hyper-V.</para>
+
+        <para>The path <emphasis role="bold">/Users/myUser/hpccdata</emphasis>
+        provides access to the host file system for Mac OSX.</para>
+
+        <para>The path <emphasis role="bold">~/hpccdata</emphasis> provides
+        access to the host file system for Linux.</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>The value passed to --set common-hostpath is case
+              sensitive.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </listitem>
+
+      <listitem>
+        <para>Copy the output from the helm install command in the previous
+        step from the word <emphasis role="bold">storage:</emphasis> to the
+        end, and save it to a text file.</para>
+
+        <para>In this example, we will call the file
+        <emphasis>mystorage.yaml</emphasis>. The file should look similar to
+        this:</para>
+
+        <para><programlisting>storage:
+  planes:
+  - name: dali
+    pvc: dali-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+  - name: dll
+    pvc: dll-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+  - name: sasha
+    pvc: sasha-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/sasha"
+    category: sasha
+  - name: debug
+    pvc: debug-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/debug"
+    category: debug
+  - name: data
+    pvc: data-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    category: data
+  - name: mydropzone
+    pvc: mydropzone-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    category: lz
+
+sasha:
+  wu-archiver:
+    plane: sasha
+  dfuwu-archiver:
+    plane: sasha</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <para>If you are using Docker Desktop with Hyper-V, add the shared
+        data folder (in this example, C:\hpccdata) in Docker Desktop's
+        settings by pressing the Add button and typing c:\hpccdata.</para>
+
+        <para>This is <emphasis role="bold">not</emphasis> needed in a MacOS
+        or WSL 2 environment.</para>
+
+        <graphic fileref="../../images/dockerFileShare.jpg" />
+      </listitem>
+
+      <listitem>
+        <para>Finally, install the hpcc Helm chart, and provide a yaml file
+        that provides the storage information created by the previous
+        step.</para>
+
+        <programlisting>helm install mycluster hpcc/hpcc --version=8.6.14 -f mystorage.yaml </programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>The --version argument is optional, but recommended. It
+              ensures that you know which version you are installing. If
+              omitted, the latest non-development version is installed. This
+              example uses 8.6.14, but you should use the version you
+              want.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </listitem>
+
+      <listitem>
+        <para>To test, open a browser and access ECLWatch, press the ECL
+        button, and select the Playground tab, then create some data files and
+        workunits by submitting to Thor some ECL code like the
+        following:</para>
+
+        <programlisting>LayoutPerson := RECORD
+  UNSIGNED1 ID;
+  STRING15  FirstName;
+  STRING25  LastName;
+END;
+allPeople := DATASET([ {1,'Fred','Smith'},
+                       {2,'Joe','Jones'},
+                       {3,'Jane','Smith'}],LayoutPerson);
+OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
+</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Use the helm uninstall command to terminate your cluster, then
+        restart your deployment.</para>
+      </listitem>
+
+      <listitem>
+        <para>Open ECL Watch and notice your workunits and logical files are
+        still there.</para>
+      </listitem>
+    </orderedlist>
+
+    <para></para>
+  </sect1>
+
+  <sect1 id="StoragePlanes">
+    <title>Import: Storage Planes and How To Use Them</title>
+
+    <para>Storage planes provide the flexibility to configure where the data
+    is stored within a deployed HPCC Systems platform, but it doesn't directly
+    address the question of how to get data onto the platform in the first
+    place.</para>
+
+    <para>Containerized platforms support importing data in two ways:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Upload a file to a Landing Zone and Import (Spray)</para>
+      </listitem>
+
+      <listitem>
+        <para>Copy a file to a Storage Plane and access it directly</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Beginning with version 7.12.0, new ECL syntax was added to access
+    files directly from a storage plane. This is similar to the <emphasis
+    role="bold">file::</emphasis> syntax used to directly read files from a
+    physical machine, typically a landing zone.</para>
+
+    <para>The new syntax is:</para>
+
+    <para><programlisting>~plane::&lt;storage-plane-name&gt;::&lt;path&gt;::&lt;filename&gt;</programlisting>Where
+    the syntax of the path and filename are the same as used with the
+    <emphasis role="strong">file::</emphasis> syntax. This includes requiring
+    uppercase letters to be quoted with a ^ symbol. For more details, see the
+    Landing Zone Files section of the <emphasis>ECL Language
+    Reference.</emphasis></para>
+
+    <para>If you have storage planes configured as in the previous section,
+    and you copy the <emphasis role="strong">originalperson</emphasis> file to
+    <emphasis role="strong">C:\hpccdata\hpcc-data\tutorial</emphasis>, you can
+    then reference the file using this syntax:</para>
+
+    <para><programlisting>'~plane::data::tutorial::originalperson'</programlisting><variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>The <emphasis role="strong">originalperson</emphasis> file
+            is available from the HPCC Systems Web site
+            (https://cdn.hpccsystems.com/install/docs/3_8_0_8rc_CE/OriginalPerson).</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para></para>
+
+    <para></para>
+
+    <para></para>
   </sect1>
 </chapter>
