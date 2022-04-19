@@ -226,7 +226,7 @@ void initOptions(int argc, const char **argv)
     if (options->getPropBool("sanityCheckUdpSettings", true))
     {
         unsigned __int64 networkSpeed = options->getPropInt64("@udpNetworkSpeed", 10 * U64C(0x40000000));
-        sanityCheckUdpSettings(numReceiveSlots, numThreads, networkSpeed);
+        sanityCheckUdpSettings(numReceiveSlots, 100, numThreads, networkSpeed);
     }
 }
 
