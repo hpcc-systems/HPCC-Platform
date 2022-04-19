@@ -475,13 +475,11 @@ bool MemoryBuffer::matches(const MemoryBuffer & other) const
 MemoryBuffer::MemoryBuffer(size_t initial)
 {
     assertex((size32_t)initial == initial);
-    init();
     _realloc((size32_t)initial);
 }
 
 MemoryBuffer::MemoryBuffer(size_t len, const void * newBuffer)
 {
-    init();
     assertex((size32_t)len == len);
     append((size32_t)len, newBuffer);
 }
