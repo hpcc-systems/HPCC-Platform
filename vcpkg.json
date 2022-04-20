@@ -33,10 +33,7 @@
             "name": "winflexbison",
             "platform": "windows"
         },
-        {
-            "name": "libmysql",
-            "platform": "!(windows & x86)"
-        },
+        "libmysql",
         "librdkafka",
         "openblas"
     ]

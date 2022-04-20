@@ -12,7 +12,7 @@ on:
       - "!candidate-6.*"
 
 jobs:
-  pre_job:
+  changed-modules:
     runs-on: ubuntu-20.04
     outputs:
       eclwatch: ${{ steps.skip_check.outputs.eclwatch }}
@@ -27,18 +27,26 @@ jobs:
       matrix:
         node: ["16", "14"]
       fail-fast: false
+
     name: "Check eclwatch and npm"
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.eclwatch }}
+    needs: changed-modules
     runs-on: ubuntu-20.04
+
     steps:
+      - name: Changed Summary
+        run: |
+          echo ${{ matrix.os }} ${{ matrix.triplet }}
+          echo "eclwatch:  ${{ needs.changed-modules.outputs.eclwatch }}"
       - uses: actions/checkout@v2
+        if: ${{ needs.changed-modules.outputs.eclwatch }}
         with:
           submodules: "recursive"
       - uses: actions/setup-node@v2
+        if: ${{ needs.changed-modules.outputs.eclwatch }}
         with:
           node-version: ${{ matrix.node }}
       - name: Cache node modules
+        if: ${{ needs.changed-modules.outputs.eclwatch }}
         uses: actions/cache@v2
         with:
           path: ./esp/src/node_modules
@@ -46,11 +54,14 @@ jobs:
           restore-keys: |
             npm-deps-${{ hashFiles('./esp/src/package-lock.json') }}
       - name: Install Dependencies
+        if: ${{ needs.changed-modules.outputs.eclwatch }}
         working-directory: ./esp/src
         run: npm ci
       - name: Build
+        if: ${{ needs.changed-modules.outputs.eclwatch }}
         working-directory: ./esp/src
         run: npm run build
       - name: Test
+        if: ${{ needs.changed-modules.outputs.eclwatch }}
         working-directory: ./esp/src
         run: npm run test

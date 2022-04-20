@@ -28,7 +28,6 @@ if(MYSQLEMBED)
     ADD_PLUGIN(mysqlembed)
     if(MAKE_MYSQLEMBED)
         find_package(MYSQL REQUIRED)
-        find_package(ZLIB REQUIRED)
         set(
             SRCS
             mysqlembed.cpp)

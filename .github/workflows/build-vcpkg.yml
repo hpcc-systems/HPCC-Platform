@@ -8,16 +8,14 @@ on:
     branches:
       - "master"
       - "candidate-*"
-      - "!candidate-7.10.*"
-      - "!candidate-7.8.*"
-      - "!candidate-7.6.*"
-      - "!candidate-7.4.*"
-      - "!candidate-7.2.*"
-      - "!candidate-7.0.*"
+      - "!candidate-8.4.*"
+      - "!candidate-8.2.*"
+      - "!candidate-8.0.*"
+      - "!candidate-7.*"
       - "!candidate-6.*"
 
 jobs:
-  check-skip:
+  changed-modules:
     runs-on: ubuntu-20.04
     outputs:
       platform: ${{ steps.skip_check.outputs.platform }}
@@ -42,24 +40,24 @@ jobs:
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
             cmake_build_options: "--config Debug -- -m"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
             cmake_build_options: "--config Debug -- -m"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
             cmake_build_options: "-- -j$(nproc)"
       fail-fast: false
 
     name: "Build with vcpkg"
-    needs: check-skip
+    needs: changed-modules
     runs-on: ${{ matrix.os }}
     steps:
       - name: Display build summary
@@ -67,10 +65,10 @@ jobs:
         run: |
           echo ${{ matrix.os }} ${{ matrix.triplet }}
           echo "Checkout to $Env:GITHUB_WORKSPACE"
-          echo "Platform Changed:  ${{ needs.check-skip.outputs.platform }}"
+          echo "Platform Changed:  ${{needs.changed-modules.outputs.platform }}"
 
       - name: Ubuntu Dependencies
-        if: ${{ needs.check-skip.outputs.platform && matrix.os == 'ubuntu-20.04' }}
+        if: ${{ needs.changed-modules.outputs.platform && matrix.os == 'ubuntu-20.04' }}
         shell: "bash"
         run: |
           sudo apt-get update -y
@@ -78,7 +76,7 @@ jobs:
             zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
             libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
             default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config uuid-dev libtool autotools-dev automake \
-            libssl-dev xmlstarlet
+            libssl-dev xmlstarlet libncurses-dev
 
           curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
           sudo apt-add-repository "deb https://deb.nodesource.com/node_16.x $(lsb_release -sc) main"
@@ -86,33 +84,33 @@ jobs:
           sudo apt-get install -y nodejs
 
       - name: OSX Dependencies
-        if: ${{ needs.check-skip.outputs.platform && matrix.os == 'macos-11' }}
+        if: ${{ needs.changed-modules.outputs.platform && matrix.os == 'macos-11' }}
         shell: "bash"
         run: |
           brew install bison flex pkg-config automake libtool cmake openjdk@11
 
       - name: "Remove builtin vcpkg"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ needs.changed-modules.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Check out source code
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ needs.changed-modules.outputs.platform }}
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: "vcpkg Bootstrap"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ needs.changed-modules.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
 
       - name: "Setup NuGet credentials"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ needs.changed-modules.outputs.platform }}
         working-directory: ./vcpkg
         shell: "bash"
         run: |
@@ -128,16 +126,16 @@ jobs:
             -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
       - name: "Generate HPCC-Platform Build Files"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ needs.changed-modules.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           mkdir build
           cd build
-          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF -DUSE_NATIVE_LIBRARIES=ON$ {{ matrix.cmake_config_options }}
 
       - name: "Build HPCC-Platform"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ needs.changed-modules.outputs.platform }}
         working-directory: ./build
         shell: "bash"
         run: |
