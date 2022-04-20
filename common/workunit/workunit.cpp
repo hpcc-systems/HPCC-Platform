@@ -331,8 +331,13 @@ protected:
                 throwUnexpected();
             }
 
-            IPropertyTree * next = curTarget->addPropTree(tag);
-            next->setProp("@id", id);
+            VStringBuffer xpath("%s[@id=\"%s\"]", tag, id);
+            IPropertyTree * next = curTarget->queryPropTree(xpath);
+            if (!next)
+            {
+                next = curTarget->addPropTree(tag);
+                next->setProp("@id", id);
+            }
             expandProcessTreeFromStats(rootTarget, next, &cur, doFormat);
         }
     }
@@ -9991,7 +9996,7 @@ static void expandAttributes(IPropertyTree & targetNode, IPropertyTree & progres
     }
 }
 
-void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progressTree, const unsigned &progressV) const
+void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, const IPropertyTree &progressTree, const unsigned progressV) const
 {
     IPropertyTree *graphNode = rootNode.queryPropTree("att/graph");
     if (!graphNode) return;

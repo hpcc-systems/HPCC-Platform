@@ -633,7 +633,7 @@ class WORKUNIT_API CLocalWUGraph : implements IConstWUGraph, public CInterface
     mutable Owned<IPropertyTree> graph; // cached copy of graph xgmml
     unsigned wuidVersion;
 
-    void mergeProgress(IPropertyTree &tree, IPropertyTree &progressTree, const unsigned &progressV) const;
+    void mergeProgress(IPropertyTree &tree, const IPropertyTree &progressTree, const unsigned progressV) const;
 
 public:
     IMPLEMENT_IINTERFACE;
