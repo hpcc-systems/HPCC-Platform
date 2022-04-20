@@ -26,7 +26,7 @@ Out of the box, HPCC component logs are handled by K8s drivers, and exposed via 
 Access to logs processed by other processes such as Elastic Stack, Azure log analytics, etc. is provided by the chosen log processor solution.
 However, HPCC provides a standard interface into the logs. To enable this feature, information about the chosen log processor solution must be provided in
 the global.logAccess portion of the Helm chart.
-For example, if an elastic stack is deployed under the default namespace, and it contains hpcc logs in indexes prefixed 'filebeat-' the following log access configuration would allow log access through HPCC:
+For example, if an elastic stack is deployed under the default namespace, and it contains hpcc logs in indexes prefixed 'hpcc-logs' the following log access configuration would allow log access through HPCC:
 
     
     global:
@@ -39,11 +39,11 @@ For example, if an elastic stack is deployed under the default namespace, and it
             port: 9200
         logMaps:
           - type: "global"                             #These settings apply to all log mappings
-            storeName: "filebeat-*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
+            storeName: "hpcc-logs*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
             searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
             timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
           - type: "workunits"                          #Search by workunits specific log mapping
-            storeName: "filebeat-*"                    # Only needed if differs from global.storeName
+            storeName: "hpcc-logs*"                    # Only needed if differs from global.storeName
             searchColumn: "hpcc.log.jobid"             # Field containing WU information
           - type: "components"                         #Search by components specific log mapping
             searchColumn: "kubernetes.container.name"  # Field containing container information
@@ -51,6 +51,10 @@ For example, if an elastic stack is deployed under the default namespace, and it
             searchColumn: "hpcc.log.audience"          # Field containing audience information
           - type: "class"                              #Search by log class specific log mapping
             searchColumn: "hpcc.log.class"             # Field containing log class information
+          - type: "instance"                           #Search by log source instance specific mapping
+            searchColumn: "kubernetes.pod.name"        # Field containing source instance information
+          - type: "host"                               #Search by log source host specific mapping
+            searchColumn: "kubernetes.node.hostname"   # Field containing source host information
 
 This configuration coincides with the elastic4hpcclogs managed solution found in HPCC-Systems/helm/managed/logging/elastic, and can be provided as part of an HPCC Systems deployment as follows:
     
