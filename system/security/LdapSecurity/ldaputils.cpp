@@ -231,9 +231,6 @@ LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userD
     *err = LdapSimpleBind(ld, timeout, (char*)userDN, (char*)pwd);
     if (*err != LDAP_SUCCESS)
     {
-        DBGLOG("LdapSimpleBind error (%d) - '%s' for admin user %s", *err, ldap_err2string(*err), isEmptyString(userDN) ? "NULL" : userDN);
-        if (!isEmptyString(userDN))
-            DBGLOG("Please make sure your LDAP configuration 'systemBasedn' contains the complete path, including the complete 'dc=domainComponent'");
         return nullptr;
     }
     return ld;
@@ -251,21 +248,16 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
     if (nullptr == ld)
     {
         ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, timeout, &err);
+        if(nullptr == ld)
+        {
+            DBGLOG("ldap bind error (%d) - %s", err, ldap_err2string(err));
 
-        //if that failed, and was for ldaps, see if we can do anonymous bind using ldap/389
-        if (nullptr == ld  && strieq(ldapprotocol,"ldaps"))
-            ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, "ldap", 389, timeout, &err);
-    }
+            // for new versions of openldap, version 2.2.*
+            if(err == LDAP_PROTOCOL_ERROR  &&  stype != ACTIVE_DIRECTORY)
+                DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
 
-    if(nullptr == ld)
-    {
-        DBGLOG("ldap bind error (%d) - %s", err, ldap_err2string(err));
-
-        // for new versions of openldap, version 2.2.*
-        if(err == LDAP_PROTOCOL_ERROR)
-            DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
-
-        return err;
+            return err;
+        }
     }
 
     LDAPMessage* msg = NULL;

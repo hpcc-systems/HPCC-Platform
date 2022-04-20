@@ -465,7 +465,7 @@ public:
                 sleep(LDAPSEC_RETRY_WAIT);
                 if(retries < LDAPSEC_MAX_RETRIES)
                 {
-                    DBGLOG("LDAP AD Server %s temporarily unreachable for user %s, retrying...", hostbuf.str(), sysUserDN.str());
+                    DBGLOG("LDAP AD Server %s temporarily unreachable for user %s on port %d, retrying...", hostbuf.str(), sysUserDN.str(), port);
                 }
             }
             if (rc != LDAP_SUCCESS)
