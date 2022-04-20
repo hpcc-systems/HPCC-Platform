@@ -125,7 +125,7 @@ private:
 class jlib_decl MemoryBuffer
 {
 public:
-    inline MemoryBuffer()  { init(); }
+    constexpr MemoryBuffer() = default;
     MemoryBuffer(size_t initial);
     MemoryBuffer(size_t len, const void * buffer);
     MemoryBuffer(MemoryBuffer & value) = delete;
@@ -230,12 +230,12 @@ private:
     MemoryBuffer & _reverse();
     const char* _str();
     
-    mutable char *  buffer;
-    size32_t  curLen;
-    size32_t  maxLen;
-    size32_t  readPos;
-    bool    swapEndian;
-    bool    ownBuffer;
+    mutable char * buffer = nullptr;
+    size32_t curLen = 0;
+    size32_t maxLen = 0;
+    size32_t readPos = 0;
+    bool swapEndian= false;
+    bool ownBuffer = true;
 };
 
 // Utility class, to back patch a scalar into current position
