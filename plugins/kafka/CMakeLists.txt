@@ -27,57 +27,73 @@ project(kafka)
 if(KAFKA)
     ADD_PLUGIN(kafka)
     if(MAKE_KAFKA)
-        # librdkafka packages do not include everything we need to properly
-        # build against it; until/if they are ever fixed we will need to build
-        # our own version of librdkafka from source and include it ourselves
+        if (VCPKG_APPLOCAL_DEPS)
+            find_package(RdKafka REQUIRED)
 
-        if(NOT EXISTS "${PROJECT_SOURCE_DIR}/librdkafka/configure")
-            message(FATAL_ERROR
+            set ( LOCAL_LIBRDKAFKA_LIBS 
+                RdKafka::rdkafka 
+                RdKafka::rdkafka++
+            )
+        else ()
+            # librdkafka packages do not include everything we need to properly
+            # build against it; until/if they are ever fixed we will need to build
+            # our own version of librdkafka from source and include it ourselves
+
+            if(NOT EXISTS "${PROJECT_SOURCE_DIR}/librdkafka/configure")
+                message(FATAL_ERROR
 "   The librdkafka submodule is not available.
    This normally indicates that the git submodule has not been fetched.
    Please run git submodule update --init --recursive")
+            endif()
+
+            set(LIBRDKAFKA_BUILD_DIR "${PROJECT_BINARY_DIR}/../../build")
+
+            if(APPLE)
+                set(LIBRDKAFKA_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.dylib)
+                set(LIBRDKAFKA_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.1.dylib)
+                set(LIBRDKAFKACPP_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.dylib)
+                set(LIBRDKAFKACPP_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.1.dylib)
+            else()
+                set(LIBRDKAFKA_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.so)
+                set(LIBRDKAFKA_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.so.1)
+                set(LIBRDKAFKACPP_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.so)
+                set(LIBRDKAFKACPP_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.so.1)
+            endif()
+
+            # librdkafka does not support out-of-source builds, so let's copy all
+            # of its source code to our binary directory and build there; further,
+            # we need to pull some working directory shenanigans for each command
+            # in order to make the built scripts function correctly
+
+            add_custom_target(librdkafka-build ALL
+                COMMAND mkdir -p ${LIBRDKAFKA_BUILD_DIR}
+                # If we've copied the source files before, compute checksums
+                COMMAND if [ -d ${LIBRDKAFKA_BUILD_DIR}/src ]\; then md5sum ${LIBRDKAFKA_BUILD_DIR}/src/*/*.c ${LIBRDKAFKA_BUILD_DIR}/src/*/*.cpp ${LIBRDKAFKA_BUILD_DIR}/src/*/*.h > ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt\; fi
+                COMMAND echo "Copying librdkafka source files" && cp -rp ${PROJECT_SOURCE_DIR}/librdkafka ${LIBRDKAFKA_BUILD_DIR}/src
+                # Run configure if it hasn't been run before
+                COMMAND if [ ! -f ${LIBRDKAFKA_BUILD_DIR}/src/Makefile.config ]\; then echo "Configuring librdkafka" && cd ${LIBRDKAFKA_BUILD_DIR}/src && ./configure --prefix=${LIBRDKAFKA_BUILD_DIR}\; fi
+                # If either there is no checksum file or if the checksums are different, re-make librdkafka
+                COMMAND if [ ! -f ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt ] || ! md5sum --quiet --status -c ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt\; then echo "Building librdkafka" && cd ${LIBRDKAFKA_BUILD_DIR}/src && make libs && make install\; fi
+                COMMAND rm -f ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt
+                COMMENT Copying and building librdkafka)
+
+            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${LIBRDKAFKA_BUILD_DIR}/lib\")")
+
+            add_library(librdkafka SHARED IMPORTED)
+            set_property(TARGET librdkafka PROPERTY IMPORTED_LOCATION ${LIBRDKAFKA_LIB})
+            add_dependencies(librdkafka librdkafka-build)
+    
+            add_library(librdkafkacpp SHARED IMPORTED)
+            set_property(TARGET librdkafkacpp PROPERTY IMPORTED_LOCATION ${LIBRDKAFKACPP_LIB})
+            add_dependencies(librdkafkacpp librdkafka-build)
+
+            set ( LOCAL_LIBRDKAFKA_INCLUDE ${LIBRDKAFKA_BUILD_DIR}/include )
+            set ( LOCAL_LIBRDKAFKA_LIBS 
+                librdkafka
+                librdkafkacpp
+            )
+
         endif()
-
-        set(LIBRDKAFKA_BUILD_DIR "${PROJECT_BINARY_DIR}/../../build")
-
-        if(APPLE)
-            set(LIBRDKAFKA_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.dylib)
-            set(LIBRDKAFKA_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.1.dylib)
-            set(LIBRDKAFKACPP_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.dylib)
-            set(LIBRDKAFKACPP_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.1.dylib)
-        else()
-            set(LIBRDKAFKA_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.so)
-            set(LIBRDKAFKA_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka.so.1)
-            set(LIBRDKAFKACPP_LIB ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.so)
-            set(LIBRDKAFKACPP_LIB_REAL ${LIBRDKAFKA_BUILD_DIR}/lib/librdkafka++.so.1)
-        endif()
-
-        # librdkafka does not support out-of-source builds, so let's copy all
-        # of its source code to our binary directory and build there; further,
-        # we need to pull some working directory shenanigans for each command
-        # in order to make the built scripts function correctly
-
-        add_custom_target(librdkafka-build ALL
-            COMMAND mkdir -p ${LIBRDKAFKA_BUILD_DIR}
-            # If we've copied the source files before, compute checksums
-            COMMAND if [ -d ${LIBRDKAFKA_BUILD_DIR}/src ]\; then md5sum ${LIBRDKAFKA_BUILD_DIR}/src/*/*.c ${LIBRDKAFKA_BUILD_DIR}/src/*/*.cpp ${LIBRDKAFKA_BUILD_DIR}/src/*/*.h > ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt\; fi
-            COMMAND echo "Copying librdkafka source files" && cp -rp ${PROJECT_SOURCE_DIR}/librdkafka ${LIBRDKAFKA_BUILD_DIR}/src
-            # Run configure if it hasn't been run before
-            COMMAND if [ ! -f ${LIBRDKAFKA_BUILD_DIR}/src/Makefile.config ]\; then echo "Configuring librdkafka" && cd ${LIBRDKAFKA_BUILD_DIR}/src && ./configure --prefix=${LIBRDKAFKA_BUILD_DIR}\; fi
-            # If either there is no checksum file or if the checksums are different, re-make librdkafka
-            COMMAND if [ ! -f ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt ] || ! md5sum --quiet --status -c ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt\; then echo "Building librdkafka" && cd ${LIBRDKAFKA_BUILD_DIR}/src && make libs && make install\; fi
-            COMMAND rm -f ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt
-            COMMENT Copying and building librdkafka)
-
-        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${LIBRDKAFKA_BUILD_DIR}/lib\")")
-
-        add_library(librdkafka SHARED IMPORTED)
-        set_property(TARGET librdkafka PROPERTY IMPORTED_LOCATION ${LIBRDKAFKA_LIB})
-        add_dependencies(librdkafka librdkafka-build)
-
-        add_library(librdkafkacpp SHARED IMPORTED)
-        set_property(TARGET librdkafkacpp PROPERTY IMPORTED_LOCATION ${LIBRDKAFKACPP_LIB})
-        add_dependencies(librdkafkacpp librdkafka-build)
 
         set(
             SRCS
@@ -90,7 +106,7 @@ if(KAFKA)
             ./../../rtl/include
             ./../../common/deftype
             ./../../system/jlib
-            ${LIBRDKAFKA_BUILD_DIR}/include
+            ${LOCAL_LIBRDKAFKA_INCLUDE}
             ${CMAKE_BINARY_DIR}
             ${CMAKE_BINARY_DIR}/oss)
 
@@ -118,10 +134,8 @@ if(KAFKA)
             DESTINATION ${LIB_DIR}
             COMPONENT Runtime)
 
-        target_link_libraries(
-            kafka
-            librdkafka
-            librdkafkacpp
+        target_link_libraries(kafka
+            ${LOCAL_LIBRDKAFKA_LIBS}
             eclrtl
             jlib
             ${ZLIB_LIBRARIES})

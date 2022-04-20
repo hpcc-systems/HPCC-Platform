@@ -234,6 +234,10 @@ IF (USE_OPENSSL)
 target_link_libraries ( jlib ${OPENSSL_LIBRARIES})
 endif (USE_OPENSSL)
 
+IF (WIN32 AND USE_ZLIB)
+target_link_libraries ( jlib ZLIB::ZLIB )
+endif (WIN32 AND USE_ZLIB)
+
 if (WIN32)
  target_link_libraries ( jlib ws2_32 mpr.lib Winmm.lib psapi.lib )
 elseif (("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" ))
