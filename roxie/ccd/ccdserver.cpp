@@ -388,10 +388,10 @@ protected:
 
 // General activity statistics
 
-static const StatisticsMapping actStatistics({StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
+static const StatisticsMapping actStatistics({StWhenFirstRow, StWhenStarted, StTimeElapsed, StTimeDependencies, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                               StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
                                               StNumScansPerRow, StNumAllocations, StNumAllocationScans,
-                                              StTimeFirstExecute, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles});
+                                              StTimeFirstExecute, StCycleDependenciesCycles, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles});
 static const StatisticsMapping joinStatistics({StNumAtmostTriggered}, actStatistics);
 static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -1380,6 +1380,8 @@ public:
     inline void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock cb(statecrit);
+        if (timeActivities && !stats.getStatisticValue(StWhenStarted))
+            stats.addStatistic(StWhenStarted, getTimeStampNowValue());
         if (state != STATEreset && state != STATEstarting)
         {
             CTXLOG("STATE: Expected state to be reset, but was %s, in activity %d", queryStateText(state), activityId);
@@ -1408,12 +1410,19 @@ public:
 
     void executeDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
     {
+        if (dependencies.empty())
+            return;
+
+        CCycleTimer dependencyTimer(timeActivities);
+
         //MORE: Create a filtered list and then use asyncfor
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == (int) controlId)
                 dependencies.item(idx).execute(parentExtractSize, parentExtract);
         }
+
+        stats.addStatistic(StCycleDependenciesCycles, dependencyTimer.elapsedCycles());
     }
 
     void stopDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
