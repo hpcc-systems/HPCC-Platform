@@ -78,7 +78,7 @@ jobs:
             zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
             libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
             default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config uuid-dev libtool autotools-dev automake \
-            libssl-dev xmlstarlet
+            libssl-dev xmlstarlet libncurses-dev
 
           curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
           sudo apt-add-repository "deb https://deb.nodesource.com/node_16.x $(lsb_release -sc) main"
