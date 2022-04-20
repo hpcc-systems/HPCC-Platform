@@ -329,6 +329,19 @@ void addBindingToServiceResource(IPropertyTree *service, const char *name, const
     bindingTree->setProp("@workunitsBasedn", workunitsBaseDN);
 }
 
+const char *getLDAPBaseDN(IPropertyTree &service, IPropertyTree *ldapAuthTree, const char *xpath)
+{
+    const char *resourcesBasedn = service.queryProp(xpath);
+    if (!isEmptyString(resourcesBasedn))
+        return resourcesBasedn;
+
+    if (!ldapAuthTree)
+        return nullptr;
+
+    VStringBuffer authTreeXPath("ldap/%s", xpath);
+    return ldapAuthTree->queryProp(authTreeXPath);
+}
+
 void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLdap)
 {
     IPropertyTree *wsAccessService = legacyEsp->queryPropTree("EspService[@type='ws_access']");
@@ -358,6 +371,29 @@ void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLd
         const char *workunitsBaseDN = authTree->queryProp("@workunitsBasedn");
         addBindingToServiceResource(wsAccessService, binding.queryProp("@name"), "WsSMC",
             binding.getPropInt("@port"), baseDN, workunitsBaseDN);
+    }
+
+    //Now, setLDAPSecurity for the esp applications other than eclwatch.
+    char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@class='esp'][@public='true']");
+    ForEach(*services)
+    {
+        IPropertyTree &service = services->query();
+        const char *type = service.queryProp("@type");
+        if (strieq(type, "eclwatch"))
+            continue;
+
+        StringBuffer path(hpccBuildInfo.componentDir);
+        addPathSepChar(path, sepchar).append("applications").append(sepchar).append(type).append(sepchar);
+        path.append("ldap_authorization_map.yaml");
+        Owned<IPropertyTree> authTree = createPTreeFromYAMLFile(path);
+        if (!authTree)
+            IERRLOG("Failed to read %s for EspService %s", path.str(), type);
+        const char *baseDN = getLDAPBaseDN(service, authTree, "@resourcesBasedn");
+        const char *workunitsBaseDN = getLDAPBaseDN(service, authTree, "@workunitsBasedn");
+        if (!isEmptyString(baseDN) || !isEmptyString(workunitsBaseDN))
+            addBindingToServiceResource(wsAccessService, type, type, 0, //port number unknown. Seem not used. Set to 0 for now.
+                baseDN, workunitsBaseDN);
     }
 }
 

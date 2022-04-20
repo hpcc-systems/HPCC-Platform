@@ -1,4 +1,5 @@
 ldap:
+   resourcesBasedn: ou=WsSql,ou=EspServices,ou=ecl
    root_access:
       resource: WsSQLAccess
       required: Read
