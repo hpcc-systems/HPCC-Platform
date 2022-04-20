@@ -59,6 +59,7 @@ include_directories (
          ./../../rtl/include
          ./../../rtl/eclrtl
          ${LIB_INCLUDE_DIR}
+         ${HPCC_SOURCE_DIR}/testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DXMLLIB_EXPORTS )
@@ -70,3 +71,7 @@ target_link_libraries ( xmllib
          eclrtl
          jlib
     )
+
+IF (USE_CPPUNIT)
+  target_link_libraries (xmllib ${CPPUNIT_LIBRARIES})
+ENDIF()
