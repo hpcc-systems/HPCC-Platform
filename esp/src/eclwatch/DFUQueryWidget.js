@@ -27,6 +27,7 @@ define([
     "hpcc/DelayLoadWidget",
     "src/WsTopology",
     "src/Utility",
+    "src/Session",
 
     "put-selector/put",
 
@@ -61,7 +62,7 @@ define([
 ], function (declare, lang, nlsHPCCMod, arrayUtil, domClass, domForm, topic,
     registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     editor, selector, tree,
-    _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, WsTopology, Utility,
+    _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, WsTopology, Utility, Session,
     put,
     template) {
 
@@ -673,7 +674,31 @@ define([
                             node.innerText = Utility.valueCleanUp(value);
                         },
                     },
-                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 162 }
+                    MinSkew: {
+                        label: nlsHPCC.MinSkew, width: 60,
+                        formatter: function (value, row) {
+                            return value !== undefined ? value : "";
+                        }
+                    },
+                    MaxSkew: {
+                        label: nlsHPCC.MaxSkew, width: 60,
+                        formatter: function (value, row) {
+                            return value !== undefined ? value : "";
+                        }
+                    },
+                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 162 },
+                    AtRestCost: {
+                        label: nlsHPCC.FileCostAtRest, width: 100,
+                        formatter: function (cost, row) {
+                            return Session.formatCost(cost);
+                        }
+                    },
+                    AccessCost: {
+                        label: nlsHPCC.FileAccessCost, width: 100,
+                        formatter: function (cost, row) {
+                            return Session.formatCost(cost);
+                        }
+                    }
                 }
             }, this.id + "WorkunitsGrid");
             this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {

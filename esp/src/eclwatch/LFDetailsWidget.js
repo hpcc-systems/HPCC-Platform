@@ -461,7 +461,7 @@ define([
             } else if (name === "RecordSize" && newValue === "0") {
                 this.updateInput("RecordSize", oldValue, this.i18n.NoPublishedSize);
             } else if (name === "Cost") {
-                this.updateInput("FormattedCost", oldValue, Session.formatCost(newValue || 0) + " (" + dojoConfig.currencyCode + ")");
+                this.updateInput("FormattedCost", oldValue, Session.formatCost(newValue));
             }
         },
 
