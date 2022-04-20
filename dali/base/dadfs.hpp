@@ -427,7 +427,7 @@ interface IDistributedFile: extends IInterface
     virtual void resetHistory() = 0;
     virtual bool isExternal() const = 0;
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) = 0;
-    virtual int  getExpire() = 0;
+    virtual int  getExpire(StringBuffer *expirationDate) = 0;
     virtual void setExpire(int expireDays) = 0;
     virtual void getCost(const char * cluster, double & atRestCost, double & accessCost) = 0;
 };

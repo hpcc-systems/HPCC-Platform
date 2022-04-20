@@ -194,6 +194,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.60"), max_ver("1.61")] double Cost;
     [min_ver("1.62")] double AtRestCost;
     [min_ver("1.62")] double AccessCost;
+    [min_ver("1.63")] string ExpirationDate;
 };
 
 ESPStruct DFUSpaceItem

@@ -3295,9 +3295,21 @@ public:
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
     virtual bool isExternal() const { return external; }
 
-    virtual int getExpire()
+    virtual int getExpire(StringBuffer *expirationDate)
     {
-        return queryAttributes().getPropInt("@expireDays", -1);
+        int expireDays = queryAttributes().getPropInt("@expireDays", -1);
+        if (!expirationDate || (expireDays == -1))
+            return expireDays;
+
+        const char *lastAccessed = queryAttributes().queryProp("@accessed");
+        if (isEmptyString(lastAccessed))
+            return expireDays;
+
+        CDateTime expires;
+        expires.setString(lastAccessed);
+        expires.adjustTime(60*24*expireDays);
+        expires.getString(*expirationDate);
+        return expireDays;
     }
 
     virtual void setExpire(int expireDays)

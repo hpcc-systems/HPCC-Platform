@@ -2383,8 +2383,17 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             FileDetails.setBlooms(bloomList);
     }
 
-    if ((version >= 1.40) && df->queryAttributes().hasProp("@expireDays"))
-        FileDetails.setExpireDays(df->queryAttributes().getPropInt("@expireDays"));
+    if (version >= 1.40)
+    {
+        StringBuffer expirationDate;
+        int expireDays = df->getExpire(&expirationDate);
+        if (expireDays != -1)
+        {
+            FileDetails.setExpireDays(expireDays);
+            if ((version >= 1.63) && !expirationDate.isEmpty())
+                FileDetails.setExpirationDate(expirationDate);
+        }
+    }
 
     //#14280
     IDistributedSuperFile *sf = df->querySuperFile();
