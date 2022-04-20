@@ -1270,6 +1270,61 @@ public:
     }
 };
 
+class CEsdlTransformOperationTrace : public CEsdlTransformOperationWithoutChildren
+{
+protected:
+    StringAttr m_label;
+    Owned<ICompiledXpath> m_test; //optional, if provided trace only if test evaluates to true
+    Owned<ICompiledXpath> m_select;
+
+public:
+    CEsdlTransformOperationTrace(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        m_label.set(stag.getValue("label"));
+        const char *select = stag.getValue("select");
+        if (isEmptyString(select))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without select", m_traceName.str(), !m_ignoreCodingErrors);
+
+        m_select.setown(compileXpath(select));
+
+        const char *test = stag.getValue("test");
+        if (!isEmptyString(test))
+            m_test.setown(compileXpath(test));
+    }
+
+    virtual void toDBGLog() override
+    {
+#if defined(_DEBUG)
+        DBGLOG(">%s> %s(test(%s), label(%s), select(%s))", m_traceName.str(), m_tagname.str(), m_test ? m_test->getXpath() : "true", m_label.str(), m_select->getXpath());
+#endif
+    }
+
+    virtual ~CEsdlTransformOperationTrace(){}
+
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        try
+        {
+            if (m_test && !sourceContext->evaluateAsBoolean(m_test))
+                return false;
+            targetContext->trace(m_label, m_select, scriptContext->getTraceToStdout());
+        }
+        catch (IException* e)
+        {
+            int code = e->errorCode();
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            esdlOperationError(code, m_tagname, msg, m_traceName, !m_ignoreCodingErrors);
+        }
+        catch (...)
+        {
+            esdlOperationError(ESDL_SCRIPT_Error, m_tagname, "unknown exception processing", m_traceName, !m_ignoreCodingErrors);
+        }
+        return false;
+    }
+};
+
 class CEsdlTransformOperationRemoveNode : public CEsdlTransformOperationWithoutChildren
 {
 protected:
@@ -1897,6 +1952,8 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
         return new CEsdlTransformOperationHttpPostXml(xpp, stag, prefix);
     if (streq(op, "mysql"))
         return new CEsdlTransformOperationMySqlCall(xpp, stag, prefix);
+    if (streq(op, "trace"))
+        return new CEsdlTransformOperationTrace(xpp, stag, prefix);
     return nullptr;
 }
 
