@@ -93,7 +93,7 @@ extern ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & p
 extern HQL_API bool isKnownDistribution(IHqlExpression * distribution);
 extern HQL_API bool isPersistDistribution(IHqlExpression * distribution);
 extern HQL_API bool isSortedDistribution(IHqlExpression * distribution);
-
+extern HQL_API bool hasKnownDistribution(IHqlExpression * expr);
 //---------------------------------------------------------------------------------------------
 
 extern HQL_API IHqlExpression * mapJoinDistribution(TableProjectMapper & mapper, IHqlExpression * distribution, IHqlExpression * side);
