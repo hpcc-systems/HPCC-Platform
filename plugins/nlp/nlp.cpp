@@ -49,8 +49,6 @@ namespace nlp {
     static CriticalSection cs; 
     static NLPEng *nlpEng = NULL;
 
-    ECL_NLP_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }
-
     //--------------------------------------------------------------------------------
     //                           ECL SERVICE ENTRYPOINTS
     //--------------------------------------------------------------------------------
@@ -71,3 +69,7 @@ namespace nlp {
         memcpy_iflen(tgt, sso.str().c_str(), tgtLen);
     }
 } // namespace nlp
+
+using namespace nlp;
+
+ECL_NLP_API void setPluginContext(IPluginContext * _ctx) { parentCtx = _ctx; }

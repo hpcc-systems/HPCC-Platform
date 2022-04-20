@@ -35,4 +35,10 @@
 #include "nlp_eng.hpp"
 #include <sstream>
 
+extern "C"
+{
+    ECL_NLP_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+    ECL_NLP_API void setPluginContext(IPluginContext * _ctx);
+}
+
 #endif
