@@ -986,7 +986,7 @@ protected:
     MapStringToMyClass<ThorSectionTimer> functionTimers;
     ActivityTimeAccumulator activityStats;
     IProbeManager *probeManager = NULL;
-    unsigned processed;
+    unsigned processed = 0;
     unsigned numStarts = 0;
     unsigned activityId;
     activityState state;
@@ -1013,7 +1013,6 @@ public:
         sourceIdx = 0;
         inputStream = NULL;
         meta.set(basehelper.queryOutputMeta());
-        processed = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
@@ -1034,7 +1033,6 @@ public:
         inputStream = NULL;
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
-        processed = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = false;
@@ -1158,12 +1156,6 @@ public:
         }
         return timer;
     }
-    void mergeStrandStats(unsigned strandProcessed, const ActivityTimeAccumulator & strandCycles)
-    {
-        CriticalBlock cb(statscrit);
-        processed += strandProcessed;
-        activityStats.merge(strandCycles);
-    }
     inline void ensureRowAllocator()
     {
         if (!rowAllocator) 
@@ -1246,7 +1238,7 @@ public:
 
         activityStats.addStatistics(merged);
         merged.mergeStatistic(StCycleLocalExecuteCycles, queryLocalCycles());
-        merged.mergeStatistic(StNumRowsProcessed, processed);
+        merged.mergeStatistic(StNumRowsProcessed, getTotalRowsProcessed());
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -1442,7 +1434,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = activityStats.totalCycles;
+        __int64 ret = queryTotalCycles();
         if (input) ret -= input->queryTotalCycles();
         if (ret < 0) 
             ret = 0;
@@ -1720,7 +1712,12 @@ public:
 
     virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
     {
-        addEdgeStats(statsBuilder, 0, numStarts, processed, 1);
+        addEdgeStats(statsBuilder, 0, numStarts, getTotalRowsProcessed(), 1);
+    }
+
+    virtual unsigned getTotalRowsProcessed() const
+    {
+        return processed;
     }
 
     inline ThorActivityKind getKind() const
@@ -1751,7 +1748,7 @@ public:
         }
 
         if (collectFactoryStatistics)
-            factory->noteProcessed(oid, processed);
+            factory->noteProcessed(oid, _processed);
     }
 
     virtual void noteLibrary(IQueryFactory *library) override
@@ -1899,9 +1896,7 @@ public:
     }
     virtual void start()
     {
-        processed = 0;
-        numProcessedLastGroup = 0;
-        activityStats.reset();
+        numProcessedLastGroup = processed;
     }
     virtual void stop()
     {
@@ -1911,10 +1906,6 @@ public:
                 inputStream->stop();
 
             parent.stop();
-            //It would be preferrable to move activityStats (+processed?) to gatherStats(), but because of
-            //the way firstRow is associated with startCycles it would require an extra parameter
-            //which is not consistent with the other gatherStats() calls, or extra logic in the stats classes.
-            parent.mergeStrandStats(processed, activityStats);
         }
         stopped = true;
     }
@@ -1930,13 +1921,16 @@ public:
     inline void requestAbort() { abortRequested.store(true, std::memory_order_relaxed); }
     inline bool isAborting() { return abortRequested.load(std::memory_order_relaxed); }
 
-    void gatherStats(CRuntimeStatisticCollection & mergedStats) const
+    void gatherStrandStats(CRuntimeStatisticCollection & mergedStats) const
     {
+        activityStats.addStatistics(mergedStats);
         mergedStats.merge(stats);
         if (rowAllocator)
             rowAllocator->gatherStats(mergedStats);
     }
     const ActivityTimeAccumulator&  queryTimings() const { return activityStats; }
+
+    unsigned getRowsProcessed() const { return processed; }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1958,10 +1952,8 @@ public:
 
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        //MORE: Could call gatherStats here for child strands and avoid repeated merge and reset of the strand stats
-        //but calc local time would need to extract from merged
-        //ForEachItemIn(i, strands)
-        //    strands.item(i).gatherStats(merged);
+        ForEachItemIn(i, strands)
+            strands.item(i).gatherStrandStats(merged);
 
         CRoxieServerActivity::gatherStats(merged);
     }
@@ -1997,6 +1989,15 @@ public:
         if (!active)
             CRoxieServerActivity::stop();
     }
+
+    virtual unsigned __int64 queryTotalCycles() const override
+    {
+        unsigned __int64 total = 0;
+        ForEachItemIn(idx, strands)
+            total += strands.item(idx).queryTimings().totalCycles;
+        return total;
+    }
+
 
     void requestAbort()
     {
@@ -2125,7 +2126,7 @@ public:
 
     virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
     {
-        addEdgeStats(statsBuilder, 0, numStarts, processed, strands.ordinality());
+        addEdgeStats(statsBuilder, 0, numStarts, getTotalRowsProcessed(), strands.ordinality());
     }
 
 protected:
@@ -2137,6 +2138,14 @@ protected:
             strands.item(idx).start();
             active++;
         }
+    }
+
+    virtual unsigned getTotalRowsProcessed() const override
+    {
+        unsigned total = 0;
+        ForEachItemIn(idx, strands)
+            total += strands.item(idx).getRowsProcessed();
+        return total;
     }
 };
 
