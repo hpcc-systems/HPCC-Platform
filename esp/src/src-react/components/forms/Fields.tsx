@@ -444,12 +444,12 @@ export const EsdlEspProcessesTextField: React.FunctionComponent<EsdlEspProcesses
     React.useEffect(() => {
         WsESDLConfig.ListESDLBindings({}).then(({ ListESDLBindingsResponse }) => {
             setEspProcesses(
-                ListESDLBindingsResponse.EspProcesses.EspProcess.map(proc => {
+                ListESDLBindingsResponse?.EspProcesses?.EspProcess?.map(proc => {
                     return {
                         key: proc.Name,
                         text: proc.Name
                     };
-                })
+                }) ?? []
             );
         });
     }, []);
@@ -466,12 +466,12 @@ export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTe
     React.useEffect(() => {
         WsESDLConfig.ListESDLDefinitions({}).then(({ ListESDLDefinitionsResponse }) => {
             setDefinitions(
-                ListESDLDefinitionsResponse.Definitions.Definition.map(defn => {
+                ListESDLDefinitionsResponse?.Definitions?.Definition?.map(defn => {
                     return {
                         key: defn.Id,
                         text: defn.Id
                     };
-                })
+                }) ?? []
             );
         });
     }, []);

@@ -5,7 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import * as parser from "dojox/xml/parser";
 import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
+import { Memory } from "src/store/Memory";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";

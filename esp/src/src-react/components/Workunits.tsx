@@ -3,7 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, 
 import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
 import * as domClass from "dojo/dom-class";
-import * as ESPWorkunit from "src/ESPWorkunit";
+import { CreateWUQueryStore, Get, WUQueryStore } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
@@ -65,7 +65,7 @@ const defaultUIState = {
 
 interface WorkunitsProps {
     filter?: object;
-    store?: any;
+    store?: WUQueryStore;
 }
 
 const emptyFilter = {};
@@ -87,7 +87,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [filter]);
 
     const gridStore = React.useMemo(() => {
-        return store ? store : ESPWorkunit.CreateWUQueryStore({});
+        return store ? store : CreateWUQueryStore();
     }, [store]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
@@ -115,7 +115,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             Wuid: {
                 label: nlsHPCC.WUID, width: 180,
                 formatter: function (Wuid, row) {
-                    const wu = ESPWorkunit.Get(Wuid);
+                    const wu = Get(Wuid);
                     return <>
                         <Image src={wu.getStateImage()} />
                         &nbsp;

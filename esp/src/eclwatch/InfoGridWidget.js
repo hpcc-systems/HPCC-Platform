@@ -6,7 +6,7 @@ define([
     "dojo/dom",
     "dojo/dom-construct",
     "dojo/dom-class",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
     "dojo/topic",
     "dojo/has",

@@ -7,7 +7,7 @@ define([
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/dom-form",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
     "dojo/promise/all",
 

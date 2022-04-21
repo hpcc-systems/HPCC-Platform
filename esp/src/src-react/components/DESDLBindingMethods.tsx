@@ -3,7 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, M
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
-import { AlphaNumSortMemory } from "src/Memory";
+import { MemoryTreeStore } from "src/store/Tree";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsESDLConfig from "src/WsESDLConfig";
 import { useGrid } from "../hooks/grid";
@@ -11,23 +11,6 @@ import { ShortVerticalDivider } from "./Common";
 import { editor, tree } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/ESDLBindingMethods.tsx");
-
-class TreeStore extends AlphaNumSortMemory {
-    mayHaveChildren(item) {
-        if (!item.__hpcc_parentName) {
-            return true;
-        }
-        return false;
-    }
-
-    getChildren(parent, options) {
-        return this.query({ __hpcc_parentName: parent.__hpcc_id }, options);
-    }
-
-    appendChild(child) {
-        this.data.__hpcc_parentName.push(child);
-    }
-}
 
 interface DESDLBindingMethodsProps {
     name: string
@@ -43,7 +26,7 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
     const [messageBarType, setMessageBarType] = React.useState<MessageBarType>();
 
     //  Grid ---
-    const store = useConst(new Observable(new TreeStore("__hpcc_id", { Name: true })));
+    const store = useConst(new Observable(new MemoryTreeStore("__hpcc_id", "__hpcc_parentName", { Name: true })));
     const { Grid, refreshTable } = useGrid({
         store,
         query: { __hpcc_parentName: null },

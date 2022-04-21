@@ -3,7 +3,7 @@ import * as ESPWorkunit from "src/ESPWorkunit";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as ESPQuery from "src/ESPQuery";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 import * as WsWorkunits from "./WsWorkunits";
 import * as FileSpray from "./FileSpray";
 import * as WsDfu from "./WsDfu";
@@ -28,11 +28,11 @@ export class ESPSearch {
     protected _rowID = 0;
     protected _searchText: string;
 
-    store = Observable(new Memory());
-    eclStore = Observable(new Memory("Wuid"));
-    dfuStore = Observable(new Memory("ID"));
-    fileStore = Observable(new Memory("__hpcc_id"));
-    queryStore = Observable(new Memory("__hpcc_id"));
+    store = new Observable(new Memory("storeID"));
+    eclStore = new Observable(new Memory("Wuid"));
+    dfuStore = new Observable(new Memory("ID"));
+    fileStore = new Observable(new Memory("__hpcc_id"));
+    queryStore = new Observable(new Memory("__hpcc_id"));
 
     constructor(private update: () => void) {
     }

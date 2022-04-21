@@ -9,7 +9,7 @@ import * as parser from "dojox/xml/parser";
 
 import { ESPBase } from "./ESPBase";
 import * as ESPRequest from "./ESPRequest";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 
 class DiskUsageStore extends Memory {
 

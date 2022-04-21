@@ -3,7 +3,7 @@ define([
     "dojo/_base/lang",
     "src/nlsHPCC",
     "dojo/_base/array",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
     "dojo/on",
     "dojo/promise/all",

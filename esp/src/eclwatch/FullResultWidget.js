@@ -4,7 +4,7 @@ define([
     "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/request/iframe",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
 
     "dijit/registry",

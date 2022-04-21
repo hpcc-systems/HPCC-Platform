@@ -3,7 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
+import { Memory } from "src/store/Memory";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";

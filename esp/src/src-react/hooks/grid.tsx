@@ -1,8 +1,7 @@
 import * as React from "react";
 import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IStackProps, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { AlphaNumSortMemory, QueryRequest, QuerySortItem } from "src/Memory";
-import * as ESPRequest from "src/ESPRequest";
+import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../components/Common";
 import { DojoGrid } from "../components/DojoGrid";
@@ -241,7 +240,7 @@ export function useFluentGrid({
     filename
 }: useFluentGridProps): useFluentStoreGridResponse {
 
-    const constStore = useConst(new AlphaNumSortMemory(primaryID, alphaNumColumns));
+    const constStore = useConst(new Memory(primaryID, alphaNumColumns));
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store: constStore, columns, sort, filename, start: 0, count: data.length });
 
     React.useEffect(() => {
@@ -254,7 +253,7 @@ export function useFluentGrid({
 
 interface useFluentPagedGridProps {
     persistID: string,
-    store: ESPRequest.Store,
+    store: BaseStore<any, any>,
     query?: QueryRequest,
     sort?: QuerySortItem,
     columns: object,
