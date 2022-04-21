@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { ESPExceptions, isExceptions } from "@hpcc-js/comms";
-import { Observable, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction } from "@hpcc-js/util";
+import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction, Message } from "@hpcc-js/util";
 
 const logger = scopedLogger("../util/logging.ts");
 
@@ -18,7 +18,7 @@ export class ECLWatchLogger implements Writer {
 
     protected _origWriter: Writer;
     protected _log: LogEntry[] = [];
-    protected _observable = new Observable("added");
+    protected _dispatch = new Dispatch();
 
     static init(): ECLWatchLogger {
         if (!g_logger) {
@@ -50,7 +50,7 @@ export class ECLWatchLogger implements Writer {
     }
 
     listen(callback: CallbackFunction): () => void {
-        const added = this._observable.addObserver("added", val => callback("added", val));
+        const added = this._dispatch.attach(val => callback("added", val));
         return () => {
             added.release();
         };
@@ -60,7 +60,7 @@ export class ECLWatchLogger implements Writer {
         this._origWriter.write(dateTime, level, id, message);
         const row = { dateTime, level, id, message };
         this._log.push(row);
-        this._observable.dispatchEvent("added", row);
+        this._dispatch.post(new Message());
     }
 
     rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
@@ -86,7 +86,7 @@ export function useECLWatchLogger(): [Readonly<LogEntry[]>, number] {
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
 
     React.useEffect(() => {
-        return eclLogger?.listen((eventID, row) => {
+        return eclLogger?.listen(() => {
             setLastUpdate(Date.now());
         });
     }, [eclLogger]);
