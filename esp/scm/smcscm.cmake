@@ -31,7 +31,6 @@ set ( ESPSCM_SRCS
       ws_dfu_common.ecm
       ws_dfuXref.ecm
       ws_fs.ecm
-      ws_roxie.ecm
       ws_smc.ecm
       ws_topology.ecm
       ws_workunits_struct.ecm

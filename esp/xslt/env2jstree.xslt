@@ -170,20 +170,3 @@
 
 
 </xsl:stylesheet>
-
-
-<!--EspNavigationData viewType="tree">
- <Folder name="Attribute Servers" tooltip="Attribute Servers">
-  <DynamicFolder name="local" params="type=repository&amp;subtype=as&amp;name=local&amp;netAddress=http://2wd66:8145" tooltip="local"/>
- </Folder>
- <Folder name="Roxie Clusters" tooltip="Roxie Clusters">
-  <DynamicFolder name="linux_dev" params="type=repository&amp;subtype=rc&amp;name=linux_dev&amp;netAddress=10.150.192.1:9876" tooltip="linux_dev"/>
- </Folder>
- <Menu name="rcmenu1">
-  <MenuItem action="/ws_roxieconfig/NavMenuEvent" name="DeployMultiple" tooltip="Deploy"/>
- </Menu>
- <Menu name="rcmenu2">
-  <MenuItem action="/ws_roxieconfig/NavMenuEvent" name="DeployMultiple" tooltip="Deploy"/>
-  <MenuItem action="/ws_roxieconfig/NavMenuEvent" name="GetVersion" tooltip="Get Version"/>
- </Menu>
-</EspNavigationData-->
