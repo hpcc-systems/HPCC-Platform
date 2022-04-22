@@ -95,6 +95,7 @@ class StrandOptions;
 interface IOrderedCallbackCollection;
 interface IFinalRoxieInput : extends IInputBase
 {
+    virtual bool isSimpleSink() const = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void reset() = 0;
 
@@ -149,6 +150,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual IFinalRoxieInput *queryInput(unsigned idx) const = 0;
     virtual void execute(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void onCreate(IHThorArg *colocalArg) = 0;
+    virtual bool isSimpleSink() const = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual IStrandJunction *getOutputStreams(IRoxieAgentContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks) = 0;  // Use StrandFlags values for flags
 

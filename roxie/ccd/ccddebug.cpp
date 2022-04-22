@@ -141,6 +141,10 @@ public:
     {
         return *this;
     }
+    virtual bool isSimpleSink() const override
+    {
+        return in->isSimpleSink();
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         // NOTE: totalRowCount/maxRowSize not reset, as we want them cumulative when working in a child query.

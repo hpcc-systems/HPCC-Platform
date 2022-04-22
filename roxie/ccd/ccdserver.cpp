@@ -878,7 +878,6 @@ public:
         //only a sink if a root activity
         return isRoot && !internalSpillAllUsesWithinGraph;
     }
-
     virtual void gatherEdgeStats(IStatisticGatherer &builder, int channel, bool reset) const override
     {
         // There is no meaningful info to return along the dependency edge - we don't detect how many times the value has been read from the context
@@ -1410,6 +1409,18 @@ public:
         if (collectFactoryStatistics)
             factory->noteStarted();
         startJunction(junction);
+    }
+    
+    virtual bool isSimpleSink() const override 
+    {
+        if (!dependencies.empty())
+        {
+            // DBGLOG("Not simple because has dependencies");
+            return false;
+        }
+        if (input)
+            return input->isSimpleSink();
+        return true;
     }
 
     void executeDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
@@ -2556,7 +2567,11 @@ public:
     {
         return puller.queryInput()->queryIndexReadActivity();
     }
-
+    virtual bool isSimpleSink() const override
+    {
+        // DBGLOG("Not simple because readahead");
+        return false;
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
@@ -2841,6 +2856,16 @@ public:
         if (localCycles < 0)
             localCycles = 0;
         return localCycles;
+    }
+
+    virtual bool isSimpleSink() const override
+    {
+        if (!CRoxieServerActivity::isSimpleSink())
+            return false;
+        for (unsigned i = 0; i < numInputs; i++)
+            if (!inputArray[i]->isSimpleSink())
+                return false;
+        return true;
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -4388,7 +4413,10 @@ public:
         parentExtractSize = _parentExtractSize;
         parentExtract = _parentExtract;
     }
-
+    virtual bool isSimpleSink() const
+    {
+        return activity.isSimpleSink(); // MORE - false might be another option!
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
 #ifdef TRACE_STARTSTOP
@@ -6290,6 +6318,10 @@ public:
     {
         return input->queryIndexReadActivity();
     }
+    virtual bool isSimpleSink() const
+    {
+        return input->isSimpleSink();
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock procedure(cs);
@@ -6368,6 +6400,7 @@ public:
     }
 
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
+    virtual bool isSimpleSink() const { return true; }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
     virtual void stop() { }
     virtual void reset() { }
@@ -8951,7 +8984,11 @@ public:
         {
             return parent->queryOutputMeta();
         }
-
+        virtual bool isSimpleSink() const override
+        {
+            // DBGLOG("Not simple because splitter");
+            return parent->isSimpleSink();  // Debateable
+        }
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             // NOTE: it is tempting to move the init() of all output adaptors here. However that is not a good idea, 
@@ -27366,6 +27403,69 @@ public:
     }
 };
 
+class CSequentialSinkSet : public CRoxieServerActivity
+{
+    IRoxieServerActivityCopyArray subsinks;
+public:
+    CSequentialSinkSet(IRoxieAgentContext *_ctx) : CRoxieServerActivity(_ctx, *new CPseudoArg) {}
+    ~CSequentialSinkSet()
+    {
+
+    }
+    
+    virtual const void *nextRow() override
+    {
+        throwUnexpected(); // I am nobody's input
+    }
+    
+    void addSink(IRoxieServerActivity &activity)
+    {
+        subsinks.append(activity);
+    }
+    virtual void execute(unsigned parentExtractSize, const byte *parentExtract) override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.execute(parentExtractSize, parentExtract);
+        }
+    }
+    virtual void connectInputStreams(bool consumerOrdered) override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.connectInputStreams(consumerOrdered);
+        }
+    }
+
+    virtual void stop() override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.stop();
+        }
+    }
+
+    virtual void abort() override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.abort();
+        }
+    }
+
+    virtual void reset() override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.reset();
+        }    
+    }
+};
 
 class CActivityGraph : implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph, public CInterface
 {
@@ -27527,6 +27627,7 @@ protected:
     IArrayOf<IRoxieServerActivity> activities;
     IArrayOf<IRoxieProbe> probes;
     CIArrayOf<SinkThread> threads;
+    Owned<CSequentialSinkSet> simpleSinks;
     IRoxieServerActivityCopyArray sinks;
     StringAttr graphName;
     Owned<CGraphResults> results;
@@ -27587,12 +27688,6 @@ public:
             IRoxieServerActivityFactory &donor = graphDefinition.serverItem(idx);
             IRoxieServerActivity &activity = *donor.createActivity(_ctx, probeManager);
             activities.append(activity);
-            if (donor.isSink())
-            {
-                sinks.append(activity);
-                if (probeManager)
-                    probeManager->noteSink(&activity);
-            }
         }
         ForEachItemIn(idx1, graphDefinition)
         {
@@ -27623,9 +27718,30 @@ public:
                     probeManager->noteDependency( &dependencySourceActivity, dependencySourceIndex, dependencyControlId, dependencyEdgeIds.item(idx2), &activity);
             }
         }
-        ForEachItemIn(idx2, sinks)
+        ForEachItemIn(idx2, graphDefinition)
         {
-            IRoxieServerActivity &sink = sinks.item(idx2);
+            IRoxieServerActivityFactory &donor = graphDefinition.serverItem(idx2);
+            if (donor.isSink())
+            {
+                IRoxieServerActivity &activity = activities.item(idx2);
+                if (activity.isSimpleSink())
+                {
+                    if (!simpleSinks)
+                    {
+                        simpleSinks.setown(new CSequentialSinkSet(_ctx));
+                        sinks.append(*simpleSinks);
+                    }
+                    simpleSinks->addSink(activity);
+                }
+                else
+                    sinks.append(activity);
+                if (probeManager)
+                    probeManager->noteSink(&activity);
+            }
+        }
+        ForEachItemIn(idx3, sinks)
+        {
+            IRoxieServerActivity &sink = sinks.item(idx3);
             sink.connectInputStreams(true);
         }
     }
