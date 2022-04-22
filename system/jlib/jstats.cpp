@@ -917,6 +917,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(Dependencies) },
     { TIMESTAT(Start) },
     { CYCLESTAT(Start) },
+    { ENUMSTAT(ActivityCharacteristics) },
 };
 
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?

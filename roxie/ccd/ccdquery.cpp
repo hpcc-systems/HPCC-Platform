@@ -345,6 +345,9 @@ QueryOptions::QueryOptions()
     statsToWorkunit = false; // No global default or workunit setting for this
     failOnLeaks = alwaysFailOnLeaks;
     collectFactoryStatistics = defaultCollectFactoryStatistics;
+    executeDependenciesSequentially = defaultExecuteDependenciesSequentially;
+    startInputsSequentially = defaultStartInputsSequentially;
+    traceActivityCharacteristics = ::traceActivityCharacteristics;
     parallelWorkflow = false;
     sinkMode = defaultSinkMode;
     numWorkflowThreads = 1;
@@ -380,6 +383,9 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     allSortsMaySpill = other.allSortsMaySpill;
     failOnLeaks = other.failOnLeaks;
     collectFactoryStatistics = other.collectFactoryStatistics;
+    executeDependenciesSequentially = other.executeDependenciesSequentially;
+    startInputsSequentially = other.startInputsSequentially;
+    traceActivityCharacteristics = other.traceActivityCharacteristics;
 
     parallelWorkflow = other.parallelWorkflow;
     sinkMode = other.sinkMode;
@@ -426,6 +432,9 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(failOnLeaks, wu, "failOnLeaks");
     updateFromWorkUnit(noSeekBuildIndex, wu, "noSeekBuildIndex");
     updateFromWorkUnit(collectFactoryStatistics, wu, "collectFactoryStatistics");
+    updateFromWorkUnit(executeDependenciesSequentially, wu, "executeDependenciesSequentially");
+    updateFromWorkUnit(startInputsSequentially, wu, "startInputsSequentially");
+    updateFromWorkUnit(traceActivityCharacteristics, wu, "traceActivityCharacteristics");
 
     updateFromWorkUnit(parallelWorkflow, wu, "parallelWorkflow");
     updateFromWorkUnit(sinkMode, wu, "sinkMode");
@@ -498,7 +507,10 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
         updateFromContext(failOnLeaks, ctx, "@failOnLeaks", "_FailOnLeaks");
         updateFromContext(collectFactoryStatistics, ctx, "@collectFactoryStatistics", "_CollectFactoryStatistics");
-
+        updateFromContext(executeDependenciesSequentially, ctx, "@executeDependenciesSequentially", "_ExecuteDependenciesSequentially");
+        updateFromContext(startInputsSequentially, ctx, "@startInputsSequentially", "_StartInputsSequentially");
+        updateFromContext(traceActivityCharacteristics, ctx, "@traceActivityCharacteristics", "_TraceActivityCharacteristics");
+        
         updateFromContext(parallelWorkflow, ctx, "@parallelWorkflow", "_parallelWorkflow");
         updateFromContext(numWorkflowThreads, ctx, "@numWorkflowThreads", "_numWorkflowThreads");
         updateFromContext(statsToWorkunit, ctx, "@statsToWorkunit", "_statsToWorkunit");

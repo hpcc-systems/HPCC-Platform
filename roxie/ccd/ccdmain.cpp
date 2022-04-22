@@ -83,6 +83,7 @@ unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
+bool traceActivityCharacteristics = false;
 unsigned actResetLogPeriod = 300;
 bool traceRoxiePackets = false;
 bool delaySubchannelPackets = false;    // For debugging/testing purposes only
@@ -137,12 +138,14 @@ bool preloadOnceData;
 bool reloadRetriesFailed;
 bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
+bool defaultExecuteDependenciesSequentially = false;
+bool defaultStartInputsSequentially = false;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelQueryLoadThreads = 0;               // Number of threads to use for parallel loading of queries. 0 means don't (may cause CPU starvation on other vms)
 bool alwaysFailOnLeaks = false;
 bool ignoreFileDateMismatches = false;
 int fileTimeFuzzySeconds = 0;
-SinkMode defaultSinkMode = SinkMode::Parallel;
+SinkMode defaultSinkMode = SinkMode::Automatic;
 unsigned continuationCompressThreshold = 1024;
 
 bool useOldTopology = false;
@@ -1112,6 +1115,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setMemoryOptions(topology);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
+        traceActivityCharacteristics = topology->getPropBool("@traceActivityCharacteristics", traceActivityCharacteristics);
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
@@ -1141,6 +1145,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
         mergeAgentStatistics = topology->getPropBool("@mergeAgentStatistics", topology->getPropBool("@mergeSlaveStatistics", true));  // legacy name
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
+        defaultExecuteDependenciesSequentially = topology->getPropBool("@executeDependenciesSequentially", defaultExecuteDependenciesSequentially);
+        defaultStartInputsSequentially = topology->getPropBool("@startInputsSequentially", defaultStartInputsSequentially);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
         parallelQueryLoadThreads = topology->getPropInt("@parallelQueryLoadThreads", parallelQueryLoadThreads);
         if (!parallelQueryLoadThreads)
