@@ -318,7 +318,7 @@ interface IDFUprogress: extends IConstDFUprogress
     virtual void setProgress(unsigned percentDone, unsigned secsLeft, const char * timeLeft,
                              unsigned __int64 scaledDone, unsigned __int64 scaledTotal, const char * scale,
                              unsigned kbPerSecondAve, unsigned kbPerSecondRate,
-                             unsigned slavesDone, bool replicating)=0;
+                             unsigned slavesDone, bool replicating, unsigned __int64 numReads, unsigned __int64 numWrites)=0;
     virtual void setDone(const char * timeTaken, unsigned kbPerSecond, bool set100pc) = 0;
     virtual void setState(DFUstate state) = 0;
     virtual void setTotalNodes(unsigned val) = 0;

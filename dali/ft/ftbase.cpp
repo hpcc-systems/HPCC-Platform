@@ -540,6 +540,8 @@ void OutputProgress::reset()
     outputLength = 0;
     hasCompressed = false;
     compressedPartSize = 0;
+    numWrites = 0;
+    numReads = 0;
 }
 
 MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
@@ -566,6 +568,9 @@ MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned vers
             in.read(hasCompressed);
             if (hasCompressed)
                 in.read(compressedPartSize);
+            break;
+        case 2:
+            in.readPacked(numWrites).readPacked(numReads);
             break;
         }
     }
@@ -596,8 +601,11 @@ MemoryBuffer & OutputProgress::serializeExtra(MemoryBuffer & out, unsigned versi
     {
     case 1:
         out.append(hasCompressed);
-        if (hasCompressed )
+        if (hasCompressed)
             out.append(compressedPartSize);
+        break;
+    case 2:
+        out.appendPacked(numWrites).appendPacked(numReads);
         break;
     }
     return out;
@@ -615,6 +623,8 @@ void OutputProgress::set(const OutputProgress & other)
     resultTime = other.resultTime;
     hasCompressed = other.hasCompressed;
     compressedPartSize = other.compressedPartSize;
+    numWrites = other.numWrites;
+    numReads = other.numReads;
 }
 
 void OutputProgress::restore(IPropertyTree * tree)
@@ -629,6 +639,8 @@ void OutputProgress::restore(IPropertyTree * tree)
     resultTime.setString(tree->queryProp("@modified"));
     hasCompressed = tree->getPropBool("@compressed");
     compressedPartSize = tree->getPropInt64("@compressedPartSize");
+    numWrites = tree->getPropInt64("@numWrites");
+    numReads = tree->getPropInt64("@numReads");
 }
 
 void OutputProgress::save(IPropertyTree * tree)
@@ -647,6 +659,8 @@ void OutputProgress::save(IPropertyTree * tree)
     }
     tree->setPropInt("@compressed", hasCompressed);
     tree->setPropInt64("@compressedPartSize", compressedPartSize);
+    tree->setPropInt64("@numWrites", numWrites);
+    tree->setPropInt64("@numReads", numReads);
 }
 
 
