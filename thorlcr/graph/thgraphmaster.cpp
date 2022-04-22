@@ -2421,11 +2421,6 @@ void CMasterGraph::execute(size32_t _parentExtractSz, const byte *parentExtract,
 
 void CMasterGraph::start()
 {
-    if (!queryOwner())
-    {
-        if (globals->getPropBool("@watchdogProgressEnabled"))
-            queryJobManager().queryDeMonServer()->startGraph(this);
-    }
     Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach (*iter)
         iter->query().queryActivity()->startProcess();
@@ -2634,6 +2629,11 @@ void CMasterGraph::sendGraph()
 bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
     GraphPrintLog("Processing graph");
+    if (!queryOwner())
+    {
+        if (globals->getPropBool("@watchdogProgressEnabled"))
+            queryJobManager().queryDeMonServer()->startGraph(this);
+    }
     if (syncInitData())
     {
         sendActivityInitData(); // has to be done at least once
