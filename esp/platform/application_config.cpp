@@ -202,12 +202,12 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
         legacyAuthenticate->addPropTree("Setting", LINK(&settings->query()));
 }
 
-void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
+void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, const char *wsdlAddress, int seq)
 {
     VStringBuffer xpath("binding_plugins/@%s", service);
     const char *binding_plugin = app->queryProp(xpath);
 
-    VStringBuffer bindingXml("<EspBinding name='%s_binding' service='%s_service' protocol='%s' type='%s_http' plugin='%s' netAddress='%s' port='%d'/>", service, service, protocol, service, binding_plugin, netAddress, port);
+    VStringBuffer bindingXml("<EspBinding name='%s_binding' service='%s_service' protocol='%s' type='%s_http' plugin='%s' netAddress='%s' wsdlServiceAddress='%s' port='%d'/>", service, service, protocol, service, binding_plugin, netAddress, wsdlAddress, port);
     IPropertyTree *bindingEntry = legacyEsp->addPropTree("EspBinding", createPTreeFromXMLString(bindingXml));
     if (seq==0)
         bindingEntry->setProp("@defaultBinding", "true");
@@ -248,7 +248,7 @@ static void mergeServicePTree(IPropertyTree *target, IPropertyTree *toMerge)
     }
 }
 
-void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *application, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
+void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *application, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, const char *wsdlAddress, int seq)
 {
     VStringBuffer plugin_xpath("service_plugins/@%s", service);
     const char *service_plugin = app->queryProp(plugin_xpath);
@@ -261,7 +261,7 @@ void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *applic
     if (serviceConfig && serviceEntry)
         mergeServicePTree(serviceEntry, serviceConfig);
 
-    bindService(legacyEsp, app, service, protocol, netAddress, port, bindAuth, seq);
+    bindService(legacyEsp, app, service, protocol, netAddress, port, bindAuth, wsdlAddress, seq);
 }
 
 bool addProtocol(IPropertyTree *legacyEsp, IPropertyTree *app)
@@ -310,9 +310,12 @@ void addServices(IPropertyTree *legacyEsp, IPropertyTree *appEsp, const char *ap
     const char *netAddress = appEsp->queryProp("@netAddress");
     if (!netAddress)
         netAddress = ".";
+    const char *wsdlAddress = appEsp->queryProp("service/@wsdlAddress");
+    if (!wsdlAddress)
+        wsdlAddress = "";
     int seq=0;
     ForEach(*services)
-        addService(legacyEsp, appEsp, application, services->query().queryProp("."), tls ? "https" : "http", netAddress, port, auth, seq++);
+        addService(legacyEsp, appEsp, application, services->query().queryProp("."), tls ? "https" : "http", netAddress, port, auth, wsdlAddress, seq++);
 }
 
 void addBindingToServiceResource(IPropertyTree *service, const char *name, const char *serviceType, unsigned port,
