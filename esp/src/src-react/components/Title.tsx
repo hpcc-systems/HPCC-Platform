@@ -112,7 +112,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     }
                 },
                 { key: "divider_3", itemType: ContextualMenuItemType.Divider },
-                { key: "config", href: "#/config", text: nlsHPCC.Configuration },
+                { key: "config", href: "#/topology/configuration", text: nlsHPCC.Configuration },
                 { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
             ],
             directionalHintFixed: true

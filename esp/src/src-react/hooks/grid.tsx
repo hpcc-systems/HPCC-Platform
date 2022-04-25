@@ -154,7 +154,7 @@ function useFluentStoreGrid({
     filename
 }: useFluentStoreGridProps): useFluentStoreGridResponse {
 
-    const memoizedColumns = useDeepMemo(() => ({ ...columns }), [columns], [columns]);
+    const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
     const [selection, setSelection] = React.useState([]);
     const [items, setItems] = React.useState<any[]>([]);
