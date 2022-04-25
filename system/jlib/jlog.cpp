@@ -3426,6 +3426,11 @@ ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId)
     return new FieldLogAccessFilter(jobId, LOGACCESS_FILTER_jobid);
 }
 
+ILogAccessFilter * getColumnLogAccessFilter(const char * columnName, const char * value)
+{
+    return new ColumnLogAccessFilter(columnName, value, LOGACCESS_FILTER_column);
+}
+
 ILogAccessFilter * getComponentLogAccessFilter(const char * component)
 {
     return new FieldLogAccessFilter(component, LOGACCESS_FILTER_component);
@@ -3449,11 +3454,12 @@ ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessF
 ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type)
 {
     ILogAccessFilter * ret = new BinaryLogAccessFilter(arg1, arg2, type);
-    arg1->Release();
-    arg2->Release();
+    if (arg1)
+        arg1->Release();
+    if (arg2)
+        arg2->Release();
     return ret;
 }
-
 
 // LOG ACCESS HELPER METHODS
 

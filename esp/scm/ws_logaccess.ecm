@@ -23,7 +23,8 @@ ESPenum LogAccessType : int
     ByLogType(3, "ByLogType"),
     ByTargetAudience(4, "ByTargetAudience"),
     BySourceInstance(5, "BySourceInstance"),
-    BySourceNode(6, "BySourceNode")
+    BySourceNode(6, "BySourceNode"),
+    ByFieldName(7, "ByFieldName")
 };
 
 ESPenum LogAccessLogFormat : int
@@ -56,45 +57,78 @@ ESPResponse GetLogAccessInfoResponse
     string RemoteLogManagerType;
     string RemoteLogManagerConnectionString;
 };
+
+ESPenum LogAccessFilterOperator : int
+{
+    NONE(0, "NONE"),
+    AND(1, "AND"),
+    OR(2, "OR")
+};
+
 /*
 * Provides mechanism to query log entries
 *
-* Caller can query by JobId, component, log event type, or target audience by providing the appropriate
+* Caller can query by JobId, component, log event type, target audience, source instance, or host by providing the appropriate
 * enumerated value in the LogCategory field, as well as the targeted value in the SearchByValue field.
+* Caller can also query by field name directly by choosing the 'ByFieldName' option and providing the field name, and desired filter value.
 *
 * SearchbyValue is optional if LogCategory == ALL
 *
+* SearchbyValue contains value used to identify target log entries.
+* Limited to values associated with the the LogCategory choice.
+*
+* If searching by "ByJobIdID", the SearchByValue should contain the jobid of interest
+* If searching by "ByComponent", the SearchByValue should contain the component of interest
+* If searching by "ByLogType", the SearchByValue should contain the 3 letter code associated with the log type of interest.
+* valid values at time of writing are:
+*    DIS - Disaster
+*    ERR - Error
+*    WRN - Warning
+*    INF - Information
+*    PRO - Progress
+*    MET - Metric
+*
+*If searching by "ByTargetAudience", the SearchByValue should contain the 3 letter code associated with the target audience of interest.
+* valid values at time of writing are:
+*    OPR - Operator
+*    USR - User
+*    PRO - Programmer
+*    ADT - Audit
+*If searching by "BySourceInstance", the SearchByValue should contain the instance of interest
+*If searching by "BySourceNode", the SearchByValue should contain the node of interest
+*If searching by "ByFieldName", the SearchByValue should contain the field value of interest, and the SearchField 
+* should be populated.
 * Caller should restrict the query to target a specific time range specified in the Range field.
-* By default, the first 100 log entries encountered are returned. Caller to pagenize using the
+* By default, the first 100 log entries encountered are returned. Caller to paginate using the
 * LogLineStartFrom field (specifies as zero-indexed start index) and the LogLineLimit (specifies the maximum
 * number of log entries to be returned)
 * Caller can specify which log columns should be reported via the Columns field, all available columns returned by default.
 *
 * The report format can be specified via the Format field: JSON|XML|CSV
 */
-ESPRequest GetLogsRequest
+ESPStruct LogFilter
 {
     ESPenum LogAccessType LogCategory;
-    string SearchByValue; //Value used to identify target log entries.
-                          //Limited to values associated with the the LogCategory choice.
-                          //
-                          //If searching by "ByJobIdID", the SearchByValue should contain the jobid of interest
-                          //If searching by "ByComponent", the SearchByValue should contain the component of interest
-                          //If searching by "ByLogType", the SearchByValue should contain the 3 letter code associated with the log type of interest.
-                          // valid values at time of writing are:
-                          //    DIS - Disaster
-                          //    ERR - Error
-                          //    WRN - Warning
-                          //    INF - Information
-                          //    PRO - Progress
-                          //    MET - Metric
-                          //
-                          //If searching by "ByTargetAudience", the SearchByValue should contain the 3 letter code associated with the target audience of interest.
-                          // valid values at time of writing are:
-                          //    OPR - Operator
-                          //    USR - User
-                          //    PRO - Programmer
-                          //    ADT - Audit
+    string SearchByValue; 
+    string SearchField;
+};
+
+ESPStruct BinaryLogFilter
+{
+    ESPStruct LogFilter leftFilter;
+    ESParray<ESPstruct BinaryLogFilter> leftBinaryFilter;
+
+    ESPenum LogAccessFilterOperator Operator;
+
+    ESPStruct LogFilter rightFilter;
+    ESParray<ESPstruct BinaryLogFilter> rightBinaryFilter;
+};
+
+ESPRequest GetLogsRequest
+{
+    [min_ver("1.02")] ESPStruct BinaryLogFilter Filter;
+    [depr_ver("1.02")] ESPenum LogAccessType LogCategory;
+    [depr_ver("1.02")] string SearchByValue; //Value used to identify target log entries.
     ESPStruct TimeRange Range;
     unsigned LogLineLimit(100);
     int64 LogLineStartFrom(0);
@@ -108,7 +142,7 @@ ESPResponse GetLogsResponse
     string LogLines;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.01"), default_client_version("1.01"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.02"), default_client_version("1.02"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);

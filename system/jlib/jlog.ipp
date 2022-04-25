@@ -863,7 +863,7 @@ class CLogAccessFilter : public CInterfaceOf<ILogAccessFilter> {};
 class FieldLogAccessFilter : public CLogAccessFilter
 {
 public:
-    FieldLogAccessFilter(const char * _value, LogAccessFilterType _filterType) : value(_value), type(_filterType) {}
+    FieldLogAccessFilter(const char * _value, LogAccessFilterType _filterType) : value(_value), type(_filterType) {fprintf(stderr, "-----Creating  FieldLogAccessFilter '%s'", value.str());}
     FieldLogAccessFilter(IPropertyTree * tree, LogAccessFilterType _filterType)
     {
         type = _filterType;
@@ -894,11 +894,54 @@ protected:
     LogAccessFilterType type;
 };
 
+class ColumnLogAccessFilter : public CLogAccessFilter
+{
+public:
+    ColumnLogAccessFilter(const char * _column, const char * _value, LogAccessFilterType _filterType) : value(_value), fieldName(_column), type(_filterType) {fprintf(stderr, "-----CREATING ColumnLogAccessFilter");}
+    ColumnLogAccessFilter(IPropertyTree * tree, LogAccessFilterType _filterType)
+    {
+        type = _filterType;
+        VStringBuffer xpath("@%s", logAccessFilterTypeToString(type));
+        value.set(tree->queryProp(xpath.str()));
+    }
+
+    void addToPTree(IPropertyTree * tree) const
+    {
+        IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
+        filterTree->setProp("@type", logAccessFilterTypeToString(type));
+        filterTree->setProp("@value", value);
+        tree->addPropTree("filter", filterTree);
+    }
+
+    void toString(StringBuffer & out) const
+    {
+        out.set(value);
+    }
+
+    LogAccessFilterType filterType() const
+    {
+        return type;
+    }
+
+    const char * getFieldName() const
+    {
+        return fieldName.str();
+    }
+
+protected:
+    StringAttr value;
+    StringAttr fieldName;
+    LogAccessFilterType type;
+};
+
 class BinaryLogAccessFilter : public CLogAccessFilter
 {
 public:
     BinaryLogAccessFilter(ILogAccessFilter * _arg1, ILogAccessFilter * _arg2, LogAccessFilterType _type) : arg1(_arg1), arg2(_arg2)
     {
+        if (!arg1 || !arg2)
+            throw makeStringException(-1, "Binary Log Access Filter encountered empty operand"); 
+
         setType(_type);
     }
 
@@ -940,6 +983,16 @@ public:
     LogAccessFilterType filterType() const
     {
         return type;
+    }
+
+    ILogAccessFilter * leftFilterClause() const
+    {
+        return arg1;
+    }
+
+    ILogAccessFilter * rightFilterClause() const
+    {
+        return arg2;
     }
 
 private:

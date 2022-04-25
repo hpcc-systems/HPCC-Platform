@@ -378,7 +378,7 @@ void esTimestampQueryRangeString(std::string & range, const char * timestampfiel
 }
 
 /*
- * Constructs ElasticSearch match clause
+ * Constructs ElasticSearch term clause
  * Use for exact term matches such as a price, a product ID, or a username.
  */
 void esTermQueryString(std::string & search, const char *searchval, const char *searchfield)
@@ -471,154 +471,182 @@ void ElasticStackLogAccess::esSearchMetaData(std::string & search, const LogAcce
     search += ", ";
 }
 
+/*
+ * Constructs ElasticSearch querystring clause
+ * Use for exact term matches based on operators such as AND or OR
+ */
+void ElasticStackLogAccess::populateESQueryQueryString(std::string & queryString, std::string & queryIndex, const ILogAccessFilter * filter)
+{
+    //https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
+    //Returns documents based on a provided query string, using a parser with a strict syntax.
+
+    //This query uses a syntax to parse and split the provided query string based on operators, 
+    //such as AND or NOT. The query then analyzes each split text independently before returning matching documents.
+
+    if (filter == nullptr)
+        throw makeStringExceptionV(-1, "%s: Null filter detected while creating Elastic Stack query string", COMPONENT_NAME);
+
+
+    StringBuffer queryValue;
+    std::string queryField = m_globalSearchColName.str();
+
+    filter->toString(queryValue);
+    switch (filter->filterType())
+    {
+    case LOGACCESS_FILTER_jobid:
+    {
+        if (m_workunitSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'JobID' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_workunitSearchColName.str();
+
+        if (!m_workunitIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_workunitIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_workunitIndexSearchPattern.str());
+            queryIndex = m_workunitIndexSearchPattern;
+        }
+
+        DBGLOG("%s: Searching log entries by jobid: '%s'...", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_class:
+    {
+        if (m_classSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Class' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_classSearchColName.str();
+
+        if (!m_classIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_classIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_classIndexSearchPattern.str());
+            queryIndex = m_classIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by class: '%s'...", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_audience:
+    {
+        if (m_audienceSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Audience' log entry field not configured", COMPONENT_NAME);
+        
+        queryField = m_audienceSearchColName.str();
+
+        if (!m_audienceIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_audienceIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_audienceIndexSearchPattern.str());
+
+            queryIndex = m_audienceIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by target audience: '%s'...", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_component:
+    {
+        if (m_componentsSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Host' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_componentsSearchColName.str();
+
+        if (!m_componentsIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_componentsIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_componentsIndexSearchPattern.str());
+
+            queryIndex = m_componentsIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching '%s' component log entries...", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_host:
+    {
+        if (m_hostSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Host' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_hostSearchColName.str();
+
+        if (!m_hostIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_hostIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_hostIndexSearchPattern.str());
+
+            queryIndex = m_hostIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by host: '%s'", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_instance:
+    {
+        if (m_instanceSearchColName.isEmpty())
+            throw makeStringExceptionV(-1, "%s: 'Instance' log entry field not configured", COMPONENT_NAME);
+
+        queryField = m_instanceSearchColName.str();
+
+        if (!m_instanceIndexSearchPattern.isEmpty())
+        {
+            if (!queryIndex.empty() && queryIndex != m_instanceIndexSearchPattern.str())
+                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.c_str(), m_instanceIndexSearchPattern.str());
+
+            queryIndex = m_instanceIndexSearchPattern.str();
+        }
+
+        DBGLOG("%s: Searching log entries by HPCC component instance: '%s'", COMPONENT_NAME, queryValue.str() );
+        break;
+    }
+    case LOGACCESS_FILTER_wildcard:
+        throw makeStringExceptionV(-1, "%s: Wild Card filter detected within exact term filter!", COMPONENT_NAME);
+    case LOGACCESS_FILTER_or:
+    case LOGACCESS_FILTER_and:
+        queryString += " ( ";
+        populateESQueryQueryString(queryString, queryIndex, filter->leftFilterClause());
+        queryString.append(" ");
+        queryString += logAccessFilterTypeToString(filter->filterType());
+        queryString.append(" ");
+
+        populateESQueryQueryString(queryString, queryIndex, filter->rightFilterClause());
+        queryString += " ) ";
+        return; // queryString populated, need to break out
+    case LOGACCESS_FILTER_column:
+        if (filter->getFieldName() == nullptr)
+            throw makeStringExceptionV(-1, "%s: empty field name detected in filter by column!", COMPONENT_NAME);
+        queryField = filter->getFieldName();
+        break;
+    default:
+        throw makeStringExceptionV(-1, "%s: Unknown query criteria type encountered: '%s'", COMPONENT_NAME, queryValue.str());
+    }
+
+    queryString += queryField + ":" + queryValue.str();
+
+    if (queryIndex.empty())
+        queryIndex = m_globalIndexSearchPattern.str();
+}
+
 void ElasticStackLogAccess::populateQueryStringAndQueryIndex(std::string & queryString, std::string & queryIndex, const LogAccessConditions & options)
 {
     try
     {
-        StringBuffer queryValue;
-        std::string queryField = m_globalSearchColName.str();
-        queryIndex = m_globalIndexSearchPattern.str();
-
-        bool fullTextSearch = true;
-        bool wildCardSearch = false;
-
-        options.queryFilter()->toString(queryValue);
-        switch (options.queryFilter()->filterType())
-        {
-        case LOGACCESS_FILTER_jobid:
-        {
-            if (!m_workunitSearchColName.isEmpty())
-            {
-                queryField = m_workunitSearchColName.str();
-                fullTextSearch = false; //found dedicated components column
-            }
-
-            if (!m_workunitIndexSearchPattern.isEmpty())
-            {
-                queryIndex = m_workunitIndexSearchPattern.str();
-            }
-
-            DBGLOG("%s: Searching log entries by jobid: '%s'...", COMPONENT_NAME, queryValue.str() );
-            break;
-        }
-        case LOGACCESS_FILTER_class:
-        {
-            if (!m_classSearchColName.isEmpty())
-            {
-                queryField = m_classSearchColName.str();
-                fullTextSearch = false; //found dedicated components column
-            }
-
-            if (!m_classIndexSearchPattern.isEmpty())
-            {
-                queryIndex = m_classIndexSearchPattern.str();
-            }
-
-            DBGLOG("%s: Searching log entries by class: '%s'...", COMPONENT_NAME, queryValue.str() );
-            break;
-        }
-        case LOGACCESS_FILTER_audience:
-        {
-            if (!m_audienceSearchColName.isEmpty())
-            {
-                queryField = m_audienceSearchColName.str();
-                fullTextSearch = false; //found dedicated components column
-            }
-
-            if (!m_audienceIndexSearchPattern.isEmpty())
-            {
-                queryIndex = m_audienceIndexSearchPattern.str();
-            }
-
-            DBGLOG("%s: Searching log entries by target audience: '%s'...", COMPONENT_NAME, queryValue.str() );
-            break;
-        }
-        case LOGACCESS_FILTER_component:
-        {
-            if (!m_componentsSearchColName.isEmpty())
-            {
-                queryField = m_componentsSearchColName.str();
-                fullTextSearch = false; //found dedicated components column
-            }
-
-            if (!m_componentsIndexSearchPattern.isEmpty())
-            {
-                queryIndex = m_componentsIndexSearchPattern.str();
-            }
-
-            DBGLOG("%s: Searching '%s' component log entries...", COMPONENT_NAME, queryValue.str() );
-            break;
-        }
-        case LOGACCESS_FILTER_host:
-        {
-            if (!m_hostSearchColName.isEmpty())
-            {
-                queryField = m_hostSearchColName.str();
-                fullTextSearch = false; //found dedicated components column
-            }
-
-            if (!m_hostIndexSearchPattern.isEmpty())
-            {
-                queryIndex = m_hostIndexSearchPattern.str();
-            }
-
-            DBGLOG("%s: Searching log entries by host: '%s'", COMPONENT_NAME, queryValue.str() );
-            break;
-        }
-        case LOGACCESS_FILTER_instance:
-        {
-            if (!m_instanceSearchColName.isEmpty())
-            {
-                queryField = m_instanceSearchColName.str();
-                fullTextSearch = false; //found dedicated components column
-            }
-
-            if (!m_instanceIndexSearchPattern.isEmpty())
-            {
-                queryIndex = m_instanceIndexSearchPattern.str();
-            }
-
-            DBGLOG("%s: Searching log entries by HPCC component instance: '%s'", COMPONENT_NAME, queryValue.str() );
-            break;
-        }
-        case LOGACCESS_FILTER_wildcard:
-        {
-            wildCardSearch = true;
-            DBGLOG("%s: Performing wildcard log entry search...", COMPONENT_NAME);
-            break;
-        }
-        case LOGACCESS_FILTER_or:
-            throw makeStringExceptionV(-1, "%s: Compound query criteria not currently supported: '%s'", COMPONENT_NAME, queryValue.str());
-            //"query":{"bool":{"must":[{"match":{"kubernetes.container.name.keyword":{"query":"eclwatch","operator":"or"}}},{"match":{"container.image.name.keyword":"hpccsystems\\core"}}]} }
-        case LOGACCESS_FILTER_and:
-            throw makeStringExceptionV(-1, "%s: Compound query criteria not currently supported: '%s'", COMPONENT_NAME, queryValue.str());
-            //"query":{"bool":{"must":[{"match":{"kubernetes.container.name.keyword":{"query":"eclwatch","operator":"and"}}},{"match":{"created_ts":"2021-08-25T20:23:04.923Z"}}]} }
-        default:
-            throw makeStringExceptionV(-1, "%s: Unknown query criteria type encountered: '%s'", COMPONENT_NAME, queryValue.str());
-        }
-
         queryString = "{";
         esSearchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
 
-        queryString += "\"query\": { \"bool\": {";
-
-        if(!wildCardSearch)
+        queryString += "\"query\": { \"bool\": { \"filter\": [ ";
+        if (options.queryFilter()->filterType() == LOGACCESS_FILTER_wildcard) // No filter
         {
-            queryString += " \"must\": { ";
-
-            std::string criteria;
-            if (fullTextSearch) //are we performing a query on a blob, or exact term match?
-                esMatchQueryString(criteria, queryValue.str(), queryField.c_str());
-            else
-                esTermQueryString(criteria, queryValue.str(), queryField.c_str());
-
-            queryString += criteria;
-            queryString += "}, "; //end must, expect filter to follow
+            queryIndex = m_globalIndexSearchPattern.str();
+        }
+        else
+        {
+            queryString += "{ \"query_string\": { \"query\": \"";
+            populateESQueryQueryString(queryString, queryIndex, options.queryFilter());
+            queryString += "\" } },";
         }
 
-        std::string filter = "\"filter\": {";
         std::string range;
-
         const LogAccessTimeRange & trange = options.getTimeRange();
         //Bail out earlier?
         if (trange.getStartt().isNull())
@@ -626,25 +654,22 @@ void ElasticStackLogAccess::populateQueryStringAndQueryIndex(std::string & query
 
         esTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
 
-        filter += range;
-        filter += "}"; //end filter
-
-        queryString += filter;
-        queryString += "}}}"; //end bool and query
+        queryString += "{ " + range;
+        queryString += "}]}}}"; //end range, filter array, bool, query, and request
 
         DBGLOG("%s: Search string '%s'", COMPONENT_NAME, queryString.c_str());
     }
     catch (std::runtime_error &e)
     {
         const char * wha = e.what();
-        throw makeStringExceptionV(-1, "%s: fetchLog: Error searching doc: %s", COMPONENT_NAME, wha);
+        throw makeStringExceptionV(-1, "%s: Error populating ES search string: %s", COMPONENT_NAME, wha);
     }
     catch (IException * e)
     {
         StringBuffer mess;
         e->errorMessage(mess);
         e->Release();
-        throw makeStringExceptionV(-1, "%s: fetchLog: Error searching doc: %s", COMPONENT_NAME, mess.str());
+        throw makeStringExceptionV(-1, "%s: Error populating ES search string: %s", COMPONENT_NAME, mess.str());
     }
 }
 

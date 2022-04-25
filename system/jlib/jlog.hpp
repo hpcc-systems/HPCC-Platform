@@ -1397,6 +1397,7 @@ typedef enum
     LOGACCESS_FILTER_wildcard,
     LOGACCESS_FILTER_instance,
     LOGACCESS_FILTER_host,
+    LOGACCESS_FILTER_column,
     LOGACCESS_FILTER_unknown
 } LogAccessFilterType;
 
@@ -1417,9 +1418,9 @@ inline const char * logAccessFilterTypeToString(LogAccessFilterType field)
     case LOGACCESS_FILTER_host:
         return "host";
     case LOGACCESS_FILTER_or:
-        return "or";
+        return "OR";
     case LOGACCESS_FILTER_and:
-        return "and";
+        return "AND";
     case LOGACCESS_FILTER_wildcard:
          return "*" ;
     default:
@@ -1444,9 +1445,9 @@ inline unsigned logAccessFilterTypeFromName(char const * name)
         return LOGACCESS_FILTER_instance;
     if(strieq(name, "host"))
         return LOGACCESS_FILTER_host;
-    if(strieq(name, "or"))
+    if(strieq(name, "OR"))
         return LOGACCESS_FILTER_or;
-    if(strieq(name, "and"))
+    if(strieq(name, "AND"))
         return LOGACCESS_FILTER_and;
     return LOGACCESS_FILTER_unknown;
 }
@@ -1457,6 +1458,21 @@ interface jlib_decl ILogAccessFilter : public IInterface
     virtual void addToPTree(IPropertyTree * tree) const = 0;
     virtual void toString(StringBuffer & out) const = 0;
     virtual LogAccessFilterType filterType() const = 0;
+    virtual ILogAccessFilter * leftFilterClause() const
+    {
+       return nullptr;
+    }
+
+    virtual ILogAccessFilter * rightFilterClause() const
+    {
+       return nullptr;
+    }
+
+    virtual const char * getFieldName() const
+    {
+       return nullptr;
+    }
+
 };
 
 enum LogAccessReturnColsMode
@@ -1503,6 +1519,7 @@ public:
     {
         return filter.get();
     }
+
     void setFilter(ILogAccessFilter * _filter)
     {
         filter.setown(_filter);
@@ -1618,6 +1635,7 @@ extern jlib_decl ILogAccessFilter * getClassLogAccessFilter(LogMsgClass logclass
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
 extern jlib_decl ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type);
 extern jlib_decl ILogAccessFilter * getWildCardLogAccessFilter();
+extern jlib_decl ILogAccessFilter * getColumnLogAccessFilter(const char * columnName, const char * value);
 
 // Helper functions to actuate log access query
 extern jlib_decl bool fetchLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, ILogAccessFilter * filter, LogAccessTimeRange timeRange, const StringArray & cols, LogAccessLogFormat format);

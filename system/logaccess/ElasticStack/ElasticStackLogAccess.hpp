@@ -14,6 +14,7 @@
 #pragma once
 
 #include "jlog.hpp"
+#include "jlog.ipp"
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include "jfile.ipp"
@@ -84,6 +85,7 @@ private:
     void getMinReturnColumns(std::string & columns);
     void getDefaultReturnColumns(std::string & columns);
     void getAllColumns(std::string & columns);
+    void populateESQueryQueryString(std::string & queryString, std::string & queryIndex, const ILogAccessFilter * filter);
 public:
     ElasticStackLogAccess(const std::vector<std::string> &hostUrlList, IPropertyTree & logAccessPluginConfig);
     virtual ~ElasticStackLogAccess() override = default;
