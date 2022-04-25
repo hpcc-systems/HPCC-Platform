@@ -4169,8 +4169,8 @@ public:
             root.setown(conn->getRoot());
             root->queryBranch(".");     // load branch
             Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
-            // name could have changed before being attached
-            lfnHash = getFilenameHash(logicalName.get());
+            // NB: if there is already an lfnHash, don't change it, because renames do not move parts over striped mounts
+            setLFNHash(fdesc);
             setFileAttrs(fdesc,false);
             setClusters(fdesc);
             setParts(fdesc,false);
@@ -4317,15 +4317,33 @@ public:
         DFD_OS os = SepCharBaseOs(psc);
         StringBuffer basedir;
 
-        const char *myBase;
+        StringBuffer myBase;
         if (newbasedir)
         {
             diroverride = newbasedir;
-            myBase = newbasedir;
+            myBase.set(newbasedir);
         }
         else
         {
-            myBase = queryBaseDirectory(grp_unknown, 0, os);
+#ifdef _CONTAINERIZED
+            IClusterInfo &iClusterInfo = clusters.item(0);
+            const char *planeName = iClusterInfo.queryGroupName();
+            if (!isEmptyString(planeName))
+            {
+                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                if (plane)
+                {
+                    if (clusters.ordinality() > 1)
+                    {
+                        // NB: this may need revisiting if rename needs to support renaming of files on >1 cluster
+                        throwUnexpectedX("renamePhysicalPartFiles - not supported on files on multiple planes");
+                    }
+                    myBase.set(plane->queryPrefix());
+                }
+            }
+#else
+            myBase.set(queryBaseDirectory(grp_unknown, 0, os));
+#endif
             diroverride = myBase;
         }
 
@@ -4341,7 +4359,7 @@ public:
             return false;
         if (isPathSepChar(newPath.charAt(newPath.length()-1)))
             newPath.setLength(newPath.length()-1);
-        newPath.remove(0, strlen(myBase));
+        newPath.remove(0, myBase.length());
         newdir.append(baseDir).append(newPath);
         StringBuffer fullname;
         CIArrayOf<CIStringArray> newNames;
@@ -4357,7 +4375,7 @@ public:
                 unsigned stripeNum = calcStripeNumber(i, lfnHash, numStripedDevices);
 
                 makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum);
-                newPath.remove(0, strlen(myBase));
+                newPath.remove(0, myBase.length());
 
                 StringBuffer copyDir(baseDir);
                 adjustClusterDir(i, copy, copyDir);
