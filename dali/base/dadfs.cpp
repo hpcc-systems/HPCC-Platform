@@ -9118,6 +9118,9 @@ public:
         case DFUQFTinteger64Range:
             match = checkInteger64RangeFilter(file);
             break;
+        case DFUQFTinverseWildcardMatch:
+            match = doInverseWildMatch(file);
+            break;
         }
         return match;
     }
@@ -9131,6 +9134,17 @@ public:
         if (prop && WildMatch(prop, filter, true))
             return true;
         return false;
+    }
+    bool doInverseWildMatch(IPropertyTree &file)
+    {
+        const char* filter = filterValue.get();
+        if (!attrPath.get() || !filter || !*filter || streq(filter, "*"))
+            return true;
+
+        const char* prop = file.queryProp(attrPath.get());
+        if (prop && WildMatch(prop, filter, true))
+            return false;
+        return true;
     }
     bool doBooleanMatch(IPropertyTree &file)
     {
@@ -9257,7 +9271,7 @@ class CIterateFileFilterContainer : public CInterface
     {
         if (!attr || !*attr)
             return;
-        if ((DFUQFTwildcardMatch == filterType) || (DFUQFTstringRange == filterType))
+        if ((DFUQFTwildcardMatch == filterType) || (DFUQFTstringRange == filterType) || (DFUQFTinverseWildcardMatch == filterType))
         {
             filters.append(*new CDFUSFFilter(filterType, attr, value, valueHigh));
             return;
@@ -9374,6 +9388,7 @@ public:
             case DFUQFThasProp:
             case DFUQFTbooleanMatch:
             case DFUQFTwildcardMatch:
+            case DFUQFTinverseWildcardMatch:
                 filterSize = 3;
                 if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter name | filter value
                     addFilter(filterType, filterStringArray.item(i+1), (const char*)filterStringArray.item(i+2), NULL);

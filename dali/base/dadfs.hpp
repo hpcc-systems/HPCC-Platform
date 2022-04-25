@@ -189,7 +189,8 @@ enum DFUQFilterType
     DFUQFTintegerRange,
     DFUQFTinteger64Range,
     DFUQFTspecial,
-    DFUQFTincludeFileAttr
+    DFUQFTincludeFileAttr,
+    DFUQFTinverseWildcardMatch
 };
 
 enum DFUQSerializeFileAttrOption
@@ -882,5 +883,3 @@ constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 
 #endif
-
-
