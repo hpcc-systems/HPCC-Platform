@@ -181,7 +181,7 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                     />}
                 rules={{
                     pattern: {
-                        value: /^([a-z0-9]+(::)?)+$/i,
+                        value: /^([_a-z0-9]+(::)?)+$/i,
                         message: nlsHPCC.ValidationErrorNamePrefix
                     }
                 }}

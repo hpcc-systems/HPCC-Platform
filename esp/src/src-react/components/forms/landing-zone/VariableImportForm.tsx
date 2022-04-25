@@ -179,7 +179,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     />}
                 rules={{
                     pattern: {
-                        value: /^([a-z0-9]+(::)?)+$/i,
+                        value: /^([_a-z0-9]+(::)?)+$/i,
                         message: nlsHPCC.ValidationErrorNamePrefix
                     }
                 }}

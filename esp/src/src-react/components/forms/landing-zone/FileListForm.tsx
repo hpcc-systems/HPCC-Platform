@@ -1,12 +1,13 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
+import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
 import { useForm, Controller } from "react-hook-form";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextLinkedField } from "../Fields";
 import * as FileSpray from "src/FileSpray";
+import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
 import * as FormStyles from "./styles";
-import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
 
 interface FileListFormValues {
     dropzone: string;
@@ -57,13 +58,13 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
     }, [setShowForm]);
 
     const doSubmit = React.useCallback(() => {
-        const uploadFiles = (data, selection) => {
+        const uploadFiles = (folderPath, selection) => {
             const formData = new FormData();
             selection.forEach(file => {
                 formData.append("uploadedfiles[]", file);
             });
             const uploadUrl = "/FileSpray/UploadFile.json?" +
-                "upload_&rawxml_=1&NetAddress=" + machine + "&OS=" + os + "&Path=" + data.path;
+                "upload_&rawxml_=1&NetAddress=" + machine + "&OS=" + os + "&Path=" + folderPath;
 
             setSubmitDisabled(true);
 
@@ -89,14 +90,15 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
 
         handleSubmit(
             (data, evt) => {
+                const folderPath = joinPath(data.path, pathSep);
                 if (data.overwrite) {
-                    uploadFiles(data, selection);
+                    uploadFiles(folderPath, selection);
                 } else {
                     const fileNames = selection.map(file => file["name"]);
                     FileSpray.FileList({
                         request: {
                             Netaddr: machine,
-                            Path: data.path
+                            Path: folderPath
                         }
                     }).then(({ FileListResponse }) => {
                         let fileName = "";
@@ -107,7 +109,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                             }
                         });
                         if (fileName === "") {
-                            uploadFiles(data, selection);
+                            uploadFiles(folderPath, selection);
                         } else {
                             alert(nlsHPCC.OverwriteMessage + "\n" + fileNames.join("\n"));
                         }
@@ -119,7 +121,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, machine, onSubmit, os, reset, selection]);
+    }, [closeForm, handleSubmit, machine, onSubmit, os, pathSep, reset, selection]);
 
     const progressIconSpin = keyframes({
         "0%": {
