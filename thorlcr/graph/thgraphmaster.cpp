@@ -138,7 +138,15 @@ void CSlaveMessageHandler::threadmain()
                     unsigned slave;
                     msg.read(slave);
                     Owned<IThorException> e = deserializeThorException(msg);
-                    e->setSlave(slave+1);
+                    if (slave==0) // slave # unknown
+                    {
+                        if (job.queryChannelsPerSlave()>1) // we don't know which slave, but we know node (sender)
+                            e->setSlave(-sender); // -ve number used by reporting to flag that it is a known node vs slave #
+                        else
+                            e->setSlave(sender);
+                    }
+                    else
+                        e->setSlave(slave);
                     Owned<CGraphBase> graph = job.queryJobChannel(0).getGraph(e->queryGraphId());
                     if (graph)
                     {
