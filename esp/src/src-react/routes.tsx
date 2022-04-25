@@ -108,6 +108,14 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["files"],
+        path: "/scopes",
+        children: [
+            { path: "", action: (ctx) => import("./components/Scopes").then(_ => <_.Scopes filter={parseSearch(ctx.search) as any} scope={"."} />) },
+            { path: "/:Scope", action: (ctx, params) => import("./components/Scopes").then(_ => <_.Scopes filter={parseSearch(ctx.search) as any} scope={params.Scope as string} />) },
+        ]
+    },
+    {
+        mainNav: ["files"],
         path: "/landingzone",
         children: [
             { path: "", action: (context) => import("./components/LandingZone").then(_ => <_.LandingZone filter={parseSearch(context.search) as any} />) },

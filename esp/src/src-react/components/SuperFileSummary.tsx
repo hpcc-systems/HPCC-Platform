@@ -1,9 +1,8 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
-import { DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
+import { DFUService, DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
@@ -13,6 +12,8 @@ import { CopyFile } from "./forms/CopyFile";
 import { replaceUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/SuperFileSummary.tsx");
+
+const dfuService = new DFUService({ baseUrl: "" });
 
 interface SuperFileSummaryProps {
     cluster?: string;
@@ -41,7 +42,12 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
         message: nlsHPCC.DeleteSuperfile,
         onSubmit: React.useCallback(() => {
             const subfiles = (file?.subfiles?.Item || []).map(s => { return { Name: s }; });
-            WsDfu.SuperfileAction("remove", file.Name, subfiles, true)
+            dfuService.SuperfileAction({
+                action: "remove",
+                superfile: file.Name,
+                subfiles: { Item: subfiles.map(file => file.Name) },
+                delete: true
+            })
                 .then(() => replaceUrl("/files"))
                 .catch(err => logger.error(err))
                 ;
