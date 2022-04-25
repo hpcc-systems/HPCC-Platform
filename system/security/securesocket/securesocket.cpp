@@ -1461,8 +1461,6 @@ public:
         X509 *x509=NULL;
         EVP_PKEY *pkey=NULL;
 
-        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
-
         bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
         if ((pkey=EVP_PKEY_new()) == NULL)
@@ -1610,7 +1608,6 @@ public:
         X509 *x509=NULL;
         EVP_PKEY *pkey=NULL;
 
-        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
         bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
         OpenSSL_add_all_algorithms ();
@@ -1741,7 +1738,6 @@ public:
         const EVP_MD *digest;
         BIO *pmem;
 
-        CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
         bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
         OpenSSL_add_all_algorithms ();
