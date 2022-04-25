@@ -81,7 +81,6 @@ void RSAZCryptor::init()
     priv_size = 0;
     pub_size = 0;
 
-    CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
     bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
 #if defined(_WIN32) || defined(__linux__)

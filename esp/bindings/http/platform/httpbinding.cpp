@@ -799,7 +799,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
                 VStringBuffer msg("Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
                 ESPLOG(LogMin, "%s", msg.str());
                 ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: Not Authorized", "Resource: %s [%s]", curres->getName(), (desc) ? desc : "");
-                ctx->setAuthError(EspAuthErrorNotAuthorized);
+                user->setAuthenticateStatus(AS_ACCOUNT_ROOT_ACCESS_DENIED);
                 ctx->setRespMsg(msg.str());
                 authorized = false;
                 break;
