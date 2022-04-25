@@ -1595,13 +1595,6 @@ public:
         if (graph)
             graph->gatherStatistics(builder);
 
-        SuperHashIteratorOf<decltype(childGraphs)::ELEMENT> iter(childGraphs);
-        ForEach(iter)
-        {
-            IActivityGraph * curChildGraph = static_cast<IActivityGraph *>(iter.query().getValue());
-            curChildGraph->gatherStatistics(builder);
-        }
-
         graph.clear();
         childGraphs.kill();
     }
