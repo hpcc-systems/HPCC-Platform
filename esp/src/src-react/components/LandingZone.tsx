@@ -48,6 +48,15 @@ function formatQuery(targetDropzones, filter): QueryRequest {
     };
 }
 
+const buttonStyles = mergeStyleSets({
+    labelOnly: {
+        ":hover": {
+            background: "initial",
+            cursor: "initial"
+        }
+    }
+});
+
 const FilterFields: Fields = {
     "DropZoneName": { type: "target-dropzone", label: nlsHPCC.DropZone },
     "Server": { type: "target-server", label: nlsHPCC.Server },
@@ -237,6 +246,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             onClick: () => setShowAddFile(true)
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "importLabel", text: `${nlsHPCC.Import}: `, className: buttonStyles.labelOnly },
         {
             key: "fixed", text: nlsHPCC.Fixed, disabled: !selection.length,
             onClick: () => setShowFixed(true)
