@@ -56,6 +56,8 @@
 
 #include "portlist.h"
 
+#include <random>
+
 static NonReentrantSpinLock * cvtLock;
 
 #ifdef _WIN32
@@ -3349,33 +3351,36 @@ const char * generatePassword(StringBuffer &pwd, int pwdLen)
     const char alphaUC[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const char alphaLC[] = "abcdefghijklmnopqrstuvwxyz";
     const char numeric[] = "0123456789";
-    const char symbol[] = "~@#$%^*()_-+={[}]:,.?";
+    const char symbol[] = "~@#%^*_-+{[}]:,.?";
+
+    std::random_device seedGen;//uniformly-distributed integer random number generator that produces non-deterministic random numbers
+    std::mt19937 mtEngine(seedGen());//generates 32-bit pseudo-random numbers using Mersenne twister algorithm
 
     //Ensures each character group used at least once
-    srand(time(0));
-    pwd.append(alphaUC[rand() % (sizeof(alphaUC) - 1)]);
-    pwd.append(alphaLC[rand() % (sizeof(alphaLC) - 1)]);
-    pwd.append(numeric[rand() % (sizeof(numeric) - 1)]);
-    pwd.append(symbol[rand() % (sizeof(symbol) - 1)]);
+    pwd.append(alphaUC[mtEngine() % (sizeof(alphaUC) - 1)]);
+    pwd.append(alphaLC[mtEngine() % (sizeof(alphaLC) - 1)]);
+    pwd.append(numeric[mtEngine() % (sizeof(numeric) - 1)]);
+    pwd.append(symbol[mtEngine() % (sizeof(symbol) - 1)]);
 
     for (int i = 4; i < pwdLen; i++)
     {
-        switch(rand() % NUM_GROUPS)//select a random character group
+        switch(mtEngine() % NUM_GROUPS)//select a random character group
         {
         case 0:
-            pwd.append(alphaUC[rand() % (sizeof(alphaUC) - 1)]);  break;
+            pwd.append(alphaUC[mtEngine() % (sizeof(alphaUC) - 1)]);
+            break;
         case 1:
-            pwd.append(alphaLC[rand() % (sizeof(alphaLC) - 1)]);  break;
+            pwd.append(alphaLC[mtEngine() % (sizeof(alphaLC) - 1)]);
+            break;
         case 2:
-            pwd.append(numeric[rand() % (sizeof(numeric) - 1)]);  break;
+            pwd.append(numeric[mtEngine() % (sizeof(numeric) - 1)]);
+            break;
         case 3:
-            pwd.append(symbol[rand() % (sizeof(symbol) - 1)]);  break;
+            pwd.append(symbol[mtEngine() % (sizeof(symbol) - 1)]);
+            break;
         }
     }
-#ifdef _DEBUG
-    if (pwd.length() != (size32_t)pwdLen)
-        throw makeStringException(0, "Generated Passwords wrong length!");
-#endif
+
     return pwd.str();
 }
 
