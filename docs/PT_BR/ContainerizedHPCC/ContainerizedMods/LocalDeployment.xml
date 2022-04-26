@@ -11,6 +11,8 @@
     <title>Pré-requisitos</title>
 
     <para><graphic fileref="../../images/WhatYouNeed.jpg"/></para>
+
+    <para>Todas ferramentas de terceiros devem ser 64-bits.</para>
   </sect1>
 
   <sect1 id="addrepo" role="nobrk">

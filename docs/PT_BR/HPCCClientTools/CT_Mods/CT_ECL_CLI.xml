@@ -1668,6 +1668,125 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
           </informaltable></para>
       </sect2>
 
+      <sect2 id="CT_CLI_SyntaxECLQueriesFiles" role="brk">
+        <title>arquivos de consultas ecl</title>
+
+        <para><emphasis role="bold">arquivos de consultas ecl &lt;target&gt;
+        [&lt;query&gt;]</emphasis></para>
+
+        <para>The queries files command displays a list of the files currently
+        in use by the given query. If the <emphasis>query</emphasis> option is
+        omitted, it returns a list of files for all queries on the specified
+        target.</para>
+
+        <para>Examplos:</para>
+
+        <programlisting>ecl queries files roxie myquery
+</programlisting>
+
+        <para>Examplo de resultado:</para>
+
+        <para><programlisting> &gt; ecl queries files roxie myquery 
+ ------------------ 
+Query: myquery 
+Files used: 
+  jd::subfile1, 100 bytes, 2 part(s) 
+  jd::subfile2, 100 bytes, 2 part(s) 
+
+SuperFiles used: 
+  jd::mysuperfile 
+  &gt; jd::subfile2 
+  &gt; jd::subfile1 </programlisting></para>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Nome do cluster de destino em que a consulta será
+                  publicada</entry>
+                </row>
+
+                <row>
+                  <entry>query</entry>
+
+                  <entry>Opcional. Nome da consulta para obter a lista de
+                  arquivos utilizados. Se omitido, uma lista de arquivos para
+                  cada consulta será retornado no destino
+                  especificado.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Informação adicional de rastreamento do
+                  Output</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>Endereço IP ou hostname do servidor ESP executando
+                  serviços ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>Porta dos serviços do ECL Watch (Padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Utilize SSL para segurar a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>Nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>Senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout enquanto conecta ao servidor (em
+                  milesegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout enquanto é feita leitura do socket (em
+                  segundos)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
       <sect2 id="CT_CLI_eclqueriescopy" role="brk">
         <title>ecl queries copy</title>
 
@@ -1836,8 +1955,22 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-ssl</entry>
 
-                  <entry>Use o protocolo SSL para proteger a conexão com o
-                  servidor.</entry>
+                  <entry>Use o protocolo SSL para proteger a conexão com o(s)
+                  servidor(es).</entry>
+                </row>
+
+                <row>
+                  <entry>--source-ssl</entry>
+
+                  <entry>Use SSL when connecting to the source (default if
+                  --ssl is enabled)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-no-ssl</entry>
+
+                  <entry>Não utilize SSL ao se conectar com a fonte (padrão é
+                  --ssl DESabilitado)</entry>
                 </row>
 
                 <row>
@@ -2004,8 +2137,22 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 <row>
                   <entry>-ssl, --ssl</entry>
 
-                  <entry>Use o protocolo SSL para proteger a conexão com o
-                  servidor.</entry>
+                  <entry>Use o protocolo SSL para proteger a conexão com o(s)
+                  servidor(es).</entry>
+                </row>
+
+                <row>
+                  <entry>--source-ssl</entry>
+
+                  <entry>Utilize SSL quando conectar com a fonte (padrão é
+                  --ssl desabilitado)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-no-ssl</entry>
+
+                  <entry>Não utilize SSL ao conectar com a fonte (padrão é
+                  --ssl é DESabilitado)</entry>
                 </row>
 
                 <row>
@@ -4611,6 +4758,144 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>--wait-read=&lt;Secs&gt;</entry>
 
                   <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable><parameter/></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLRoxiexref" role="brk">
+        <title>ecl roxie xref</title>
+
+        <para><emphasis role="bold">ecl roxie xref
+        &lt;cluster&gt;</emphasis></para>
+
+        <para>The <emphasis role="bold">roxie xref</emphasis> command returns
+        file information for the specified queries on the specified cluster.
+        If the <emphasis>queryids</emphasis> option is omitted, file
+        information about all queries is returned. The result is in XML
+        format.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie xref myroxie
+ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
+
+        <para>Example result:</para>
+
+        <programlisting>&lt;QueryXrefInfo&gt;
+ &lt;Endpoint ep="192.168.56.1:9876"&gt;
+  &lt;Queries reporting="1"&gt;
+   &lt;Query id="myquery.1"/&gt;
+     &lt;SuperFile name="jd::mysuperfile"&gt;
+       &lt;File name="jd::subfile1"/&gt;
+       &lt;File name="jd::subfile2"/&gt;
+   &lt;Query id="myotherquery.1"/&gt;
+     &lt;SuperFile name="jd::myothersuperfile"&gt;
+       &lt;File name="jd::subfile1"/&gt;
+       &lt;File name="jd::subfile2"/&gt;
+       &lt;File name="jd::subfile3"/&gt;
+  &lt;/Queries&gt;
+  &lt;Status&gt;ok&lt;/Status&gt;
+ &lt;/Endpoint&gt;
+&lt;/QueryXrefInfo&gt;
+</programlisting>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie xref</entry>
+
+                  <entry>Returns file information for the selected queries in
+                  XML format.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--check-all-nodes</entry>
+
+                  <entry>Gets query file information from all nodes. This can
+                  be slow.</entry>
+                </row>
+
+                <row>
+                  <entry>--queryids=&lt;csv list&gt;</entry>
+
+                  <entry>The queries for which to get file information
+                  (default is all queries)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>Max time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Informação adicional de rastreamento do
+                  Output</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou hostname do servidor ESP executando
+                  os serviços do ECL Watch</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta do serviço ECL Watch (Padrão é 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>--ssl</entry>
+
+                  <entry>Utilize SSL para segurar a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+
+                  <entry>Tempo máx de espera em milesegundos</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout durante a conexão ao servidor (em
+                  milesegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout durante a leitura do socket (em
                   segundos)</entry>
                 </row>
               </tbody>

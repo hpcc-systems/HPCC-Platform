@@ -701,8 +701,9 @@
     INDEX.</para>
 
     <para>Para ambos os tipos de junção KEYED (com chave), qualquer GROUPing
-    dos conjuntos de registro de base permanece inalterado. Consulte KEYED e
-    WILD para ler uma discussão sobre a filtragem de INDEX.</para>
+    e/ou distribuição dos conjuntos de registro de base permanece inalterado.
+    Consulte KEYED e WILD para ler uma discussão sobre a filtragem de
+    INDEX.</para>
   </sect2>
 
   <sect2 id="Join_Logic">

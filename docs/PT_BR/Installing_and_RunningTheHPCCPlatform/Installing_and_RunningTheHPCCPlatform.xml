@@ -1166,7 +1166,7 @@
                     comando para todos os nós. Um script de amostra é
                     fornecido com o HPCC Systems. Use o comando a seguir para
                     iniciar o HPCC em todos os
-                    nós:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                    nós:</para><para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start </programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1545,7 +1545,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         qualquer usuário com permissões suficientes de execução. Porém, quando
         o nome do usuário e senha forem solicitados, você deve informar as
         credenciais de um usuário com direitos sudo suficientes para executar
-        comandos como administrador em todos os nós. </emphasis></para>
+        comandos como administrador em todos os nós.</emphasis></para>
 
         <para>Antes de usar esse script, você precisa ter criado e definido um
         arquivo environment.xml (usando o assistente ou o modo avançado do
@@ -1863,7 +1863,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         como usuário do hpcc.</para>
 
         <para><emphasis role="bold">Esse script executa um comando em todos os
-        endereços IP no arquivo ativo environment.xml. </emphasis></para>
+        endereços IP no arquivo ativo environment.xml.</emphasis></para>
 
         <para>Os endereços IP foram definidos no momento da edição do ambiente
         no Gerenciador de Configurações. Esse script suporta todos os
@@ -1873,24 +1873,22 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para>Este exemplo inicia todos os componentes nos nós</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start 
 </programlisting></para>
 
         <para>Este exemplo inicia todos os componentes em todos os nós usando
         8 execuções simultâneas</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
-</programlisting>Este exemplo inicia todos os componentes do esp type nos
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh start -n 8
+</programlisting>Este exemplo inicia todos os componentes do daly type nos
         nós</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
-</programlisting>Este exemplo inicia todos os componentes com um nome de
-        componente myesp nos nós</para>
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c dali@mydali.service start 
+</programlisting></para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
-</programlisting>Este exemplo inicia a aplicação auxiliar dafilesrv</para>
+        <para>Este exemplo inicia a aplicação dafilesrv helper</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -c dafilesrv@dafilesrv.service start 
 </programlisting></para>
       </sect2>
 
