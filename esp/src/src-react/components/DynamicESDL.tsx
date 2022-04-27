@@ -4,7 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import * as Observable from "dojo/store/Observable";
-import { AlphaNumSortMemory } from "src/Memory";
+import { Memory } from "src/store/Memory";
 import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import nlsHPCC from "src/nlsHPCC";
@@ -24,7 +24,7 @@ const defaultUIState = {
     hasSelection: false,
 };
 
-class TreeStore extends AlphaNumSortMemory {
+class TreeStore extends Memory {
     mayHaveChildren(item) {
         return item.children;
     }

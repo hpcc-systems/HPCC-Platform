@@ -5,7 +5,7 @@ import * as lang from "dojo/_base/lang";
 import * as ESPUtil from "./ESPUtil";
 import * as Utility from "./Utility";
 import * as WsSMC from "./WsSMC";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 
 class Store extends Memory {
 

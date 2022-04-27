@@ -1,6 +1,6 @@
 ﻿define([
     "dojo/_base/declare",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
 
     "dijit/registry",

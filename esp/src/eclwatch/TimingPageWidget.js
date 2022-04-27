@@ -1,7 +1,7 @@
 define([
     "dojo/_base/declare",
     "src/nlsHPCC",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
 
     "dijit/registry",
@@ -119,7 +119,7 @@ define([
                 context.refreshGrid();
             };
 
-            var store = new MemoryMod.AlphaNumSortMemory("__hpcc_id", { Scope: true });
+            var store = new MemoryMod.Memory("__hpcc_id", { Scope: true });
             this.store = new Observable(store);
             this.grid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,

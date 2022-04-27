@@ -25,7 +25,7 @@ import { JsonImportForm } from "./forms/landing-zone/JsonImportForm";
 import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
-import { QueryRequest } from "src/Memory";
+import { QueryRequest } from "src/store/Memory";
 
 function formatQuery(targetDropzones, filter): QueryRequest {
     const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);

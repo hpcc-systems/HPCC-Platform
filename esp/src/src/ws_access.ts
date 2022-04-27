@@ -8,7 +8,7 @@ import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
 import * as topic from "dojo/topic";
 
 import * as ESPRequest from "./ESPRequest";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 
 class UsersStore extends ESPRequest.Store {
 

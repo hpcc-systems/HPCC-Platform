@@ -1,7 +1,7 @@
 define([
     "dojo/_base/declare",
     "src/nlsHPCC",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
 
     "dgrid/OnDemandGrid",

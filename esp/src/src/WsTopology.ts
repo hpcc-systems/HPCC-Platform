@@ -9,7 +9,7 @@ import * as aspect from "dojo/aspect";
 
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";
-import { Memory } from "src/Memory";
+import { Memory } from "src/store/Memory";
 
 declare const dojoConfig;
 

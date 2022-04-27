@@ -9,7 +9,7 @@ import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
 import * as WsSMC from "./WsSMC";
 import * as WsWorkunits from "./WsWorkunits";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 
 class Store extends Memory {
 
