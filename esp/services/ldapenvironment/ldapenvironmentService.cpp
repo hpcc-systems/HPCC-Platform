@@ -100,6 +100,7 @@ const char * CldapenvironmentEx::formatOUname(StringBuffer &ou, const char * env
             ou.append(reqBaseDN);
             break;
     }
+    ou.toLowerCase();
     return ou.str();
 }
 
@@ -360,6 +361,22 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
             catch(...)
             {
                 notes.appendf("\nNon Fatal Error creating '%s'", respLDAPAdminUser.str());
+            }
+
+            //Add LDAPAdmin user to Administrators group
+            if (secmgr->getLdapServerType() == ACTIVE_DIRECTORY)
+            {
+                const char * pDC = strstr(respUsersBaseDN.str(), "dc=");
+                VStringBuffer ldapadminGrpOU("cn=Administrators,cn=Builtin,%s", pDC ? pDC : "dc=local");
+                VStringBuffer ldapadminUsr("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
+                try
+                {
+                    secmgr->changeGroupMember("add", ldapadminGrpOU.str(), ldapadminUsr.str());
+                }
+                catch(...)
+                {
+                    notes.appendf("\nNon Fatal Error adding '%s' to '%s'", ldapadminUsr.str(), ldapadminGrpOU.str());
+                }
             }
 
             //Add LDAP R/W permissions for LDAPAdmin user
