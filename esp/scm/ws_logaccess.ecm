@@ -106,9 +106,11 @@ ESPRequest GetLogsRequest
 ESPResponse GetLogsResponse
 {
     string LogLines;
+    [min_ver("1.02")] unsigned int LogLineCount;
+    [min_ver("1.02")] unsigned int TotalLogLinesAvailable;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.01"), default_client_version("1.01"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.02"), default_client_version("1.02"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);

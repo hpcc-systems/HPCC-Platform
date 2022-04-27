@@ -91,7 +91,7 @@ public:
     void populateQueryStringAndQueryIndex(std::string & queryString, std::string & queryIndex, const LogAccessConditions & options);
 
     // IRemoteLogAccess methods
-    virtual bool fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) override;
+    virtual bool fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) override;
     virtual const char * getRemoteLogAccessType() const override { return type; }
     virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
     virtual const char * fetchConnectionStr() const override { return m_esConnectionStr.str();}

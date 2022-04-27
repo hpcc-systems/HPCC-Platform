@@ -143,7 +143,14 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
     logFetchOptions.setStartFrom((offset_t)startFrom);
 
     StringBuffer logcontent;
-    m_remoteLogAccessor->fetchLog(logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));
+    LogQueryResultDetails LogQueryResultDetails;
+    m_remoteLogAccessor->fetchLog(LogQueryResultDetails, logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));
+
+    if (version >= 1.02)
+    {
+        resp.setLogLineCount(LogQueryResultDetails.totalReceived);
+        resp.setTotalLogLinesAvailable(LogQueryResultDetails.totalAvailable);
+    }
 
     resp.setLogLines(logcontent.str());
 
