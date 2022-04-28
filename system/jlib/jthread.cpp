@@ -134,7 +134,7 @@ unsigned WINAPI Thread::_threadmain(LPVOID v)
 void *Thread::_threadmain(void *v)
 #endif
 {
-    resetThreadLogging();   // Not strictly needed if everything handled via thread_local variable's constructors...
+    resetThreadLogging();
     Thread * t = (Thread *)v;
 #ifdef _WIN32
     if (SEHHandling) 
@@ -607,6 +607,7 @@ void CThreadedPersistent::threadmain()
             break;
         try
         {
+            resetThreadLogging();
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -957,13 +958,13 @@ public:
     {
         do
         {
-            resetThreadLogging();
             sem.wait();
             {
                 CriticalBlock block(parent.crit); // to synchronize
                 if (parent.stopall)
                     break;
             }
+            resetThreadLogging();
             parent.notifyStarted(this);
             try
             {

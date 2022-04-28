@@ -259,7 +259,7 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 }
 
 static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
-static thread_local LogMsgJobInfo defaultJobInfo = globalDefaultJobInfo;
+static thread_local LogMsgJobInfo defaultJobInfo;
 
 const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
 
