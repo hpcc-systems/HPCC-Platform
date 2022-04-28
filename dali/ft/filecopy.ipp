@@ -91,7 +91,7 @@ protected:
     StringAttr                  wuid;
 };
 
-typedef CIArrayOf<FileTransferThread> TransferArray;
+typedef IArrayOf<FileTransferThread> TransferArray;
 
 //----------------------------------------------------------------------------
 

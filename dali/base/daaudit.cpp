@@ -222,7 +222,7 @@ Retry:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CDaliAuditServer(const char *_auditdir)
         : auditdir(_auditdir),Thread("CDaliAuditServer")

@@ -30,8 +30,6 @@ typedef CopyReferenceArrayOf<ISocket> SocketPortArray;
 class CEspTerminator : public Thread
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     virtual int run()
     {
         sleep(15);

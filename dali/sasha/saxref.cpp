@@ -2018,7 +2018,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
 
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaXRefServer()
         : Thread("CSashaXRefServer")
@@ -2266,7 +2266,7 @@ class CSashaExpiryServer: public ISashaServer, public Thread
     Linked<IPropertyTree> props;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaExpiryServer(IPropertyTree *_config)
         : props(_config), Thread("CSashaExpiryServer")

@@ -831,7 +831,7 @@ private:
     IRoxieAbortMonitor * roxieAbortMonitor;
 
 protected:
-    CIArrayOf<CWSCHelperThread> threads;
+    IArrayOf<CWSCHelperThread> threads;
     WSCType wscType;
 
 public:

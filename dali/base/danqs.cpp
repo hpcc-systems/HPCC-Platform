@@ -228,7 +228,7 @@ class CQueueChannel: implements IQueueChannel, public CInterface
     Owned<CNamedQueueConnection> parent;
     SubscriptionId getsid;
     CheckedCriticalSection proxysect;
-    CIArrayOf<CNamedQueueSubscriptionProxy> proxies;
+    IArrayOf<CNamedQueueSubscriptionProxy> proxies;
 
 
 public:
@@ -476,7 +476,7 @@ class CDaliNamedQueueServer: public IDaliServer, public Thread, implements IConn
     CheckedCriticalSection subsect;
     int fn = 0;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CDaliNamedQueueServer()
         : Thread("CDaliNamedQueueServer")

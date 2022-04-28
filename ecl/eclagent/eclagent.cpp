@@ -154,7 +154,7 @@ class CHThorDebugSocketListener : public Thread, implements IHThorDebugSocketLis
     CriticalSection activeCrit;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
     CHThorDebugSocketListener(CHThorDebugContext * _debugContext)
         : Thread("CHThorDebugSocketListener"), debugContext(_debugContext)
     {

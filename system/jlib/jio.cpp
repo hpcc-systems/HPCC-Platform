@@ -738,7 +738,7 @@ private:
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
     virtual void beforeDispose();
     
     ElevatorScanner(int file, size32_t recordSize);

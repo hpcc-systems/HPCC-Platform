@@ -688,7 +688,7 @@ IActiveQueryLimiterFactory *ensureLimiterFactory()
 class RoxieListener : public Thread, implements IHpccProtocolListener, implements IHpccProtocolMsgSink, implements IThreadFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
     RoxieListener(unsigned _poolSize, bool _suspended) : Thread("RoxieListener")
     {
         running = false;

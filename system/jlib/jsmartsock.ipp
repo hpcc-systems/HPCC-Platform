@@ -76,7 +76,7 @@ class jlib_decl CSmartSocketFactory: public Thread,
     SmartSocketEndpoint *findEndpoint(SocketEndpoint &ep);
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSmartSocketFactory(const char *_socklist, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned)-1);
     CSmartSocketFactory(IPropertyTree &service, bool _retry = false, unsigned _retryInterval = 60, unsigned _dnsInterval = (unsigned)-1);

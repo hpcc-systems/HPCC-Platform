@@ -146,7 +146,7 @@ class CDaliPublisherServer: public IDaliServer, public Thread, public CDaliPubli
     CheckedCriticalSection stubsect;
     ReadWriteLock processlock;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CDaliPublisherServer()
         : Thread("CDaliPublisherServer")

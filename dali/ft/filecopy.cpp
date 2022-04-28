@@ -178,7 +178,7 @@ void FilePartInfo::init()
 
 //----------------------------------------------------------------------------
 
-void shuffle(CIArray & array)
+static void shuffle(TransferArray & array)
 {
     //Use our own seeded random number generator, so that multiple dfu at the same time are less likely to clash.
     Owned<IRandomNumberGenerator> random = createRandomNumberGenerator();
@@ -1899,7 +1899,7 @@ void FileSprayer::gatherFileSizes(FilePartInfoArray & fileSizeQueue, bool errorI
 {
     if (fileSizeQueue.ordinality())
     {
-        CIArrayOf<FileSizeThread> threads;
+        IArrayOf<FileSizeThread> threads;
         CriticalSection fileSizeCS;
 
         //Is this a good guess?  start square root of number of files threads??

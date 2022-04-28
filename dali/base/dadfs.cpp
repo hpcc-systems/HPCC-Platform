@@ -10451,7 +10451,7 @@ class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements I
 
 public:
 
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CDaliDFSServer(IPropertyTree *config)
         : Thread("CDaliDFSServer"), CTransactionLogTracker(MDFS_MAX)

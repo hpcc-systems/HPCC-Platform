@@ -37,7 +37,7 @@ private:
     Linked<IPipeProcess> pipe;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     int run()
     {

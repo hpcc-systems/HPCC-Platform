@@ -1055,7 +1055,7 @@ public:
 
 class CThreadPool: public CThreadPoolBase, implements IThreadPool, public CInterface
 {
-    CIArrayOf<CPooledThreadWrapper> threadwrappers;
+    IArrayOf<CPooledThreadWrapper> threadwrappers;
     PooledThreadHandle nextid;
     IThreadFactory *factory;
     unsigned stacksize;
@@ -1271,7 +1271,7 @@ public:
     virtual bool joinAll(bool del,unsigned timeout=INFINITE)
     { // note timeout is for each join
         CriticalBlock block(crit);
-        CIArrayOf<CPooledThreadWrapper> tojoin;
+        IArrayOf<CPooledThreadWrapper> tojoin;
         ForEachItemIn(i1,threadwrappers) {
             CPooledThreadWrapper &it = threadwrappers.item(i1);
             it.Link();

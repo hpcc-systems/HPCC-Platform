@@ -172,7 +172,7 @@ class CSashaSDSCoalescingServer: public ISashaServer, public Thread
     CriticalSection suspendResumeCrit;
     Linked<IPropertyTree> coalesceProps;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaSDSCoalescingServer(IPropertyTree *_config)
         : coalesceProps(_config), Thread("CSashaSDSCoalescingServer")
