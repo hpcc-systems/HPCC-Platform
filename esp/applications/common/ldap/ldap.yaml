@@ -16,7 +16,6 @@ ldap:
   sudoersBasedn: ou=SUDOers
   systemBasedn: cn=Users
   usersBasedn: ou=users,ou=ecl
-  resourcesBasedn: ou=WsEcl,ou=EspServices,ou=ecl
   workunitsBasedn: ou=workunits,ou=ecl
   ldapAdminSecretKey: ""
   ldapAdminVaultId: ""
