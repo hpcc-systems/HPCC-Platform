@@ -48,6 +48,8 @@ bool startsWithGitProtocol(const char * urn)
 {
     if (startsWith(urn, "git+") || startsWith(urn, "git:"))
         return true;
+    if (startsWith(urn, "http:") || startsWith(urn, "https:"))
+        return true;
     return false;
 }
 
