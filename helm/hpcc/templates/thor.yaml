@@ -82,7 +82,7 @@ data:
           labels:
             accessDali: "yes"
             accessEsp: "yes"
-            helmVersion: 8.6.23-closedown0
+            helmVersion: 8.6.24-rc1
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
@@ -148,7 +148,7 @@ data:
             component: "thormanager"
             accessDali: "yes"
             accessEsp: "yes"
-            helmVersion: 8.6.23-closedown0
+            helmVersion: 8.6.24-rc1
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
@@ -213,7 +213,7 @@ data:
             app: "_HPCC_JOBNAME_"
             component: "thorworker"
             accessEsp: "true"
-            helmVersion: 8.6.23-closedown0
+            helmVersion: 8.6.24-rc1
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
@@ -340,7 +340,7 @@ spec:
         app: thor-eclagent
         accessDali: "yes"
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
-        helmVersion: 8.6.23-closedown0
+        helmVersion: 8.6.24-rc1
 {{- if hasKey $commonCtx.me "labels" }}
 {{ toYaml $commonCtx.me.labels | indent 8 }}
 {{- end }}
@@ -399,7 +399,7 @@ spec:
         run: {{ $commonCtx.thorAgentName | quote }}
         accessDali: "yes"
         accessEsp: "no"
-        helmVersion: 8.6.23-closedown0
+        helmVersion: 8.6.24-rc1
 {{- if hasKey $commonCtx.me "labels" }}
 {{ toYaml $commonCtx.me.labels | indent 8 }}
 {{- end }}
