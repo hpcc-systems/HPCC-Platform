@@ -1471,7 +1471,7 @@ definir margens, tamanho do papel, orientação etc.
                   list</emphasis></entry>
 
                   <entry>Escolha entre as opções Enviar, Enviar selecionados,
-                  Compilar ou Depura <itemizedlist>
+                  ou Compilar <itemizedlist>
                       <listitem>
                         <para><emphasis role="bold">Submit </emphasis>Envia o
                         código ECL a ser compilado e executado no cluster de

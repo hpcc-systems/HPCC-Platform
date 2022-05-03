@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="CustomConfig">
+  <title>Configurações Customizadas</title>
+
+  <sect1 id="CustTechniques" role="nobrk">
+    <title>Técnicas de Customização</title>
+
+    <para>Nesta seção, nós vamos abordar a criação de uma configuração
+    customizada do arquivo YAML e do lançamento de uma plataforma HPCC
+    Systems<superscript>®</superscript> utilizando os configurações padrão mas
+    as customizações. Depois de entender os conceitos de deste capítulo, você
+    pode consultar o próximo para uma referência a todos as configurações de
+    valores de configuração.</para>
+
+    <para>Há várias maneiras de personalizar uma implantação da plataforma.
+    Nós recomendamos o uso de métodos que permitem que você aproveite melhor o
+    configuração como práticas de código (CaC). A configuração como código é a
+    padrão de gerenciamento de arquivos de configuração em um sistema de
+    controle de versão ou repositório.</para>
+
+    <para>A seguir uma lista de técnicas de customização:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>A primeira maneira de substituir uma configuração padrão é
+        através da linha de comando usando o parâmetro <emphasis
+        role="bold">--set</emphasis>.</para>
+
+        <para>Este é o mais fácil, mas o menos compatível com as diretrizes
+        CaC. Também é mais difícil de rastrear as alterações.</para>
+      </listitem>
+
+      <listitem>
+        <para>A segunda maneira é modificando os valores padrão e salvando por
+        meio da seguinte linha de comando:</para>
+
+        <programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting>
+
+        <para>Isso pode estar em conformidade com as diretrizes do CaC, se
+        você colocar esse arquivo sob controle de versão, mas dificulta a
+        utilização de uma nova configuração padrão quando uma estiver
+        disponível.</para>
+      </listitem>
+
+      <listitem>
+        <para>A terceira maneira, é a que normalmente usamos. Usar o padrão
+        configuração, mais um arquivo YAML de personalização e o parâmetro -f
+        (ou parâmetro --values) para o comando helm. Isso usa o padrão
+        configuração e apenas substitui as configurações especificadas no
+        personalização YAML. Além disso, você pode passar vários arquivos YAML
+        no mesmo comando, se desejado.</para>
+
+        <para>Para este tutorial, usaremos o terceiro método para levantar um
+        plataforma com todas as configurações padrão, mas adicionar algumas
+        personalizações. No primeiro exemplo, em vez de um Roxie, teremos
+        dois. No segundo exemplo, ele adicionará um segundo 10-way
+        Thor.</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect2 id="CustTutorial1" role="brk">
+      <title>Criar um Custom Configuration Chart para Dois Roxies</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o repositório HPCC Systems a sua
+          lista de repositórios do helm, adicione-o agora.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>Se você já adiciou, atualize para os últimos charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um novo arquivo de texto, o nomeie para <emphasis
+          role="bold">tworoxies.yaml</emphasis> e abra-o em um editor de
+          texto.</para>
+
+          <para>Você pode usar qualquer editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve os valores padrão em um arquivo de texto:</para>
+
+          <para><programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Abra o arquivo salvo (myvalues.yaml) em um editor de
+          texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie toda seção <emphasis role="bold">roxie:</emphasis> e
+          cole dentro no novo arquivo tworoxies.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie todo o conteúdo do novo arquivo tworoxies.yaml, exceto a
+          primeira linha (roxie:), e cole no final do arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <para>No primeiro bloco, edite o valor para <emphasis
+          role="bold">name:</emphasis> e altere o valor para <emphasis
+          role="bold">roxie2.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>No segundo bloco, edite o valor para <emphasis
+          role="bold">prefix:</emphasis> e altere para <emphasis
+          role="bold">roxie2.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>No segundo bloco, edite o valor para <emphasis
+          role="bold">name:</emphasis> abaixo de <emphasis
+          role="bold">services:</emphasis> e altere para <emphasis
+          role="bold">roxie2</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo e feche o editor de texto.</para>
+
+          <para>O arquivo tworoxies.yaml file deve se parecer com este
+          aqui:</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> Os comentários foram
+          removidos para simplificar o examplo:</para>
+
+          <para><programlisting>roxie:
+- name: roxie
+  disabled: false
+  prefix: roxie
+  services:
+  - name: roxie
+    servicePort: 9876
+    listenQueue: 200
+    numThreads: 30
+    visibility: local
+  replicas: 2  
+  numChannels: 2
+  serverReplicas: 0
+  localAgent: false
+  traceLevel: 1
+  topoServer:
+    replicas: 1
+
+- name: roxie2
+  disabled: false
+  prefix: roxie2
+  services:
+  - name: roxie2
+    servicePort: 9876
+    listenQueue: 200
+    numThreads: 30
+    visibility: local
+  replicas: 2  
+  numChannels: 2
+  serverReplicas: 0
+  localAgent: false
+  traceLevel: 1
+  topoServer:
+    replicas: 1
+</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy utilizando um novo chart de
+      configuração personalizado.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra uma janela de terminal e navegue para o diretório onde
+          você salvou o arquivo tworoxies.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o deploy do seu HPCC Systems Platform, adicionando a nova
+          configuração ao comando:</para>
+
+          <para><programlisting>helm install mycluster hpcc/hpcc -f tworoxies.yaml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Após você confirmar que seu deploy está sendo executado, abra
+          o ECL Watch.</para>
+
+          <para>Você deverá ver dois clusters Roxie disponíveis como Targets
+          -- roxie e roxie2.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="CustTutorial2" role="nobrk">
+      <title>Crie um Novo Chart de Configuração para Dois Thors</title>
+
+      <para>Você pode especificar mais de uma configuração de customização
+      repetindo o parâmetro -f.</para>
+
+      <para>Por exemplo:</para>
+
+      <para><programlisting>helm install mycluster hpcc/hpcc  -f tworoxies.yaml -f twothors.yaml</programlisting></para>
+
+      <para>Nesta seção, nós vamos adicionar um segundo Thor 10-way.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Se você ainda não adicionou o repositório do HPCC Systems a
+          lista de repositórios helm, adicione agora.<programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>Se você já adicionou, atualize os últimos charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Crie um novo arquivo de texto e nomeie-o <emphasis
+          role="bold">twothors.yaml</emphasis>, em seguida abra em um editor
+          de texto.</para>
+
+          <para>Você pode usar qualquer editor de texto.</para>
+        </listitem>
+
+        <listitem>
+          <para>Em um editor de texto, abra o arquivo de valores padrão que
+          você salvou anteriormente (myvalues.yaml).</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie por inteiro a seção <emphasis
+          role="bold">thor:</emphasis> e cole no novo arquivo
+          twothors.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copie todo conteúdo para o novo arquivo twothors.yaml, exceto
+          a primeira linha (thor:), e cole no final do arquivo.</para>
+        </listitem>
+
+        <listitem>
+          <para>No segundo bloco, edite o valor para <emphasis
+          role="bold">name:</emphasis> e altere-o para <emphasis
+          role="bold">thor10.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>No segundo bloco, edite o valor para <emphasis
+          role="bold">prefix:</emphasis> e altere-o para <emphasis
+          role="bold">thor10.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>No segundo bloco, edite o valor para <emphasis
+          role="bold">numWorkers:</emphasis> e altere-o para <emphasis
+          role="bold">10.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Salve o arquivo e feche o editor de texto.</para>
+
+          <para>O resultado do arquivo do twothors.yaml deve se parecer
+          assim</para>
+
+          <para><emphasis role="bold">Nota:</emphasis> Os comentários foram
+          removidos para simplificar o exemplo:</para>
+
+          <para><programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+- name: thor10
+  prefix: thor10
+  numWorkers: 10
+  maxJobs: 4
+  maxGraphs: 2</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy utilizando o novo chart de
+      configuração personalizado.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Abra uma janela de terminal e navegue para o diretório onde
+          você salvou o arquivo twothors.yaml.</para>
+        </listitem>
+
+        <listitem>
+          <para>Faça o deploy do seu HPCC Systems Platform, adicionando a nova
+          configuração ao comando:</para>
+
+          <para><programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Após você confirmar que seu deploy está sendo executado, abra
+          o ECL Watch.</para>
+
+          <para>Você deverá ver dois clusters Thor disponíveis como Targets --
+          thor and thor10.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+</chapter>

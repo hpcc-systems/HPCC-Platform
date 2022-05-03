@@ -66,7 +66,7 @@
 
         <listitem>
           <para>Verifique se eles não estão mais sendo executados. É possível
-          usar um comando único, como: <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+          usar um único comando, como: <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh status</programlisting></para>
         </listitem>
 
         <listitem>

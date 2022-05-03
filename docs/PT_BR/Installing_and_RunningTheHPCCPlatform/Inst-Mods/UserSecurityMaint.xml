@@ -1613,6 +1613,15 @@
 
                 <entry>Completo</entry>
               </row>
+
+              <row>
+                <entry>WsLogAccess</entry>
+
+                <entry>Habilita a função de leitura de logs dos
+                componentes</entry>
+
+                <entry>Leitura</entry>
+              </row>
             </tbody>
           </tgroup>
         </informaltable></para>
