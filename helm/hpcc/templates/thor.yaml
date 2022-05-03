@@ -38,7 +38,8 @@ Pass in dict with root and me
 {{- $eclAgentJobName := printf "%s-_HPCC_JOBNAME_" $eclAgentType }}
 {{- $thorManagerJobName := printf "thormanager-_HPCC_JOBNAME_" }}
 {{- $thorWorkerJobName := printf "thorworker-_HPCC_JOBNAME_" }}
-{{- $thorNetworkPolicyName := printf "thormanager-networkpolicy-_HPCC_JOBNAME_" }}
+{{- $thorManagerNetworkPolicyName := printf "thormanager-networkpolicy-_HPCC_JOBNAME_" }}
+{{- $thorWorkerNetworkPolicyName := printf "thorworker-networkpolicy-_HPCC_JOBNAME_" }}
 {{- $numWorkersPerPod := .me.numWorkersPerPod | default 1 }}
 {{- $configCtx := . -}}
 apiVersion: v1 
@@ -143,10 +144,10 @@ data:
       template:
         metadata:
           labels:
-            app: thor
+            app: "_HPCC_JOBNAME_"
+            component: "thormanager"
             accessDali: "yes"
             accessEsp: "yes"
-            job: "_HPCC_JOBNAME_"
             helmVersion: 8.6.23-closedown0
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
@@ -157,7 +158,7 @@ data:
 {{- end }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
-          serviceAccountName: hpcc-agent
+          serviceAccountName: hpcc-thoragent
           initContainers:
           {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
           {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
@@ -209,9 +210,9 @@ data:
       template:
         metadata:
           labels:
-            app: thor
+            app: "_HPCC_JOBNAME_"
+            component: "thorworker"
             accessEsp: "true"
-            job: "_HPCC_JOBNAME_"
             helmVersion: 8.6.23-closedown0
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
@@ -270,24 +271,43 @@ data:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: {{ $thorNetworkPolicyName }}
+      name: {{ $thorManagerNetworkPolicyName }}
     spec:
       podSelector:
         matchLabels:
-          app: thor
-          job: "_HPCC_JOBNAME_"
+          app: "_HPCC_JOBNAME_"
+          component: thormanager
       ingress:
       - from:
         - podSelector:
-            matchLabels:
-              app: thor
-              job: "_HPCC_JOBNAME_"
+            matchExpressions:
+              - {key: app, operator: In, values: ["thor-eclagent", "_HPCC_JOBNAME_"]}
       egress:
       - to:
         - podSelector:
             matchLabels:
-              app: thor
-              job: "_HPCC_JOBNAME_"
+              app: "_HPCC_JOBNAME_"
+
+  thorworker-networkspec.yaml:
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: {{ $thorWorkerNetworkPolicyName }}
+    spec:
+      podSelector:
+        matchLabels:
+          app: "_HPCC_JOBNAME_"
+          component: thorworker
+      ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              app: "_HPCC_JOBNAME_"
+      egress:
+      - to:
+        - podSelector:
+            matchLabels:
+              app: "_HPCC_JOBNAME_"
 {{- end -}}
 
 {{- $local := dict "first" true }}
@@ -312,10 +332,12 @@ spec:
   selector:
     matchLabels:
       run: {{ $commonCtx.eclAgentName | quote }}
+      app: thor-eclagent
   template:
     metadata:
       labels:
         run: {{ $commonCtx.eclAgentName | quote }}
+        app: thor-eclagent
         accessDali: "yes"
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
         helmVersion: 8.6.23-closedown0
