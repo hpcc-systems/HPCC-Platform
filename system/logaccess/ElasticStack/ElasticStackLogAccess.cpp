@@ -223,11 +223,12 @@ const IPropertyTree * ElasticStackLogAccess::getESStatus()
  * Transform iterator of hits/fields to back-end agnostic response
  *
  */
-void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped, bool reportHeader)
+unsigned processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped, bool reportHeader)
 {
     if (!iter)
         throw makeStringExceptionV(-1, "%s: Detected null 'hits' ElasticSearch response", COMPONENT_NAME);
 
+    unsigned recsProcessed = 0;
     switch (format)
     {
         case LOGACCESS_LOGFORMAT_xml:
@@ -241,6 +242,7 @@ void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf,
                 returnbuf.append("<line>");
                 toXML(&cur,returnbuf);
                 returnbuf.append("</line>");
+                recsProcessed++;
             }
             if (wrapped)
                 returnbuf.append("</lines>");
@@ -262,6 +264,7 @@ void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf,
 
                 first = false;
                 returnbuf.appendf("{\"fields\": [ %s ]}", hitchildjson.str());
+                recsProcessed++;
             }
             if (wrapped)
                 returnbuf.append("]}");
@@ -299,6 +302,7 @@ void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf,
                         first = false;
 
                     fieldElementsItr->query().getProp(nullptr, returnbuf); // commas in data should be escaped
+                    recsProcessed++;
                 }
                 returnbuf.newline();
             }
@@ -307,13 +311,14 @@ void processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & returnbuf,
         default:
             break;
     }
+    return recsProcessed;
 }
 
 /*
  * Transform ES query response to back-end agnostic response
  *
  */
-void processESSearchJsonResp(const cpr::Response & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format, bool reportHeader)
+bool processESSearchJsonResp(LogQueryResultDetails & resultDetails, const cpr::Response & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format, bool reportHeader)
 {
     if (retrievedDocument.status_code != 200)
         throw makeStringExceptionV(-1, "ElasticSearch request failed: %s", retrievedDocument.text.c_str());
@@ -331,10 +336,13 @@ void processESSearchJsonResp(const cpr::Response & retrievedDocument, StringBuff
     if (tree->getPropInt("_shards/failed",0) > 0)
         LOG(MCuserProgress,"ES Log Access: failed _shards reported");
 
-    DBGLOG("ES Log Access: hit count: '%d'", tree->getPropInt("hits/total/value"));
+    resultDetails.totalAvailable = tree->getPropInt("hits/total/value");
+    PROGLOG("ES Log Access: hit count: '%d'", resultDetails.totalAvailable);
 
     Owned<IPropertyTreeIterator> hitsFieldsElements = tree->getElements("hits/hits/fields");
-    processHitsJsonResp(hitsFieldsElements, returnbuf, format, true, reportHeader);
+    resultDetails.totalReceived = processHitsJsonResp(hitsFieldsElements, returnbuf, format, true, reportHeader);
+
+    return true;
 }
 
 /*
@@ -675,12 +683,10 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
     }
 }
 
-bool ElasticStackLogAccess::fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
+bool ElasticStackLogAccess::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     cpr::Response esresp = performESQuery(options);
-    processESSearchJsonResp(esresp, returnbuf, format, true);
-
-    return true;
+    return processESSearchJsonResp(resultDetails, esresp, returnbuf, format, true);
 }
 
 class ELASTICSTACKLOGACCESS_API ElasticStackLogStream : public CInterfaceOf<IRemoteLogAccessStream>
