@@ -752,7 +752,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             oneShotRoxie = true;
             if (wuid)
                 DBGLOG("Starting roxie - wuid=%s", wuid);
-            allFilesDynamic = true;
             if (topology->getPropBool("@server", false))
             {
 #ifdef _CONTAINERIZED
