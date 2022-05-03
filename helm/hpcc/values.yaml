@@ -505,6 +505,10 @@ esp:
     port: 8888
     ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
     servicePort: 8010
+    ## wsdlAddress should be set to the host and port which clients can use to hit this service.
+    #   This address is added to the service wsdl files which simplify setting up a SOAP client to hit this service.  There may be many external factors determining the address
+    #   that is accible to clients.
+    # wsdlAddress: clientfacingaddress:8010
     ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
     visibility: local
     ## Annotations can be specified on a service - for example to specify provider-specific information such as service.beta.kubernetes.io/azure-load-balancer-internal-subnet
