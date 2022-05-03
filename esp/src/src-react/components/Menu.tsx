@@ -140,6 +140,7 @@ const subMenuItems: SubMenuItems = {
     "topology": [
         { headerText: nlsHPCC.Configuration, itemKey: "/topology/configuration" },
         { headerText: nlsHPCC.Pods, itemKey: "/topology/pods" },
+        { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
     ],
     "topology-old": [
         { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology-old" },
