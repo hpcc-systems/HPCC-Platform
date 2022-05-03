@@ -44,7 +44,7 @@ class CDaliDiagnosticsServer: public IDaliServer, public Thread
     bool stopped;
 public:
 
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CDaliDiagnosticsServer()
         : Thread("CDaliDiagnosticsServer")

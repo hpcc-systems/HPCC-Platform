@@ -67,7 +67,7 @@ protected:
 
 protected:
     Semaphore producerStopSem;
-    CIArrayOf<CThreaded> threads;
+    IArrayOf<CThreaded> threads;
 };
 
 
@@ -174,7 +174,7 @@ private:
     const unsigned numProducers;
     Semaphore producerStopSem;
     Semaphore producerStoppedSem;
-    CIArrayOf<CThreaded> threads;
+    IArrayOf<CThreaded> threads;
     std::atomic<bool> stopping;
     bool started;
 };

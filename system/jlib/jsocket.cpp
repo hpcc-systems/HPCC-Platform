@@ -4279,7 +4279,6 @@ class CSocketSelectThread: public CSocketBaseThread
 
 #endif 
 public:
-    IMPLEMENT_IINTERFACE;
     CSocketSelectThread(const char *trc)
         : CSocketBaseThread("CSocketSelectThread")
     {
@@ -4706,7 +4705,7 @@ public:
 
 class CSocketSelectHandler: implements ISocketSelectHandler, public CInterface
 {
-    CIArrayOf<CSocketSelectThread> threads;
+    IArrayOf<CSocketSelectThread> threads;
     CriticalSection sect;
     bool started;
     std::atomic<bool> stopped;
@@ -4917,7 +4916,6 @@ class CSocketEpollThread: public CSocketBaseThread
     }
 
 public:
-    IMPLEMENT_IINTERFACE;
     CSocketEpollThread(const char *trc, unsigned _hdlPerThrd)
         : CSocketBaseThread("CSocketEpollThread")
     {
@@ -5292,7 +5290,7 @@ public:
 
 class CSocketEpollHandler: implements ISocketSelectHandler, public CInterface
 {
-    CIArrayOf<CSocketEpollThread> threads;
+    IArrayOf<CSocketEpollThread> threads;
     CriticalSection sect;
     bool started;
     std::atomic<bool> stopped;

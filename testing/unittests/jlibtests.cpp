@@ -2414,7 +2414,7 @@ public:
         }
 
     protected:
-        CIArrayOf<LockTestThread> threads;
+        IArrayOf<LockTestThread> threads;
         Semaphore startSem;
         Semaphore endSem;
         LOCK lock;

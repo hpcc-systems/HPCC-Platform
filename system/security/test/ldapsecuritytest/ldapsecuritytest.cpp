@@ -115,8 +115,6 @@ class CPermissionCheckThread : public Thread
     SecResourceType m_rtype;
     int m_rounds;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CPermissionCheckThread(ISecManager* secmgr, const char* user, const char* passwd, const char* r, SecResourceType rtype, int rounds)
     {
         m_secmgr = secmgr;

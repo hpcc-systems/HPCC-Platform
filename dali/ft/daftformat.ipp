@@ -704,7 +704,7 @@ class DALIFT_API CRemotePartitioner : public Thread, public IFormatPartitioner
 {
 public:
     CRemotePartitioner(const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid);
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     virtual int  run();
 

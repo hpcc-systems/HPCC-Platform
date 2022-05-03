@@ -79,7 +79,7 @@ Owned<CHpccProtocolPlugin> global;
 class ProtocolListener : public Thread, implements IHpccProtocolListener, implements IThreadFactory
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
     ProtocolListener(IHpccProtocolMsgSink *_sink) : Thread("RoxieListener")
     {
         running = false;

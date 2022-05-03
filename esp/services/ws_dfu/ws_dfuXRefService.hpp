@@ -65,8 +65,6 @@ class CXRefExBuilderThread : public Thread
         nodeQueue.enqueue(LINK(xRefNode));
     }
 public:
-    IMPLEMENT_IINTERFACE;
-
     CXRefExBuilderThread() { };
     ~CXRefExBuilderThread(){DBGLOG("Destroyed XRef thread");};
 

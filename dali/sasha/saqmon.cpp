@@ -33,7 +33,7 @@ class CSashaQMonitorServer: public ISashaServer, public Thread
     StringArray cnames;
     IArrayOf<IJobQueue> queues;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaQMonitorServer()
         : Thread("CSashaQMonitorServer")

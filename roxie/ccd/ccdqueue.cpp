@@ -3309,7 +3309,7 @@ class PacketDiscarder : public Thread, implements IPacketDiscarder
     Owned<IMessageCollator> mc;
 
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     PacketDiscarder()
     {

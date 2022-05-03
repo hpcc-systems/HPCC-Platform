@@ -372,7 +372,7 @@ class CSashaVerifierServer: public ISashaServer, public Thread
     Semaphore stopsem;
     Owned<IUserDescriptor> udesc;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaVerifierServer()
         : Thread("CSashaVerifierServer")
@@ -474,7 +474,7 @@ class CSashaDaFSMonitorServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
 public:
-    IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE_USING(Thread);
 
     CSashaDaFSMonitorServer()
         : Thread("CSashaDaFSMonitorServer")
