@@ -3003,7 +3003,7 @@ void EspMessageInfo::write_esp_ipp()
 
         // internal: getSharedInstance()
         outs("private:\n");
-        outf("\tstatic CX%s& getSharedInstance() { static CX%s instance(nilIgnore); return instance; }\n", name_, name_);
+        outf("\tstatic CX%s& getSharedInstance();\n", name_);
 
         // TODO: getMapInfo_() internal implementation
         outs("\tvoid getMapInfo_(IMapInfo& info, BoolHash& added) {  }\n");
@@ -3032,35 +3032,7 @@ void EspMessageInfo::write_esp_ipp()
                 outf("\t{ getXsdDefinition_(context,request,schema,added,NULL); }\n");
         }
 
-        outf("\tvoid doInit()\n");
-        outs("\t{\n");
-        outs("\t\tstatic const char* inits[] = {");
-        
-        for (pi = getParams(); pi!=NULL; pi=pi->next)
-        {
-            if (strcmp(parent,"string")==0)
-            {
-                const char* def = pi->getMetaString("enum",NULL);
-                outf("%s", def);
-            }
-            else if (strcmp(parent,"int")==0 || strcmp(parent,"short")==0)
-            {
-                int def = pi->getMetaInt("enum");
-                outf("\"%d\"",def);
-            }
-            else if (strcmp(parent,"double")==0 || strcmp(parent,"float")==0)
-            {
-                double def = pi->getMetaDouble("enum");
-                outf("\"%g\"",def);
-            }
-            else
-                throw "Unhandled base type";
-
-            outs(",");
-        }
-        outs("NULL};\n");
-        outf("\t\tinit(\"%s\",\"%s\",inits);\n",name_,parent);
-        outs("\t}\n");
+        outf("\tvoid doInit();\n");
 
         outs("};\n\n");
 
@@ -3289,7 +3261,41 @@ bool EspMessageInfo::hasMapInfo()
 void EspMessageInfo::write_esp()
 {
     if (espm_type_ == espm_enum)
+    {
+        outf("CX%s& CX%s::getSharedInstance() { static CX%s instance(nilIgnore); return instance; }\n", name_, name_, name_);
+
+        outf("void CX%s::doInit()\n", name_);
+        outs("{\n");
+        outs("\tstatic const char* inits[] = {");
+
+        for (ParamInfo* pi = getParams(); pi!=NULL; pi=pi->next)
+        {
+            if (strcmp(parent,"string")==0)
+            {
+                const char* def = pi->getMetaString("enum",NULL);
+                outf("%s", def);
+            }
+            else if (strcmp(parent,"int")==0 || strcmp(parent,"short")==0)
+            {
+                int def = pi->getMetaInt("enum");
+                outf("\"%d\"",def);
+            }
+            else if (strcmp(parent,"double")==0 || strcmp(parent,"float")==0)
+            {
+                double def = pi->getMetaDouble("enum");
+                outf("\"%g\"",def);
+            }
+            else
+                throw "Unhandled base type";
+
+            outs(",");
+        }
+        outs("NULL};\n");
+        outf("\tinit(\"%s\",\"%s\",inits);\n",name_,parent);
+        outs("}\n");
+
         return;
+    }
 
     const char *parent=getParentName();
 

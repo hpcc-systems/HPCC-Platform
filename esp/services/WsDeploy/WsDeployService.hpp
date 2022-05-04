@@ -262,24 +262,7 @@ private:
         }
       };
 
-      static CConfigFileMonitorThread* getInstance()
-      {
-        static Owned<CConfigFileMonitorThread> s_configFileMonitorSingleton;
-        static CSingletonLock slock;
-
-        if (slock.lock() == true)
-        {
-          if (s_configFileMonitorSingleton.get() == NULL)
-          {
-            s_configFileMonitorSingleton.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
-            s_configFileMonitorSingleton->init();
-          }
-
-          slock.unlock();
-        }
-
-        return s_configFileMonitorSingleton.get();
-      };
+      static CConfigFileMonitorThread* getInstance();
 
     protected:
       CThreaded* m_pWorkerThread;

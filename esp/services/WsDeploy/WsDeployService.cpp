@@ -2881,6 +2881,25 @@ void CWsDeployFileInfo::setEnvironment(IEspContext &context, IConstWsDeployReqIn
   }
 }
 
+static Owned<CWsDeployFileInfo::CConfigFileMonitorThread> s_configFileMonitorSingleton;
+static CSingletonLock slock;
+CWsDeployFileInfo::CConfigFileMonitorThread* CWsDeployFileInfo::CConfigFileMonitorThread::getInstance()
+{
+
+  if (slock.lock() == true)
+  {
+    if (s_configFileMonitorSingleton.get() == NULL)
+    {
+      s_configFileMonitorSingleton.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
+      s_configFileMonitorSingleton->init();
+    }
+
+    slock.unlock();
+  }
+
+  return s_configFileMonitorSingleton.get();
+}
+
 bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySettingsRequest &req, IEspDisplaySettingsResponse &resp)
 {
   synchronized block(m_mutex);
