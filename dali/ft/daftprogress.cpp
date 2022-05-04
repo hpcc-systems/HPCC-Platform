@@ -64,7 +64,7 @@ void DaftProgress::formatTime(char * buffer, unsigned secs)
         sprintf(buffer, "%d secs", secs);
 }
 
-void DaftProgress::onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize, unsigned numNodes)
+void DaftProgress::onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize, unsigned numNodes, unsigned __int64 numReads, unsigned __int64 numWrites)
 {
     cycle_t nowTime = get_cycles_now();
     savedTime[nextSample] = nowTime;
@@ -91,7 +91,7 @@ void DaftProgress::onProgress(unsigned __int64 sizeDone, unsigned __int64 totalS
         displayProgress((unsigned)(sizeDone*100/totalSize), secsLeft, temp, 
                         sizeDone/scale,totalSize/scale,scaleUnit, 
                         (unsigned)(msGone ? (sizeDone-startSize)/msGone : 0),
-                        (unsigned)(recentTimeDelta ? recentSizeDelta / recentTimeDelta : 0), numNodes);
+                        (unsigned)(recentTimeDelta ? recentSizeDelta / recentTimeDelta : 0), numNodes, numReads, numWrites);
 
         if (sizeDone == totalSize)
         {

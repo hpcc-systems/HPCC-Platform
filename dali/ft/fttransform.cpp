@@ -507,6 +507,7 @@ void TransferServer::sendProgress(OutputProgress & curProgress)
     msg.setEndian(__BIG_ENDIAN);
     curProgress.serializeCore(msg.clear().append(false));
     curProgress.serializeExtra(msg, 1);
+    curProgress.serializeExtra(msg, 2);
     if (!catchWriteBuffer(masterSocket, msg))
         throwError(RFSERR_TimeoutWaitMaster);
 
@@ -521,7 +522,8 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
 
     const offset_t startInputOffset = curPartition.inputOffset;
     const offset_t startOutputOffset = curPartition.outputOffset;
-
+    stat_type prevNumWrites =  out->getStatistic(StNumDiskWrites);
+    stat_type prevNumReads = input->getStatistic(StNumDiskReads);
     for (;;)
     {
         unsigned gotLength = input->getBlock(out);
@@ -541,6 +543,12 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
             curProgress.outputLength = out->tell()-startOutputOffset;
+            stat_type curNumWrites = out->getStatistic(StNumDiskWrites);
+            stat_type curNumReads = input->getStatistic(StNumDiskReads);
+            curProgress.numWrites += (curNumWrites - prevNumWrites);
+            curProgress.numReads += (curNumReads - prevNumReads);
+            prevNumWrites = curNumWrites;
+            prevNumReads = curNumReads;
             if (crcOut)
                 curProgress.outputCRC = crcOut->getCRC();
             if (calcInputCRC)
@@ -645,6 +653,11 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
 
     if (msg.remaining())
         msg.read(fileUmask);
+    if (msg.remaining())
+    {
+        ForEachItemIn(i2, progress)
+            progress.item(i2).deserializeExtra(msg, 2);
+    }
 
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
@@ -688,10 +701,12 @@ void TransferServer::transferChunk(unsigned chunkIndex)
     size32_t fixedTextLength = (size32_t)curPartition.fixedText.length();
     if (fixedTextLength || curPartition.inputName.isNull())
     {
+        stat_type prevWrites = out->getStatistic(StNumDiskWrites);
         out->write(fixedTextLength, curPartition.fixedText.get());
         curProgress.status = OutputProgress::StatusCopied;
         curProgress.inputLength = fixedTextLength;
         curProgress.outputLength = fixedTextLength;
+        curProgress.numWrites += (out->getStatistic(StNumDiskWrites)-prevWrites);
         if (crcOut)
             curProgress.outputCRC = crcOut->getCRC();
         sendProgress(curProgress);
@@ -864,7 +879,9 @@ processedProgress:
                 {
                     char null = 0;
                     offset_t lastOffset = lastChunk.outputOffset+lastChunk.outputLength;
+                    stat_type prevWrites = outio->getStatistic(StNumDiskWrites);
                     outio->write(lastOffset-sizeof(null),sizeof(null),&null);
+                    curProgress.numWrites += (outio->getStatistic(StNumDiskWrites)-prevWrites);
                     LOG(MCdebugProgress, unknownJob, "Extend length of target file to %" I64F "d", lastOffset);
                 }
             }
@@ -937,6 +954,7 @@ processedProgress:
                     curProgress.status = OutputProgress::StatusRenamed;
                     curProgress.serializeCore(msg.clear().append(false));
                     curProgress.serializeExtra(msg, 1);
+                    curProgress.serializeExtra(msg, 2);
                     if (!catchWriteBuffer(masterSocket, msg))
                         throwError(RFSERR_TimeoutWaitMaster);
                 }
