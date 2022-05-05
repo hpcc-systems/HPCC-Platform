@@ -2059,7 +2059,7 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* processName, const char* fileN
         OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
         if (!rIO)
             throw makeStringExceptionV(ECLWATCH_CANNOT_READ_FILE, "Cannot read file %s.", logSpecs.item(i));
-        OwnedIFileIOStream ios = createIOStream(rIO);
+        OwnedIFileIOStream ios = createBufferedIOStream(rIO);
         Owned<IStreamLineReader> lineReader = createLineReader(ios, true);
 
 /*
@@ -2235,7 +2235,7 @@ void WsWuInfo::readWorkunitThorLogOneDay(IFile* sourceFile, unsigned& processID,
     if (!sourceIO)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.", sourceFile->queryFilename());
 
-    Owned<IFileIOStream> ios = createIOStream(sourceIO);
+    Owned<IFileIOStream> ios = createBufferedIOStream(sourceIO);
 
     VStringBuffer startwuid("Started wuid=%s", wuid.str());
     VStringBuffer endwuid("Finished wuid=%s", wuid.str());
