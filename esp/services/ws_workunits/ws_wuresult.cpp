@@ -129,8 +129,10 @@ bool CWsWuResultOutHelper::getWUResultStreaming(CHttpRequest* request, CHttpResp
         zipFileNameWithPath.append((outFormat == WUResultOutGZIP) ? ".gz" : ".zip");
         zipResultFile(zipFileNameWithPath);
 
-        CWsWuFileHelper helper(nullptr);
-        response->setContent(helper.createIOStreamWithFileName(zipFileNameWithPath, IFOread));
+        auto stream = createIOStreamFromFile(zipFileNameWithPath, IFOread);
+        if (stream == nullptr)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for zip file %s", zipFileNameWithPath.str());
+        response->setContent(stream);
         if (outFormat == WUResultOutGZIP)
             response->setContentType("application/x-gzip");
         else
@@ -442,5 +444,3 @@ unsigned CWsWuResultOutHelper::getResultXmlStreaming(INewResultSet* result, cons
     Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty, 0, flusher);
     return writeResultCursorXml(*writer, cursor, resultName, start, count, schemaName, xmlns, true, &abortCallback);
 }
-
-

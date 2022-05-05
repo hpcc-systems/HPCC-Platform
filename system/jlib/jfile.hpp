@@ -277,6 +277,9 @@ extern jlib_decl IFileIOStream * createIOStream(IFileIO * file);        // links
 extern jlib_decl IFileIOStream * createNoSeekIOStream(IFileIOStream * stream);  // links argument
 extern jlib_decl IFileIOStream * createBufferedIOStream(IFileIO * file, unsigned bufsize=(unsigned)-1);// links argument
 extern jlib_decl IFileIOStream * createBufferedAsyncIOStream(IFileAsyncIO * file, unsigned bufsize=(unsigned)-1);// links argument
+extern jlib_decl IFileIOStream * createIOStreamFromFile(const char *fileNameWithPath, IFOmode mode);// links argument
+extern jlib_decl IFileIOStream * createBufferedIOStreamFromFile(const char *fileNameWithPath, IFOmode mode, unsigned bufsize=(unsigned)-1);// links argument
+
 
 // Useful for commoning up file and string based processing
 extern jlib_decl IFileIO * createIFileI(unsigned len, const void * buffer);     // input only...
