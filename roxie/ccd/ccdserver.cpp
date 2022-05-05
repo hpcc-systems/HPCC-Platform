@@ -311,9 +311,9 @@ public:
     {
         return ctx->resolveLFN(filename, isOpt, isPrivilegedUser);
     }
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
+    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
-        return ctx->createLFN(filename, overwrite, extend, clusters, isPrivilegedUser);
+        return ctx->createWriteHandler(filename, overwrite, extend, clusters, isPrivilegedUser);
     }
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
     {
@@ -388,10 +388,10 @@ protected:
 
 // General activity statistics
 
-static const StatisticsMapping actStatistics({StWhenFirstRow, StTimeElapsed, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
+static const StatisticsMapping actStatistics({StWhenFirstRow, StWhenStarted, StTimeElapsed, StTimeDependencies, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                               StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
                                               StNumScansPerRow, StNumAllocations, StNumAllocationScans,
-                                              StTimeFirstExecute, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles});
+                                              StTimeFirstExecute, StCycleDependenciesCycles, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles});
 static const StatisticsMapping joinStatistics({StNumAtmostTriggered}, actStatistics);
 static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                     StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
@@ -988,7 +988,7 @@ protected:
     MapStringToMyClass<ThorSectionTimer> functionTimers;
     ActivityTimeAccumulator activityStats;
     IProbeManager *probeManager = NULL;
-    unsigned processed;
+    unsigned processed = 0;
     unsigned numStarts = 0;
     unsigned activityId;
     activityState state;
@@ -1015,7 +1015,6 @@ public:
         sourceIdx = 0;
         inputStream = NULL;
         meta.set(basehelper.queryOutputMeta());
-        processed = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
@@ -1036,7 +1035,6 @@ public:
         inputStream = NULL;
         ctx = NULL;
         meta.set(basehelper.queryOutputMeta());
-        processed = 0;
         state=STATEreset;
         rowAllocator = NULL;
         debugging = false;
@@ -1160,12 +1158,6 @@ public:
         }
         return timer;
     }
-    void mergeStrandStats(unsigned strandProcessed, const ActivityTimeAccumulator & strandCycles)
-    {
-        CriticalBlock cb(statscrit);
-        processed += strandProcessed;
-        activityStats.merge(strandCycles);
-    }
     inline void ensureRowAllocator()
     {
         if (!rowAllocator) 
@@ -1248,6 +1240,7 @@ public:
 
         activityStats.addStatistics(merged);
         merged.mergeStatistic(StCycleLocalExecuteCycles, queryLocalCycles());
+        merged.mergeStatistic(StNumRowsProcessed, getTotalRowsProcessed());
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -1382,6 +1375,8 @@ public:
     inline void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock cb(statecrit);
+        if (timeActivities && !stats.getStatisticValue(StWhenStarted))
+            stats.addStatistic(StWhenStarted, getTimeStampNowValue());
         if (state != STATEreset && state != STATEstarting)
         {
             CTXLOG("STATE: Expected state to be reset, but was %s, in activity %d", queryStateText(state), activityId);
@@ -1410,12 +1405,19 @@ public:
 
     void executeDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
     {
+        if (dependencies.empty())
+            return;
+
+        CCycleTimer dependencyTimer(timeActivities);
+
         //MORE: Create a filtered list and then use asyncfor
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == (int) controlId)
                 dependencies.item(idx).execute(parentExtractSize, parentExtract);
         }
+
+        stats.addStatistic(StCycleDependenciesCycles, dependencyTimer.elapsedCycles());
     }
 
     void stopDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
@@ -1434,7 +1436,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 ret = activityStats.totalCycles;
+        __int64 ret = queryTotalCycles();
         if (input) ret -= input->queryTotalCycles();
         if (ret < 0) 
             ret = 0;
@@ -1712,7 +1714,12 @@ public:
 
     virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
     {
-        addEdgeStats(statsBuilder, 0, numStarts, processed, 1);
+        addEdgeStats(statsBuilder, 0, numStarts, getTotalRowsProcessed(), 1);
+    }
+
+    virtual unsigned getTotalRowsProcessed() const
+    {
+        return processed;
     }
 
     inline ThorActivityKind getKind() const
@@ -1743,7 +1750,7 @@ public:
         }
 
         if (collectFactoryStatistics)
-            factory->noteProcessed(oid, processed);
+            factory->noteProcessed(oid, _processed);
     }
 
     virtual void noteLibrary(IQueryFactory *library) override
@@ -1891,9 +1898,7 @@ public:
     }
     virtual void start()
     {
-        processed = 0;
-        numProcessedLastGroup = 0;
-        activityStats.reset();
+        numProcessedLastGroup = processed;
     }
     virtual void stop()
     {
@@ -1903,10 +1908,6 @@ public:
                 inputStream->stop();
 
             parent.stop();
-            //It would be preferrable to move activityStats (+processed?) to gatherStats(), but because of
-            //the way firstRow is associated with startCycles it would require an extra parameter
-            //which is not consistent with the other gatherStats() calls, or extra logic in the stats classes.
-            parent.mergeStrandStats(processed, activityStats);
         }
         stopped = true;
     }
@@ -1922,13 +1923,16 @@ public:
     inline void requestAbort() { abortRequested.store(true, std::memory_order_relaxed); }
     inline bool isAborting() { return abortRequested.load(std::memory_order_relaxed); }
 
-    void gatherStats(CRuntimeStatisticCollection & mergedStats) const
+    void gatherStrandStats(CRuntimeStatisticCollection & mergedStats) const
     {
+        activityStats.addStatistics(mergedStats);
         mergedStats.merge(stats);
         if (rowAllocator)
             rowAllocator->gatherStats(mergedStats);
     }
     const ActivityTimeAccumulator&  queryTimings() const { return activityStats; }
+
+    unsigned getRowsProcessed() const { return processed; }
 };
 
 class CRoxieServerStrandedActivity : public CRoxieServerActivity
@@ -1950,10 +1954,8 @@ public:
 
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
-        //MORE: Could call gatherStats here for child strands and avoid repeated merge and reset of the strand stats
-        //but calc local time would need to extract from merged
-        //ForEachItemIn(i, strands)
-        //    strands.item(i).gatherStats(merged);
+        ForEachItemIn(i, strands)
+            strands.item(i).gatherStrandStats(merged);
 
         CRoxieServerActivity::gatherStats(merged);
     }
@@ -1989,6 +1991,15 @@ public:
         if (!active)
             CRoxieServerActivity::stop();
     }
+
+    virtual unsigned __int64 queryTotalCycles() const override
+    {
+        unsigned __int64 total = 0;
+        ForEachItemIn(idx, strands)
+            total += strands.item(idx).queryTimings().totalCycles;
+        return total;
+    }
+
 
     void requestAbort()
     {
@@ -2117,7 +2128,7 @@ public:
 
     virtual void updateEdgeStats(IStatisticGatherer * statsBuilder) const
     {
-        addEdgeStats(statsBuilder, 0, numStarts, processed, strands.ordinality());
+        addEdgeStats(statsBuilder, 0, numStarts, getTotalRowsProcessed(), strands.ordinality());
     }
 
 protected:
@@ -2129,6 +2140,14 @@ protected:
             strands.item(idx).start();
             active++;
         }
+    }
+
+    virtual unsigned getTotalRowsProcessed() const override
+    {
+        unsigned total = 0;
+        ForEachItemIn(idx, strands)
+            total += strands.item(idx).getRowsProcessed();
+        return total;
     }
 };
 
@@ -11671,7 +11690,7 @@ protected:
                 clusters.append(".");
         }
         // Using defaultPrivilegedUser as restricted files applies to limits reading of file (not writing of files)
-        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters, defaultPrivilegedUser));
+        writer.setown(ctx->createWriteHandler(rawLogicalName, overwrite, extend, clusters, defaultPrivilegedUser));
         // MORE - need to check somewhere that single part if it's an existing file or an external one...
     }
 
@@ -12155,7 +12174,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         }
 
         OwnedRoxieString fname(helper.getFileName());
-        writer.setown(ctx->createLFN(fname, overwrite, false, clusters, defaultPrivilegedUser)); // MORE - if there's a workunit, use if for scope.
+        writer.setown(ctx->createWriteHandler(fname, overwrite, false, clusters, defaultPrivilegedUser)); // MORE - if there's a workunit, use if for scope.
         filename.set(writer->queryFile()->queryFilename());
         if (writer->queryFile()->exists())
         {

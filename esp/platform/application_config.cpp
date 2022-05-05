@@ -202,12 +202,12 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
         legacyAuthenticate->addPropTree("Setting", LINK(&settings->query()));
 }
 
-void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
+void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, const char *wsdlAddress, int seq)
 {
     VStringBuffer xpath("binding_plugins/@%s", service);
     const char *binding_plugin = app->queryProp(xpath);
 
-    VStringBuffer bindingXml("<EspBinding name='%s_binding' service='%s_service' protocol='%s' type='%s_http' plugin='%s' netAddress='%s' port='%d'/>", service, service, protocol, service, binding_plugin, netAddress, port);
+    VStringBuffer bindingXml("<EspBinding name='%s_binding' service='%s_service' protocol='%s' type='%s_http' plugin='%s' netAddress='%s' wsdlServiceAddress='%s' port='%d'/>", service, service, protocol, service, binding_plugin, netAddress, wsdlAddress, port);
     IPropertyTree *bindingEntry = legacyEsp->addPropTree("EspBinding", createPTreeFromXMLString(bindingXml));
     if (seq==0)
         bindingEntry->setProp("@defaultBinding", "true");
@@ -248,7 +248,7 @@ static void mergeServicePTree(IPropertyTree *target, IPropertyTree *toMerge)
     }
 }
 
-void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *application, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
+void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *application, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, const char *wsdlAddress, int seq)
 {
     VStringBuffer plugin_xpath("service_plugins/@%s", service);
     const char *service_plugin = app->queryProp(plugin_xpath);
@@ -261,7 +261,7 @@ void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *applic
     if (serviceConfig && serviceEntry)
         mergeServicePTree(serviceEntry, serviceConfig);
 
-    bindService(legacyEsp, app, service, protocol, netAddress, port, bindAuth, seq);
+    bindService(legacyEsp, app, service, protocol, netAddress, port, bindAuth, wsdlAddress, seq);
 }
 
 bool addProtocol(IPropertyTree *legacyEsp, IPropertyTree *app)
@@ -310,9 +310,12 @@ void addServices(IPropertyTree *legacyEsp, IPropertyTree *appEsp, const char *ap
     const char *netAddress = appEsp->queryProp("@netAddress");
     if (!netAddress)
         netAddress = ".";
+    const char *wsdlAddress = appEsp->queryProp("service/@wsdlAddress");
+    if (!wsdlAddress)
+        wsdlAddress = "";
     int seq=0;
     ForEach(*services)
-        addService(legacyEsp, appEsp, application, services->query().queryProp("."), tls ? "https" : "http", netAddress, port, auth, seq++);
+        addService(legacyEsp, appEsp, application, services->query().queryProp("."), tls ? "https" : "http", netAddress, port, auth, wsdlAddress, seq++);
 }
 
 void addBindingToServiceResource(IPropertyTree *service, const char *name, const char *serviceType, unsigned port,
@@ -327,6 +330,19 @@ void addBindingToServiceResource(IPropertyTree *service, const char *name, const
     bindingTree->setPropInt("@port", port);
     bindingTree->setProp("@basedn", baseDN);
     bindingTree->setProp("@workunitsBasedn", workunitsBaseDN);
+}
+
+const char *getLDAPBaseDN(IPropertyTree &service, IPropertyTree *ldapAuthTree, const char *xpath)
+{
+    const char *resourcesBasedn = service.queryProp(xpath);
+    if (!isEmptyString(resourcesBasedn))
+        return resourcesBasedn;
+
+    if (!ldapAuthTree)
+        return nullptr;
+
+    VStringBuffer authTreeXPath("ldap/%s", xpath);
+    return ldapAuthTree->queryProp(authTreeXPath);
 }
 
 void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLdap)
@@ -358,6 +374,29 @@ void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLd
         const char *workunitsBaseDN = authTree->queryProp("@workunitsBasedn");
         addBindingToServiceResource(wsAccessService, binding.queryProp("@name"), "WsSMC",
             binding.getPropInt("@port"), baseDN, workunitsBaseDN);
+    }
+
+    //Now, setLDAPSecurity for the esp applications other than eclwatch.
+    char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@class='esp'][@public='true']");
+    ForEach(*services)
+    {
+        IPropertyTree &service = services->query();
+        const char *type = service.queryProp("@type");
+        if (strieq(type, "eclwatch"))
+            continue;
+
+        StringBuffer path(hpccBuildInfo.componentDir);
+        addPathSepChar(path, sepchar).append("applications").append(sepchar).append(type).append(sepchar);
+        path.append("ldap_authorization_map.yaml");
+        Owned<IPropertyTree> authTree = createPTreeFromYAMLFile(path);
+        if (!authTree)
+            IERRLOG("Failed to read %s for EspService %s", path.str(), type);
+        const char *baseDN = getLDAPBaseDN(service, authTree, "@resourcesBasedn");
+        const char *workunitsBaseDN = getLDAPBaseDN(service, authTree, "@workunitsBasedn");
+        if (!isEmptyString(baseDN) || !isEmptyString(workunitsBaseDN))
+            addBindingToServiceResource(wsAccessService, type, type, 0, //port number unknown. Seem not used. Set to 0 for now.
+                baseDN, workunitsBaseDN);
     }
 }
 

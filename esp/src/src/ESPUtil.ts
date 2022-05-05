@@ -12,7 +12,7 @@ import * as json from "dojo/json";
 import * as on from "dojo/on";
 import * as query from "dojo/query";
 import * as Stateful from "dojo/Stateful";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 
 // @ts-ignore
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";

@@ -18,7 +18,7 @@
     recommend using methods that allow you to best take advantage of the
     configuration as code (CaC) practices. Configuration as code is the
     standard of managing configuration files in a version control system or
-    repository. </para>
+    repository.</para>
 
     <para>The following is a list of common customization techniques:</para>
 
@@ -310,6 +310,188 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
 
           <para>You should see two Thor clusters available as Targets -- thor
           and thor10.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="CustTutorial3" role="nobrk">
+      <title>Create a Custom Configuration Chart for No Thor</title>
+
+      <para>In this section, we will create a YAML file to specify a platform
+      deployment with no Thor. </para>
+
+      <orderedlist>
+        <listitem>
+          <para>If you have not already added the HPCC Systems repository to
+          the helm repository list, add it now.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>If you have added it, update to the latest charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a new text file and name it <emphasis
+          role="bold">nothor.yaml</emphasis> and open it in a text
+          editor.</para>
+
+          <para>You can use any text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Edit the file so it disables Thor as follows:</para>
+
+          <para><programlisting>thor: []</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Save the file and close the text editor.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy using the new custom configuration
+      chart.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open a terminal and navigate to the folder where you saved the
+          nothor.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy your HPCC Systems Platform, adding the new
+          configuration to your command:</para>
+
+          <para><programlisting># If you have previously stopped your cluster
+
+helm install mycluster hpcc/hpcc -f nothor.yaml
+
+# To upgrade without stopping
+
+helm upgrade mycluster hpcc/hpcc -f nothor.yaml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>After you confirm that your deployment is running, open ECL
+          Watch.</para>
+
+          <para>You should not see any Thor cluster available as a
+          Target.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="CustTutorial4" role="brk">
+      <title>Create a Custom Configuration Chart for No Roxie</title>
+
+      <para>In this section, we will create a YAML file to specify a platform
+      deployment with no Roxie. While the outcome is similar to what we did in
+      the previous section for no Thor, the technique is different. </para>
+
+      <orderedlist>
+        <listitem>
+          <para>If you have not already added the HPCC Systems repository to
+          the helm repository list, add it now.</para>
+
+          <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+          <para>If you have added it, update to the latest charts:</para>
+
+          <para><programlisting>helm repo update</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a new text file and name it <emphasis
+          role="bold">noroxie.yaml</emphasis> and open it in a text
+          editor.</para>
+
+          <para>You can use any text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Save the default values to a text file:</para>
+
+          <para><programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Open the saved file (myvalues.yaml) in a text editor.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire <emphasis role="bold">roxie:</emphasis>
+          section and paste it into the new noroxie.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire <emphasis role="bold">eclagent:</emphasis>
+          section and paste it into the new noroxie.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>In the <emphasis role="bold">roxie</emphasis> block, edit the
+          value for <emphasis role="bold">disabled:</emphasis> and change it
+          to <emphasis role="bold">true</emphasis></para>
+
+          <para>You can remove everything else from the roxie: block except
+          name.</para>
+        </listitem>
+
+        <listitem>
+          <para>In the <emphasis role="bold">eclagent</emphasis> block, delete
+          the entire <emphasis role="bold">name: roxie-workunit</emphasis>
+          block. </para>
+
+          <para>This removes the instance of a Roxie acting as an ECL Agent.
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Save the file and close the text editor.</para>
+
+          <para>The resulting noroxie.yaml file should look like this:</para>
+
+          <para><emphasis role="bold">Note:</emphasis> The comments have been
+          removed to simplify the example:</para>
+
+          <para><programlisting>roxie:
+- name: roxie
+  disabled: true
+  
+eclagent:
+- name: hthor
+  replicas: 1
+  maxActive: 4
+  prefix: hthor
+  useChildProcesses: false
+  type: hthor</programlisting></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Deploy using the new custom configuration
+      chart.</emphasis></para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open a terminal and navigate to the folder where you saved the
+          noroxie.yaml file.</para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy your HPCC Systems Platform, adding the new
+          configuration to your command:</para>
+
+          <para><programlisting>helm install mycluster hpcc/hpcc -f noroxie.yaml</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>After you confirm that your deployment is running, open ECL
+          Watch.</para>
+
+          <para>You should not see any Roxie cluster available as a
+          Target.</para>
         </listitem>
       </orderedlist>
     </sect2>

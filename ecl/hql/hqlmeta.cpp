@@ -772,7 +772,10 @@ IHqlExpression * queryGroupSortOrder(IHqlExpression * expr)
     return queryMetaProperty(expr)->meta.groupSortOrder;
 }
 
-
+bool hasKnownDistribution(IHqlExpression * expr)
+{
+    return isKnownDistribution(queryDistribution(expr));
+}
 
 //What is the actual local sort order at the moment - ignoring any grouping.
 IHqlExpression * CHqlMetaInfo::getLocalSortOrder() const

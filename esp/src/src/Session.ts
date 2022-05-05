@@ -45,7 +45,15 @@ getBuildInfo().then(info => {
     dojoConfig.currencyCode = info["currencyCode"] ?? "";
 });
 
-export const formatCost = d3Format(".2f");
+const format = d3Format(".2f");
+export function formatCost(value?: number | string): string {
+    if (value !== 0 && !value) {
+        logger.warning(`formatCost called for a nullish value: ${value}`);
+        return "";
+    }
+    const _number = typeof value === "string" ? Number(value) : value;
+    return `${format(_number)} (${dojoConfig?.currencyCode || "USD"})`;
+}
 
 export function initSession() {
     if (sessionIsActive > -1) {

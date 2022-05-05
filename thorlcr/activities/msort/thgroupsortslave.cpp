@@ -56,7 +56,10 @@ public:
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
         unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
-        iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, unstable ? stableSort_none : stableSort_earlyAlloc, rc_mixed, spillPriority));
+        {
+            CriticalBlock block(loaderCs);
+            iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, unstable ? stableSort_none : stableSort_earlyAlloc, rc_mixed, spillPriority));
+        }
         eoi = false;
         if (container.queryGrouped())
             out.setown(iLoader->loadGroup(inputStream, abortSoon));
@@ -79,10 +82,8 @@ public:
         out.clear();
         if (hasStarted())
         {
-            {
-                CriticalBlock block(loaderCs);
-                mergeStats(stats, iLoader, spillStatistics);
-            }
+            CriticalBlock block(loaderCs);
+            mergeStats(stats, iLoader, spillStatistics);
             iLoader.clear();
         }
         PARENT::stop();

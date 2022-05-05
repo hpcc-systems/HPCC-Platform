@@ -451,7 +451,7 @@ private:
 
     inline bool fileExists(const char *lfn)
     {
-        Owned<IDistributedFile> f = wsdfs::lookup(lfn, queryUserDescriptor(), AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+        Owned<IDistributedFile> f = wsdfs::lookup(lfn, queryUserDescriptor(), AccessMode::readMeta, false, false, nullptr, defaultPrivilegedUser, INFINITE);
         if (f)
             return true;
         return false;
@@ -770,7 +770,7 @@ private:
                     MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                     persistLock.setown(getPersistReadLock(goer));
                 }
-                Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), AccessMode::tbdWrite, false, false, nullptr, defaultPrivilegedUser, INFINITE);
+                Owned<IDistributedFile> f = wsdfs::lookup(goer, queryUserDescriptor(), AccessMode::writeSequential, false, false, nullptr, defaultPrivilegedUser, INFINITE);
                 if (!f)
                     goto restart; // Persist has been deleted since last checked - repeat the whole process
                 const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
@@ -1600,13 +1600,6 @@ public:
         if (graph)
             graph->gatherStatistics(builder);
 
-        SuperHashIteratorOf<decltype(childGraphs)::ELEMENT> iter(childGraphs);
-        ForEach(iter)
-        {
-            IActivityGraph * curChildGraph = static_cast<IActivityGraph *>(iter.query().getValue());
-            curChildGraph->gatherStatistics(builder);
-        }
-
         graph.clear();
         childGraphs.kill();
     }
@@ -2363,7 +2356,7 @@ public:
         return queryAgentDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, 0, header, isOpt, false);
     }
 
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
+    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
         throwUnexpected(); // only support writing on the server
     }
@@ -3542,9 +3535,9 @@ public:
         return ret.getClear();
     }
 
-    virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
+    virtual IRoxieWriteHandler *createWriteHandler(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
     {
-        return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit, isPrivilegedUser);
+        return factory->queryPackage().createWriteHandler(filename, overwrite, extend, clusters, workUnit, isPrivilegedUser);
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
@@ -3818,7 +3811,7 @@ public:
     {
         StringBuffer fullname;
         expandLogicalFilename(fullname, logicalName, workUnit, false, false);
-        Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(),AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser,INFINITE);
+        Owned<IDistributedFile> file = wsdfs::lookup(fullname.str(),queryUserDescriptor(),AccessMode::readMeta,false,false,nullptr,defaultPrivilegedUser,INFINITE);
         if (file)
         {
             WorkunitUpdate wu = updateWorkUnit();

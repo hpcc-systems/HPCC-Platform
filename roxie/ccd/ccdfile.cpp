@@ -3295,7 +3295,7 @@ public:
 
 public:
     CAgentDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, AccessMode::tbdRead, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverId(header->serverId)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, AccessMode::readRandom, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverId(header->serverId)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
@@ -3410,7 +3410,7 @@ private:
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile)
 {
-    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, true, false, AccessMode::tbdRead, isSuperFile);
+    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, true, false, AccessMode::readRandom, isSuperFile);
 }
 
 extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, AccessMode accessMode)

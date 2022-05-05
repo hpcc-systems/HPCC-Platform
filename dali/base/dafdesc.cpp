@@ -1753,7 +1753,7 @@ public:
         tracename.set(logicalName.get());
         if (!queryProperties().hasProp("@lfnHash"))
         {
-            lfnHash = hashc((const unsigned char *)tracename.str(), tracename.length(), 0);
+            lfnHash = getFilenameHash(tracename.length(), tracename.str());
             queryProperties().setPropInt("@lfnHash", lfnHash);
         }
     }

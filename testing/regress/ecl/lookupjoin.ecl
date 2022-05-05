@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning(4550, ignore);     // Remove warning about input distributions for join j9
+
 myrec := RECORD
  unsigned6 did;
  string1 let;

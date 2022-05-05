@@ -37,7 +37,7 @@ export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
             ["#/stub/RoxieQueries-DL/PackageMaps", "#/packagemaps"],
             ["#/stub/RoxieQueries", "#/queries"],
 
-            ["#/stub/OPS-DL/Topology", "#/topology"],
+            ["#/stub/OPS-DL/Topology", "#/topology-old"],
             ["#/stub/OPS-DL/DiskUsage", "#/diskusage"],
             ["#/stub/OPS-DL/TargetClustersQuery", "#/clusters"],
             ["#/stub/OPS-DL/ClusterProcessesQuery", "#/processes"],
@@ -45,8 +45,8 @@ export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
             ["#/stub/OPS-DL/Permissions", "#/security"],
             ["#/stub/OPS-DL/Monitoring", "#/monitoring"],
             ["#/stub/OPS-DL/DESDL", "#/desdl"],
-            ["#/stub/OPS-DL/LogVisualization", "#/topology"],
-            ["#/stub/OPS", "#/topology"],
+            ["#/stub/OPS-DL/LogVisualization", "#/topology-old"],
+            ["#/stub/OPS", "#/topology-old"],
         ].forEach(row => {
             legacyIndex[row[0]] = row[1];
             modernIndex[row[1]] = row[0];

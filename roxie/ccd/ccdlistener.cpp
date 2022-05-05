@@ -501,16 +501,19 @@ public:
                 myReply.append("<Endpoint ep='");
                 ep.getUrlStr(myReply);
                 myReply.append("'>\n");
+                unsigned savedLength = myReply.length();
                 try
                 {
                     globalPackageSetManager->doControlMessage(xml, myReply, logctx);
                 }
                 catch(IException *E)
                 {
+                    myReply.setLength(savedLength);
                     controlException(myReply, E, logctx);
                 }
                 catch(...)
                 {
+                    myReply.setLength(savedLength);
                     controlException(myReply, MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception"), logctx);
                 }
                 myReply.append("</Endpoint>\n");

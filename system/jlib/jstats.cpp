@@ -925,6 +925,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(LeafLoad) },
     { TIMESTAT(BlobLoad) },
     { CYCLESTAT(BlobLoad) },
+    { TIMESTAT(Dependencies) },
+    { CYCLESTAT(Dependencies) },
 };
 
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?

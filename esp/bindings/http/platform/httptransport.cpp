@@ -2069,8 +2069,9 @@ int CHttpRequest::processHeaders(IMultiException *me)
 
     if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload(false)))
     {
-        UERRLOG("Bad request: Content-Length exceeded maxRequestEntityLength");
-        throw createEspHttpException(HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE_CODE, "The request length was too long.", HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE);
+        VStringBuffer errorMessage("The request length (%lld) exceeded maxRequestEntityLength (%d).", m_content_length, m_MaxRequestEntityLength);
+        UERRLOG("%s", errorMessage.str());
+        throw createEspHttpException(HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE_CODE, errorMessage.str(), HTTP_STATUS_REQUEST_ENTITY_TOO_LARGE);
     }
     setPersistentEligible(checkPersistentEligible());
 

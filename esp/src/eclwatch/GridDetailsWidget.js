@@ -2,7 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "src/nlsHPCC",
-    "src/Memory",
+    "src/store/Memory",
     "dojo/store/Observable",
 
     "dijit/registry",
@@ -106,7 +106,7 @@ define([
 
         initGrid: function () {
             var context = this;
-            var store = new MemoryMod.AlphaNumSortMemory(this.idProperty, this.alphanumSort);
+            var store = new MemoryMod.Memory(this.idProperty, this.alphanumSort);
             this.store = new Observable(store);
             this.grid = this.createGrid(this.id + "Grid");
             this.setGridNoDataMessage(this.i18n.noDataMessage);

@@ -222,6 +222,21 @@ public:
         cmdHelper.loadDefinition(optSource, optService.get(), optInterfaceVersion,"", optTraceFlags());
         createOptionals();
 
+        if (optInterfaceVersion == 0.0)
+        {
+            DBGLOG("Target interface version for service '%s' not provided...", optService.get());
+            const char * esdlsrvversion =  cmdHelper.esdlDef->queryService(optService.get())->queryProp("version");
+            if (isEmptyString(esdlsrvversion))
+            {
+                WARNLOG("Could not determine Service '%s' version from ECM definition!", optService.get());
+            }
+            else
+            {
+                optInterfaceVersion = atof(esdlsrvversion);
+                DBGLOG("Target interface version set to latest from ECM definition: '%s'", esdlsrvversion);
+            }
+        }
+
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optInterfaceVersion, opts.get(), optFlags );
 
         if( optRawOutput )
@@ -520,6 +535,21 @@ public:
     {
         cmdHelper.loadDefinition(optSource, optService.get(), optInterfaceVersion, "", optTraceFlags());
         createOptionals();
+
+        if (optInterfaceVersion == 0.0)
+        {
+            DBGLOG("Target interface version for service '%s' not provided...", optService.get());
+            const char * esdlsrvversion =  cmdHelper.esdlDef->queryService(optService.get())->queryProp("version");
+            if (isEmptyString(esdlsrvversion))
+            {
+                WARNLOG("Could not determine Service '%s' version from ECM definition!", optService.get());
+            }
+            else
+            {
+                optInterfaceVersion = atof(esdlsrvversion);
+                DBGLOG("Target interface version set to latest from ECM definition: '%s'", esdlsrvversion);
+            }
+        }
 
         Owned<IEsdlDefObjectIterator> structs = cmdHelper.esdlDef->getDependencies( optService.get(), optMethod.get(), ESDLOPTLIST_DELIMITER, optInterfaceVersion, opts.get(), optFlags );
 

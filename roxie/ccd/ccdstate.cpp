@@ -569,7 +569,7 @@ protected:
                     }
                     if (traceLevel > 9)
                         DBGLOG("Looking up subfile %s", subFileName.str());
-                    AccessMode subAccessMode = AccessMode::tbdRead;   // NOTE - overwriting a superfile does NOT require write access to subfiles
+                    AccessMode subAccessMode = AccessMode::readRandom;   // NOTE - overwriting a superfile does NOT require write access to subfiles
                     Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, subAccessMode, false, false, isPrivilegedUser);
                     if (subFileInfo)
                     {
@@ -690,7 +690,7 @@ public:
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
-        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, AccessMode::tbdRead, false, true, isPrivilegedUser);
+        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, AccessMode::readRandom, false, true, isPrivilegedUser);
         if (!result)
         {
             StringBuffer compulsoryMsg;
@@ -704,13 +704,13 @@ public:
         return result;
     }
 
-    virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu, bool isPrivilegedUser) const
+    virtual IRoxieWriteHandler *createWriteHandler(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu, bool isPrivilegedUser) const
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false, false);
-        Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, AccessMode::tbdWrite, true, isPrivilegedUser);
+        Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, AccessMode::writeSequential, true, isPrivilegedUser);
         if (!resolved)
-            resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, AccessMode::tbdWrite, true, resolveLocally(), isPrivilegedUser));
+            resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, AccessMode::writeSequential, true, resolveLocally(), isPrivilegedUser));
         if (resolved)
         {
             if (resolved->exists())
@@ -739,7 +739,7 @@ public:
         else if (daliHelper)
             user = daliHelper->queryUserDescriptor();//predeployed query mode
 
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, AccessMode::tbdWrite, isPrivilegedUser, &clusters);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, AccessMode::writeSequential, isPrivilegedUser, &clusters);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);

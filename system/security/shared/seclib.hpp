@@ -229,6 +229,7 @@ enum authStatus : int
     AS_ACCOUNT_DISABLED = 6,//valid username and password/credential are supplied but the account has been disabled
     AS_ACCOUNT_EXPIRED = 7,//valid username and password/credential supplied but the account has expired
     AS_ACCOUNT_LOCKED = 8,//valid username is supplied, but the account is locked out
+    AS_ACCOUNT_ROOT_ACCESS_DENIED = 9,//valid username and password/credential supplied but the user does not have the root access to the service.
 };
 
 static const SecFeatureBit SUF_NO_FEATURES                 = 0x00;

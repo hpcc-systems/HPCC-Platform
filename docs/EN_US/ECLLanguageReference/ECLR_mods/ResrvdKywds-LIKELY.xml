@@ -4,15 +4,13 @@
 <sect1 id="likely">
   <title>LIKELY and UNLIKELY</title>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] LIKELY<indexterm>
+  <para><emphasis role="bold">LIKELY<indexterm>
       <primary>LIKELY</primary>
     </indexterm>(</emphasis><emphasis>filtercondition</emphasis><emphasis
   role="bold">, [</emphasis><emphasis> likelihood </emphasis><emphasis
   role="bold">] </emphasis><emphasis role="bold">);</emphasis></para>
 
-  <para><emphasis role="bold">[</emphasis><emphasis>attrname</emphasis>
-  :=<emphasis role="bold"> ] UNLIKELY<indexterm>
+  <para><emphasis role="bold">UNLIKELY<indexterm>
       <primary>UNLIKELY</primary>
     </indexterm>(</emphasis><emphasis>filtercondition</emphasis><emphasis
   role="bold">);</emphasis><informaltable colsep="1" frame="all" rowsep="1">

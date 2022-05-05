@@ -397,7 +397,12 @@ void Thread::startRelease()
     unsigned delay = 1000;
     for (;;) {
         pthread_attr_t attr;
-        pthread_attr_init(&attr);
+        status = pthread_attr_init(&attr);
+        if (status)
+        {
+            IERRLOG("pthread_attr_init returns %d",status);
+            throw makeOsException(status);
+        }
         pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
         if (stacksize)
@@ -419,6 +424,7 @@ void Thread::startRelease()
         pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
         pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
         status = pthread_create(&threadid, &attr, Thread::_threadmain, this);
+        pthread_attr_destroy(&attr);
         if ((status==EAGAIN)||(status==EINTR)) {
             if (numretrys--==0)
                 break;

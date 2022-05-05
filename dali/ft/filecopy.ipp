@@ -336,6 +336,8 @@ protected:
     bool                    compressOutput;
     bool                    copyCompressed;
     unsigned __int64        totalLengthRead;
+    unsigned __int64        totalNumReads;
+    unsigned __int64        totalNumWrites;
     unsigned                throttleNicSpeed;
     unsigned                lastProgressTick;
     StringAttr              wuid; // used for logging

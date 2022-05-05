@@ -6,7 +6,7 @@ define([
     "dojo/_base/Deferred",
     "dojo/data/ItemFileReadStore",
     "dojo/promise/all",
-    "src/Memory",
+    "src/store/Memory",
 
     "src/WsTopology",
     "src/WsWorkunits",

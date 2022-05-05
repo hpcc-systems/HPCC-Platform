@@ -3458,38 +3458,37 @@ ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAcce
 // LOG ACCESS HELPER METHODS
 
 // Fetches log entries - based on provided filter, via provided IRemoteLogAccess instance
-bool fetchLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, ILogAccessFilter * filter, LogAccessTimeRange timeRange, const StringArray & cols, LogAccessLogFormat format)
+bool fetchLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, ILogAccessFilter * filter, LogAccessTimeRange timeRange, const StringArray & cols, LogAccessLogFormat format)
 {
     LogAccessConditions logFetchOptions;
     logFetchOptions.setTimeRange(timeRange);
     logFetchOptions.setFilter(filter);
     logFetchOptions.copyLogFieldNames(cols); //ensure these fields are declared in m_logMapping->queryProp("WorkUnits/@contentcolumn")? or in LogMap/Fields?"
-
-    return logAccess.fetchLog(logFetchOptions, returnbuf, format);
+    return logAccess.fetchLog(resultDetails, logFetchOptions, returnbuf, format);
 }
 
 // Fetches log entries based on provided JobID, via provided IRemoteLogAccess instance
-bool fetchJobIDLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+bool fetchJobIDLog(LogQueryResultDetails & resultDetails,StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
 {
-    return fetchLog(returnbuf, logAccess, getJobIDLogAccessFilter(jobid), timeRange, cols, format);
+    return fetchLog(resultDetails, returnbuf, logAccess, getJobIDLogAccessFilter(jobid), timeRange, cols, format);
 }
 
 // Fetches log entries based on provided component name, via provided IRemoteLogAccess instance
-bool fetchComponentLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+bool fetchComponentLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
 {
-    return fetchLog(returnbuf, logAccess, getComponentLogAccessFilter(component), timeRange, cols, format);
+    return fetchLog(resultDetails, returnbuf, logAccess, getComponentLogAccessFilter(component), timeRange, cols, format);
 }
 
 // Fetches log entries based on provided audience, via provided IRemoteLogAccess instance
-bool fetchLogByAudience(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
 {
-    return fetchLog(returnbuf, logAccess, getAudienceLogAccessFilter(audience), timeRange, cols, format);
+    return fetchLog(resultDetails, returnbuf, logAccess, getAudienceLogAccessFilter(audience), timeRange, cols, format);
 }
 
 // Fetches log entries based on provided log message class, via provided IRemoteLogAccess instance
-bool fetchLogByClass(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
 {
-    return fetchLog(returnbuf, logAccess, getClassLogAccessFilter(logclass), timeRange, cols, format);
+    return fetchLog(resultDetails, returnbuf, logAccess, getClassLogAccessFilter(logclass), timeRange, cols, format);
 }
 
 //logAccessPluginConfig expected to contain connectivity and log mapping information
@@ -3513,11 +3512,11 @@ IRemoteLogAccess &queryRemoteLogAccessor()
                     port: 9200
                     logMaps:
                     - type: "global"
-                    storeName: "filebeat-*"
+                    storeName: "hpcc-logs*"
                     searchColumn: "message"
                     timeStampColumn: "created_ts"
                     - type: "workunits"
-                    storeName: "filebeat-*"
+                    storeName: "hpcc-logs*"
                     searchColumn: "hpcc.log.jobid"
                     - type: "components"
                     searchColumn: "kubernetes.container.name"

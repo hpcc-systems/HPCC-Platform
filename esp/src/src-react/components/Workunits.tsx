@@ -3,13 +3,12 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, 
 import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
 import * as domClass from "dojo/dom-class";
-import * as ESPWorkunit from "src/ESPWorkunit";
+import { CreateWUQueryStore, Get, WUQueryStore } from "src/ESPWorkunit";
 import * as WsWorkunits from "src/WsWorkunits";
 import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
-import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
@@ -66,7 +65,7 @@ const defaultUIState = {
 
 interface WorkunitsProps {
     filter?: object;
-    store?: any;
+    store?: WUQueryStore;
 }
 
 const emptyFilter = {};
@@ -81,7 +80,6 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
     const query = React.useMemo(() => {
@@ -89,7 +87,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [filter]);
 
     const gridStore = React.useMemo(() => {
-        return store ? store : ESPWorkunit.CreateWUQueryStore({});
+        return store ? store : CreateWUQueryStore();
     }, [store]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
@@ -117,7 +115,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             Wuid: {
                 label: nlsHPCC.WUID, width: 180,
                 formatter: function (Wuid, row) {
-                    const wu = ESPWorkunit.Get(Wuid);
+                    const wu = Get(Wuid);
                     return <>
                         <Image src={wu.getStateImage()} />
                         &nbsp;
@@ -140,14 +138,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             ExecuteCost: {
                 label: nlsHPCC.ExecuteCost, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                    return `${formatCost(cost)}`;
                 }
             },
             FileAccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)
-                        } (${currencyCode || "$"})`;
+                    return `${formatCost(cost)}`;
                 }
             }
         }

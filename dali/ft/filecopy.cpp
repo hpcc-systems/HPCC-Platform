@@ -394,6 +394,9 @@ bool FileTransferThread::performTransfer()
 
         msg.append(sprayer.fileUmask);
 
+        ForEachItemIn(i3, progress)
+            progress.item(i3).serializeExtra(msg, 2);
+
         if (!catchWriteBuffer(socket, msg))
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
@@ -412,10 +415,10 @@ bool FileTransferThread::performTransfer()
             OutputProgress newProgress;
             newProgress.deserializeCore(msg);
             newProgress.deserializeExtra(msg, 1);
+            newProgress.deserializeExtra(msg, 2);
             sprayer.updateProgress(newProgress);
 
             LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
-
             if (isAborting())
             {
                 if (!sendRemoteAbort(socket))
@@ -615,6 +618,8 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     calcedInputCRC = false;
     aborting = false;
     totalLengthRead = 0;
+    totalNumReads = 0;
+    totalNumWrites = 0;
     throttleNicSpeed = 0;
     compressedInput = false;
     compressOutput = options->getPropBool(ANcompress);
@@ -2828,6 +2833,8 @@ void FileSprayer::updateProgress(const OutputProgress & newProgress)
     OutputProgress & curProgress = progress.item(newProgress.whichPartition);
 
     totalLengthRead += (newProgress.inputLength - curProgress.inputLength);
+    totalNumReads += (newProgress.numReads - curProgress.numReads);
+    totalNumWrites += (newProgress.numWrites - curProgress.numWrites);
     curProgress.set(newProgress);
     if (curProgress.tree)
         curProgress.save(curProgress.tree);
@@ -2853,7 +2860,7 @@ void FileSprayer::updateSizeRead()
         unsigned numCompleted = (sizeReadSoFar == sizeToBeRead) ? transferSlaves.ordinality() : numSlavesCompleted;
         if (done || (nowTick - lastOperatorTick >= operatorUpdateFrequency))
         {
-            progressReport->onProgress(sizeReadSoFar, sizeToBeRead, numCompleted);
+            progressReport->onProgress(sizeReadSoFar, sizeToBeRead, numCompleted, totalNumReads, totalNumWrites);
             lastOperatorTick = nowTick;
             progressDone = done;
         }
@@ -3109,14 +3116,14 @@ void FileSprayer::spray()
         StringBuffer cluster;
         distributedTarget->getClusterName(0, cluster);
         if (!cluster.isEmpty())
-            fileAccessCost += calcFileAccessCost(cluster, 0, 0);
+            fileAccessCost += calcFileAccessCost(cluster, totalNumWrites, 0);
     }
     if (distributedSource && distributedSource->querySuperFile()==nullptr)
     {
         StringBuffer cluster;
         distributedSource->getClusterName(0, cluster);
         if (!cluster.isEmpty())
-            fileAccessCost += calcFileAccessCost(cluster, 0, 0);
+            fileAccessCost += calcFileAccessCost(cluster, 0, totalNumReads);
     }
     progressReport->setFileAccessCost(fileAccessCost);
     StringBuffer copyEventText;     // [logical-source] > [logical-target]
@@ -3306,6 +3313,7 @@ void FileSprayer::updateTargetProperties()
 
         DistributedFilePropertyLock lock(distributedTarget);
         IPropertyTree &curProps = lock.queryAttributes();
+        curProps.setPropInt64("@numDiskWrites", totalNumWrites);
         if (calcCRC())
             curProps.setPropInt(FAcrc, totalCRC.get());
         curProps.setPropInt64(FAsize, totalLength);
@@ -3480,6 +3488,11 @@ void FileSprayer::updateTargetProperties()
         int expireDays = options->getPropInt("@expireDays", -1);
         if (expireDays != -1)
             curProps.setPropInt("@expireDays", expireDays);
+    }
+    if (distributedSource)
+    {
+        if (distributedSource->querySuperFile()==nullptr)
+            distributedSource->addAttrValue("@numDiskReads", totalNumReads);
     }
     if (error)
         throw error.getClear();

@@ -8,7 +8,7 @@ import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
 import * as Observable from "dojo/store/Observable";
 import * as ESPWorkunit from "src/ESPWorkunit";
 import nlsHPCC from "src/nlsHPCC";
-import { Memory } from "src/Memory";
+import { Memory } from "src/store/Memory";
 import { Chip } from "./controls/Chip";
 import { pushParamExact } from "../util/history";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";

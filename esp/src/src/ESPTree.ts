@@ -1,7 +1,7 @@
 ﻿import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
 import * as ESPUtil from "./ESPUtil";
-import { Memory } from "./Memory";
+import { Memory } from "./store/Memory";
 
 const TreeItem = declare([ESPUtil.Singleton], {
     __hpcc_type: "none",

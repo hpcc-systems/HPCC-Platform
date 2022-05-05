@@ -25,7 +25,7 @@ import { JsonImportForm } from "./forms/landing-zone/JsonImportForm";
 import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
-import { QueryRequest } from "src/Memory";
+import { QueryRequest } from "src/store/Memory";
 
 function formatQuery(targetDropzones, filter): QueryRequest {
     const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
@@ -47,6 +47,15 @@ function formatQuery(targetDropzones, filter): QueryRequest {
         } : undefined
     };
 }
+
+const buttonStyles = mergeStyleSets({
+    labelOnly: {
+        ":hover": {
+            background: "initial",
+            cursor: "initial"
+        }
+    }
+});
 
 const FilterFields: Fields = {
     "DropZoneName": { type: "target-dropzone", label: nlsHPCC.DropZone },
@@ -237,6 +246,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             onClick: () => setShowAddFile(true)
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "importLabel", text: `${nlsHPCC.Import}: `, className: buttonStyles.labelOnly },
         {
             key: "fixed", text: nlsHPCC.Fixed, disabled: !selection.length,
             onClick: () => setShowFixed(true)

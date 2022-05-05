@@ -66,8 +66,11 @@ static CClassMeta<AggregateRowBuilder> AggregateRowBuilderMeta;
 
 void RowAggregator::start(IEngineRowAllocator *_rowAllocator, ICodeContext *ctx, unsigned activityId)
 {
-    rowAllocator.set(_rowAllocator);
-    rowBuilderAllocator.setown(ctx->getRowAllocatorEx(&AggregateRowBuilderMeta, activityId, roxiemem::RHFunique|roxiemem::RHFscanning|roxiemem::RHFdelayrelease));
+    if (rowAllocator != _rowAllocator)
+    {
+        rowAllocator.set(_rowAllocator);
+        rowBuilderAllocator.setown(ctx->getRowAllocatorEx(&AggregateRowBuilderMeta, activityId, roxiemem::RHFunique|roxiemem::RHFscanning|roxiemem::RHFdelayrelease));
+    }
 }
 
 void RowAggregator::reset()
@@ -81,7 +84,6 @@ void RowAggregator::reset()
     _releaseAll();
     eof = false;
     cursor = NULL;
-    rowAllocator.clear();
     totalSize = overhead = 0;
 }
 

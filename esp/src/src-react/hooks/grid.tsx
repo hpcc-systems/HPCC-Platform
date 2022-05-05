@@ -1,15 +1,30 @@
 import * as React from "react";
 import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IStackProps, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { AlphaNumSortMemory, QueryRequest, QuerySortItem } from "src/Memory";
-import * as ESPRequest from "src/ESPRequest";
+import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../components/Common";
 import { DojoGrid } from "../components/DojoGrid";
-import { useDeepCallback, useDeepEffect } from "./deepHooks";
+import { useDeepCallback, useDeepEffect, useDeepMemo } from "./deepHooks";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useUserStore } from "./store";
 import { useUserTheme } from "./theme";
+
+interface DojoColumn {
+    selectorType?: string;
+    label?: string;
+    field?: string;
+    width?: number;
+    headerIcon?: string;
+    headerTooltip?: string;
+    sortable?: boolean;
+    disabled?: boolean | ((item: any) => boolean);
+    hidden?: boolean;
+    formatter?: (object, value, node, options) => any;
+    renderCell?: (object, value, node, options) => any;
+}
+
+type DojoColumns = { [key: string]: DojoColumn };
 
 interface useGridProps {
     store: any,
@@ -84,7 +99,7 @@ function tooltipItemRenderer(item: any, index: number, column: IColumn) {
     </TooltipHost>;
 }
 
-function columnsAdapter(columns, sorted?: QuerySortItem): IColumn[] {
+function columnsAdapter(columns: DojoColumns, sorted?: QuerySortItem): IColumn[] {
     const attr = sorted?.attribute;
     const desc = sorted?.descending;
     const retVal: IColumn[] = [];
@@ -116,7 +131,7 @@ interface useFluentStoreGridProps {
     sort?: QuerySortItem,
     start: number,
     count: number,
-    columns: object,
+    columns: DojoColumns,
     filename: string
 }
 
@@ -138,7 +153,7 @@ function useFluentStoreGrid({
     filename
 }: useFluentStoreGridProps): useFluentStoreGridResponse {
 
-    const constColumns = useConst({ ...columns });
+    const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
     const [selection, setSelection] = React.useState([]);
     const [items, setItems] = React.useState<any[]>([]);
@@ -169,11 +184,11 @@ function useFluentStoreGrid({
     }, [refreshTable]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
-        return columnsAdapter(constColumns, sorted);
-    }, [constColumns, sorted]);
+        return columnsAdapter(memoizedColumns, sorted);
+    }, [memoizedColumns, sorted]);
 
     const onColumnClick = React.useCallback((event: React.MouseEvent<HTMLElement>, column: IColumn) => {
-        if (constColumns[column.key]?.sortable === false) return;
+        if (memoizedColumns[column.key]?.sortable === false) return;
 
         let sorted = column.isSorted;
         let isSortedDescending: boolean = column.isSortedDescending;
@@ -190,7 +205,7 @@ function useFluentStoreGrid({
             attribute: sorted ? column.key : "",
             descending: sorted ? isSortedDescending : false
         });
-    }, [constColumns]);
+    }, [memoizedColumns]);
 
     const renderDetailsHeader = React.useCallback((props: IDetailsHeaderProps, defaultRender?: any) => {
         return defaultRender({
@@ -217,8 +232,8 @@ function useFluentStoreGrid({
     />, [fluentColumns, items, onColumnClick, renderDetailsHeader, selectionHandler]);
 
     const copyButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(constColumns, selection, `${filename}.csv`)
-    ], [constColumns, filename, selection]);
+        ...createCopyDownloadSelection(memoizedColumns, selection, `${filename}.csv`)
+    ], [memoizedColumns, filename, selection]);
 
     return { Grid, selection, copyButtons, total, refreshTable };
 }
@@ -228,7 +243,7 @@ interface useFluentGridProps {
     primaryID: string,
     alphaNumColumns?: { [id: string]: boolean },
     sort?: QuerySortItem,
-    columns: object,
+    columns: DojoColumns,
     filename: string
 }
 
@@ -241,7 +256,7 @@ export function useFluentGrid({
     filename
 }: useFluentGridProps): useFluentStoreGridResponse {
 
-    const constStore = useConst(new AlphaNumSortMemory(primaryID, alphaNumColumns));
+    const constStore = useConst(new Memory(primaryID, alphaNumColumns));
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store: constStore, columns, sort, filename, start: 0, count: data.length });
 
     React.useEffect(() => {
@@ -254,10 +269,10 @@ export function useFluentGrid({
 
 interface useFluentPagedGridProps {
     persistID: string,
-    store: ESPRequest.Store,
+    store: BaseStore<any, any>,
     query?: QueryRequest,
     sort?: QuerySortItem,
-    columns: object,
+    columns: DojoColumns,
     filename: string
 }
 

@@ -1556,7 +1556,7 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     authReq.ctx->setUserID(_userName);
     authReq.ctx->setPassword(_password);
     authReq.authBinding->populateRequest(m_request.get());
-    if (!authReq.authBinding->doAuth(authReq.ctx) && (authReq.ctx->getAuthError() != EspAuthErrorNotAuthorized))
+    if (!authReq.authBinding->doAuth(authReq.ctx))
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
@@ -1578,12 +1578,6 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     addCookie(SESSION_TIMEOUT_COOKIE, cookieStr.str(), 0, false);
     clearCookie(SESSION_AUTH_MSG_COOKIE);
     clearCookie(SESSION_START_URL_COOKIE);
-    if (authReq.ctx->getAuthError() == EspAuthErrorNotAuthorized)
-    {
-        authReq.ctx->setAuthStatus(AUTH_STATUS_NOACCESS);
-        sendAuthorizationMsg(authReq);
-        return authSucceeded;
-    }
 
     authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
     if (unlock)
@@ -2112,6 +2106,9 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         case AS_ACCOUNT_LOCKED :
             ESPLOG(LogMin, "Account locked for %s", authReq.ctx->queryUserId());
             addCookie(USER_ACCT_ERROR_COOKIE, "Account Locked", 0, false);
+            break;
+        case AS_ACCOUNT_ROOT_ACCESS_DENIED :
+            addCookie(USER_ACCT_ERROR_COOKIE, authReq.ctx->getRespMsg(), 0, false);
             break;
         }
     }

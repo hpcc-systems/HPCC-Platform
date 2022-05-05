@@ -464,7 +464,7 @@ public:
                 sleep(LDAPSEC_RETRY_WAIT);
                 if(retries < LDAPSEC_MAX_RETRIES)
                 {
-                    DBGLOG("LDAP AD Server %s temporarily unreachable for user %s, retrying...", hostbuf.str(), sysUserDN.str());
+                    DBGLOG("LDAP AD Server %s temporarily unreachable for user %s on port %d, retrying...", hostbuf.str(), sysUserDN.str(), port);
                 }
             }
             if (rc != LDAP_SUCCESS)
@@ -1673,7 +1673,6 @@ public:
             //grants access to Administrators only
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_DEFAULT), PT_ADMINISTRATORS_ONLY, nullptr);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), PT_DEFAULT, nullptr);
-            createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_VIEW_SCOPE), PT_ADMINISTRATORS_ONLY, nullptr);
             createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(RT_WORKUNIT_SCOPE), PT_DEFAULT, nullptr);
 
             createLdapBasedn(NULL, m_ldapconfig->getUserBasedn(), PT_ADMINISTRATORS_ONLY, nullptr);

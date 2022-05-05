@@ -8,7 +8,6 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
-import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
@@ -76,8 +75,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const [viewByScope, setViewByScope] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [, { currencyCode }] = useBuildInfo();
 
     //  Grid ---
     const gridStore = React.useMemo(() => {
@@ -162,17 +161,23 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     node.innerText = Utility.valueCleanUp(value);
                 },
             },
+            MinSkew: {
+                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ?? ""
+            },
+            MaxSkew: {
+                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ?? ""
+            },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                    return `${formatCost(cost)}`;
                 }
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
                 formatter: function (cost, row) {
-                    return `${formatCost(cost ?? 0)} (${currencyCode || "$"})`;
+                    return `${formatCost(cost)}`;
                 }
             }
         }
@@ -240,12 +245,20 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             }
         },
         {
+            key: "viewByScope", text: nlsHPCC.ViewByScope, iconProps: { iconName: "BulletedTreeList" }, iconOnly: true, canCheck: true, checked: viewByScope,
+            onClick: () => {
+                setViewByScope(!viewByScope);
+                window.location.href = "#/scopes";
+            }
+        },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
             key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => {
                 setMine(!mine);
             }
         },
-    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
+    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
     const filterFields: Fields = {};

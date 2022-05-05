@@ -917,7 +917,10 @@ int main( int argc, const char *argv[]  )
     }
 
     StringBuffer queueName;
-#ifndef _CONTAINERIZED
+#ifdef _CONTAINERIZED
+    bool removeK8sNetwork = false;
+    StringBuffer cloudJobName;
+#else
     SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
     if (!thorName) thorName = "thor";
@@ -926,7 +929,6 @@ int main( int argc, const char *argv[]  )
 #endif
 
     Owned<IException> exception;
-    StringBuffer cloudJobName;
     try
     {
         CSDSServerStatus &serverStatus = openThorServerStatus();
@@ -984,6 +986,7 @@ int main( int argc, const char *argv[]  )
         StringBuffer myEp;
         queryMyNode()->endpoint().getUrlStr(myEp);
 
+        removeK8sNetwork = applyK8sYaml("thorworker", workunit, cloudJobName, "networkspec", { }, true);
         applyK8sYaml("thorworker", workunit, cloudJobName, "jobspec", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false);
 #else
         StringBuffer thorEpStr;
@@ -1083,12 +1086,30 @@ int main( int argc, const char *argv[]  )
 #ifdef _CONTAINERIZED
     if (!cloudJobName.isEmpty())
     {
-        KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
-        if (keepJob != KeepK8sJobs::all)
+        try
         {
-            // Delete jobs unless the pod failed and keepJob==podfailures
-            if ((nullptr == exception) || (KeepK8sJobs::podfailures != keepJob))
-                deleteK8sResource("thorworker", cloudJobName, "job");
+            KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+            if (keepJob != KeepK8sJobs::all)
+            {
+                // Delete jobs unless the pod failed and keepJob==podfailures
+                if ((nullptr == exception) || (KeepK8sJobs::podfailures != keepJob))
+                    deleteK8sResource("thorworker", cloudJobName, "job");
+            }
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e);
+            e->Release();
+        }
+        try
+        {
+            if (removeK8sNetwork)
+                deleteK8sResource("thorworker-networkpolicy", cloudJobName, "networkpolicy");
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e);
+            e->Release();
         }
     }
     setExitCode(0);

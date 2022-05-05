@@ -3295,9 +3295,21 @@ public:
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
     virtual bool isExternal() const { return external; }
 
-    virtual int getExpire()
+    virtual int getExpire(StringBuffer *expirationDate)
     {
-        return queryAttributes().getPropInt("@expireDays", -1);
+        int expireDays = queryAttributes().getPropInt("@expireDays", -1);
+        if (!expirationDate || (expireDays == -1))
+            return expireDays;
+
+        const char *lastAccessed = queryAttributes().queryProp("@accessed");
+        if (isEmptyString(lastAccessed))
+            return expireDays;
+
+        CDateTime expires;
+        expires.setString(lastAccessed);
+        expires.adjustTime(60*24*expireDays);
+        expires.getString(*expirationDate);
+        return expireDays;
     }
 
     virtual void setExpire(int expireDays)
@@ -3319,6 +3331,7 @@ protected:
     StringAttr partmask;
     FileClusterInfoArray clusters;
     FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
+    unsigned lfnHash = 0;
     AccessMode accessMode = AccessMode::none;
 
     void savePartsAttr(bool force) override
@@ -3547,6 +3560,7 @@ public:
         LOGFDESC("CDistributedFile.a fdesc",fdesc);
 #endif
         setFileAttrs(fdesc,false);
+        setLFNHash(fdesc);
         setClusters(fdesc);
         setPreferredClusters(_parent->defprefclusters);
         setParts(fdesc,false);
@@ -3565,6 +3579,8 @@ public:
         root->setPropTree("ClusterLock", createPTree());
 //      fdesc->serializeTree(*root,IFDSF_EXCLUDE_NODES);
         setFileAttrs(fdesc,true);
+        if (!external)
+            setLFNHash(fdesc);
         setClusters(fdesc);
         setPreferredClusters(_parent->defprefclusters);
         saveClusters();
@@ -3669,6 +3685,17 @@ public:
             getClusterNames(cnames);
         fdesc->setClusterOrder(cnames,_clusterName&&*_clusterName);
         return fdesc.getClear();
+    }
+
+    void setLFNHash(IFileDescriptor *fdesc)
+    {
+        if (fdesc->queryProperties().hasProp("@lfnHash"))
+            lfnHash = fdesc->queryProperties().getPropInt("@lfnHash");
+        else
+        {
+            // this is a guard, just in case the file descriptor has the lfnHash missing
+            lfnHash = getFilenameHash(logicalName.get());
+        }
     }
 
     void setFileAttrs(IFileDescriptor *fdesc,bool save)
@@ -4142,6 +4169,8 @@ public:
             root.setown(conn->getRoot());
             root->queryBranch(".");     // load branch
             Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
+            // NB: if there is already an lfnHash, don't change it, because renames do not move parts over striped mounts
+            setLFNHash(fdesc);
             setFileAttrs(fdesc,false);
             setClusters(fdesc);
             setParts(fdesc,false);
@@ -4288,15 +4317,33 @@ public:
         DFD_OS os = SepCharBaseOs(psc);
         StringBuffer basedir;
 
-        const char *myBase;
+        StringBuffer myBase;
         if (newbasedir)
         {
             diroverride = newbasedir;
-            myBase = newbasedir;
+            myBase.set(newbasedir);
         }
         else
         {
-            myBase = queryBaseDirectory(grp_unknown, 0, os);
+#ifdef _CONTAINERIZED
+            IClusterInfo &iClusterInfo = clusters.item(0);
+            const char *planeName = iClusterInfo.queryGroupName();
+            if (!isEmptyString(planeName))
+            {
+                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+                if (plane)
+                {
+                    if (clusters.ordinality() > 1)
+                    {
+                        // NB: this may need revisiting if rename needs to support renaming of files on >1 cluster
+                        throwUnexpectedX("renamePhysicalPartFiles - not supported on files on multiple planes");
+                    }
+                    myBase.set(plane->queryPrefix());
+                }
+            }
+#else
+            myBase.set(queryBaseDirectory(grp_unknown, 0, os));
+#endif
             diroverride = myBase;
         }
 
@@ -4312,11 +4359,10 @@ public:
             return false;
         if (isPathSepChar(newPath.charAt(newPath.length()-1)))
             newPath.setLength(newPath.length()-1);
-        newPath.remove(0, strlen(myBase));
+        newPath.remove(0, myBase.length());
         newdir.append(baseDir).append(newPath);
         StringBuffer fullname;
         CIArrayOf<CIStringArray> newNames;
-        unsigned existingLfnHash = queryAttributes().getPropInt("@lfnHash");
         unsigned i;
         for (i=0;i<width;i++)
         {
@@ -4326,10 +4372,10 @@ public:
             {
                 unsigned cn = copyClusterNum(i, copy, nullptr);
                 unsigned numStripedDevices = queryPartDiskMapping(cn).numStripedDevices;
-                unsigned stripeNum = calcStripeNumber(i, existingLfnHash, numStripedDevices);
+                unsigned stripeNum = calcStripeNumber(i, lfnHash, numStripedDevices);
 
                 makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart(), stripeNum);
-                newPath.remove(0, strlen(myBase));
+                newPath.remove(0, myBase.length());
 
                 StringBuffer copyDir(baseDir);
                 adjustClusterDir(i, copy, copyDir);
@@ -7024,8 +7070,7 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
 
                 StringBuffer stripeDir;
                 unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
-                unsigned lfnHash = parent.queryRoot()->getPropInt("Attr/@lfnHash");
-                addStripeDirectory(stripeDir, dir, planePrefix, partIndex, lfnHash, numStripedDevices);
+                addStripeDirectory(stripeDir, dir, planePrefix, partIndex, parent.lfnHash, numStripedDevices);
                 if (!stripeDir.isEmpty())
                     dir.swapWith(stripeDir);
             }

@@ -5,7 +5,7 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 1.2.10
+version: 1.4.0
 
 # Elastic Stack version
 appVersion: 7.17.1
