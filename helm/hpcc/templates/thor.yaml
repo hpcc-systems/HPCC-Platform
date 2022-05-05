@@ -144,11 +144,13 @@ data:
       template:
         metadata:
           labels:
-            app: "_HPCC_JOBNAME_"
-            component: "thormanager"
             accessDali: "yes"
             accessEsp: "yes"
+            app: "thor"
+            component: "thormanager"
             helmVersion: 8.6.25-closedown0
+            instance: "_HPCC_JOBNAME_"
+            job: "_HPCC_JOBNAME_"
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
@@ -210,10 +212,12 @@ data:
       template:
         metadata:
           labels:
-            app: "_HPCC_JOBNAME_"
-            component: "thorworker"
             accessEsp: "true"
+            app: "thor"
+            component: "thorworker"
             helmVersion: 8.6.25-closedown0
+            instance: "_HPCC_JOBNAME_"
+            job: "_HPCC_JOBNAME_"
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
@@ -275,18 +279,20 @@ data:
     spec:
       podSelector:
         matchLabels:
-          app: "_HPCC_JOBNAME_"
+          app: thor
           component: thormanager
+          job: "_HPCC_JOBNAME_"
       ingress:
       - from:
         - podSelector:
             matchExpressions:
-              - {key: app, operator: In, values: ["thor-eclagent", "_HPCC_JOBNAME_"]}
+              - {key: instance, operator: In, values: ["{{.eclAgentName}}", "_HPCC_JOBNAME_"]}
       egress:
       - to:
         - podSelector:
             matchLabels:
-              app: "_HPCC_JOBNAME_"
+              app: thor
+              job: "_HPCC_JOBNAME_"
 
   thorworker-networkspec.yaml:
     apiVersion: networking.k8s.io/v1
@@ -296,18 +302,21 @@ data:
     spec:
       podSelector:
         matchLabels:
-          app: "_HPCC_JOBNAME_"
+          app: thor
           component: thorworker
+          job: "_HPCC_JOBNAME_"
       ingress:
       - from:
         - podSelector:
             matchLabels:
-              app: "_HPCC_JOBNAME_"
+              app: thor
+              job: "_HPCC_JOBNAME_"
       egress:
       - to:
         - podSelector:
             matchLabels:
-              app: "_HPCC_JOBNAME_"
+              app: thor
+              job: "_HPCC_JOBNAME_"
 {{- end -}}
 
 {{- $local := dict "first" true }}
@@ -331,16 +340,16 @@ spec:
   replicas: {{ $commonCtx.eclAgentReplicas }}
   selector:
     matchLabels:
-      run: {{ $commonCtx.eclAgentName | quote }}
-      app: thor-eclagent
+      instance: {{ $commonCtx.eclAgentName | quote }}
   template:
     metadata:
       labels:
-        run: {{ $commonCtx.eclAgentName | quote }}
-        app: thor-eclagent
         accessDali: "yes"
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
+        app: "thor"
+        component: "thor-eclagent"
         helmVersion: 8.6.25-closedown0
+        instance: {{ $commonCtx.eclAgentName | quote }}
 {{- if hasKey $commonCtx.me "labels" }}
 {{ toYaml $commonCtx.me.labels | indent 8 }}
 {{- end }}
@@ -392,14 +401,16 @@ spec:
   replicas: {{ $commonCtx.thorAgentReplicas }}
   selector:
     matchLabels:
-      run: {{ $commonCtx.thorAgentName | quote }}
+      instance: {{ $commonCtx.thorAgentName | quote }}
   template:
     metadata:
       labels:
-        run: {{ $commonCtx.thorAgentName | quote }}
         accessDali: "yes"
         accessEsp: "no"
+        app: "thor"
+        component: "thor-thoragent"
         helmVersion: 8.6.25-closedown0
+        instance: {{ $commonCtx.thorAgentName | quote }}
 {{- if hasKey $commonCtx.me "labels" }}
 {{ toYaml $commonCtx.me.labels | indent 8 }}
 {{- end }}
