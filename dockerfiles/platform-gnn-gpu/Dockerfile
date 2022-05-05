@@ -24,13 +24,15 @@ ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 USER root
 
-# nvidia/cuda bsae
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget gnupg2 curl ca-certificates && \
-    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | apt-key add - && \
+
+# nvidia/cuda base
+RUN apt-get update && apt-get install -y --no-install-recommends  wget gnupg2 ca-certificates && \
+    apt-key del 7fa2af80 && \
+    apt-key del 3bf863cc && \
+    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub && \
+    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub && \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
     echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list && \
-    apt-get purge --autoremove -y curl && \
     rm -rf /var/lib/apt/lists/*
 
 ENV CUDA_VERSION 11.3.1
