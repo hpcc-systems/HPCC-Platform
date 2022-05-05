@@ -307,7 +307,9 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
     const { onChange, required, selectedKey } = { ...props };
 
     React.useEffect(() => {
-        const options = targetClusters?.map(row => {
+        const options = targetClusters?.filter(row => {
+            return !(row.Type === "roxie" && row.QueriesOnly === true);
+        })?.map(row => {
             return {
                 key: row.Name || "unknown",
                 text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
