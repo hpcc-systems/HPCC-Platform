@@ -797,13 +797,13 @@ void mergeStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const S
 }
 
 template <class INTERFACE>
-void mergeStats(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source, const StatisticsMapping & mapping) { mergeStats(stats, source.get(), mapping); }
+void mergeStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, const StatisticsMapping & mapping) { mergeStats(stats, source.get(), mapping); }
 
 template <class INTERFACE>
 void mergeStats(CRuntimeStatisticCollection & stats, INTERFACE * source)       { mergeStats(stats, source, stats.queryMapping()); }
 
 template <class INTERFACE>
-void mergeStats(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source) { mergeStats(stats, source.get(), stats.queryMapping()); }
+void mergeStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source) { mergeStats(stats, source.get(), stats.queryMapping()); }
 
 template <class INTERFACE>
 void mergeStat(CRuntimeStatisticCollection & stats, INTERFACE * source, StatisticKind kind)
@@ -813,7 +813,7 @@ void mergeStat(CRuntimeStatisticCollection & stats, INTERFACE * source, Statisti
 }
 
 template <class INTERFACE>
-void mergeStat(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source, StatisticKind kind) { mergeStat(stats, source.get(), kind); }
+void mergeStat(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, StatisticKind kind) { mergeStat(stats, source.get(), kind); }
 
 //---------------------------------------------------------------------------------------------------------------------
 
