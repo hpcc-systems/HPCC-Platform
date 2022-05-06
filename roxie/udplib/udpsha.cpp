@@ -483,7 +483,7 @@ void PacketTracker::dump() const
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __uint64 networkSpeedBitsPerSecond)
+void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned sendQueueSize, unsigned numSenders, __uint64 networkSpeedBitsPerSecond)
 {
     unsigned maxDataPacketSize = 0x2000;    // assume jumbo frames roxiemem::DATA_ALIGNMENT_SIZE;
     __uint64 bytesPerSecond = networkSpeedBitsPerSecond / 10;
@@ -516,10 +516,11 @@ void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __ui
         trace("udpRequestTimeout", udpRequestTimeout, (2 * minLatencyNs + minTimeForPermitPackets) * 2 / 5, 10);
         trace("udpResendDelay", udpResendDelay, minTimeForAllPackets, 10);
         DBGLOG("udpMaxPendingPermits: %u [%u..%u]", udpMaxPendingPermits, udpMaxPendingPermits, udpMaxPendingPermits);
-        DBGLOG("udpMaxClientPercent: %u [%u..%u]", udpMaxClientPercent, 100, 500);
+        DBGLOG("udpMaxClientPercent: %u [%u..%u]", udpMaxClientPercent, 100, udpMaxPendingPermits * 100);
         DBGLOG("udpMaxPermitDeadTimeouts: %u [%u..%u]", udpMaxPermitDeadTimeouts, 2, 10);
         DBGLOG("udpRequestDeadTimeout: %u [%u..%u]", udpRequestDeadTimeout, 10000, 120000);
         DBGLOG("udpMinSlotsPerSender: %u [%u..%u]", udpMinSlotsPerSender, 1, 5);
+        DBGLOG("Queue sizes: send(%u) receive(%u)", sendQueueSize, receiveQueueSize);
     }
 
     // Some sanity checks
@@ -558,7 +559,7 @@ void sanityCheckUdpSettings(unsigned receiveQueueSize, unsigned numSenders, __ui
         WARNLOG("udpMaxPendingPermits=1: only one sender can send at a time");
     if (udpMaxClientPercent < 100)
         ERRLOG("udpMaxClientPercent should be >= 100");
-    else if (maxSlotsPerClient * udpMaxClientPercent / 100 > receiveQueueSize)
+    else if (maxSlotsPerClient > receiveQueueSize)
         ERRLOG("maxSlotsPerClient * udpMaxClientPercent exceeds the queue size => all slots will be initially allocated to the first sender");
     if (udpMinSlotsPerSender > 10)
         ERRLOG("udpMinSlotsPerSender of %u is higher than recommended", udpMinSlotsPerSender);
