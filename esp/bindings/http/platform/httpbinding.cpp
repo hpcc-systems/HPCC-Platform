@@ -98,6 +98,21 @@ static IXmlSchema* createXmlSchema(const char* schema)
     return creator(schema);
 }
 
+static void setBndCfgServiceType(IPropertyTree* tree, const char* procName, IPropertyTree* bndCfg)
+{
+    const char* srvName = bndCfg->queryProp("@service");
+    if (isEmptyString(srvName))
+        return;
+
+    Owned<IPropertyTree> srvCfg = getServiceConfig(tree, srvName, procName);
+    if (!srvCfg)
+        return;
+
+    const char* srvType = srvCfg->queryProp("@type");
+    if (!isEmptyString(srvType))
+        bndCfg->setProp("@serviceType", srvType);
+}
+
 EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const char *procname)
 {
     Owned<IPropertyTree> proc_cfg = getProcessConfig(tree, procname);
@@ -198,6 +213,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 if (secMgrCfg)
                 {
                     //This is a Pluggable Security Manager
+                    setBndCfgServiceType(tree, procname, bnd_cfg);
                     m_secmgr.setown(SecLoader::loadPluggableSecManager<ISecManager>(bindname, bnd_cfg, secMgrCfg));
                     m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                     m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));

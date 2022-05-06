@@ -73,73 +73,17 @@ public:
 
     IAuthMap * createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
     {
-        CAuthMap * authmap = new CAuthMap();
-
-        Owned<IPropertyTreeIterator> loc_iter = authconfig->getElements(".//Location");
-        ForEach(*loc_iter)
-        {
-            IPropertyTree & location = loc_iter->query();
-            StringBuffer pathstr, rstr, required, description;
-            location.getProp("@path", pathstr);
-            location.getProp("@resource", rstr);
-            location.getProp("@required", required);
-            location.getProp("@description", description);
-
-            if(pathstr.length() == 0)
-                throw MakeStringException(-1, "path empty in Authenticate/Location");
-            if(rstr.length() == 0)
-                throw MakeStringException(-1, "resource empty in Authenticate/Location");
-
-            ISecResourceList * rlist = authmap->queryResourceList(pathstr.str());
-            if(rlist == NULL)
-            {
-                rlist = createResourceList("singleusersecurity", secureContext);
-                authmap->add(pathstr.str(), rlist);
-            }
-            ISecResource * rs = rlist->addResource(rstr.str());
-            SecAccessFlags requiredaccess = str2perm(required.str());
-            rs->setRequiredAccessFlags(requiredaccess);
-            rs->setDescription(description.str());
-            rs->setAccessFlags(SecAccess_Full);//grant full access to authenticated users
-        }
-
-        authmap->shareWithManager(*this, secureContext);
-        return authmap;
+        Owned<IAuthMap> authMap = new CAuthMap();
+        createAuthMapImpl(authMap, "singleusersecurity", true, SecAccess_Full, authconfig, secureContext);
+        authMap->shareWithManager(*this, secureContext);
+        return authMap.getClear();
     }
 
     IAuthMap * createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
     {
-        CAuthMap * feature_authmap = new CAuthMap();
-        Owned<IPropertyTreeIterator> feature_iter = authconfig->getElements(".//Feature");
-        ForEach(*feature_iter)
-        {
-            IPropertyTree * feature = &feature_iter->query();
-            if (feature)
-            {
-                StringBuffer pathstr, rstr, required, description;
-                feature->getProp("@path", pathstr);
-                feature->getProp("@resource", rstr);
-                feature->getProp("@required", required);
-                feature->getProp("@description", description);
-                ISecResourceList * rlist = feature_authmap->queryResourceList(pathstr.str());
-                if(rlist == NULL)
-                {
-                    rlist = createResourceList(pathstr.str(), secureContext);
-                    feature_authmap->add(pathstr.str(), rlist);
-                }
-                if (!rstr.isEmpty())
-                {
-                    ISecResource * rs = rlist->addResource(rstr.str());
-                    SecAccessFlags requiredaccess = str2perm(required.str());
-                    rs->setRequiredAccessFlags(requiredaccess);
-                    rs->setDescription(description.str());
-                    rs->setAccessFlags(SecAccess_Full);//grant full access to authenticated users
-                }
-            }
-        }
-
-        feature_authmap->shareWithManager(*this, secureContext);
-        return feature_authmap;
+        Owned<IAuthMap> featureMap = new CAuthMap();
+        createFeatureMapImpl(featureMap, true, SecAccess_Full, authconfig, secureContext);
+        return featureMap.getClear();
     }
 
     IAuthMap * createSettingMap(IPropertyTree * authConfig, IEspSecureContext* secureContext = nullptr) override

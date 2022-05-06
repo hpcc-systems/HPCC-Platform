@@ -166,101 +166,16 @@ public:
 
     virtual IAuthMap* createAuthMap(IPropertyTree* authconfig, IEspSecureContext* secureContext = nullptr) override
     {
-        CAuthMap* authmap = new CAuthMap();
-
-        try
-        {
-            Owned<IPropertyTreeIterator> loc_iter;
-            loc_iter.setown(authconfig->getElements(".//Location"));
-            if (loc_iter != nullptr)
-            {
-                IPropertyTree* location = nullptr;
-                loc_iter->first();
-                while (loc_iter->isValid())
-                {
-                    location = &loc_iter->query();
-                    if (location != nullptr)
-                    {
-                        StringBuffer pathstr, rstr, required, description;
-                        location->getProp("@path", pathstr);
-                        location->getProp("@resource", rstr);
-                        location->getProp("@required", required);
-                        location->getProp("@description", description);
-
-                        if (pathstr.length() == 0)
-                            throw makeStringException(-1, "CJwtSecurityManager: path empty in Authenticate/Location");
-                        if (rstr.length() == 0)
-                            throw makeStringException(-1, "CJwtSecurityManager: resource empty in Authenticate/Location");
-
-                        ISecResourceList* rlist = authmap->queryResourceList(pathstr.str());
-
-                        if (rlist == nullptr)
-                        {
-                            rlist = createResourceList("jwtsecmgr", secureContext);
-                            authmap->add(pathstr.str(), rlist);
-                        }
-                        ISecResource* rs = rlist->addResource(rstr.str());
-                        SecAccessFlags requiredaccess = str2perm(required.str());
-                        rs->setRequiredAccessFlags(requiredaccess);
-                        rs->setDescription(description.str());
-                    }
-                    loc_iter->next();
-                }
-            }
-        }
-        catch(...)
-        {
-            delete(authmap);
-            throw;
-        }
-
-        return authmap;
+        Owned<IAuthMap> authMap = new CAuthMap();
+        createAuthMapImpl(authMap, "jwtsecmgr", false, SecAccess_Unavailable, authconfig, secureContext);
+        return authMap.getClear();;
     }
 
     virtual IAuthMap* createFeatureMap(IPropertyTree* authconfig, IEspSecureContext* secureContext = nullptr) override
     {
-        CAuthMap* feature_authmap = new CAuthMap();
-
-        try
-        {
-            Owned<IPropertyTreeIterator> feature_iter;
-            feature_iter.setown(authconfig->getElements(".//Feature"));
-            ForEach(*feature_iter)
-            {
-                IPropertyTree* feature = nullptr;
-                feature = &feature_iter->query();
-                if (feature != nullptr)
-                {
-                    StringBuffer pathstr, rstr, required, description;
-                    feature->getProp("@path", pathstr);
-                    feature->getProp("@resource", rstr);
-                    feature->getProp("@required", required);
-                    feature->getProp("@description", description);
-
-                    ISecResourceList* rlist = feature_authmap->queryResourceList(pathstr.str());
-
-                    if (rlist == nullptr)
-                    {
-                        rlist = createResourceList(pathstr.str(), secureContext);
-                        feature_authmap->add(pathstr.str(), rlist);
-                    }
-                    if (!rstr.isEmpty())
-                    {
-                        ISecResource* rs = rlist->addResource(rstr.str());
-                        SecAccessFlags requiredaccess = str2perm(required.str());
-                        rs->setRequiredAccessFlags(requiredaccess);
-                        rs->setDescription(description.str());
-                    }
-                }
-            }
-        }
-        catch(...)
-        {
-            delete(feature_authmap);
-            throw;
-        }
-
-        return feature_authmap;
+        Owned<IAuthMap> featureMap = new CAuthMap();
+        createFeatureMapImpl(featureMap, false, SecAccess_Unavailable, authconfig, secureContext);
+        return featureMap.getClear();
     }
 
     virtual IAuthMap* createSettingMap(IPropertyTree* authConfig, IEspSecureContext* secureContext = nullptr) override
@@ -835,14 +750,6 @@ public:
     virtual const char* getDescription() override
     {
         return "JWT Security Manager";
-    }
-
-    virtual bool logoutUser(ISecUser& user, IEspSecureContext* secureContext = nullptr) override
-    {
-        user.setAuthenticateStatus(AS_UNKNOWN);
-        user.credentials().setSessionToken(0);
-
-        return true;
     }
 
     virtual bool authorize(ISecUser& user, ISecResourceList* resources, IEspSecureContext* secureContext) override

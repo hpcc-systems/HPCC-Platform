@@ -1,0 +1,43 @@
+authNZ:
+   test:
+      name: test
+      type: test
+      LibName: libtestauthSecurity.so
+      authType: AuthTypeMixed
+      # Define which authorization resources to be tested.
+      # As default, the authorization resources defined in
+      # ldap_authorization_map.yaml are tested.
+      useResourceMapsFrom: ldap
+      userAccess:
+      -  userName: testadmin
+         #password: MW6vRCpKS7AhO/1YBazKOg== # optional. If missing, use the userName as the password.
+         #secretKey: testauthusercreds1     # optional
+         defaults:
+            fileScope: full
+            eclWUScope: full
+            resource: full
+      -  userName: testuser
+         #password: qrjTr7raH8lOaO8//i+n7Q== # optional. If missing, use the userName as the password.
+         #secretKey: testauthusercreds2     # optional
+         defaults:
+            fileScope: none
+            eclWUScope: none
+            resource: none
+         fileScopes: # what kinds of file scopes should be given to testuser?
+            "testuser": full
+         eclWUScopes: # what kinds of eclwu scopes should be given to testuser?
+            "testuser": full
+         resources:  # what kinds of resource permissions should be given to testuser?
+            WsSMC:
+               features:
+                  SmcAccess: full
+                  ThorQueueAccess: full
+                  MachineInfoAccess: full
+                  ClusterTopologyAccess: full
+            WsWorkunits:
+               features:
+                  OwnWorkunitsAccess: full
+                  OthersWorkunitsAccess: full
+            WsTopology:
+               features:
+                  ClusterTopologyAccess: full

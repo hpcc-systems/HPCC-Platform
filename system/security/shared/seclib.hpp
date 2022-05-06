@@ -420,7 +420,8 @@ enum secManagerType : int
     SMT_HTPasswd,
     SMT_SingleUser,
     SMT_HTPluggable,
-    SMT_JWTAuth
+    SMT_JWTAuth,
+    SMT_TestAuth
 };
 
 static const SecFeatureBit SMF_NO_FEATURES                    = 0x00;
