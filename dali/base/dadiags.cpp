@@ -115,10 +115,7 @@ public:
                 StringAttr id;
                 StringBuffer buf;
                 params.read(id);
-                if (0 == stricmp(id,"threads")) {
-                    mb.append(getThreadList(buf).str());
-                }
-                else if (0 == stricmp(id, "mpqueue")) {
+                if (0 == stricmp(id, "mpqueue")) {
                     mb.append(getReceiveQueueDetails(buf).str());
                 }
                 else if (0 == stricmp(id, "locks")) { // Legacy - newer diag clients should use querySDS().getLocks() directly
