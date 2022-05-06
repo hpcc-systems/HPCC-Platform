@@ -104,6 +104,26 @@ vault write auth/kubernetes/role/hpcc-vault-access \
         ttl=24h
 ```
 
+## 'eclUser' category secrets
+
+Create example vault 'eclUser' secrets:
+
+```bash
+vault kv put secret/eclUser/vault-example crypt.key=@examples/secrets/crypt.key
+```
+
+Create example kubernetes secret:
+
+```bash
+kubectl create secret generic k8s-example --from-file=crypt.key=examples/secrets/crypt.key
+```
+
+
+## 'ecl' category secrets
+
+Secrets in the 'ecl' category are not accessible by ECL code directly and therefore not visible to ECL users.  They can be used by internal ECL feartures
+and commands.  For example:
+
 ## HTTP-CONNECT Secrets:
 
 This example focuses on ECL secrets to provide HTTP connection strings and credentials for ECL SOAPCALL and HTTPCALL commands.
@@ -118,7 +138,7 @@ Besides the URL values can currently be set for proxy (trusted for keeping these
 
 ## Create example vault secret:
 
-Create example vault secrets:
+Create example vault 'ecl' secrets:
 
 ```bash
 vault kv put secret/ecl/http-connect-vaultsecret url=@examples/secrets/url-basic username=@examples/secrets/username password=@examples/secrets/password
@@ -136,7 +156,7 @@ Create example kubernetes secret:
 kubectl create secret generic http-connect-basicsecret --from-file=url=examples/secrets/url-basic --from-file=examples/secrets/username --from-file=examples/secrets/password
 ```
 
-## Installing the HPCC with the HTTP-CONNECT Secrets added to ECL components
+## Installing the HPCC with the secrets added to ECL components
 
 Install the HPCC helm chart with the secrets just defined added to all components that run ECL.
 
@@ -149,8 +169,35 @@ Use kubectl to check the status of the deployed pods.  Wait until all pods are r
 ```bash
 kubectl get pods
 ```
+--------------------------------------------------------------------------------------------------------
 
-## Using the created secrets via HTTPCALL from within ECL code
+If you don't already have the HPCC client tools installed please install them now:
+
+https://hpccsystems.com/download#HPCC-Platform
+
+
+## Using the created 'eclUser' category secrets directly in ECL code
+
+The following ecl commands will run the three example ECL files on hthor.
+
+```bash
+ecl run hthor examples/secrets/crypto_secret.ecl
+```
+
+The expected result would be:
+
+```xml
+<Result>
+<Dataset name='k8s_message'>
+ <Row><k8s_message>top secret</k8s_message></Row>
+</Dataset>
+<Dataset name='vault_message'>
+ <Row><vault_message>For your eyes only</vault_message></Row>
+</Dataset>
+</Result>
+```
+
+## Using the created 'ecl' category secrets via HTTPCALL from within ECL code
 
 If you don't already have the HPCC client tools installed please install them now:
 

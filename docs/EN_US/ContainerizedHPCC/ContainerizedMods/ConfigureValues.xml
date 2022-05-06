@@ -887,7 +887,10 @@
         into the system if you don't want it in the source. Such as code with
         embedded code, you can have that defined in the code sign sections. If
         you have information that you don't want public but need to run it you
-        could use secrets.</para>
+        could use secrets. There is a category named "eclUser" which is where
+        you would put secrets that you want to be readable directly from ECL code.
+        Other secret categories, including the "ecl" category, are read internally
+        by system components and not exposed directly to ECL code.</para>
       </sect3>
 
       <sect3>
@@ -895,11 +898,12 @@
 
         <para>Vaults is another way to do Secrets. The vaults section mirrors
         the secret section but leverages <emphasis>HashiCorp Vault</emphasis>
-        for the storage of secrets. There is an additional category for vaults
-        named "ecl-user". The intent of the ecl-user vault secrets is to be
-        readable directly from ECL code. Other secret categories are read
-        internally by system components and not exposed directly to ECL
-        code.</para>
+        for the storage of secrets. There is a category for vaults named "eclUser".
+        The intent of the eclUser vault category is to be readable directly from ECL
+        code. Only add vault configurations to the "eclUser" category that you want
+        ECL users to be able to access.  Other vault categories, including the "ecl"
+        category, are read internally by system components and not exposed directly
+        to ECL code.</para>
       </sect3>
     </sect2>
 

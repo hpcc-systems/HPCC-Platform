@@ -74,6 +74,9 @@
         "ecl": {
           "$ref": "#/definitions/secrets"
         },
+        "eclUser": {
+          "$ref": "#/definitions/secrets"
+        },
         "codeSign": {
           "$ref": "#/definitions/secrets"
         },
@@ -108,7 +111,7 @@
         "ecl": {
           "$ref": "#/definitions/vaultCategory"
         },
-        "ecl-user": {
+        "eclUser": {
           "$ref": "#/definitions/vaultCategory"
         },
         "codeSign": {

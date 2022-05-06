@@ -340,6 +340,7 @@ IIdAtom * getClusterSizeId;
 IIdAtom * getDatasetHashId;
 IIdAtom * getECLId;
 IIdAtom * getEnvId;
+IIdAtom * getSecretId;
 IIdAtom * getEventExtraId;
 IIdAtom * getEventNameId;
 IIdAtom * getExpandLogicalNameId;
@@ -1005,6 +1006,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(getDatasetHash);
     MAKEID(getECL);
     MAKEID(getEnv);
+    MAKEID(getSecret);
     MAKEID(getEventExtra);
     MAKEID(getEventName);
     MAKEID(getExpandLogicalName);

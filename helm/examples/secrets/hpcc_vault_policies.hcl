@@ -2,7 +2,7 @@ path "secret/data/ecl/*" {
     capabilities = ["read"]
 }
 
-path "secret/data/ecl-user/*" {
+path "secret/data/eclUser/*" {
     capabilities = ["read"]
 }
 

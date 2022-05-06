@@ -67,6 +67,7 @@ static const char * eclReserved2[] = { //HPCC and OS environment settings
 
     "clustersize",
     "getenv",
+    "getsecret",
     NULL
 };
 

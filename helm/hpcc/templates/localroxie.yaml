@@ -43,7 +43,7 @@ data:
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled  -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
-{{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
+{{- $secretsCategories := list "system" "eclUser" "ecl" "storage" }}
 {{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "remote" "spill" "dll" "debug") "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
