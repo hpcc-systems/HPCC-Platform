@@ -291,9 +291,7 @@ extern jlib_decl IThreadPool *createThreadPool(
                                 unsigned targetpoolsize=0           // target maximum size of pool (default same as defaultmax)   
                              );
 
-extern jlib_decl StringBuffer &getThreadList(StringBuffer &str);
 extern jlib_decl unsigned getThreadCount();
-extern jlib_decl StringBuffer &getThreadName(int thandle,unsigned logtid,StringBuffer &name); // either thandle or tid should be 0
 
 // Simple pipe process support
 interface ISimpleReadStream;

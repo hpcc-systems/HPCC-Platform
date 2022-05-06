@@ -117,8 +117,7 @@ void enableThreadSEH() { SEHHandling=true; }
 void disableThreadSEH() { SEHHandling=false; } // only prevents new threads from having SEH handler, no mech. for turning off existing threads SEH handling.
 
 
-static ICopyArrayOf<Thread> ThreadList;
-static CriticalSection ThreadListSem;
+static std::atomic<unsigned> threadCount;
 static size32_t defaultThreadStackSize=0;
 static ICopyArrayOf<Thread> ThreadDestroyList;
 static CriticalSection ThreadDestroyListLock;
@@ -436,9 +435,6 @@ void Thread::startRelease()
         IERRLOG("pthread_create returns %d",status);
         PrintStackReport();
         PrintMemoryReport();
-        StringBuffer s;
-        getThreadList(s);
-        IERRLOG("Running threads:\n %s",s.str());
         throw makeOsException(status);
     }
     unsigned retryCount = 10;
@@ -454,12 +450,7 @@ void Thread::startRelease()
     alive = true;
     if (prioritydelta)
         adjustPriority(prioritydelta);
-
-    {
-        CriticalBlock block(ThreadListSem);
-        ThreadList.zap(*this);  // just in case restarting
-        ThreadList.append(*this);
-    }
+    threadCount++;
 #ifdef _WIN32
     DWORD count = ResumeThread(hThread);
     assertex(count == 1);
@@ -531,53 +522,16 @@ Thread::~Thread()
     }
 #endif
     Link();
-    
+    threadCount--;
 //  DBGLOG("Thread %x (%s) destroyed\n", threadid, threadname);
-    {
-        CriticalBlock block(ThreadListSem);
-        ThreadList.zap(*this);
-    }
     free(cthreadname.threadname);
     cthreadname.threadname = NULL;
 }
 
 unsigned getThreadCount()
 {
-    CriticalBlock block(ThreadListSem);
-    return ThreadList.ordinality();
+    return threadCount;
 }
-
-StringBuffer & getThreadList(StringBuffer &str)
-{
-    CriticalBlock block(ThreadListSem);
-    ForEachItemIn(i,ThreadList) {
-        Thread &item=ThreadList.item(i);
-        item.getInfo(str).append("\n");
-    }
-    return str;
-}
-
-StringBuffer &getThreadName(int thandle,unsigned tid,StringBuffer &name)
-{
-    CriticalBlock block(ThreadListSem);
-    bool found=false;
-    ForEachItemIn(i,ThreadList) {
-        Thread &item=ThreadList.item(i);
-        int h; 
-        unsigned t;
-        const char *s = item.getLogInfo(h,t);
-        if (s&&*s&&((thandle==0)||(h==thandle))&&((tid==0)||(t==tid))) {
-            if (found) {
-                name.clear();
-                break;  // only return if unambiguous
-            }
-            name.append(s);
-            found = true;
-        }
-    }
-    return name;
-}
-
 
 // CThreadedPersistent
 

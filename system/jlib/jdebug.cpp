@@ -1753,14 +1753,12 @@ public:
             return;
         assertex(n);
         processes.sort(compare);
-        StringBuffer name;
         ForEachItemIn(i1,processes) {
             CProcInfo &pi = processes.item(i1);
             if ((pi.delta.system==0)&&(pi.delta.user==0))
                 break;
-            getThreadName(pi.pid(),0,name.clear());
-            str.appendf("\n TT: PI=%d PN=%s PC=%d ST=%d UT=%d%s%s",
-                        pi.pid(),pi.info.cmd,(pi.delta.system+pi.delta.user)*100/tot_time,pi.delta.system,pi.delta.user,name.length()?" TN=":"",name.str());
+            str.appendf("\n TT: PI=%d PN=%s PC=%d ST=%d UT=%d",
+                        pi.pid(),pi.info.cmd,(pi.delta.system+pi.delta.user)*100/tot_time,pi.delta.system,pi.delta.user);
             if (--n==0)
                 break;
         }
