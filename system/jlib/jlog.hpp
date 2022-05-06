@@ -557,7 +557,7 @@ private:
 class jlib_decl LogMsgJobInfo
 {
 public:
-    LogMsgJobInfo(LogMsgJobId _job = UnknownJob, LogMsgUserId _user = UnknownUser) : jobID(_job), userID(_user) {}
+    constexpr LogMsgJobInfo(LogMsgJobId _job = UnknownJob, LogMsgUserId _user = UnknownUser) : jobID(_job), userID(_user) {}
     ~LogMsgJobInfo();
     LogMsgJobId queryJobID() const;
     const char * queryJobIDStr() const;
