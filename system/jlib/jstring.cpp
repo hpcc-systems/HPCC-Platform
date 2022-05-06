@@ -1436,6 +1436,13 @@ void StringAttr::set(const char * _text)
     free(oldtext);
 }
 
+void StringAttr::swapWith(StringAttr & other)
+{
+    char * temp = text;
+    text = other.text;
+    other.text = temp;
+}
+
 void StringAttr::set(const char * _text, size_t _len)
 {
     char * oldtext = text;

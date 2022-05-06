@@ -346,8 +346,7 @@ void Thread::init(const char *_name)
     threadid = 0;
     tidlog = 0;
     alive = false;
-    cthreadname.threadname = (NULL == _name) ? NULL : strdup(_name);
-    ithreadname = &cthreadname;
+    cthreadname.set(_name);
     prioritydelta = 0;
     nicelevel = 0;
     stacksize = 0; // default is EXE default stack size  (set by /STACK)
@@ -511,7 +510,6 @@ bool Thread::join(unsigned timeout)
 
 Thread::~Thread()
 {
-    ithreadname = &cthreadname; // safer (as derived classes destroyed)
 #ifdef _DEBUG
     if (alive) {
         if (!stopped.wait(0)) { // see if fell out of threadmain and signal stopped
@@ -523,9 +521,7 @@ Thread::~Thread()
 #endif
     Link();
     threadCount--;
-//  DBGLOG("Thread %x (%s) destroyed\n", threadid, threadname);
-    free(cthreadname.threadname);
-    cthreadname.threadname = NULL;
+//  DBGLOG("Thread %x (%s) destroyed\n", threadid, cthreadname.str());
 }
 
 unsigned getThreadCount()
@@ -868,7 +864,7 @@ class CPooledThreadWrapper: public Thread
     IPooledThread *thread;
     Semaphore sem;
     CThreadPoolBase &parent;
-    char *runningname;
+    StringAttr runningName;
 public:
     CPooledThreadWrapper(CThreadPoolBase &_parent,
                          PooledThreadHandle _handle,
@@ -877,16 +873,15 @@ public:
     {
         thread = _thread;
         handle = _handle;
-        runningname = strdup(_parent.poolname); 
+        runningName.set(_parent.poolname); 
     }
 
     ~CPooledThreadWrapper()
     {
         thread->Release();
-        free(runningname);
     }
 
-    void setName(const char *name) { free(runningname); runningname=strdup(name); }
+    void setName(const char *name) { runningName.set(name); }
     void setHandle(PooledThreadHandle _handle) { handle = _handle; }
     PooledThreadHandle queryHandle() { return handle; }
     IPooledThread &queryThread() { return *thread; }
@@ -919,30 +914,19 @@ public:
             parent.notifyStarted(this);
             try
             {
-                char *&threadname = cthreadname.threadname;
-                char *temp = threadname;    // swap running name and threadname
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap running name and threadname
                 thread->threadmain();
-                temp = threadname;  // and back
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap back
             }
             catch (IException *e)
             {
-                char *&threadname = cthreadname.threadname;
-                char *temp = threadname;    // swap back
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap back
                 handleException(e);
             }
 #ifndef NO_CATCHALL
             catch (...)
             {
-                char *&threadname = cthreadname.threadname;
-                char *temp = threadname;    // swap back
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap back
                 handleException(MakeStringException(0, "Unknown exception in Thread from pool %s", parent.poolname.get()));
             }
 #endif
@@ -1158,11 +1142,6 @@ public:
     PooledThreadHandle startNoBlock(void *param)
     {
         return _start(param, NULL, true);
-    }
-
-    PooledThreadHandle startNoBlock(void *param,const char *name)
-    {
-        return _start(param, name, true);
     }
 
     PooledThreadHandle start(void *param)
