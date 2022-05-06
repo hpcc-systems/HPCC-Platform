@@ -9,7 +9,7 @@ For those who are used to the bare-metal version of the platform, one of the mai
 Whenever the HPCC system needs to access storage, it uses a 'storage plane' to provide all the information needed to use that storage.  These storage planes are defined within the storage section of the values.yaml file.  Many of the options for a storage plane are optional and will be covered later, but first what are the basics?  There are two main options for storage:
 
 ## Ephemeral Storage
-Ephemeral storage is storage that has the same lifetime as the instance of the HPCC cluster.  When the cluster is installed the storage is created, when the cluster is uninstalled the storage is destroyed.  This is very useful for testing, or experimenting with a system, but not so helpful for a production system!  This type of storage is used in the default values.yaml file to make it easy to deploy the chart and experiment.
+Ephemeral storage is storage that has the same lifetime as the instance of the HPCC cluster.  When the cluster is installed the storage is created, when the cluster is uninstalled the storage is destroyed.  This is very useful for testing, or experimenting with a system, but not so helpful for storing data on a production system!  Ephemeral storage is also used for temporary spill files.  This type of storage is used in the default values.yaml file to make it easy to deploy the chart and experiment.
 
 A storage plane for ephemeral storage has the following format:
 
@@ -25,7 +25,7 @@ What do the different options mean.
 * name\
   a unique name used to identify the storage plane.
 * prefix\
-  The path that the components will use to access that storage.  The default values.yaml files tend to uses paths that are the same as the defaults for bare-metal installations, but that isn't a requirement.  Each storage plane needs to use a they could be anything as long as they are unique for each plane.
+  The path that the components will use to access that storage.  The default values.yaml files tend to use paths that are the same as the defaults for bare-metal installations, but that isn't a requirement.  Each storage plane prefix can be anything as long as they are unique for each plane.
 * storageSize\
   The main option you are likely to configure for ephemeral - to indicate how much storage needs to be reserved.
 * storageClass\
@@ -35,9 +35,9 @@ When the HPCC system starts up, storage will be created for each storage plane t
 
 ## Persistent data
 
-Kubernetes uses the concept of persistent volumes (pvs) and persistent volume claims (pvcs) to manage storage.  They are used behind the scenes to implement ephemeral storage planes, but for data to be persistent they need to be explicitly managed separately from the cluster because they have a different lifetimes.
+Kubernetes uses the concept of persistent volumes (pvs) and persistent volume claims (pvcs) to manage storage.  They are used behind the scenes to implement ephemeral storage planes, but for data to be persistent they need to be explicitly managed separately from the cluster because they have different lifetimes.
 
-The pvcs for persistent data are created before the cluster is installed.  The cluster using those pvcs can then be repeatedly installed and uninstalled, and the data will remain until the pvcs are deleted.  (Note, just to confuse things even further the underlying storage may have a different lifetime from the persistent volume.  For example storage that is mounted from the host, or blob storage in azure that is accessed via an NFS persistent volume will continue to exist after the persistent volume is destroyed.)
+The pvcs for persistent data must be created before the cluster is installed.  The cluster using those pvcs can then be repeatedly installed and uninstalled, and the data will remain until the pvcs are deleted.  (Note, just to confuse things even further the underlying storage may have a different lifetime from the persistent volume.  For example storage that is mounted from the host, or blob storage in azure that is accessed via an NFS persistent volume will continue to exist after the persistent volume is destroyed.)
 
 For details on creating persistent volumes see below.  For now, what information needs to be included in the values.yaml so the system can use them?
 
@@ -72,7 +72,6 @@ Information about each helm chart can be obtained with the command:
 ```
 helm show readme <chart-name>
 ```
-(Once HPCC-27574 is fixed!)
 
 Each helm chart has a values file which can be used to define the characteristics of the storage planes you want to create.  When the storage charts are installed they output a text file which provides (with some minor editing) the storage plane definitions required by the main HPCC chart.  The following are a couple of examples:
 
@@ -104,7 +103,7 @@ helm show readme hpcc/hpcc-azurefile
 
 # Different Storage Uses
 
-The storage plane definitions allow you to define how the underlying storage is accessed, but HPCC uses storage for lots of different purposes.  How do you configure which plane it uses?  The storage planes have an additional "category" property which is indicates the kind of data it contains.  A storage plane is only used for a single category - which ensures the different types of data are isolated from each other.  The other reason that different categories have different planes is that they often require different performance characteristics.
+The storage plane definitions allow you to define how the underlying storage is accessed, but HPCC uses storage for lots of different purposes.  How do you configure which plane it uses?  The storage planes have an additional "category" property which indicates the kind of data it contains.  A storage plane is only used for a single category - which ensures the different types of data are isolated from each other.  The other reason that different categories have different planes is that they often require different performance characteristics.
 
 The following categories are currently supported (with some notes about performance characteristics to take into account):
 
@@ -135,7 +134,7 @@ The following categories are currently supported (with some notes about performa
 * remote\
   If you are reading data from another HPCC instance, it may be storing the data in different locations.  This category allows the system to be configured to directly access the files created by the remote cluster.
 * temp (optional)\
-  Where are temporary files written?  [Jake is this actually used?]
+  Where are temporary files written?  This is used to determine the location to write non-spill temporary files.  It will default to a local temporary directory.
 
 If more than one storage plane is defined with the same category, the first is used as the default.  You can override the default data or spill plane for Thor (or roxie, eclagent) by setting the "dataPlane" or "spillPlane" properties on the Thor instance.  Similarly the default location for git repositories used by eclccserver can be configured with the "gitPlane" property.  See the values.schema.json file for more details and other examples. 
 
@@ -144,9 +143,9 @@ A storage plane supports several options that provide greater control over how t
 
 ## General options
 * disabled\
-  Setting this to false provides a simple way to temporarily remove a storage plane from the installation without haveing to delete the definition from the values.yaml.
+  Setting this to true provides a simple way to temporarily remove a storage plane from the installation without haveing to delete the definition from the values.yaml.
 * defaultSprayParts\
-  When a file is sprayed from a landing zone, it is common to split it into multiple parts to allow it to be read efficiently from Thor.  In bare-metal systems the number of parts is determined by the size of the Thor that the storage is associated with.  In Kubernetes the storage is separate so there is no associated size, so this property provides the default number of parts to partition the file into.
+  When a file is sprayed from a landing zone, it is common to split it into multiple parts to allow it to be read efficiently from Thor.  In bare-metal systems the number of parts created when spraying is determined by the size of the Thor (or Roxie) cluster targetted by the spray operation.  In Kubernetes the storage is separate so there is no associated size, so this property provides the default number of parts to partition the file into.
 * subPath\
   This property has two uses.  The first use allows two storage planes to share the same underlying storage.  Two planes can share the same pvc, if the prefix and all the storage properties are identical.  The subPath property specifies which sub directory within this shared storage to use for this category.\
   The second use is detailed below in bare-metal and Kubernetes co-existing.
@@ -156,7 +155,7 @@ A storage plane supports several options that provide greater control over how t
   * storageReads: The costs of 10,000 read operatons
   * storageWrites: The cost of 10,000 write operations
 * umask\
-  [Jake why is this used?]
+  The file creation mask (used by despray).  Normally configured on a landing zone, it allows desprayed the umask to be changed so that desprayed files are accessible by other users.
 * forcePermissions\
   For some types of provisioned storage, the mounted filing system has insufficient permissions to be read by the hpcc pods. Examples include using hostpath storage, or using NFS mounted storage.  This option performs a chown on the storage before starting up to ensure it can be accessed.
 
@@ -170,7 +169,7 @@ A storage plane supports several options that provide greater control over how t
         
 ## Bare-metal options
 
-Bare-metal storage planes differ from standard storage planes because they do not have an associated pvc.  Instead the engines communicate with a dafilesrv service running on a set of machines.  (This rest of this section is largely taken from a previous blog.)
+Bare-metal storage planes differ from standard storage planes because they do not have an associated pvc.  Instead the engines communicate with a dafilesrv service running on a set of machines.
 
 There are two aspects to using bare-metal storage in the Kubernetes system.  The first is the 'hostGroups' entry in the storage section which provides named lists of hosts.  The hostGroups entries can take one of two forms:
 ```
@@ -233,9 +232,9 @@ This section is here for completeness...  The prefix is allowed to be a url whic
 
 ## Remote reading
 
-It is possible for one HPCC cluster to read files from another cluster using the "REMOTE::" syntax.  The meta data is retrived by calling a service on the remote cluster, but how is data accessed?  Once possibility would be to stream it via a remote service, but that would require an extra hop and require resources to run the service on the external cluster.  A much better option is for the cluster can read the files directly.
+It is possible for one HPCC cluster to read files from another cluster using the "REMOTE::" syntax.  The meta data is retrieved by calling a service on the remote cluster, but how is data accessed?  One possibility would be to stream it via a remote service, but that would require an extra hop and require resources to run the service on the external cluster.  A much better option is for the cluster to read the files directly.
 
-This is achieved through a 'remote' category on a storage plane and an extra "remote" section within the storage section of the values.yaml file.  This contains a list of remote environments.  Each environment entry specifies a names, a service endpoint and a list of external planes and the local plane that they are mapped to.  This is best illustrated with an example:
+This is achieved through a 'remote' category on a storage plane and an extra "remote" section within the storage section of the values.yaml file.  This contains a list of remote environments.  Each environment entry specifies a name, a service endpoint and a list of external planes and the local plane that they are mapped to.  This is best illustrated with an example:
 
 ```
 storage:
@@ -264,9 +263,9 @@ If there is no mapping then ? jake does it fall back to dafilesrv?]  [What else?
 
 ## Cached access to files.
 
-Sometimes there is a need to cache files accessed from a particular storage.  (One example is HPC-cache for azure to cache Roxie access to keys.)  Naively you might expect to define a new storage plane to provide the access via the cache through a different pvc.  Unfortunately that doesn't really work - the cache isn't a separate storage plane.  A file is either present on both or neither, the cache is instead a different way of accessing the same storage plane.
+Sometimes there is a need to cache files accessed from a particular storage plane.  (One example is HPC-cache for azure to cache Roxie access to keys.)  Naively you might expect to define a new storage plane to provide the access via the cache through a different pvc.  Unfortunately that doesn't really work - the cache isn't a separate storage plane.  A file is either present on both or neither, the cache is instead a different way of accessing the same storage plane.
 
-To support requirement a storage plane can define one or more aliases.  E.g.
+To support this, a storage plane can define one or more aliases.  E.g.
 
 ```
 - name: data
@@ -286,9 +285,9 @@ Currently "random" is the only mode that the system treats differently, but it i
 
 ## Bare metal and Kubernetes co-existing
 
-There have been some situations where a bare-metal roxie cluster has been used to synchronize data files, with the intent of a K8s cluster reusing them it is created (because the files are already copied to the correct place).  Needless to say this is not recommended...
+There have been some situations where a bare-metal roxie cluster has been used to synchronize data files, with the intent of a K8s cluster reusing them if it is created (because the files are already copied to the correct place).  Needless to say this is not recommended...
 
-The problem with this approach is that by default the bare-metal system puts the files in a roxie subdirectory within the storage location (hpcc-data/roxie), and the k8s system does not (hcc-data).  This means that when the k8s cluster checks to see if the file exists the expected path does not match, the file does not exist so it copies the file again.  This can be worked-around by setting the subPath property of the associated storage plane to "roxie".  Then both systems expect the files in the same place, allowing the k8s cluster to reuse it.
+The problem with this approach is that by default the bare-metal system puts the files in a roxie subdirectory within the storage location (i.e. hpcc-data/roxie), and the k8s system does not (i.e. hpcc-data).  This means that when the k8s cluster checks to see if the file exists the expected path does not match, the file does not exist so it copies the file again.  This can be worked-around by setting the subPath property of the associated storage plane to "roxie".  Then both systems expect the files in the same place, allowing the k8s cluster to reuse it.
 
 # Future extensions
 
