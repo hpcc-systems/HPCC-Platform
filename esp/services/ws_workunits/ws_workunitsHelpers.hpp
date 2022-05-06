@@ -26,6 +26,7 @@
 #include "hqlerror.hpp"
 #include "dllserver.hpp"
 #include "mpbase.hpp"
+#include "httpresponsebuffer.ipp"
 
 #include <list>
 #include <vector>
@@ -43,6 +44,8 @@ namespace ws_workunits {
 #define    File_ThorLog "ThorLog"
 #define    File_ThorSlaveLog "ThorSlaveLog"
 #define    File_EclAgentLog "EclAgentLog"
+#else
+#define    File_ComponentLog "ComponentLog"
 #endif
 
 #define    File_XML "XML"
@@ -146,6 +149,13 @@ static constexpr unsigned defaultMaxLogRecords = 10000;
 static constexpr unsigned defaultWULogSearchTimeBufferSecs = 600;
 static constexpr unsigned microSecsToSecDivisor = 1000000;
 
+struct WUComponentLogOptions
+{
+    LogAccessConditions logFetchOptions;
+    LogAccessLogFormat logFormat = LOGACCESS_LOGFORMAT_csv;
+    unsigned wuLogSearchTimeBuffSecs = defaultWULogSearchTimeBufferSecs;
+};
+
 class WsWuInfo
 {
     IEspWUArchiveFile* readArchiveFileAttr(IPropertyTree& fileTree, const char* path);
@@ -157,12 +167,19 @@ class WsWuInfo
     bool parseLogLine(const char* line, const char* endWUID, unsigned& processID, const unsigned columnNumPID);
     void readWorkunitThorLog(const char* processName, const char* logSpec, const char* slaveIPAddress, unsigned slaveNum, MemoryBuffer& buf, const char* outFile);
     void readWorkunitThorLogOneDay(IFile* ios, unsigned& processID, MemoryBuffer& buf, IFileIOStream* outIOS);
+#else
+    unsigned sendComponentLogContent(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
+    void sendComponentLogCSV(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
+    void sendComponentLogJSON(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
+    void sendComponentLogXML(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
 #endif
     void readFileContent(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);
     void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, const char *outFileName);
     void initWULogReader();
+    void setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs);
+
 
 public:
     /*
@@ -173,8 +190,9 @@ public:
     * LogAccessLogFormat logFormat - Declares the log report format
     * unsigned wuLogSearchTimeBuffSecs - Defines the query time-window before wu creation and after wu end
     */
-    void readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode,
-                                   LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
+    void readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
+                                   const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
+    void sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options);
 
     WsWuInfo(IEspContext &ctx, IConstWorkUnit *cw_) :
       context(ctx), cw(cw_)
@@ -665,6 +683,8 @@ class CWsWuFileHelper
 #ifndef _CONTAINERIZED
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
+#else
+    void readWUComponentLogOptionsReq(IConstWUFileOption &logOptionReq, WUComponentLogOptions &options);
 #endif
     void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
@@ -683,6 +703,9 @@ public:
     IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
     void validateFilePath(const char *file, WsWuInfo &winfo, CWUFileType wuFileType, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
     bool validateWUFile(const char *file, WsWuInfo &winfo, CWUFileType wuFileType);
+#ifdef _CONTAINERIZED
+    void sendWUComponentLogStreaming(CHttpRequest *request, CHttpResponse *response);
+#endif
 };
 
 class CWsWuEmailHelper

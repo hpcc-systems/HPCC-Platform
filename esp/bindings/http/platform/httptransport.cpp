@@ -501,6 +501,23 @@ IProperties *CHttpMessage::queryParameters()
     return m_queryparams.get();
 }
 
+int CHttpMessage::getParameterInt(const char* name, int defaultValue)
+{
+    StringBuffer value;
+    getParameter(name, value);
+    if (value.isEmpty())
+        return defaultValue;
+
+    const char* finger = value.str();
+    while (*finger)
+    {
+        if (!isdigit(*finger)) 
+            return defaultValue;
+        ++finger;
+    }
+    return atoi(value.str());
+}
+
 IProperties *CHttpMessage::getParameters()
 {
     if (!m_queryparams)

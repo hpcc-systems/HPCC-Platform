@@ -96,6 +96,9 @@ if(WSSQL_SERVICE AND USE_JAVA)
         ${ESPSCM_GENERATED_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/SQL2ECL
         ${HPCC_SOURCE_DIR}/common/thorhelper
+        ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
+        ${HPCC_SOURCE_DIR}/rtl/eclrtl
+        ${HPCC_SOURCE_DIR}/rtl/include
         )
 
     if (CMAKE_COMPILER_IS_CLANG)
