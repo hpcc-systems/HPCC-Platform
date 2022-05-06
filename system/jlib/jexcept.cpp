@@ -915,10 +915,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
     
     
     StackWalk( ip , _bp);
-    ModuleWalk();
-    StringBuffer threadlist;
-    IERRLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
-    
+    ModuleWalk();    
 }
 
 
