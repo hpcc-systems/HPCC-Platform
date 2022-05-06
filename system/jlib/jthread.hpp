@@ -125,7 +125,7 @@ public:
     virtual void start();
     virtual void startRelease();        
 
-    StringBuffer &getInfo(StringBuffer &str) { str.appendf("%8" I64F "X %6" I64F "d %u: %s",(__int64)threadid,(__int64)threadid,tidlog,getName()); return str; } 
+    StringBuffer &getInfo(StringBuffer &str);
     const char *getLogInfo(int &thandle,unsigned &tid) { 
 #ifdef _WIN32
         thandle = (int)(memsize_t)hThread;

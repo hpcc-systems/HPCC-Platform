@@ -143,16 +143,6 @@ void *Thread::_threadmain(void *v)
     t->tidlog = threadLogID();
 #endif
     int ret = t->begin();
-    char *&threadname = t->cthreadname.threadname;
-    if (threadname) {
-        memsize_t l=strlen(threadname);
-        char *newname = (char *)malloc(l+8+1);
-        memcpy(newname,"Stopped ",8);
-        memcpy(newname+8,threadname,l+1);
-        char *oldname = threadname;
-        threadname = newname;
-        free(oldname);
-    }
     {
         // need to ensure joining thread does not race with us to release
         t->Link();  // extra safety link
@@ -376,6 +366,13 @@ void Thread::start()
     }
     Link();
     startRelease();
+}
+
+StringBuffer & Thread::getInfo(StringBuffer &str)
+{
+    const char * status = alive ? "" : "Stopped ";
+    str.appendf("%8" I64F "X %6" I64F "d %u: %s%s",(__int64)threadid,(__int64)threadid,tidlog,status,getName());
+    return str;
 }
 
 void Thread::startRelease()
