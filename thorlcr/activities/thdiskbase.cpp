@@ -52,7 +52,7 @@ void CDiskReadMasterBase::init()
         bool temp = 0 != (TDXtemporary & helper->getFlags());
         bool jobTemp = 0 != (TDXjobtemp & helper->getFlags());
         bool opt = 0 != (TDRoptional & helper->getFlags());
-        file.setown(lookupReadFile(helperFileName, AccessMode::readSequential, jobTemp, temp, opt));
+        file.setown(lookupReadFile(helperFileName, AccessMode::readSequential, jobTemp, temp, opt, reInit, diskReadRemoteStatistics, &fileStatsTableStart));
         if (file)
         {
             if (file->isExternal() && (helper->getFlags() & TDXcompress))
@@ -78,15 +78,6 @@ void CDiskReadMasterBase::init()
                     IDistributedFile &subfile = super->querySubFile(s, true);
                     subfileLogicalFilenames.append(subfile.queryLogicalName());
                 }
-            }
-            if (0==(helper->getFlags() & TDXtemporary))
-            {
-                /* JCS->SHAMSER - kludge for now, don't add more than max
-                 * But it means updateFileReadCostStats will not be querying the correct files,
-                 * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
-                 */
-                for (unsigned i=subFileStats.size(); i<numsubs; i++)
-                    subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
             }
             void *ekey;
             size32_t ekeylen;
@@ -123,6 +114,7 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
         ForEachItemIn(s, subfileLogicalFilenames)
             dst.append(subfileLogicalFilenames.item(s));
     }
+    dst.append(fileStatsTableStart);
     if (mapping)
         mapping->serializeMap(slave, dst);
     else
@@ -131,7 +123,7 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 
 void CDiskReadMasterBase::done()
 {
-    updateFileReadCostStats(subFileStats);
+    updateFileReadCostStats();
     CMasterActivity::done();
 }
 
@@ -140,8 +132,11 @@ void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
     CMasterActivity::deserializeStats(node, mb);
     if (mapping && (mapping->queryMapWidth(node)>0)) // there won't be any subfile stats. if worker was sent 0 parts
     {
-        for (auto &stats: subFileStats)
-            stats->deserialize(node, mb);
+        unsigned numFilesToRead;
+        mb.read(numFilesToRead);
+        assertex(numFilesToRead<=fileStats.size());
+        for (unsigned i=0; i<numFilesToRead; i++)
+            fileStats[i]->deserialize(node, mb);
     }
 }
 /////////////////

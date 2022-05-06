@@ -64,7 +64,6 @@ public:
         unsigned keyReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJKRR", 0);
         if (!keyReadWidth || keyReadWidth>container.queryJob().querySlaves())
             keyReadWidth = container.queryJob().querySlaves();
-        
 
         initMb.clear();
         initMb.append(indexFileName.get());

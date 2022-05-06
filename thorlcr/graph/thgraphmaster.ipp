@@ -239,19 +239,21 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     bool asyncStart;
     MemoryBuffer *data;
     CriticalSection progressCrit;
-    IArrayOf<IDistributedFile> readFiles;
-    std::unordered_map<std::string, IDistributedFile *> readFilesMap; // NB: IDistributedFile pointers are owned by readFiles
-
+    std::vector<Owned<IDistributedFile>> readFiles;
+    std::unordered_map<std::string, unsigned> readFilesMap; // NB: IDistributedFile pointers are owned by readFiles
+    std::vector<unsigned> fileStatsTable;
 protected:
     std::vector<OwnedPtr<CThorEdgeCollection>> edgeStatsVector;
     CThorStatsCollection statsCollection;
     IBitSet *notedWarnings;
     cost_type diskAccessCost = 0;
+    std::vector<OwnedPtr<CThorStatsCollection>> fileStats;
 
     IDistributedFile *queryReadFile(unsigned f);
+    unsigned queryReadFileId(const char *lfnName);
     IDistributedFile *findReadFile(const char *lfnName);
-    IDistributedFile *lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt);
-    void updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCollection>> & subFileStats);
+    IDistributedFile *lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt, bool statsForMultipleFiles=false, const StatisticsMapping &statsMapping=diskReadRemoteStatistics, unsigned * fileStatsStartEntry=nullptr);
+    void updateFileReadCostStats();
     void updateFileWriteCostStats(IFileDescriptor & fileDesc, IPropertyTree &props, stat_type numDiskWrites);
     virtual void process() { }
 public:

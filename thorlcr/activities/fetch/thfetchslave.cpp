@@ -262,29 +262,25 @@ public:
         }
         return NULL;
     }
-    virtual void getFileStats(CRuntimeStatisticCollection & stats) override
+    virtual void getFileStats(CRuntimeStatisticCollection & stats, std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned fileTableStart) override
     {
         for (unsigned f=0; f<files; f++)
         {
             IFileIO *file = fPosMultiPartTable[f].file;
             mergeStats(stats, file);
         }
-    }
-    virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
-    {
-        if (subFileStats.size()>0)
+        if(!fileStats.empty())
         {
             ISuperFileDescriptor *super = parts.item(0).queryOwner().querySuperFileDescriptor();
-            dbgassertex(super);
             for (unsigned f=0; f<files; f++)
             {
+                IFileIO *file = fPosMultiPartTable[f].file;
                 IPartDescriptor &part = parts.item(f);
                 unsigned subfile, lnum;
-                if(super->mapSubPart(part.queryPartIndex(), subfile, lnum))
-                {
-                    IFileIO *file = fPosMultiPartTable[f].file;
-                    mergeStats(*subFileStats[subfile], file);
-                }
+                if (super && super->mapSubPart(part.queryPartIndex(), subfile, lnum))
+                    mergeStats(*fileStats[fileTableStart+subfile], file);
+                else
+                    mergeStats(*fileStats[fileTableStart], file);
             }
         }
     }
@@ -307,7 +303,7 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
     MemoryBuffer offsetMapBytes;
     Owned<IExpander> eexp;
     Owned<IEngineRowAllocator> keyRowAllocator;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> subFileStats;
+    unsigned fileTableStart = NotFound;
 
 protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
@@ -368,6 +364,7 @@ public:
         if (!container.queryLocalOrGrouped())
             mptag = container.queryJobChannel().deserializeMPTag(data);
 
+        data.read(fileTableStart);
         files = parts.ordinality();
         if (files)
         {
@@ -387,9 +384,7 @@ public:
                 }
             }
             ISuperFileDescriptor *super = parts.item(0).queryOwner().querySuperFileDescriptor();
-            if (super)
-                for (unsigned i=0; i<files; i++)
-                    subFileStats.push_back(new CRuntimeStatisticCollection(diskReadPartStatistics));
+            setupSpace4FileStats(fileTableStart, reInit, super!=nullptr, super?super->querySubFiles():0, diskReadRemoteStatistics);
         }
 
         unsigned encryptedKeyLen;
@@ -575,12 +570,10 @@ public:
     virtual void serializeStats(MemoryBuffer &mb) override
     {
         if (fetchStream)
-        {
-            fetchStream->getFileStats(stats);
-            fetchStream->getSubFileStats(subFileStats);
-        }
+            fetchStream->getFileStats(stats, fileStats, fileTableStart);
         PARENT::serializeStats(mb);
-        for (auto &stats: subFileStats)
+        mb.append((unsigned)fileStats.size());
+        for (auto &stats: fileStats)
             stats->serialize(mb);
     }
     virtual void onLimitExceeded() = 0;

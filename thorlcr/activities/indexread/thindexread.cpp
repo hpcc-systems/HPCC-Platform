@@ -36,7 +36,7 @@ protected:
     bool localKey = false;
     bool partitionKey = false;
     StringBuffer fileName;
-    std::vector<OwnedPtr<CThorStatsCollection>> subIndexFileStats;
+    unsigned fileStatsTableStart = NotFound;
 
     rowcount_t aggregateToLimit()
     {
@@ -222,7 +222,7 @@ public:
             StringBuffer expandedFileName;
             queryThorFileManager().addScope(container.queryJob(), helperFileName, expandedFileName);
             fileName.set(expandedFileName);
-            Owned<IDistributedFile> index = lookupReadFile(helperFileName, AccessMode::readRandom, false, false, 0 != (TIRoptional & indexBaseHelper->getFlags()));
+            Owned<IDistributedFile> index = lookupReadFile(helperFileName, AccessMode::readRandom, false, false, 0 != (TIRoptional & indexBaseHelper->getFlags()), reInit, indexReadActivityStatistics, &fileStatsTableStart);
             if (index && (0 == index->numParts())) // possible if superfile
                 index.clear();
             if (index)
@@ -235,26 +235,15 @@ public:
                 if (container.queryLocalData() && !localKey)
                     throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
 
+                IDistributedSuperFile *super = index->querySuperFile();
                 nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
                 if (localKey)
                     nofilter = true;
                 else
                 {
-                    IDistributedSuperFile *super = index->querySuperFile();
                     IDistributedFile *sub = super ? &super->querySubFile(0,true) : index.get();
                     if (sub && 1 == sub->numParts())
                         nofilter = true;
-                    if (super)
-                    {
-                        unsigned numSubFiles = super->numSubFiles(true);
-
-                        /* JCS->SHAMSER - kludge for now, don't add more than max
-                        * But it means updateFileReadCostStats will not be querying the correct files,
-                        * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
-                        */
-                        for (unsigned i=subIndexFileStats.size(); i<numSubFiles; i++)
-                            subIndexFileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
-                    }
                 }
                 //MORE: Change index getFormatCrc once we support projected rows for indexes.
                 checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
@@ -290,7 +279,10 @@ public:
         ForEachItemIn(p2, parts)
             partNumbers.append(parts.item(p2).queryPartIndex());
         if (partNumbers.ordinality())
+        {
             fileDesc->serializeParts(dst, partNumbers);
+            dst.append(fileStatsTableStart);
+        }
     }
     virtual void abort() override
     {
@@ -300,12 +292,15 @@ public:
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
     {
         CMasterActivity::deserializeStats(node, mb);
-        for (auto &indexFileStats: subIndexFileStats)
-            indexFileStats->deserialize(node, mb);
+        unsigned numFilesToRead;
+        mb.read(numFilesToRead);
+        assertex(numFilesToRead<=fileStats.size());
+        for (unsigned i=0; i<numFilesToRead; i++)
+            fileStats[i]->deserialize(node, mb);
     }
     virtual void done() override
     {
-        updateFileReadCostStats(subIndexFileStats);
+        updateFileReadCostStats();
         CMasterActivity::done();
     }
 };

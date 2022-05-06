@@ -41,7 +41,8 @@ class CKeyedJoinMaster : public CMasterActivity
     bool remoteKeyedFetch = false;
     bool assumePrimary = false;
     unsigned totalIndexParts = 0;
-    std::vector<OwnedPtr<CThorStatsCollection>> fileStats;
+    unsigned indexFileStatsTableEntry = NotFound;
+    unsigned dataFileStatsTableEntry = NotFound;
 
     // CMap contains mappings and lists of parts for each slave
     class CMap
@@ -303,28 +304,20 @@ public:
         totalIndexParts = 0;
 
         Owned<IDistributedFile> dataFile;
-        Owned<IDistributedFile> indexFile = lookupReadFile(indexFileName, AccessMode::readRandom, false, false, 0 != (helper->getJoinFlags() & JFindexoptional));
+        Owned<IDistributedFile> indexFile = lookupReadFile(indexFileName, AccessMode::readRandom, false, false, 0 != (helper->getJoinFlags() & JFindexoptional), true, indexReadActivityStatistics, &indexFileStatsTableEntry);
         if (indexFile)
         {
             if (!isFileKey(indexFile))
                 throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", indexFileName.get());
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
-            // One entry for each subfile (unless it is not a superfile => then add one entry for index data file stats)
+
             unsigned numSuperIndexSubs = superIndex?superIndex->numSubFiles(true):1;
-
-            /* JCS->SHAMSER - kludge for now, don't add more than max
-            * But it means updateFileReadCostStats will not be querying the correct files,
-            * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
-            */
-            for (unsigned i=fileStats.size(); i<numSuperIndexSubs; i++)
-                fileStats.push_back(new CThorStatsCollection(indexReadStatistics));
-
             if (helper->diskAccessRequired())
             {
                 OwnedRoxieString fetchFilename(helper->getFileName());
                 if (fetchFilename)
                 {
-                    dataFile.setown(lookupReadFile(fetchFilename, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional)));
+                    dataFile.setown(lookupReadFile(fetchFilename, AccessMode::readRandom, false, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true, diskReadRemoteStatistics, &dataFileStatsTableEntry));
                     if (dataFile)
                     {
                         if (isFileKey(dataFile))
@@ -362,16 +355,6 @@ public:
                                 remoteKeyedFetch = false;
                         }
                         dataMap.map(*this, dataFile, false, getOptBool("allLocalFetchParts"));
-                        IDistributedSuperFile *super = dataFile->querySuperFile();
-                        // One entry for each subfile (unless it is not a superfile => then have 1 entry for data file stats)
-                        unsigned numsubs = super?super->numSubFiles(true):1;
-
-                        /* JCS->SHAMSER - kludge for now, don't add more than max
-                        * But it means updateFileReadCostStats will not be querying the correct files,
-                        * if the file varies per CQ execution (see other notes in updateFileReadCostStats)
-                        */
-                        for (unsigned i=fileStats.size(); i<numsubs; i++)
-                            fileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
                     }
                 }
             }
@@ -541,6 +524,7 @@ public:
             }
             if (remoteKeyedLookup)
                 indexMap.serializePartMap(dst);
+            dst.append(indexFileStatsTableEntry);
             unsigned totalDataParts = dataMap.count();
             dst.append(totalDataParts);
             if (totalDataParts)
@@ -559,18 +543,22 @@ public:
                 }
                 if (remoteKeyedFetch)
                     dataMap.serializePartMap(dst);
+                dst.append(dataFileStatsTableEntry);
             }
         }
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
     {
         CMasterActivity::deserializeStats(node, mb);
-        for (auto &stats: fileStats)
-            stats->deserialize(node, mb);
+        unsigned numFilesToRead;
+        mb.read(numFilesToRead);
+        assertex(fileStats.size()>=numFilesToRead);
+        for (unsigned i=0; i<numFilesToRead; i++)
+            fileStats[i]->deserialize(node, mb);
     }
     virtual void done() override
     {
-        updateFileReadCostStats(fileStats);
+        updateFileReadCostStats();
         CMasterActivity::done();
     }
 };
