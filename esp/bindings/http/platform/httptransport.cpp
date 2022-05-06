@@ -939,12 +939,13 @@ int CHttpMessage::send()
     // When m_content is empty but the stream was set, read content from the stream.
     if((m_content_length > 0 && m_content.length() == 0) && m_content_stream.get() != NULL)
     {
-        //Read the file and send out 20K at a time.
+        //Read the file and send out a chunk at a time.
+        //This generally streams from a file.  It would be more efficient to stream data directly to the socket (avoiding an intermediate file), or use sendfile()
         __int64 content_length = m_content_length;
-        int buflen = 20*1024;
+        size_t buflen = DEFAULT_COPY_BLKSIZE;
         if(buflen > content_length)
-            buflen = (int) content_length;
-        char* buffer = new char[buflen + 1];
+            buflen = (size_t) content_length;
+        char* buffer = new char[buflen];
         __int64 sizesent = 0;
         while(sizesent < content_length)
         {
