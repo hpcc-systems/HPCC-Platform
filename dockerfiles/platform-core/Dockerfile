@@ -31,6 +31,8 @@ RUN apt-get clean -y && \
 RUN apt-get install -y \
   default-jdk \
   g++ \
+  git \
+  git-lfs \
   openssh-client \
   libapr1 \
   libnuma1 \
