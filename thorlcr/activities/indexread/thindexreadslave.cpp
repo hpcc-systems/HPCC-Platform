@@ -1395,7 +1395,6 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
     {
         RtlDynamicRowBuilder row(allocator);
         size32_t sz = helper->transform(row);
-        callback.finishedRow();
         if (sz==0)
             return NULL;
         if (getDataLinkCount() >= rowLimit)
@@ -1480,10 +1479,7 @@ public:
                 {
                     expanding = helper->next();
                     if (!expanding)
-                    {
-                        callback.finishedRow(); // next() could filter?
                         break;
-                    }
 
                     OwnedConstThorRow row = createNextRow();
                     if (row)
@@ -1498,6 +1494,7 @@ public:
                 {
                     ++progress;
                     expanding = helper->first(rec);
+                    callback.finishedRow(); // first() can lookup blobs
                     if (expanding)
                     {
                         OwnedConstThorRow row = createNextRow();
@@ -1505,8 +1502,6 @@ public:
                             return row.getClear();
                         break;
                     }
-                    else
-                        callback.finishedRow(); // first() could filter?
                 }
                 else
                 {
