@@ -153,7 +153,7 @@
                       }
                   };
 
-                  var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getAliasActions(Action) + '</soap:Body></soap:Envelope>';
+                  var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_workunits"><soap:Body>' + getAliasActions(Action) + '</soap:Body></soap:Envelope>';
 
                   YAHOO.util.Connect.initHeader("SOAPAction", "/WsWorkunits/WUQuerysetActionAliases?");
                   YAHOO.util.Connect.initHeader("Content-Type", "text/xml");

@@ -13,10 +13,6 @@
                     var index = 1;
                         function onLoad()
                         {
-                            //if we came here because of tree navigation in ws_roxieconfig then go back 2 pages else 1 page only
-                            var loc = document.location.toString();
-                            if (loc.indexOf('/ws_roxieconfig/NavMenuEvent?cmd=DeployMultiple') != -1)
-                                index = 2;
                             var btn = document.getElementById('backBtn');
                             if (index < history.length)
                                 btn.style.display = 'block';

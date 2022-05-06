@@ -56,7 +56,6 @@ set ( SCRIPTS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/scriptaculous.js
     ${CMAKE_CURRENT_SOURCE_DIR}/slider.js
     ${CMAKE_CURRENT_SOURCE_DIR}/sortabletable.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/tabularForm.js
     ${CMAKE_CURRENT_SOURCE_DIR}/TargetSelectWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/timer.js
     ${CMAKE_CURRENT_SOURCE_DIR}/TimingGridWidget.js
@@ -73,4 +72,3 @@ set ( SCRIPTS_FILES
 FOREACH( iFile ${SCRIPTS_FILES} )
     Install( FILES ${iFile} DESTINATION componentfiles/files/scripts COMPONENT Runtime )
 ENDFOREACH ( iFile )
-

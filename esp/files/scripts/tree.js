@@ -1415,34 +1415,7 @@ function postForm(xmlDoc, url)
         alert('Failed to post data to service!');
         
     return resp;
-}   
-/*
-<EspNavigationData>
-    <Folder name="Attribute Servers" tooltip="Attribute Servers">
-        <DynamicFolder menu="rcmenu1"
-            name="DefaultAttrServer"
-            params="type=repository&amp;subtype=as&amp;name=DefaultAttrServer&amp;netAddress=http://10.150.29.202:8145"
-            tooltip="DefaultAttrServer"/>
-        <DynamicFolder menu="rcmenu1"
-            name="Configured Attribute Server"
-            params="type=repository&amp;subtype=as&amp;name=Configured Attribute Server&amp;netAddress=http://10.150.29.202:8145"
-            tooltip="Configured Attribute Server"/>
-        <DynamicFolder menu="rcmenu1"
-            name="attrSvr1"
-            params="type=repository&amp;subtype=as&amp;name=attrSvr1&amp;netAddress=http://10.150.64.208:8145"
-            tooltip="attrSvr1"/>
-    </Folder>
-    <Folder name="Roxie Clusters" tooltip="Roxie Clusters">
-        <DynamicFolder menu="rcmenu1"
-            name="roxie1"
-            params="type=repository&amp;subtype=rc&amp;name=roxie1&amp;netAddress=roxieAddr1"
-            tooltip="roxie1"/>
-    </Folder>
-    <Menu name="rcmenu1">
-        <MenuItem action="/ws_roxieconfig/NavMenuPublishEvent?parm1=y" name="Publish" tooltip="Publish"/>
-    </Menu>
-</EspNavigationData>
-*/
+}
 
 function addChildItemsFromNavData(xmlNode, parent)
 {

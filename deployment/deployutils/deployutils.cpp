@@ -2872,12 +2872,9 @@ bool checkComponentReferences(const IPropertyTree* pEnv, IPropertyTree* pNode, c
   {
     xpathArray.append(XML_TAG_ESPSERVICE); 
     attribs.append("@eclWatch");          //ws_ecl
-    attribs.append("@attributeServer");//ws_ecl and ws_roxieconfig
+    attribs.append("@attributeServer");//ws_ecl
 
     xpathArray.append("EspService/WsEcl");//ws_facts and ws_distrix
-    attribArray[numXpaths++].append("@espBinding"); 
-
-    xpathArray.append("EspService/SourceAttributeServer");//ws_roxieconfig
     attribArray[numXpaths++].append("@espBinding"); 
 
     xpathArray.append(XML_TAG_ECLSERVERPROCESS);

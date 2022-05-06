@@ -153,14 +153,6 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="roxieconfig" type="espBindingType" use="optional">
-                <xs:annotation>
-                    <xs:appinfo>
-                        <tooltip>Name of the RoxieConfig service to use for roxie testing</tooltip>
-                        <serviceType>ws_roxieconfig</serviceType>
-                    </xs:appinfo>
-                </xs:annotation>
-            </xs:attribute>
             <xs:attribute name="eclServer" type="eclServerType" use="required">
                 <xs:annotation>
                     <xs:appinfo>
