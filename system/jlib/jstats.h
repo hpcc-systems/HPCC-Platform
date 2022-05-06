@@ -815,6 +815,42 @@ void mergeStat(CRuntimeStatisticCollection & stats, INTERFACE * source, Statisti
 template <class INTERFACE>
 void mergeStat(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, StatisticKind kind) { mergeStat(stats, source.get(), kind); }
 
+
+//Some template helper classes for overwriting/setting statistics from external sources.
+
+template <class INTERFACE>
+void setStats(CRuntimeStatisticCollection & stats, INTERFACE * source, const StatisticsMapping & mapping)
+{
+    if (!source)
+        return;
+
+    unsigned max = mapping.numStatistics();
+    for (unsigned i=0; i < max; i++)
+    {
+        StatisticKind kind = mapping.getKind(i);
+        stats.setStatistic(kind, source->getStatistic(kind));
+    }
+}
+
+template <class INTERFACE>
+void setStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, const StatisticsMapping & mapping) { setStats(stats, source.get(), mapping); }
+
+template <class INTERFACE>
+void setStats(CRuntimeStatisticCollection & stats, INTERFACE * source)       { setStats(stats, source, stats.queryMapping()); }
+
+template <class INTERFACE>
+void setStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source) { setStats(stats, source.get(), stats.queryMapping()); }
+
+template <class INTERFACE>
+void setStats(CRuntimeStatisticCollection & stats, INTERFACE * source, StatisticKind kind)
+{
+    if (source)
+        stats.setStatistic(kind, source->getStatistic(kind));
+}
+
+template <class INTERFACE>
+void setStats(CRuntimeStatisticCollection & stats, const Shared<INTERFACE> & source, StatisticKind kind) { setStat(stats, source.get(), kind); }
+
 //---------------------------------------------------------------------------------------------------------------------
 
 //A class for minimizing the overhead of collecting timestamps.

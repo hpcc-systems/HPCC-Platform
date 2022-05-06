@@ -1624,15 +1624,16 @@ protected:
     unsigned overflowCount = 0;
     unsigned maxCores = 0;
     unsigned outStreams = 0;
-    offset_t sizeSpill = 0;
     ICompare *iCompare;
     StableSortFlag stableSort;
     EmptyRowSemantics emptyRowSemantics = ers_forbidden;
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options = 0;
     unsigned spillCompInfo = 0;
-    __uint64 spillCycles = 0;
-    __uint64 sortCycles = 0;
+    std::atomic<unsigned> statOverflowCount{0};
+    std::atomic<offset_t> statSizeSpill{0};
+    std::atomic<__uint64> statSpillCycles{0};
+    std::atomic<__uint64> statSortCycles{0};
 
     bool spillRows(bool critical)
     {
@@ -1648,7 +1649,7 @@ protected:
         {
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
-            sortCycles += timer.elapsedCycles();
+            statSortCycles += timer.elapsedCycles();
             ActPrintLog(&activity, "%sSorting %" RIPF "u rows took: %f", tracingPrefix.str(), spillableRows.numCommitted(), ((float)timer.elapsedMs())/1000);
             tempPrefix.append("srt");
         }
@@ -1659,8 +1660,9 @@ protected:
         spillableRows.save(*iFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
-        sizeSpill += iFile->size();
-        spillCycles += spillTimer.elapsedCycles();
+        ++statOverflowCount; // NB: this is total over multiple uses of this class
+        statSizeSpill += iFile->size();
+        statSpillCycles += spillTimer.elapsedCycles();
         return true;
     }
     void setEmptyRowSemantics(EmptyRowSemantics _emptyRowSemantics)
@@ -1748,7 +1750,7 @@ protected:
                     {
                         CCycleTimer timer;
                         spillableRows.sort(*iCompare, maxCores);
-                        sortCycles += timer.elapsedCycles();
+                        statSortCycles += timer.elapsedCycles();
                     }
 
                     if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
@@ -1829,9 +1831,6 @@ protected:
         spillFiles.kill();
         totalRows = 0;
         overflowCount = outStreams = 0;
-        sizeSpill = 0;
-        spillCycles = 0;
-        sortCycles = 0;
     }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IThorRowInterfaces *_rowIf, ICompare *_iCompare, StableSortFlag _stableSort, RowCollectorSpillFlags _diskMemMix, unsigned _spillPriority)
@@ -1896,7 +1895,7 @@ public:
         {
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores);
-            sortCycles += timer.elapsedCycles();
+            statSortCycles += timer.elapsedCycles();
         }
         out.transferFrom(spillableRows);
     }
@@ -1946,17 +1945,17 @@ public:
         switch (kind)
         {
         case StCycleSpillElapsedCycles:
-            return spillCycles;
+            return statSpillCycles;
         case StCycleSortElapsedCycles:
-            return sortCycles;
+            return statSortCycles;
         case StTimeSpillElapsed:
-            return cycle_to_nanosec(spillCycles);
+            return cycle_to_nanosec(statSpillCycles);
         case StTimeSortElapsed:
-            return cycle_to_nanosec(sortCycles);
+            return cycle_to_nanosec(statSortCycles);
         case StNumSpills:
-            return overflowCount;
+            return statOverflowCount;
         case StSizeSpillFile:
-            return sizeSpill;
+            return statSizeSpill;
         default:
             break;
         }
@@ -2032,6 +2031,7 @@ public:
     virtual unsigned __int64 getStatistic(StatisticKind kind) override { return CThorRowCollectorBase::getStatistic(kind); }
     virtual bool hasSpilt() const override { return CThorRowCollectorBase::hasSpilt(); }
     virtual void setTracingPrefix(const char *tracing) override { CThorRowCollectorBase::setTracingPrefix(tracing); }
+    virtual void reset() override { CThorRowCollectorBase::reset(); }
 
 // IThorArrayLock
     virtual void lock() const override { CThorRowCollectorBase::lock(); }
