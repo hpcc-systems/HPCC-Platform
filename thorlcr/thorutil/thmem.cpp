@@ -1630,10 +1630,10 @@ protected:
     Owned<CSharedSpillableRowSet> spillableRowSet;
     unsigned options = 0;
     unsigned spillCompInfo = 0;
-    std::atomic<unsigned> statOverflowCount{0};
-    std::atomic<offset_t> statSizeSpill{0};
-    std::atomic<__uint64> statSpillCycles{0};
-    std::atomic<__uint64> statSortCycles{0};
+    RelaxedAtomic<unsigned> statOverflowCount{0};
+    RelaxedAtomic<offset_t> statSizeSpill{0};
+    RelaxedAtomic<__uint64> statSpillCycles{0};
+    RelaxedAtomic<__uint64> statSortCycles{0};
 
     bool spillRows(bool critical)
     {
@@ -1649,7 +1649,7 @@ protected:
         {
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
-            statSortCycles += timer.elapsedCycles();
+            statSortCycles.fastAdd(timer.elapsedCycles());
             ActPrintLog(&activity, "%sSorting %" RIPF "u rows took: %f", tracingPrefix.str(), spillableRows.numCommitted(), ((float)timer.elapsedMs())/1000);
             tempPrefix.append("srt");
         }
@@ -1660,9 +1660,9 @@ protected:
         spillableRows.save(*iFile, spillCompInfo, false, spillPrefixStr.str()); // saves committed rows
         spillFiles.append(new CFileOwner(iFile.getLink()));
         ++overflowCount;
-        ++statOverflowCount; // NB: this is total over multiple uses of this class
-        statSizeSpill += iFile->size();
-        statSpillCycles += spillTimer.elapsedCycles();
+        statOverflowCount.fastAdd(1); // NB: this is total over multiple uses of this class
+        statSizeSpill.fastAdd(iFile->size());
+        statSpillCycles.fastAdd(spillTimer.elapsedCycles());
         return true;
     }
     void setEmptyRowSemantics(EmptyRowSemantics _emptyRowSemantics)
@@ -1750,7 +1750,7 @@ protected:
                     {
                         CCycleTimer timer;
                         spillableRows.sort(*iCompare, maxCores);
-                        statSortCycles += timer.elapsedCycles();
+                        statSortCycles.fastAdd(timer.elapsedCycles());
                     }
 
                     if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
@@ -1895,7 +1895,7 @@ public:
         {
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores);
-            statSortCycles += timer.elapsedCycles();
+            statSortCycles.fastAdd(timer.elapsedCycles());
         }
         out.transferFrom(spillableRows);
     }
