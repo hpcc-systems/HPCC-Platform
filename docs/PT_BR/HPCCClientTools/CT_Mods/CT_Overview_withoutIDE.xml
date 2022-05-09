@@ -127,6 +127,21 @@
           <para>Instale o software de ferramentas do cliente em sua
           máquina.</para>
 
+          <para><variablelist>
+              <varlistentry>
+                <term>Nota:</term>
+
+                <listitem>
+                  <para>Para grandes workunits ECL, o compilador de 32 bits
+                  (eclcc) pode ficar sem memória mais rapidamente do que a
+                  versão de 64 bits. Portanto, na maioria dos casos, você deve
+                  instalar a versão de 64 bits. No entanto, para máquinas com
+                  memória de 4 GB ou menos, você deve usar as ferramentas de
+                  cliente de 32 bits.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+
           <para><emphasis role="bold">Windows: </emphasis></para>
 
           <para>Execute o arquivo executável, p.ex.:
@@ -149,7 +164,7 @@
           <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
 
           <para>Após instalar o pacote, execute o comando a seguir para
-          atualizar as dependências:</para>
+          "arrumar" as dependências:</para>
 
           <programlisting>sudo apt-get install -f </programlisting>
 

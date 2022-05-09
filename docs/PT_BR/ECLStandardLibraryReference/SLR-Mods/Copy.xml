@@ -214,8 +214,7 @@
 
   <para>A função <emphasis role="bold">Copy </emphasis> recebe um arquivo
   lógico e o copia para outro arquivo lógico. Isso pode ser feito no mesmo
-  cluster, para outro cluster ou para um cluster em um Dali totalmente
-  separado.</para>
+  cluster, para outro. O destino não pode ser um arquivo externo.</para>
 
   <para>Exemplo:</para>
 

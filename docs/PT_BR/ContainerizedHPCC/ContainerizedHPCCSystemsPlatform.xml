@@ -176,10 +176,10 @@
         suficiente para que recomendamos o uso de uma ferramenta especial para
         editá-lo.</para>
 
-        <para>O <emphasis role="strong">values.yaml</emphasis> do helm chart
-        padrão tem menos de 100 linhas e pode ser editado em qualquer editor
-        e/ou modificado por meio das substituições da linha de comando. Também
-        é autodocumentado com comentários extensos.</para>
+        <para>O <emphasis role="strong">values.yaml</emphasis> do gráfico de
+        helm padrão é relativamente pequeno e pode ser aberto em qualquer
+        editor e/ou modificado por meio das substituições de linha de comando
+        do helm. Também é auto-documentado com extensos comentários.</para>
       </sect2>
 
       <sect2 id="staticvsondemand">
@@ -239,6 +239,12 @@
   <xi:include href="ContainerizedHPCC/ContainerizedMods/LocalDeployment.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <xi:include href="ContainerizedHPCC/ContainerizedMods/PVCStorage.xml"
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/CustomConfig.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/ConfigureValues.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/ContainerLogging.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude"/>
 </book>
