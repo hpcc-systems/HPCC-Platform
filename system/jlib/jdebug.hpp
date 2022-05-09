@@ -44,12 +44,7 @@ void jlib_decl display_time(const char * title, cycle_t diff);
 inline cycle_t getTSC() { __asm { __asm _emit 0x0f __asm _emit 0x31 } }
 #pragma warning(pop)
 #elif !defined(_WIN32)
-inline __int64 getTSC()
-{
-   unsigned a, d;
-   __asm__ volatile("rdtsc" : "=a" (a), "=d" (d));
-   return ((cycle_t)a)|(((cycle_t)d) << 32);
-}
+inline cycle_t getTSC() { return __builtin_ia32_rdtsc(); }
 #else
 #include <intrin.h>
 inline cycle_t getTSC() { return __rdtsc(); }
