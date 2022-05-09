@@ -204,6 +204,7 @@ int CEspHttpServer::processRequest()
     catch (IException *e)
     {
         DBGLOG(e);
+        sendInternalError(true);
         ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
         e->Release();
         return 0;
@@ -211,6 +212,7 @@ int CEspHttpServer::processRequest()
     catch (...)
     {
         IERRLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
+        sendInternalError(false);
         ctx->addTraceSummaryValue(LogMin, "msg", "Unknown Exception - reading request [CEspHttpServer::processRequest()]", TXSUMMARY_GRP_ENTERPRISE);
         return 0;
     }
@@ -428,6 +430,7 @@ int CEspHttpServer::processRequest()
     catch (IException *e)
     {
         DBGLOG(e);
+        sendInternalError(true);
         ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
         VStringBuffer fault("F%d", e->errorCode());
         ctx->addTraceSummaryValue(LogMin, "custom_fields.soapFaultCode", fault.str(), TXSUMMARY_GRP_ENTERPRISE);
@@ -442,6 +445,7 @@ int CEspHttpServer::processRequest()
         UWARNLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
         if (len > 0)
             m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
+        sendInternalError(false);
         ctx->addTraceSummaryValue(LogMin, "msg", "Unknown exception caught in CEspHttpServer::processRequest", TXSUMMARY_GRP_ENTERPRISE);
         return 0;
     }
@@ -1622,6 +1626,41 @@ void CEspHttpServer::sendException(EspAuthRequest& authReq, unsigned code, const
         resp.append("</Exception></Exceptions>");
     }
     sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
+}
+
+/**
+ * @brief Return a generic internal server error to the client.
+ *
+ * Exceptions caught by processRequest fall into three categories.
+ *
+ * 1. HTTP exceptions. These are assumed to contain messages suitable for client consumption and
+ *    are returned to the caller.
+ * 2. Other known exceptions, derived from IException. These are assumed to contain messages that
+ *    include implementation details not appropriate for client consumption.
+ * 3. Unexpected exceptions that cannot be described.
+ *
+ * This method handles categories 2 and 3. A generic message indicating that an exception occurred
+ * is returned to the client with status code 500. The parameter indicates whether trace output is
+ * likely to include exception details, and the returned message will refer the client to examine
+ * the logs for more information when appropriate.
+ *
+ * @param loggedDetails 
+ */
+void CEspHttpServer::sendInternalError(bool loggedDetails)
+{
+    IEspContext* ctx = m_request->queryContext();
+    const char*  globalId = (ctx ? ctx->getGlobalId() : nullptr);
+    StringBuffer content;
+    if (!isEmptyString(globalId))
+        content.appendf("Request failed for global transaction '%s'.", globalId);
+    else
+        content.append("Request failed.");
+    if (loggedDetails)
+        content.append(" Check log files for more information.");
+    m_response->setStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    m_response->setContentType(HTTP_TYPE_TEXT_PLAIN);
+    m_response->setContent(content);
+    m_response->send();
 }
 
 void CEspHttpServer::sendAuthorizationMsg(EspAuthRequest& authReq)
