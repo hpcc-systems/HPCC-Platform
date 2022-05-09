@@ -52,36 +52,42 @@ LogAccessTimeRange requestedRangeToLARange(IConstTimeRange & reqrange)
     return range;
 }
 
-bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, IEspGetLogsResponse & resp)
+LogAccessFilterType cLogAccessFilterOperator2LogAccessFilterType(CLogAccessFilterOperator cLogAccessFilterOperator)
 {
-    if (!m_remoteLogAccessor)
-        throw makeStringException(-1, "WsLogAccess: Remote Log Access plug-in not available!");
+    switch (cLogAccessFilterOperator)
+    {
+    case CLogAccessFilterOperator_NONE:
+        return LOGACCESS_FILTER_unknown;
+    case CLogAccessFilterOperator_AND:
+        return LOGACCESS_FILTER_and;
+    case CLogAccessFilterOperator_OR:
+        return LOGACCESS_FILTER_or;
+    case LogAccessFilterOperator_Undefined:
+    default:
+        throw makeStringException(-1, "WsLogAccess: Cannot convert log filter operator!");
+    }
+}
 
-    CLogAccessType searchByCategory = req.getLogCategory();
-    const char * searchByValue = req.getSearchByValue();
-    if (searchByCategory != CLogAccessType_All && isEmptyString(searchByValue))
-        throw makeStringException(-1, "WsLogAccess::onGetLogs: Must provide log category");
+ILogAccessFilter * buildLogFilterByFields(CLogAccessType searchByCategory, const char * searchByValue, const char * serchField)
+{
+    if (isEmptyString(searchByValue) && searchByCategory != CLogAccessType_All)
+       throw makeStringException(-1, "WsLogAccess: Empty searchByValue detected");
 
-    LogAccessConditions logFetchOptions;
     switch (searchByCategory)
     {
         case CLogAccessType_All:
-            logFetchOptions.setFilter(getWildCardLogAccessFilter());
-            break;
+            return getWildCardLogAccessFilter();
         case CLogAccessType_ByJobIdID:
-            logFetchOptions.setFilter(getJobIDLogAccessFilter(searchByValue));
-            break;
+            return getJobIDLogAccessFilter(searchByValue);
         case CLogAccessType_ByComponent:
-            logFetchOptions.setFilter(getComponentLogAccessFilter(searchByValue));
-            break;
+            return getComponentLogAccessFilter(searchByValue);
         case CLogAccessType_ByLogType:
         {
             LogMsgClass logType = LogMsgClassFromAbbrev(searchByValue);
             if (logType == MSGCLS_unknown)
                 throw makeStringExceptionV(-1, "Invalid Log Type 3-letter code encountered: '%s' - Available values: 'DIS,ERR,WRN,INF,PRO,MET'", searchByValue);
 
-            logFetchOptions.setFilter(getClassLogAccessFilter(logType));
-            break;
+            return getClassLogAccessFilter(logType);
         }
         case CLogAccessType_ByTargetAudience:
         {
@@ -89,26 +95,118 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
             if (targetAud == MSGAUD_unknown || targetAud == MSGAUD_all)
                 throw makeStringExceptionV(-1, "Invalid Target Audience 3-letter code encountered: '%s' - Available values: 'OPR,USR,PRO,ADT'", searchByValue);
 
-            logFetchOptions.setFilter(getAudienceLogAccessFilter(targetAud));
-            break;
+            return getAudienceLogAccessFilter(targetAud);
         }
         case CLogAccessType_BySourceInstance:
         {
-            logFetchOptions.setFilter(getInstanceLogAccessFilter(searchByValue));
-            break;
+            return getInstanceLogAccessFilter(searchByValue);
         }
         case CLogAccessType_BySourceNode:
         {
-            logFetchOptions.setFilter(getHostLogAccessFilter(searchByValue));
+            return getHostLogAccessFilter(searchByValue);
             break;
+        }
+        case CLogAccessType_ByFieldName:
+        {
+            return getColumnLogAccessFilter(serchField, searchByValue);
         }
         case LogAccessType_Undefined:
         default:
             throw makeStringException(-1, "Invalid remote log access request type");
     }
+}
+
+ILogAccessFilter * buildLogFilter(IConstLogFilter * logFilter)
+{
+    if (logFilter)
+        return buildLogFilterByFields(logFilter->getLogCategory(), logFilter->getSearchByValue(), logFilter->getSearchField());
+    else
+        return nullptr;
+}
+
+bool isLogFilterEmpty(IConstLogFilter * logFilter)
+{
+    if (!logFilter)
+        return true;
+
+    return isEmptyString(logFilter->getSearchByValue()) && logFilter->getLogCategory() == LogAccessType_Undefined && isEmptyString(logFilter->getSearchField());
+}
+
+ILogAccessFilter * buildBinaryLogFilter(IConstBinaryLogFilter * binaryfilter)
+{
+    if (!binaryfilter)
+        return nullptr;
+    
+    ILogAccessFilter * leftFilter = nullptr;
+    if (binaryfilter->getLeftBinaryFilter().ordinality() == 0)
+    {
+        leftFilter = buildLogFilter(&binaryfilter->getLeftFilter());
+    }
+    else
+    {
+        if (binaryfilter->getLeftBinaryFilter().ordinality() > 1)
+            throw makeStringException(-1, "WsLogAccess: LeftBinaryFilter cannot contain multiple entries!");
+
+        if (!isLogFilterEmpty(&binaryfilter->getLeftFilter()))
+            throw makeStringException(-1, "WsLogAccess: Cannot submit leftFilter and leftBinaryFilter!");
+
+        leftFilter = buildBinaryLogFilter(&binaryfilter->getLeftBinaryFilter().item(0));
+    }
+
+    if (!leftFilter)
+        throw makeStringExceptionV(-1, "WsLogAccess: Empty LEFT filter encountered");
+
+    switch (binaryfilter->getOperator())
+    {
+    case CLogAccessFilterOperator_NONE:
+    case LogAccessFilterOperator_Undefined: //no operator found
+        //if (rightFilter != nullptr)
+        //     WARNLOG("right FILTER ENCOUNTERED but no valid operator");
+        return leftFilter;
+    case CLogAccessFilterOperator_AND:
+    case CLogAccessFilterOperator_OR:
+    {
+        ILogAccessFilter * rightFilter = nullptr;
+        if (binaryfilter->getRightBinaryFilter().ordinality() == 0)
+        {
+            rightFilter = buildLogFilter(&binaryfilter->getRightFilter());
+        }
+        else
+        {
+            if (binaryfilter->getRightBinaryFilter().ordinality() > 1)
+                throw makeStringException(-1, "WsLogAccess: RightBinaryFilter cannot contain multiple entries!");
+
+            if (!isLogFilterEmpty(&binaryfilter->getRightFilter()))
+                throw makeStringException(-1, "WsLogAccess: Cannot submit rightFilter and rightBinaryFilter!");
+
+            rightFilter = buildBinaryLogFilter(&binaryfilter->getRightBinaryFilter().item(0));
+        }
+
+        if (!rightFilter)
+            throw makeStringExceptionV(-1, "WsLogAccess: Empty RIGHT filter encountered");
+
+        return getBinaryLogAccessFilterOwn(leftFilter, rightFilter, cLogAccessFilterOperator2LogAccessFilterType(binaryfilter->getOperator()));
+    }
+
+    default:
+        throw makeStringExceptionV(-1, "WsLogAccess: Invalid log access filter operator encountered '%d'", binaryfilter->getOperator());
+    }
+}
+
+bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, IEspGetLogsResponse & resp)
+{
+    if (!m_remoteLogAccessor)
+        throw makeStringException(-1, "WsLogAccess: Remote Log Access plug-in not available!");
+
+    double version = context.getClientVersion();
+    LogAccessConditions logFetchOptions;
+    if (version > 1.01)
+        logFetchOptions.setFilter(buildBinaryLogFilter(&req.getFilter()));
+    else
+        logFetchOptions.setFilter(buildLogFilterByFields(req.getLogCategory(), req.getSearchByValue(), nullptr));
 
     LogAccessTimeRange range = requestedRangeToLARange(req.getRange());
-    double version = context.getClientVersion();
+    
     if (version > 1.0)
     {
         switch (req.getSelectColumnMode())
