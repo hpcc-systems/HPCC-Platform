@@ -1812,6 +1812,9 @@ void HqlCppTranslator::buildAssignChildDataset(BuildCtx & ctx, const CHqlBoundTa
     {
     case no_call:
     case no_externalcall:
+        if (callIsActivity(expr) && !ctx.queryMatchExpr(activityContextMarkerExpr))
+            break;
+        //fallthrough
     case no_libraryinput:
         buildDatasetAssign(ctx, target, expr);
         return;
@@ -2554,6 +2557,8 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         return;
     case no_call:
     case no_externalcall:
+        if (callIsActivity(expr) && !ctx.queryMatchExpr(activityContextMarkerExpr))
+            break;
         doBuildCall(ctx, &target, expr, NULL);
         return;
     case no_getgraphresult:
