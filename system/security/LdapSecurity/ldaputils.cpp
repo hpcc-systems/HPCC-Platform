@@ -248,16 +248,18 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
     if (nullptr == ld)
     {
         ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, timeout, &err);
-        if(nullptr == ld)
+        if(nullptr == ld  && strieq(ldapprotocol,"ldaps"))
         {
-            DBGLOG("ldap bind error (%d) - %s", err, ldap_err2string(err));
-
-            // for new versions of openldap, version 2.2.*
-            if(err == LDAP_PROTOCOL_ERROR  &&  stype != ACTIVE_DIRECTORY)
-                DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
-
-            return err;
+            //if that failed, and was for ldaps, see if we can do anonymous bind using ldap/389
+            ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, "ldap", 389, timeout, &err);
         }
+
+        // for new versions of openldap, version 2.2.*
+        if(nullptr == ld   &&  err == LDAP_PROTOCOL_ERROR  &&  stype != ACTIVE_DIRECTORY)
+            DBGLOG("If you're trying to connect to an OpenLdap server, make sure you have \"allow bind_v2\" enabled in slapd.conf");
+
+        if(nullptr == ld)
+            return err;//unable to connect, give up
     }
 
     LDAPMessage* msg = NULL;
