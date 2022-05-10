@@ -307,11 +307,12 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
 
 protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
-    IFetchStream *fetchStream = nullptr;
+    Owned<IFetchStream> fetchStream;
+    CriticalSection fetchStreamCS;
     IHThorFetchBaseArg *fetchBaseHelper;
     unsigned files = 0;
     CPartDescriptorArray parts;
-    IRowStream *keyIn = nullptr;
+    Owned<IRowStream> keyIn;
     bool indexRowExtractNeeded = false;
     mptag_t mptag = TAG_NULL;
 
@@ -327,11 +328,6 @@ public:
         fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
         reInit = 0 != (fetchBaseHelper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
         appendOutputLinked(this);
-    }
-    ~CFetchSlaveBase()
-    {
-        ::Release(keyIn);
-        ::Release(fetchStream);
     }
 
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
@@ -471,12 +467,12 @@ public:
 
             if (fetchBaseHelper->extractAllJoinFields())
             {
-                keyIn = LINK(inputStream);
+                keyIn.set(inputStream);
                 keyInMeta.set(input->queryFromActivity()->queryRowMetaData());
             }
             else
             {
-                keyIn = new CKeyFieldExtract(this, *inputStream, *fetchBaseHelper);
+                keyIn.setown(new CKeyFieldExtract(this, *inputStream, *fetchBaseHelper));
                 keyInMeta.set(QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData));
             }
             keyInIf.setown(createRowInterfaces(keyInMeta));
@@ -509,12 +505,15 @@ public:
             };
             Owned<IOutputMetaData> fmeta = createFixedSizeMetaData(sizeof(offset_t)); // should be provided by Gavin?
             keyInIf.setown(createRowInterfaces(fmeta));
-            keyIn = new CKeyFPosExtract(keyInIf, this, *inputStream, *fetchBaseHelper);
+            keyIn.setown(new CKeyFPosExtract(keyInIf, this, *inputStream, *fetchBaseHelper));
         }
 
         Owned<IThorRowInterfaces> rowIf = createRowInterfaces(queryRowMetaData());
         OwnedRoxieString fileName = fetchBaseHelper->getFileName();
-        fetchStream = createFetchStream(*this, keyInIf, rowIf, abortSoon, fileName, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp);
+        {
+            CriticalBlock b(fetchStreamCS);
+            fetchStream.setown(createFetchStream(*this, keyInIf, rowIf, abortSoon, fileName, parts, offsetCount, offsetMapSz, offsetMapBytes.toByteArray(), this, mptag, eexp));
+        }
         fetchStreamOut = fetchStream->queryOutput();
         fetchStream->start(keyIn);
         initializeFileParts();
@@ -569,8 +568,11 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        if (fetchStream)
-            fetchStream->getFileStats(stats, fileStats, fileTableStart);
+        {
+            CriticalBlock b(fetchStreamCS);
+            if (fetchStream)
+                fetchStream->getFileStats(stats, fileStats, fileTableStart);
+        }
         PARENT::serializeStats(mb);
         mb.append((unsigned)fileStats.size());
         for (auto &stats: fileStats)
