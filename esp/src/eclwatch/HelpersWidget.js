@@ -52,6 +52,9 @@ define([
                 case "ComponentLog":
                     params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
                     break;
+                case "postmortem":
+                    params = "/WUFile/" + item.Type + "?Wuid=" + encodeURIComponent(this.wu.Wuid) + "&Name=" + encodeURIComponent(item.Orig.Name) + "&Type=" + encodeURIComponent(item.Orig.Type);
+                    break;
                 case "EclAgentLog":
                     params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
                     break;
