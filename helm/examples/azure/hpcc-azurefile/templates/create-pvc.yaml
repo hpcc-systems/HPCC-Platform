@@ -6,7 +6,7 @@ metadata:
 spec:
   accessModes:
     - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
-  storageClassName: {{ include "hpcc-azurefile.SCName" (dict "root" $ "plane" $plane) | default "" | quote  }}
+  storageClassName: {{ include "hpcc-azurefile.SCName" (dict "root" $ "plane" $plane) | default "azurefile-csi" | quote  }}
   resources:
     requests:
       storage: {{ $plane.size }}
