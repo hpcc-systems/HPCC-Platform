@@ -404,7 +404,7 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     if (partStream)
     {
         closedPartFileStats.mergeStatistic(StNumDiskRowsRead, partStream->queryProgress());
-        activity.mergeSubFileStats(partDesc, partStream);
+        activity.mergeFileStats(partDesc, partStream);
         partStream->stop(&fileCRC);
     }
 }

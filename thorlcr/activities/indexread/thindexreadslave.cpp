@@ -76,7 +76,7 @@ protected:
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> subIndexFileStats;
+    unsigned fileTableStart = NotFound;
 
     template<class StatProvider>
     class CCaptureIndexStats
@@ -358,15 +358,19 @@ public:
         else
             return nullptr;
     }
-    void mergeSubFileStats(IPartDescriptor *partDesc, IFileIO *partIO)
+    void mergeFileStats(IPartDescriptor *partDesc, IFileIO *partIO)
     {
-        if (subIndexFileStats.size()>0)
+        if (fileStats.size()>0)
         {
             ISuperFileDescriptor * superFDesc = partDesc->queryOwner().querySuperFileDescriptor();
-            dbgassertex(superFDesc);
-            unsigned subfile, lnum;
-            if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
-                mergeStats(*subIndexFileStats[subfile], partIO);
+            if (superFDesc)
+            {
+                unsigned subfile, lnum;
+                if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
+                    mergeStats(*fileStats[fileTableStart+subfile], partIO);
+            }
+            else
+                mergeStats(*fileStats[fileTableStart], partIO);
         }
     }
     void updateStats()
@@ -375,7 +379,7 @@ public:
         {
             mergeStats(stats, lazyIFileIO);
             if (currentPart<partDescs.ordinality())
-                mergeSubFileStats(&partDescs.item(currentPart), lazyIFileIO);
+                mergeFileStats(&partDescs.item(currentPart), lazyIFileIO);
         }
     }
     void configureNextInput()
@@ -611,12 +615,7 @@ public:
             IPartDescriptor &part0 = partDescs.item(0);
             IFileDescriptor &fileDesc = part0.queryOwner();
             ISuperFileDescriptor *super = fileDesc.querySuperFileDescriptor();
-            if (super)
-            {
-                unsigned numSubFiles = super->querySubFiles();
-                for (unsigned i=0; i<numSubFiles; i++)
-                    subIndexFileStats.push_back(new CRuntimeStatisticCollection(indexReadActivityStatistics));
-            }
+
             if ((0 == (helper->getFlags() & TIRusesblob)) && !localMerge)
             {
                 if (!inChildQuery())
@@ -692,6 +691,8 @@ public:
                     }
                 }
             }
+            data.read(fileTableStart);
+            setupSpace4FileStats(fileTableStart, reInit, super!=nullptr, super?super->querySubFiles():0, indexReadActivityStatistics);
         }
     }
     // IThorDataLink
@@ -727,8 +728,9 @@ public:
     {
         stats.setStatistic(StNumRowsProcessed, progress);
         PARENT::serializeStats(mb);
-        for (auto &indexFileStats: subIndexFileStats)
-            indexFileStats->serialize(mb);
+        mb.append((unsigned)fileStats.size());
+        for (auto &stats: fileStats)
+            stats->serialize(mb);
     }
     virtual void done() override
     {
@@ -1393,7 +1395,6 @@ class CIndexNormalizeSlaveActivity : public CIndexReadSlaveBase
     {
         RtlDynamicRowBuilder row(allocator);
         size32_t sz = helper->transform(row);
-        callback.finishedRow();
         if (sz==0)
             return NULL;
         if (getDataLinkCount() >= rowLimit)
@@ -1478,10 +1479,7 @@ public:
                 {
                     expanding = helper->next();
                     if (!expanding)
-                    {
-                        callback.finishedRow(); // next() could filter?
                         break;
-                    }
 
                     OwnedConstThorRow row = createNextRow();
                     if (row)
@@ -1496,6 +1494,7 @@ public:
                 {
                     ++progress;
                     expanding = helper->first(rec);
+                    callback.finishedRow(); // first() can lookup blobs
                     if (expanding)
                     {
                         OwnedConstThorRow row = createNextRow();
@@ -1503,8 +1502,6 @@ public:
                             return row.getClear();
                         break;
                     }
-                    else
-                        callback.finishedRow(); // first() could filter?
                 }
                 else
                 {

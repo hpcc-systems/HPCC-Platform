@@ -2752,6 +2752,12 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
             buildExprAssign(ctx, target, mapped);
             break;
         }
+    case no_getsecret:
+        {
+            OwnedHqlExpr mapped = cvtGetSecretToCall(expr);
+            buildExprAssign(ctx, target, mapped);
+            break;
+        }
     default:
         doBuildExprAssign(ctx, target, expr);
         break;
@@ -3406,6 +3412,12 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_getenv:
         {
             OwnedHqlExpr mapped = cvtGetEnvToCall(expr);
+            buildExpr(ctx, mapped, tgt);
+            return;
+        }
+    case no_getsecret:
+        {
+            OwnedHqlExpr mapped = cvtGetSecretToCall(expr);
             buildExpr(ctx, mapped, tgt);
             return;
         }
@@ -10577,6 +10589,13 @@ IHqlExpression * HqlCppTranslator::cvtGetEnvToCall(IHqlExpression * expr)
     return bindFunctionCall(getEnvId, args);
 }
 
+IHqlExpression * HqlCppTranslator::cvtGetSecretToCall(IHqlExpression * expr)
+{
+    HqlExprArray args;
+    args.append(*LINK(expr->queryChild(0)));
+    args.append(*LINK(expr->queryChild(1)));
+    return bindFunctionCall(getSecretId, args);
+}
 //---------------------------------------------------------------------------
 
 void HqlCppTranslator::doBuildAssignToFromUnicode(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr) 

@@ -1,0 +1,1407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="ContainerConfigurationValuesCHAPTER">
+  <title>Configuração dos Valores</title>
+
+  <para>Este capítulo descreve a configuração do HPCC Systems para uma
+  implantação Kubernetes em contêineres. As seções a seguir detalham como as
+  configurações são fornecidas aos charts do helm, como descobrir quais opções
+  estão disponíveis e alguns detalhes da estrutura do arquivo de configuração.
+  As seções subsequentes também fornecerão uma breve explicação de alguns dos
+  conteúdos do arquivo padrão <emphasis>values.yaml</emphasis>, usado na
+  configuração do HPCC Systems para uma implantação em contêiner.</para>
+
+  <sect1 id="Intro_Containerized_Environments" role="nobrk">
+    <title>O Ambiente do Contêiner</title>
+
+    <para>Uma das ideias por trás de nossa mudança para a nuvem foi tentar
+    simplificar a configuração do sistema e, ao mesmo tempo, fornecer uma
+    solução flexível o suficiente para atender às demandas de nossa
+    comunidade, aproveitando os recursos do contêiner sem sacrificar o
+    desempenho.</para>
+
+    <para>Toda a configuração do HPCC Systems no espaço do contêiner é
+    governada por um único arquivo, um arquivo
+    <emphasis>values.yaml</emphasis> e seu arquivo de esquema
+    associado.</para>
+
+    <sect2 id="WhatIsValues.Yaml">
+      <title>O <emphasis>values.yaml</emphasis> e como é utilizado</title>
+
+      <para>O arquivo <emphasis>values.yaml</emphasis> são os valores de
+      configuração fornecidos para um chart do Helm. O arquivo
+      <emphasis>values.yaml</emphasis> é usado pelo chart do Helm para
+      controlar como o HPCC Systems é implantado na nuvem. Esse arquivo de
+      valores é usado para configurar e obter uma instância do HPCC Systems em
+      execução no Kubernetes. O arquivo<emphasis> values.yaml
+      </emphasis>define tudo o que acontece para configurar e/ou definir seu
+      sistema para uma implantação em contêiner. Você deve usar o arquivo de
+      valores fornecido como base para modelar as personalizações específicas
+      para sua implantação de acordo com seus requisitos.</para>
+
+      <para>O arquivo <emphasis>values.yaml</emphasis> do HPCC Systems pode
+      ser encontrado no repositório github do HPCC Systems. Para usar o chart
+      Helm do HPCC Systems, primeiro adicione o repositório de charts hpcc
+      usando o Helm e, em seguida, acesse os valores do chart Helm dos charts
+      nesse repositório.</para>
+
+      <para>Por exemplo, ao adicionar o repositório "hpcc", conforme
+      recomendado antes de instalar o chart do Helm com o seguinte
+      comando:</para>
+
+      <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart
+</programlisting>
+
+      <para>Agora você pode visualizar os charts entregues do HPCC Systems e
+      ver os valores lá emitindo:</para>
+
+      <programlisting>helm show values hpcc/hpcc</programlisting>
+
+      <para>Você pode capturar a saída deste comando, ver como os padrões são
+      configurados e usá-lo como base para sua customização.</para>
+    </sect2>
+
+    <sect2 id="Values-SchemaJSONFile" role="brk">
+      <title>O values-schema.json</title>
+
+      <para>O <emphasis>values-schema.json</emphasis> é um arquivo JSON que
+      declara o que é válido e o que não está dentro da soma total dos valores
+      mesclados que são passados para o Helm no momento da instalação. Ele
+      define quais valores são permitidos e valida o arquivo de valores em
+      relação a eles. Todos os itens principais são declarados no arquivo de
+      esquema, enquanto o arquivo default <emphasis>values.yaml</emphasis>
+      também contém comentários sobre os elementos mais importantes. Se você
+      quiser saber quais opções estão disponíveis para qualquer componente
+      específico, o esquema é um bom lugar para começar.</para>
+
+      <para>O arquivo de esquema normalmente contém (para uma propriedade) um
+      nome e uma descrição. Muitas vezes, incluirá detalhes do tipo e os itens
+      que pode conter se for uma lista ou dicionário. Por exemplo:</para>
+
+      <programlisting>    "roxie": { 
+      "description": "roxie process",
+      "type": "array"
+      "items": { "$ref": "#/definitions/roxie" }
+    },</programlisting>
+
+      <para>Cada plano, no arquivo de esquema, tem uma lista de propriedades
+      geralmente contendo um prefixo (caminho), um subcaminho (subcaminho) e
+      propriedades adicionais. Por exemplo, para um plano de armazenamento, o
+      arquivo de esquema possui uma lista de propriedades, incluindo o
+      prefixo. Os "planos" neste caso são uma referência ($ref) para outra
+      seção do esquema. O arquivo de esquema deve ser completo e conter tudo o
+      que é necessário, incluindo descrições que devem ser relativamente
+      autoexplicativas.</para>
+
+      <programlisting>    "storage": {
+      "type": "object",
+      "properties": {
+        "hostGroups": {
+          "$ref": "#/definitions/hostGroups"
+        },
+        "planes": {
+          "$ref": "#/definitions/storagePlanes"
+        }
+      },
+      "additionalProperties": false
+</programlisting>
+
+      <para>Observe o valor de <emphasis>additionalProperties</emphasis>
+      normalmente no final de cada seção no esquema. Ele especifica se os
+      valores permitem propriedades adicionais ou não. Se esse valor
+      <emphasis>additionalProperties</emphasis> estiver presente e definido
+      como false, nenhuma outra propriedade será permitida e a lista de
+      propriedades estará completa.</para>
+
+      <para>Ao trabalhar com o HPCC Systems <emphasis>values.yam</emphasis>, o
+      arquivo de valores deve ser validado em relação a esse esquema. Se
+      houver um valor que não seja permitido conforme definido no arquivo de
+      esquema, ele não será iniciado e, em vez disso, gerará um ERRO.</para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="TheValuesYaml_FileAndRelated" role="nobrk">
+    <title>Componentes HPCC Systems no Arquivo
+    <emphasis>values.yaml</emphasis></title>
+
+    <para>Os chart do Helm do HPCC Systems são enviados com valores de
+    estoque/padrão. Esses charts do Helm têm um conjunto de valores padrão
+    idealmente para serem usados como guia na configuração de sua implantação.
+    Geralmente, cada componente do HPCC Systems é uma lista. Essa lista define
+    as propriedades para cada instância do componente.</para>
+
+    <para>Esta seção fornecerá detalhes adicionais e qualquer percepção digna
+    de nota para os componentes do HPCC Systems definidos no arquivo
+    <emphasis>values.yaml</emphasis>.</para>
+
+    <sect2 id="YAMLHPCC_Components">
+      <title>Os Componentes do HPCC Systems</title>
+
+      <para>Uma das principais diferenças entre o bare metal e o
+      contêiner/nuvem é que o armazenamento bare metal está diretamente
+      vinculado aos nós do job trabalho Thor ou Thor e aos nós de trabalho
+      Roxie, ou mesmo no caso do servidor ECLCC as DLLs. Nos contêineres, eles
+      são completamente separados e qualquer coisa relacionada a arquivos é
+      definida no arquivo <emphasis>values.yaml</emphasis></para>
+
+      <para>Em contêineres, as instâncias de componentes são executadas
+      dinamicamente. Por exemplo, se você configurou seu sistema para usar um
+      Thor de 50 vias, então um Thor de 50 vias será gerado quando um trabalho
+      for enfileirado para ele. Quando esse trabalho for concluído, a
+      instância Thor desaparecerá. Este é o mesmo padrão para os outros
+      componentes também.</para>
+
+      <para>Cada componente deve ter uma entrada de recursos, no arquivo
+      <emphasis>valores.yaml</emphasis> entregues os recursos estão presentes,
+      mas comentados conforme indicado aqui.</para>
+
+      <para><programlisting>  #resources:
+  #  cpu: "1"
+  #  memory: "4G"
+</programlisting>O arquivo de valores de estoque funcionará e permitirá que
+      você mantenha um sistema funcional, porém você deve definir os recursos
+      dos componentes da maneira que melhor corresponda à sua estratégia
+      operacional.</para>
+
+      <sect3 id="YML_HPCCSystemsServices">
+        <title>Os serviços do Sistema</title>
+
+        <para>A maioria dos componentes do HPCC Systems tem uma entrada de
+        definição de serviço, semelhante à entrada de recursos. Todos os
+        componentes que possuem definições de serviço seguem esse mesmo
+        padrão.</para>
+
+        <para>Qualquer informação relacionada ao serviço precisa estar em um
+        objeto de serviço, por exemplo:</para>
+
+        <para><programlisting>  service:
+    servicePort: 7200
+    visibility: local
+</programlisting></para>
+
+        <para>Isso se aplica à maioria dos componentes do HPCC Systems, ESP,
+        Dali, dafilesrv e Sasha. A especificação do Roxie é um pouco
+        diferente, pois tem seu serviço definido em "roxieservice". Cada Roxie
+        pode ter várias definições de "roxieservice". (ver esquema).</para>
+      </sect3>
+
+      <sect3 id="DALI_ValueYAML">
+        <title>Dali</title>
+
+        <para>Ao configurar o Dali, que também possui uma seção de recursos,
+        ele também precisará de muita memória e uma boa quantidade de CPU. É
+        muito importante defini-los com cuidado. Caso contrário, o Kubernetes
+        pode atribuir todos os pods à mesma máquina virtual e os componentes
+        que lutam pela memória os esmagarão. Portanto, mais memória atribuída
+        melhor. Se você definir isso errado e um processo usar mais memória do
+        que o configurado, o Kubernetes matará o pod.</para>
+      </sect3>
+
+      <sect3 id="DAFLESRV_DFURVR_YMLSECT">
+        <title>Componentes: dafilesvrs, dfuserver</title>
+
+        <para>Os componentes do HPCC Systems de dafilesvrs, eclccservers,
+        dfuserver, são declarados como listas no yaml, assim como o ECL
+        Agent.</para>
+
+        <para>Considere o dfuserver que está nos
+        <emphasis>values.yaml</emphasis> entregues do HPCC Systems
+        como:</para>
+
+        <programlisting>dfuserver:
+- name: dfuserver
+  maxJobs: 1</programlisting>
+
+        <para>Se você adicionar um mydfuserver da seguinte maneira:</para>
+
+        <para><programlisting>dfuserver:
+- name: dfuserver
+  maxJobs: 1
+- name: mydfuserver
+  maxJobs: 1
+</programlisting>Nesse cenário, você teria outro item aqui chamado
+        mydfuserver, ele apareceria no ECLWatch e você poderia enviar itens
+        para ele.</para>
+
+        <para>Se você quiser adicionar outro dfuserver, poderá adicioná-lo à
+        lista da mesma forma. Você também pode instanciar outros componentes
+        adicionando-os às suas respectivas listas.</para>
+      </sect3>
+
+      <sect3 id="VALYml_ECLCCServer">
+        <title>ECL Agent e ECLCC Server</title>
+
+        <para>Values of note for the ECL Agent and ECLCC Server.</para>
+
+        <para><emphasis role="bold">useChildProcess</emphasis> -- Conforme
+        definido no esquema, iniciada cada compilação da workunit como um
+        processo secundário em vez de em seu próprio contêiner. Quando você
+        envia um job ou consulta para compilar, ele é enfileirado e
+        processado, com essa opção definida como true, ele gerará um processo
+        secundário utilizando quase nenhuma sobrecarga adicional na
+        inicialização. Ideal para enviar muitos jobs pequenos para compilar.
+        No entanto, como cada job de compilação não é mais executado como um
+        pod independente com suas próprias especificações de recursos, mas é
+        executado como um processo secundário no próprio pod do servidor
+        ECLCC, o pod do servidor ECLCC deve ser definido com recursos
+        adequados para si mesmo (mínimo para ouvir para a fila etc.) e todos
+        os jobs que ele possa ter que executar em paralelo.</para>
+
+        <para>Por exemplo, imagine que <emphasis>maxJobs</emphasis> está
+        definido como 4 e 4 consultas grandes são enfileiradas rapidamente, o
+        que significa que 4 processos secundário são iniciados, cada cpu
+        consumindo e memória dentro do pod do servidor ECLCC. Com o componente
+        configurado com <emphasis>useChildProcesses</emphasis> definido como
+        true, cada trabalho será executado no mesmo pod (até o valor de
+        <emphasis>maxJobs</emphasis> em paralelo). Portanto, com
+        <emphasis>useChildProcesses</emphasis> habilitado, os recursos do
+        componente devem ser definidos de forma que o pod tenha recursos
+        suficientes para lidar com as demandas de recursos de todos esses
+        trabalhos para poder ser executado em paralelo.</para>
+
+        <para>Com useChildProcess ativado, pode ser bastante caro na maioria
+        dos modelos de preços de nuvem e bastante dispendioso se não houver
+        nenhum job em execução. Em vez disso, você pode definir esse
+        <emphasis>useChildprocess</emphasis> como false (o padrão) para
+        iniciar um pod para compilar cada consulta apenas com a memória
+        necessária para o trabalho que será descartado quando concluído.
+        Agora, esse modelo também ouviu, talvez 20 segundos a um minuto para
+        gerar o cluster Kubernetes para processar o trabalho. O que pode não
+        ser ideal para um ambiente que está enviando vários trabalhos
+        pequenos, mas sim jobs maiores que minimizariam o efeito da sobrecarga
+        ao iniciar o cluster Kubernetes.</para>
+
+        <para>Definir <emphasis>useChildProcess</emphasis> como false permite
+        melhor a possibilidade de dimensionamento dinâmico. Para jobs que
+        levariam muito tempo para compilar, a sobrecarga extra (inicialização)
+        é mínima, e esse seria o caso ideal para ter o
+        <emphasis>useChildProcess</emphasis> como falso. Definir
+        <emphasis>useChildProcess</emphasis> como false permite apenas 1 pod
+        por compilação, embora haja um atributo para colocar um limite de
+        tempo nessa compilação.</para>
+
+        <para><emphasis role="bold">ChildProcessTimeLimit</emphasis> é o tempo
+        limite (em segundos) para compilação de processos secundários antes de
+        abortarem e usarem um contêiner separado, quando o
+        <emphasis>useChildProcesses</emphasis> é false.</para>
+
+        <para><emphasis role="bold">maxActive</emphasis> -- O número máximo de
+        jobs que podem ser executadas em paralelo. Novamente, tome cuidado
+        porque cada job precisará de memória suficiente para ser executado.
+        Por exemplo, se <emphasis>maxActive</emphasis> estiver definido como
+        2000, você poderá enviar um trabalho muito grande e, nesse caso, gerar
+        cerca de 2.000 trabalhos usando uma quantidade considerável de
+        recursos, o que poderia gerar uma conta de compilação bastante cara,
+        novamente dependendo do seu provedor de nuvem e seu plano de
+        faturamento.</para>
+      </sect3>
+
+      <sect3 id="ValYML_Sasha">
+        <title>Sasha</title>
+
+        <para>A configuração para Sasha é uma exceção, pois é uma estrutura do
+        tipo dicionário e não uma lista. Você não pode ter mais de um
+        arquivador ou dfuwu-archiver, pois isso é uma limitação de valor, você
+        pode optar por ter o serviço ou não (defina o valor 'disabled' como
+        true).</para>
+      </sect3>
+
+      <sect3 id="ValYML_Thor">
+        <title>Thor</title>
+
+        <para>As instâncias Thor são executadas dinamicamente, assim como os
+        outros componentes em contêineres. A configuração do Thor também
+        consiste em uma lista de instâncias do Thor. Cada instância gera
+        dinamicamente uma coleção de pods (manager + N workers) quando os
+        workers são enfileirados para ela. Quando ocioso, não há pods de
+        worker (ou manager) em execução.</para>
+
+        <para>Se você quisesse um Thor de 50 vias, você definiria o número de
+        workers, o valor <emphasis role="bold">numWorkers</emphasis> para 50 e
+        você teria um Thor de 50 vias. Conforme indicado no exemplo a
+        seguir:</para>
+
+        <para><programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 50</programlisting></para>
+
+        <para>Ao fazer isso, o ideal é renomear o recurso para algo que o
+        descreva claramente, como <emphasis>thor_50</emphasis> como no exemplo
+        a seguir.</para>
+
+        <para><programlisting>-name: thor_50</programlisting></para>
+
+        <para>A atualização do valor <emphasis>numWorkers</emphasis>
+        reiniciará o agente Thor ouvindo a fila, fazendo com que todos os
+        novos jobs usem a nova configuração.3</para>
+
+        <para><emphasis role="bold">maxJobs</emphasis> -- Controla o número de
+        jobs, especificamente <emphasis>maxJobs</emphasis> define o número
+        máximo de jobs.</para>
+
+        <para><emphasis role="bold">maxGraphs</emphasis> -- Limita a
+        quantidade máxima de charts. Geralmente faz sentido manter esse valor
+        abaixo ou no mesmo número de <emphasis>maxJobs</emphasis>, pois nem
+        todos os jobs enviam charts e quando fazem os jobs Thor não estão
+        executando charts o tempo todo. Se houver mais de 2 charts enviados
+        (Thor), o segundo será bloqueado até que a próxima instância Thor
+        fique disponível.</para>
+
+        <para>A ideia aqui é que os jobs podem passar uma quantidade
+        significativa de tempo fora dos charts, como aguardar um estado de
+        fluxo de trabalho (fora do próprio mecanismo Thor), bloqueado em uma
+        persistência ou atualizando super arquivos etc. ter um limite maior de
+        trabalhos simultâneos (<emphasis>maxJobs</emphasis>) do que gráficos
+        (instâncias <emphasis>maxGraphs</emphasis> / Thor). Como as instâncias
+        Thor (charts) são relativamente caras (muitos pods/maior uso de
+        recursos), enquanto os pods de fluxo de trabalho (jobs) são
+        comparativamente baratos.</para>
+
+        <para>Assim, os valores de charts entregues (exemplo) definem
+        <emphasis>maxJobs</emphasis> como maior que
+        <emphasis>maxGraphs</emphasis>. Os jobs enfileirados para um Thor nem
+        sempre estão executando charts. Portanto, pode fazer sentido ter mais
+        desses trabalhos, que não consomem um Thor grande e todos os seus
+        recursos, mas restringem o número máximo de instâncias do Thor em
+        execução.</para>
+
+        <para>Thor têm 3 componentes (o que corresponde as seções de
+        recurso).</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Workflow</para>
+          </listitem>
+
+          <listitem>
+            <para>Manager</para>
+          </listitem>
+
+          <listitem>
+            <para>Workers</para>
+          </listitem>
+        </orderedlist>
+
+        <para>O Manager e os Workers são lançados juntos e normalmente
+        consomem bastante recursos (e nós). Enquanto o Workflow é barato e
+        geralmente não requer tantos recursos. Você pode esperar em um mundo
+        Kubernetes, muitos deles coexistiriam no mesmo nó (e, portanto, seriam
+        baratos). Portanto, faz sentido que <emphasis>maxJobs</emphasis> seja
+        maior e <emphasis>maxGraphs</emphasis> seja menor</para>
+
+        <para>No Kubernetes, os jobs são executados de forma independente em
+        seus próprios pods. Enquanto no bare metal, podemos ter jobs que podem
+        afetar outros trabalhos porque estão sendo executados no mesmo espaço
+        de processo.</para>
+      </sect3>
+
+      <sect3 id="YAML_Thor_and_hThor_Memory">
+        <title>Memórias Thor e hThor</title>
+
+        <para>As seções de <emphasis>memory</emphasis> Thor e hThor permitem
+        que a memória de recursos do componente seja refinada em diferentes
+        áreas.</para>
+
+        <para>Por exemplo, o "workerMemory" para um Thor é definido
+        como:</para>
+
+        <programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  managerResources:
+    cpu: "1"
+    memory: "2G"
+  workerResources:
+    cpu: "4"
+    memory: "4G"
+  workerMemory:
+    query: "3G"
+    thirdParty: "500M"
+  eclAgentResources:
+    cpu: "1"
+    memory: "2G"</programlisting>
+
+        <para>A seção "<emphasis>workerResources</emphasis>" informará ao
+        Kubernetes para recursos 4G por pod de worker. Por padrão, o Thor
+        reservará 90% dessa memória para usar na memória de consulta HPCC
+        (roxiemem). Os 10% restantes são deixados para todos os outros usos
+        não baseados em linha (roxiemem), como heap geral, sobrecarga do
+        sistema operacional etc. Não há permissão para qualquer biblioteca de
+        terceiros, plug-ins ou uso de linguagem incorporada dentro desse
+        padrão. Em outras palavras, se, por exemplo, o python incorporado
+        alocar 4G, o processo logo falhará com um erro de falta de memória,
+        quando começar a usar qualquer memória, pois esperava que 90% desse 4G
+        estivesse disponível gratuitamente para uso próprio.</para>
+
+        <para>Esses padrões podem ser substituídos pelas seções de memória.
+        Neste exemplo, <emphasis>workerMemory.query</emphasis> define que 3G
+        da memória com recursos disponíveis deve ser atribuído à memória de
+        consulta e 500M para usos de "thirdParty".</para>
+
+        <para>Isso limita o uso de roxiemem de memória do HPCC Systems para
+        exatamente 3G, deixando 1G livre para outros propósitos. O
+        "thirdParty" não é realmente alocado, mas é usado apenas como parte do
+        total em execução, para garantir que a configuração não especifique um
+        total nesta seção maior que a seção de recursos, por exemplo, se
+        "thirdParty" foi definido como " 2G" na seção acima, haveria uma
+        reclamação de tempo de execução quando Thor executasse que a definição
+        excedeu o limite de recursos.</para>
+
+        <para>Também é possível substituir a porcentagem recomendada padrão
+        (90% por padrão), definindo <emphasis>maxMemPercentage</emphasis>. Se
+        "query" não estiver definida, ela será calculada como a memória máxima
+        recomendada menos a memória definida (por exemplo,
+        "thirdParty).</para>
+
+        <para>No Thor existem 3 áreas de recursos, <emphasis>eclAgent,
+        ThorManager </emphasis>e<emphasis> ThorWorker(s)</emphasis>. Cada um
+        tem uma área *Resource que define suas necessidades de recursos do
+        Kubernetes e uma seção *Memory correspondente que pode ser usada para
+        substituir os requisitos de alocação de memória padrão.</para>
+
+        <para>Essas configurações também podem ser substituídas por consulta,
+        por meio de opções de workunits seguindo o padrão:
+        &lt;memory-section-name&gt;.&lt;property&gt;. Por exemplo:
+        #option('workerMemory.thirdParty', "1G");</para>
+
+        <para><emphasis role="bold">Nota</emphasis>: Atualmente, há apenas
+        "consulta" (uso de HPCC roxiemem) e "thirdParty" para todos/qualquer
+        uso de terceiros. É possível que outras categorias sejam adicionadas
+        no futuro, como "python" ou "java" - que definem especificamente os
+        usos de memória para esses destinos.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Delivered_HPCC_ValuesYaml">
+    <title>O arquivo HPCC Systems <emphasis>values.yaml</emphasis></title>
+
+    <para>O arquivo HPCC systems <emphasis>values.yaml</emphasis> entregue é
+    mais um exemplo que fornece uma configuração de tipo básico que deve ser
+    personalizada para suas necessidades específicas. Uma das principais
+    ideias por trás do arquivo de valores é poder personalizá-lo com relativa
+    facilidade para seu cenário específico. O chart entregue é configurado
+    para ser sensato o suficiente para ser entendido, ao mesmo tempo em que
+    permite uma personalização relativamente fácil para configurar um sistema
+    de acordo com seus requisitos específicos. Esta seção examinará mais de
+    perto alguns aspectos do arquivo <emphasis>values.yaml</emphasis>.</para>
+
+    <para>O arquivo HPCC Systems Values entregue consiste principalmente nas
+    seguintes áreas:</para>
+
+    <para><informaltable>
+        <tgroup cols="3">
+          <tbody>
+            <row>
+              <entry>global</entry>
+
+              <entry>storage</entry>
+
+              <entry>visibilities</entry>
+            </row>
+
+            <row>
+              <entry>data planes</entry>
+
+              <entry>certificates</entry>
+
+              <entry>security</entry>
+            </row>
+
+            <row>
+              <entry>secrets</entry>
+
+              <entry>components</entry>
+
+              <entry/>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>As seções subsequentes examinarão alguns deles mais de perto e por
+    que cada um deles está lá.</para>
+
+    <sect2 id="ValYAML_STorage">
+      <title>Armazenamento</title>
+
+      <para>O armazenamento em contêiner é outro conceito-chave que difere do
+      bare metal. Existem algumas diferenças entre contêiner e armazenamento
+      em metal. A seção Storage é bastante bem definida entre o arquivo de
+      esquema e o <emphasis>values.yaml</emphasis>. Uma boa abordagem para
+      armazenamento é entender claramente suas necessidades de armazenamento e
+      descrevê-las, e uma vez que você tenha essa estrutura básica em mente, o
+      esquema pode ajudar a preencher os detalhes. O esquema deve ter uma
+      descrição decente para cada atributo. Todo o armazenamento deve ser
+      definido por meio de planos. Há um comentário relevante no arquivo
+      <emphasis>values.yaml</emphasis> descrevendo melhor o
+      armazenamento.</para>
+
+      <programlisting>## storage:
+##
+## 1. If an engine component has the dataPlane property set, 
+#       then that plane will be the default data location for that component.
+## 2. If there is a plane definition with a category of "data" 
+#       then the first matching plane will be the default data location
+##
+## If a data plane contains the storageClass property then an implicit pvc 
+#       will be created for that data plane.
+##
+## If plane.pvc is defined, a Persistent Volume Claim must exist with that name, 
+#       storageClass and storageSize are not used.
+##
+## If plane.storageClass is defined, storageClassName: &lt;storageClass&gt;
+## If set to "-", storageClassName: "", which disables dynamic provisioning
+## If set to "", choosing the default provisioner.  
+#       (gp2 on AWS, standard on GKE, AWS &amp; OpenStack)
+##
+## plane.forcePermissions=true is required by some types of provisioned
+## storage, where the mounted filing system has insufficient permissions to be
+## read by the hpcc pods. Examples include using hostpath storage (e.g. on
+## minikube and docker for desktop), or using NFS mounted storage.
+</programlisting>
+
+      <para>Existem diferentes categorias de armazenamento, para uma
+      implantação de HPCC Systems você deve ter no mínimo uma categoria dali,
+      uma categoria dll e pelo menos 1 categoria de dados. Esses tipos
+      geralmente são aplicáveis a todas as configurações, além de outras
+      categorias opcionais de dados.</para>
+
+      <para>Todo o armazenamento deve estar em uma definição de plano de
+      armazenamento. Isso é melhor descrito no comentário na definição de
+      armazenamento no arquivo de valores.</para>
+
+      <programlisting>planes:
+  #   name: &lt;required&gt;
+  #   prefix: &lt;path&gt;                        # Root directory for accessing the plane 
+                                            # (if pvc defined), 
+  #                                         # or url to access plane.
+  #   category: data|dali|lz|dll|spill|temp # What category of data is stored on this plane?
+  #
+  # For dynamic pvc creation:
+  #   storageClass: ''
+  #   storageSize: 1Gi
+  #
+  # For persistent storage:
+  #   pvc: &lt;name&gt;                           # The name of the persistant volume claim
+  #   forcePermissions: false
+  #   hosts: [ &lt;host-list&gt; ]                 # Inline list of hosts
+  #   hostGroup: &lt;name&gt;                     # Name of the host group for bare metal 
+  #                                         # must match the name of the storage plane..
+  #
+  # Other options:
+  #   subPath: &lt;relative-path&gt;              # Optional sub directory within &lt;prefix&gt; 
+  #                                         # to use as the root directory
+  #   numDevices: 1                         # number of devices that are part of the plane
+  #   secret: &lt;secret-id&gt;                   # what secret is required to access the files.  
+  #                                         # This could optionally become a list if required 
+                                            # (or add secrets:).
+
+  #   defaultSprayParts: 4                  # The number of partitions created when spraying 
+                                            # (default: 1)
+
+  #   cost:                                 # The storage cost
+  #     storageAtRest: 0.0135               # Storage at rest cost: cost per GiB/month</programlisting>
+
+      <para>Cada plano tem 3 campos obrigatórios: O nome, a categoria e o
+      prefixo.</para>
+
+      <para>Quando o sistema estiver instalado, usando os valores fornecidos
+      em estoque, ele criará um volume de armazenamento com capacidade de 1 GB
+      através das seguintes propriedades.</para>
+
+      <para>Por exemplo:</para>
+
+      <programlisting>- name: dali
+  storageClass: ""
+  storageSize: 1Gi
+  prefix: "/var/lib/HPCCSystems/dalistorage"
+  category: dali
+</programlisting>
+
+      <para>Mais comumente o prefixo: define o caminho dentro do contêiner
+      onde o armazenamento está montado. O prefixo pode ser uma URL para
+      armazenamento de blobs. Todos os pods usarão o caminho (prefixo: ) para
+      acessar o armazenamento.</para>
+
+      <para>Para o exemplo acima, quando você observar a lista de
+      armazenamento, o <emphasis>storageSize</emphasis> criará um volume com 1
+      GB de capacidade. O prefixo será o caminho, a categoria é usada para
+      limitar o acesso aos dados e minimizar o número de volumes acessíveis de
+      cada componente.</para>
+
+      <para>As listas de armazenamento dinâmico no arquivo
+      <emphasis>values.yaml</emphasis> são caracterizadas pelos valores
+      storageClass: e storageSize:.</para>
+
+      <para><emphasis role="bold">storageClass</emphasis>: define qual storage
+      deve ser usado para alocar o armazenamento. Uma classe de armazenamento
+      em branco indica que deve usar a classe de armazenamento de provedores
+      de nuvem padrão.</para>
+
+      <para><emphasis role="bold">storageSize</emphasis>: Conforme indicado no
+      exemplo, define a capacidade do volume.</para>
+
+      <sect3 id="YAML_StorageCategory">
+        <title>Categoria de Armazenamento</title>
+
+        <para>A categoria de armazenamento (Storage Category) é usada para
+        indicar o tipo de dados que está sendo armazenado nesse local.
+        Diferentes planos são usados para as diferentes categorias para isolar
+        os diferentes tipos de dados uns dos outros, mas também porque eles
+        geralmente exigem características de desempenho diferentes. Um plano
+        nomeado pode armazenar apenas uma categoria de dados. As seções a
+        seguir examinam as categorias de dados com suporte atualmente usadas
+        em nossa implantação em contêiner.</para>
+
+        <para><programlisting> category: data|dali|lz|dll|spill|temp  # What category of data is stored on this plane?</programlisting></para>
+
+        <para>O próprio sistema pode gravar em qualquer plano de dados. É
+        assim que a categoria de dados pode ajudar a melhorar o desempenho.
+        Por exemplo, se você tiver um índice, o Roxie desejará acesso rápido
+        aos dados, em vez de outros componentes.</para>
+
+        <para>Alguns componentes podem usar apenas 1 categoria, alguns podem
+        usar várias. O arquivo de valores pode conter mais de uma definição de
+        plano de armazenamento para cada categoria. O primeiro plano de
+        armazenamento na lista para cada categoria é usado como local padrão
+        para armazenar essa categoria de dados. Essas categorias minimizam a
+        exposição dos dados do avião a componentes que não precisam deles. Por
+        exemplo, o componente ECLCC Server não precisa saber sobre as landing
+        zones ou onde Dali armazena seus dados, portanto, ele monta apenas as
+        categorias de avião necessárias.</para>
+      </sect3>
+
+      <sect3 id="YML_EphemeralStorage">
+        <title>Armazenamento Temporário</title>
+
+        <para>O armazenamento temporário (Ephemeral storage) é alocado quando
+        o cluster HPCC Systems é instalado e excluído quando o chart é
+        desinstalado. Isso é útil para manter os custos de nuvem baixos, mas
+        pode não ser apropriado para seus dados.</para>
+
+        <para>Em seu sistema, você deseja substituir o(s) valor(es) de estoque
+        fornecido(s) pelo armazenamento apropriado para suas necessidades
+        específicas. Os valores fornecidos criam volumes persistentes efêmeros
+        ou temporários que são excluídos automaticamente quando o chart é
+        desinstalado. Você provavelmente quer que o armazenamento seja
+        persistente. Você deve personalizar o armazenamento para uma
+        configuração mais adequada às suas necessidades.</para>
+      </sect3>
+
+      <sect3 id="YAML_Persist_storage">
+        <title>Armazenamento Persistente</title>
+
+        <para>O Kubernetes usa declarações de volume persistentes (pvcs) para
+        fornecer acesso ao armazenamento de dados. O HPCC Systems oferece
+        suporte ao armazenamento em nuvem por meio do provedor de nuvem que
+        pode ser exposto por meio dessas declarações de volume
+        persistentes.</para>
+
+        <para>As Declarações de Volume Persistentes podem ser criadas
+        substituindo os valores de armazenamento no chart do Helm entregue. Os
+        valores no arquivo example/local/values-localfile.yaml fornecidos
+        substituem as entradas correspondentes no chart de comando original da
+        pilha entregue do HPCC Systems. O chart localfile cria volumes de
+        armazenamento persistentes. Você pode usar o values-localfile.yaml
+        diretamente (como demonstrado em documentos/tutoriais separados) ou
+        pode usá-lo como base para criar seu próprio chart de
+        substituição.</para>
+
+        <para>Para definir um plano de armazenamento que utiliza um PVC, você
+        deve decidir onde esses dados residirão. Você cria os diretórios de
+        armazenamento, com os nomes apropriados e, em seguida, pode instalar o
+        chart do Helm de arquivos locais para criar os volumes para usar a
+        opção de armazenamento local, como no exemplo a seguir:</para>
+
+        <programlisting>helm install mycluster hpcc/hpcc -f examples/local/values-localfile.yaml</programlisting>
+
+        <para><emphasis role="bold">Nota: </emphasis>As configurações para os
+        PVCs devem ser ReadWriteMany, exceto para Dali que pode ser
+        ReadWriteOnce.</para>
+
+        <para>Há vários recursos, blogs, tutoriais e até mesmo vídeos de
+        desenvolvedores que fornecem detalhes passo a passo para a criação de
+        volumes de armazenamento persistentes.</para>
+      </sect3>
+
+      <sect3 id="CYML_BareMEtalStorage">
+        <title>Armazenamento Bare Metal</title>
+
+        <para>Há dois aspectos no uso do armazenamento bare metal no sistema
+        Kubernetes. A primeira é a entrada <emphasis>hostGroups</emphasis> na
+        seção de armazenamento que fornece listas nomeadas de hosts. As
+        entradas <emphasis>hostGroups</emphasis> podem assumir uma das duas
+        formas. Essa é a forma mais comum e associa diretamente uma lista de
+        nomes de host a um nome:</para>
+
+        <programlisting>storage: 
+  hostGroups: 
+  - name:  &lt;name&gt; "The name of the host group" 
+    hosts: [ "a list of host names" ] 
+</programlisting>
+
+        <para>A segunda forma permite que um grupo de hosts seja derivado de
+        outro:</para>
+
+        <programlisting>storage: 
+  hostGroups: 
+  - name: "The name of the host group process" 
+    hostGroup: "Name of the hostgroup to create a subset of" 
+    count: &lt;Number of hosts in the subset&gt; 
+    offset: &lt;the first host to include in the subset&gt;  
+    delta: &lt;Cycle offset to apply to the hosts&gt; 
+</programlisting>
+
+        <para>Alguns exemplos típicos com clusters bare-metal são subconjuntos
+        menores do host ou os mesmos hosts, mas armazenando partes diferentes
+        em nós diferentes, por exemplo:</para>
+
+        <programlisting>Group: groupCDE 
+    delta: 1</programlisting>
+
+        <para>O segundo aspecto é adicionar uma propriedade à definição do
+        plano de armazenamento para indicar quais hosts estão associados a
+        ela. Existem duas opções:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">hostGroup: &lt;name&gt;</emphasis> O
+            nome do grupo de hosts para bare metal. O nome do hostGroup deve
+            corresponder ao nome do plano de armazenamento..</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">hosts:
+            &lt;list-of-namesname&gt;</emphasis> Uma lista embutida de hosts.
+            Principalmente útil para landing zones.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Por Exemplo:</para>
+
+        <programlisting>storage: 
+  planes: 
+  - name: demoOne 
+    category: data 
+    prefix: "/home/demo/temp" 
+    hostGroup: groupABCD # The name of the hostGroup 
+  - name: myDropZone 
+    category: lz 
+    prefix: "/home/demo/mydropzone" 
+    hosts: [ 'mylandingzone.com' ] # Inline reference to an external host. </programlisting>
+      </sect3>
+    </sect2>
+
+    <sect2 id="StorageItems_HPCC_Systems_Coomponents">
+      <title>Itens de armazenamento para componentes de HPCC Systems</title>
+
+      <sect3 id="YML-DOC_GenData-Storage">
+        <title>Armazenamento geral de dados</title>
+
+        <para>Os arquivos de dados gerais gerados pelo HPCC são armazenados em
+        dados. Para Thor, os custos de armazenamento de dados provavelmente
+        podem ser significativos. A velocidade de acesso sequencial é
+        importante, mas o acesso aleatório é muito menos importante. Para
+        ROXIE, a velocidade de acesso aleatório provavelmente será mais
+        importante.</para>
+      </sect3>
+
+      <sect3>
+        <title>LZ</title>
+
+        <para>LZ ou lz, utilizados para dados da landing zone. É aqui que
+        colocamos os dados brutos que chegam ao sistema. Uma landing zone onde
+        usuários externos podem ler e gravar arquivos. O HPCC Systems podem
+        importar ou exportar arquivos para uma landing zone. Normalmente, o
+        desempenho é um problema menor, pode ser armazenamento de bucket
+        blob/s3, acessado diretamente ou por meio de uma montagem NFS.</para>
+      </sect3>
+
+      <sect3>
+        <title>dali</title>
+
+        <para>A localização do repositório de metadados dali, que precisa dar
+        suporte ao acesso aleatório rápido.</para>
+      </sect3>
+
+      <sect3>
+        <title>dll</title>
+
+        <para>Onde as consultas ECL compiladas são armazenadas. O
+        armazenamento precisa permitir que objetos compartilhados sejam
+        carregados diretamente a partir dele de forma eficiente. Se você
+        quiser dados Dali e dll no mesmo plano, é possível usar o mesmo
+        prefixo para ambas as propriedades do subcaminho. Ambos usariam o
+        mesmo prefixo, mas deveriam ter subcaminhos diferentes.</para>
+      </sect3>
+
+      <sect3>
+        <title>sasha</title>
+
+        <para>Este é o local onde as workunitss são arquivadas, etc., são
+        armazenadas e normalmente é menos crítico de velocidade, exigindo
+        menores custos de armazenamento.</para>
+      </sect3>
+
+      <sect3>
+        <title>spill</title>
+
+        <para>Uma categoria opcional na qual os arquivos spill são gravados.
+        Os discos NVMe locais são potencialmente uma boa opção para
+        isso.</para>
+      </sect3>
+
+      <sect3>
+        <title>temp</title>
+
+        <para>Uma categoria opcional onde os arquivos temporários podem ser
+        gravados.</para>
+      </sect3>
+    </sect2>
+
+    <sect2>
+      <title>Valores de Segurança</title>
+
+      <para>Esta seção examinará as seções de <emphasis>values.yaml</emphasis>
+      que tratam dos componentes de segurança do sistema.</para>
+
+      <sect3>
+        <title>Certificados</title>
+
+        <para>A seção de certificados pode ser usada para permitir que o
+        cert-manager gere certificados TLS para cada componente na implantação
+        do HPCC Systems.</para>
+
+        <programlisting>certificates:
+  enabled: false
+  issuers:
+    local:
+      name: hpcc-local-issuer</programlisting>
+
+        <para>No arquivo yaml entregue, os certificados não estão habilitados,
+        conforme ilustrado acima. Você deve primeiro instalar o cert-manager
+        para usar esse recurso.</para>
+      </sect3>
+
+      <sect3 id="ValYAML_Secrets">
+        <title>Secrets</title>
+
+        <para>A seção Secrets contém um conjunto de categorias, cada uma
+        contendo uma lista de secrets. A seção Secrets é onde obter
+        informações no sistema se você não as quiser na fonte. Como código
+        incorporado, você pode definir isso nas seções de sinal de código. Se
+        você tiver informações que não deseja que sejam públicas, mas precisa
+        executá-las, poderá usar segredos.</para>
+      </sect3>
+
+      <sect3>
+        <title>Vaults</title>
+
+        <para>Vaults é outra maneira de fazer Secrets. A seção de vaults
+        espelha a seção secrets, mas aproveita o HashiCorp Vault para o
+        armazenamento de secrets. Há uma categoria adicional para vaults
+        chamada "ecl-user". A intenção dos secrets do vaults do usuário ecl é
+        ser legível diretamente do código ECL. Outras categorias vaults são
+        lidas internamente pelos componentes do sistema e não expostas
+        diretamente ao código ECL.</para>
+      </sect3>
+    </sect2>
+
+    <sect2>
+      <title>Visibilidades</title>
+
+      <para>A seção de visibilidades pode ser usada para definir rótulos,
+      anotações e tipos de serviço para qualquer serviço com a visibilidade
+      especificada.</para>
+    </sect2>
+
+    <sect2>
+      <title>Réplicas e Resources</title>
+
+      <para>Outros valores dignos de nota nos charts que têm relação com a
+      instalação e configuração do HPCC Systems.</para>
+
+      <sect3 id="REPLICAS_">
+        <title>Réplicas</title>
+
+        <para>replicas: define quantos nós de réplica surgem, quantos pods são
+        executados para equilibrar uma carga. Para ilustrar, se você tiver um
+        Roxie de 1 via e definir réplicas como 2, você terá 2 Roxies de 1
+        via.</para>
+      </sect3>
+
+      <sect3 id="RESOURCES_ValuesYAML">
+        <title>Recursos</title>
+
+        <para>A maioria dos componentes tem uma seção de recursos que define
+        quantos recursos são atribuídos a esse componente. Nos arquivos de
+        valores entregues em estoque, as seções recursos: existem apenas para
+        fins ilustrativos e são comentadas. Qualquer implantação em nuvem que
+        venha a desempenhar qualquer função não trivial, esses valores devem
+        ser definidos adequadamente com recursos adequados para cada
+        componente, da mesma forma que você alocaria recursos físicos
+        adequados em um data center. Os recursos devem ser configurados de
+        acordo com os requisitos específicos do sistema e o ambiente em que
+        você os executaria. A definição inadequada de recursos pode resultar
+        em falta de memória e/ou remoção do Kubernetes, pois o sistema pode
+        usar quantidades ilimitadas de recursos, como memória e os nós ficarão
+        sobrecarregados, momento em que o Kubernetes começará a despejar os
+        pods. Portanto, se sua implantação estiver vendo despejos frequentes,
+        convém ajustar sua alocação de recursos.</para>
+
+        <para><programlisting>  #resources:
+  #  cpu: "1"
+  #  memory: "4G"
+</programlisting>Cada componente deve ter uma entrada de recursos, mas alguns
+        componentes, como Thor, possuem vários recursos. Os componentes
+        manager, worker e eclagent têm requisitos de recursos
+        diferentes.</para>
+      </sect3>
+
+      <sect3 id="TAINTS_TOLERATIONS_PLACEMENTS">
+        <title>Taints, Tolerations, e placements</title>
+
+        <para>Esta é uma consideração importante para sistemas em contêineres.
+        Taints e Tolerations são tipos de restrições de nó do Kubernetes
+        também referidas por <emphasis role="bold">Node Affinity</emphasis>. A
+        afinidade do nó é uma maneira de restringir os pods aos nós. Apenas
+        uma "afinidade" pode ser aplicada a um pod. Se um pod corresponder a
+        várias listas de "pods" de canais, somente a última definição de
+        "afinidade" será aplicada.</para>
+
+        <para>Os taints e as tolerations trabalham juntos para garantir que os
+        pods não sejam agendados em nós inadequados. As tolerâncias são
+        aplicadas aos pods e permitem (mas não exigem) que os pods sejam
+        agendados em nós com taints correspondentes. Taints são o oposto -
+        elas permitem que um nó repele um conjunto de cápsulas.</para>
+
+        <para>Por exemplo, todos os workers Thor devem estar no tipo
+        apropriado de VM. Se um grande job de Thor aparecer – então o nível de
+        taints entra em jogo.</para>
+
+        <para>Para obter mais informações e exemplos de nossos Taints,
+        Tolerations e Placements, consulte nossa documentação do
+        desenvolvedor:</para>
+
+        <para><ulink
+        url="???">https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/hpcc/docs/placements.md</ulink></para>
+
+        <sect4 id="YAML_FileStruct_Placement">
+          <title>Placement</title>
+
+          <para>O Placement é responsável por encontrar o melhor nó para um
+          pod. Na maioria das vezes, o placement é tratado automaticamente
+          pelo Kubernetes. Você pode restringir um pod para que ele possa ser
+          executado apenas em um conjunto específico de nós. Usando canais,
+          você pode configurar o agendador do Kubernetes para usar uma lista
+          de "pods" para aplicar configurações aos pods. Por exemplo:</para>
+
+          <programlisting> placements:
+   - pods: [list]
+     placement:
+       &lt;supported configurations&gt;</programlisting>
+
+          <para>Os pods: [list] podem conter uma variedade de itens.</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Tipos de componentes do HPCC Systems, usando o
+              <emphasis>tipo</emphasis> de prefixo: pode ser: dali, esp,
+              eclagent, eclccserver, roxie, thor. Por exemplo
+              "tipo:esp"</para>
+            </listitem>
+
+            <listitem>
+              <para>Alvo; o nome de um item de array dos tipos acima usando o
+              prefixo "target:" Por exemplo "target:roxie" ou
+              "target:thor".</para>
+            </listitem>
+
+            <listitem>
+              <para>Pod, nome de metadados "Implantação" do nome do item de
+              matriz de um tipo. Por exemplo, "eclwatch", "mydali",
+              "thor-thoragent"</para>
+            </listitem>
+
+            <listitem>
+              <para>Expressão regular do nome do trabalho: Por exemplo,
+              "compile-" ou "compile-". ou correspondência exata
+              "^compile-.$"</para>
+            </listitem>
+
+            <listitem>
+              <para>Todos: para solicitar todos os componentes do HPCC
+              Systems. Os canais padrão para os pods que entregamos são
+              [all]</para>
+            </listitem>
+          </orderedlist>
+
+          <para><emphasis role="bold">Placements</emphasis> – no Kubernetes, o
+          conceito de placement permite distribuir seus pods por tipos de nós
+          com características particulares. Os placements seriam usados para
+          garantir que os pods ou trabalhos que desejam nós com
+          características específicas sejam colocados neles.</para>
+
+          <para>Por exemplo, um cluster Thor pode ser direcionado para machine
+          learning usando nós com uma GPU. Outro trabalho pode querer nós com
+          uma boa quantidade de memória ou outro para mais CPU. Você pode usar
+          posicionamentos para garantir que os pods com requisitos específicos
+          sejam colocados nos nós apropriados.</para>
+        </sect4>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="MoreHelmANDYAML" role="nobrk">
+    <title>Mais Helm e Yaml</title>
+
+    <para>Esta seção destina-se a fornecer algumas informações úteis para
+    começar com uma implantação em contêiner. Existem vários recursos para
+    usar arquivos Kubernetes, Helm e Yaml. Anteriormente, abordamos o arquivo
+    <emphasis>values.yaml</emphasis> e o arquivo values-schema.json. Esta
+    seção expande alguns desses conceitos e como eles podem ser aplicados ao
+    usar a versão em contêiner da plataforma HPCC Systems. Para obter mais
+    informações sobre como usar arquivos Kubernetes, Helm ou YAML, ou para
+    implantações de nuvem ou contêiner, consulte a respectiva
+    documentação.</para>
+
+    <sect2 id="TheValuesYamlFileStruct">
+      <title>Estrutura do arquivo <emphasis>values.yaml</emphasis></title>
+
+      <para>O arquivo <emphasis>values.yaml</emphasis> é um arquivo yaml. Yaml
+      é uma linguagem de serialização de dados frequentemente usada como
+      formato para arquivos de configuração. A construção que compõe a maior
+      parte de um arquivo yaml é o par chave-valor, às vezes chamado de hash
+      ou dicionário. A construção do par chave-valor consiste em uma chave que
+      aponta para algum(s) valor(es). Os valores podem ser strings, números,
+      booleanos, inteiros, arrays ou dicionários e listas. Esses valores são
+      definidos pelo esquema.</para>
+
+      <para>Em arquivos yaml, o recuo é usado para representar a estrutura e o
+      aninhamento do documento. Espaços à esquerda são significativos e
+      tabulações não são permitidas.</para>
+
+      <sect3 id="YAML_Dictionary">
+        <title>Dicionário</title>
+
+        <para>Dicionários são coleções de mapeamentos de valores-chave. Todas
+        as chaves diferenciam maiúsculas de minúsculas e, como mencionamos
+        anteriormente, o recuo também é crucial. Essas chaves devem ser
+        seguidas por dois pontos (:) e um espaço. Os dicionários também podem
+        ser aninhados.</para>
+
+        <para>Dictionary is a key: value, followed by another key: value:, for
+        example:</para>
+
+        <programlisting>    logging: 
+       detail: 80 
+</programlisting>
+
+        <para>Isso é uma exemplo de dicionário para registro.</para>
+
+        <para>Os dicionários nos arquivos de valores passados, como os do
+        arquivo <emphasis>myoverrides.yaml</emphasis> no exemplo abaixo, serão
+        mesclados nos dicionários correspondentes nos valores existentes,
+        começando com os valores padrão do chart helm entregue.</para>
+
+        <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting></para>
+
+        <para>Observe que você pode passar quantos arquivos yaml desejar, eles
+        serão mesclados na ordem em que aparecem na linha de comando.</para>
+
+        <para>Quaisquer valores pré-existentes em um dicionário que não sejam
+        substituídos continuarão presentes no resultado mesclado. No entanto,
+        você pode excluir o conteúdo de um dicionário definindo-o como
+        nulo.</para>
+      </sect3>
+
+      <sect3 id="YAML_Lists">
+        <title>Listas</title>
+
+        <para>Listas são grupos de elementos começando no mesmo nível de recuo
+        começando com um - (um traço e um espaço). Cada elemento da lista é
+        recuado no mesmo nível e começa com um traço e um espaço. As listas
+        também podem ser aninhadas e podem ser listas de dicionários, que por
+        sua vez também podem ter propriedades de lista.</para>
+
+        <para>Um exemplo de uma lista de dicionários, com
+        placement.tolerations como uma lista aninhada.:</para>
+
+        <para><programlisting>placements:
+- pods: ["all"]
+  placement:
+    tolerations:
+    - key: "kubernetes.azure.com/scalesetpriority"
+</programlisting></para>
+
+        <para>Uma chave é denotada usando um sinal de menos, que é um item de
+        entrada na lista, que é um dicionário com atributos aninhados. Em
+        seguida, o próximo sinal de menos (no mesmo nível de recuo) é a
+        próxima entrada nessa lista.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Global_Image">
+      <title>Global</title>
+
+      <para>A primeira seção do arquivo <emphasis>values.yaml</emphasis>
+      descreve os valores globais. O global.image.root é uma string que indica
+      qual versão extrair. Global se aplica geralmente a tudo.</para>
+
+      <programlisting># Default values for hpcc.
+
+global:
+  # Settings in the global section apply to all HPCC components in all subcharts
+
+  image:
+    ## It is recommended to name a specific version rather than latest, for any non-trivial 
+    ## For best results, the helm chart version and platform version should match - default if version
+    ## not specified. Do not override without good reason as undefined behavior may result. 
+    ## version: x.y.z
+    root: "hpccsystems"    # change this to pull from somewhere other than DockerHub hpccsystems
+    pullPolicy: IfNotPresent
+
+  # logging sets the default logging information for all components. Can be overridden locally
+  logging:
+    detail: 80
+</programlisting>
+
+      <para>No trecho do arquivo <emphasis>value.yaml</emphasis> entregue do
+      HPCC Systems (acima) <emphasis>global</emphasis>: é um dicionário de
+      nível superior. Conforme observado nos comentários, as configurações na
+      seção global se aplicam a todos os componentes do HPCC Systems. Observe
+      a partir do recuo que os outros valores estão aninhados nesse dicionário
+      global.</para>
+
+      <sect3>
+        <title>Imagem</title>
+
+        <para>Em nosso arquivo <emphasis>values.yaml</emphasis> entregue, o
+        valor imediatamente após global: é <emphasis>image</emphasis>: você
+        deve usar uma versão nomeada específica em vez de usar o "latest",
+        como também indicado nos comentários no arquivo de valores. A versão
+        do chart do Helm e a versão da plataforma devem corresponder.
+        Idealmente, você não deveria ter que definir o image.version. Por
+        padrão, ele corresponderá à versão do chart do helm.</para>
+      </sect3>
+
+      <sect3 id="YAMLGlobal_RootValue">
+        <title>O valor root</title>
+
+        <para>A entrada de nível de definição/dicionário global é root. Por
+        exemplo</para>
+
+        <para><programlisting>  root: "hpccsystems" # change to pull your images somewhere other than DockerHub hpccsystems
+</programlisting></para>
+
+        <para>No arquivo <emphasis>values.yaml</emphasis>, isso usa nosso
+        repositório específico do HPCC Systems. É possível que você queira
+        extrair de algum outro repositório, então é onde definir esse
+        valor.</para>
+
+        <para><emphasis role="bold">root:</emphasis> SomeValue</para>
+      </sect3>
+
+      <sect3 id="Global_Chart_Values">
+        <title>Outros valores de chart</title>
+
+        <para>Itens definidos na seção global são compartilhados entre
+        componentes.</para>
+
+        <para>Examplos de valores global são seções de armazenamento e
+        segurança.</para>
+
+        <programlisting>storage:
+  planes:</programlisting>
+
+        <para>e também</para>
+
+        <para><programlisting>security:
+  eclSecurity:
+    # Possible values:
+    # allow - functionality is permitted
+    # deny - functionality is not permitted
+    # allowSigned - functionality permitted only if code signed
+    embedded: "allow"
+    pipe:  "allow"
+    extern: "allow"
+    datafile: "allow"</programlisting>Nos exemplos acima, storage: e security:
+        são valores globais do chart.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="YAML_Usage">
+      <title>Usage</title>
+
+      <para>O arquivo <emphasis>values.yaml</emphasis> do HPCC Systems é usado
+      pelo chart Helm para controlar como o HPCC Systems é implantado. O
+      arquivo de valores contém dicionários e listas, e eles podem ser
+      aninhados para criar estruturas mais complexas. O arquivo HPCC Systems
+      <emphasis>values.yaml</emphasis> destina-se a ser um guia de instalação
+      de demonstração de início rápido que não é apropriado para uso prático
+      não trivial. Você deve personalizar sua implantação para uma que seja
+      mais adequada às suas necessidades específicas. Para personalizar sua
+      implantação, substitua os valores de estoque no arquivo
+      <emphasis>values.yaml</emphasis>, como no exemplo a seguir:</para>
+
+      <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>
+
+      <para>O exemplo acima usa o arquivo
+      <emphasis>myoverrides.yaml</emphasis> por meio do parâmetro -f, que
+      substitui quaisquer valores especificados no arquivo
+      <emphasis>values.yaml</emphasis> do HPCC Systems. É importante observar
+      que isso mescla as substituições de myoverrides.yaml. Qualquer coisa que
+      esteja nos valores no próprio chart do helm que não seja substituído
+      pelos valores passados permanecerá ativo. Quando houver 2 arquivos yaml
+      como este exemplo (as pilhas <emphasis>values.yaml</emphasis> e
+      myoverrides.yaml), se houver uma entrada correspondente (qualquer coisa
+      que não seja um dicionário), o valor do segundo arquivo substituirá o
+      primeiro. Os dicionários, no entanto, sempre serão mesclados.</para>
+
+      <para>Mais informações sobre implantações personalizadas são abordadas
+      em outras seções, bem como na documentação do Kubernetes Helm. Consultar
+      a documentação do Helm fornece detalhes completos para todos os aspectos
+      do uso do gráfico do Helm, e não apenas para alguns casos selecionados
+      descritos.</para>
+
+      <sect3 id="SampYaml-UseCase">
+        <title>Caso de Uso</title>
+
+        <para>Por exemplo, você deseja atualizar os detalhes do log. Você pode
+        ter outro arquivo yaml para atualizar esse valor ou qualquer outro
+        valor de lista usando um arquivo yaml de substituição.</para>
+
+        <para>Como veremos mais adiante, os componentes são definidos como
+        listas, portanto, qualquer definição de um componente em um arquivo de
+        valores do usuário substituirá todas as instâncias do componente no
+        chart padrão. Você pode remover todos os componentes definidos em uma
+        lista, substituindo a lista por uma lista nula, por exemplo,</para>
+
+        <programlisting> thor: []</programlisting>
+
+        <para>Isso removerá todo os componentes Thor.</para>
+
+        <para>Outras opções (por exemplo, configurar os custos para cpu ou
+        acesso a arquivos) são implementadas como um dicionário, de modo que
+        as opções podem ser definidas seletivamente em um arquivo de valores
+        de usuários, e as outras opções serão mantidas.</para>
+      </sect3>
+
+      <sect3 id="merging_AND_Overrides">
+        <title>Mesclando e Sobrescrevendo</title>
+
+        <para>Tendo vários arquivos yaml, como um para registro, outro para
+        armazenamento, outro para segredos e assim por diante, os arquivos
+        podem estar no controle de versão. Eles podem ser versionados,
+        verificados, etc. e têm o benefício de apenas definir/alterar a área
+        específica necessária, garantindo que todas as áreas não alteradas
+        sejam deixadas intocadas. A regra aqui para manter em mente onde
+        vários arquivos yaml são aplicados, os mais recentes sempre
+        substituirão os valores dos anteriores. Eles são mesclados em
+        sequência.</para>
+
+        <para>Outro ponto a considerar, onde existe um dicionário global como
+        root: e seu valor é redefinido no 2º arquivo (como um dicionário) ele
+        não seria sobrescrito. Você não pode simplesmente substituir um
+        dicionário. Você pode redefinir um dicionário e defini-lo como nulo
+        (como o exemplo Thor na seção anterior), o que efetivamente o
+        eliminará.</para>
+
+        <para><emphasis role="bold">ATENÇÃO</emphasis>: Se você tivesse uma
+        definição global (como storage.planes) e a mesclasse onde ela fosse
+        redefinida, eliminaria todas as definições da lista.</para>
+
+        <para>Outro meio de eliminar todos os valores em uma lista é passar um
+        conjunto vazio denotado por um [ ], como este exemplo:</para>
+
+        <para><programlisting>bundles: []</programlisting>Isso eliminaria
+        quaisquer propriedades definidas para pacotes configuráveis.</para>
+
+        <sect4 id="GenerallyApplicable">
+          <title>Geralmente aplicável</title>
+
+          <para>Esses itens são geralmente aplicáveis para nossos arquivos
+          yaml do HPCC Systems Helm.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Todos os nomes devem ser únicos.</para>
+            </listitem>
+
+            <listitem>
+              <para>Todos os prefixos devem ser únicos.</para>
+            </listitem>
+
+            <listitem>
+              <para>Os serviços devem ser únicos.</para>
+            </listitem>
+
+            <listitem>
+              <para>yaml são mesclados em sequência.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>Geralmente em relação aos componentes do HPCC Systems, os
+          componentes são listas. Como dito anteriormente, se você tiver uma
+          lista de valores vazia [ ], isso invalidaria essa lista em outro
+          lugar.</para>
+        </sect4>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Additional_YMLUSage">
+      <title>Uso adicional</title>
+
+      <para>Os componentes são adicionados ou modificados passando
+      sobreposições. Os valores do chart são substituídos apenas, passando no
+      arquivo de valores de substituição usando -f, (para arquivo de
+      substituição) ou via --set, onde você pode substituir um único valor. Os
+      valores passados são sempre mesclados na ordem em que são fornecidos na
+      linha de comando do helm.</para>
+
+      <para>Por exemplo, você pode</para>
+
+      <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>Para
+      sobrepor quaisquer valores entregues no
+      <emphasis>values.yaml</emphasis>. Ou você pode usar --set conforme o
+      exemplo:</para>
+
+      <programlisting>helm install myhpcc hpcc/hpcc --set storage.daliStorage.plane=dali-plane</programlisting>
+
+      <para>Para substituir apenas o valor global.image.version. Novamente, a
+      ordem em que os valores são mesclados é a mesma em que são emitidos na
+      linha de comando. Agora considere:</para>
+
+      <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml --set storage.daliStorage.plane=dali-plane</programlisting>
+
+      <para>No exemplo anterior, a flag --set no comando acima substitui o
+      valor de storage.daliStorage.plane (if) definido em myoverrides.yaml,
+      que substitui qualquer configuração de arquivo
+      <emphasis>values.yaml</emphasis> e resulta em defini-lo como dali-plane.
+      Portanto, independentemente do valor no arquivo yaml para essa
+      configuração específica, a ordem especificada na linha de comando o
+      substitui na ordem fornecida na linha de comando.</para>
+
+      <sect3 id="using_the_set_flag">
+        <title>Opções de linha de comando</title>
+
+        <para>Se a flag <emphasis>--set</emphasis> for usada na instalação do
+        helm ou na atualização do helm, esses valores serão simplesmente
+        convertidos em YAML no lado do cliente.</para>
+
+        <para>Você pode especificar a flag -f várias vezes. A prioridade será
+        dada ao último arquivo (mais à direita) especificado.<programlisting>$ helm install myhpcc hpcc/hpcc -f myvalues.yaml -f override.yaml</programlisting></para>
+
+        <para>Para o exemplo acima, se myvalues.yaml e override.yaml
+        contivessem uma chave chamada 'Test', o valor definido em
+        override.yaml teria precedência.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</chapter>

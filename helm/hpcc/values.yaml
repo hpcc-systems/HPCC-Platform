@@ -289,7 +289,13 @@ secrets:
     #testauthusercreds2: "testauthusercreds2"            ## Default k/v for test authentication secrets
 
   ecl: {}
-    ## Category for secrets published to all components that run ecl
+    ## Category for secrets published to all components that run ecl.  These secrets are for use by internal
+    ## ECL processing.  For example HTTPCALL and SOAPCALL have built in support for secrets that are not directly
+    ## accessible to users, that is, accessed directly via ECL code.
+
+  eclUser: {}
+    ## Category for secrets accessible via ecl code.  These are secrets that users can access directly.  Be cautious about
+    ## what secrets you add to this category as they are easily accessed by ECL code.
 
   codeSign: {}
     #gpg-private-key-1: codesign-gpg-key-1
@@ -306,8 +312,8 @@ secrets:
     ## Category to provide passwords for eclccserver to access private git repos
 
 ## The vaults section mirrors the secret section but leverages vault for the storage of secrets.
-## There is an additional category for vaults named "ecl-user".  In the future "ecl-user" vault
-## secrets will be readable directly from ECL code.  Other secret categories are read internally
+## There is an additional category for vaults named "eclUser".  "eclUser" vault
+## secrets are readable directly from ECL code.  Other secret categories are read internally
 ## by system components and not exposed directly to ECL code.
 ##
 ## For each vault:
@@ -324,8 +330,9 @@ vaults:
 
   ecl:
 
-  ecl-user:
-    #ECL code will have direct access to these secrets
+  eclUser:
+    ## Category for vaults accessible via ecl code.  These are vaults that users can access directly.  Be cautious
+    ## about what vaults you add to this category as they are easily accessed by ECL code.
 
   esp:
 

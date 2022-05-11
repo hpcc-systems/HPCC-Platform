@@ -53,7 +53,12 @@ enum DFD_OS
 enum DFD_Replicate
 {
     DFD_NoCopies      = 1,
+#ifdef _CONTAINERIZED
+    // NB: in containerized mode, each plane has only 1 copy.
+    DFD_DefaultCopies = 1
+#else
     DFD_DefaultCopies = 2
+#endif
 };
 
 enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_unknown, __grp_size };

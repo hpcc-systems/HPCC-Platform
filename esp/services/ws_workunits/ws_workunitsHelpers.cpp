@@ -206,8 +206,8 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
     }
 }
 
-void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords,
-                                         LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs)
+void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
+                                         const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs)
 {
     if (!m_remoteLogAccessor)
         throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
@@ -216,41 +216,10 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
         throw makeStringException(ECLWATCH_INVALID_FILE_NAME, "WsWuInfo: Target filename not provided!");
 
     LogAccessConditions logFetchOptions;
-    logFetchOptions.setFilter(getJobIDLogAccessFilter(wuid.str()));
-
-    struct LogAccessTimeRange range;
-    stat_type timeStamp;
-    if (cw->getStatistic(timeStamp, "", StWhenCreated))
-    {
-        CDateTime startt;
-        startt.set(timeStamp / microSecsToSecDivisor);
-
-        startt.adjustTimeSecs(-wuLogSearchTimeBuffSecs);
-        range.setStart(startt);
-
-        StringBuffer newstart;
-        startt.getString(newstart);
-        DBGLOG("Searching for WUID '%s' log entries starting time: '%s'", wuid.str(), newstart.str());
-    }
-    else
-        throw makeStringExceptionV(ECLWATCH_WU_START_NOT_AVAILABLE, "WsWuInfo: Cound not determine WUID '%s' start time", wuid.str());
-
-    if (cw->getStatistic(timeStamp, "", StWhenFinished))
-    {
-        CDateTime endt;
-        endt.set(timeStamp / microSecsToSecDivisor);
-        endt.adjustTimeSecs(wuLogSearchTimeBuffSecs);
-
-        range.setEnd(endt);
-        StringBuffer newend;
-        endt.getString(newend);
-        DBGLOG("Searching for WUID '%s' log entries ending time: '%s'", wuid.str(), newend.str()); //end + time buffer
-    }
-    else
-        WARNLOG("WsWuInfo: Fetching log entries for '%s' without a 'finished'", wuid.str());
+    logFetchOptions.setFilter(getJobIDLogAccessFilter(wuid));
+    setLogTimeRange(logFetchOptions, wuLogSearchTimeBuffSecs);
 
     logFetchOptions.setReturnColsMode(retColsMode);
-    logFetchOptions.setTimeRange(range);
     logFetchOptions.setLimit(maxLogRecords);
 
     Owned<IFileIOStream> outIOS;
@@ -259,7 +228,7 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
     if (!outIOS)
         throw makeStringException(ECLWATCH_CANNOT_OPEN_FILE, "WsWuInfo: Could not create target log file!");
 
-    Owned<IRemoteLogAccessStream> logreader = m_remoteLogAccessor->getLogReader(logFetchOptions, logFormat);
+    Owned<IRemoteLogAccessStream> logReader = m_remoteLogAccessor->getLogReader(logFetchOptions, logFormat);
 
     StringBuffer logcontent;
     unsigned totalRecsRead = 0;
@@ -270,7 +239,7 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
     else if (logFormat == LOGACCESS_LOGFORMAT_xml)
         writeStringToStream(*outIOS, "<lines>");
 
-    while (logreader->readLogEntries(logcontent.clear(), recsRead))
+    while (logReader->readLogEntries(logcontent.clear(), recsRead))
     {
         if (logFormat == LOGACCESS_LOGFORMAT_json && totalRecsRead > 0 && recsRead > 0)
         {
@@ -308,6 +277,141 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
             writeStringToStream(*outIOS, "</lines>");
     }
 }
+
+void WsWuInfo::setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs)
+{
+    struct LogAccessTimeRange range;
+    stat_type timeStamp;
+    if (cw->getStatistic(timeStamp, "", StWhenCreated))
+    {
+        CDateTime startt;
+        startt.set(timeStamp / microSecsToSecDivisor);
+
+        startt.adjustTimeSecs(-wuLogSearchTimeBuffSecs);
+        range.setStart(startt);
+
+        StringBuffer newstart;
+        startt.getString(newstart);
+        DBGLOG("Searching for WUID '%s' log entries starting time: '%s'", wuid.get(), newstart.str());
+    }
+    else
+        throw makeStringExceptionV(ECLWATCH_WU_START_NOT_AVAILABLE, "WsWuInfo: Cound not determine WUID '%s' start time", wuid.get());
+
+    if (cw->getStatistic(timeStamp, "", StWhenFinished))
+    {
+        CDateTime endt;
+        endt.set(timeStamp / microSecsToSecDivisor);
+        endt.adjustTimeSecs(wuLogSearchTimeBuffSecs);
+
+        range.setEnd(endt);
+        StringBuffer newend;
+        endt.getString(newend);
+        DBGLOG("Searching for WUID '%s' log entries ending time: '%s'", wuid.get(), newend.str()); //end + time buffer
+    }
+    else
+        WARNLOG("WsWuInfo: Fetching log entries for '%s' without a 'finished' statistics entry", wuid.get());
+
+    logFetchOptions.setTimeRange(range);
+}
+
+#ifdef _CONTAINERIZED
+void WsWuInfo::sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options)
+{
+    if (!m_remoteLogAccessor)
+        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
+
+    setLogTimeRange(options.logFetchOptions, options.wuLogSearchTimeBuffSecs);
+    options.logFetchOptions.setFilter(getJobIDLogAccessFilter(wuid));
+
+    response->setStatus(HTTP_STATUS_OK);
+    response->startSend();
+
+    Owned<CFlushingHttpResponseBuffer> flusher = new CFlushingHttpResponseBuffer(response, defaultResponseFlushThresholdBytes); //No need to use a different ResponseFlushThreshold.
+    Owned<IRemoteLogAccessStream> logReader = m_remoteLogAccessor->getLogReader(options.logFetchOptions, options.logFormat);
+    if (options.logFormat == LOGACCESS_LOGFORMAT_csv)
+        sendComponentLogCSV(context, logReader, flusher, options);
+    else if (options.logFormat == LOGACCESS_LOGFORMAT_json)
+        sendComponentLogJSON(context, logReader, flusher, options);
+    else
+        sendComponentLogXML(context, logReader, flusher, options);
+}
+
+void WsWuInfo::sendComponentLogCSV(IEspContext* context, IRemoteLogAccessStream* logReader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options)
+{
+    unsigned totalRecsRead = sendComponentLogContent(context, logReader, flusher, options);
+    if (totalRecsRead == options.logFetchOptions.getLimit()) //Warn of possible truncation
+    {
+        VStringBuffer truncationWarnmessage("Log query reached record limit (%u). Log report could be incomplete.", options.logFetchOptions.getLimit());
+        LOG(MCuserInfo, "WsWuInfo: %s", truncationWarnmessage.str());
+        flusher->flushXML(truncationWarnmessage, false);
+    }
+}
+
+void WsWuInfo::sendComponentLogJSON(IEspContext* context, IRemoteLogAccessStream* logReader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options)
+{
+    StringBuffer s("{\"lines\": [");
+    flusher->flushXML(s, false);
+    unsigned totalRecsRead = sendComponentLogContent(context, logReader, flusher, options);
+    if (totalRecsRead == options.logFetchOptions.getLimit()) //Warn of possible truncation
+    {
+        VStringBuffer truncationWarnmessage("Log query reached record limit (%u). Log report could be incomplete.", options.logFetchOptions.getLimit());
+        LOG(MCuserInfo, "WsWuInfo: %s", truncationWarnmessage.str());
+        VStringBuffer jsonMessage("], \"Message\": \"%s\"}", truncationWarnmessage.str()); //close lines array, append Message object
+        flusher->flushXML(jsonMessage, true);
+    }
+    else
+    {
+        s.set("]}");
+        flusher->flushXML(s, true);
+    }
+}
+
+void WsWuInfo::sendComponentLogXML(IEspContext* context, IRemoteLogAccessStream* logReader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options)
+{
+    StringBuffer s("<lines>");
+    flusher->flushXML(s, false);
+    unsigned totalRecsRead = sendComponentLogContent(context, logReader, flusher, options);
+    if (totalRecsRead == options.logFetchOptions.getLimit()) //Warn of possible truncation
+    {
+        VStringBuffer truncationWarnmessage("Log query reached record limit (%u). Log report could be incomplete.", options.logFetchOptions.getLimit());
+        LOG(MCuserInfo, "WsWuInfo: %s", truncationWarnmessage.str());
+        VStringBuffer xmlMessage("</lines>\n<!-- %s -->", truncationWarnmessage.str()); //close lines element, append comment message
+        flusher->flushXML(xmlMessage, true);
+    }
+    else
+    {
+        s.set("</lines>");
+        flusher->flushXML(s, true);
+    }
+}
+
+unsigned WsWuInfo::sendComponentLogContent(IEspContext* context, IRemoteLogAccessStream* logReader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options)
+{
+    CESPAbortRequestCallback abortCallback(context);
+
+    StringBuffer logContent;
+    unsigned totalRecsRead = 0;
+    unsigned recsRead = 0;
+    while (logReader->readLogEntries(logContent.clear(), recsRead))
+    {
+        if (options.logFormat == LOGACCESS_LOGFORMAT_json && totalRecsRead > 0 && recsRead > 0)
+        {
+            StringBuffer s(',');
+            flusher->flushXML(s, false);
+        }
+
+        totalRecsRead += recsRead;
+        flusher->flushXML(logContent, false);
+
+        if (abortCallback.abortRequested())
+        {
+            LOG(MCdebugInfo, unknownJob, "WsWuInfo::sendComponentLogContent(): abort requested via callback");
+            break;
+        }
+    }
+    return totalRecsRead;
+}
+#endif
 
 void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
 {
@@ -654,7 +758,16 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
             for (unsigned i = 0; i < FileTypeSize; i++)
                 getHelpFiles(query, (WUFileType) i, helpers, flags, helpersCount);
         }
-#ifndef _CONTAINERIZED
+#ifdef _CONTAINERIZED
+        helpersCount++;
+        if ((flags & WUINFO_IncludeHelpers))
+        {
+            Owned<IEspECLHelpFile> h = createECLHelpFile();
+            h->setName(File_ComponentLog);
+            h->setType(File_ComponentLog);
+            helpers.append(*h.getLink());
+        }
+#else
         getWorkunitThorLogInfo(helpers, info, flags, helpersCount);
 
         if (cw->getWuidVersion() > 0)
@@ -3916,6 +4029,127 @@ void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, cons
     }
 }
 
+#ifdef _CONTAINERIZED
+void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpResponse* response)
+{
+    StringBuffer wuid, fileName;
+    request->getParameter("Wuid", wuid);
+    if (wuid.isEmpty())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Empty Wuid detected");
+    request->getParameter("Name", fileName);
+    if (fileName.isEmpty())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Empty Name detected");
+
+    IEspContext* ctx = request->queryContext();
+    Owned<CWULogFileRequest> espRequest = new CWULogFileRequest(ctx, "WsWorkunits", request->queryParameters(), request->queryAttachments());
+
+    WUComponentLogOptions options;
+    readWUComponentLogOptionsReq(espRequest->getFileOptions(), options);
+
+    WsWuInfo winfo(*ctx, wuid.str());
+    int option = request->getParameterInt("Option", CWUFileDownloadOption_OriginalText); //0: original content; 1: content as attachment; 2: zip; 3: gzip.
+    if ((option < CWUFileDownloadOption_OriginalText) || (option > CWUFileDownloadOption_GZIP))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid WU File Download option detected: '%d'", option);
+
+    CWUFileDownloadOption opt = (CWUFileDownloadOption) option;
+    if ((opt == CWUFileDownloadOption_OriginalText) || (opt == CWUFileDownloadOption_Attachment))
+    {
+        if (opt == CWUFileDownloadOption_OriginalText)
+        {
+            if (options.logFormat == LOGACCESS_LOGFORMAT_csv)
+                ctx->setResponseFormat(ESPSerializationCSV);
+            else if (options.logFormat == LOGACCESS_LOGFORMAT_json)
+                ctx->setResponseFormat(ESPSerializationJSON);
+            else
+                ctx->setResponseFormat(ESPSerializationXML);
+        }
+        else
+        {
+            VStringBuffer headerStr("attachment;filename=%s", fileName.str());
+            if (options.logFormat == LOGACCESS_LOGFORMAT_csv)
+                headerStr.append(".csv");
+            else if (options.logFormat == LOGACCESS_LOGFORMAT_json)
+                headerStr.append(".json");
+            else
+                headerStr.append(".xml");
+            ctx->addCustomerHeader("Content-disposition", headerStr.str());
+        }
+
+        winfo.sendWorkunitComponentLogs(ctx, response, options);
+    }
+    else
+    {   //zip or gzip the WUComponentLog
+        StringBuffer workingFolder, resultFileNameWithPath;
+
+        unsigned currentTime = msTick();
+        workingFolder.setf("%s%sT%xAT%x", TEMPZIPDIR, PATHSEPSTR, (unsigned)(memsize_t)GetCurrentThreadId(), currentTime);
+        resultFileNameWithPath.setf("%s%s%s", workingFolder.str(), PATHSEPSTR, fileName.str());
+        recursiveCreateDirectoryForFile(resultFileNameWithPath);
+        //Read the WUComponentLog into a file
+        winfo.readWorkunitComponentLogs(resultFileNameWithPath, options.logFetchOptions.getLimit(), options.logFetchOptions.getReturnColsMode(), options.logFormat, options.wuLogSearchTimeBuffSecs);
+
+        VStringBuffer headerStr("attachment;filename=%s", fileName.str());
+        if (opt == CWUFileDownloadOption_GZIP)
+            headerStr.append(".gz");
+        else
+            headerStr.append(".zip");
+        ctx->addCustomerHeader("Content-disposition", headerStr.str());
+
+        //zip or gzip
+        StringBuffer zipFileNameWithPath(resultFileNameWithPath);
+        zipFileNameWithPath.append((opt == CWUFileDownloadOption_GZIP) ? ".gz" : ".zip");
+        StringBuffer zipCommand;
+        if (opt == CWUFileDownloadOption_GZIP)
+            zipCommand.setf("tar -czf %s -C %s %s", zipFileNameWithPath.str(), workingFolder.str(), fileName.str());
+        else
+            zipCommand.setf("zip -j %s %s", zipFileNameWithPath.str(), resultFileNameWithPath.str());
+        if (system(zipCommand) != 0)
+            throw makeStringExceptionV(ECLWATCH_CANNOT_COMPRESS_DATA, "Failed to execute system command '%s'. Please make sure that zip utility is installed.",
+                (opt == CWUFileDownloadOption_GZIP) ? "tar" : "zip");
+
+        //Send the zipped file and clean the workingFolder.
+        response->setContent(createIOStreamWithFileName(zipFileNameWithPath, IFOread));
+        if (opt == CWUFileDownloadOption_GZIP)
+            response->setContentType("application/x-gzip");
+        else
+            response->setContentType("application/zip");
+        response->send();
+        recursiveRemoveDirectory(workingFolder);
+    }
+}
+
+void CWsWuFileHelper::readWUComponentLogOptionsReq(IConstWUFileOption& logOptionReq, WUComponentLogOptions& options)
+{
+    //If MaxLogRecords is in logOptionReq, use it; otherwise, default to 100 in LogAccessConditions.
+    if (!logOptionReq.getMaxLogRecords_isNull())
+        options.logFetchOptions.setLimit(logOptionReq.getMaxLogRecords());
+    //If LogSearchTimeBuffSecs is in logOptionReq, use it; otherwise, default to defaultWULogSearchTimeBufferSecs.
+    if (!logOptionReq.getLogSearchTimeBuffSecs_isNull())
+        options.wuLogSearchTimeBuffSecs = logOptionReq.getLogSearchTimeBuffSecs();
+    CLogAccessLogFormat logFormatSetting = logOptionReq.getLogFormat();
+    if (logFormatSetting != LogAccessLogFormat_Undefined)
+        options.logFormat = (LogAccessLogFormat) logFormatSetting;
+    else
+        options.logFormat = LOGACCESS_LOGFORMAT_csv;
+    switch (logOptionReq.getLogSelectColumnMode())
+    {
+    case CLogSelectColumnMode_MIN:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_min);
+        break;
+    case CLogSelectColumnMode_ALL:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_all);
+        break;
+    case CLogSelectColumnMode_CUSTOM:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_custom);
+        options.logFetchOptions.copyLogFieldNames(logOptionReq.getLogColumns());
+        break;
+    default:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
+        break;
+    }
+}
+#endif
+
 void CWsWuFileHelper::createZAPWUGraphProgressFile(const char* wuid, const char* pathNameStr)
 {
     Owned<IPropertyTree> graphProgress = getWUGraphProgress(wuid, true);
@@ -4333,6 +4567,34 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
         winfo.getWorkunitEclAgentLog(nullptr, file, item.getProcess(), mb, fileNameWithPath.str());
+        break;
+    }
+#else
+    case CWUFileType_ComponentLog:
+    {
+        WUComponentLogOptions options;
+        readWUComponentLogOptionsReq(item, options);
+
+        fileName.set(File_ComponentLog);
+        if (options.logFormat == LOGACCESS_LOGFORMAT_csv)
+        {
+            fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
+            fileName.append(".csv");
+        }
+        else if (options.logFormat == LOGACCESS_LOGFORMAT_json)
+        {
+            fileMimeType.set(HTTP_TYPE_JSON);
+            fileName.append(".json");
+        }
+        else
+        {
+            fileMimeType.set(HTTP_TYPE_APPLICATION_XML);
+            fileName.append(".xml");
+        }
+        fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
+
+        winfo.readWorkunitComponentLogs(fileNameWithPath, options.logFetchOptions.getLimit(), options.logFetchOptions.getReturnColsMode(),
+            options.logFormat, options.wuLogSearchTimeBuffSecs);
         break;
     }
 #endif

@@ -95,12 +95,7 @@ private:
     void adjustNiceLevel();
 
 protected:
-    struct cThreadName: implements IThreadName
-    {
-        char *threadname;
-        const char *get() { return threadname; }
-    } cthreadname;
-    IThreadName *ithreadname;
+    StringAttr cthreadname;
 public:
 #ifndef _WIN32
     Semaphore suspend;
@@ -118,14 +113,14 @@ public:
     bool isCurrentThread() const;
     void setNice(int nicelevel);
     void setStackSize(size32_t size);               // required stack size in bytes - called before start() (obviously)
-    const char *getName() { const char *ret = ithreadname?ithreadname->get():NULL; return ret?ret:"unknown"; }
+    const char *getName() { return cthreadname.isEmpty() ? "unknown" : cthreadname.str(); }
     bool isAlive() { return alive; }
     bool join(unsigned timeout=INFINITE);
 
     virtual void start();
     virtual void startRelease();        
 
-    StringBuffer &getInfo(StringBuffer &str) { str.appendf("%8" I64F "X %6" I64F "d %u: %s",(__int64)threadid,(__int64)threadid,tidlog,getName()); return str; } 
+    StringBuffer &getInfo(StringBuffer &str);
     const char *getLogInfo(int &thandle,unsigned &tid) { 
 #ifdef _WIN32
         thandle = (int)(memsize_t)hThread;
@@ -140,10 +135,6 @@ public:
 
     // run method not implemented - concrete derived classes must do so
     static  void setDefaultStackSize(size32_t size);    // NB under windows requires linker setting (/stack:)
-
-    IThreadName *queryThreadName() { return ithreadname; }
-    void setThreadName(IThreadName *name) { ithreadname = name; }
-
 };
 
 interface IThreaded
@@ -276,7 +267,6 @@ interface IThreadPool : extends IInterface
         virtual IPooledThreadIterator *running()=0;                 // return an iterator for all currently running threads
         virtual unsigned runningCount()=0;                  // number of currently running threads
         virtual PooledThreadHandle startNoBlock(void *param)=0; // starts a new thread if it can do so without blocking, else throws exception
-        virtual PooledThreadHandle startNoBlock(void *param,const char *name)=0;    // starts a new thread if it can do so without blocking, else throws exception
         virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
         virtual bool waitAvailable(unsigned timeout) = 0;            // wait until a pool member is available
 };
@@ -292,9 +282,7 @@ extern jlib_decl IThreadPool *createThreadPool(
                                 unsigned targetpoolsize=0           // target maximum size of pool (default same as defaultmax)   
                              );
 
-extern jlib_decl StringBuffer &getThreadList(StringBuffer &str);
 extern jlib_decl unsigned getThreadCount();
-extern jlib_decl StringBuffer &getThreadName(int thandle,unsigned logtid,StringBuffer &name); // either thandle or tid should be 0
 
 // Simple pipe process support
 interface ISimpleReadStream;

@@ -119,8 +119,7 @@ void enableThreadSEH() { SEHHandling=true; }
 void disableThreadSEH() { SEHHandling=false; } // only prevents new threads from having SEH handler, no mech. for turning off existing threads SEH handling.
 
 
-static ICopyArrayOf<Thread> ThreadList;
-static CriticalSection ThreadListSem;
+static std::atomic<unsigned> threadCount;
 static size32_t defaultThreadStackSize=0;
 static ICopyArrayOf<Thread> ThreadDestroyList;
 static CriticalSection ThreadDestroyListLock;
@@ -136,7 +135,7 @@ unsigned WINAPI Thread::_threadmain(LPVOID v)
 void *Thread::_threadmain(void *v)
 #endif
 {
-    resetThreadLogging();   // Not strictly needed if everything handled via thread_local variable's constructors...
+    resetThreadLogging();
     Thread * t = (Thread *)v;
 #ifdef _WIN32
     if (SEHHandling) 
@@ -145,16 +144,6 @@ void *Thread::_threadmain(void *v)
     t->tidlog = threadLogID();
 #endif
     int ret = t->begin();
-    char *&threadname = t->cthreadname.threadname;
-    if (threadname) {
-        memsize_t l=strlen(threadname);
-        char *newname = (char *)malloc(l+8+1);
-        memcpy(newname,"Stopped ",8);
-        memcpy(newname+8,threadname,l+1);
-        char *oldname = threadname;
-        threadname = newname;
-        free(oldname);
-    }
     {
         // need to ensure joining thread does not race with us to release
         t->Link();  // extra safety link
@@ -359,8 +348,7 @@ void Thread::init(const char *_name)
     threadid = 0;
     tidlog = 0;
     alive = false;
-    cthreadname.threadname = (NULL == _name) ? NULL : strdup(_name);
-    ithreadname = &cthreadname;
+    cthreadname.set(_name);
     prioritydelta = 0;
     nicelevel = 0;
     stacksize = 0; // default is EXE default stack size  (set by /STACK)
@@ -378,6 +366,13 @@ void Thread::start()
     }
     Link();
     startRelease();
+}
+
+StringBuffer & Thread::getInfo(StringBuffer &str)
+{
+    const char * status = alive ? "" : "Stopped ";
+    str.appendf("%8" I64F "X %6" I64F "d %u: %s%s",(__int64)threadid,(__int64)threadid,tidlog,status,getName());
+    return str;
 }
 
 void Thread::startRelease()
@@ -441,9 +436,6 @@ void Thread::startRelease()
         IERRLOG("pthread_create returns %d",status);
         PrintStackReport();
         PrintMemoryReport();
-        StringBuffer s;
-        getThreadList(s);
-        IERRLOG("Running threads:\n %s",s.str());
         throw makeOsException(status);
     }
     unsigned retryCount = 10;
@@ -459,12 +451,7 @@ void Thread::startRelease()
     alive = true;
     if (prioritydelta)
         adjustPriority(prioritydelta);
-
-    {
-        CriticalBlock block(ThreadListSem);
-        ThreadList.zap(*this);  // just in case restarting
-        ThreadList.append(*this);
-    }
+    threadCount++;
 #ifdef _WIN32
     DWORD count = ResumeThread(hThread);
     assertex(count == 1);
@@ -525,7 +512,6 @@ bool Thread::join(unsigned timeout)
 
 Thread::~Thread()
 {
-    ithreadname = &cthreadname; // safer (as derived classes destroyed)
 #ifdef _DEBUG
     if (alive) {
         if (!stopped.wait(0)) { // see if fell out of threadmain and signal stopped
@@ -536,53 +522,14 @@ Thread::~Thread()
     }
 #endif
     Link();
-    
-//  DBGLOG("Thread %x (%s) destroyed\n", threadid, threadname);
-    {
-        CriticalBlock block(ThreadListSem);
-        ThreadList.zap(*this);
-    }
-    free(cthreadname.threadname);
-    cthreadname.threadname = NULL;
+    threadCount--;
+//  DBGLOG("Thread %x (%s) destroyed\n", threadid, cthreadname.str());
 }
 
 unsigned getThreadCount()
 {
-    CriticalBlock block(ThreadListSem);
-    return ThreadList.ordinality();
+    return threadCount;
 }
-
-StringBuffer & getThreadList(StringBuffer &str)
-{
-    CriticalBlock block(ThreadListSem);
-    ForEachItemIn(i,ThreadList) {
-        Thread &item=ThreadList.item(i);
-        item.getInfo(str).append("\n");
-    }
-    return str;
-}
-
-StringBuffer &getThreadName(int thandle,unsigned tid,StringBuffer &name)
-{
-    CriticalBlock block(ThreadListSem);
-    bool found=false;
-    ForEachItemIn(i,ThreadList) {
-        Thread &item=ThreadList.item(i);
-        int h; 
-        unsigned t;
-        const char *s = item.getLogInfo(h,t);
-        if (s&&*s&&((thandle==0)||(h==thandle))&&((tid==0)||(t==tid))) {
-            if (found) {
-                name.clear();
-                break;  // only return if unambiguous
-            }
-            name.append(s);
-            found = true;
-        }
-    }
-    return name;
-}
-
 
 // CThreadedPersistent
 
@@ -609,6 +556,7 @@ void CThreadedPersistent::threadmain()
             break;
         try
         {
+            resetThreadLogging();
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -908,7 +856,7 @@ class CPooledThreadWrapper: public Thread
     IPooledThread *thread;
     Semaphore sem;
     CThreadPoolBase &parent;
-    char *runningname;
+    StringAttr runningName;
 public:
     CPooledThreadWrapper(CThreadPoolBase &_parent,
                          PooledThreadHandle _handle,
@@ -917,16 +865,15 @@ public:
     {
         thread = _thread;
         handle = _handle;
-        runningname = strdup(_parent.poolname); 
+        runningName.set(_parent.poolname); 
     }
 
     ~CPooledThreadWrapper()
     {
         thread->Release();
-        free(runningname);
     }
 
-    void setName(const char *name) { free(runningname); runningname=strdup(name); }
+    void setName(const char *name) { runningName.set(name); }
     void setHandle(PooledThreadHandle _handle) { handle = _handle; }
     PooledThreadHandle queryHandle() { return handle; }
     IPooledThread &queryThread() { return *thread; }
@@ -949,40 +896,29 @@ public:
     {
         do
         {
-            resetThreadLogging();
             sem.wait();
             {
                 CriticalBlock block(parent.crit); // to synchronize
                 if (parent.stopall)
                     break;
             }
+            resetThreadLogging();
             parent.notifyStarted(this);
             try
             {
-                char *&threadname = cthreadname.threadname;
-                char *temp = threadname;    // swap running name and threadname
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap running name and threadname
                 thread->threadmain();
-                temp = threadname;  // and back
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap back
             }
             catch (IException *e)
             {
-                char *&threadname = cthreadname.threadname;
-                char *temp = threadname;    // swap back
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap back
                 handleException(e);
             }
 #ifndef NO_CATCHALL
             catch (...)
             {
-                char *&threadname = cthreadname.threadname;
-                char *temp = threadname;    // swap back
-                threadname = runningname;
-                runningname = temp;
+                cthreadname.swapWith(runningName); // swap back
                 handleException(MakeStringException(0, "Unknown exception in Thread from pool %s", parent.poolname.get()));
             }
 #endif
@@ -1198,11 +1134,6 @@ public:
     PooledThreadHandle startNoBlock(void *param)
     {
         return _start(param, NULL, true);
-    }
-
-    PooledThreadHandle startNoBlock(void *param,const char *name)
-    {
-        return _start(param, name, true);
     }
 
     PooledThreadHandle start(void *param)

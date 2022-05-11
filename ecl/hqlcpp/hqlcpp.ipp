@@ -1477,6 +1477,7 @@ public:
     void buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression * expr);
 
     IHqlExpression * cvtGetEnvToCall(IHqlExpression * expr);
+    IHqlExpression * cvtGetSecretToCall(IHqlExpression * expr);
 
 //Statements
     void doBuildStmtApply(BuildCtx & ctx, IHqlExpression * expr);

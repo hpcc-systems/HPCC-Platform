@@ -237,6 +237,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   FULL
   FUNCTION
   GETENV
+  GETSECRET
   GLOBAL
   GRAPH
   GROUP
@@ -7144,6 +7145,12 @@ primexpr1
                             parser->normalizeExpression($3, type_stringorunicode, false);
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             $$.setExpr(createValue(no_getenv, makeVarStringType(UNKNOWN_LENGTH), $3.getExpr(), $5.getExpr()), $1);
+                        }
+    | GETSECRET '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, false);
+                            parser->normalizeExpression($5, type_stringorunicode, false);
+                            $$.setExpr(createValue(no_getsecret, makeDataType(UNKNOWN_LENGTH), $3.getExpr(), $5.getExpr()), $1);
                         }
     | __STAND_ALONE__   
                         {

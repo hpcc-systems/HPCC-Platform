@@ -398,34 +398,90 @@ CMasterActivity::~CMasterActivity()
 
 IDistributedFile *CMasterActivity::queryReadFile(unsigned f)
 {
-    if (f>=readFiles.ordinality())
-        return NULL;
-    return &readFiles.item(f);
+    if (f>=readFiles.size())
+        return nullptr;
+    return readFiles[f];
 }
 
-IDistributedFile *CMasterActivity::findReadFile(const char *lfnName)
+unsigned CMasterActivity::queryReadFileId(const char *normalizedFileName)
 {
-    auto it = readFilesMap.find(lfnName);
+    auto it = readFilesMap.find(normalizedFileName);
     if (it != readFilesMap.end())
-        return LINK(it->second);
+        return (int)(it->second);
+    return NotFound;
+}
+
+IDistributedFile *CMasterActivity::findReadFile(const char *normalizedFileName)
+{
+    auto it = readFilesMap.find(normalizedFileName);
+    if (it != readFilesMap.end())
+        return LINK(readFiles[it->second]);
     return nullptr;
 }
 
-IDistributedFile *CMasterActivity::lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt)
+IDistributedFile *CMasterActivity::lookupReadFile(const char *lfnName, AccessMode mode, bool jobTemp, bool temp, bool opt, bool statsForMultipleFiles, const StatisticsMapping & statsMapping, unsigned * fileStatsStartEntry)
 {
     StringBuffer normalizedFileName;
     queryThorFileManager().addScope(container.queryJob(), lfnName, normalizedFileName, jobTemp|temp);
-    Owned<IDistributedFile> file = findReadFile(normalizedFileName);
-    if (!file)
+    Owned<IDistributedFile> file;
+    unsigned fileId = queryReadFileId(normalizedFileName.str());
+    if (fileId==NotFound)
     {
         file.setown(queryThorFileManager().lookup(container.queryJob(), lfnName, mode, jobTemp|temp, opt, true, container.activityIsCodeSigned()));
         if (file)
         {
-            readFiles.append(*LINK(file));
-            readFilesMap[normalizedFileName.str()] = file;
+            fileId = readFiles.size();
+            readFiles.push_back(LINK(file));
+            readFilesMap[normalizedFileName.str()] = fileId;
             if (!temp) // NB: Temps not listed in workunit
                 queryThorFileManager().noteFileRead(container.queryJob(), file);
+            if (!jobTemp && !temp && fileStatsStartEntry!=nullptr)
+            {
+                unsigned fileStatsSizeExtend = 0; // how many entries need to be added to fileStats vector
+                IDistributedSuperFile *super = file->querySuperFile();
+                bool isSuper = super!=nullptr;
+                unsigned numSubs = isSuper ? super->numSubFiles(true) : 0;
+                if (statsForMultipleFiles)
+                {
+                    // fileStats[] will need to track stats from multiple files.  To do this, fileStatsTable[] vector
+                    // will be used to map from file id to the starting point of the stats in fileStats.
+                    // e.g.
+                    // Given that file id for 'child::super' is 0
+                    //            file id for 'child::f1' is 1
+                    //            file id for 'child::f2' is 2
+                    //       and child::super has 2 subfiles
+                    //
+                    // Then the following table will be generated (through multiple calls to this function)
+                    // fileStatsTable[0] = 0;
+                    // fileStatsTable[1] = 2;
+                    // fileStatsTable[2] = 3;
+                    //
+                    // fileStats[0] = stats for 'child::super' - stats for child::super and subfile 1
+                    // fileStats[1] = stats for 'child::super' - stats for child::super and subfile 2
+                    // fileStats[2] = stats for 'child::f1' - stats for child::f1
+                    // fileStats[3] = stats for 'child::f2' - stats for child::f2
+                    *fileStatsStartEntry = (unsigned) fileStats.size(); // index of the first stats entry for this file
+                    fileStatsTable.push_back(*fileStatsStartEntry);
+                    assertex(fileId==fileStatsTable.size()-1);
+                    fileStatsSizeExtend = isSuper?numSubs:1;
+                }
+                else  // Use entire fileStats to track stats for a superfile (fileStats is not used if not a superfile)
+                {
+                    assertex(fileStats.size() == 0);
+                    *fileStatsStartEntry = 0;
+                    // Super files will use fileStats to track stats.  Non-super file stats tracked in graph stats
+                    fileStatsSizeExtend = isSuper?numSubs:0;
+                }
+                for (unsigned i=0; i<fileStatsSizeExtend; i++)
+                    fileStats.push_back(new CThorStatsCollection(statsMapping));
+            }
         }
+    }
+    else
+    {
+        file.setown(LINK(queryReadFile(fileId)));
+        if (!jobTemp && !temp && !fileStatsTable.empty())
+            *fileStatsStartEntry = fileStatsTable[fileId];
     }
     return file.getClear();
 }
@@ -474,8 +530,10 @@ void CMasterActivity::init()
     bool inCQ = container.queryOwner().queryOwner() && !container.queryOwner().isGlobal();
     if (!inCQ)
     {
-        readFiles.kill();
+        readFiles.clear();
         readFilesMap.clear();
+        fileStatsTable.clear();
+        fileStats.clear();
     }
 }
 
@@ -500,7 +558,7 @@ bool CMasterActivity::wait(unsigned timeout)
 void CMasterActivity::kill()
 {
     CActivityBase::kill();
-    readFiles.kill();
+    readFiles.clear();
     readFilesMap.clear();
 }
 
@@ -564,20 +622,19 @@ void CMasterActivity::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
 void CMasterActivity::done()
 {
     CActivityBase::done();
-    if (readFiles.ordinality())
+    if (readFiles.size())
     {
         IArrayOf<IDistributedFile> tmpFiles;
-        ForEachItemIn(f, readFiles)
+        for (IDistributedFile * file: readFiles)
         {
-            IDistributedFile &file = readFiles.item(f);
-            IDistributedSuperFile *super = file.querySuperFile();
+            IDistributedSuperFile *super = file->querySuperFile();
             if (super)
             {
                 getSuperFileSubs(super, tmpFiles, true);
-                tmpFiles.append(*LINK(&file));
+                tmpFiles.append(*LINK(file));
             }
             else
-                tmpFiles.append(*LINK(&file));
+                tmpFiles.append(*LINK(file));
         }
         ForEachItemIn(s, tmpFiles)
         {
@@ -587,61 +644,47 @@ void CMasterActivity::done()
     }
 }
 
-void CMasterActivity::updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCollection>> & subFileStats)
+void CMasterActivity::updateFileReadCostStats()
 {
-    /* JCSMORE->SHAMSER: (separate JIRA needed)
-     * there can be >1 read file if this act. is in a child query/loop, it could be processing a different file per iteration,
-     * meaning there could be an arbitrary number of readfiles, in that case activity::init would be called multiple times.
-     * 
-     * I hit an assert during testing reading a super in a CQ:
-        libjlib.so!raiseAssertException(const char * assertion, const char * file, unsigned int line) (\home\jsmith\git\HPCC-Platform\system\jlib\jexcept.cpp:660)
-        libjlib.so!MemoryBuffer::read(MemoryBuffer * const this, unsigned char & value) (\home\jsmith\git\HPCC-Platform\system\jlib\jbuff.cpp:693)
-        libjlib.so!MemoryBuffer::readPacked(MemoryBuffer * const this) (\home\jsmith\git\HPCC-Platform\system\jlib\jbuff.cpp:813)
-        libjlib.so!MemoryBuffer::readPacked(MemoryBuffer * const this, unsigned int & value) (\home\jsmith\git\HPCC-Platform\system\jlib\jbuff.cpp:824)
-        libjlib.so!CRuntimeStatisticCollection::deserialize(CRuntimeStatisticCollection * const this, MemoryBuffer & in) (\home\jsmith\git\HPCC-Platform\system\jlib\jstats.cpp:2524)
-        libactivitymasters_lcr.so!CThorStatsCollection::deserialize(CThorStatsCollection * const this, unsigned int node, MemoryBuffer & mb) (\home\jsmith\git\HPCC-Platform\thorlcr\graph\thgraphmaster.ipp:53)
-        libactivitymasters_lcr.so!CDiskReadMasterBase::deserializeStats(CDiskReadMasterBase * const this, unsigned int node, MemoryBuffer & mb) (\home\jsmith\git\HPCC-Platform\thorlcr\activities\thdiskbase.cpp:139)
-        libgraphmaster_lcr.so!CMasterGraph::deserializeStats(CMasterGraph * const this, unsigned int node, MemoryBuffer & mb) (\home\jsmith\git\HPCC-Platform\thorlcr\graph\thgraphmaster.cpp:2781)
-     *
-     * (would be a crash in a Release build)
-     * it's because the diskread init is adding new CThorStatsCollection per init (per execution of the CQ),
-     * which means when deserializing there are too many. The code assumes there is only 1 file being read.
-     * 
-     * I've temporarily changed the code where subFileStats's are added, to prevent more being added per iteration,
-     * but it needs re-thinking to handle the workers potentially dealing with different logical files
-     * (+ index read to handle super files, and case where act. is reading >1 file, i.e. KJ)
-     * I've changed this code rely on the 1st readFiles for now (not the # of subFileStats, which may be more)
-     * NB: also changed when the expansion of readFiles (from supers to subfiles) happens, a new super was being added
-     * each CQ iteration and re-expanded, meaing readFiles kept growing.
-     * 
-     * Also, superkey1.ecl hits a dbgasserex whilst deserializing stats (before and after these PR changes),
-     * but is caught/ignored. I haven't investigated further.
-     */
-
-    IDistributedFile *file = queryReadFile(0);
-    if (file)
+    if (fileStats.size()>0)
     {
-        IDistributedSuperFile *super = file->querySuperFile();
-        if (super)
-        {       
-            unsigned numSubFiles = super->numSubFiles(true); //subFileStats.size();
-            if (subFileStats.size())
+        unsigned fileIndex = 0;
+        for (unsigned i=0; i<readFiles.size();i++)
+        {
+            IDistributedFile *file = queryReadFile(i);
+            if (file)
             {
-                assertex(numSubFiles <= subFileStats.size());
-                for (unsigned i=0; i<subFileStats.size(); i++)
+                IDistributedSuperFile *super = file->querySuperFile();
+                if (super)
                 {
-                    IDistributedFile &subFile = super->querySubFile(i, true);
-                    const char *subName = subFile.queryLogicalName();
-                    PROGLOG("subName = %s", subName);
-                    stat_type numDiskReads = subFileStats[i]->getStatisticSum(StNumDiskReads);
+                    unsigned numSubFiles = super->numSubFiles(true);
+                    for (unsigned i=0; i<numSubFiles; i++)
+                    {
+                        IDistributedFile &subFile = super->querySubFile(i, true);
+                        stat_type numDiskReads = fileStats[fileIndex]->getStatisticSum(StNumDiskReads);
+                        StringBuffer clusterName;
+                        subFile.getClusterName(0, clusterName);
+                        diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
+                        subFile.addAttrValue("@numDiskReads", numDiskReads);
+                        fileIndex++;
+                    }
+                }
+                else
+                {
+                    stat_type numDiskReads = fileStats[fileIndex]->getStatisticSum(StNumDiskReads);
                     StringBuffer clusterName;
-                    subFile.getClusterName(0, clusterName);
+                    file->getClusterName(0, clusterName);
                     diskAccessCost += money2cost_type(calcFileAccessCost(clusterName, 0, numDiskReads));
-                    subFile.addAttrValue("@numDiskReads", numDiskReads);
+                    file->addAttrValue("@numDiskReads", numDiskReads);
+                    fileIndex++;
                 }
             }
         }
-        else
+    }
+    else
+    {
+        IDistributedFile *file = queryReadFile(0);
+        if (file)
         {
             stat_type numDiskReads = statsCollection.getStatisticSum(StNumDiskReads);
             StringBuffer clusterName;

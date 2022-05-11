@@ -403,6 +403,7 @@ ESPrequest WULogFileRequest
     [min_ver("1.55")] int64 SizeLimit(0);
     [min_ver("1.77")] ESPenum ErrorMessageFormat ErrorMessageFormat;
     string PlainText;
+    [min_ver("1.90")] ESPStruct WUFileOption FileOptions;
 };
 
 ESPresponse [exceptions_inline] WULogFileResponse

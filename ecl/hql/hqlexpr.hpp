@@ -711,7 +711,7 @@ enum node_operator : unsigned short {
         no_sectioninput,
         no_forcegraph,
         no_eventextra,
-    no_unused81,
+        no_getsecret,
         no_related,
         no_executewhen,
         no_definesideeffect,

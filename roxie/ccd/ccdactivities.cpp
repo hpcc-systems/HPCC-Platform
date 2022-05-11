@@ -3172,7 +3172,9 @@ public:
                     }
 
                     indexRecordsRead++;
-                    if (normalizeHelper->first(tlk->queryKeyBuffer()))
+                    bool firstMatch = normalizeHelper->first(tlk->queryKeyBuffer());
+                    callback.finishedRow();
+                    if (firstMatch) // first() can lookup blobs
                     {
                         do
                         {
@@ -3195,7 +3197,6 @@ public:
                                 totalSizeSent += rowBuilder.writeToOutput(transformedSize, true);
                             }
                         } while (normalizeHelper->next());
-                        callback.finishedRow();
 
                         if (totalSizeSent > indexReadChunkSize && !continuationFailed)
                         {
@@ -3210,7 +3211,6 @@ public:
                     }
                     else
                     {
-                        callback.finishedRow(); // first() could have filtered
                         postFiltered++;
                         skipped++;
                     }

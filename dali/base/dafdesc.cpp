@@ -101,7 +101,10 @@ void ClusterPartDiskMapSpec::setRoxie (unsigned redundancy, unsigned channelsPer
 {
     flags = 0;
     replicateOffset = _replicateOffset?_replicateOffset:1;
-    defaultCopies = redundancy+1;
+#ifdef _CONTAINERIZED
+    // NB: in containerized mode the cluster spec. redundancy isn't used.
+    redundancy = 0;
+#endif
     if ((channelsPerNode>1)&&(redundancy==0)) {
         flags |= CPDMSF_wrapToNextDrv;
         flags |= CPDMSF_overloadedConfig;
@@ -223,6 +226,11 @@ void ClusterPartDiskMapSpec::fromProp(IPropertyTree *tree)
     }
     replicateOffset = getPropDef(tree,"@replicateOffset",1);
     defaultCopies = getPropDef(tree,"@redundancy",defrep)+1;
+#ifdef _CONTAINERIZED
+    // NB: in containerized mode the cluster spec. redundancy isn't used.
+    // Force number of copies to 1 here (on deserialization) to avoid code paths that would look at redundant copies.
+    defaultCopies = 1;
+#endif
     maxDrvs = (byte)getPropDef(tree,"@maxDrvs",2);
     startDrv = (byte)getPropDef(tree,"@startDrv",defrep?0:getPathDrive(dir.str()));
     interleave = getPropDef(tree,"@interleave",0);
@@ -256,6 +264,11 @@ void ClusterPartDiskMapSpec::deserialize(MemoryBuffer &mb)
     mb.read(flags);
     mb.read(replicateOffset);
     mb.read(defaultCopies);
+#ifdef _CONTAINERIZED
+    // NB: in containerized mode the cluster spec. redundancy isn't used.
+    // Force number of copies to 1 here (on deserialization) to avoid code paths that would look at redundant copies.
+    defaultCopies = 1;
+#endif
     mb.read(startDrv);
     mb.read(maxDrvs);
     mb.read(interleave);

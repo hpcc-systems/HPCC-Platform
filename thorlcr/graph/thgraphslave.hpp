@@ -208,6 +208,7 @@ protected:
     bool optStableInput = true; // is the input forced to ordered?
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
+    std::vector<OwnedPtr<CRuntimeStatisticCollection>> fileStats;
 
 protected:
     unsigned __int64 queryLocalCycles() const;
@@ -217,7 +218,7 @@ protected:
     void setLookAhead(unsigned index, IStartableEngineRowStream *lookAhead, bool persistent);
     void startLookAhead(unsigned index);
     bool isLookAheadActive(unsigned index) const;
-
+    void setupSpace4FileStats(unsigned where, bool statsForMultipleFiles, bool isSuper, unsigned numSubs, const StatisticsMapping & statsMapping);
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)
 

@@ -1011,7 +1011,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         unsigned __int64 defaultNetworkSpeed = 10 * U64C(0x40000000); // 10Gb/s
         unsigned __int64 networkSpeed = topology->getPropInt64("@udpNetworkSpeed", defaultNetworkSpeed);   // only used to sanity check the different udp options
         unsigned udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
-        sanityCheckUdpSettings(udpQueueSize, numChannels, networkSpeed);
+        unsigned udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
+        sanityCheckUdpSettings(udpQueueSize, udpSendQueueSize, numChannels, networkSpeed);
 
         int ttlTmp = topology->getPropInt("@multicastTTL", 1);
         if (ttlTmp < 0)

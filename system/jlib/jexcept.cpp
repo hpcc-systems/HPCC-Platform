@@ -915,10 +915,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
     
     
     StackWalk( ip , _bp);
-    ModuleWalk();
-    StringBuffer threadlist;
-    IERRLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
-    
+    ModuleWalk();    
 }
 
 
@@ -1349,8 +1346,6 @@ NO_SANITIZE("alignment") void excsighandler(int signum, siginfo_t *info, void *e
 
 #endif
 
-    StringBuffer threadlist;
-    PROGLOG( "ThreadList:\n%s",getThreadList(threadlist).str());
     queryLogMsgManager()->flushQueue(10*1000);
 
     // MCK - really should not return after recv'ing any of these signals

@@ -716,10 +716,13 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
         testThreadsX(2);
         testThreadsX(3);
         testThreadsX(4);
+        testThreadsX(5);
+        testThreadsX(6);
     }
     void testThreadsX(unsigned mode)
     {
         unsigned iters = 10000;
+        testThreadsXX(mode, 0, iters);
         testThreadsXX(mode, 10, iters);
         testThreadsXX(mode, 1000, iters);
         testThreadsXX(mode, 2000, iters);
@@ -731,11 +734,11 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
     }
     void testThreadsXX(unsigned mode, unsigned count, unsigned iters)
     {
-        unsigned start = msTick();
-        class Thread : public IThreaded
+        unsigned start = usTick();
+        class Threaded : public IThreaded
         {
         public:
-            Thread(unsigned _count) : count(_count) {}
+            Threaded(unsigned _count) : count(_count) {}
             virtual void threadmain() override
             {
                 ret = call_from_thread(count);
@@ -743,11 +746,24 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
             unsigned count;
             unsigned ret = 0;
         } t1(count), t2(count), t3(count);
+        class MyThread : public Thread
+        {
+        public:
+            MyThread(unsigned _count) : count(_count) {}
+            virtual int run() override
+            {
+                ret = call_from_thread(count);
+                return 0;
+            }
+            unsigned count;
+            unsigned ret = 0;
+        };
+
+        unsigned ret = 0;
         switch (mode)
         {
         case 0:
         {
-            unsigned ret = 0;
             CThreadedPersistent thread1("1", &t1), thread2("2", &t2), thread3("3", &t3);
             for (unsigned i = 0; i < iters; i++)
             {
@@ -760,12 +776,10 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 thread3.join(INFINITE);
             }
             ret += t1.ret + t2.ret + t3.ret;
-            DBGLOG("ThreadedPersistant %d , %d, %d", count, msTick() - start, ret);
             break;
         }
         case 1:
         {
-            unsigned ret = 0;
             for (unsigned i = 0; i < iters; i++)
             {
                 t1.threadmain();
@@ -774,12 +788,10 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 ret = call_from_thread(count);
             }
             ret += t1.ret + t2.ret + t3.ret;
-            DBGLOG("Sequential %d , %d, %d", count, msTick() - start, ret);
             break;
         }
         case 2:
         {
-            unsigned ret = 0;
             CThreaded tthread1("1", &t1), tthread2("2", &t2), tthread3("3", &t3);
             for (unsigned i = 0; i < iters; i++)
             {
@@ -792,12 +804,10 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 tthread3.join();
             }
             ret += t1.ret + t2.ret + t3.ret;
-            DBGLOG("CThreaded %d , %d, %d", count, msTick() - start, ret);
             break;
         }
         case 3:
         {
-            unsigned ret = 0;
             for (unsigned i = 0; i < iters; i++)
             {
                 class casyncfor: public CAsyncFor
@@ -814,13 +824,11 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 afor.For(4, 4);
                 ret = afor.ret;
             }
-            DBGLOG("AsyncFor %d , %d, %d", count, msTick() - start, ret);
             break;
         }
         case 4:
         {
             CPersistentTask task1("1", &t1), task2("2", &t2), task3("3", &t3);
-            unsigned ret = 0;
             for (unsigned i = 0; i < iters; i++)
             {
                 task1.start();
@@ -832,10 +840,59 @@ class ThreadedPersistStressTest : public CppUnit::TestFixture
                 task3.join(INFINITE);
             }
             ret += t1.ret + t2.ret + t3.ret;
-            DBGLOG("PersistantTask %d , %d, %d", count, msTick() - start, ret);
+            break;
+        }
+        case 5:
+        {
+            MyThread thread1(count), thread2(count), thread3(count);
+            for (unsigned i = 0; i < iters; i++)
+            {
+                thread1.start();
+                thread2.start();
+                thread3.start();
+                ret = call_from_thread(count);
+                thread1.join(INFINITE);
+                thread2.join(INFINITE);
+                thread3.join(INFINITE);
+            }
+            ret += thread1.ret + thread2.ret + thread3.ret;
+            break;
+        }
+        case 6:
+        {
+            IArrayOf<IThread> threads;
+            for (unsigned i = 0; i < iters; i++)
+            {
+                MyThread * thread1 = new MyThread(count);
+                MyThread * thread2 = new MyThread(count);
+                MyThread * thread3 = new MyThread(count);
+                threads.append(*thread1);
+                threads.append(*thread2);
+                threads.append(*thread3);
+
+                thread1->start();
+                thread2->start();
+                thread3->start();
+                ret = call_from_thread(count);
+                thread1->join(INFINITE);
+                thread2->join(INFINITE);
+                thread3->join(INFINITE);
+                ret += thread1->ret + thread2->ret + thread3->ret;
+
+#if 0
+                if (i >= 600)
+                {
+                    threads.remove(0);
+                    threads.remove(0);
+                    threads.remove(0);
+                }
+#endif
+            }
             break;
         }
         }
+        constexpr const char * modes[] = { "ThreadedPersistant", "Sequential", "CThreaded", "AsyncFor", "PersistantTask", "Thread", "ManyThread" };
+        DBGLOG("%s %d, %d [%u], %u", modes[mode], count, usTick() - start, (usTick() - start) / iters / 4, ret);
     }
 };
 

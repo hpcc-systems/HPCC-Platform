@@ -278,7 +278,7 @@ public:
     void         setown(StringBuffer & source);
     void         toLowerCase();
     void         toUpperCase();
-    
+    void         swapWith(StringAttr & other);
 private:
     char *       text;
 };
