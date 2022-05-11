@@ -4173,12 +4173,12 @@ formalQualifier
 
 
 paramDefinition
-    : setType knownOrUnknownId defvalue 
+    : setType UNKNOWN_ID defvalue
                         {   
                             $$.clear(); 
                             parser->addParameter($1, $2.getId(), $1.getType(), $3.getExpr());
                         }
-    | paramType knownOrUnknownId defvalue   
+    | paramType UNKNOWN_ID defvalue
                         {   
                             $$.clear();
                             parser->addParameter($1, $2.getId(), $1.getType(), $3.getExpr());
@@ -4197,23 +4197,23 @@ paramDefinition
                            OwnedHqlExpr func = $1.getExpr();
                            parser->addParameter($1, func->queryId(), LINK(defaultIntegralType), $2.getExpr());
                         }
-    | ANY DATASET knownOrUnknownId
+    | ANY DATASET UNKNOWN_ID
                         {
                             $$.clear();
                             parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType())), NULL);
                         }
-    | ANY knownOrUnknownId defvalue
+    | ANY UNKNOWN_ID defvalue
                         {
                             $$.clear();
                             parser->setTemplateAttribute();
                             parser->addParameter($1, $2.getId(), makeAnyType(), $3.getExpr());
                         }
-    | paramType knownOrUnknownId nestedParmdef defFuncValue
+    | paramType UNKNOWN_ID nestedParmdef defFuncValue
                         {
                             $$.clear();
                             parser->addFunctionParameter($1, $2.getId(), $1.getType(), $4.getExpr());
                         }
-    | setType knownOrUnknownId nestedParmdef defFuncValue
+    | setType UNKNOWN_ID nestedParmdef defFuncValue
                         {
                             $$.clear();
                             parser->addFunctionParameter($1, $2.getId(), $1.getType(), $4.getExpr());
