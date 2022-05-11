@@ -2701,7 +2701,7 @@ public:
     virtual void lookupSid(const char* act_name, MemoryBuffer& act_sid, ACT_TYPE act_type)
     {
         StringBuffer filter;
-        const char* basedn;
+        const char* basedn = "";
 
         if (strchr(act_name, '='))//passed in a fully qualified DN?
         {
