@@ -1271,6 +1271,9 @@ void CGraphBase::deserializeCreateContexts(MemoryBuffer &mb)
 
 void CGraphBase::reset()
 {
+    if (!started)
+        return;
+
     setCompleteEx(false);
     clearProgressUpdated();
     graphCancelHandler.reset();
@@ -1454,10 +1457,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
     Owned<IException> exception;
     try
     {
-        if (started)
-            reset();
-        else
-            started = true;
+        started = true;
         ++numExecuted;
         Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
@@ -2054,6 +2054,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
 
 void CGraphBase::executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract)
 {
+    started = true;
     if (sequential)
     {
         // JCSMORE - would need to re-think how this is done if these sibling child queries could be executed in parallel
@@ -2086,27 +2087,6 @@ void CGraphBase::doExecuteChild(size32_t parentExtractSz, const byte *parentExtr
     IGraphTempHandler *tempHandler = queryTempHandler(false);
     if (tempHandler)
         tempHandler->clearTemps();
-}
-
-void CGraphBase::executeChild(size32_t & retSize, void * &ret, size32_t parentExtractSz, const byte *parentExtract)
-{
-    reset();
-    doExecute(parentExtractSz, parentExtract, false);
-
-    UNIMPLEMENTED;
-
-/*
-    ForEachItemIn(idx1, elements)
-    {
-        EclGraphElement & cur = elements.item(idx1);
-        if (cur.isResult)
-        {
-            cur.extractResult(retSize, ret);
-            return;
-        }
-    }
-*/
-    throwUnexpected();
 }
 
 void CGraphBase::setResults(IThorGraphResults *results) // used by master only
