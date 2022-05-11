@@ -134,7 +134,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../vcpkg-overlays -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
 
       - name: "Build HPCC-Platform"
         if: ${{ needs.check-skip.outputs.platform }}
