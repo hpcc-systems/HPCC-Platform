@@ -1945,12 +1945,14 @@ void EclCC::generateOutput(EclCompileInstance & instance)
                 option->setProp("@value", valueStr.str());
                 instance.archive->addPropTree("Option", option.getClear());
             }
-            gatherResourceManifestFilenames(instance, resourceManifestFiles);
-            ForEachItemIn(i, resourceManifestFiles)
-                addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
 
             if (optArchive)
             {
+                //Only include resources in the archive if a full archive is being created, not if it is being saved in the workunit
+                gatherResourceManifestFilenames(instance, resourceManifestFiles);
+                ForEachItemIn(i, resourceManifestFiles)
+                    addManifestResourcesToArchive(instance.archive, resourceManifestFiles.item(i));
+
                 if (optCheckDirty)
                 {
                     Owned<IPipeProcess> pipe = createPipeProcess();
