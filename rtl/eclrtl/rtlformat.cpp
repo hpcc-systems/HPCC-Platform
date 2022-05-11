@@ -766,7 +766,9 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
         appendJSONName(out, fieldname);
     }
     out.append("{");
-    if (!nestChildren && !nestLimit)
+    if ((flags & XWFonlyindentroot) && !(flags & XWFnoindent))
+        nestLimit++;
+    else if (!nestChildren && !nestLimit)
         nestLimit = indent;
 }
 
@@ -789,7 +791,9 @@ void CommonJsonWriter::outputEndNested(const char *fieldname)
         }
     }
     out.append("}");
-    if (indent==nestLimit)
+    if ((flags & XWFonlyindentroot) && !(flags & XWFnoindent))
+        nestLimit--;
+    else if (indent==nestLimit)
         nestLimit = 0;
 }
 
