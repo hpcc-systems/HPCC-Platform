@@ -1,0 +1,34 @@
+# Configures HPCC logAccess to target Azure Log Analytics Workspace
+global:
+  logAccess:
+    name: "Azure LogAnalytics LogAccess"
+    type: "AzureLogAnalyticsCurl"
+    connection:
+      #All connection attributes are optional **IF** defined as environment variables on the HPCC container
+      #workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
+                               # Env var equivalent: AZURE_LOGANALYTICS_WORKSPACE_ID
+      #tenantID: "ABC"         #The Tenant ID, required for KQL API access
+                               # Env var equivalent: AZURE_TENANT_ID
+      #clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access - format: 00000000-0000-0000-0000-000000000000
+                               # Env var equivalent: AZURE_CLIENT_ID
+      #clientSecret: "XYZ123"  #The secret associated with the Azure Active Directory registered application
+                               # Env var equivalent: AZURE_CLIENT_SECRET
+    logMaps:
+    - type: "global"
+      storeName: "ContainerLog"
+      searchColumn: "LogEntry"
+      timeStampColumn: "hpcc_log_timestamp"
+    - type: "workunits"
+      storeName: "ContainerLog"
+      searchColumn: "hpcc_log_jobid"
+    - type: "components"
+      searchColumn: "ContainerID"
+    - type: "audience"
+      searchColumn: "hpcc_log_audience"
+    - type: "class"
+      searchColumn: "hpcc_log_class"
+    - type: "instance"
+      storeName: "ContainerInventory"
+      searchColumn: "Name"
+    - type: "host"
+      searchColumn: "Computer"

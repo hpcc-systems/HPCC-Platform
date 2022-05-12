@@ -71,6 +71,26 @@ static CriticalSection * protectedGeneratorCs;
 mach_timebase_info_data_t timebase_info  = { 1,1 };
 #endif
 
+bool getEnvVar(const char * varName, StringBuffer & varValue)
+{
+    if (isEmptyString(varName))
+        return false;
+
+    try
+    {
+        varValue.set(std::getenv(varName));
+        if (varValue.isEmpty())
+            return false;
+    }
+    catch(const std::exception& e)
+    {
+        ERRLOG("Encountered error fetching '%s' environment variable: '%s'.", varName, e.what());
+        return false;
+    }
+
+    return true;
+}
+
 HPCCBuildInfo hpccBuildInfo;
 
 #define stringify(x) # x
@@ -1580,7 +1600,7 @@ void StringArray::appendListUniq(const char *list, const char *delim, bool trimS
     DelimToStringArray(list, *this, delim, true, trimSpaces);
 }
 
-StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim)
+StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim) const
 {
     ForEachItemIn(i, *this)
     {

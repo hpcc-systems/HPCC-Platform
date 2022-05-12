@@ -36,6 +36,8 @@ extern mach_timebase_info_data_t timebase_info;   // Calibration for nanosecond 
 
 //#define NAMEDCOUNTS
 
+bool jlib_decl getEnvVar(const char * varName, StringBuffer & varValue);
+
 interface IPropertyTree;
 interface IProperties;
 
@@ -246,7 +248,7 @@ public:
     void appendList(const char *list, const char *delim, bool trimSpaces = true);
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim, bool trimSpaces = true);
-    StringBuffer &getString(StringBuffer &ret, const char *delim); // get CSV string of array contents
+    StringBuffer &getString(StringBuffer &ret, const char *delim) const; // get CSV string of array contents
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
     void sortCompare(int (*compare)(const char * const * l, const char * const * r));
