@@ -613,16 +613,16 @@ const char *sanitizeSourceFile(const char *file)
     return file;
 }
 
-void throwUnexpectedException(const char * file, unsigned line)
+void throwUnexpectedException(const char * function, const char * file, unsigned line)
 {
     printStackReport();
-    throw makeStringExceptionV(9999, "Internal Error at %s(%d)", sanitizeSourceFile(file), line);
+    throw makeStringExceptionV(9999, "Internal Error in %s() at %s(%d)", function, sanitizeSourceFile(file), line);
 }
 
-void throwUnexpectedException(const char * where, const char * file, unsigned line)
+void throwUnexpectedException(const char * what, const char * function, const char * file, unsigned line)
 {
     printStackReport();
-    throw makeStringExceptionV(9999, "Internal Error '%s' at %s(%d)", where, sanitizeSourceFile(file), line);
+    throw makeStringExceptionV(9999, "Internal Error '%s' in %s() at %s(%d)", what, function, sanitizeSourceFile(file), line);
 }
 
 void raiseAssertException(const char *assertion, const char *file, unsigned line)
