@@ -127,7 +127,7 @@ bool CThorInput::isFastThrough() const
 // 
 
 CSlaveActivity::CSlaveActivity(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
-    : CActivityBase(_container, statsMapping), CEdgeProgress(this)
+    : CActivityBase(_container, statsMapping), CEdgeProgress(this), inactiveStats(statsMapping)
 {
     data = NULL;
 }
@@ -566,6 +566,30 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
 void CSlaveActivity::serializeStats(MemoryBuffer &mb)
 {
     CriticalBlock b(crit); // JCSMORE not sure what this is protecting..
+
+    // Collates previously collected static(inactive) stats with live stats collected via a virtual callback (gatherActiveStats),
+    // and updates the activity's 'stats'.
+    // The callback fetches the current state of the activity's stats, called within a critical section ('statsCs'),
+    // which the activity should use to protect any objects it uses whilst stats are being collected.
+    if (someInactiveStats)
+    {
+        CRuntimeStatisticCollection activeStats(inactiveStats);
+        {
+            CriticalBlock block(statsCs);
+            gatherActiveStats(activeStats);
+        }
+        stats.set(activeStats);
+    }
+    else
+    {
+        const StatisticsMapping &statsMapping = stats.queryMapping();
+        CRuntimeStatisticCollection activeStats(statsMapping);
+        {
+            CriticalBlock block(statsCs);
+            gatherActiveStats(activeStats);
+        }
+        stats.set(activeStats);
+    }
 
     // JCS->GH - should these be serialized as cycles, and a different mapping used on master?
     stats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
