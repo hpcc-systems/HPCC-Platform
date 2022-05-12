@@ -1,5 +1,5 @@
 ###############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,10 +15,5 @@
 ################################################################################
 
 IF(NOT CLIENTTOOLS_ONLY)
-  IF((NOT WIN32) AND USE_ELASTICSTACK_CLIENT)
-    HPCC_ADD_SUBDIRECTORY (ElasticStack)
-  ENDIF()
-  #IF (USE_AZURE)
-    HPCC_ADD_SUBDIRECTORY (Azure)
-  #ENDIF()
+    HPCC_ADD_SUBDIRECTORY (BlobLogAccess)
 ENDIF()

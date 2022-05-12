@@ -3,6 +3,7 @@
     "name": "hpcc-platform",
     "version": "8.6.0",
     "dependencies": [
+        "azure-storage-blobs-cpp",
         "icu",
         "zlib",
         "openssl",
