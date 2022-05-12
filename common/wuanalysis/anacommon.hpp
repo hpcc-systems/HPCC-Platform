@@ -29,6 +29,8 @@ interface IWuScope
     virtual stat_type getStatRaw(StatisticKind kind, StatisticKind variant = StKindNone) const = 0;
     virtual unsigned getAttr(WuAttr kind) const = 0;
     virtual void getAttr(StringBuffer & result, WuAttr kind) const = 0;
+    virtual const char * getFullScopeName(StringBuffer & fullScopeName) const = 0;
+    virtual const char * queryName() const = 0;
 };
 
 interface IWuActivity;
@@ -40,16 +42,15 @@ interface IWuEdge : public IWuScope
 
 interface IWuActivity : public IWuScope
 {
-    virtual const char * queryName() const = 0;
-    virtual const char * getFullScopeName(StringBuffer & fullScopeName) const = 0;
     virtual IWuEdge * queryInput(unsigned idx) = 0;
     virtual IWuEdge * queryOutput(unsigned idx) = 0;
+
     inline IWuActivity * queryInputActivity(unsigned idx)
     {
         IWuEdge * edge = queryInput(idx);
         return edge ? edge->querySource() : nullptr;
     }
-    inline ThorActivityKind queryThorActivityKind()
+    inline ThorActivityKind queryThorActivityKind() const
     {
         return (ThorActivityKind) getAttr(WaKind);
     }
@@ -77,7 +78,16 @@ private:
     StringBuffer comment;
 };
 
-typedef enum { watOptFirst=0, watOptMinInterestingTime=0, watOptMinInterestingCost, watOptSkewThreshold, watOptMinRowsPerNode, watPreFilteredKJThreshold, watOptMax } WutOptionType ;
+enum WutOptionType
+{
+    watOptFirst=0,
+    watOptMinInterestingTime=0,
+    watOptMinInterestingCost,
+    watOptSkewThreshold,
+    watOptMinRowsPerNode,
+    watPreFilteredKJThreshold,
+    watOptMax
+};
 
 interface IAnalyserOptions
 {

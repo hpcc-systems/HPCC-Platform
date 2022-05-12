@@ -50,7 +50,10 @@ set (    SRCS
          ws_workunitsHelpers.hpp
          ws_workunitsAuditLogs.cpp
          ws_workunitsQuerySets.cpp
+         ws_wudetails.hpp
          ws_wudetails.cpp
+         ws_wuhotspot.hpp
+         ws_wuhotspot.cpp
          ws_wuresult.cpp
     )
 
@@ -95,6 +98,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
          ${HPCC_SOURCE_DIR}/dali/dfu
          ${HPCC_SOURCE_DIR}/dali/ft
+         ${HPCC_SOURCE_DIR}/common/wuanalysis
          ./../../../testing/unittests
     )
 
@@ -127,7 +131,9 @@ target_link_libraries ( ws_workunits
          fileview2
          thorhelper
          pkgfiles
+         wuanalysis
          ${CPPUNIT_LIBRARIES}
+
     )
 
 if (NOT CONTAINERIZED)

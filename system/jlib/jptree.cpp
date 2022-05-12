@@ -8518,6 +8518,30 @@ static void applyEnvironmentConfig(IPropertyTree & target, const char * cptPrefi
     }
 }
 
+void applyProperties(IPropertyTree * target, const IProperties * source)
+{
+    Owned<IPropertyIterator> iter = source->getIterator();
+    ForEach(*iter)
+    {
+        StringBuffer value;
+        const char * name = iter->getPropKey();
+        source->getProp(name, value);
+        target->setProp(name, value.str());
+    }
+}
+
+void applyProperty(IPropertyTree * target, const char * source)
+{
+    const char * equals = strchr(source, '=');
+    if (equals)
+    {
+        StringBuffer prop(equals - source, source);
+        target->setProp(prop, equals + 1);
+    }
+    else
+        target->setPropBool(source, true);
+}
+
 IPropertyTree * createPTreeFromYAML(const char * yaml)
 {
     if (*yaml == '{')
