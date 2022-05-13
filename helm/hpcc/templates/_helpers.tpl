@@ -1331,22 +1331,27 @@ Pass in dict with root, job, target and type
 */}}
 {{- define "hpcc.placementsByJobTargetType" -}}
 {{- if .root.Values.placements }}
-{{- $job := .job -}}
-{{- $target := (printf "target:%s" .target | default "") -}}
-{{- $type := printf "type:%s" .type -}}
-{{- $placementsDict := dict -}}
-{{- range $placement := .root.Values.placements -}}
-{{- if or (has $target $placement.pods) (has $type $placement.pods) (has "all" $placement.pods) -}}
-{{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
-{{- else -}}
-{{- range $jobPattern := $placement.pods -}}
-{{- if mustRegexMatch $jobPattern $job -}}
-{{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
+ {{- $job := .job -}}
+ {{- $target := (printf "target:%s" .target | default "") -}}
+ {{- $type := printf "type:%s" .type -}}
+ {{- $categories := list "all" $type $target -}}
+ {{- $placementsDict := dict -}}
+ {{- $placements := .root.Values.placements -}}
+ {{- range $category := $categories -}}
+  {{- range $placement := $placements -}}
+   {{- if or (has $category $placement.pods) -}}
+    {{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{- range $placement := .root.Values.placements -}}
+  {{- range $jobPattern := $placement.pods -}}
+   {{- if mustRegexMatch $jobPattern $job -}}
+    {{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 
@@ -1356,15 +1361,19 @@ Pass in dict with root, pod, target and type
 */}}
 {{- define "hpcc.placementsByPodTargetType" -}}
 {{- if .root.Values.placements }}
-{{- $pod := .pod -}}
-{{- $target := (printf "target:%s" .target | default "") -}}
-{{- $type := printf "type:%s" .type -}}
-{{- $placementsDict := dict  -}}
-{{- range $placement := .root.Values.placements -}}
-{{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) (has "all"  $placement.pods) -}}
-{{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
-{{- end -}}
-{{- end -}}
+ {{- $pod := .pod -}}
+ {{- $target := (printf "target:%s" .target | default "") -}}
+ {{- $type := printf "type:%s" .type -}}
+ {{- $categories := list "all" $type $target $pod -}}
+ {{- $placementsDict := dict  -}}
+ {{- $placements := .root.Values.placements -}}
+ {{- range $category := $categories -}}
+  {{- range $placement := $placements -}}
+   {{- if or (has $category $placement.pods) -}}
+    {{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
 {{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
