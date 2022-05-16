@@ -127,7 +127,7 @@ bool CldapenvironmentEx::changePermissions(const char * ou, const char * userFQD
     action.m_allows = allows;
     action.m_denies = denies;
     DBGLOG("Setting (%d,%d) permissions for rName %s, baseDN %s, user %s", (int)allows, (int)denies, rName.str(), baseDN.str(), userFQDN);
-    bool ok;
+    bool ok = false;
     try
     {
         ok = secmgr->changePermission(action);
