@@ -131,14 +131,14 @@ void jlib_decl setTerminateOnSEH(bool set=true);
 
 void jlib_decl setProcessAborted(bool _abortVal);
 
-__declspec(noreturn) void jlib_decl throwUnexpectedException(const char * file, unsigned line) __attribute__((noreturn));
-__declspec(noreturn) void jlib_decl throwUnexpectedException(const char * where, const char * file, unsigned line) __attribute__((noreturn));
+__declspec(noreturn) void jlib_decl throwUnexpectedException(const char * function, const char * file, unsigned line) __attribute__((noreturn));
+__declspec(noreturn) void jlib_decl throwUnexpectedException(const char * function, const char * where, const char * file, unsigned line) __attribute__((noreturn));
 
 const char jlib_decl *sanitizeSourceFile(const char *file);
 
-#define makeUnexpectedException()  makeStringExceptionV(9999, "Internal Error at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
-#define throwUnexpected()          throwUnexpectedException(sanitizeSourceFile(__FILE__), __LINE__)
-#define throwUnexpectedX(x)        throwUnexpectedException(x, sanitizeSourceFile(__FILE__), __LINE__)
+#define makeUnexpectedException()  makeStringExceptionV(9999, "Internal Error in %s() at %s(%d)", __func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define throwUnexpected()          throwUnexpectedException(__func__, sanitizeSourceFile(__FILE__), __LINE__)
+#define throwUnexpectedX(x)        throwUnexpectedException(x, __func__, sanitizeSourceFile(__FILE__), __LINE__)
 #define assertThrow(x)             assertex(x)
 
 #define UNIMPLEMENTED throw makeStringExceptionV(-1, "UNIMPLEMENTED feature at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
