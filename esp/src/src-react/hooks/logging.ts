@@ -1,7 +1,9 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
+import toast from "react-hot-toast";
 import { ESPExceptions, isExceptions } from "@hpcc-js/comms";
 import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction, Message } from "@hpcc-js/util";
+import { CustomToaster } from "../components/controls/CustomToaster";
 
 const logger = scopedLogger("../util/logging.ts");
 
@@ -60,6 +62,7 @@ export class ECLWatchLogger implements Writer {
         this._origWriter.write(dateTime, level, id, message);
         const row = { dateTime, level, id, message };
         this._log.push(row);
+        toast.custom(CustomToaster({ id, level, message, dateTime }));
         this._dispatch.post(new Message());
     }
 

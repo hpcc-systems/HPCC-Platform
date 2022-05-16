@@ -1,19 +1,22 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
 import { useBoolean } from "@fluentui/react-hooks";
-import { About } from "./About";
-import { MyAccount } from "./MyAccount";
-
-import * as WsAccount from "src/ws_account";
+import { Toaster } from "react-hot-toast";
 import * as cookie from "dojo/cookie";
 
+import * as WsAccount from "src/ws_account";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
+
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore } from "../hooks/store";
-import * as Utility from "src/Utility";
+
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { ComingSoon } from "./controls/ComingSoon";
+import { About } from "./About";
+import { MyAccount } from "./MyAccount";
+import { toasterScale } from "./controls/CustomToaster";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
@@ -186,6 +189,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} />
                     </Stack.Item>
                 </Stack>
+                <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
+                    top: toasterScale(57),
+                    right: 8 - (180 - toasterScale(180))
+                }} />
             </Stack.Item>
         </Stack>
         <Panel type={PanelType.smallFixedNear}
