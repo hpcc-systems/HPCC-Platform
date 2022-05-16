@@ -1083,13 +1083,46 @@ const void *CPTValue::queryValue() const
 void CPTValue::serialize(MemoryBuffer &tgt)
 {
     //Retain backward compatibility for the serialization format.
-    size32_t serialLen = (size32_t)length();
-    tgt.append(serialLen);
-    if (serialLen)
+    size32_t dataSz = (size32_t)length();
+    tgt.append(dataSz);
+    if (dataSz)
     {
         tgt.append(compressed);
-        tgt.append(serialLen, get());
+        tgt.append(dataSz, get());
     }
+}
+
+bool CPTValue::serializeAndCompress(MemoryBuffer &tgt)
+{
+    //Retain backward compatibility for the serialization format.
+    size32_t dataSz = (size32_t)length();
+    size32_t startPos = tgt.length();
+    tgt.append(dataSz); // will rewrite if converted to compressed
+    if (dataSz)
+    {
+        tgt.append(compressed); // will rewrite if succeeds in converting to compressed
+        if (!compressed)
+        {
+            size32_t dataStartPos = tgt.length();
+            size32_t newSize = dataSz * 4 / 5; // don't bother if can't compress to <= 80% of original size
+            Owned<ICompressor> compressor = createLZWCompressor();
+            void *data = tgt.reserveTruncate(newSize);
+            compressor->open(data, newSize);
+            if (compressor->write(get(), dataSz) == dataSz)
+            {
+                compressor->close();
+                size32_t compressedLen = compressor->buflen();
+                bool newCompressed = true;
+                tgt.writeEndianDirect(startPos, sizeof(compressedLen), &compressedLen);
+                tgt.writeDirect(startPos+sizeof(size32_t), sizeof(newCompressed), &newCompressed);
+                tgt.setLength(startPos + sizeof(size32_t) + sizeof(bool) + compressedLen);
+                return true;
+            }
+            tgt.setLength(dataStartPos);
+        }
+        tgt.append(dataSz, get());
+    }
+    return false;
 }
 
 void CPTValue::deserialize(MemoryBuffer &src)
@@ -1106,6 +1139,15 @@ void CPTValue::deserialize(MemoryBuffer &src)
         compressed = false;
         clear();
     }
+}
+
+void CPTValue::write(IFileIO *out, offset_t offset)
+{
+    size32_t dataSz = (size32_t)length();
+    // NB: same format as CPTValue::serialize
+    out->write(offset, sizeof(dataSz), &dataSz); offset += sizeof(dataSz);
+    out->write(offset, sizeof(compressed), &compressed); offset += sizeof(compressed);
+    out->write(offset, dataSz, get());
 }
 
 MemoryBuffer &CPTValue::getValue(MemoryBuffer &tgt, bool binary) const
@@ -1170,6 +1212,21 @@ size32_t CPTValue::queryValueSize() const
     }
     else
         return (size32_t)length();
+}
+
+void deserializeAndDecompressCPTValue(MemoryBuffer &dest, MemoryBuffer &src)
+{
+    DelayedMarker<size32_t> delayedUncompresedSzMarker(dest); // will be filled with uncompressed size
+    dest.append(false); // compressed flag
+    size32_t compressedSz;
+    src.read(compressedSz);
+    bool compressedFlag;
+    src.read(compressedFlag);
+    Owned<IExpander> expander = createLZWExpander();
+    size32_t uncompressedSize = expander->init(src.readDirect(compressedSz));
+    void *uncompressedBufPtr = dest.reserveTruncate(uncompressedSize);
+    expander->expand(uncompressedBufPtr);
+    delayedUncompresedSzMarker.write(uncompressedSize);
 }
 
 ///////////////////

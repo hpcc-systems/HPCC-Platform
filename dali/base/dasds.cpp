@@ -28,6 +28,7 @@
 #include "mplog.hpp"
 #include "jptree.ipp"
 #include "jqueue.tpp"
+#include "jlzw.hpp"
 #include "dautils.hpp"
 #include "dadfs.hpp"
 #include "jmetrics.hpp"
@@ -935,7 +936,7 @@ void serializeVisibleAttributes(IPropertyTree &tree, MemoryBuffer &mb)
         for (;;)
         {
             const char *attr = aIter->queryName();
-            if (0 != strcmp(EXT_ATTR, attr))
+            if (0 != strncmp(EXT_ATTR, attr, strlen(EXT_ATTR)))
             {
                 mb.append(attr);
                 mb.append(aIter->queryValue());
@@ -1428,7 +1429,7 @@ public:
     {
         tree.setProp(NULL, (char *)NULL);
     }
-    virtual void readValue(const char *name, MemoryBuffer &mb)
+    virtual void readValue(const char *name, MemoryBuffer &mb, const IPropertyTree &tree)
     {
         StringBuffer filename;
         getFilename(filename, name);
@@ -1526,6 +1527,20 @@ public:
 
 class CBinaryFileExternal : public CExternalFile, implements IExternalHandler
 {
+    void readValueFromFile(IFileIO *fileIO, bool decompress, MemoryBuffer &result)
+    {
+        size32_t sz = fileIO->size();
+        if (decompress)
+        {                
+            // NB: ext properties can't remain compressed due to queryProp(xpath) interface
+            // convert back to uncompressed
+            MemoryBuffer compressedCPTValue;
+            verifyex(sz == ::read(fileIO, 0, sz, compressedCPTValue));
+            deserializeAndDecompressCPTValue(result, compressedCPTValue);
+        }
+        else
+            verifyex(sz == ::read(fileIO, 0, sz, result));
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1534,7 +1549,7 @@ public:
     {
         tree.setProp(NULL, (char *)NULL);
     }
-    virtual void readValue(const char *name, MemoryBuffer &mb)
+    virtual void readValue(const char *name, MemoryBuffer &mb, const IPropertyTree &tree)
     {
         StringBuffer filename;
         getFilename(filename, name);
@@ -1554,7 +1569,11 @@ public:
         else
         {
             Owned<IFileIO> fileIO = iFile->open(IFOread);
-            verifyex(sz == ::read(fileIO, 0, sz, mb));
+
+            // NB: ext properties can't remain compressed due to queryProp(xpath) interface
+            // convert back to uncompressed
+            bool decompress = hasMask((SdsExtFlags)tree.getPropInt(EXT_ATTR_FLAGS), SdsExtFlags::compressedText);
+            readValueFromFile(fileIO, decompress, mb);
         }
     }
     virtual void read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue)
@@ -1596,7 +1615,11 @@ public:
             if (withValue)
             {
                 Owned<IFileIO> fileIO = iFile->open(IFOread);
-                verifyex(sz == ::read(fileIO, 0, sz, mb));
+
+                // NB: ext properties can't remain compressed due to queryProp(xpath) interface
+                // convert back to uncompressed
+                bool decompress = hasMask((SdsExtFlags)owner.getPropInt(EXT_ATTR_FLAGS), SdsExtFlags::compressedText);
+                readValueFromFile(fileIO, decompress, mb);
             }
             else
                 mb.append((size32_t)0);
@@ -1610,15 +1633,28 @@ public:
         Owned<IFileIO> fileIO = iFile->open(IFOcreate);
 
         MemoryBuffer out;
-        ((PTree &)tree).queryValue()->serialize(out);
-        const char *data = out.toByteArray();
-        unsigned length = out.length();
-        fileIO->write(0, length, data);
+        IPTArrayValue *value = ((PTree &)tree).queryValue();
+        // NB: !value->isArray() guaranteed
+        
+        bool tryConvertToCompressed = !value->isCompressed();
+        bool compressedText = false;
+        if (tryConvertToCompressed)
+        {
+            compressedText = value->serializeAndCompress(out);
+            fileIO->write(0, out.length(), out.toByteArray());
+        }
+        else
+            value->write(fileIO, 0);
         if (remoteBackupLocation.length())
         {
+            size32_t len = out.length();
             StringBuffer fname(name);
-            backupHandler.addExt(fname.append(queryExt()).str(), length, out.detach());
-        }       
+            backupHandler.addExt(fname.append(queryExt()).str(), len, out.detach());
+        }
+        if (compressedText)
+            tree.setPropInt(EXT_ATTR_FLAGS, (int)SdsExtFlags::compressedText);
+        else
+            tree.removeProp(EXT_ATTR_FLAGS);
     }
     virtual void remove(const char *name) { CExternalFile::remove(name); }
     virtual bool isValid(const char *name) { return CExternalFile::isValid(name); }
@@ -1637,7 +1673,7 @@ public:
         PTree &tree = *QUERYINTERFACE(&_tree, PTree);
         ::Release(tree.detach());
     }
-    virtual void readValue(const char *name, MemoryBuffer &mb)
+    virtual void readValue(const char *name, MemoryBuffer &mb, const IPropertyTree &tree)
     {
         StringBuffer filename;
         getFilename(filename, name);
@@ -1974,7 +2010,7 @@ public:
     CServerRemoteTree *queryRoot();
     void saveDelta(const char *path, IPropertyTree &changeTree);
     CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack);
-    void getExternalValue(__int64 index, MemoryBuffer &mb);
+    void getExternalValue(__int64 index, MemoryBuffer &mb, const IPropertyTree &tree);
     IPropertyTree *getXPathsSortLimitMatchTree(const char *baseXPath, const char *matchXPath, const char *sortby, bool caseinsensitive, bool ascending, unsigned from, unsigned limit);
     void addNodeSubscriber(ISubscription *sub, SubscriptionId id);
     void removeNodeSubscriber(SubscriptionId id);
@@ -2645,7 +2681,7 @@ public:
         if (!index)
             return CRemoteTreeBase::getProp(xpath, ret);
         MemoryBuffer mbv, mb;
-        SDSManager->getExternalValue(index, mbv);
+        SDSManager->getExternalValue(index, mbv, *this);
         CPTValue v(mbv);
         v.getValue(mb, true);
         unsigned len = mb.length();
@@ -3049,7 +3085,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
         if (index)
         {
             MemoryBuffer mbv;
-            SDSManager->getExternalValue(index, mbv);
+            SDSManager->getExternalValue(index, mbv, *this);
             CPTValue v(mbv);
             v.getValue(mb, binary);
         }
@@ -3072,10 +3108,13 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
         if (index)
         {
             bool r = false;
+            bool r2 = false;
             if (!testExternalCandidate())
             {
                 SDSManager->deleteExternal(index); // i.e. no longer e.g. now less than threshold.
                 r = removeProp(EXT_ATTR);
+                if (r)
+                    r2 = removeProp(EXT_ATTR_FLAGS);
             }
             else
                 SDSManager->writeExternal(*this, false, index);
@@ -3085,6 +3124,8 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                 if (!t)
                     t = changeTree.addPropTree(ATTRDELETE_TAG, createPTree());
                 t->addProp(EXT_ATTR, "");
+                if (r2)
+                    t->addProp(EXT_ATTR_FLAGS, "");
             }
             else
                 changeTree.setProp(NULL, (const char *)NULL);
@@ -7100,13 +7141,13 @@ IPropertyTree *CCovenSDSManager::getXPathsSortLimitMatchTree(const char *baseXPa
     return NULL;
 }
 
-void CCovenSDSManager::getExternalValue(__int64 index, MemoryBuffer &mb)
+void CCovenSDSManager::getExternalValue(__int64 index, MemoryBuffer &mb, const IPropertyTree &tree)
 {
     IExternalHandler *handler = queryExternalHandler(EF_BinaryValue);
     assertex(handler);
     StringBuffer name(EXTERNAL_NAME_PREFIX);
     name.append(index);
-    handler->readValue(name.str(), mb);
+    handler->readValue(name.str(), mb, tree);
 }
 
 void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuffer &mb)
@@ -7117,7 +7158,7 @@ void CCovenSDSManager::getExternalValueFromServerId(__int64 serverId, MemoryBuff
         CHECKEDCRITICALBLOCK(extCrit, fakeCritTimeout);
         __int64 index = idTree->getPropInt64(EXT_ATTR);
         if (index)
-            getExternalValue(index, mb);
+            getExternalValue(index, mb, *idTree);
         else
             OWARNLOG("External file reference missing (node name='%s', id=%" I64F "d)", idTree->queryName(), serverId);
     }
@@ -8952,7 +8993,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
                     if (index && QUERYINTERFACE(&currentBranch, CServerRemoteTree))
                     {
                         MemoryBuffer mbv;
-                        SDSManager->getExternalValue(index, mbv);
+                        SDSManager->getExternalValue(index, mbv, currentBranch);
                         CPTValue v(mbv);
                         v.getValue(mb, binary);
                     }

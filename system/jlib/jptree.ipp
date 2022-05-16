@@ -156,8 +156,10 @@ interface IPTArrayValue
     virtual size32_t queryValueRawSize() const = 0;
     virtual unsigned find(const IPropertyTree *search) const = 0;
     virtual IPropertyTree **getRawArray() const = 0;
+    virtual void write(IFileIO *out, offset_t offset) = 0;
 
     virtual void serialize(MemoryBuffer &tgt) = 0;
+    virtual bool serializeAndCompress(MemoryBuffer &tgt) = 0; // returns true if converted to compressed
     virtual void deserialize(MemoryBuffer &src) = 0;
 };
 
@@ -186,8 +188,10 @@ public:
     {
         return (IPropertyTree **)getArray();
     }
+    virtual void write(IFileIO *out, offset_t offset) override { UNIMPLEMENTED; }
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
+    virtual bool serializeAndCompress(MemoryBuffer &tgt) override { UNIMPLEMENTED; }
     virtual void deserialize(MemoryBuffer &src) override { UNIMPLEMENTED; }
 };
 
@@ -218,9 +222,11 @@ public:
     virtual size32_t queryValueRawSize() const override { return (size32_t)length(); }
     virtual unsigned find(const IPropertyTree *search) const override { throwUnexpected(); }
     virtual IPropertyTree **getRawArray() const override { throwUnexpected(); }
+    virtual void write(IFileIO *out, offset_t offset) override;
 
 // serializable
     virtual void serialize(MemoryBuffer &tgt) override;
+    virtual bool serializeAndCompress(MemoryBuffer &tgt) override;
     virtual void deserialize(MemoryBuffer &src) override;
 
 private:
@@ -230,6 +236,8 @@ private:
 #define IptFlagTst(fs, f) (0!=(fs&(f)))
 #define IptFlagSet(fs, f) (fs |= (f))
 #define IptFlagClr(fs, f) (fs &= (~f))
+
+jlib_decl void deserializeAndDecompressCPTValue(MemoryBuffer &dest, MemoryBuffer &src);
 
 // NOTE - hairy code alert!
 // In order to keep code common between atom and local versions of ptree, we store the atom-specific information BEFORE the this pointer of AttrStr
@@ -627,7 +635,16 @@ public:
     IPTArrayValue *queryValue() { return value; }
     CQualifierMap *queryMap() { return value ? value->queryMap() : nullptr; }
     IPTArrayValue *detachValue() { IPTArrayValue *v = value; value = NULL; return v; }
-    void setValue(IPTArrayValue *_value, bool binary) { if (value) delete value; value = _value; if (binary) IptFlagSet(flags, ipt_binary); }
+    void setValue(IPTArrayValue *_value, bool binary)
+    {
+        if (value)
+            delete value;
+        value = _value;
+        if (binary)
+            IptFlagSet(flags, ipt_binary);
+        else
+            IptFlagClr(flags, ipt_binary);
+    }
     bool checkPattern(const char *&xxpath) const;
     IPropertyTree *detach()
     {

@@ -30,6 +30,13 @@
 
 #define EXTERNAL_NAME_PREFIX "dalisds_"
 #define EXT_ATTR "@sds:ext"
+#define EXT_ATTR_FLAGS "@sds:ext.flags" // NB: must have common prefix (sds:ext)
+enum class SdsExtFlags
+{
+    none           = 0,
+    compressedText = 1
+};
+BITMASK_ENUM(SdsExtFlags);
 #define EF_LegacyBinaryValue "bin"
 #define EF_BinaryValue       "bv2"
 #define EF_XML         "xml"

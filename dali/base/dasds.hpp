@@ -141,7 +141,7 @@ interface IExternalHandler : extends IInterface
     virtual void resetAsExternal(IPropertyTree &tree) = 0;
     virtual void write(const char *name, IPropertyTree &tree) = 0;
     virtual void read(const char *name, IPropertyTree &owner, MemoryBuffer &mb, bool withValue=true) = 0;
-    virtual void readValue(const char *name, MemoryBuffer &mb) = 0;
+    virtual void readValue(const char *name, MemoryBuffer &mb, const IPropertyTree &tree) = 0;
     virtual void remove(const char *name) = 0;
     virtual bool isValid(const char *name) = 0;
     virtual StringBuffer &getName(StringBuffer &fName, const char *base) = 0;
