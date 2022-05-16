@@ -11,7 +11,7 @@ import { useFluentGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { useUserTheme } from "../hooks/theme";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { pushParams } from "../util/history";
+import { pushUrl } from "../util/history";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -22,6 +22,7 @@ import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
 
 const FilterFields: Fields = {
+    "ScopeName": { type: "string", label: nlsHPCC.Scope, readonly: true },
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
     "Description": { type: "string", label: nlsHPCC.Description, placeholder: nlsHPCC.SomeDescription },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
@@ -31,10 +32,24 @@ const FilterFields: Fields = {
     "FileSizeTo": { type: "string", label: nlsHPCC.ToSizes, placeholder: "16777216" },
     "FileType": { type: "file-type", label: nlsHPCC.FileType },
     "FirstN": { type: "string", label: nlsHPCC.FirstN, placeholder: "-1" },
-    // "Sortby": { type: "file-sortby", label: nlsHPCC.FirstNSortBy, disabled: (params: Fields) => !params.FirstN.value },
     "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
+
+function formatQuery(_filter) {
+    const filter = { ..._filter };
+    if (filter.Index) {
+        filter.ContentType = "key";
+        delete filter.Index;
+    }
+    if (filter.StartDate) {
+        filter.StartDate = new Date(filter.StartDate).toISOString();
+    }
+    if (filter.EndDate) {
+        filter.EndDate = new Date(filter.StartDate).toISOString();
+    }
+    return filter;
+}
 
 const dfuService = new DFUService({ baseUrl: "" });
 
@@ -72,6 +87,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+    const [filterFields, setFilterFields] = React.useState<Fields>({});
 
     const [data, setData] = React.useState<any[]>([]);
     const [scopePath, setScopePath] = React.useState<string[]>([]);
@@ -92,7 +108,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             setScopePath([]);
             dfuService.DFUFileView({ Scope: "" }).then(async ({ DFULogicalFiles }) => {
                 const rootFiles = await dfuService.DFUFileView({ Scope: "." });
-                const files = rootFiles.DFULogicalFiles.DFULogicalFile ?? [];
+                const files = rootFiles?.DFULogicalFiles?.DFULogicalFile ?? [];
                 setData(mergeFileData(DFULogicalFiles, files));
             });
         } else {
@@ -149,10 +165,10 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                         url = "#/scopes/" + path;
                         return <div style={{ display: "flex", alignItems: "center" }}>
                             <Icon iconName={"FabricFolder"} style={{ fontSize: "1.5em", marginRight: "8px" }} />
-                            <Link href={url}>{name}</Link>
+                            <Link data-selection-disabled={true} href={url}>{name}</Link>
                         </div>;
                     }
-                    return <Link href={url}>{name}</Link>;
+                    return <Link data-selection-disabled={true} href={url}>{name}</Link>;
                 }, [scopePath])
             },
             Owner: { label: nlsHPCC.Owner, width: 75 },
@@ -240,7 +256,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!data, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: !data, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => setShowFilter(true)
         },
         {
@@ -258,10 +274,34 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     ], [data, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
-    const filterFields: Fields = {};
-    for (const field in FilterFields) {
-        filterFields[field] = { ...FilterFields[field], value: filter[field] };
-    }
+    React.useEffect(() => {
+        const _filterFields: Fields = {};
+        for (const field in FilterFields) {
+            _filterFields[field] = { ...FilterFields[field], value: filter[field] };
+        }
+        _filterFields["ScopeName"].value = scope;
+        setFilterFields(_filterFields);
+    }, [filter, scope]);
+
+    const applyFilter = React.useCallback((params) => {
+        const query = formatQuery(params);
+
+        if (query["ScopeName"] !== ".") {
+            query["LogicalName"] = query["ScopeName"] + (query["LogicalName"] ? "::" + query["LogicalName"] : "");
+        }
+        delete query["ScopeName"];
+
+        const keys = Object.keys(query);
+        const qs = keys.map(key => {
+            const val = query[key];
+            if (!!val) {
+                return `${key}=${val}`;
+            }
+            return "";
+        }).filter(pair => pair.length > 0).join("&");
+
+        pushUrl("/files/?" + qs);
+    }, []);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -291,7 +331,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                         </div>
                     </div>
                 }</SizeMe>
-                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={applyFilter} />
                 <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable} />
                 <CopyFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
                 <RenameFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable} />
