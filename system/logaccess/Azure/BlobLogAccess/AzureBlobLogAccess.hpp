@@ -17,7 +17,6 @@
 #include "jlog.ipp"
 #include "jptree.hpp"
 #include "jstring.hpp"
-//#include "jfile.ipp"
 
 
 #ifndef AZUREBLOB_LOGACCESS_EXPORTS
@@ -28,21 +27,14 @@
 
 #define COMPONENT_NAME "Azure Blob Log Access"
 
-/* undef verify definitions to avoid collision in cpr submodule */
-//#ifdef verify
-    //#pragma message("UNDEFINING 'verify' - Will be redefined by cpr" )
-//    #undef verify
-//#endif
+#include <azure/storage/blobs.hpp>
 
-//#include <cpr/response.h>
-//#include <elasticlient/client.h>
-//#include <elasticlient/scroll.h>
-
-//using namespace elasticlient;
+using namespace Azure::Storage::Blobs;
 
 class AZUREBLOB_LOGACCESS_API AzureBlobLogAccess : public CInterfaceOf<IRemoteLogAccess>
 {
 private:
+    BlobContainerClient m_containerClient;
     static constexpr const char * type = "azureblob";
 
     Owned<IPropertyTree> m_pluginCfg;
@@ -71,12 +63,8 @@ private:
 
     StringBuffer m_esConnectionStr;
 
-    void getMinReturnColumns(std::string & columns);
-    void getDefaultReturnColumns(std::string & columns);
-    void getAllColumns(std::string & columns);
-//    void populateESQueryQueryString(std::string & queryString, std::string & queryIndex, const ILogAccessFilter * filter);
 public:
-    AzureBlobLogAccess(const std::vector<std::string> &hostUrlList, IPropertyTree & logAccessPluginConfig);
+    AzureBlobLogAccess(const char * blobConnString, IPropertyTree & logAccessPluginConfig);
     virtual ~AzureBlobLogAccess() override = default;
 
     //void populateQueryStringAndQueryIndex(std::string & queryString, std::string & queryIndex, const LogAccessConditions & options);

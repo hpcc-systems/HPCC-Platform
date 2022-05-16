@@ -3505,40 +3505,40 @@ IRemoteLogAccess &queryRemoteLogAccessor()
     return *logAccessor.query([]
         {
             Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
-    #ifdef LOGACCESSDEBUG
+#ifdef LOGACCESSDEBUG
             if (!logAccessPluginConfig)
             {
                 const char * simulatedGlobalYaml = R"!!(global:
-                logAccess:
-                    name: "localES"
-                    type: "elasticstack"
-                    connection:
-                    protocol: "http"
-                    host: "elasticsearch-master.default.svc.cluster.local"
-                    port: 9200
-                    logMaps:
-                    - type: "global"
-                    storeName: "hpcc-logs*"
-                    searchColumn: "message"
-                    timeStampColumn: "created_ts"
-                    - type: "workunits"
-                    storeName: "hpcc-logs*"
-                    searchColumn: "hpcc.log.jobid"
-                    - type: "components"
-                    searchColumn: "kubernetes.container.name"
-                    - type: "audience"
-                    searchColumn: "hpcc.log.audience"
-                    - type: "class"
-                    searchColumn: "hpcc.log.class"
-                    - type: "instance"
-                    searchColumn: "kubernetes.pod.name"
-                    - type: "host"
-                    searchColumn: "kubernetes.node.hostname"
+  logAccess:
+    name: "AzureLogAnalytics"
+    type: "AzureBlob"
+    connection:
+      protocol: "http"
+      host: "elasticsearch-master.default.svc.cluster.local"
+      port: 9200
+    logMaps:
+    - type: "global"
+      storeName: "hpcc-logs*"
+      searchColumn: "message"
+      timeStampColumn: "created_ts"
+    - type: "workunits"
+      storeName: "hpcc-logs*"
+      searchColumn: "hpcc.log.jobid"
+    - type: "components"
+      searchColumn: "kubernetes.container.name"
+    - type: "audience"
+      searchColumn: "hpcc.log.audience"
+    - type: "class"
+      searchColumn: "hpcc.log.class"
+    - type: "instance"
+      searchColumn: "kubernetes.pod.name"
+    - type: "host"
+      searchColumn: "kubernetes.node.hostname"
                 )!!";
                 Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
                 logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
             }
-    #endif
+#endif
 
             if (!logAccessPluginConfig)
                 throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
