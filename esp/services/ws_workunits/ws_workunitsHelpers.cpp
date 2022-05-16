@@ -4108,7 +4108,10 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
                 (opt == CWUFileDownloadOption_GZIP) ? "tar" : "zip");
 
         //Send the zipped file and clean the workingFolder.
-        response->setContent(createIOStreamWithFileName(zipFileNameWithPath, IFOread));
+        IFileIOStream* stream = createIOStreamFromFile(zipFileNameWithPath, IFOread);
+        if (stream == nullptr)
+            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for zip file %s", zipFileNameWithPath.str());
+        response->setContent(stream);
         if (opt == CWUFileDownloadOption_GZIP)
             response->setContentType("application/x-gzip");
         else
