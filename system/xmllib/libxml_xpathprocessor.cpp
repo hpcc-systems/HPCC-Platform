@@ -1633,6 +1633,7 @@ private:
     xmlXPathContextPtr xpathCtx = nullptr;
     IInterface *functionRegister = nullptr;
     bool traceToStdout = false;
+    bool testMode = false;
 
 public:
     CEsdlScriptContext(void *ctx, IInterface *_functionRegister) : espCtx(ctx), functionRegister(_functionRegister)
@@ -2010,6 +2011,14 @@ private:
     virtual IInterface *queryFunctionRegister() override
     {
         return functionRegister;
+    }
+    void setTestMode(bool val) override //enable features that help with unit testing but should never be used in production
+    {
+        testMode = val;
+    }
+    bool getTestMode() override
+    {
+        return testMode;
     }
 };
 

@@ -174,6 +174,8 @@ interface IEsdlScriptContext : extends IInterface
     virtual void setTraceToStdout(bool val) = 0; //keep it simple for now.  default is to use jlog.  This flag may go away when we give more control over tracing
     virtual bool getTraceToStdout() = 0;
     virtual IInterface *queryFunctionRegister() = 0;
+    virtual void setTestMode(bool val) = 0; //enable features that help with unit testing but should never be used in production
+    virtual bool getTestMode() = 0;
 };
 
 extern "C" XMLLIB_API IEsdlScriptContext *createEsdlScriptContext(void * espContext, IInterface *functionRegister);
