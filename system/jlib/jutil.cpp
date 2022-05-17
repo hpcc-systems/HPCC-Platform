@@ -992,6 +992,29 @@ jlib_decl int rand_r(unsigned int *seed)
 #endif
 #endif
 
+//------------------------------------------------------------------------
+//static Mersenne Twister 32 bit Pseudo Random Number Generator (PRNG) wrapper
+static class CMTRandomNumberGenerator32 : implements IMTRandomNumberGenerator32
+{
+    std::mt19937 mtPRNG;//instance of Mersenne Twister Random Number Generator
+public:
+    CMTRandomNumberGenerator32()
+    {
+        std::random_device seedGen;//seed with uniformly-distributed integer random number generator that produces non-deterministic random numbers
+        mtPRNG.seed(seedGen());
+    }
+
+    inline virtual size32_t rand32()    override    { return (size32_t)mtPRNG(); }
+    inline virtual size32_t rand32Min() override    { return mtPRNG.min(); }
+    inline virtual size32_t rand32Max() override    { return mtPRNG.max(); }
+} mtRandomNumberGenerator;    //static singleton instance
+
+inline IMTRandomNumberGenerator32 *queryMTRandomGen32()
+{
+    return &mtRandomNumberGenerator;
+}
+//------------------------------------------------------------------------
+
 class CShuffledIterator: implements IShuffledIterator, public CInterface
 {
     CRandom rand;
@@ -3353,30 +3376,29 @@ const char * generatePassword(StringBuffer &pwd, int pwdLen)
     const char numeric[] = "0123456789";
     const char symbol[] = "~@#%^*_-+{[}]:,.?";
 
-    std::random_device seedGen;//uniformly-distributed integer random number generator that produces non-deterministic random numbers
-    std::mt19937 mtEngine(seedGen());//generates 32-bit pseudo-random numbers using Mersenne twister algorithm
+    IMTRandomNumberGenerator32 * randGen = queryMTRandomGen32();
 
     //Ensures each character group used at least once
-    pwd.append(alphaUC[mtEngine() % (sizeof(alphaUC) - 1)]);
-    pwd.append(alphaLC[mtEngine() % (sizeof(alphaLC) - 1)]);
-    pwd.append(numeric[mtEngine() % (sizeof(numeric) - 1)]);
-    pwd.append(symbol[mtEngine() % (sizeof(symbol) - 1)]);
+    pwd.append(alphaUC[randGen->rand32() % (sizeof(alphaUC) - 1)]);
+    pwd.append(alphaLC[randGen->rand32() % (sizeof(alphaLC) - 1)]);
+    pwd.append(numeric[randGen->rand32() % (sizeof(numeric) - 1)]);
+    pwd.append(symbol[randGen->rand32() % (sizeof(symbol) - 1)]);
 
     for (int i = 4; i < pwdLen; i++)
     {
-        switch(mtEngine() % NUM_GROUPS)//select a random character group
+        switch(randGen->rand32() % NUM_GROUPS)//select a random character group
         {
         case 0:
-            pwd.append(alphaUC[mtEngine() % (sizeof(alphaUC) - 1)]);
+            pwd.append(alphaUC[randGen->rand32() % (sizeof(alphaUC) - 1)]);
             break;
         case 1:
-            pwd.append(alphaLC[mtEngine() % (sizeof(alphaLC) - 1)]);
+            pwd.append(alphaLC[randGen->rand32() % (sizeof(alphaLC) - 1)]);
             break;
         case 2:
-            pwd.append(numeric[mtEngine() % (sizeof(numeric) - 1)]);
+            pwd.append(numeric[randGen->rand32() % (sizeof(numeric) - 1)]);
             break;
         case 3:
-            pwd.append(symbol[mtEngine() % (sizeof(symbol) - 1)]);
+            pwd.append(symbol[randGen->rand32() % (sizeof(symbol) - 1)]);
             break;
         }
     }

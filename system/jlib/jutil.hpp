@@ -166,6 +166,23 @@ inline int fastRand()
     return rand();
 }
 
+//------------------------------------------------------------------------
+//Thread safe, normally distributed, fast Pseudo Random Number Generator (PRNG)
+//Implements Mersenne Twister Pseudo Random Number Generator with a long period of 19937 – 1, which
+//produces a sequence of 32-bit integers that only repeats itself after ((2 ^ 19937) – 1) numbers have been generated
+interface IMTRandomNumberGenerator32
+{
+    virtual size32_t rand32() = 0;//return next 32 bit pseudo random number
+    virtual size32_t rand32Min() = 0;//minimum possible random value (0)
+    virtual size32_t rand32Max() = 0;//maximum possible random value, typically 4,294,967,295 on 32 bit implementation
+};
+
+//Query static instance of IMTRandomNumberGenerator32 object, always available and seeded
+extern jlib_decl IMTRandomNumberGenerator32 *queryMTRandomGen32();
+
+//Handy macro to get a single pseudo random number
+#define GET_MTRAND32() queryMTRandomGen32()->rand32()
+//------------------------------------------------------------------------
 
 interface IShuffledIterator: extends IInterface
 {
