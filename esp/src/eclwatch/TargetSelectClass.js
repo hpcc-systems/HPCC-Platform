@@ -8,6 +8,8 @@ define([
     "dojo/promise/all",
     "src/store/Memory",
 
+    "@hpcc-js/util",
+
     "src/WsTopology",
     "src/WsWorkunits",
     "src/FileSpray",
@@ -17,7 +19,7 @@ define([
     "src/Utility"
 
 ], function (lang, nlsHPCCMod, arrayUtil, xhr, Deferred, ItemFileReadStore, all, MemoryMod,
-    WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
+    hpccUtil, WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     var nlsHPCC = nlsHPCCMod.default;
     return {
@@ -411,7 +413,11 @@ define([
             this.getDropZoneFolder = function () {
                 var baseFolder = this._dropZoneTarget.machine.Directory;
                 var selectedFolder = this.get("value");
-                return baseFolder + selectedFolder;
+                var folderPath = hpccUtil.join(baseFolder, selectedFolder);
+                if (!folderPath.endsWith(pathSepChar)) {
+                    folderPath += pathSepChar;
+                }
+                return folderPath;
             };
             if (this._dropZoneTarget) {
                 this._loadDropZoneFolders(pathSepChar, this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {

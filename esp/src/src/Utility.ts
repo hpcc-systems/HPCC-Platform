@@ -1,4 +1,5 @@
 ﻿import { format as d3Format, Palette } from "@hpcc-js/common";
+import { join } from "@hpcc-js/util";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
@@ -845,6 +846,14 @@ export function pathTail(path: string) {
     //  Assuming we need to support windows paths as well...
     const pathParts = path.split("\\").join("/").split("/");
     return pathParts.pop();
+}
+
+export function joinPath(pathSegment, pathSep: string = "/") {
+    let path = join(pathSegment);
+    if (!path.endsWith(pathSep)) {
+        path += pathSep;
+    }
+    return path;
 }
 
 export function getImageURL(name) {
