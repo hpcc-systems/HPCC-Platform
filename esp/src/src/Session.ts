@@ -48,7 +48,7 @@ getBuildInfo().then(info => {
 const format = d3Format(".2f");
 export function formatCost(value?: number | string): string {
     if (value !== 0 && !value) {
-        logger.warning(`formatCost called for a nullish value: ${value}`);
+        logger.debug(`formatCost called for a nullish value: ${value}`);
         return "";
     }
     const _number = typeof value === "string" ? Number(value) : value;
