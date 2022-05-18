@@ -370,7 +370,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
             else
                 throw makeStringException(0, "launchFtSlaveCmd: no directio dafilesrv services found");
         }
-        connectEP.set(serviceTree->queryProp("@name"));
+        connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
     }
 #endif
 
