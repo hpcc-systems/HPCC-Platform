@@ -99,6 +99,7 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 #define ANdecryptKey        "@decryptKey"
 #define ANumask             "@umask"
 #define ANuseFtSlave        "@useFtSlave"
+#define ANdirectIOServiceName "@directIOServiceName"
 
 #define PNpartition         "partition"
 #define PNprogress          "progress"
@@ -353,8 +354,23 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
     }
     else
     {
-        auto externalService = getDafileServiceFromConfig("directio");
-        connectEP.set(externalService.first.c_str(), externalService.second);
+        Owned<IPropertyTree> serviceTree;
+        if (!isEmptyString(sprayer.directIOServiceName))
+        {
+            VStringBuffer serviceQualifier("services[@name='%s']", sprayer.directIOServiceName.get());
+            serviceTree.setown(getGlobalConfigSP()->getPropTree(serviceQualifier));
+            if (!serviceTree)
+                throw makeStringExceptionV(0, "launchFtSlaveCmd: failed to find dafilesrv service named: '%s'", sprayer.directIOServiceName.get());
+        }
+        else // find 1st of type 'directio' // JCSMORE perhaps change this to new type 'sprayservice'
+        {
+            Owned<IPropertyTreeIterator> directIOServices = getGlobalConfigSP()->getElements("services[@type='directio']");
+            if (directIOServices->first())
+                serviceTree.set(&directIOServices->query());
+            else
+                throw makeStringException(0, "launchFtSlaveCmd: no directio dafilesrv services found");
+        }
+        connectEP.set(serviceTree->queryProp("@name"));
     }
 #endif
 
@@ -380,9 +396,11 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
         setDafsEndpointPort(connectEP);
         if (connectEP.isNull())
             return false;
+        socket.setown(connectDafs(connectEP, 5000));
+        if (!socket)
+            throwError1(DFTERR_FailedStartSlave, url.str());
         try
         {
-            socket.setown(connectDafs(connectEP, 5000));
             prepareCmd(msg, daFileSrvCommandVersion);
             sendDaFsFtSlaveCmd(socket, msg);
         }
@@ -678,6 +696,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     encryptKey.set(options->queryProp(ANencryptKey));
     decryptKey.set(options->queryProp(ANdecryptKey));
     useFtSlave = options->getPropBool(ANuseFtSlave);
+    directIOServiceName.set(options->queryProp(ANdirectIOServiceName));
 
     fileUmask = -1;
     const char *umaskStr = options->queryProp(ANumask);

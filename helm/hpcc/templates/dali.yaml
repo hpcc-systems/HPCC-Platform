@@ -101,7 +101,7 @@ spec:
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}
-      serviceAccountName: "hpcc-dali"
+      serviceAccountName: "hpcc-discoverservices"
       initContainers: 
       {{- include "hpcc.changePlaneMountPerms" (dict "root" $ "includeCategories" $tmpDaliScope.aggregatePlaneCategories "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes) | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}

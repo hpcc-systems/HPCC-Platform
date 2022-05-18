@@ -1106,6 +1106,7 @@ public:
         IConstDFUoptions *options = wu->queryOptions();
         Owned<IPropertyTree> opttree = createPTreeFromIPT(options->queryTree());
         opttree->setPropBool("@useFtSlave", config->getPropBool("@useFtSlave"));
+        opttree->setProp("@directIOServiceName", config->queryProp("@directIOServiceName"));
         StringAttr encryptkey;
         StringAttr decryptkey;
         if (options->getEncDec(encryptkey,decryptkey)) {

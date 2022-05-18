@@ -194,6 +194,10 @@
           "maxJobs": {
             "type": "integer"
           },
+          "directIOServiceName": {
+            "description": "Optional name of the direct IO service to use (will default to 1st directio dafilesrv)",
+            "type": "string"
+          },
           "useFtSlave": {
             "description": "Use legacy ftslave processes (run within dfuserver pod)",
             "type": "boolean",

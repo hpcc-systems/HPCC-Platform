@@ -359,6 +359,7 @@ protected:
     dfu_operation           operation = dfu_unknown;
     CAbortRequestCallback   fileSprayerAbortChecker;
     unsigned slaveUpdateFrequency = minSlaveUpdateFrequency;
+    StringAttr              directIOServiceName;
 };
 
 
