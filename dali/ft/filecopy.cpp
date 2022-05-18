@@ -354,7 +354,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
     else
     {
         auto externalService = getDafileServiceFromConfig("directio");
-        connectEP.set(externalSevice.first.c_str(), externalSevice.second);
+        connectEP.set(externalService.first.c_str(), externalService.second);
     }
 #endif
 
