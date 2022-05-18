@@ -19,7 +19,7 @@
 #define DAFSCOMMON_HPP
 
 #define DAFILESRV_VERSION_MAJOR 2
-#define DAFILESRV_VERSION_MINOR 5
+#define DAFILESRV_VERSION_MINOR 6
 #define MAJORMINOR(MAJOR, MINOR) MAJOR ## MINOR
 #define DAFILESRV_VERSION_JOIN(X, Y) MAJORMINOR(X, Y)
 #define DAFILESRV_VERSION DAFILESRV_VERSION_JOIN(DAFILESRV_VERSION_MAJOR, DAFILESRV_VERSION_MINOR)
@@ -91,6 +91,8 @@ enum
 // 2.5
     RFCStreamGeneral,                              // 45
     RFCStreamReadJSON = '{',
+// 2.6
+    RFCFtSlaveCmd,
     RFCmaxnormal,
     RFCmax,
     RFCunknown = 255 // 0 would have been more sensible, but can't break backward compatibility

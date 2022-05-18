@@ -61,6 +61,8 @@ public:
     void go(Semaphore & _sem);
     void logIfRunning(StringBuffer &list);
     void setErrorOwn(IException * e);
+    void prepareCmd(MemoryBuffer &mb, unsigned version);
+    bool launchFtSlaveCmd(const SocketEndpoint &_ep);
 
     virtual int run();
     virtual bool abortRequested() { return isAborting(); }
@@ -171,6 +173,9 @@ protected:
 //----------------------------------------------------------------------------
 
 typedef Linked<IDistributedFile> DistributedFileAttr;
+
+constexpr unsigned maxSlaveUpdateFrequency = 1000;      // time between updates in ms - small number of nodes.
+constexpr unsigned minSlaveUpdateFrequency = 5000;      // time between updates in ms - large number of nodes.
 
 class FileSprayer : public IFileSprayer, public CInterface
 {
@@ -352,6 +357,7 @@ protected:
     Owned<IPropertyTree>    srcHistory;
     dfu_operation           operation = dfu_unknown;
     CAbortRequestCallback   fileSprayerAbortChecker;
+    unsigned slaveUpdateFrequency = minSlaveUpdateFrequency;
 };
 
 

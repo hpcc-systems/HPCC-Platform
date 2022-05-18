@@ -1408,6 +1408,30 @@ int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr)
     return -1;
 }
 
+int sendDaFsFtSlaveCmd(ISocket *socket, MemoryBuffer &cmdMsg)
+{
+    assertex(socket);
+    
+    MemoryBuffer sendbuf;
+    initSendBuffer(sendbuf);
+    sendbuf.append((RemoteFileCommandType)RFCFtSlaveCmd).append(cmdMsg);
+    MemoryBuffer replybuf;
+    try
+    {
+        sendDaFsBuffer(socket, sendbuf);
+        receiveDaFsBuffer(socket, replybuf, 1);
+        return 0;
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        ::Release(e);
+    }
+    return -1;
+}
+
+
+
 
 struct CDafsOsCacheEntry
 {

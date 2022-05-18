@@ -147,9 +147,6 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
     DWORD runcode;
     if (!invoke_program(cmd.str(), runcode, false))
         throw makeStringExceptionV(-1,"Error spawning %s", exe);
-
-    //In containerized world all processes are executed locally, so make sure we try and connect to a local instance
-    connectEP.set("localhost");
 #else
     if (SSHusername.isEmpty())
     {

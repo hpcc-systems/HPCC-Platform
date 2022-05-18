@@ -68,6 +68,7 @@ extern DAFSCLIENT_API unsigned getDaliServixVersion(const IpAddress &ip,StringBu
 extern DAFSCLIENT_API unsigned getDaliServixVersion(const SocketEndpoint &ep,StringBuffer &ver);
 extern DAFSCLIENT_API DAFS_OS getDaliServixOs(const SocketEndpoint &ep);
 extern DAFSCLIENT_API bool testDaliServixPresent(const IpAddress &ip);
+extern DAFSCLIENT_API int sendDaFsFtSlaveCmd(ISocket *socket, MemoryBuffer &cmdBuffer);
 
 
 

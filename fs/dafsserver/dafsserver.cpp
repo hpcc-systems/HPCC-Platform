@@ -70,6 +70,9 @@
 #include "rmtclient_impl.hpp"
 #include "dafsserver.hpp"
 
+#include "ftslavelib.hpp"
+#include "filecopy.hpp"
+
 
 using namespace cryptohelper;
 
@@ -222,6 +225,7 @@ const char *RFCStrings[] =
     RFCText(RFCStreamReadTestSocket),
     RFCText(RFCStreamGeneral),
     RFCText(RFCStreamReadJSON),
+    RFCText(RFCFtSlaveCmd),
     RFCText(RFCmaxnormal),
 };
 
@@ -4908,6 +4912,34 @@ public:
         reply.append((unsigned)RFEnoerror);
     }
 
+    void cmdFtSlaveCmd(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client, CThrottler *throttler)
+    {
+        byte action;
+        msg.read(action);
+
+        MemoryBuffer results;
+        results.setEndian(__BIG_ENDIAN);
+        Owned<IException> exception;
+        bool ok=false;
+        try
+        {
+            CThrottleReleaseBlock block(*throttler, RFCFtSlaveCmd);
+            // NB: will run continuously and write progress back to client.socket
+            ok = processFtCommand(action, client.socket, msg, results);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e);
+            exception.setown(e);
+        }
+        msg.clear().append(true).append(ok);
+        serializeException(exception, msg);
+        msg.append(results);
+        catchWriteBuffer(client.socket, msg);
+
+        LOG(MCdebugProgress, unknownJob, "Results sent from slave: %s", client.peerName.str());
+    }
+
     void formatException(MemoryBuffer &reply, IException *e, RemoteFileCommandType cmd, bool testSocketFlag, unsigned _dfsErrorCode, CRemoteClientHandler *client)
     {
         unsigned dfsErrorCode = _dfsErrorCode;
@@ -5061,6 +5093,7 @@ public:
                 MAPCOMMANDCLIENT(RFCgetcrc, cmdGetCRC, *client);
                 MAPCOMMANDCLIENT(RFCmove, cmdMove, *client);
                 MAPCOMMANDCLIENT(RFCcopy, cmdCopy, *client);
+                MAPCOMMANDCLIENTTHROTTLE(RFCFtSlaveCmd, cmdFtSlaveCmd, *client, &slowCmdThrottler); // could use dedicated throttle for ftslave commands(?)
                 MAPCOMMAND(RFCsetsize, cmdSetSize);
                 MAPCOMMAND(RFCsettrace, cmdSetTrace);
                 MAPCOMMAND(RFCgetinfo, cmdGetInfo);
