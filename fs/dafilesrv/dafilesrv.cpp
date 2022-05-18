@@ -391,8 +391,8 @@ int main(int argc, const char* argv[])
     unsigned short  sslport;
     unsigned dedicatedRowServicePort = DEFAULT_ROWSERVICE_PORT;
 #ifdef _CONTAINERIZED
-    bool directIO = strsame(config->queryProp("@application"), "directio");
-    connectMethod = directIO ? SSLNone : SSLOnly;
+    bool stream = strsame(config->queryProp("@application"), "stream");
+    connectMethod = stream ? SSLOnly : SSLNone;
     dedicatedRowServicePort = 0; // row service always runs on same secure ssl port in containerized mode
     port = 0;
     sslport = config->getPropInt("service/@port", SECURE_DAFILESRV_PORT);

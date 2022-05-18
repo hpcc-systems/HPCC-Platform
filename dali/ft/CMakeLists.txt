@@ -21,6 +21,7 @@ project (all)
 if ( PLATFORM )
     include (ftslave.cmake)
 endif()
+include (ftslavelib.cmake)
 include (dalift.cmake)
 
 

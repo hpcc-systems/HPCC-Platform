@@ -1408,6 +1408,18 @@ int getDafsInfo(ISocket * socket, unsigned level, StringBuffer &retstr)
     return -1;
 }
 
+void sendDaFsFtSlaveCmd(ISocket *socket, MemoryBuffer &cmdMsg)
+{
+    assertex(socket);
+    
+    MemoryBuffer sendbuf;
+    initSendBuffer(sendbuf);
+    sendbuf.append((RemoteFileCommandType)RFCFtSlaveCmd).append(cmdMsg);
+    MemoryBuffer replybuf;
+    sendDaFsBuffer(socket, sendbuf);
+    receiveDaFsBuffer(socket, replybuf, 1);
+}
+
 
 struct CDafsOsCacheEntry
 {

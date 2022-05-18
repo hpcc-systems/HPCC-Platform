@@ -35,6 +35,7 @@
 #include "daftmc.hpp"
 #include "daftformat.ipp"
 #include "junicode.hpp"
+#include "filecopy.ipp"
 
 //----------------------------------------------------------------------------
 
@@ -1838,8 +1839,8 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 
 //----------------------------------------------------------------------------
 
-CRemotePartitioner::CRemotePartitioner(const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid)
-    : wuid(_wuid)
+CRemotePartitioner::CRemotePartitioner(FileSprayer &_sprayer, const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid)
+    : wuid(_wuid), sprayer(_sprayer)
 {
     LOG(MCdebugProgressDetail, unknownJob, "CRemotePartitioner::CRemotePartitioner(_srcFormat.type :'%s', _tgtFormat.type:'%s', _slave:'%s', _wuid:'%s')", _srcFormat.getFileFormatTypeString(), _tgtFormat.getFileFormatTypeString(), _slave, _wuid);
     ep.set(_ep);
@@ -1860,68 +1861,88 @@ void CRemotePartitioner::calcPartitions(Semaphore * _sem)
 #endif
 }
 
+void CRemotePartitioner::prepareCmd(MemoryBuffer &msg)
+{
+    msg.append((byte)FTactionpartition);
+    srcFormat.serialize(msg);
+    tgtFormat.serialize(msg);
+    msg.append(whichInput);
+    fullPath.serialize(msg);
+    msg.append(totalSize);
+    msg.append(thisOffset);
+    msg.append(thisSize);
+    msg.append(thisHeaderSize);
+    msg.append(numParts);
+    msg.append(compressedInput);
+    unsigned compatflags = 0;                   // compatibility flags (not yet used)
+    msg.append(compatflags);
+    msg.append(decryptKey);
+    //Add extra data at the end to provide backward compatibility
+    srcFormat.serializeExtra(msg, 1);
+    tgtFormat.serializeExtra(msg, 1);
+}
 
 void CRemotePartitioner::callRemote()
 {
-    bool ok = false;
     try
     {
+        LogMsgJobInfo job(unknownJob);
         StringBuffer url, tmp;
         ep.getUrlStr(url);
 
-        Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, slave, ep, DAFT_VERSION, queryFtSlaveLogDir(), NULL, wuid);
-        if (socket)
+        MemoryBuffer msg;
+        msg.setEndian(__BIG_ENDIAN);
+        Owned<ISocket> socket;
+        SocketEndpoint connectEP(ep);
+
+        //Send message and wait for response...
+        //MORE: they should probably all be sent on different threads....
+
+        if (sprayer.useFtSlave)
         {
-            LogMsgJobInfo job(unknownJob);
-            MemoryBuffer msg;
-            msg.setEndian(__BIG_ENDIAN);
+            StringBuffer tmp;
+            socket.setown(spawnRemoteChild(SPAWNdfu, slave, connectEP, DAFT_VERSION, queryFtSlaveLogDir(), nullptr, wuid));
+            if (!socket)
+                throwError1(DFTERR_FailedStartSlave, url.str());
 
-            LOG(MCdebugProgressDetail, job, "Remote partition part %s[%d]", url.str(), whichInput);
-
-            //Send message and wait for response...
-            //MORE: they should probably all be sent on different threads....
-            msg.append((byte)FTactionpartition);
-            srcFormat.serialize(msg);
-            tgtFormat.serialize(msg);
-            msg.append(whichInput);
-            fullPath.serialize(msg);
-            msg.append(totalSize);
-            msg.append(thisOffset);
-            msg.append(thisSize);
-            msg.append(thisHeaderSize);
-            msg.append(numParts);
-            msg.append(compressedInput);
-            unsigned compatflags = 0;                   // compatibility flags (not yet used)
-            msg.append(compatflags);
-            msg.append(decryptKey);
-            //Add extra data at the end to provide backward compatibility
-            srcFormat.serializeExtra(msg, 1);
-            tgtFormat.serializeExtra(msg, 1);
-
+            prepareCmd(msg);
             if (!catchWriteBuffer(socket, msg))
                 throwError1(RFSERR_TimeoutWaitConnect, url.str());
-
-            msg.clear();
-            if (!catchReadBuffer(socket, msg, FTTIME_PARTITION))
-                throwError1(RFSERR_TimeoutWaitSlave, url.str());
-
-            bool done;
-            msg.setEndian(__BIG_ENDIAN);
-            msg.read(done);
-            msg.read(ok);
-            error.setown(deserializeException(msg));
-            if (ok)
-                deserialize(results, msg);
-
-            msg.clear().append(true);
-            catchWriteBuffer(socket, msg);
-
-            LOG(MCdebugProgressDetail, job, "Remote partition calculated %s[%d] ok(%d)", url.str(), whichInput, ok);
         }
         else
         {
-            throwError1(DFTERR_FailedStartSlave, url.str());
+            setDafsEndpointPort(connectEP);
+            if (connectEP.isNull())
+                throwError1(DFTERR_FailedStartSlave, url.str());
+            socket.setown(connectDafs(connectEP, 5000));
+            if (!socket)
+                throwError1(DFTERR_FailedStartSlave, url.str());
+            prepareCmd(msg);
+            sendDaFsFtSlaveCmd(socket, msg);
         }
+
+        LOG(MCdebugProgressDetail, job, "Remote partition part %s[%d]", url.str(), whichInput);
+
+        msg.clear();
+        if (!catchReadBuffer(socket, msg, FTTIME_PARTITION))
+            throwError1(RFSERR_TimeoutWaitSlave, url.str());
+
+        bool done, ok;
+        msg.setEndian(__BIG_ENDIAN);
+        msg.read(done);
+        msg.read(ok);
+        error.setown(deserializeException(msg));
+        if (ok)
+            deserialize(results, msg);
+
+        // if communicating with ftslave, the process has a final ack wait
+        if (sprayer.useFtSlave)
+        {
+            msg.clear().append(true);
+            catchWriteBuffer(socket, msg);
+        }
+
+        LOG(MCdebugProgressDetail, job, "Remote partition calculated %s[%d] ok(%d)", url.str(), whichInput, ok);
     }
     catch (IException * e)
     {
@@ -2341,7 +2362,7 @@ IOutputProcessor * createOutputProcessor(const FileFormat & format)
     }
 }
 
-IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid)
+IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid)
 {
     bool sameFormats = sameEncoding(srcFormat, tgtFormat);
     LOG(MCdebugProgressDetail, unknownJob, "createFormatProcessor(srcFormat.type:'%s', tgtFormat.type:'%s', calcOutput:%d, sameFormats:%d)", srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString(), calcOutput, sameFormats);
@@ -2402,5 +2423,5 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
     if (!slave)
         slave = queryFtSlaveExecutable(ep, name);
 
-    return new CRemotePartitioner(ep, srcFormat, tgtFormat, slave, wuid);
+    return new CRemotePartitioner(sprayer, ep, srcFormat, tgtFormat, slave, wuid);
 }

@@ -194,6 +194,15 @@
           "maxJobs": {
             "type": "integer"
           },
+          "sprayServiceName": {
+            "description": "Optional name of the dafilesrv spray service to use (will default to 1st 'spray' dafilesrv)",
+            "type": "string"
+          },
+          "useFtSlave": {
+            "description": "Use legacy ftslave processes (ran within dfuserver pod)",
+            "type": "boolean",
+            "default": false
+          },
           "env": {
             "$ref": "#/definitions/env"
           },
@@ -2445,12 +2454,17 @@
     },
     "dafilesrv": {
       "type": "object",
-      "required": [ "name", "service" ],
+      "required": [ "name", "application", "service" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
           "type": "string",
           "description": "The name of the dafilesrv process"
+        },
+        "application": {
+          "type": "string",
+          "enum": ["stream", "directio", "spray"],
+          "description": "Application type"
         },
         "service": {
           "$ref": "#/definitions/service"

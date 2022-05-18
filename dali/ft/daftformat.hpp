@@ -99,6 +99,7 @@ typedef IArrayOf<IFormatPartitioner> FormatPartitionerArray;
 extern DALIFT_API IFormatProcessor * createFormatProcessor(const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput);
 extern DALIFT_API IOutputProcessor * createOutputProcessor(const FileFormat & format);
 
-extern DALIFT_API IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid);
+class FileSprayer;
+extern DALIFT_API IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid);
 
 #endif

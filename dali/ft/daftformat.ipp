@@ -700,10 +700,11 @@ protected:
 
 //---------------------------------------------------------------------------
 
+class FileSprayer;
 class DALIFT_API CRemotePartitioner : public Thread, public IFormatPartitioner
 {
 public:
-    CRemotePartitioner(const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid);
+    CRemotePartitioner(FileSprayer &sprayer, const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid);
     IMPLEMENT_IINTERFACE_USING(Thread);
 
     virtual int  run();
@@ -715,14 +716,16 @@ public:
     virtual void setTarget(IOutputProcessor * _target) { UNIMPLEMENTED; }
     virtual void setRecordStructurePresent(bool _recordStructurePresent);
     virtual void getRecordStructure(StringBuffer & _recordStructure);
-    virtual void setAbort(IAbortRequestCallback * _abort) { UNIMPLEMENTED; }
+    virtual void setAbort(IAbortRequestCallback * _abort) { /*UNIMPLEMENTED;*/ }
 
 protected:
     void callRemote();
+    void prepareCmd(MemoryBuffer &msg);
 
     virtual bool isAborting() { UNIMPLEMENTED; };
 
 protected:
+    FileSprayer                 &sprayer;
     SocketEndpoint              ep;
     FileFormat                  srcFormat;
     FileFormat                  tgtFormat;
