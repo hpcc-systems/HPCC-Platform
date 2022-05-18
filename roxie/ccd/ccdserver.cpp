@@ -1774,7 +1774,6 @@ protected:
     {
         return factory->getEnableFieldTranslation();
     }
-
 };
 
 //=====================================================================================================
@@ -9153,12 +9152,12 @@ public:
             }
             catch (...)
             {
-                IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerThroughSpillActivity::doStart");
+                IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerThroughSpillActivity::start");
                 startError.set(E);
                 throw E;
             }
             if (timeActivities)
-                stats.addStatistic(StTimeStart, timer.elapsedCycles());
+                stats.addStatistic(StCycleStartCycles, timer.elapsedCycles());
         }
     }
 
@@ -16442,7 +16441,7 @@ public:
             }
             catch (...)
             {
-                IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerLibraryCallActivity::doStart");
+                IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerLibraryCallActivity::start");
                 error.set(E);
                 throw E;
             }
@@ -16474,7 +16473,7 @@ public:
             }
 
             if (timeActivities)
-                stats.addStatistic(StTimeStart, timer.elapsedCycles());
+                stats.addStatistic(StCycleStartCycles, timer.elapsedCycles());
         }
     }
 
