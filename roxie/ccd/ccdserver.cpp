@@ -16289,8 +16289,15 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             parent->start(oid, parentExtractSize, parentExtract, paused);
-            CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
             numStarts++;
+            if (parent->timeActivities)
+            {
+                CCycleTimer timer;
+                CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
+                parent->stats.addStatisticAtomic(StCycleStartCycles, timer.elapsedCycles());
+            }
+            else
+                CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
         }
 
         virtual IStrandJunction *getOutputStreams(IRoxieAgentContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
