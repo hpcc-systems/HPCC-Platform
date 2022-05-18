@@ -39,7 +39,6 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DFTSLAVELIB_EXPORTS )
 
 HPCC_ADD_LIBRARY ( ftslavelib SHARED ${SRCS} )
-set_target_properties (ftslavelib PROPERTIES COMPILE_FLAGS -D_CONSOLE)
 install ( TARGETS ftslavelib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ftslavelib
          dalibase 
@@ -49,7 +48,3 @@ target_link_libraries ( ftslavelib
          hrpc 
          remote 
     )
-
-if (NOT CONTAINERIZED)
-    target_link_libraries ( ftslavelib environment )
-endif()
