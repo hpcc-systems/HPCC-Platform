@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Route, RouterContext } from "universal-router";
-import { initialize, parseSearch, pushUrl } from "./util/history";
+import { initialize, parseSearch, pushUrl, replaceUrl } from "./util/history";
 
 export interface ToDoProps {
 }
@@ -70,8 +70,8 @@ export const routes: RoutesEx = [
         path: "/search",
         children: [
             { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SearchResultsWidget" />) },
-            { path: "/:Wuid(W\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d(?:-\\d+)?)", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUDetailsWidget" params={params} />) },
-            { path: "/:Wuid(D\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d(?:-\\d+)?)", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DFUWUDetailsWidget" params={params} />) },
+            { path: "/:Wuid(W\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d(?:-\\d+)?)", action: (ctx, params) => replaceUrl(`/workunits/${params.Wuid}`) },
+            { path: "/:Wuid(D\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d(?:-\\d+)?)", action: (ctx, params) => replaceUrl(`/dfuworkunits/${params.Wuid}`) },
             { path: "/:searchText", action: (ctx, { searchText }) => import("./components/Search").then(_ => <_.Search searchText={searchText as string} />) }
         ]
     },
