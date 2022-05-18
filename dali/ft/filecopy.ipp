@@ -340,6 +340,7 @@ protected:
     bool                    compressedInput;
     bool                    compressOutput;
     bool                    copyCompressed;
+    bool                    useFtSlave;
     unsigned __int64        totalLengthRead;
     unsigned __int64        totalNumReads;
     unsigned __int64        totalNumWrites;

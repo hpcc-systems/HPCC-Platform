@@ -194,6 +194,11 @@
           "maxJobs": {
             "type": "integer"
           },
+          "useFtSlave": {
+            "description": "Use legacy ftslave processes (run within dfuserver pod)",
+            "type": "boolean",
+            "default": false
+          },
           "env": {
             "$ref": "#/definitions/env"
           },

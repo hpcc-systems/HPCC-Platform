@@ -191,7 +191,7 @@ int main(int argc, const char *argv[])
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();
 
-            engine.setown(createDFUengine());
+            engine.setown(createDFUengine(globals));
             engine->setDFUServerName(name);
             addAbortHandler(exitDFUserver);
 

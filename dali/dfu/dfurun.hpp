@@ -34,7 +34,7 @@ interface IDFUengine: extends IInterface
     virtual void setDFUServerName(const char* name) = 0;
 };
 
-IDFUengine *createDFUengine();
+IDFUengine *createDFUengine(const IPropertyTree *config);
 void stopDFUserver(const char *qname);
 
 #endif

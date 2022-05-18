@@ -530,6 +530,7 @@ class CDFUengine: public CInterface, implements IDFUengine
         }
     }
 
+    Linked<const IPropertyTree> config;
     Owned<IScheduleEventPusher> eventpusher;
     IArrayOf<cDFUlistener> listeners;
 
@@ -540,7 +541,7 @@ class CDFUengine: public CInterface, implements IDFUengine
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDFUengine()
+    CDFUengine(const IPropertyTree *_config) : config(_config)
     {
         defaultTransferBufferSize = 0;
         runningflag = 1;
@@ -1104,6 +1105,7 @@ public:
         IConstDFUfileSpec *destination = wu->queryDestination();
         IConstDFUoptions *options = wu->queryOptions();
         Owned<IPropertyTree> opttree = createPTreeFromIPT(options->queryTree());
+        opttree->setPropBool("@useFtSlave", config->getPropBool("@useFtSlave"));
         StringAttr encryptkey;
         StringAttr decryptkey;
         if (options->getEncDec(encryptkey,decryptkey)) {
@@ -1808,9 +1810,9 @@ public:
 };
 
 
-IDFUengine *createDFUengine()
+IDFUengine *createDFUengine(const IPropertyTree *config)
 {
-    return new CDFUengine;
+    return new CDFUengine(config);
 }
 
 void stopDFUserver(const char *qname)

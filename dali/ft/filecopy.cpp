@@ -98,6 +98,7 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 #define ANencryptKey        "@encryptKey"
 #define ANdecryptKey        "@decryptKey"
 #define ANumask             "@umask"
+#define ANuseFtSlave        "@useFtSlave"
 
 #define PNpartition         "partition"
 #define PNprogress          "progress"
@@ -341,22 +342,19 @@ void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
         progress.item(i3).serializeExtra(msg, 2);
 }
 
-// will need to be determined per spray job, depending on target cluster version/support
-static constexpr bool useDafilesrvForFtSlave = true;
-
 bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
 {
     SocketEndpoint connectEP(ep);
 #ifdef _CONTAINERIZED
-    if (useDafilesrvForFtSlave)
-    {
-        auto externalService = getDafileServiceFromConfig("directio");
-        connectEP.set(externalSevice.first.c_str(), externalSevice.second);
-    }
-    else
+    if (sprayer.useFtSlave)
     {
         //In containerized world all processes are executed locally, so make sure we try and connect to a local instance
         connectEP.set("localhost");
+    }
+    else
+    {
+        auto externalService = getDafileServiceFromConfig("directio");
+        connectEP.set(externalSevice.first.c_str(), externalSevice.second);
     }
 #endif
 
@@ -365,7 +363,19 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
 
     Owned<ISocket> socket;
     MemoryBuffer msg;
-    if (useDafilesrvForFtSlave)
+    msg.setEndian(__BIG_ENDIAN);
+    if (sprayer.useFtSlave)
+    {
+        StringBuffer tmp;
+        socket.setown(spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), connectEP, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid));
+        if (!socket)
+            throwError1(DFTERR_FailedStartSlave, url.str());
+
+        prepareCmd(msg, 0);
+        if (!catchWriteBuffer(socket, msg))
+            throwError1(RFSERR_TimeoutWaitConnect, url.str());
+    }
+    else
     {
         setDafsEndpointPort(connectEP);
         if (connectEP.isNull())
@@ -381,19 +391,6 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
             EXCLOG(e,"getDafileSvrInfo");
             e->Release();
         }
-        return false;
-    }
-    else
-    {
-        StringBuffer tmp;
-        socket.setown(spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), connectEP, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid));
-        if (!socket)
-            throwError1(DFTERR_FailedStartSlave, url.str());
-
-        msg.setEndian(__BIG_ENDIAN);
-        prepareCmd(msg, 0);
-        if (!catchWriteBuffer(socket, msg))
-            throwError1(RFSERR_TimeoutWaitConnect, url.str());
     }
     bool done;
     for (;;)
@@ -425,7 +422,8 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
 
     LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
 
-    if (!useDafilesrvForFtSlave)
+    // if communicating with ftslave, the process has a final ack wait
+    if (sprayer.useFtSlave)
     {
         // ftslave sends back a final ack.
         msg.clear().append(true);
@@ -433,6 +431,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
         if (sprayer.options->getPropInt("@fail", 0)) // JCSMORE - legacy? not set anywhere afaics
             throwError(DFTERR_CopyFailed);
     }
+    return ok;
 }
 
 bool FileTransferThread::performTransfer()
@@ -483,7 +482,7 @@ bool FileTransferThread::performTransfer()
 
     LOG(MCdebugProgressDetail, job, "Start generate part %s [%p]", url.str(), this);
 
-    launchFtSlaveCmd(ep);
+    ok = launchFtSlaveCmd(ep);
 
     LOG(MCdebugProgressDetail, job, "Stopped generate part %s [%p]", url.str(), this);
 
@@ -678,6 +677,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     progressDone = false;
     encryptKey.set(options->queryProp(ANencryptKey));
     decryptKey.set(options->queryProp(ANdecryptKey));
+    useFtSlave = options->getPropBool(ANuseFtSlave);
 
     fileUmask = -1;
     const char *umaskStr = options->queryProp(ANumask);
