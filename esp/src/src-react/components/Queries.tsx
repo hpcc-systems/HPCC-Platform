@@ -5,6 +5,7 @@ import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
+import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
@@ -25,13 +26,16 @@ const FilterFields: Fields = {
     "Activated": { type: "queries-active-state", label: nlsHPCC.Activated }
 };
 
-function formatQuery(filter: any) {
+function formatQuery(filter: any, mine, currentUser) {
     const retVal = {
         ...filter,
         PriorityLow: filter.Priority,
         PriorityHigh: filter.Priority
     };
     delete retVal.Priority;
+    if (mine === true) {
+        retVal.Owner = currentUser?.username;
+    }
     return retVal;
 }
 
@@ -59,6 +63,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
@@ -69,8 +74,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     }, [store]);
 
     const query = React.useMemo(() => {
-        return formatQuery(filter);
-    }, [filter]);
+        return formatQuery(filter, mine, currentUser);
+    }, [filter, mine, currentUser]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
         persistID: "queries",
@@ -229,12 +234,12 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => {
                 setMine(!mine);
             }
         },
-    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};

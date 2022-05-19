@@ -9,6 +9,7 @@ import { formatCost } from "src/Session";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
+import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
@@ -32,7 +33,7 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter) {
+function formatQuery(_filter, mine, currentUser) {
     const filter = { ..._filter };
     if (filter.LastNDays) {
         const end = new Date();
@@ -48,6 +49,9 @@ function formatQuery(_filter) {
         if (filter.EndDate) {
             filter.EndDate = new Date(filter.EndDate).toISOString();
         }
+    }
+    if (mine === true) {
+        filter.Owner = currentUser?.username;
     }
     logger.debug(filter);
     return filter;
@@ -79,12 +83,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
     const query = React.useMemo(() => {
-        return formatQuery(filter);
-    }, [filter]);
+        return formatQuery(filter, mine, currentUser);
+    }, [currentUser, filter, mine]);
 
     const gridStore = React.useMemo(() => {
         return store ? store : CreateWUQueryStore();
@@ -217,10 +222,10 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             onClick: () => { setShowFilter(true); }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => { setMine(!mine); }
         },
-    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {

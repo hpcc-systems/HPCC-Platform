@@ -7,6 +7,7 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
+import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Filter } from "./forms/Filter";
@@ -23,12 +24,16 @@ const FilterFields: Fields = {
     "StateReq": { type: "dfuworkunit-state", label: nlsHPCC.State, placeholder: nlsHPCC.Created },
 };
 
-function formatQuery(filter) {
+function formatQuery(_filter, mine, currentUser) {
+    const filter = { ..._filter };
     if (filter.StartDate) {
         filter.StartDate = new Date(filter.StartDate).toISOString();
     }
     if (filter.EndDate) {
         filter.EndDate = new Date(filter.StartDate).toISOString();
+    }
+    if (mine === true) {
+        filter.Owner = currentUser?.username;
     }
     return filter;
 }
@@ -57,12 +62,13 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
     const { Grid, selection, refreshTable, copyButtons } = useGrid({
         store: store || ESPDFUWorkunit.CreateWUQueryStore({}),
-        query: formatQuery(filter),
+        query: formatQuery(filter, mine, currentUser),
         sort: { attribute: "Wuid", descending: true },
         filename: "dfuworkunits",
         columns: {
@@ -169,12 +175,12 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => {
                 setMine(!mine);
             }
         },
-    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};

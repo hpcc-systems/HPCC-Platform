@@ -47,7 +47,6 @@ export const Search: React.FunctionComponent<SearchProps> = ({
 
     const progress = useConst({ value: 0 });
 
-    const [mine, setMine] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [searchCount, setSearchCount] = React.useState(0);
 
@@ -86,7 +85,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
             const matchedIds: { [key: string]: boolean } = {};
             results.forEach(resultCategory => {
                 if (resultCategory) {
-                    resultCategory.forEach(result => {
+                    resultCategory?.forEach(result => {
                         if (!matchedIds[result.id]) {
                             _data.push(result);
                             matchedIds[result.id] = true;
@@ -122,14 +121,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                 }
             }
         },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
-            onClick: () => {
-                setMine(!mine);
-            }
-        },
-    ], [mine, refreshData, selection, uiState.hasSelection]);
+    ], [refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
