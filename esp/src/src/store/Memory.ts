@@ -71,7 +71,7 @@ export class Memory<T extends BaseRow = BaseRow> extends BaseStore<T, T> {
 
     protected fetchData(request: QueryRequest<T>, options: QueryOptions<T>): ThenableResponse<T> {
         const data = this.queryEngine(request, options)(this.data);
-        data.total = data.length;
+        data.total = this.data.length;
         return Promise.resolve(data);
     }
 }
