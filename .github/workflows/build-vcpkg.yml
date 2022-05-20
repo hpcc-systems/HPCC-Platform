@@ -1,7 +1,7 @@
 name: build-vcpkg
 
 env:
-  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,readwrite"
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
 
 on:
   pull_request:
