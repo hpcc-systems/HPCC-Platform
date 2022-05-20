@@ -20,6 +20,8 @@ The list item in "pods" can be one of the following:
 4) Job name regular expression:  For example "compile-" or "compile-.*" or exact match "^compile-.*$"
 5) set pod: ["all"] for all HPCC Systems components
 
+Regardless of the order of placements in the configuration, they will be processed in the following order: "all", "type", "target" and "pod" or "job".
+
 Supported configurations under each "placement"
 1) nodeSelector
    Multiple nodeSelectors can be applied. For example
@@ -130,7 +132,7 @@ placements:
       effect: "NoSchedule"
 
 ```
-"topologySpreadConstraints" example, there are two node pools which have "hpcc=spot1" and "hpcc=spot2" respectively. The roxie pods will be evenly scheduled on the two node pools. After deployment verify it with
+"topologySpreadConstraints" example, there are two node pools which have "hpcc=nodepool1" and "hpcc=nodepool2" respectively. The Roxie pods will be evenly scheduled on the two node pools. After deployment verify it with
 ```code
 kubectl get pod -o wide | grep roxie
 ```
