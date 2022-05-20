@@ -70,6 +70,7 @@
     "react": "16.14.0",
     "react-dom": "16.14.0",
     "react-hook-form": "7.30.0",
+    "react-hot-toast": "^2.2.0",
     "react-reflex": "4.0.6",
     "react-sizeme": "3.0.2",
     "universal-router": "9.1.0"
