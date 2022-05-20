@@ -251,28 +251,6 @@ private:
     bool                      localFlag;
 };
 
-// Implementation of filter using component
-
-class ComponentLogMsgFilter : public CLogMsgFilter
-{
-public:
-    ComponentLogMsgFilter(unsigned _compo, bool local) : component(_compo), localFlag(local) {}
-    ComponentLogMsgFilter(MemoryBuffer & in) { in.read(component); in.read(localFlag); }
-    ComponentLogMsgFilter(IPropertyTree * tree) { component = tree->getPropInt("@component", 0); localFlag = tree->hasProp("@local"); }
-
-    bool                      includeMessage(const LogMsg & msg) const { if(localFlag && msg.queryRemoteFlag()) return false; return msg.queryComponent() == component; }
-    bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
-    unsigned                  queryAudienceMask() const { return MSGAUD_all; }
-    unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
-    void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_component).append(component).append(localFlag && preserveLocal); }
-    void                      addToPTree(IPropertyTree * tree) const;
-    bool                      queryLocalFlag() const { return localFlag; }
-private:
-    unsigned                  component;
-    bool                      localFlag;
-};
-
 // Implementation of filter using regex
 
 class RegexLogMsgFilter : public CLogMsgFilter
@@ -739,28 +717,16 @@ public:
     bool                      flushQueue(unsigned timeout) { if(processor) return processor->flush(timeout); else return true; }
     void                      report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf,3,4)));
     void                      report_va(const LogMsgCategory & cat, const char * format, va_list args) __attribute__((format(printf,3,0)));
-    void                      mreport_direct(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg);
     void                      mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg);
-    void                      mreport_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf,5,0)));
     void                      mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf,4,0)));
     void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf,4,5)));
     void                      report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf,4,0)));
     void                      report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-    void                      report(unsigned compo, const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf,4,5)));
-    void                      report_va(unsigned compo, const LogMsgCategory & cat, const char * format, va_list args) __attribute__((format(printf,4,0)));
-    void                      report(unsigned compo, const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf,5,6)));
-    void                      report_va(unsigned compo, const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf,5,0)));
-    void                      report(unsigned compo, const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
     void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf,4,5)));
     void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf,4,0)));
     void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf,5,6)));
     void                      report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf,5,0)));
     void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
-    void                      report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf,5,6)));
-    void                      report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf,5,0)));
-    void                      report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf,6,7)));
-    void                      report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args)__attribute__((format(printf,6,0)));
-    void                      report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
     void                      report(const LogMsg & msg) const { if(prefilter.includeCategory(msg.queryCategory())) doReport(msg); }
     bool                      addMonitor(ILogMsgHandler * handler, ILogMsgFilter * filter);
     bool                      addMonitorOwn(ILogMsgHandler * handler, ILogMsgFilter * filter);

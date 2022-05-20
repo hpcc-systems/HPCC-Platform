@@ -41,7 +41,7 @@ include_directories (
 
 HPCC_ADD_LIBRARY( dfuwu SHARED ${SRCS} )
 set_target_properties ( dfuwu PROPERTIES 
-        COMPILE_FLAGS "-DLOGMSGCOMPONENT=3 -D_USRDLL"
+        COMPILE_FLAGS "-D_USRDLL"
         DEFINE_SYMBOL DALI_EXPORTS 
         )
 install ( TARGETS dfuwu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
