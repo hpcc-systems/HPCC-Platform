@@ -92,34 +92,35 @@ export const DESDLBindingMethods: React.FunctionComponent<DESDLBindingMethodsPro
 
     const saveConfiguration = React.useCallback(() => {
 
-        let userXML = "";
-        const results = store.query();
+        store.query().then(results => {
+            let userXML = "";
 
-        results.forEach((row, idx) => {
-            if (row.__hpcc_parentName !== null && row.Value !== "") {
-                userXML += row.Value;
-            }
-        });
+            results.forEach((row, idx) => {
+                if (row.__hpcc_parentName !== null && row.Value !== "") {
+                    userXML += row.Value;
+                }
+            });
 
-        const xmlBuilder = "<Methods>" + userXML + "</Methods>";
-        WsESDLConfig.PublishESDLBinding({
-            request: {
-                EspProcName: binding?.EspProcName,
-                EspBindingName: binding?.BindingName,
-                EspPort: binding?.EspPort,
-                EsdlDefinitionID: binding?.ESDLBinding?.Definition?.Id,
-                Overwrite: true,
-                Config: xmlBuilder
-            }
-        }).then(({ PublishESDLBindingResponse }) => {
-            setErrorMessage(PublishESDLBindingResponse?.status?.Description);
-            setShowError(true);
-            if (PublishESDLBindingResponse?.status.Code === 0) {
-                setMessageBarType(MessageBarType.success);
-            } else {
-                setMessageBarType(MessageBarType.error);
-            }
-            refreshGrid();
+            const xmlBuilder = "<Methods>" + userXML + "</Methods>";
+            WsESDLConfig.PublishESDLBinding({
+                request: {
+                    EspProcName: binding?.EspProcName,
+                    EspBindingName: binding?.BindingName,
+                    EspPort: binding?.EspPort,
+                    EsdlDefinitionID: binding?.ESDLBinding?.Definition?.Id,
+                    Overwrite: true,
+                    Config: xmlBuilder
+                }
+            }).then(({ PublishESDLBindingResponse }) => {
+                setErrorMessage(PublishESDLBindingResponse?.status?.Description);
+                setShowError(true);
+                if (PublishESDLBindingResponse?.status.Code === 0) {
+                    setMessageBarType(MessageBarType.success);
+                } else {
+                    setMessageBarType(MessageBarType.error);
+                }
+                refreshGrid();
+            });
         });
     }, [binding, refreshGrid, store]);
 
