@@ -76,6 +76,7 @@ bool udpAdjustThreadPriorities = false; // Adjust the priorities for the UDP rec
 bool udpAllowAsyncPermits = false;      // Allow requests to send more data to overtake the data packets that are being sent.
 
 unsigned multicastTTL = 1;
+bool traceIBYTIfails = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
