@@ -388,9 +388,10 @@ protected:
 
 // General activity statistics
 
-static const StatisticsMapping actStatistics({StWhenFirstRow, StWhenStarted, StTimeElapsed, StTimeDependencies, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
+static const StatisticsMapping actStatistics({StWhenFirstRow, StTimeElapsed, StTimeDependencies, StTimeLocalExecute, StTimeTotalExecute, StSizeMaxRowSize,
                                               StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
                                               StNumScansPerRow, StNumAllocations, StNumAllocationScans,
+                                              StWhenStarted, StTimeStart, StCycleStartCycles,
                                               StTimeFirstExecute, StCycleDependenciesCycles, StCycleLocalExecuteCycles, StCycleTotalExecuteCycles});
 static const StatisticsMapping joinStatistics({StNumAtmostTriggered}, actStatistics);
 static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
@@ -1370,7 +1371,7 @@ public:
 
     virtual void serializeExtra(MemoryBuffer &out) {}
 
-    inline void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock cb(statecrit);
         if (timeActivities && !stats.getStatisticValue(StWhenStarted))
@@ -1756,6 +1757,18 @@ public:
         throwUnexpected();
     }
 
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) override final
+    {
+        if (timeActivities)
+        {
+            CCycleTimer timer;
+            doStart(parentExtractSize, parentExtract, paused);
+            stats.addStatistic(StCycleStartCycles, timer.elapsedCycles());
+        }
+        else
+            doStart(parentExtractSize, parentExtract, paused);
+    }
+
 protected:
     RecordTranslationMode getEnableFieldTranslation() const
     {
@@ -1796,14 +1809,14 @@ public:
         prefiltered = false;
         eof = false;
     }
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         IFinalRoxieInput *saveInput = input;
         Owned<IStrandJunction> saveJunction = junction.getClear();
         input = NULL;   // Make sure parent does not start the chain yet
         try
         {
-            CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+            CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         }
         catch (...)
         {
@@ -1966,7 +1979,7 @@ public:
     //This function is pure (But also implemented out of line) to force the derived classes to implement it.
     //After calling the base class start method, and initialising any values from the helper they must call onStartStrands(),
     //this must also happen before any rows are read from the strands (e.g., by a source junction)
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
 
     virtual void reset()
     {
@@ -2151,9 +2164,9 @@ protected:
 
 
 //For some reason gcc doesn't let you specify a function as pure virtual and define it at the same time.
-void CRoxieServerStrandedActivity::start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+void CRoxieServerStrandedActivity::doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
 {
-    CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+    CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     startJunction(splitter);
 }
 
@@ -2193,13 +2206,13 @@ public:
         prefiltered = false;
         eof = false;
     }
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         IFinalRoxieInput *save = input;
         input = NULL;   // Make sure parent does not start the chain yet - but we do want to do the dependencies (because the decision about whether to start may depend on them)
         try
         {
-            CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+            CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         }
         catch (...)
         {
@@ -2703,9 +2716,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         input1->start(parentExtractSize, parentExtract, paused);
         startJunction(junction1);
     }
@@ -2909,9 +2922,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         for (unsigned i = 0; i < numInputs; i++)
         {
             inputArray[i]->start(parentExtractSize, parentExtract, paused);
@@ -5325,11 +5338,11 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         first = true;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 };
 
@@ -5565,9 +5578,9 @@ public:
         aggregated.addRow(next);
     }
             
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerChildBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerChildBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         aggregated.start(rowAllocator, ctx->queryCodeContext(), activityId);
     }
 
@@ -5646,9 +5659,9 @@ public:
         lastInput = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerChildBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerChildBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         numProcessedLastGroup = processed;
         ok = false;
     }
@@ -5939,10 +5952,10 @@ public:
         numRows = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         curRow = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         numRows = helper.numRows();
     }
 
@@ -6095,9 +6108,9 @@ public:
             return new InlineTableSimpleProcessor(*this, helper);
         return new InlineTableStrandProcessor(*this, helper, strands.ordinality(), inputOrdered);
     }
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerStrandedActivity::doStart(parentExtractSize, parentExtract, paused);
         numRows = helper.numRows();
         onStartStrands();
         startJunction(sourceJunction); // This must be started *after* all the strands have been initialised
@@ -6156,9 +6169,9 @@ public:
         }
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
         OwnedRoxieString fromWuid(helper.getWUID());
         wuReader.setown(ctx->getWorkunitRowReader(fromWuid, helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
@@ -6611,9 +6624,9 @@ public:
         sequence = helper.querySequence();
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         iter.setown(graph->createResultIterator(sequence));
     }
 
@@ -6921,9 +6934,9 @@ public:
         graph = static_cast<ILocalGraphEx *>(ctx->queryCodeContext()->resolveLocalQuery(graphId));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (iterInput)
             iterInput->start(parentExtractSize, parentExtract, paused);
         else
@@ -7029,9 +7042,9 @@ public:
         sequence = _sequence;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if ((int)sequence >= 0)
         {
             try
@@ -7195,10 +7208,10 @@ public:
         numToKeep = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numKept = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         numToKeep = helper.numToKeep();
     }
 };
@@ -7217,10 +7230,10 @@ public:
         stepCompare = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         prev = NULL;
-        CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDedupActivity::doStart(parentExtractSize, parentExtract, paused);
         IInputSteppingMeta * stepMeta = input->querySteppingMeta();
         stepCompare = NULL;
         if (stepMeta)
@@ -7353,11 +7366,11 @@ public:
             compareBest = helper.queryCompareBest();
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         first = true;
         kept = nullptr;
-        CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDedupActivity::doStart(parentExtractSize, parentExtract, paused);
         if (numToKeep>1)
             throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "DEDUP with RIGHT and NumToKeep>1 not supported");
     }
@@ -7419,11 +7432,11 @@ public:
         survivorIndex = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         first = true;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -7754,10 +7767,10 @@ public:
         keepBest = helper.keepBest();
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void onCreate(IHThorArg *_colocalParent)
@@ -7879,10 +7892,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         readFirstRow = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()    
@@ -7976,12 +7989,12 @@ public:
         numProcessedLastGroup = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numThisRow = 0;
         curRow = 0;
         numProcessedLastGroup = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -8099,14 +8112,14 @@ public:
         curChildRow = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numThisRow = 0;
         curRow = 0;
         numProcessedLastGroup = 0;
         curChildRow = NULL;
 
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         cursor = helper.queryIterator();
     }
 
@@ -8212,10 +8225,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -8303,10 +8316,10 @@ public:
             sorter.setown(createSortAlgorithm(sortAlgorithm, compare, ctx->queryRowManager(), meta, ctx->queryCodeContext(), tempDirectory, activityId));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         assertex(!readInput);
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -8502,9 +8515,9 @@ public:
         CRoxieServerActivity::reset();
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         skew = helper.getSkew();
         numDivisions = helper.getNumDivisions();
         //Check for -ve integer values and treat as out of range
@@ -8712,9 +8725,9 @@ public:
         stepCompare = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         IInputSteppingMeta * stepMeta = input->querySteppingMeta();
         if (stepMeta)
             stepCompare = stepMeta->queryCompare();
@@ -9109,6 +9122,7 @@ public:
 
     virtual void start(unsigned oid, unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
+        CCycleTimer timer(timeActivities);
         CriticalBlock b(crit);
         if (startError)
             throw startError.getLink();
@@ -9126,7 +9140,7 @@ public:
             readError.clear();
             try
             {
-                CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+                CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
             }
             catch (IException *E)
             {
@@ -9142,6 +9156,8 @@ public:
                 startError.set(E);
                 throw E;
             }
+            if (timeActivities)
+                stats.addStatistic(StCycleStartCycles, timer.elapsedCycles());
         }
     }
 
@@ -9375,10 +9391,10 @@ public:
         rowDeserializer.setown(rowAllocator->createDiskDeserializer(ctx->queryCodeContext()));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         groupSignalled = true; // i.e. don't start with a NULL row
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
         {
             OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
@@ -9495,7 +9511,7 @@ public:
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         firstRead = true;
         inputExhausted = false;
@@ -9503,7 +9519,7 @@ public:
         pipeVerified.reinit();
         pipeOpened.reinit();
         writeTransformer->ready();
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
         {
             OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
@@ -9719,12 +9735,12 @@ public:
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         firstRead = true;
         inputExhausted = false;
         writeTransformer->ready();
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if(!recreate)
         {
             OwnedRoxieString pipeProgram(helper.getPipeProgram());
@@ -9889,9 +9905,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         rows.setown(helper.createInput());
     }
 
@@ -9953,10 +9969,10 @@ public:
         stepCompare = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         anyThisGroup = false;
-        CRoxieServerLateStartActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLateStartActivity::doStart(parentExtractSize, parentExtract, paused);
         lateStart(parentExtractSize, parentExtract, helper.canMatchAny());
 
         stepCompare = NULL;
@@ -10104,9 +10120,9 @@ public:
         stepCompare = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerLateStartActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLateStartActivity::doStart(parentExtractSize, parentExtract, paused);
         lateStart(parentExtractSize, parentExtract, helper.canMatchAny());//sets eof
         assertex(eof == !helper.canMatchAny());
 
@@ -10428,11 +10444,11 @@ public:
         eof = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         anyThisGroup = false;
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         numSamples = helper.getProportion();
         whichSample = helper.getSampleNumber();
         numToSkip = (whichSample ? whichSample-1 : 0);
@@ -10515,10 +10531,10 @@ public:
         done = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         numSets = helper.getNumSets();
         setCounts = new unsigned[numSets];
         memset(setCounts, 0, sizeof(unsigned)*numSets);
@@ -10607,11 +10623,11 @@ public:
         numSets = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
         curIndex = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         numSets = helper.getNumSets();
         setCounts = new unsigned[numSets];
         memset(setCounts, 0, sizeof(unsigned)*numSets);
@@ -10679,9 +10695,9 @@ public:
         numToSkip = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerChooseSetsExActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerChooseSetsExActivity::doStart(parentExtractSize, parentExtract, paused);
         numToSkip = (unsigned *)calloc(sizeof(unsigned), numSets);
     }
 
@@ -10726,9 +10742,9 @@ public:
         counter = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerChooseSetsExActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerChooseSetsExActivity::doStart(parentExtractSize, parentExtract, paused);
         counter = (count_t *)calloc(sizeof(count_t), numSets);
     }
 
@@ -10818,10 +10834,10 @@ public:
         numerator = denominator = counter = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         numerator = helper.getProportionNumerator();
         denominator = helper.getProportionDenominator();
         if(denominator == 0) denominator = 1; //MORE: simplest way to avoid disaster in this case
@@ -10899,12 +10915,12 @@ public:
         abortEarly = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         isInputGrouped = input->queryOutputMeta()->isGrouped();     // could be done earlier, in setInput?
         abortEarly = !isInputGrouped && (factory->getKind() == TAKexistsaggregate); // ditto
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -11114,9 +11130,9 @@ public:
     }
     virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
     virtual bool needsAllocator() const { return true; }
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerStrandedActivity::doStart(parentExtractSize, parentExtract, paused);
         onStartStrands();
         if (combineStreams)
         {
@@ -11256,11 +11272,11 @@ public:
         gathered = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         gathered = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -11354,10 +11370,10 @@ public:
         eof = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual const void * nextRow()
@@ -11445,10 +11461,10 @@ public:
         anyThisGroup = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         anyThisGroup = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (helper.canMatchAny())
             eof = false;
         else
@@ -11709,9 +11725,9 @@ public:
         return true;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         
         resolve();
         Owned<IFileIO> io;
@@ -11967,9 +11983,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerDiskWriteActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskWriteActivity::doStart(parentExtractSize, parentExtract, paused);
         OwnedRoxieString xmlpath(xmlHelper.getXmlIteratorPath());
         if (!xmlpath)
             rowTag.set(DEFAULTXMLROWTAG);
@@ -12228,9 +12244,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         resolve();
     }
 
@@ -12603,7 +12619,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         left = NULL;
         rightIndex = 0;
@@ -12611,7 +12627,7 @@ public:
         state = JSfill;
         matchedLeft = false;
 
-        CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerTwoInputActivity::doStart(parentExtractSize, parentExtract, paused);
 
         keepLimit = helper.getKeepLimit();
         if (keepLimit == 0) 
@@ -13382,14 +13398,14 @@ public:
             delete &pullers.item(idx);
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = (numInputs==0);
         inGroup = false;
         nextPuller = 0;
         readyPending = 0;
         ready.reinit();
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         ForEachItemIn(idx, pullers)
         {
             pullers.item(idx).start(parentExtractSize, parentExtract, paused, ctx);
@@ -13512,9 +13528,9 @@ public:
         curStream = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputActivity::doStart(parentExtractSize, parentExtract, paused);
         streamIdx = 0;
         curStream = streamArray[streamIdx];
         eogSeen = false;
@@ -13614,10 +13630,10 @@ public:
         savedParentExtract = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         //Don't start the inputs yet so we can short-circuit...
-        CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         savedParentExtractSize = parentExtractSize;
         savedParentExtract = parentExtract;
     }
@@ -13751,9 +13767,9 @@ public:
     }
 
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputActivity::doStart(parentExtractSize, parentExtract, paused);
         if (factory->getKind() != TAKexternalsink)
         {
             IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
@@ -14013,11 +14029,11 @@ public:
         delete [] pending;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         activeInputs = 0;
         first = true;
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()    
@@ -14084,12 +14100,12 @@ public:
         numProcessedLastGroup = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         streamIndex = 0;
         eof = false;
         numProcessedLastGroup = processed;
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     const void * nextFromInputs()
@@ -14178,10 +14194,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = processed;
-        CRoxieServerMultiInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     void nextInputs(ConstPointerArray & out)
@@ -14273,10 +14289,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = processed;
-        CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerTwoInputActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -14421,10 +14437,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -14513,11 +14529,11 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
         recordCount = 0;
-        CRoxieServerLateStartActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLateStartActivity::doStart(parentExtractSize, parentExtract, paused);
         lateStart(parentExtractSize, parentExtract, helper.canMatchAny()); //sets eof
     }
 
@@ -14639,9 +14655,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerStrandedActivity::doStart(parentExtractSize, parentExtract, paused);
         onStartStrands();
     }
 
@@ -14667,11 +14683,11 @@ class CRoxieServerProjectActivity : public CRoxieServerActivity
         recordCount = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
         recordCount = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -14823,13 +14839,13 @@ public:
             return NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
         recordCount = 0;
         eof = false;
         allPulled = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         preload = helper.getLookahead();
         if (!preload)
             preload = ctx->queryOptions().prefetchProjectPreload;
@@ -15046,10 +15062,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         int iterations = (int) helper.numIterations();
         maxIterations = (iterations >= 0) ? iterations : 0;
         finishedLooping = ((activityKind == TAKloopcount) && (maxIterations == 0));
@@ -15108,11 +15124,11 @@ public:
         loopQuery.set(ctx->queryChildGraph(loopGraphId));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         curStream = inputStream;
         loopCounter = 1;
-        CRoxieServerLoopActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLoopActivity::doStart(parentExtractSize, parentExtract, paused);
 
         //MORE: Not sure about this, should IRoxieServerChildGraph be combined with IActivityGraph?
         loopGraph.set(loopQuery->queryLoopGraph());
@@ -15403,12 +15419,12 @@ public:
         executor.onCreate(ctx);
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock b(scrit); // can stop while still starting, if unlucky...
         readySpace.reinit(parallelLoopFlowLimit);
         recordsReady.reinit();    
-        CRoxieServerLoopActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLoopActivity::doStart(parentExtractSize, parentExtract, paused);
         defaultNumParallel = helper.defaultParallelIterations();
         if (!defaultNumParallel)
             defaultNumParallel = DEFAULT_PARALLEL_LOOP_THREADS;
@@ -15806,9 +15822,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         int iterations = (int) helper.numIterations();
         maxIterations = (iterations >= 0) ? iterations : 0;
         if (maxIterations > maxGraphLoopIterations)
@@ -15862,9 +15878,9 @@ public:
         GraphQuery.set(ctx->queryChildGraph(loopGraphId));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerGraphLoopActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerGraphLoopActivity::doStart(parentExtractSize, parentExtract, paused);
 
         //MORE: Not sure about this, should IRoxieServerChildGraph be combined with IActivityGraph?
         loopGraph.set(GraphQuery->queryLoopGraph());
@@ -16090,9 +16106,9 @@ public:
             return NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerGraphLoopActivity::start(parentExtractSize, parentExtract, paused);         // initialises GraphExtractBuilder
+        CRoxieServerGraphLoopActivity::doStart(parentExtractSize, parentExtract, paused);         // initialises GraphExtractBuilder
         inputExtractMapper->setParentExtract(parentExtractSize, parentExtract);
 
         createExpandedGraph(GraphExtractBuilder.size(), GraphExtractBuilder.getbytes(), probeManager);
@@ -16273,8 +16289,15 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             parent->start(oid, parentExtractSize, parentExtract, paused);
-            CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
             numStarts++;
+            if (parent->timeActivities)
+            {
+                CCycleTimer timer;
+                CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
+                parent->stats.addStatisticAtomic(StCycleStartCycles, timer.elapsedCycles());
+            }
+            else
+                CExtractMapperInput::start(parentExtractSize, parentExtract, paused);
         }
 
         virtual IStrandJunction *getOutputStreams(IRoxieAgentContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
@@ -16399,6 +16422,7 @@ public:
 
     virtual void start(unsigned oid, unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
+        CCycleTimer timer(timeActivities);
         CriticalBlock b(crit);
         if (error)
             throw error.getLink();
@@ -16412,7 +16436,7 @@ public:
             //see notes on splitter above
             try
             {
-                CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+                CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
             }
             catch (IException *E)
             {
@@ -16454,6 +16478,9 @@ public:
                 Owned<IFinalRoxieInput> output = graph->selectOutput(numInputs+extra.unusedOutputs.item(i3));
                 output->stopall();
             }
+
+            if (timeActivities)
+                stats.addStatistic(StCycleStartCycles, timer.elapsedCycles());
         }
     }
 
@@ -16707,9 +16734,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerNWayInputBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNWayInputBaseActivity::doStart(parentExtractSize, parentExtract, paused);
 
         bool selectionIsAll;
         size32_t selectionLen;
@@ -16804,9 +16831,9 @@ public:
         delete [] resultJunctions;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
 
         if (selectedInputs.ordinality() == 0)
         {
@@ -17043,9 +17070,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerNWayBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNWayBaseActivity::doStart(parentExtractSize, parentExtract, paused);
 
         for (unsigned i=0; i < numInputs; i++)
         {
@@ -17123,9 +17150,9 @@ public:
         initializedMeta = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerNaryActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNaryActivity::doStart(parentExtractSize, parentExtract, paused);
         merger.init(helper.queryCompare(), helper.dedup(), helper.querySteppingMeta()->queryCompare());
         merger.initInputs(expandedStreams.length(), expandedStreams.getArray());
     }
@@ -17228,9 +17255,9 @@ public:
         outputAllocator.setown(createRowAllocator(helper.queryOutputMeta()));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerNaryActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNaryActivity::doStart(parentExtractSize, parentExtract, paused);
         ForEachItemIn(i1, expandedInputs)
         {
             Owned<RoxieSteppedInput> stepInput = new RoxieSteppedInput(expandedInputs.item(i1), expandedStreams.item(i1));
@@ -17393,9 +17420,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerNWayBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerNWayBaseActivity::doStart(parentExtractSize, parentExtract, paused);
 
         unsigned whichInput = helper.getInputIndex();
         selectedInput = nullptr;
@@ -17530,9 +17557,9 @@ public:
         remote.onCreate(_colocalParent);
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         remote.onStart(parentExtractSize, parentExtract);
 
         remote.setLimits(helper.getRowLimit(), (unsigned __int64) -1, I64C(0x7FFFFFFFFFFFFFFF));
@@ -17639,10 +17666,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         counter = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         size32_t thisSize = helper.createDefault(rowBuilder);
         defaultRecord.setown(rowBuilder.finalizeRowClear(thisSize));
@@ -17733,10 +17760,10 @@ public:
         rightRowAllocator.setown(createRowAllocator(helper.queryRightRecordSize()));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         counter = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
 
         RtlDynamicRowBuilder rowBuilder(rightRowAllocator);
         size32_t thisSize = helper.createInitialRight(rowBuilder);
@@ -17840,7 +17867,7 @@ public:
         numProcessedLastGroup = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         endPending = false;
         eof = false;
@@ -17849,7 +17876,7 @@ public:
         numGroupMax = 0;
         numProcessedLastGroup = processed;
         assertex(next == NULL);
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()    
@@ -17944,10 +17971,10 @@ public:
         skip = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         doneThisGroup = 0;
-        CRoxieServerLateStartActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLateStartActivity::doStart(parentExtractSize, parentExtract, paused);
         limit = helper.getLimit();
         skip = helper.numToSkip();
         lateStart(parentExtractSize, parentExtract, limit > 0);
@@ -18040,10 +18067,10 @@ public:
         done = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     const void *defaultRow()
@@ -18309,12 +18336,12 @@ public:
         dualCacheInput = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         first = true;
         failingLimit.clear();
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         keepLimit = helper.getKeepLimit();
         if(keepLimit == 0)
             keepLimit = (unsigned)-1;
@@ -18929,12 +18956,12 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eog = false;
         matchedGroup = false;
         left = NULL;
-        CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerTwoInputActivity::doStart(parentExtractSize, parentExtract, paused);
         keepLimit = helper.getKeepLimit();
         if(keepLimit==0) keepLimit = static_cast<unsigned>(-1);
         atmostsTriggered = 0;
@@ -19412,7 +19439,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eog = false;
         eos = false;
@@ -19421,7 +19448,7 @@ public:
         started = false;
         left = NULL;
 
-        CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerTwoInputActivity::doStart(parentExtractSize, parentExtract, paused);
         keepLimit = helper.getKeepLimit();
         if(keepLimit==0)
             keepLimit = (unsigned) -1;
@@ -19736,14 +19763,14 @@ public:
         hasBest = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         assertex(sorted == NULL);
         sortedCount = 0;
         curIndex = 0;
         eoi = false;
         
-        CRoxieServerLateStartActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLateStartActivity::doStart(parentExtractSize, parentExtract, paused);
         limit = (unsigned) helper.getLimit();
         hasBest = helper.hasBest();
         lateStart(parentExtractSize, parentExtract, limit > 0);
@@ -19881,9 +19908,9 @@ public:
         rowLimit = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         rowLimit = helper.getRowLimit();  // could conceivably depend on context so should not compute any earlier than this
     }
 
@@ -19977,11 +20004,11 @@ public:
         isFail = _onFail;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         started = false;
         index = 0;
-        CRoxieServerLimitActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerLimitActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -20077,7 +20104,7 @@ public:
     }
 
     // MORE - you could argue we should catch exceptions in START too, though not clear what to do with them
-    // See CRoxieServerSkipCatchActivity::start
+    // See CRoxieServerSkipCatchActivity::doStart
     // This is less significant now that we properly distinguish start exceptions from read exceptions in ThroughSpill activity
 
     virtual const void *nextRow()
@@ -20156,13 +20183,13 @@ public:
         index = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         started = false;
         index = 0;
         try
         {
-            CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+            CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         }
         catch (IException *E)
         {
@@ -20294,11 +20321,11 @@ public:
         index = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         started = false;
         index = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -20384,9 +20411,9 @@ public:
         if (ctx)
             traceEnabled = ctx->queryOptions().traceEnabled && !isBlind();
     }
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (traceEnabled && helper.canMatchAny())
         {
             keepLimit = helper.getKeepLimit();
@@ -20517,9 +20544,9 @@ public:
         active = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerMultiInputBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         cond = helper.getBranch();
         //CHOOSE defaults to the last argument if out of range.
         if (cond >= numInputs)
@@ -20621,12 +20648,12 @@ public:
         cond = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         cond = helper.getCondition();
         if (traceStartStop)
-            DBGLOG("IfActivity::start %d - cond = %d", activityId, (int) cond);
+            DBGLOG("IfActivity::doStart %d - cond = %d", activityId, (int) cond);
         if (cond)
         {
             if (inputTrue)
@@ -21045,11 +21072,11 @@ public:
         eogseen = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         savedExtractSize = parentExtractSize;
         savedExtract = parentExtract;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         executeDependencies(parentExtractSize, parentExtract, WhenBeforeId);
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
         eofseen = false;
@@ -21136,11 +21163,11 @@ public:
         savedExtract = NULL;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         savedExtractSize = parentExtractSize;
         savedExtract = parentExtract;
-        CRoxieServerActionBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActionBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         executeDependencies(parentExtractSize, parentExtract, WhenBeforeId);
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
     }
@@ -21306,9 +21333,9 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerStrandedActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerStrandedActivity::doStart(parentExtractSize, parentExtract, paused);
         onStartStrands();
     }
 
@@ -21728,12 +21755,12 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
         srchStr = NULL;
         in = NULL;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -21906,9 +21933,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (compoundHelper)
         {
             rowLimit = compoundHelper->getRowLimit();
@@ -22076,11 +22103,11 @@ public:
         lastGroupProcessed = processed;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         rowLimit = compoundHelper->getRowLimit();
         stopAfter = compoundHelper->getChooseNLimit();
-        CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskReadBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         readAheadDone = false;
         readIndex = 0;
         lastGroupProcessed = processed;
@@ -22242,11 +22269,11 @@ public:
         fileoffset = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         rowLimit = readHelper->getRowLimit();
         stopAfter = readHelper->getChooseNLimit();
-        CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskReadBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         if (!useRemote())
         {
             rowTransformer.set(readHelper->queryTransformer());
@@ -22373,11 +22400,11 @@ public:
         headerLines = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         rowLimit = readHelper->getRowLimit();
         stopAfter = readHelper->getChooseNLimit();
-        CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskReadBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         if (!useRemote())
         {
             if (!eof)
@@ -22550,10 +22577,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskReadBaseActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -22591,12 +22618,12 @@ public:
         choosenLimit = 0;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         choosenLimit = countHelper.getChooseNLimit();
         rowLimit = countHelper.getRowLimit();
 //      keyedLimit = countHelper->getKeyedLimit(); // more - should there be one?
-        CRoxieServerDiskAggregateBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskAggregateBaseActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual const void *nextRow()
@@ -22753,10 +22780,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         gathered= false;
-        CRoxieServerDiskAggregateBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerDiskAggregateBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         resultAggregator.start(rowAllocator, ctx->queryCodeContext(), activityId);
     }
 
@@ -23085,14 +23112,14 @@ public:
         remote.onCreate(_colocalParent);
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         accepted = 0;
         rejected = 0;
         rowLimit = (unsigned __int64) -1;
         keyedLimit = (unsigned __int64 ) -1;
         choosenLimit = I64C(0x7fffffffffffffff);
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         remote.onStart(parentExtractSize, parentExtract);
         variableInfoPending = variableFileName;
     }
@@ -23366,9 +23393,9 @@ public:
         delete [] seekSizes;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexReadBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         steppingMeta.setDistributed();
         if (steppedExtra)
             steppingMeta.setExtra(steppedExtra);
@@ -23785,13 +23812,13 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         firstRead = true;
         accepted = 0;
         rejected = 0;
         keyedCount = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (steppedExtra)
             steppingMeta.setExtra(steppedExtra);
         eof = !indexHelper.canMatchAny();
@@ -24109,10 +24136,10 @@ public:
         done = false;
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -24150,10 +24177,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexActivity::doStart(parentExtractSize, parentExtract, paused);
         choosenLimit = countHelper.getChooseNLimit();
         rowLimit = countHelper.getRowLimit();
         keyedLimit = countHelper.getKeyedLimit();
@@ -24373,10 +24400,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
     }
 
     virtual const void *nextRow()
@@ -24404,10 +24431,10 @@ public:
     {
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         done = false;
-        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexActivity::doStart(parentExtractSize, parentExtract, paused);
         if (!paused)
             processAllKeys();
     }
@@ -24545,11 +24572,11 @@ public:
 
     IMPLEMENT_IINTERFACE_USING(CRoxieServerIndexActivity)
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         gathered= false;
-        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexActivity::doStart(parentExtractSize, parentExtract, paused);
         groupSegCount = 0;
         if (!paused)
             processAllKeys();
@@ -24711,9 +24738,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexReadBaseActivity::doStart(parentExtractSize, parentExtract, paused);
         rowLimit = readHelper.getRowLimit();
         keyedLimit = readHelper.getKeyedLimit();
         choosenLimit = readHelper.getChooseNLimit();
@@ -24888,9 +24915,9 @@ public:
         remote.gatherStats(merged);
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         remote.onStart(parentExtractSize, parentExtract);
         remote.setLimits(helper.getRowLimit(), (unsigned __int64) -1, I64C(0x7FFFFFFFFFFFFFFF));
         if (variableFileName)
@@ -25610,9 +25637,9 @@ public:
         }
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (indexReadInput)
         {
             indexReadInput->start(parentExtractSize, parentExtract, true); // paused=true because we don't want to actually run the index read
@@ -25954,9 +25981,9 @@ public:
             indexReadStream = connectSingleStream(ctx, indexReadInput, indexReadIdx, indexReadJunction, consumerOrdered);  // We never actually pull the stream
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         if (indexReadInput)
         {
             indexReadInput->start(parentExtractSize, parentExtract, true); // paused=true because we don't want to actually run the index read
@@ -26323,9 +26350,9 @@ public:
         fetchInputAllocator.setown(createRowAllocator(helper.queryFetchInputRecordSize()));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerKeyedJoinBase::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerKeyedJoinBase::doStart(parentExtractSize, parentExtract, paused);
         if (variableFetchFileName)
         {
             bool isFetchOpt = (helper.getFetchFlags() & FFdatafileoptional) != 0;
@@ -26473,9 +26500,9 @@ public:
         joinFieldsAllocator.setown(createRowAllocator(joinPrefixedMeta));
     }
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerKeyedJoinBase::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerKeyedJoinBase::doStart(parentExtractSize, parentExtract, paused);
         if (rootIndex)
         {
             varFileInfo.setown(rootIndex->getVarFileInfo());
@@ -26822,10 +26849,10 @@ public:
     virtual const void * getNextRow() { return NULL; };
     virtual void releaseRow(const void * r) { ReleaseRoxieRow(r); };
 
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         authToken.append(ctx->queryAuthToken());
     }
     virtual void reset()

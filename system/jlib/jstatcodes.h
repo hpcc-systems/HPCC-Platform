@@ -245,6 +245,8 @@ enum StatisticKind
     StCostCompile,
     StTimeDependencies,
     StCycleDependenciesCycles,
+    StTimeStart,
+    StCycleStartCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
