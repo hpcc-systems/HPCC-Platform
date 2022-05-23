@@ -4,6 +4,15 @@ esp:
    daliServers: mydali
    loadDaliBindings: true
    auth: ldap
+   authDomain:
+     domainName: "default"
+     authType : "AuthTypeMixed"
+     clientSessionTimeoutMinutes : 120
+     serverSessionTimeoutMinutes : 240
+     unrestrictedResources : "/favicon.ico,/esp/files/*,/esp/xslt/*"
+     invalidURLsAfterAuth : "/esp/login"
+     loginLogoURL : "/esp/files/eclwatch/img/Loginlogo.png"
+     logonURL : "/esp/files/Login.html"
    tls: true
    service:
      port: 8880
