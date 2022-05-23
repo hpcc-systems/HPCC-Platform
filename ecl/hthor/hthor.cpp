@@ -981,7 +981,10 @@ void CHThorXmlWriteActivity::execute()
     headerLength = header.length();
     diskout->write(headerLength, header.str());
 
-    Owned<IXmlWriterExt> writer = createIXmlWriterExt(helper.getXmlFlags(), 0, NULL, (kind==TAKjsonwrite) ? WTJSONRootless : WTStandard);
+    unsigned xwflags = helper.getXmlFlags();
+    if (kind==TAKjsonwrite)
+        xwflags |= XWFonlyindentroot;
+    Owned<IXmlWriterExt> writer = createIXmlWriterExt(xwflags, 0, NULL, (kind==TAKjsonwrite) ? WTJSONRootless : WTStandard);
     writer->outputBeginArray(rowTag); //need to set up the array
     writer->clear(); //but not output it
 
