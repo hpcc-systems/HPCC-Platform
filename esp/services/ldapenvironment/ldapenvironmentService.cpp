@@ -127,7 +127,7 @@ bool CldapenvironmentEx::changePermissions(const char * ou, const char * userFQD
     action.m_allows = allows;
     action.m_denies = denies;
     DBGLOG("Setting (%d,%d) permissions for rName %s, baseDN %s, user %s", (int)allows, (int)denies, rName.str(), baseDN.str(), userFQDN);
-    bool ok;
+    bool ok = false;
     try
     {
         ok = secmgr->changePermission(action);
@@ -167,11 +167,11 @@ bool CldapenvironmentEx::createSecret(SecretType type, const char * secretName, 
     return true;
 }
 
-void CldapenvironmentEx::createLDAPBaseDN(const char * baseDN, const char * description, StringBuffer & notes)
+void CldapenvironmentEx::createLDAPBaseDN(const char * baseDN, SecPermissionType pt, const char * description, StringBuffer & notes)
 {
     try
     {
-        secmgr->createLdapBasedn(nullptr, baseDN, PT_ADMINISTRATORS_ONLY, description);
+        secmgr->createLdapBasedn(nullptr, baseDN, pt, description);
     }
     catch(...)
     {
@@ -238,11 +238,11 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         if (req.getCreateLDAPEnvironment())
         {
             //Note that ESP will also try to create these OUs on startup
-            createLDAPBaseDN(respFilesBaseDN.str(), description.str(), notes);
-            createLDAPBaseDN(respGroupsBaseDN.str(), description.str(), notes);
-            createLDAPBaseDN(respUsersBaseDN.str(), description.str(), notes);
-            createLDAPBaseDN(respResourcesBaseDN.str(), description.str(), notes);
-            createLDAPBaseDN(respWorkunitsBaseDN.str(), description.str(), notes);
+            createLDAPBaseDN(respFilesBaseDN.str(), PT_DEFAULT, description.str(), notes);
+            createLDAPBaseDN(respGroupsBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str(), notes);
+            createLDAPBaseDN(respUsersBaseDN.str(),  PT_ADMINISTRATORS_ONLY, description.str(), notes);
+            createLDAPBaseDN(respResourcesBaseDN.str(), PT_ADMINISTRATORS_ONLY, description.str(), notes);
+            createLDAPBaseDN(respWorkunitsBaseDN.str(), PT_DEFAULT, description.str(), notes);
 
             //Create HPCCAdmins Group
             try

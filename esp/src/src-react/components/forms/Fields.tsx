@@ -6,6 +6,7 @@ import * as WsAccess from "src/ws_access";
 import * as WsESDLConfig from "src/WsESDLConfig";
 import { States } from "src/WsWorkunits";
 import { FileList, States as DFUStates } from "src/FileSpray";
+import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useLogicalClusters } from "../../hooks/platform";
 
@@ -306,7 +307,9 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
     const { onChange, required, selectedKey } = { ...props };
 
     React.useEffect(() => {
-        const options = targetClusters?.map(row => {
+        const options = targetClusters?.filter(row => {
+            return !(row.Type === "roxie" && row.QueriesOnly === true);
+        })?.map(row => {
             return {
                 key: row.Name || "unknown",
                 text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
@@ -497,9 +500,10 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
         if (!props.required) {
             retVal.push({ key: "", text: "" });
         }
-        let _path = [Path, ""].join(pathSepChar).replace(machineDirectory, "");
-        _path = (_path.length > 1 && _path.substr(-1) === "/") ? _path.substr(0, _path.length - 1) : _path;
-        retVal.push({ key: Path, text: _path });
+        retVal.push({
+            key: Path,
+            text: joinPath(Path, pathSepChar).replace(machineDirectory, "")
+        });
         return new Promise((resolve, reject) => {
             if (depth > 2) {
                 resolve(retVal);

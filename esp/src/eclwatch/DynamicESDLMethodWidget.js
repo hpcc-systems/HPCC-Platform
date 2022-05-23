@@ -99,45 +99,45 @@ define([
 
         saveMethod: function () {
             var context = this;
-            var userXML = "";
-            var results = this.store.query();
-
-            arrayUtil.forEach(results, function (row, idx) {
-                if (row.__hpcc_parentName !== null && row.Value !== "") {
-                    userXML += row.Value;
-                }
-            });
-
-            var xmlBuilder = "<Methods>" + userXML + "</Methods>";
-            WsESDLConfig.PublishESDLBinding({
-                request: {
-                    EspProcName: this.params.Binding.ESPProcessName,
-                    EspBindingName: this.params.Binding.Name,
-                    EspPort: this.params.Binding.Port,
-                    EsdlDefinitionID: this.params.Definition,
-                    Overwrite: true,
-                    Config: xmlBuilder
-                }
-            }).then(function (response) {
-                if (lang.exists("PublishESDLBindingResponse.status", response)) {
-                    if (response.PublishESDLBindingResponse.status.Code === 0) {
-                        dojo.publish("hpcc/brToaster", {
-                            Severity: "Message",
-                            Source: "WsESDLConfig.PublishESDLBinding",
-                            Exceptions: [{ Source: context.i18n.SuccessfullySaved, Message: response.PublishESDLBindingResponse.status.Description }]
-                        });
-                    } else {
-                        dojo.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsESDLConfig.PublishESDLBinding",
-                            Exceptions: [{
-                                Source: context.i18n.Error,
-                                Message: response.PublishESDLBindingResponse.status.Description
-                            }]
-                        });
+            this.store.query().then(function (results) {
+                var userXML = "";
+                arrayUtil.forEach(results, function (row, idx) {
+                    if (row.__hpcc_parentName !== null && row.Value !== "") {
+                        userXML += row.Value;
                     }
-                    context.refreshGrid();
-                }
+                });
+
+                var xmlBuilder = "<Methods>" + userXML + "</Methods>";
+                WsESDLConfig.PublishESDLBinding({
+                    request: {
+                        EspProcName: context.params.Binding.ESPProcessName,
+                        EspBindingName: context.params.Binding.Name,
+                        EspPort: context.params.Binding.Port,
+                        EsdlDefinitionID: context.params.Definition,
+                        Overwrite: true,
+                        Config: xmlBuilder
+                    }
+                }).then(function (response) {
+                    if (lang.exists("PublishESDLBindingResponse.status", response)) {
+                        if (response.PublishESDLBindingResponse.status.Code === 0) {
+                            dojo.publish("hpcc/brToaster", {
+                                Severity: "Message",
+                                Source: "WsESDLConfig.PublishESDLBinding",
+                                Exceptions: [{ Source: context.i18n.SuccessfullySaved, Message: response.PublishESDLBindingResponse.status.Description }]
+                            });
+                        } else {
+                            dojo.publish("hpcc/brToaster", {
+                                Severity: "Error",
+                                Source: "WsESDLConfig.PublishESDLBinding",
+                                Exceptions: [{
+                                    Source: context.i18n.Error,
+                                    Message: response.PublishESDLBindingResponse.status.Description
+                                }]
+                            });
+                        }
+                        context.refreshGrid();
+                    }
+                });
             });
         },
 

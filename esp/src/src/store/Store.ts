@@ -1,3 +1,4 @@
+import * as QueryResults from "dojo/store/util/QueryResults";
 import { DeferredResponse, Thenable } from "./Deferred";
 
 //  Query  ---
@@ -44,7 +45,7 @@ export abstract class BaseStore<R extends BaseRow, T extends BaseRow> {
             retVal.total.resolve(data.total);
             retVal.resolve(data);
         });
-        return retVal;
+        return QueryResults(retVal);
     }
 }
 

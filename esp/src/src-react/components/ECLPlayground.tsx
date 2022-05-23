@@ -295,7 +295,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
             .then(response => response.json())
             .then(json => setEclSamples(
                 json.items.map(item => {
-                    if (item.selected) setSelectedEclSample(item.filename);
+                    if (item.selected && !wuid) setSelectedEclSample(item.filename);
                     return { key: item.filename, text: item.name };
                 })
             ));

@@ -1,19 +1,23 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { Level } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
-import { About } from "./About";
-import { MyAccount } from "./MyAccount";
-
-import * as WsAccount from "src/ws_account";
+import { Toaster } from "react-hot-toast";
 import * as cookie from "dojo/cookie";
 
+import * as WsAccount from "src/ws_account";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
+
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore } from "../hooks/store";
-import * as Utility from "src/Utility";
+
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { ComingSoon } from "./controls/ComingSoon";
+import { About } from "./About";
+import { MyAccount } from "./MyAccount";
+import { toasterScale } from "./controls/CustomToaster";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
@@ -35,6 +39,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
     const theme = useTheme();
     const toolbarThemeDefaults = { active: "false", text: "", color: theme.palette.themeLight };
+    const [logIconColor, setLogIconColor] = React.useState(theme.semanticColors.link);
 
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
@@ -68,7 +73,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         [dismissPanel],
     );
 
-    const [log] = useECLWatchLogger();
+    const [log, logLastUpdated] = useECLWatchLogger();
 
     const advMenuProps = React.useMemo(() => {
         return {
@@ -119,18 +124,40 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         };
     }, [currentUser?.username]);
 
-    const btnStyles = mergeStyleSets({
+    const btnStyles = React.useMemo(() => mergeStyleSets({
         errorsWarnings: {
             border: "none",
             background: "transparent",
             minWidth: 48,
             padding: "0 10px 0 4px",
-            color: theme.semanticColors.link
+            color: logIconColor
         },
         errorsWarningsCount: {
             margin: "-3px 0 0 -3px"
         }
-    });
+    }), [logIconColor]);
+
+    React.useEffect(() => {
+        switch (log[0]?.level) {
+            case Level.alert:
+            case Level.critical:
+            case Level.emergency:
+                setLogIconColor(theme.semanticColors.severeWarningIcon);
+                break;
+            case Level.error:
+                setLogIconColor(theme.semanticColors.errorIcon);
+                break;
+            case Level.warning:
+                setLogIconColor(theme.semanticColors.warningIcon);
+                break;
+            case Level.info:
+            case Level.notice:
+            case Level.debug:
+            default:
+                setLogIconColor(theme.semanticColors.link);
+                break;
+        }
+    }, [log, logLastUpdated, theme]);
 
     React.useEffect(() => {
         WsAccount.MyAccount({})
@@ -186,6 +213,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} />
                     </Stack.Item>
                 </Stack>
+                <Toaster position="top-right" gutter={8 - (90 - toasterScale(90))} containerStyle={{
+                    top: toasterScale(57),
+                    right: 8 - (180 - toasterScale(180))
+                }} />
             </Stack.Item>
         </Stack>
         <Panel type={PanelType.smallFixedNear}

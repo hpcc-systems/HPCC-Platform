@@ -43,7 +43,7 @@
     "@hpcc-js/chart": "2.78.1",
     "@hpcc-js/codemirror": "2.59.4",
     "@hpcc-js/common": "2.68.1",
-    "@hpcc-js/comms": "2.76.0",
+    "@hpcc-js/comms": "2.77.0",
     "@hpcc-js/dataflow": "7.0.0",
     "@hpcc-js/eclwatch": "2.72.11",
     "@hpcc-js/graph": "2.80.1",
@@ -70,6 +70,7 @@
     "react": "16.14.0",
     "react-dom": "16.14.0",
     "react-hook-form": "7.30.0",
+    "react-hot-toast": "^2.2.0",
     "react-reflex": "4.0.6",
     "react-sizeme": "3.0.2",
     "universal-router": "9.1.0"
