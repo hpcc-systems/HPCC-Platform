@@ -345,37 +345,39 @@ void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
 bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
 {
     SocketEndpoint connectEP(ep);
-#ifdef _CONTAINERIZED
-    if (sprayer.useFtSlave)
-    {
-        //In containerized world all processes are executed locally, so make sure we try and connect to a local instance
-        connectEP.set("localhost");
-    }
-    else
-    {
-        Owned<IPropertyTree> serviceTree;
-        if (!isEmptyString(sprayer.sprayServiceName))
-        {
-            VStringBuffer serviceQualifier("services[@name='%s']", sprayer.sprayServiceName.get());
-            serviceTree.setown(getGlobalConfigSP()->getPropTree(serviceQualifier));
-            if (!serviceTree)
-                throw makeStringExceptionV(0, "launchFtSlaveCmd: failed to find dafilesrv service named: '%s'", sprayer.sprayServiceName.get());
-            const char *serviceAppType = serviceTree->queryProp("@application");
-            if (!strsame("spray", serviceAppType))
-                throw makeStringExceptionV(0, "launchFtSlaveCmd: configured service '%s' is of application type '%s' ('spray' type required)", sprayer.sprayServiceName.get(), nullIfEmptyString(serviceAppType));
-        }
-        else // find 1st of type 'spray'
-        {
-            Owned<IPropertyTreeIterator> directIOServices = getGlobalConfigSP()->getElements("services[@type='spray']");
-            if (directIOServices->first())
-                serviceTree.set(&directIOServices->query());
-            else
-                throw makeStringException(0, "launchFtSlaveCmd: no 'spray' dafilesrv services found");
-        }
-        connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
-    }
-#endif
 
+    // in containerized mode, redirect to dafilesrv service or local (if useFtSlave=true)
+    if (isContainerized())
+    {
+        if (sprayer.useFtSlave)
+        {
+            //In containerized world all ftslave processes are executed locally, so make sure we try and connect to a local instance
+            connectEP.set("localhost");
+        }
+        else
+        {
+            Owned<IPropertyTree> serviceTree;
+            if (!isEmptyString(sprayer.sprayServiceName))
+            {
+                VStringBuffer serviceQualifier("services[@name='%s']", sprayer.sprayServiceName.get());
+                serviceTree.setown(getGlobalConfigSP()->getPropTree(serviceQualifier));
+                if (!serviceTree)
+                    throw makeStringExceptionV(0, "launchFtSlaveCmd: failed to find dafilesrv service named: '%s'", sprayer.sprayServiceName.get());
+                const char *serviceAppType = serviceTree->queryProp("@application");
+                if (!strsame("spray", serviceAppType))
+                    throw makeStringExceptionV(0, "launchFtSlaveCmd: configured service '%s' is of application type '%s' ('spray' type required)", sprayer.sprayServiceName.get(), nullIfEmptyString(serviceAppType));
+            }
+            else // find 1st of type 'spray'
+            {
+                Owned<IPropertyTreeIterator> directIOServices = getGlobalConfigSP()->getElements("services[@type='spray']");
+                if (directIOServices->first())
+                    serviceTree.set(&directIOServices->query());
+                else
+                    throw makeStringException(0, "launchFtSlaveCmd: no 'spray' dafilesrv services found");
+            }
+            connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
+        }
+    }
     StringBuffer url;
     ep.getUrlStr(url);
 
@@ -440,7 +442,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
         // ftslave sends back a final ack.
         msg.clear().append(true);
         catchWriteBuffer(socket, msg);
-        if (sprayer.options->getPropInt("@fail", 0)) // JCSMORE - legacy? not set anywhere afaics
+        if (sprayer.options->getPropInt("@fail", 0)) // probably used as a debug testing option
             throwError(DFTERR_CopyFailed);
     }
     return ok;

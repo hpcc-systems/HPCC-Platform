@@ -37,7 +37,6 @@
 
 bool processPullCommand(ISocket * masterSocket, MemoryBuffer & msg)
 {
-    srand((int)get_cycles_now());
     TransferServer server(masterSocket);
     server.deserializeAction(msg, FTactionpull);
     return server.pull();
@@ -46,7 +45,6 @@ bool processPullCommand(ISocket * masterSocket, MemoryBuffer & msg)
 
 bool processPushCommand(ISocket * masterSocket, MemoryBuffer & msg)
 {
-    srand((int)get_cycles_now());
     TransferServer server(masterSocket);
     server.deserializeAction(msg, FTactionpush);
     return server.push();
