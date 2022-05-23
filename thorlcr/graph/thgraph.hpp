@@ -773,7 +773,6 @@ public:
     void executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract);
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
     void doExecuteChild(size32_t parentExtractSz, const byte *parentExtract);
-    void executeChild(size32_t & retSize, void * & ret, size32_t parentExtractSz, const byte *parentExtract);
     void setResults(IThorGraphResults *results);
     virtual cost_type getDiskAccessCost() = 0;
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract, IThorGraphResults *results, IThorGraphResults *graphLoopResults);
