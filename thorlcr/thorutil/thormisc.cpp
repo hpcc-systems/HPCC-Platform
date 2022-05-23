@@ -690,6 +690,16 @@ public:
         }
         if (clearDir)
             clearTempDirectory(true);
+#ifdef _CONTAINERIZED
+        // setTempDir is called exactly once in containerized mode
+        // Output the unique directory used by this manager/worker to a file,
+        // so the postStop command can find it and ensure cleared up.
+        Owned<IFile> nameTmpDir = createIFile("tmpdir"); // NB: each pod is in it's own private working directory
+        Owned<IFileIO> nameTmpDirIO = nameTmpDir->open(IFOcreate);
+        if (!nameTmpDirIO)
+            throw makeStringException(0, "Failed to create file 'tmpdir' with content of temp directory name");
+        nameTmpDirIO->write(0, subDirPath.length(), subDirPath.str());
+#endif
     }
     void clear(bool log)
     {
