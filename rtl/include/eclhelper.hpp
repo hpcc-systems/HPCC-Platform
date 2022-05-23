@@ -612,7 +612,8 @@ enum
     XWFtrim         = 0x0001,
     XWFopt          = 0x0002,
     XWFnoindent     = 0x0004,
-    XWFexpandempty  = 0x0008
+    XWFexpandempty  = 0x0008,
+    XWFonlyindentroot = 0x0010 //JSON only for now.  only indent and add newline at root level.  Useful for writing out individual rows in ECL ouptut
 };
 
 
