@@ -346,6 +346,13 @@ export function useFluentPagedGrid({
         setPersistedPageSize(`${newPageSize}`);
     }, [page, pageSize, setPersistedPageSize]);
 
+    React.useEffect(() => {
+        const maxPage = Math.ceil(total / pageSize) - 1;
+        if (maxPage >= 0 && page > maxPage) {   //  maxPage can be -1 if total is 0
+            setPage(maxPage);
+        }
+    }, [page, pageSize, total]);
+
     const GridPagination = React.useCallback(() => {
         return <Stack horizontal className={paginationStyles.root}>
             <Stack.Item className={paginationStyles.pageControls}>
