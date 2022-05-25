@@ -82,6 +82,15 @@
             
             <xsl:copy-of select="/Environment/Software/Directories"/>  
 
+            <!--
+            # Generated for configuration info. accessed by getGlobalConfig()
+            -->
+            <global>
+             <storage>
+              <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
+             </storage>
+            </global>
+
             <SSH>
               <xsl:for-each select="SSH/@*">
                 <xsl:if test="string(.) != ''">
