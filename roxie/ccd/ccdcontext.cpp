@@ -2092,13 +2092,15 @@ public:
     virtual UChar *getResultVarUnicode(const char * name, unsigned sequence)
     {
         StringBuffer x;
-        CriticalBlock b(contextCrit);
-        useContext(sequence).getProp(name, x);
+        {
+            CriticalBlock b(contextCrit);
+            useContext(sequence).getProp(name, x);
+        }
         return rtlVCodepageToVUnicodeX(x.str(), "utf-8");
     }
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name)
     {
-        CriticalBlock b(contextCrit);
+        CriticalBlock b(timerCrit);
         ISectionTimer *timer = functionTimers.getValue(name);
         if (!timer)
         {
@@ -2112,6 +2114,8 @@ public:
 
 protected:
     mutable CriticalSection contextCrit;
+    CriticalSection timerCrit;
+    CriticalSection resolveCrit;
     Owned<IPropertyTree> context;
     IPropertyTree *persists;
     IPropertyTree *temporaries;
@@ -2133,7 +2137,7 @@ protected:
                 throw MakeStringException(ROXIE_CODEGEN_ERROR, "Code generation error - attempting to access stored variable on agent");
         case ResultSequencePersist:
             {
-                CriticalBlock b(contextCrit);
+                contextCrit.assertLocked();
                 if (!persists)
                     persists = createPTree(ipt_fast);
                 return *persists;
@@ -2146,14 +2150,14 @@ protected:
             //fall through
         case ResultSequenceInternal:
             {
-                CriticalBlock b(contextCrit);
+                contextCrit.assertLocked();
                 if (!temporaries)
                     temporaries = createPTree(ipt_fast);
                 return *temporaries;
             }
         default:
             {
-                CriticalBlock b(contextCrit);
+                contextCrit.assertLocked();
                 if (!rereadResults)
                     rereadResults = createPTree(ipt_fast);
                 return *rereadResults;
@@ -3274,8 +3278,9 @@ public:
     }
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml)
     {
+        Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, ipt_caseInsensitive|ipt_fast);
         CriticalBlock b(contextCrit);
-        useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive|ipt_fast));
+        useContext(sequence).setPropTree(name, tree.getClear());
     }
 
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val)
@@ -3519,9 +3524,10 @@ public:
 
     virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt, bool isPrivilegedUser)
     {
-        CriticalBlock b(contextCrit);
         StringBuffer expandedName;
         expandLogicalFilename(expandedName, fileName, workUnit, false, false);
+
+        CriticalBlock b(resolveCrit);
         Linked<const IResolvedFile> ret = fileCache.getValue(expandedName);
         if (!ret)
         {
@@ -3889,7 +3895,7 @@ public:
 
     virtual IDistributedFileTransaction *querySuperFileTransaction()
     {
-        CriticalBlock b(contextCrit);
+        CriticalBlock b(resolveCrit);
         if (!superfileTransaction.get())
             superfileTransaction.setown(createDistributedFileTransaction(queryUserDescriptor(), queryCodeContext()));
         return superfileTransaction.get();
