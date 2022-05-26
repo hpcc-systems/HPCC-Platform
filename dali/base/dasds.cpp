@@ -5521,10 +5521,13 @@ public:
 #else
                 toXML(root, *ios, 0, 0);
 #endif
+                ios->flush(); // ensure flushed outside of dtor (to ensure any exception thrown)
                 ios.clear();
                 fstream.clear();
+                crcPipeStream->flush(); // ensure flushed outside of dtor. NB: calls wrapped stream flush()
                 crc = crcPipeStream->queryCrc();
                 crcPipeStream.clear();
+                iFileIOTmpStore->close(); // ensure flushed outside of dtor
                 iFileIOTmpStore.clear();
             }
             catch (IException *e)
