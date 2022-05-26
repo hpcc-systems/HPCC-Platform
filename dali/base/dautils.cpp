@@ -654,14 +654,14 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                         }
                     }
                 }
-                else if (streq(SELF_SCOPE, str) && selfScopeTranslation)
+                else if (streq(SELF_SCOPE, str) && selfScopeNormalization)
                     skipScope = true;
             }
             for (;;)
             {
                 s+=2;
                 const char *ns = strstr(s,"::");
-                if ((ns || str.length()>1) && skipScope && selfScopeTranslation)
+                if ((ns || str.length()>1) && skipScope && selfScopeNormalization)
                 {
                     str.setLength(scopeStart);
                     skipScope = false;
@@ -673,7 +673,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                 scopeStart = str.length();
                 normalizeScope(name, s, ns-s, str, strict);
                 unsigned scopeLen = str.length()-scopeStart;
-                if ((1 == scopeLen) && (*SELF_SCOPE == str.charAt(str.length()-1)) && selfScopeTranslation)
+                if ((1 == scopeLen) && (*SELF_SCOPE == str.charAt(str.length()-1)) && selfScopeNormalization)
                     skipScope = true;
                 s = ns;
             }
@@ -681,7 +681,8 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         else
         {
             s = name;
-            str.append(".::");
+            if (!selfScopeNormalization)
+                str.append(".::");
         }
         tailpos = str.length();
         normalizeScope(name, s, strlen(name)-(s-name), str, strict);

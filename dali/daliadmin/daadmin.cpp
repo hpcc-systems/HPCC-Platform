@@ -1745,7 +1745,7 @@ void normalizeFileNames(IUserDescriptor *user, const char *name)
         IPropertyTree &attr = iter->query();
         const char *lfn = attr.queryProp("@name");
         CDfsLogicalFileName dlfn;
-        dlfn.enableSelfScopeTranslation(false);
+        dlfn.enableSelfScopeNormalization(false);
         dlfn.set(lfn);
 
         Owned<IDistributedFile> dFile;
