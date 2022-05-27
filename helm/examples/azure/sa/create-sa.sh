@@ -55,7 +55,7 @@ for shareName in $SHARE_NAMES
 do
   az storage share exists --connection-string "${AZURE_STORAGE_CONNECTION_STRING}" \
     --name  $shareName | grep -q  "\"exists\":[[:space:]]*false"
-  if [ $? -ne 0 ]
+  if [ $? -eq 0 ]
   then
     echo "create share $shareName"
     az storage share create \

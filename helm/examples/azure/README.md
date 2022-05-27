@@ -1,5 +1,7 @@
 # HPCC Azure storage
 
+For Kubernetes server version 1.21+ the Azure Files {standard} Container Storage Interface (CSI) driver is used by Azure Kubernetes Service (AKS) to manage the lifecycle of Azure File shares. Currently most AKS regions are using Kubernetes version 1.21 and above. To "Dynamically generate a storage account and shared volume with Storage Class" choose either "file.csi.azure.com" (CSI based) or "kubernetes.io/azure-file" as a legacy provisioner without CSI, for the older Kubernetes versions.
+
 ## Directory contents
 
 ### values-auto-azurefile.yaml

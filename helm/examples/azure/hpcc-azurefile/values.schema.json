@@ -16,6 +16,11 @@
           "description": "Kubernetes namespace for secret",
           "type": "string",
           "default": "default"
+        },
+        "provisioner": {
+          "description": "StorageClass provisioner determines what volume plugin is used for provisioning PVs",
+          "type": "string",
+          "default": "file.csi.azure.com"
         }
       }
     },
@@ -70,6 +75,10 @@
         },
         "shareName": {
           "description": "Azure storage share name",
+          "type": "string"
+        },
+        "volumeId": {
+          "description": "make sure this volumeid is unique in the cluster",
           "type": "string"
         }
       },
