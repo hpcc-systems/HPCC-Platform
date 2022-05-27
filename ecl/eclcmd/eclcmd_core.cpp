@@ -146,6 +146,8 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
         req->setResultLimit(cmd.optResultLimit);
     if (cmd.optAttributePath.length())
         req->setQueryMainDefinition(cmd.optAttributePath);
+    if (cmd.optLegacy)
+        addNamedValue("eclcc-legacy", "true", cmd.debugValues);
     if (cmd.optSnapshot.length())
         req->setSnapshot(cmd.optSnapshot);
     expandDefintionsAsDebugValues(cmd.definitions, cmd.debugValues);
