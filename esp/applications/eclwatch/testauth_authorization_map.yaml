@@ -3,7 +3,6 @@ authNZ:
       name: test
       type: test
       LibName: libtestauthSecurity.so
-      authType: AuthTypeMixed
       # Define which authorization resources to be tested.
       # As default, the authorization resources defined in
       # ldap_authorization_map.yaml are tested.

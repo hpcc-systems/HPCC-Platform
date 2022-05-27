@@ -89,18 +89,24 @@ static void copyDirectories(IPropertyTree *target, IPropertyTree *src)
     }
 }
 
-void addAuthDomains(const char *authType, IPropertyTree *legacyEsp)
+void addAuthDomains(IPropertyTree *appEsp, IPropertyTree *legacyEsp)
 {
-    if (isEmptyString(authType)) //backward compatible
-        authType = "AuthPerRequestOnly";
+    IPropertyTree *authDomainTree = appEsp->queryPropTree("authDomain");
+    if (authDomainTree)
+    {
+        IPropertyTree *legacyAuthDomains = legacyEsp->addPropTree("AuthDomains");
+        IPropertyTree *legacyAuthDomain = legacyAuthDomains->addPropTree("AuthDomain");
+        copyAttributes(legacyAuthDomain, authDomainTree);
+        return;
+    }
 
     VStringBuffer AuthDomains(
         "<AuthDomains>"
-            "<AuthDomain authType='%s' clientSessionTimeoutMinutes='120' domainName='default'"
+            "<AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default'"
                 " invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png'"
                 " logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240'"
                 " unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/>"
-        "</AuthDomains>", authType);
+        "</AuthDomains>");
     legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString(AuthDomains));
 }
 
@@ -153,8 +159,6 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
     if (isEmptyString(tag))
         throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set 'auth: none'");
 
-    addAuthDomains(appSecMgr->queryProp("@authType"), legacyEsp);
-
     IPropertyTree *legacy = legacyEsp->addPropTree("SecurityManagers");
     legacy = legacy->addPropTree("SecurityManager");
     copyAttributes(legacy, appSecMgr);
@@ -174,6 +178,9 @@ bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &
         throw MakeStringException(-1, "'auth' attribute required.  To run without security set 'auth: none'");
     if (streq(auth, "none"))
         return false;
+
+    addAuthDomains(appEsp, legacyEsp);
+
     if (streq(auth, "ldap"))
         return addLdapSecurity(legacyEsp, appEsp, bindAuth, LdapType::LegacyAD);
     if (streq(auth, "azure_ldap"))
