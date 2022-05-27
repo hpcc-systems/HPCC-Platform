@@ -14,7 +14,32 @@
 #    limitations under the License.
 ################################################################################
 
-IF(NOT CLIENTTOOLS_ONLY)
-    #HPCC_ADD_SUBDIRECTORY (BlobLogAccess)
-    HPCC_ADD_SUBDIRECTORY (LogAnalytics/CurlClient)
-ENDIF()
+project(AzureLogAnalyticsCurllogaccess)
+
+# Required installed libraries
+find_package(CURL REQUIRED)
+
+set(srcs
+  ${CMAKE_CURRENT_SOURCE_DIR}/AzureLogAnalyticsCurlClient.cpp
+)
+
+include_directories(
+  ${HPCC_SOURCE_DIR}/system/include
+  ${HPCC_SOURCE_DIR}/system/jlib
+  ${CURL_INCLUDE_DIR}
+)
+
+add_definitions(-DAZURE_LOGANALYTICS_CURL_LOGACCESS_EXPORTS)
+
+HPCC_ADD_LIBRARY(${PROJECT_NAME} SHARED ${srcs})
+
+target_link_libraries(${PROJECT_NAME}
+   PRIVATE jlib
+   PRIVATE ${CURL_LIBRARIES}
+)
+
+install(TARGETS ${PROJECT_NAME}
+  RUNTIME DESTINATION ${EXEC_DIR}
+  LIBRARY DESTINATION ${LIB_DIR}
+)
+#message("^^^^^^^^^^^^^^^^^^^^ CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS}")

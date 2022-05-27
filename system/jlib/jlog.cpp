@@ -3510,30 +3510,33 @@ IRemoteLogAccess &queryRemoteLogAccessor()
             {
                 const char * simulatedGlobalYaml = R"!!(global:
   logAccess:
-    name: "AzureLogAnalytics"
-    type: "AzureBlob"
+    name: "Azure LogAnalytics LogAccess"
+    type: "AzureLogAnalyticsCurl"
     connection:
-      protocol: "http"
-      host: "elasticsearch-master.default.svc.cluster.local"
-      port: 9200
+      #workspaceID: "ef060646-ef24-48a5-b88c-b1f3fbe40271"
+      workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
+      #tenantID: "ABC"         #The Tenant ID, required for KQL API access
+      clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access
+      clientSecret: "XYZ123"  #The secret associated with the Azure Active Directory registered application
     logMaps:
     - type: "global"
-      storeName: "hpcc-logs*"
-      searchColumn: "message"
-      timeStampColumn: "created_ts"
+      storeName: "ContainerLog"
+      searchColumn: "LogEntry"
+      timeStampColumn: "TimeGenerated"
     - type: "workunits"
-      storeName: "hpcc-logs*"
-      searchColumn: "hpcc.log.jobid"
+      storeName: "ContainerLog"
+      searchColumn: "hpcc_log_jobid"
     - type: "components"
-      searchColumn: "kubernetes.container.name"
+      searchColumn: "ContainerID"
     - type: "audience"
-      searchColumn: "hpcc.log.audience"
+      searchColumn: "hpcc_log_audience"
     - type: "class"
-      searchColumn: "hpcc.log.class"
+      searchColumn: "hpcc_log_class"
     - type: "instance"
-      searchColumn: "kubernetes.pod.name"
+      storeName: "ContainerInventory"
+      searchColumn: "Name"
     - type: "host"
-      searchColumn: "kubernetes.node.hostname"
+      searchColumn: "Computer"
                 )!!";
                 Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
                 logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));

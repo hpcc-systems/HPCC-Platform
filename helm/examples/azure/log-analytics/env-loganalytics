@@ -1,0 +1,18 @@
+# Azure log analytics 
+
+# The desired name for the Azure LogAnalytics workspace to be created and associated with target AKS cluster
+LOGANALYTICS_WORKSPACE_NAME=
+
+# Tags to properly annotate the Azure logAnalytics workspace to be created
+# For example: admin=MyName email=my.email@mycompany.com environment=myenv justification=testing
+TAGS=
+
+# The Azure resource group associated with the target AKS cluster
+LOGANALYTICS_RESOURCE_GROUP=
+
+# Name of the AKS cluster hosting HPCC components to be monitored and associated with the newly
+# created Azure LogAnalytics workspace
+AKS_CLUSTER_NAME=
+
+# The Azure subscription
+AZURE_SUBSCRIPTION=
