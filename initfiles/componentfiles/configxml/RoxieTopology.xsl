@@ -122,6 +122,14 @@
                 <xsl:value-of select="translate($path3, $oldPathSeparator, $newPathSeparator)"/>
             </xsl:attribute>
             <xsl:copy-of select="/Environment/Software/Directories"/>
+            <!--
+            # Generated for configuration info. accessed by getGlobalConfig()
+            -->
+            <global>
+             <storage>
+              <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
+             </storage>
+            </global>
             <xsl:copy-of select="/Environment/Hardware/NAS"/>
             <xsl:for-each select="ACL">
                 <xsl:copy>
