@@ -660,6 +660,19 @@
               "Warnings &amp; Errors" area. The global setting defaults to
               TRUE, but can be changed using Configuration Manager.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>maxCost</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Overrides the <emphasis>limit</emphasis> setting in
+              Thor's configuration. If the <emphasis>maxCost</emphasis>
+              threshold is reached, the job guillotine is enforced and the job
+              is halted. This does not override the
+              <emphasis>hardlimit</emphasis> setting. This is only valid for
+              Thor jobs.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>
