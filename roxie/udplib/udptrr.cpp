@@ -387,7 +387,8 @@ static_assert(sizeof(UdpRequestToSendMsg) < sizeof(UdpPacketHeader), "Expected U
 enum class ReceiveState {
     idle,           // no activity from the sender - wating for a request to send
     requested,      // permit to be send has been requested but not granted (other permits may have been granted)
-    granted,        // at least one permit granted and no pending request, waiting for data to be sent
+                    // this must be the state if the sender is on the pendingRequests list
+    granted,        // at least one permit granted and NO pending request, waiting for data to be sent
     max
 };
 constexpr const char * receiveStateNameText[(unsigned)ReceiveState::max] = { "idle", "requested", "granted" };
@@ -909,7 +910,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 // Unexpected state, should never happen!
                 ERRLOG("ERROR: Unexpected state %s in grantPermit", receiveStateName(requester->state));
-                throwUnexpected();
+                requester->state = ReceiveState::requested; // Allow the system to recover.....
+                printStackReport();
             }
 
             pendingRequests.remove(requester);
@@ -1073,7 +1075,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             //Currently this is benign.  If the sender really is alive it will send another request.
                             //Should this have a more significant effect and throw away any data that has been received from that sender??
                             //Only change the state if there are no other active permits.  Only the last request will be re-sent.
-                            if (!sender->hasActivePermit())
+                            if (!sender->hasActivePermit() && (sender->state != ReceiveState::requested))
                                 sender->state = ReceiveState::idle;
                         }
                         else if (sender->state != ReceiveState::requested)
