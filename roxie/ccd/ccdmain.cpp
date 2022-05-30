@@ -1085,7 +1085,31 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         bool allowTransparentHugePages = topology->getPropBool("@heapUseTransparentHugePages", true);
         bool retainMemory = topology->getPropBool("@heapRetainMemory", false);
         if (!totalMemoryLimit)
-            totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
+        {
+            // NB: This could be in a isContainerized(), but the resource sections only apply to containerized setups
+            const char *resourcedMemory = topology->queryProp("resources/@memory");
+            if (isEmptyString(resourcedMemory))
+            {
+                if (topology->getPropBool("@server"))
+                    resourcedMemory = topology->queryProp("serverResources/@memory");
+                else
+                    resourcedMemory = topology->queryProp("channelResources/@memory");
+            }
+            if (!isEmptyString(resourcedMemory))
+            {
+                // resource memory is defined and @totalMemoryLimit isn't, base limit on resourced limit
+                // scale down to leave room for heap/queries etc.
+                constexpr float roxieMemResourcedMemoryPct = 75.0;
+
+                totalMemoryLimit = friendlyStringToSize(resourcedMemory);
+                totalMemoryLimit = totalMemoryLimit / 100.0 * roxieMemResourcedMemoryPct;
+            }
+            else
+            {
+                // default in absence of either explicit totalMemoryLimit or resource memory settings
+                totalMemoryLimit = 1024 * 0x100000; // 1 Gb
+            }
+        }
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
         roxiemem::setMemoryOptions(topology);
 
