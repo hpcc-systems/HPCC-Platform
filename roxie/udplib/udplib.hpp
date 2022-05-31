@@ -201,6 +201,7 @@ extern UDPLIB_API bool udpTraceFlow;
 extern UDPLIB_API bool udpTraceTimeouts;
 extern UDPLIB_API unsigned udpTraceLevel;
 extern UDPLIB_API unsigned udpOutQsPriority;
+extern UDPLIB_API unsigned udpSendTraceThresholdMs;
 
 extern UDPLIB_API unsigned udpFlowSocketsSize;
 extern UDPLIB_API unsigned udpLocalWriteSocketSize;
