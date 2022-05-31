@@ -1214,7 +1214,7 @@ protected:
 
 protected:
     bool exceptionLogged;
-    bool aborted;
+    std::atomic<bool> aborted;
     CriticalSection abortLock; // NOTE: we don't bother to get lock when just reading to see whether to abort
     Owned<IException> exception;
 
