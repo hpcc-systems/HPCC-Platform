@@ -365,7 +365,7 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
             const { TpDropZoneQueryResponse } = response;
             setTargetServers(TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === props.dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
                 return {
-                    key: n.ConfigNetaddress,
+                    key: n.Netaddress,
                     text: n.Netaddress,
                     OS: n.OS
                 };
