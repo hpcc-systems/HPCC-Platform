@@ -28,6 +28,7 @@ BUILD_TYPE=                                     # Set to Debug for a debug build
 DOCKER_REPO=hpccsystems
 DEST_DOCKER_REGISTRY=docker.io
 USE_CPPUNIT=1
+STRIP_RELEASE_SYMBOLS=0
 
 # These values are set in a GitHub workflow build
 
@@ -61,7 +62,13 @@ if [[ -n ${INPUT_BUILD_TYPE} ]] ; then
 else
   BUILD_TYPE=RelWithDebInfo
   USE_CPPUNIT=0
+  STRIP_RELEASE_SYMBOLS=1
 fi
+
+if [[ -n ${INPUT_STRIP_RELEASE_SYMBOLS} ]] ; then
+  STRIP_RELEASE_SYMBOLS=$INPUT_STRIP_RELEASE_SYMBOLS
+fi
+
 
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
   LATEST=1
@@ -94,6 +101,7 @@ build_image() {
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
+       --build-arg STRIP_RELEASE_SYMBOLS=${STRIP_RELEASE_SYMBOLS} \
        ${rest} ${name}/
     push_image $name $label
   fi
