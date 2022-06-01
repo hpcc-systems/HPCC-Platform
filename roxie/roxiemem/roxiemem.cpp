@@ -72,6 +72,7 @@ namespace roxiemem {
 static unsigned memTraceLevel = 1;
 static memsize_t memTraceSizeLimit = 0;
 static const unsigned ScanReportThreshold = 10; // If average more than 10 scans per allocate then notify us.  More than 10 starts slowing the query down.
+static bool memTraceInconsistencies = false;
 
 void setMemTraceLevel(unsigned value)
 {
@@ -4339,6 +4340,7 @@ void initAllocSizeMappings(const unsigned * sizes)
 // Id is the pointer value with a sequence number stored in the lower bits (typically 1K).  These functions create ids and extract the elements
 inline DataBuffer * getPtrFromDataId(memsize_t id) { return (DataBuffer *)(id & DATA_ALIGNMENT_MASK); }
 inline unsigned getSeqFromDataId(memsize_t id) { return (unsigned)(id & (DATA_ALIGNMENT_SIZE-1)); }
+inline unsigned nextSeqFromDataId(memsize_t id) { return getSeqFromDataId(id+1); }  // Increment before extracting the id to ensure it wraps correctly.
 inline bool isNullDataId(memsize_t id) { return (id & DATA_ALIGNMENT_MASK) == 0; }
 inline memsize_t createDataId(DataBuffer * ptr, unsigned seq) { return memsize_t(ptr) | seq; }
 
@@ -4364,6 +4366,8 @@ private:
     unsigned peakPages;
     unsigned dataBuffs;
     unsigned dataBuffPages;
+    unsigned reportWalkFreeThreshold = 256;
+    unsigned attachSeq = 0;
     std::atomic_uint possibleGoers = {0};
     std::atomic_uint totalHeapPages = {0};
     Owned<IActivityMemoryUsageMap> peakUsageMap;
@@ -4459,18 +4463,34 @@ public:
         }
 
         DataBuffer *dfinger = activeBuffs;
+        unsigned gone = 0;
+        unsigned dead = 0;
         while (dfinger)
         {
             DataBuffer *next = dfinger->nextActive;
-            if (memTraceLevel >= 2 && dfinger->queryCount()!=1)
+            if (memTraceInconsistencies && getSeqFromDataId((memsize_t)next) != 0)
+                logctx.CTXLOG("INTERNAL ERROR: unexpected sequence number in nextActive in ~CChunkingRowManager - addr=%p rowMgr=%p",
+                        dfinger, this);
+
+            unsigned count = dfinger->queryCount();
+            if (count == 1)
+                gone++;
+            else if (count == 0)
+                dead++;
+
+            if (memTraceLevel >= 2 && count!=1)
                 logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
                         dfinger->queryCount()-1, dfinger, this);
-            dfinger->nextActive = 0;
-            dfinger->mgr = NULL; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
+            dfinger->nextActive = nullptr;
+            dfinger->mgr = nullptr; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
             dfinger->count.store(0, std::memory_order_relaxed);
             dfinger->released();
             dfinger = next;
         }
+
+        if ((dataBuffs != possibleGoers.load()) || (gone != possibleGoers))
+            logctx.CTXLOG("WARNING: ~CChunkingRowManager() had %u buffers %u goers %u ready to free %u dead", dataBuffs, possibleGoers.load(), gone, dead);
+
         logctx.Release();
     }
 
@@ -4823,34 +4843,66 @@ public:
                     dataBuff, dataBuffs, dataBuffPages, possibleGoers.load(), this);
 
         dataBuff->Link();
-        DataBuffer *last = NULL;
         bool needCheck;
         {
             CriticalBlock b(activeBufferCS);
-            DataBuffer *finger = activeBuffs;
-            while (finger && possibleGoers.load(std::memory_order_relaxed))
+            unsigned readyToGo = possibleGoers.load(std::memory_order_relaxed);
+            const unsigned udpDataBuffFreePercent = 10;
+
+            //Only walk the list of active buffers if more than a certain percentage are ready to be freed
+            if (readyToGo * 100 >= dataBuffs * udpDataBuffFreePercent)
             {
-                // MORE - if we get a load of data in and none out this can start to bog down...
-                DataBuffer *next = finger->nextActive;
-                if (finger->queryCount()==1)
+                unsigned steps = 0;
+                unsigned gone = 0;
+                DataBuffer *finger = activeBuffs;
+                DataBuffer *last = nullptr;
+                while (finger && (gone < readyToGo))
                 {
-                    if (memTraceLevel >= 4)
-                        logctx.CTXLOG("RoxieMemMgr: attachDataBuff() detaching DataBuffer linked in active list - addr=%p rowMgr=%p",
+                    assertex(finger->mgr == this);
+                    // MORE - if we get a load of data in and none out this can start to bog down...
+                    DataBuffer *next = finger->nextActive;
+                    if (memTraceInconsistencies && getSeqFromDataId((memsize_t)next) != 0)
+                        logctx.CTXLOG("INTERNAL ERROR: unexpected sequence number in nextActive in ~CChunkingRowManager - addr=%p rowMgr=%p",
                                 finger, this);
-                    finger->nextActive = 0;
-                    finger->Release();
-                    dataBuffs--;
-                    possibleGoers.fetch_sub(1, std::memory_order_relaxed); // It doesn't matter when other threads see this update
-                    if (last)
-                        last->nextActive = next;
+
+                    if (finger->queryCount()==1)
+                    {
+                        if (memTraceLevel >= 4)
+                            logctx.CTXLOG("RoxieMemMgr: attachDataBuff() detaching DataBuffer linked in active list - addr=%p rowMgr=%p",
+                                    finger, this);
+                        finger->mgr = nullptr;
+                        finger->nextActive = nullptr;
+                        finger->Release();
+                        if (last)
+                            last->nextActive = next;
+                        else
+                            activeBuffs = next;    // MORE - this is yukky code - surely there's a cleaner way!
+                        gone++;
+                    }
                     else
-                        activeBuffs = next;    // MORE - this is yukky code - surely there's a cleaner way!
+                        last = finger;
+                    finger = next;
+                    steps++;
                 }
-                else
-                    last = finger;
-                finger = next;
+
+                if (memTraceLevel >= 1 && (steps >= reportWalkFreeThreshold))
+                {
+                    logctx.CTXLOG("RoxieMemMgr: attachDataBuff() took %u iterations to free %u buffers from %u now %u", steps, gone, dataBuffs, possibleGoers.load());
+                    reportWalkFreeThreshold *= 2;
+                }
+
+                if (gone)
+                {
+                    possibleGoers.fetch_sub(gone, std::memory_order_relaxed); // It doesn't matter when other threads see this update
+                    dataBuffs -= gone;
+                }
             }
+
             assert(dataBuff->nextActive == nullptr);
+#ifdef _DEBUG
+            //Optionally assign a sequence number to the attached databuffer to make it easier to investigate issues
+            dataBuff->filler = ++attachSeq;
+#endif
             dataBuff->nextActive = activeBuffs;
             activeBuffs = dataBuff;
             dataBuffs++;
@@ -6246,14 +6298,16 @@ void CPackedChunkingHeap::reportScanProblem(unsigned, unsigned __int64 numScans,
 
 void DataBuffer::Release()
 {
-    if (count.load(std::memory_order_relaxed)==2 && mgr)
-        mgr->noteDataBuffReleased((DataBuffer*) this);
-    if (count.fetch_sub(1, std::memory_order_release) == 1)
+    IRowManager * manager = mgr;
+    unsigned prevCount = count.fetch_sub(1, std::memory_order_release);
+    if (prevCount == 1)
     {
         //No acquire fence - released() is assumed not to access the data in this buffer
         //If it does it should contain an acquire fence
         released();
     }
+    else if (manager && prevCount == 2)
+        manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
 }
 
 void DataBuffer::released()
@@ -6286,16 +6340,17 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
 
 void DataBuffer::noteReleased(const void *ptr)
 {
-    if (count.load(std::memory_order_relaxed)==2 && mgr)
-        mgr->noteDataBuffReleased((DataBuffer*) this);
-
-    //The link counter is shared by all the rows that are contained in this DataBuffer
-    if (count.fetch_sub(1, std::memory_order_release) == 1)
+    IRowManager * manager = mgr;
+    unsigned prevCount = count.fetch_sub(1, std::memory_order_release);
+    //After this line the DataBuffer may be deleted (e.g. by another thread) if neither of the following conditions are met
+    if (prevCount == 1)
     {
         //No acquire fence - released() is assumed not to access the data in this buffer
         //If it does it should contain an acquire fence
         released();
     }
+    else if (manager && prevCount == 2)
+        manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
 }
 
 void DataBuffer::noteLinked(const void *ptr)
@@ -6414,9 +6469,8 @@ public:
                         //Nothing else can modify curFree, so this pointer will remain valid
                         DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
 
-                        //Always update the sequence number when updating the freeHeadId to avoid ABA problem.  Increment before
-                        //extracting the id to ensure it wraps correctly.
-                        memsize_t nextHeadId = createDataId(nextFree, getSeqFromDataId(curHeadId+1));
+                        //Always update the sequence number when updating the freeHeadId to avoid ABA problem.
+                        memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
                         if (likely(bottom->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
                         {
                             dataBuffersActive.fetch_add(1);
@@ -6483,7 +6537,7 @@ public:
                                 DataBuffer * nextFree = getPtrFromDataId(curFree->nextDataId);
 
                                 //Always update the sequence number when updating the freeHeadId to avoid ABA problem
-                                memsize_t nextHeadId = createDataId(nextFree, getSeqFromDataId(curHeadId+1));
+                                memsize_t nextHeadId = createDataId(nextFree, nextSeqFromDataId(curHeadId));
                                 if (likely(finger->freeHeadId.compare_exchange_weak(curHeadId, nextHeadId, std::memory_order_acq_rel)))
                                 {
                                     dataBuffersActive.fetch_add(1);
@@ -6549,10 +6603,9 @@ void DataBufferBottom::addToFreeChain(DataBuffer * buffer)
     memsize_t expected = freeHeadId.load();
     for (;;)
     {
-        //MORE: Increment the sequence whenever an item is added to avoid the ABA problem.
-        //Incremented inside getSeqFromDataId() to ensure the seq does not overflow
-        unsigned seq = getSeqFromDataId(expected+1);
-        memsize_t newHead = createDataId(buffer, seq);
+        //Always increment the sequence number to prevent ABA problems.
+        unsigned nextSeq = nextSeqFromDataId(expected);
+        memsize_t newHead = createDataId(buffer, nextSeq);
         buffer->nextDataId = expected;
         if (likely(freeHeadId.compare_exchange_weak(expected, newHead, std::memory_order_acq_rel)))
             break;
@@ -6636,6 +6689,14 @@ extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePa
         DBGLOG("RoxieMemMgr: Setting memory limit to %" I64F "d bytes (%" I64F "u pages)", (unsigned __int64) max, (unsigned __int64)totalMemoryLimit);
     initializeHeap(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
     initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
+}
+
+void setMemoryOptions(IPropertyTree * options)
+{
+    if (!options)
+        return;
+    memTraceInconsistencies = options->getPropBool("@roxiememTraceInconsistencies", true);
+    //MORE: Other options should probably be processed here - so they can be read consistently
 }
 
 extern memsize_t getTotalMemoryLimit()
