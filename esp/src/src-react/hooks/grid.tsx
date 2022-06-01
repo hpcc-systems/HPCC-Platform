@@ -294,14 +294,7 @@ export function useFluentPagedGrid({
 }: useFluentPagedGridProps): useFluentPagedGridResponse {
 
     const [page, setPage] = React.useState(0);
-    const [persistedPageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, "25");
-    const pageSize = React.useMemo(() => {
-        const retVal = parseInt(persistedPageSize);
-        if (isNaN(retVal)) {
-            return 0;
-        }
-        return retVal;
-    }, [persistedPageSize]);
+    const [pageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, 25);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
     const [theme] = useUserTheme();
 
@@ -343,7 +336,7 @@ export function useFluentPagedGrid({
     const dropdownChange = React.useCallback((evt, option) => {
         const newPageSize = option.key as number;
         setPage(Math.floor((page * pageSize) / newPageSize));
-        setPersistedPageSize(`${newPageSize}`);
+        setPersistedPageSize(newPageSize);
     }, [page, pageSize, setPersistedPageSize]);
 
     const GridPagination = React.useCallback(() => {

@@ -486,14 +486,14 @@ define([
 
         _onAboutLoaded: false,
         _onAbout: function (evt) {
-            var aboutNode = dom.byId(this.id + "AboutDialog");
+            var placeholderNode = dom.byId(this.id + "DialogPlaceholder");
             srcReact.render(AboutModule.About, {
                 eclwatchVersion: "5",
                 show: true,
                 onClose: function () {
-                    srcReact.unrender(aboutNode);
+                    srcReact.unrender(placeholderNode);
                 }
-            }, aboutNode);
+            }, placeholderNode);
         },
 
         _onShowLock: function (evt) {
@@ -578,13 +578,13 @@ define([
         _onUpdateToolbarDom: function (evt) {
             EnvironmentTheme.getEnvironmentTheme().then(theme => {
                 if (theme === undefined) return;
-                this.environmentTextCB.set("checked", theme.active === "true");
+                this.environmentTextCB.set("checked", theme.active);
                 this.environmentText.set("value", theme.text);
                 this.toolbarColor.set("value", theme.color);
 
                 domConstruct.destroy(this.id + "BannerInnerText");
 
-                if (theme.text !== "") {
+                if (theme.active && theme.text !== "") {
                     var searchUserMoreComponents = dom.byId(this.id + "searchUserMoreComponents");
                     var parent = domConstruct.create("div", { id: this.id + "BannerInnerText", class: "environmentText" }, searchUserMoreComponents, "before");
                     domConstruct.create("span", { id: this.id + "BannerContent", style: { color: Utility.textColor(theme.color) }, innerHTML: theme.text }, parent);
@@ -593,7 +593,7 @@ define([
                     document.title = dojoConfig.pageTitle;
                 }
 
-                domStyle.set(this.id + "Titlebar", { backgroundColor: theme.color });
+                domStyle.set(this.id + "Titlebar", { backgroundColor: theme.active && theme.color ? theme.color : EnvironmentTheme.defaults.color });
             });
         },
 
