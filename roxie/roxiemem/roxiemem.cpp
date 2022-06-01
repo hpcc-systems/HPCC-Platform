@@ -6286,6 +6286,9 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
 
 void DataBuffer::noteReleased(const void *ptr)
 {
+    if (count.load(std::memory_order_relaxed)==2 && mgr)
+        mgr->noteDataBuffReleased((DataBuffer*) this);
+
     //The link counter is shared by all the rows that are contained in this DataBuffer
     if (count.fetch_sub(1, std::memory_order_release) == 1)
     {
