@@ -1533,13 +1533,14 @@ public:
                     }
                     catch (IException *E)
                     {
-                        EXCLOG(E, "Unexpected exception in stop() called from reset()");
+                        VStringBuffer msg("Unexpected exception in stop() called from reset() %u", activityId);
+                        EXCLOG(E, msg.str());
                         printStackReport();
                         ::Release(E);
                     }
                     catch (...)
                     {
-                        DBGLOG("Unexpected unknown exception in stop() called from reset()");
+                        DBGLOG("Unexpected unknown exception in stop() called from reset() %u", activityId);
                         printStackReport();
                     }
                 }
@@ -27280,7 +27281,7 @@ protected:
     class ActivityGraphAgentContext : public IndirectAgentContext
     {
         SpinLock abortLock;
-        bool aborted;
+        std::atomic<bool> aborted;
         Owned<IException> exception;
     public:
         ActivityGraphAgentContext(IRoxieAgentContext *_ctx, const IRoxieContextLogger &_logctx) : IndirectAgentContext(_ctx), logctx(_logctx), loopCounter(0), codeContext(NULL)

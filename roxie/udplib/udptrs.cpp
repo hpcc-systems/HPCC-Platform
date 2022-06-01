@@ -1041,13 +1041,15 @@ class CSendManager : implements ISendManager, public CInterface
                 if (!running)
                     return 0;
 
+                CCycleTimer timer;
                 UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.destNode];
                 unsigned payload = receiverInfo.sendData(permit, bucket);
+                unsigned elapsed = timer.elapsedMs();
                 
-                if (udpTraceLevel > 2)
+                if (udpTraceLevel > 2 || elapsed > udpSendTraceThresholdMs)
                 {
                     StringBuffer s;
-                    DBGLOG("UdpSender[%s]: sent %u bytes to node=%s under permit %" SEQF "u", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq);
+                    DBGLOG("UdpSender[%s]: sent %u bytes to node=%s under permit %" SEQF "u in %ums", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq, elapsed);
                 }
             }
             if (udpTraceLevel > 0)

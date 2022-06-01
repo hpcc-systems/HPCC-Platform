@@ -191,6 +191,14 @@
       <xsl:apply-templates select="@*[string(.) != '']"/>
       
       <xsl:copy-of select="/Environment/Software/Directories"/> 
+      <!--
+      # Generated for configuration info. accessed by getGlobalConfig()
+      -->
+      <global>
+       <storage>
+        <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>  
+       </storage>
+      </global>
       <xsl:copy-of select="/Environment/Hardware/cost"/>
       @XSL_PLUGIN_DEFINITION@
       <Debug>

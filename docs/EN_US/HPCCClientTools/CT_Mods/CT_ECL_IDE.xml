@@ -1298,6 +1298,26 @@
 
           <para></para>
         </sect3>
+
+        <sect3 id="CT_ECLIDE_statusbar" role="brk">
+          <title>Status Bar</title>
+
+          <para>The Status Bar displays useful information about the current
+          file, current server, compiler, and target.</para>
+
+          <para><graphic fileref="../../images/CT_statusbar.jpg" /></para>
+
+          <para></para>
+
+          <para>You can select the items you want displayed by right-clicking
+          on the status bar. Check the boxes of the items you want
+          displayed.</para>
+
+          <para><graphic
+          fileref="../../images/CT_statusbarConfig.jpg" /></para>
+
+          <para></para>
+        </sect3>
       </sect2>
 
       <sect2 id="Orb_Menu">

@@ -51,6 +51,7 @@ unsigned udpLocalWriteSocketSize = 1024000;
 unsigned udpStatsReportInterval = 60000;
 
 unsigned udpOutQsPriority = 0;
+unsigned udpSendTraceThresholdMs = 5;
 
 unsigned udpMaxPermitDeadTimeouts = 5;  // How many permit grants are allowed to expire (with no flow message) until request is ignored
 unsigned udpRequestDeadTimeout = 10000; // Timeout for sender getting no response to request to send before assuming that the receiver is dead.
@@ -76,6 +77,7 @@ bool udpAdjustThreadPriorities = false; // Adjust the priorities for the UDP rec
 bool udpAllowAsyncPermits = false;      // Allow requests to send more data to overtake the data packets that are being sent.
 
 unsigned multicastTTL = 1;
+bool traceIBYTIfails = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

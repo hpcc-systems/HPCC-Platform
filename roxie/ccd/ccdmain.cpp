@@ -959,6 +959,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         flushJHtreeCacheOnOOM = topology->getPropBool("@flushJHtreeCacheOnOOM", true);
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);
         udpOutQsPriority = topology->getPropInt("@udpOutQsPriority", 0);
+        udpSendTraceThresholdMs = topology->getPropInt("@udpSendTraceThresholdMs", udpSendTraceThresholdMs);
 
         //See the head of udptrr.cpp for details of the following options
         udpPermitTimeout = topology->getPropInt("@udpPermitTimeout", udpPermitTimeout);
@@ -1087,6 +1088,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
+        traceIBYTIfails = topology->getPropBool("@traceIBYTIfails", false);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
         IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", roxieMulticastEnabled ? 0 : 10);
         IBYTIbufferLifetime = topology->getPropInt("@IBYTIbufferLifetime", initIbytiDelay);

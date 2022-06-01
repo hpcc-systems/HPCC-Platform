@@ -201,6 +201,7 @@ extern UDPLIB_API bool udpTraceFlow;
 extern UDPLIB_API bool udpTraceTimeouts;
 extern UDPLIB_API unsigned udpTraceLevel;
 extern UDPLIB_API unsigned udpOutQsPriority;
+extern UDPLIB_API unsigned udpSendTraceThresholdMs;
 
 extern UDPLIB_API unsigned udpFlowSocketsSize;
 extern UDPLIB_API unsigned udpLocalWriteSocketSize;
@@ -228,6 +229,7 @@ extern UDPLIB_API bool udpAllowAsyncPermits;
 
 //Should be in ccd
 extern UDPLIB_API unsigned multicastTTL;
+extern UDPLIB_API bool traceIBYTIfails;
 
 // -- Reported metrics --------------------------------------------------------------------------
 

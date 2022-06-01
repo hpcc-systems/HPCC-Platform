@@ -69,7 +69,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     if (logicalFiles.length === 1) {
                         const request = {
                             ...data,
-                            destPath: [data.destPath, data.targetName].join(pathSep),
+                            destPath: [data.destPath, data.targetName[0]].join(pathSep),
                             sourceLogicalName: logicalFiles[0]
                         };
                         FileSpray.Despray({ request: request }).then(response => {

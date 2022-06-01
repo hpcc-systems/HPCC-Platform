@@ -799,7 +799,10 @@ extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
 extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
-    return new CSerializedRoxieQueryPacket(m.detachOwn(), length);
+    if (encryptInTransit)
+        return new CSerializedRoxieQueryPacket(m.detachOwn(), length);
+    else
+        return new CNocryptRoxieQueryPacket(m.detachOwn(), length); 
 }
 
 //=================================================================================
@@ -1430,7 +1433,7 @@ public:
                     return false;
                 }
             }
-            if (busy) 
+            else if (busy) 
             {
                 preActivity = true;
                 return true;
@@ -1556,10 +1559,10 @@ public:
                 }
                 if (delay)
                     ibytiSem.wait(delay);
-                if (traceRoxiePackets)
+                if (traceRoxiePackets || (delay && !abortJob && traceIBYTIfails))
                 {
                     StringBuffer x;
-                    DBGLOG("Delay done, abortJob=%d, elapsed=%d", (int) abortJob, msTick()-start);
+                    DBGLOG("Delay %u done, abortJob=%d, elapsed=%d", delay, (int) abortJob, msTick()-start);
                 }
                 if (!abortJob)
                 {
@@ -1588,7 +1591,14 @@ public:
                     {
                         ibytiSem.wait(delay);
                         if (!abortJob)
+                        {
                             topology->queryChannelInfo(channel).noteChannelsSick(primarySubChannel);
+                            if (traceRoxiePackets || traceIBYTIfails)
+                            {
+                                StringBuffer x;
+                                DBGLOG("Delay %u done, abortJob=%d", delay, (int) abortJob);
+                            }
+                        }
                         if (logctx.queryTraceLevel() > 8)
                         {
                             StringBuffer x;
@@ -2493,8 +2503,7 @@ public:
             }
             else if (queryFound)
             {
-                ret = false;
-                break;
+                return false;
             }
         }
         if (!checkRank)
@@ -2613,6 +2622,7 @@ public:
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 for (unsigned i = 1; i < channels.size(); i++)
                     queue.enqueue(packet->cloneSerializedPacket(channels[i]));
+                header.retries |= ROXIE_BROADCAST;
                 header.channel = channels[0];
                 queue.enqueue(packet.getClear());
                 return;
@@ -3216,6 +3226,7 @@ public:
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
                 for (unsigned i = 1; i < numChannels; i++)
                     targetQueue->enqueue(serialized->cloneSerializedPacket(i+1));
+                header.retries |= ROXIE_BROADCAST;
                 header.channel = 1;
                 targetQueue->enqueue(serialized.getClear());
             }

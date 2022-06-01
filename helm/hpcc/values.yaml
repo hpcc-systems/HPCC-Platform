@@ -358,6 +358,8 @@ bundles: []
 # for example
 # - name: DataPatterns
 
+# A dafilsrv 'stream' service is required to expose HPCC file access to 3rd parties (e.g. Spark / Java)
+# Access will only be granted to requests that have been signed by the DFUFileAccess service
 dafilesrv:
 - name: rowservice
   disabled: true # disabled by default because requires cert-manager etc. (see certificates section)
@@ -366,8 +368,9 @@ dafilesrv:
     servicePort: 7600
     visibility: local
 
- # Enabling this service exposes a dafilesrv and Dali for foreign file access for backward compatibility.
- # If enabled, both services should be secured with strict ingress rules.
+# Enable if bare-metal systems require read access to this systems' data planes via ~remote::
+# If legacy ~foreign:: access is required, Dali will also need to be exposed via a service definition in the dali configuration
+# NB: ingress rules should be added to limit access.
 - name: direct-access
   disabled: true
   application: directio

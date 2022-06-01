@@ -8895,7 +8895,10 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
     else
     {
         if (legacyFilename && checkFileExists(legacyFilename))
+        {
             delta.setown(createPTreeFromXMLFile(legacyFilename, ipt_caseInsensitive));
+            newGlobalConfig.set(delta->queryPropTree("global"));
+        }
 
         if (delta && mapper)
             delta.setown(mapper(delta));

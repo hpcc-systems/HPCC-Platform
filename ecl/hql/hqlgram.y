@@ -8621,13 +8621,13 @@ simpleDataSet
                             $$.setExpr(createDataset(no_process, { left, right, $8.getExpr(), $10.getExpr(), attr, $14.getExpr() }));
                             $$.setPosition($1);
                         }
-    | ROLLUP '(' startTopLeftRightSeqFilter ',' expression ',' transform optCommonAttrs ')' endTopLeftRightFilter endSelectorSequence
+    | ROLLUP '(' startTopLeftRightSeqFilter ',' expression ',' endTopFilter transform optCommonAttrs ')' endSelectorSequence
                         {
                             parser->normalizeExpression($5);
-                            parser->ensureTransformTypeMatch($7, $3.queryExpr());
+                            parser->ensureTransformTypeMatch($8, $3.queryExpr());
 
-                            OwnedHqlExpr tr = $7.getExpr();
-                            IHqlExpression *attr = $8.getExpr();
+                            OwnedHqlExpr tr = $8.getExpr();
+                            IHqlExpression *attr = $9.getExpr();
                             $$.setExpr(createDataset(no_rollup, { $3.getExpr(), $5.getExpr(), tr.getClear(), attr, $11.getExpr() }));
                             parser->checkDistribution($3, $$.queryExpr(), false);
                             $$.setPosition($1);
