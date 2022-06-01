@@ -259,7 +259,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         // Create HPCC Admin Username/password.
         // Attempt to create the Kubernetes secret for that user
         //----------------------------------
-        VStringBuffer respHPCCAdminUser("adminHPCC_%s", req.getEnvName());
+        VStringBuffer respHPCCAdminUser("HPCC_%s", req.getEnvName());
         StringBuffer  respHPCCAdminPwd;
         generatePassword(respHPCCAdminPwd, 10);//jutil.hpp
 
@@ -345,7 +345,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         // Create LDAP Admin Username/password.
         // Attempt to create the Kubernetes secret for that user
         //----------------------------------
-        VStringBuffer respLDAPAdminUser("adminLDAP_%s", req.getEnvName());
+        VStringBuffer respLDAPAdminUser("LDAP_%s", req.getEnvName());
         StringBuffer  respLDAPAdminPwd;
         generatePassword(respLDAPAdminPwd, 10);//jutil.hpp
 
