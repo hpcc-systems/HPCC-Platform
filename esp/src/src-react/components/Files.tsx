@@ -8,6 +8,7 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
+import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
@@ -35,7 +36,7 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter) {
+function formatQuery(_filter, mine, currentUser) {
     const filter = { ..._filter };
     if (filter.Index) {
         filter.ContentType = "key";
@@ -46,6 +47,9 @@ function formatQuery(_filter) {
     }
     if (filter.EndDate) {
         filter.EndDate = new Date(filter.StartDate).toISOString();
+    }
+    if (mine === true) {
+        filter.Owner = currentUser?.username;
     }
     return filter;
 }
@@ -75,6 +79,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const { currentUser } = useMyAccount();
     const [viewByScope, setViewByScope] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
@@ -84,8 +89,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     }, [store]);
 
     const query = React.useMemo(() => {
-        return formatQuery(filter);
-    }, [filter]);
+        return formatQuery(filter, mine, currentUser);
+    }, [filter, mine, currentUser]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
         persistID: "files",
@@ -253,12 +258,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => {
                 setMine(!mine);
             }
         },
-    ], [hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
     const filterFields: Fields = {};

@@ -10,6 +10,7 @@ import { useConfirm } from "../hooks/confirm";
 import { useFluentGrid } from "../hooks/grid";
 import { useBuildInfo } from "../hooks/platform";
 import { useUserTheme } from "../hooks/theme";
+import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
@@ -36,7 +37,7 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter) {
+function formatQuery(_filter, mine, currentUser) {
     const filter = { ..._filter };
     if (filter.Index) {
         filter.ContentType = "key";
@@ -47,6 +48,9 @@ function formatQuery(_filter) {
     }
     if (filter.EndDate) {
         filter.EndDate = new Date(filter.StartDate).toISOString();
+    }
+    if (mine === true) {
+        filter.Owner = currentUser?.username;
     }
     return filter;
 }
@@ -99,6 +103,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const { currentUser } = useMyAccount();
     const [viewByScope, setViewByScope] = React.useState(true);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [, { currencyCode }] = useBuildInfo();
@@ -114,11 +119,14 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         } else {
             setScopePath(scope.split("::"));
             dfuService.DFUFileView({ Scope: scope }).then(({ DFULogicalFiles }) => {
-                const files = DFULogicalFiles?.DFULogicalFile?.filter(file => !file.isDirectory) ?? [];
+                let files = DFULogicalFiles?.DFULogicalFile?.filter(file => !file.isDirectory) ?? [];
+                if (mine) {
+                    files = files.filter(file => file.Owner === currentUser?.username);
+                }
                 setData(mergeFileData(DFULogicalFiles, files));
             });
         }
-    }, [scope]);
+    }, [currentUser, mine, scope]);
 
     //  Grid ---
     const { Grid, selection, refreshTable, copyButtons } = useFluentGrid({
@@ -268,10 +276,10 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => setMine(!mine)
         },
-    ], [data, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);
+    ], [currentUser, data, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
     React.useEffect(() => {
@@ -284,7 +292,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     }, [filter, scope]);
 
     const applyFilter = React.useCallback((params) => {
-        const query = formatQuery(params);
+        const query = formatQuery(params, mine, currentUser);
 
         if (query["ScopeName"] !== ".") {
             query["LogicalName"] = query["ScopeName"] + (query["LogicalName"] ? "::" + query["LogicalName"] : "");
@@ -301,7 +309,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         }).filter(pair => pair.length > 0).join("&");
 
         pushUrl("/files/?" + qs);
-    }, []);
+    }, [currentUser, mine]);
 
     //  Selection  ---
     React.useEffect(() => {
