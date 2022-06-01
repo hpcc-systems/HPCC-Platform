@@ -23,88 +23,13 @@
 #include "jfile.hpp"
 #include "jsocket.hpp"
 #include "jdebug.hpp"
-
-#include "fterror.hpp"
-#include "dadfs.hpp"
-#include "rmtspawn.hpp"
-#include "filecopy.hpp"
-#include "fttransform.ipp"
-#include "daftformat.hpp"
-#include "daftcfg.hpp"
 #include "mptag.hpp"
 
-bool processPullCommand(ISocket * masterSocket, MemoryBuffer & msg)
-{
-    srand((int)get_cycles_now());
-    TransferServer server(masterSocket);
-    server.deserializeAction(msg, FTactionpull);
-    return server.pull();
-}
-
-
-bool processPushCommand(ISocket * masterSocket, MemoryBuffer & msg)
-{
-    srand((int)get_cycles_now());
-    TransferServer server(masterSocket);
-    server.deserializeAction(msg, FTactionpush);
-    return server.push();
-}
-
-
-bool processPartitionCommand(ISocket * masterSocket, MemoryBuffer & msg, MemoryBuffer & results)
-{
-    FileFormat srcFormat;
-    FileFormat tgtFormat;
-    unsigned whichInput;
-    RemoteFilename fullPath;
-    offset_t totalSize;
-    offset_t thisOffset;
-    offset_t thisSize;
-    unsigned thisHeaderSize;
-    unsigned numParts;
-    bool compressedInput = false;
-    unsigned compatflags = 0;  
-
-    srcFormat.deserialize(msg);
-    tgtFormat.deserialize(msg);
-    msg.read(whichInput);
-    fullPath.deserialize(msg);
-    msg.read(totalSize);
-    msg.read(thisOffset);
-    msg.read(thisSize);
-    msg.read(thisHeaderSize);
-    msg.read(numParts);
-    if (msg.remaining())
-        msg.read(compressedInput);
-    if (msg.remaining())
-        msg.read(compatflags); // not yet used
-    StringAttr decryptkey;
-    if (msg.remaining())
-        msg.read(decryptkey);
-    if (msg.remaining())
-    {
-        srcFormat.deserializeExtra(msg, 1);
-        tgtFormat.deserializeExtra(msg, 1);
-    }
-
-    StringBuffer text;
-    fullPath.getRemotePath(text);
-    LOG(MCdebugProgress, unknownJob, "Process partition %d(%s)", whichInput, text.str());
-    Owned<IFormatProcessor> processor = createFormatProcessor(srcFormat, tgtFormat, true);
-    Owned<IOutputProcessor> target = createOutputProcessor(tgtFormat);
-    processor->setTarget(target);
-
-    processor->setPartitionRange(totalSize, thisOffset, thisSize, thisHeaderSize, numParts);
-    processor->setSource(whichInput, fullPath, compressedInput, decryptkey);
-    processor->calcPartitions(NULL);
-
-    PartitionPointArray partition;
-    processor->getResults(partition);
-
-    serialize(partition, results);
-    return true;
-}
-
+#include "daftcfg.hpp"
+#include "fterror.hpp"
+#include "rmtspawn.hpp"
+#include "rmtfile.hpp"
+#include "ftslavelib.hpp"
 
 class FtSlave : public CRemoteSlave
 {
@@ -113,18 +38,7 @@ public:
 
     virtual bool processCommand(byte action, ISocket * masterSocket, MemoryBuffer & msg, MemoryBuffer & results)
     {
-        switch (action)
-        {
-        case FTactionpartition:
-            return processPartitionCommand(masterSocket, msg, results);
-        case FTactionpull:
-            return processPullCommand(masterSocket, msg);
-        case FTactionpush:
-            return processPushCommand(masterSocket, msg);
-        default:
-            UNIMPLEMENTED;
-        }
-        return false;
+	    return processFtCommand(action, masterSocket, msg, results);
     }
 };
 

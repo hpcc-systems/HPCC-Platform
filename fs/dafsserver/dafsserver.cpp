@@ -70,6 +70,9 @@
 #include "rmtclient_impl.hpp"
 #include "dafsserver.hpp"
 
+#include "ftslavelib.hpp"
+#include "filecopy.hpp"
+
 
 using namespace cryptohelper;
 
@@ -222,6 +225,7 @@ const char *RFCStrings[] =
     RFCText(RFCStreamReadTestSocket),
     RFCText(RFCStreamGeneral),
     RFCText(RFCStreamReadJSON),
+    RFCText(RFCFtSlaveCmd),
     RFCText(RFCmaxnormal),
 };
 
@@ -633,7 +637,6 @@ inline void appendErr(MemoryBuffer &reply, unsigned e)
 
 #define MAPCOMMAND(c,p) case c: { this->p(msg, reply) ; break; }
 #define MAPCOMMANDCLIENT(c,p,client) case c: { this->p(msg, reply, client); break; }
-#define MAPCOMMANDCLIENTTESTSOCKET(c,p,client) case c: { testSocketFlag = true; this->p(msg, reply, client); break; }
 #define MAPCOMMANDCLIENTTHROTTLE(c,p,client,throttler) case c: { this->p(msg, reply, client, throttler); break; }
 #define MAPCOMMANDSTATS(c,p,stats) case c: { this->p(msg, reply, stats); break; }
 #define MAPCOMMANDCLIENTSTATS(c,p,client,stats) case c: { this->p(msg, reply, client, stats); break; }
@@ -2568,14 +2571,14 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
 
     bool isSigned = metaInfoBlob.length() != 0;
     if (authorizedOnly && !isSigned)
-        throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: unathorized");
+        throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: unathorized");
 
     if (isSigned)
     {
         metaInfo.setown(createPTree(metaInfoBlob));
         StringBuffer metaInfoSignature;
         if (!metaInfoEnvelope->getProp("signature", metaInfoSignature))
-            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing signature");
+            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing signature");
 
 #ifdef _CONTAINERIZED
         /* This public key that is sent with request will be verified as being issued by same CA
@@ -2583,7 +2586,7 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
          */
         const char *certificate = metaInfoEnvelope->queryProp("certificate");
         if (isEmptyString(certificate))
-            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing certificate");
+            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing certificate");
         Owned<CLoadedKey> publicKey = loadPublicKeyFromCertMemory(certificate);
 #else
         const char *keyPairName = metaInfo->queryProp("keyPairName");
@@ -2591,14 +2594,14 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
         VStringBuffer keyPairPath("KeyPair[@name=\"%s\"]", keyPairName);
         IPropertyTree *keyPair = keyPairInfo->queryPropTree(keyPairPath);
         if (!keyPair)
-            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing key pair definition");
+            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing key pair definition");
         const char *publicKeyFName = keyPair->queryProp("@publicKey");
         if (isEmptyString(publicKeyFName))
-            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing public key definition");
+            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: missing public key definition");
         Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName); // NB: if cared could cache loaded keys
 #endif
         if (!digiVerify(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *publicKey))
-            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: signature verification failed");
+            throw createDafsException(DAFSERR_cmd_unauthorized, "createRemoteActivity: signature verification failed");
         checkExpiryTime(*metaInfo);
     }
     else
@@ -2792,6 +2795,24 @@ IRemoteActivity *createOutputActivity(IPropertyTree &requestTree, bool authorize
 }
 
 #define MAX_KEYDATA_SZ 0x10000
+
+enum class FeatureSupport
+{
+    none     = 0x0,
+    stream   = 0x1,
+    directIO = 0x2,
+    spray    = 0x4,
+    all      = stream|directIO|spray
+};
+BITMASK_ENUM(FeatureSupport);
+
+enum class CommandRetFlags
+{
+    none          = 0x0,
+    testSocket    = 0x1,
+    replyHandled  = 0x2
+};
+BITMASK_ENUM(CommandRetFlags);
 
 class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 {
@@ -3002,8 +3023,11 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         void processCommand(RemoteFileCommandType cmd, MemoryBuffer &msg, CThrottler *throttler)
         {
             MemoryBuffer reply;
-            bool testSocketFlag = parent->processCommand(cmd, msg, initSendBuffer(reply), this, throttler);
-            sendDaFsBuffer(socket, reply, testSocketFlag);
+            CommandRetFlags cmdFlags = parent->processCommand(cmd, msg, initSendBuffer(reply), this, throttler);
+
+            // some commands (i.e. RFCFtSlaveCmd), reply early, so should not reply again here.
+            if (!hasMask(cmdFlags, CommandRetFlags::replyHandled))
+                sendDaFsBuffer(socket, reply, hasMask(cmdFlags, CommandRetFlags::testSocket));
         }
 
         bool immediateCommand() // returns false if socket closed or failure
@@ -3425,7 +3449,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     Owned<ISocket>      securesock;
     Owned<ISocket>      rowServiceSock;
     Linked<IPropertyTree> componentConfig;
-    bool directIO = true;
+    FeatureSupport featureSupport = FeatureSupport::all; // NB: will be overridden in run()
     bool rowServiceOnStdPort = true; // should row service commands be processed on std. service port
     bool rowServiceSSL = false;
 
@@ -4787,7 +4811,7 @@ public:
             }
 
 #ifdef _CONTAINERIZED
-            bool authorizedOnly = !directIO; // unless in directIO application mode, only allow signed requests
+            bool authorizedOnly = hasMask(featureSupport, FeatureSupport::stream);
 #else
             /* NB: In bare-metal, unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
              * In a locked down secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
@@ -4908,6 +4932,33 @@ public:
         reply.append((unsigned)RFEnoerror);
     }
 
+    void cmdFtSlaveCmd(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler &client)
+    {
+        byte action;
+        msg.read(action);
+
+        MemoryBuffer results;
+        results.setEndian(__BIG_ENDIAN);
+        Owned<IException> exception;
+        bool ok=false;
+        try
+        {
+            // NB: will run continuously and write progress back to client.socket
+            ok = processFtCommand(action, client.socket, msg, results);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e);
+            exception.setown(e);
+        }
+        msg.clear().append(true).append(ok);
+        serializeException(exception, msg);
+        msg.append(results);
+        catchWriteBuffer(client.socket, msg);
+
+        LOG(MCdebugProgress, unknownJob, "Results sent from slave: %s", client.peerName.str());
+    }
+
     void formatException(MemoryBuffer &reply, IException *e, RemoteFileCommandType cmd, bool testSocketFlag, unsigned _dfsErrorCode, CRemoteClientHandler *client)
     {
         unsigned dfsErrorCode = _dfsErrorCode;
@@ -4958,6 +5009,7 @@ public:
             case RFCtreecopytmp:
             case RFCremove:
             case RFCcopysection:
+            case RFCFtSlaveCmd:
                 slowCmdThrottler.addCommand(cmd, msg, client);
                 return;
             case RFCcloseIO:
@@ -5008,28 +5060,39 @@ public:
     void checkAuthorizedStreamCommand(CRemoteClientHandler &client)
     {
         if (!rowServiceOnStdPort && !client.isRowServiceClient())
-            throw createDafsException(DAFSERR_cmdstream_unauthorized, "Unauthorized command");
+            throw createDafsException(DAFSERR_cmd_unauthorized, "Unauthorized command");
     }
 
-    bool processCommand(RemoteFileCommandType cmd, MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client, CThrottler *throttler)
+    CommandRetFlags processCommand(RemoteFileCommandType cmd, MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client, CThrottler *throttler)
     {
         Owned<CClientStats> stats = clientStatsTable.getClientReference(cmd, client->queryPeerName());
-        bool testSocketFlag = false;
+        CommandRetFlags retFlags = CommandRetFlags::none;
         unsigned posOfErr = reply.length();
         try
         {
+            FeatureSupport featureSupportCheck = featureSupport;
+
             /* isRowServiceClient only set for bare-metal clients
-             * Check they aren't sending a non-rowservice command to the row service
+             * If set, only support streaming commands
              */
+            if (client->isRowServiceClient())
+                featureSupportCheck = FeatureSupport::stream;
+
             switch (cmd)
             {
                 case RFCStreamGeneral:
                 case RFCStreamRead:
                 case RFCStreamReadJSON:
+                    if (!hasMask(featureSupportCheck, FeatureSupport::stream))
+                        throw createDafsException(DAFSERR_cmd_unauthorized, "Unauthorized command");
                     break;
-                default:
-                    if (!directIO || client->isRowServiceClient())
-                        throw createDafsException(DAFSERR_cmdstream_unauthorized, "Unauthorized command");
+                case RFCFtSlaveCmd:
+                    if (!hasMask(featureSupportCheck, FeatureSupport::spray))
+                        throw createDafsException(DAFSERR_cmd_unauthorized, "Unauthorized command");
+                    break;
+                default: // all other commands are considered 'directIO'
+                    if (!hasMask(featureSupportCheck, FeatureSupport::directIO))
+                        throw createDafsException(DAFSERR_cmd_unauthorized, "Unauthorized command");
                     break;
             }
 
@@ -5072,7 +5135,7 @@ public:
                 MAPCOMMAND(RFCsetthrottle2, cmdSetThrottle2);
                 case RFCStreamReadTestSocket:
                 {
-                    testSocketFlag = true;
+                    retFlags |= CommandRetFlags::testSocket;
                     checkAuthorizedStreamCommand(*client);
                     cmdStreamReadTestSocket(msg, reply, *client, *stats);
                     break;
@@ -5097,6 +5160,16 @@ public:
                     cmdStreamReadJSON(msg, reply, *client, *stats);
                     break;
                 }
+                case RFCFtSlaveCmd:
+                {
+                    reply.append((unsigned)RFEnoerror);
+                    sendDaFsBuffer(client->socket, reply, false);
+                    // NB: command replied to.
+                    // This command uses/takes over use of the socket for progress updates
+                    retFlags |= CommandRetFlags::replyHandled;
+                    cmdFtSlaveCmd(msg, reply, *client);
+                    break;
+                }
             default:
                 formatException(reply, nullptr, cmd, false, RFSERR_InvalidCommand, client);
                 break;
@@ -5106,10 +5179,10 @@ public:
         {
             checkOutOfHandles(e);
             reply.setWritePos(posOfErr);
-            formatException(reply, e, cmd, testSocketFlag, 0, client);
+            formatException(reply, e, cmd, hasMask(retFlags, CommandRetFlags::testSocket), 0, client);
             e->Release();
         }
-        return testSocketFlag;
+        return retFlags;
     }
 
     IPooledThread *createCommandProcessor()
@@ -5221,7 +5294,16 @@ public:
         componentConfig.set(_componentConfig);
 #ifdef _CONTAINERIZED
         if (componentConfig) // will be null in some scenarios (test cases)
-            directIO = strsame(componentConfig->queryProp("@application"), "directio");
+        {
+            // In K8s the application type determines what features this dafilesrv supports
+            const char *appType = componentConfig->queryProp("@application");
+            if (strsame("stream", appType))
+                featureSupport = FeatureSupport::stream;
+            else if (strsame("spray", appType))
+                featureSupport = FeatureSupport::spray;
+            else if (strsame("directIO", appType))
+                featureSupport = FeatureSupport::directIO;
+        }
 #endif
         if (_connectMethod != SSLOnly)
         {
@@ -5439,8 +5521,11 @@ public:
         if (cmd != RFCgetver)
             cmd = RFCinvalid;
         MemoryBuffer reply;
-        bool testSocketFlag = processCommand(cmd, msg, initSendBuffer(reply), NULL, NULL);
-        sendDaFsBuffer(socket, reply, testSocketFlag);
+        CommandRetFlags cmdFlags = processCommand(cmd, msg, initSendBuffer(reply), NULL, NULL);
+
+        // some commands (i.e. RFCFtSlaveCmd), reply early, so should not reply again here.
+        if (!hasMask(cmdFlags, CommandRetFlags::replyHandled))
+            sendDaFsBuffer(socket, reply, hasMask(cmdFlags, CommandRetFlags::testSocket));
     }
 
     void runClient(ISocket *sock, bool rowService) // rowService used to distinguish client calls

@@ -98,6 +98,8 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 #define ANencryptKey        "@encryptKey"
 #define ANdecryptKey        "@decryptKey"
 #define ANumask             "@umask"
+#define ANuseFtSlave        "@useFtSlave"
+#define ANsprayServiceName  "@sprayServiceName"
 
 #define PNpartition         "partition"
 #define PNprogress          "progress"
@@ -114,8 +116,6 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 const unsigned operatorUpdateFrequency = 5000;      // time between updates in ms
 const unsigned abortCheckFrequency = 20000;         // time between updates in ms
 const unsigned sdsUpdateFrequency = 20000;          // time between updates in ms
-const unsigned maxSlaveUpdateFrequency = 1000;      // time between updates in ms - small number of nodes.
-const unsigned minSlaveUpdateFrequency = 5000;      // time between updates in ms - large number of nodes.
 
 
 bool TargetLocation::canPull()
@@ -293,10 +293,163 @@ bool FileTransferThread::catchReadBuffer(ISocket * socket, MemoryBuffer & msg, u
     }
 }
 
+void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
+{
+    //Send message and wait for response...
+    msg.append(action);
+
+    if (0 == version) // 0 indicates command is destined to ftslave not dafilesrv
+    {
+        // send 0 for password info that was in <= 7.6 versions
+        unsigned zero = 0;
+        msg.append(zero);
+    }
+    ep.serialize(msg);
+    sprayer.srcFormat.serialize(msg);
+    sprayer.tgtFormat.serialize(msg);
+    msg.append(sprayer.calcInputCRC());
+    msg.append(calcCRC);
+    serialize(partition, msg);
+    msg.append(sprayer.numParallelSlaves());
+    msg.append(sprayer.slaveUpdateFrequency);
+    msg.append(sprayer.replicate); // NB: controls whether FtSlave copies source timestamp
+    msg.append(sprayer.mirroring);
+    msg.append(sprayer.isSafeMode);
+
+    msg.append(progress.ordinality());
+    ForEachItemIn(i, progress)
+        progress.item(i).serializeCore(msg);
+
+    msg.append(sprayer.throttleNicSpeed);
+    msg.append(sprayer.compressedInput);
+    msg.append(sprayer.compressOutput);
+    msg.append(sprayer.copyCompressed);
+    msg.append(sprayer.transferBufferSize);
+    msg.append(sprayer.encryptKey);
+    msg.append(sprayer.decryptKey);
+
+    sprayer.srcFormat.serializeExtra(msg, 1);
+    sprayer.tgtFormat.serializeExtra(msg, 1);
+
+    ForEachItemIn(i2, progress)
+        progress.item(i2).serializeExtra(msg, 1);
+
+    //NB: Any extra data must be appended at the end...
+
+    msg.append(sprayer.fileUmask);
+
+    ForEachItemIn(i3, progress)
+        progress.item(i3).serializeExtra(msg, 2);
+}
+
+bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
+{
+    SocketEndpoint connectEP(ep);
+
+    // in containerized mode, redirect to dafilesrv service or local (if useFtSlave=true)
+    if (isContainerized())
+    {
+        if (sprayer.useFtSlave)
+        {
+            //In containerized world all ftslave processes are executed locally, so make sure we try and connect to a local instance
+            connectEP.set("localhost");
+        }
+        else
+        {
+            Owned<IPropertyTree> serviceTree;
+            if (!isEmptyString(sprayer.sprayServiceName))
+            {
+                VStringBuffer serviceQualifier("services[@name='%s']", sprayer.sprayServiceName.get());
+                serviceTree.setown(getGlobalConfigSP()->getPropTree(serviceQualifier));
+                if (!serviceTree)
+                    throw makeStringExceptionV(0, "launchFtSlaveCmd: failed to find dafilesrv service named: '%s'", sprayer.sprayServiceName.get());
+                const char *serviceAppType = serviceTree->queryProp("@application");
+                if (!strsame("spray", serviceAppType))
+                    throw makeStringExceptionV(0, "launchFtSlaveCmd: configured service '%s' is of application type '%s' ('spray' type required)", sprayer.sprayServiceName.get(), nullIfEmptyString(serviceAppType));
+            }
+            else // find 1st of type 'spray'
+            {
+                Owned<IPropertyTreeIterator> directIOServices = getGlobalConfigSP()->getElements("services[@type='spray']");
+                if (directIOServices->first())
+                    serviceTree.set(&directIOServices->query());
+                else
+                    throw makeStringException(0, "launchFtSlaveCmd: no 'spray' dafilesrv services found");
+            }
+            connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
+        }
+    }
+    StringBuffer url;
+    ep.getUrlStr(url);
+
+    Owned<ISocket> socket;
+    MemoryBuffer msg;
+    msg.setEndian(__BIG_ENDIAN);
+    if (sprayer.useFtSlave)
+    {
+        StringBuffer tmp;
+        socket.setown(spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), connectEP, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid));
+        if (!socket)
+            throwError1(DFTERR_FailedStartSlave, url.str());
+
+        prepareCmd(msg, 0);
+        if (!catchWriteBuffer(socket, msg))
+            throwError1(RFSERR_TimeoutWaitConnect, url.str());
+    }
+    else
+    {
+        setDafsEndpointPort(connectEP);
+        if (connectEP.isNull())
+            return false;
+        socket.setown(connectDafs(connectEP, 5000));
+        if (!socket)
+            throwError1(DFTERR_FailedStartSlave, url.str());
+        prepareCmd(msg, daFileSrvCommandVersion);
+        sendDaFsFtSlaveCmd(socket, msg);
+    }
+    bool done;
+    for (;;)
+    {
+        msg.clear();
+        if (!catchReadBuffer(socket, msg, FTTIME_PROGRESS))
+            throwError1(RFSERR_TimeoutWaitSlave, url.str());
+
+        msg.setEndian(__BIG_ENDIAN);
+        msg.read(done);
+        if (done)
+            break;
+
+        OutputProgress newProgress;
+        newProgress.deserializeCore(msg);
+        newProgress.deserializeExtra(msg, 1);
+        newProgress.deserializeExtra(msg, 2);
+        sprayer.updateProgress(newProgress);
+
+        LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
+        if (isAborting())
+        {
+            if (!sendRemoteAbort(socket))
+                throwError1(RFSERR_TimeoutWaitSlave, url.str());
+        }
+    }
+    msg.read(ok);
+    setErrorOwn(deserializeException(msg));
+
+    LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
+
+    // if communicating with ftslave, the process has a final ack wait
+    if (sprayer.useFtSlave)
+    {
+        // ftslave sends back a final ack.
+        msg.clear().append(true);
+        catchWriteBuffer(socket, msg);
+        if (sprayer.options->getPropInt("@fail", 0)) // probably used as a debug testing option
+            throwError(DFTERR_CopyFailed);
+    }
+    return ok;
+}
 
 bool FileTransferThread::performTransfer()
 {
-    bool ok = false;
     StringBuffer url;
     ep.getUrlStr(url);
 
@@ -341,104 +494,7 @@ bool FileTransferThread::performTransfer()
     }
 
     LOG(MCdebugProgressDetail, job, "Start generate part %s [%p]", url.str(), this);
-    StringBuffer tmp;
-    Owned<ISocket> socket = spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), ep, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid);
-    if (socket)
-    {
-        MemoryBuffer msg;
-        msg.setEndian(__BIG_ENDIAN);
-
-        //MORE: Allow this to be configured by an option.
-        unsigned slaveUpdateFrequency = minSlaveUpdateFrequency;
-        if (sprayer.numParallelSlaves() < 5)
-            slaveUpdateFrequency = maxSlaveUpdateFrequency;
-
-        //Send message and wait for response...
-        msg.append(action);
-
-        // send 0 for password info that was in <= 7.6 versions
-        unsigned zero = 0;
-        msg.append(zero);
-
-        ep.serialize(msg);
-        sprayer.srcFormat.serialize(msg);
-        sprayer.tgtFormat.serialize(msg);
-        msg.append(sprayer.calcInputCRC());
-        msg.append(calcCRC);
-        serialize(partition, msg);
-        msg.append(sprayer.numParallelSlaves());
-        msg.append(slaveUpdateFrequency);
-        msg.append(sprayer.replicate); // NB: controls whether FtSlave copies source timestamp
-        msg.append(sprayer.mirroring);
-        msg.append(sprayer.isSafeMode);
-
-        msg.append(progress.ordinality());
-        ForEachItemIn(i, progress)
-            progress.item(i).serializeCore(msg);
-
-        msg.append(sprayer.throttleNicSpeed);
-        msg.append(sprayer.compressedInput);
-        msg.append(sprayer.compressOutput);
-        msg.append(sprayer.copyCompressed);
-        msg.append(sprayer.transferBufferSize);
-        msg.append(sprayer.encryptKey);
-        msg.append(sprayer.decryptKey);
-
-        sprayer.srcFormat.serializeExtra(msg, 1);
-        sprayer.tgtFormat.serializeExtra(msg, 1);
-
-        ForEachItemIn(i2, progress)
-            progress.item(i2).serializeExtra(msg, 1);
-
-        //NB: Any extra data must be appended at the end...
-
-        msg.append(sprayer.fileUmask);
-
-        ForEachItemIn(i3, progress)
-            progress.item(i3).serializeExtra(msg, 2);
-
-        if (!catchWriteBuffer(socket, msg))
-            throwError1(RFSERR_TimeoutWaitConnect, url.str());
-
-        bool done;
-        for (;;)
-        {
-            msg.clear();
-            if (!catchReadBuffer(socket, msg, FTTIME_PROGRESS))
-                throwError1(RFSERR_TimeoutWaitSlave, url.str());
-
-            msg.setEndian(__BIG_ENDIAN);
-            msg.read(done);
-            if (done)
-                break;
-
-            OutputProgress newProgress;
-            newProgress.deserializeCore(msg);
-            newProgress.deserializeExtra(msg, 1);
-            newProgress.deserializeExtra(msg, 2);
-            sprayer.updateProgress(newProgress);
-
-            LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
-            if (isAborting())
-            {
-                if (!sendRemoteAbort(socket))
-                    throwError1(RFSERR_TimeoutWaitSlave, url.str());
-            }
-        }
-        msg.read(ok);
-        setErrorOwn(deserializeException(msg));
-
-        LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
-
-        msg.clear().append(true);
-        catchWriteBuffer(socket, msg);
-        if (sprayer.options->getPropInt("@fail", 0))
-            throwError(DFTERR_CopyFailed);
-    }
-    else
-    {
-        throwError1(DFTERR_FailedStartSlave, url.str());
-    }
+    bool ok = launchFtSlaveCmd(ep);
     LOG(MCdebugProgressDetail, job, "Stopped generate part %s [%p]", url.str(), this);
 
     allDone = true;
@@ -632,6 +688,8 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     progressDone = false;
     encryptKey.set(options->queryProp(ANencryptKey));
     decryptKey.set(options->queryProp(ANdecryptKey));
+    useFtSlave = options->getPropBool(ANuseFtSlave);
+    sprayServiceName.set(options->queryProp(ANsprayServiceName));
 
     fileUmask = -1;
     const char *umaskStr = options->queryProp(ANumask);
@@ -1283,7 +1341,7 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
 
     srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
     const SocketEndpoint & ep = cur.filename.queryEndpoint();
-    IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
+    IFormatPartitioner * partitioner = createFormatPartitioner(*this, ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
 
     // CSV record structure discovery of the first source
     bool isRecordStructurePresent = options->getPropBool("@recordStructurePresent", false);
@@ -2400,6 +2458,11 @@ unsigned FileSprayer::numParallelSlaves()
 
 void FileSprayer::performTransfer()
 {
+    //MORE: Allow this to be configured by an option.
+    slaveUpdateFrequency = minSlaveUpdateFrequency;
+    if (numParallelSlaves() < 5)
+        slaveUpdateFrequency = maxSlaveUpdateFrequency;
+
     unsigned numSlaves = transferSlaves.ordinality();
     unsigned maxConnections = numParallelSlaves();
     unsigned failure = options->getPropInt("@fail", 0);

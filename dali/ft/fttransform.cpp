@@ -604,8 +604,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     msg.read(mirror);
     msg.read(isSafeMode);
 
-    srand((unsigned)get_cycles_now());
-    int adjust = fastRand() % updateFrequency - (updateFrequency/2);
+    int adjust = get_cycles_now() % updateFrequency - (updateFrequency/2);
     lastTick = msTick() + adjust;
 
     StringBuffer localFilename;

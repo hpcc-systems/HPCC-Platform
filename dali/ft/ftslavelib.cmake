@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,41 +15,36 @@
 ################################################################################
 
 
-# Component: ftslave 
+# Component: ftslavelib
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for ftslave
+#    Cmake Input File for ftslavelib
 #####################################################
 
-project( ftslave ) 
+project( ftslavelib ) 
 
 set (    SRCS 
-         ftslave.cpp 
+         ftslavelib.cpp 
     )
 
 include_directories ( 
+         ${HPCC_SOURCE_DIR}/dali/base 
          ${HPCC_SOURCE_DIR}/include 
          ${HPCC_SOURCE_DIR}/jlib
-         ${HPCC_SOURCE_DIR}/dali/base 
-         ${HPCC_SOURCE_DIR}/mp 
-         ${HPCC_SOURCE_DIR}/remote 
          ${HPCC_SOURCE_DIR}/security/shared
+         ${HPCC_SOURCE_DIR}/system/mp 
     )
 
-HPCC_ADD_EXECUTABLE ( ftslave ${SRCS} )
-set_target_properties (ftslave PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-install ( TARGETS ftslave RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( ftslave
+ADD_DEFINITIONS( -D_USRDLL -DFTSLAVELIB_EXPORTS )
+
+HPCC_ADD_LIBRARY ( ftslavelib SHARED ${SRCS} )
+install ( TARGETS ftslavelib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( ftslavelib
          dalibase 
          dalift 
-         ftslavelib
-         hrpc 
+         hrpc
          jlib
          mp 
          remote 
     )
-
-if (NOT CONTAINERIZED)
-    target_link_libraries ( ftslave environment )
-endif()

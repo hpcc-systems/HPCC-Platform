@@ -375,6 +375,12 @@ dafilesrv:
     servicePort: 7200
     visibility: local
     
+- name: spray-service
+  application: spray
+  service:
+    servicePort: 7300
+    visibility: local
+    
 
 dali:
 - name: mydali
