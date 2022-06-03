@@ -160,6 +160,7 @@ export = {
         DaliIP: "DaliIP",
         Dashboard: "Dashboard",
         DataPatterns: "Data Patterns",
+        DataPatternsDefnNotFound: "File Definition not found. Data Patterns cannot be started.",
         DataPatternsNotStarted: "Analysis not found.  To start, press Analyze button above.",
         DataPatternsStarted: "Analyzing.  Once complete report will display here.",
         dataset: ":=dataset*",

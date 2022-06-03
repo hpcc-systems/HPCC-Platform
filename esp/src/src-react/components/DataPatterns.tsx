@@ -71,7 +71,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "analyze", text: nlsHPCC.Analyze, iconProps: { iconName: "AnalyticsView" },
-            disabled: !!wu,
+            disabled: !!wu || !file?.Ecl,
             onClick: () => {
                 dpWu?.create(targetCluster).then(() => {
                     refreshData();
@@ -112,7 +112,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
             key: "wuid", text: wuid,
             href: `#/workunits/${wuid}`,
         }
-    ].filter(row => row.key !== "wuid" || !!wuid), [dpWu, isComplete, refreshData, targetCluster, wu, wuid]);
+    ].filter(row => row.key !== "wuid" || !!wuid), [dpWu, file, isComplete, refreshData, targetCluster, wu, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
     ], []);
@@ -126,7 +126,10 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
             wuid ? <div style={{ width: "512px", height: "64px", float: "right" }}>
                 <WUStatus wuid={wuid}></WUStatus>
             </div> :
-                <h3>{nlsHPCC.DataPatternsNotStarted}</h3>
+                file?.Ecl ?
+                    <h3>{nlsHPCC.DataPatternsNotStarted}</h3> :
+                    <h3>{nlsHPCC.DataPatternsDefnNotFound}</h3>
+
         }
         <Optimize dpWu={dpWu} targetCluster={targetCluster} logicalFile={logicalFile} showForm={showOptimize} setShowForm={setShowOptimize} />
     </ScrollablePane>;
