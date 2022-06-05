@@ -508,7 +508,7 @@ void CDelegatingUpdateLog::updateLog(const char* updateLogRequest, IEspUpdateLog
         response.setStatusCode(0); // assume success
         try
         {
-            Owned<IEsdlScriptContext> scriptContext(createEsdlScriptContext(nullptr));
+            Owned<IEsdlScriptContext> scriptContext(createEsdlScriptContext(nullptr, nullptr));
             scriptContext->setContent(IContentTarget::sectionOriginal, updateLogRequest);
             Owned<IXpathContext> originalContent(scriptContext->createXpathContext(nullptr, IContentTarget::sectionOriginal, true));
             Owned<IXpathContext> intermediateContent;
