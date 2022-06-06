@@ -170,6 +170,8 @@ const Activity = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
                 if (!queue) {
                     if (item.ClusterName) {
                         queue = ESPQueue.GetTargetCluster(item.ClusterName);
+                    } else if (item.Instance) {
+                        queue = ESPQueue.GetServerJobQueue(item.Instance);
                     } else {
                         queue = ESPQueue.GetServerJobQueue(item.ServerName);
                     }
