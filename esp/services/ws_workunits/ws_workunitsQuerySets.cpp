@@ -2622,9 +2622,26 @@ inline bool verifyQueryActionAllowsAlias(CQuerySetQueryActionTypes action)
 {
     return (action!=CQuerySetQueryActionTypes_Activate && action!=CQuerySetQueryActionTypes_RemoveAllAliases);
 }
-void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset, IArrayOf<IConstQuerySetQueryActionItem> &items, CQuerySetQueryActionTypes action)
+
+void setQueryActionTargetList(IProperties *queryIds, const char *queryId, bool suspendedByUser, const char *wuidToDelete, StringArray *wuidsToDelete)
 {
-    bool allowWildChecked=false;
+    queryIds->setProp(queryId, suspendedByUser);
+    if (wuidsToDelete && wuidToDelete)
+        wuidsToDelete->appendUniq(wuidToDelete);
+}
+
+void findActiveQueries(IPropertyTree *queryset, StringArray &queryIds)
+{
+    Owned<IPropertyTreeIterator> active = queryset->getElements("Alias");
+    ForEach(*active)
+        queryIds.append(active->query().queryProp("@id"));
+}
+
+void expandQueryActionTargetList(IProperties *queryIds, StringArray *wuidsToDelete, IPropertyTree *queryset, IArrayOf<IConstQuerySetQueryActionItem> &items, CQuerySetQueryActionTypes action)
+{
+    StringArray activeQueryIds;
+    bool activeQueryIdsFound = false;
+    bool allowWildChecked = false;
     ForEachItemIn(i, items)
     {
         const char *itemId = items.item(i).getQueryId();
@@ -2635,7 +2652,10 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
             if (itemSuspendState && (strieq(itemSuspendState, "By User") || strieq(itemSuspendState, "1")))
                 suspendedByUser = true;
             if (!verifyQueryActionAllowsAlias(action))
-                queryIds->setProp(itemId, suspendedByUser);
+            {
+                Owned<IPropertyTree> query = getQueryById(queryset, itemId);
+                setQueryActionTargetList(queryIds, itemId, suspendedByUser, wuidsToDelete ? query->queryProp("@wuid") : nullptr, wuidsToDelete);
+            }
             else
             {
                 Owned<IPropertyTree> query = resolveQueryAlias(queryset, itemId);
@@ -2643,14 +2663,26 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
                 {
                     const char *id = query->queryProp("@id");
                     if (id && *id)
-                        queryIds->setProp(id, suspendedByUser);
+                        setQueryActionTargetList(queryIds, id, suspendedByUser, wuidsToDelete ? query->queryProp("@wuid") : nullptr, wuidsToDelete);
                 }
             }
         }
         else
         {
             verifyQueryActionAllowsWild(allowWildChecked, action);
-            if (verifyQueryActionAllowsAlias(action))
+
+            bool checkActivated = !items.item(i).getActivated_isNull();
+            bool activated = checkActivated && items.item(i).getActivated();
+            bool suspendedByUser = items.item(i).getSuspendedByUser();
+
+            if (checkActivated && !activated && !activeQueryIdsFound)
+            {
+                activeQueryIdsFound = true;
+                findActiveQueries(queryset, activeQueryIds);
+            }
+
+            StringArray activeQueryInActionTargetList;
+            if (verifyQueryActionAllowsAlias(action) && (!checkActivated || activated))
             {
                 Owned<IPropertyTreeIterator> active = queryset->getElements("Alias");
                 ForEach(*active)
@@ -2658,15 +2690,28 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
                     const char *name = active->query().queryProp("@name");
                     const char *id = active->query().queryProp("@id");
                     if (name && id && WildMatch(name, itemId))
-                        queryIds->setProp(id, 0);
+                    {
+                        Owned<IPropertyTree> query = getQueryById(queryset, id);
+                        if (!suspendedByUser || query->getPropBool("@suspended", false))
+                        {
+                            setQueryActionTargetList(queryIds, id, 0, wuidsToDelete ? query->queryProp("@wuid") : nullptr, wuidsToDelete);
+                            activeQueryInActionTargetList.append(id);
+                        }
+                    }
                 }
             }
             Owned<IPropertyTreeIterator> queries = queryset->getElements("Query");
             ForEach(*queries)
             {
                 const char *id = queries->query().queryProp("@id");
-                if (id && WildMatch(id, itemId))
-                    queryIds->setProp(id, 0);
+                if (id && WildMatch(id, itemId) && (activeQueryInActionTargetList.find(id) == NotFound))
+                {
+                    if (!checkActivated || (activated == (activeQueryIds.find(id) != NotFound)))
+                    {
+                        if (!suspendedByUser || queries->query().getPropBool("@suspended", false))
+                            setQueryActionTargetList(queryIds, id, 0, wuidsToDelete ? queries->query().queryProp("@wuid") : nullptr, wuidsToDelete);
+                    }
+                }
             }
         }
     }
@@ -2678,7 +2723,7 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
     Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
     item->setQueryId(id);
     items.append(*(IConstQuerySetQueryActionItem*)item.getClear());
-    expandQueryActionTargetList(queryIds, queryset, items, action);
+    expandQueryActionTargetList(queryIds, nullptr, queryset, items, action);
 }
 
 bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequest & req, IEspWUQueryConfigResponse & resp)
@@ -2740,9 +2785,14 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
     if (!queryset)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", req.getQuerySetName());
 
+    CQuerySetQueryActionTypes action = req.getAction();
     Owned<IProperties> queryIds = createProperties();
-    expandQueryActionTargetList(queryIds, queryset, req.getQueries(), req.getAction());
-    if (req.getAction() == CQuerySetQueryActionTypes_ResetQueryStats)
+    StringArray wuidsToDelete;
+    if (action == CQuerySetQueryActionTypes_DeleteQueriesAndWUs)
+        expandQueryActionTargetList(queryIds, &wuidsToDelete, queryset, req.getQueries(), action);
+    else
+        expandQueryActionTargetList(queryIds, nullptr, queryset, req.getQueries(), action);
+    if (action == CQuerySetQueryActionTypes_ResetQueryStats)
         return resetQueryStats(context, req.getQuerySetName(), queryIds, resp);
 
     IArrayOf<IEspQuerySetQueryActionResult> results;
@@ -2757,7 +2807,6 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
             Owned<IPropertyTree> query = getQueryById(queryset, id);
             if (!query)
                 throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
-            CQuerySetQueryActionTypes action = req.getAction();
             const char* strAction = (action > -1) && (action < NumOfQuerySetQueryActionTypes) ? QuerySetQueryActionTypes[action] : "Undefined";
             PROGLOG("%s: queryset %s, query %s", strAction, req.getQuerySetName(), id);
             switch (action)
@@ -2775,6 +2824,7 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     setQueryAlias(queryset, query->queryProp("@name"), id);
                     break;
                 case CQuerySetQueryActionTypes_Delete:
+                case CQuerySetQueryActionTypes_DeleteQueriesAndWUs:
                     removeNamedQuery(queryset, id);
                     query.clear();
                     break;
@@ -2795,6 +2845,33 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
             e->Release();
         }
         results.append(*result.getClear());
+    }
+
+    if (action == CQuerySetQueryActionTypes_DeleteQueriesAndWUs)
+    {
+        queryset.clear();
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        ForEachItemIn(i, wuidsToDelete)
+        {
+            const char *wuid = wuidsToDelete.item(i);
+            Owned<IEspQuerySetQueryActionResult> result = createQuerySetQueryActionResult();
+            result->setWUID(wuid);
+            try
+            {
+                factory->deleteWorkUnitEx(wuid, true, context.querySecManager(), context.queryUser());
+                result->setSuccess(true);
+            }
+            catch(IException *e)
+            {
+                VStringBuffer msg("Deleting %s. ", wuid);
+                result->setMessage(e->errorMessage(msg).str());
+                result->setCode(e->errorCode());
+                result->setSuccess(false);
+                e->Release();
+            }
+            results.append(*result.getClear());
+        }
     }
     resp.setResults(results);
     return true;
