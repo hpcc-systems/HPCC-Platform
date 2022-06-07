@@ -167,6 +167,47 @@ bool CldapenvironmentEx::createSecret(SecretType type, const char * secretName, 
     return true;
 }
 
+bool CldapenvironmentEx::createUser(StringBuffer &userName, const char * prefix, const char * envName, const char * baseDN, const char * pwd, StringBuffer &notes)
+{
+#define MAX_USERNAME_LDAP_LEN 20
+    StringBuffer tmpUserName;
+    tmpUserName.appendf("%s%s", prefix, envName);
+    userName.set(tmpUserName);
+
+    Owned<ISecUser> user = secmgr->createUser(tmpUserName.str());
+    user->credentials().setPassword(pwd);
+
+    int idx = 0;
+    while (true)
+    {
+        try
+        {
+            DBGLOG("Creating user '%s' in '%s', len=%d", tmpUserName.str(), baseDN, tmpUserName.length());
+            secmgr->addUser(*user.get(), baseDN);
+            userName.set(tmpUserName.str());//success!
+            return true;
+        }
+        catch(...)
+        {
+            if (idx == 99)
+            {
+                notes.appendf("\nNon Fatal Error creating '%s'", userName.str());
+                return false;
+            }
+            if (idx == 0 && tmpUserName.length() > MAX_USERNAME_LDAP_LEN)
+                tmpUserName.setLength(MAX_USERNAME_LDAP_LEN);//LDAP limits account names to 20 characters
+            else
+            {
+                char szIndex[3];//'1' through '99'
+                itoa(++idx, szIndex, 10);
+                strcpy((char *)(tmpUserName.str() + tmpUserName.length() - strlen(szIndex)), szIndex);
+            }
+            user->setName(tmpUserName.str());
+        }
+    }
+    return false;
+}
+
 void CldapenvironmentEx::createLDAPBaseDN(const char * baseDN, SecPermissionType pt, const char * description, StringBuffer & notes)
 {
     try
@@ -259,27 +300,16 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         // Create HPCC Admin Username/password.
         // Attempt to create the Kubernetes secret for that user
         //----------------------------------
-        VStringBuffer respHPCCAdminUser("HPCC_%s", req.getEnvName());
-        StringBuffer  respHPCCAdminPwd;
-        generatePassword(respHPCCAdminPwd, 10);//jutil.hpp
+        StringBuffer respHPCCAdminUser;
+        StringBuffer respHPCCAdminPwd;
 
         if (req.getCreateLDAPEnvironment())
         {
-            //Create the HPCCAdmin user
-            {
-                Owned<ISecUser> user = secmgr->createUser(respHPCCAdminUser.str());
-                user->credentials().setPassword(respHPCCAdminPwd.str());
-                try
-                {
-                    secmgr->addUser(*user.get(), respUsersBaseDN.str());
-                }
-                catch(...)
-                {
-                    notes.appendf("\nNon Fatal Error creating '%s'", respHPCCAdminUser.str());
-                }
-            }
+            generatePassword(respHPCCAdminPwd, 10);//jutil.hpp
+            bool rc = createUser(respHPCCAdminUser, "HPCC_", req.getEnvName(), respUsersBaseDN.str(), respHPCCAdminPwd.str(), notes);
 
             //Add HPCCAdmin user to HPCCAdmins group
+            if (rc)
             {
                 VStringBuffer adminGrpOU("cn=%s,%s", adminGroupName.str(), respGroupsBaseDN.str());
                 VStringBuffer adminUsr("%s%s,%s", userPrefix, respHPCCAdminUser.str(), respUsersBaseDN.str());
@@ -345,46 +375,39 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         // Create LDAP Admin Username/password.
         // Attempt to create the Kubernetes secret for that user
         //----------------------------------
-        VStringBuffer respLDAPAdminUser("LDAP_%s", req.getEnvName());
-        StringBuffer  respLDAPAdminPwd;
-        generatePassword(respLDAPAdminPwd, 10);//jutil.hpp
+        StringBuffer respLDAPAdminUser;
+        StringBuffer respLDAPAdminPwd;
 
         if (req.getCreateLDAPEnvironment())
         {
-            //Create the user
-            Owned<ISecUser> user = secmgr->createUser(respLDAPAdminUser.str());
-            user->credentials().setPassword(respLDAPAdminPwd.str());
-            try
-            {
-                secmgr->addUser(*user.get(), respUsersBaseDN.str());
-            }
-            catch(...)
-            {
-                notes.appendf("\nNon Fatal Error creating '%s'", respLDAPAdminUser.str());
-            }
+            generatePassword(respLDAPAdminPwd, 10);//jutil.hpp
+            bool rc = createUser(respLDAPAdminUser, "LDAP_", req.getEnvName(), respUsersBaseDN.str(), respLDAPAdminPwd.str(), notes);
 
             //Add LDAPAdmin user to Administrators group
-            if (secmgr->getLdapServerType() == ACTIVE_DIRECTORY)
+            if (rc)
             {
-                const char * pDC = strstr(respUsersBaseDN.str(), "dc=");
-                VStringBuffer ldapadminGrpOU("cn=Administrators,cn=Builtin,%s", pDC ? pDC : "dc=local");
-                VStringBuffer ldapadminUsr("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
-                try
+                if (secmgr->getLdapServerType() == ACTIVE_DIRECTORY)
                 {
-                    secmgr->changeGroupMember("add", ldapadminGrpOU.str(), ldapadminUsr.str());
+                    const char * pDC = strstr(respUsersBaseDN.str(), "dc=");
+                    VStringBuffer ldapadminGrpOU("cn=Administrators,cn=Builtin,%s", pDC ? pDC : "dc=local");
+                    VStringBuffer ldapadminUsr("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
+                    try
+                    {
+                        secmgr->changeGroupMember("add", ldapadminGrpOU.str(), ldapadminUsr.str());
+                    }
+                    catch(...)
+                    {
+                        notes.appendf("\nNon Fatal Error adding '%s' to '%s'", ldapadminUsr.str(), ldapadminGrpOU.str());
+                    }
                 }
-                catch(...)
-                {
-                    notes.appendf("\nNon Fatal Error adding '%s' to '%s'", ldapadminUsr.str(), ldapadminGrpOU.str());
-                }
-            }
 
-            //Add LDAP R/W permissions for LDAPAdmin user
-            //Only grant access to root of new environment (ex  ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com)
-            VStringBuffer ldapAdminFQDN("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
-            if (!changePermissions(envOU.str(), ldapAdminFQDN.str(), SecAccess_Full, SecAccess_None))
-                notes.appendf("\nNon Fatal Error setting LDAPAdmin permission for %s'", envOU.str());
-            notes.appendf("\nEnsure LDAPAdmin user '%s' has full access permissions to environment OU '%s', including 'This object and all descendant objects'", respLDAPAdminUser.str(), envOU.str());
+                //Add LDAP R/W permissions for LDAPAdmin user
+                //Only grant access to root of new environment (ex  ou=BocaInsurance,ou=hpcc,dc=myldap,dc=com)
+                VStringBuffer ldapAdminFQDN("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
+                if (!changePermissions(envOU.str(), ldapAdminFQDN.str(), SecAccess_Full, SecAccess_None))
+                    notes.appendf("\nNon Fatal Error setting LDAPAdmin permission for %s'", envOU.str());
+                notes.appendf("\nEnsure LDAPAdmin user '%s' has full access permissions to environment OU '%s', including 'This object and all descendant objects'", respLDAPAdminUser.str(), envOU.str());
+            }
         }
 
         //Create the LDAPAdmin secret
