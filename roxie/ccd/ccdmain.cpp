@@ -1083,6 +1083,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
+        roxiemem::setMemoryOptions(topology);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);

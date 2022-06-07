@@ -458,6 +458,7 @@ export = {
         Mappings: "Mappings",
         Mask: "Mask",
         Max: "Max",
+        MaxConnections: "Max Connections",
         MaxNode: "Max Node",
         MaxSize: "Max Size",
         MaxSkew: "Max Skew",

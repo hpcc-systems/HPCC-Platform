@@ -133,6 +133,7 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDL_OPTION_ECL_INCLUDE_LIST    "--ecl-imports"
 #define ESDL_OPTION_ECL_HEADER_BLOCK    "--ecl-header"
 #define ESDL_OPTION_ENCODED             "--encoded"
+#define ESDL_OPTION_SSL                 "--ssl"
 
 #define ESDL_OPTION_USE_CASSANDRA          "--use-cassandra"
 #define ESDL_OPTION_CASSANDRA_CONSISTENCY  "--cassandra-consistency"
@@ -304,12 +305,12 @@ public:
         fprintf(stderr, "\n");
     }
 
-    static IClientWsESDLConfig * getWsESDLConfigSoapService(const char *server, const char *port, const char *username, const char *password)
+    static IClientWsESDLConfig * getWsESDLConfigSoapService(bool https, const char *server, const char *port, const char *username, const char *password)
     {
         if(server == NULL)
             throw MakeStringException(-1, "Server url not specified");
 
-        VStringBuffer url("http://%s:%s/WsESDLConfig/?ver_=%s", server, port, VERSION_FOR_ESDLCMD);
+        VStringBuffer url("%s://%s:%s/WsESDLConfig/?ver_=%s", https ? "https" : "http", server, port, VERSION_FOR_ESDLCMD);
 
         IClientWsESDLConfig * esdlConfigClient = createWsESDLConfigClient();
         esdlConfigClient->addServiceUrl(url.str());

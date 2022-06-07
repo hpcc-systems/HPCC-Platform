@@ -100,7 +100,6 @@ const char * CldapenvironmentEx::formatOUname(StringBuffer &ou, const char * env
             ou.append(reqBaseDN);
             break;
     }
-    ou.toLowerCase();
     return ou.str();
 }
 
@@ -367,6 +366,8 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
             if (secmgr->getLdapServerType() == ACTIVE_DIRECTORY)
             {
                 const char * pDC = strstr(respUsersBaseDN.str(), "dc=");
+                if (!pDC)
+                    pDC = strstr(respUsersBaseDN.str(), "DC=");
                 VStringBuffer ldapadminGrpOU("cn=Administrators,cn=Builtin,%s", pDC ? pDC : "dc=local");
                 VStringBuffer ldapadminUsr("%s%s,%s", userPrefix, respLDAPAdminUser.str(), respUsersBaseDN.str());
                 try

@@ -1414,7 +1414,13 @@ void CLdapSecManager::deleteGroup(const char* groupname)
 
 bool CLdapSecManager::changePermission(CPermissionAction& action)
 {
-    return m_ldap_client->changePermission(action);
+    bool ret = m_ldap_client->changePermission(action);
+    if (ret)
+    {
+        if (m_permissionsCache->isCacheEnabled())
+            m_permissionsCache->remove(action.m_rtype, action.m_rname.str());
+    }
+    return ret;
 }
 
 void CLdapSecManager::getGroups(const char* username, StringArray & groups)
