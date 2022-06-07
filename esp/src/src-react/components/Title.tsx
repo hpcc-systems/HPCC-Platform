@@ -103,7 +103,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 },
                 {
                     key: "logout", text: nlsHPCC.Logout, disabled: !currentUser?.username, onClick: () => {
-                        fetch("esp/logout", {
+                        fetch("/esp/logout", {
                             method: "post"
                         }).then(data => {
                             if (data) {

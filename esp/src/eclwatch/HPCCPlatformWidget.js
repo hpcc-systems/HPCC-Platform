@@ -516,7 +516,7 @@ define([
             this.logoutConfirm.show();
             query(".dijitDialogUnderlay").style("opacity", "0.5");
             this.logoutConfirm.on("execute", function () {
-                xhr("esp/logout", {
+                xhr("/esp/logout", {
                     method: "post"
                 }).then(function (data) {
                     if (data) {
