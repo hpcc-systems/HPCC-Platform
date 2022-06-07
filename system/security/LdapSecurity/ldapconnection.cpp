@@ -4043,8 +4043,40 @@ public:
 
     virtual bool changePermission(CPermissionAction& action)
     {
+        if (action.m_rname.isEmpty() && (action.m_rtype == RT_FILE_SCOPE || action.m_rtype == RT_WORKUNIT_SCOPE))
+        {
+            //Default permission action. Workunits, or File scopes...
+            const char * p = action.m_basedn.str();
+            if (!isEmptyString(p))
+            {
+                if (strchr(p, '=') >= strchr(p, ','))//ensure contain ou= and comma separator
+                    throw MakeStringException(-1, "changePermission 'action.m_basedn' (%s) appears malformed", action.m_basedn.str());
+                //Isolate OU name as resource name (ie "ou=workunits,ou=ecl,ou=hpcc",
+                // m_rname will be "workunits", m_basedn will be "ou=ecl,ou=hpcc")
+                while (*p != '=')
+                    p++;//skip leading "ou="
+                if (!isEmptyString(p))
+                {
+                    p++;
+                    while (*p && *p != ',')
+                        action.m_rname.append((char)*p++);
+                    action.m_basedn.remove(0, p - action.m_basedn.str() + 1 );//strip off leading "ou=workunits,"
+                    if (action.m_basedn.isEmpty())
+                        throw MakeStringException(-1, "changePermission action.m_basedn cannot be empty");
+                    if (action.m_rname.isEmpty())
+                        throw MakeStringException(-1, "changePermission action.m_rname cannot be empty");
+                }
+                else
+                    throw MakeStringException(-1, "changePermission 'action.m_basedn' (%s) appears malformed", action.m_basedn.str());
+             }
+             else
+                throw MakeStringException(-1, "changePermission 'action.m_basedn' must be specified");
+         }
+
+        //Get security descriptor for Resource Name
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(action.m_basedn.str(), m_ldapconfig->getBasedn(), basednbuf);
+
         Owned<CSecurityDescriptor> sd = new CSecurityDescriptor(action.m_rname.str());
         IArrayOf<CSecurityDescriptor> sdlist;
         sdlist.append(*LINK(sd));
@@ -4053,6 +4085,7 @@ public:
         else
             getSecurityDescriptors(sdlist, basednbuf.str());
 
+        //Ensure Account Name is fully qualified
         if(m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
         {
             StringBuffer act_dn;
@@ -4064,6 +4097,7 @@ public:
             action.m_account_name.clear().append(act_dn.str());
         }
 
+        //Compute new security descriptor (newsd) for Resource Name
         Owned<CSecurityDescriptor> newsd = m_pp->changePermission(sd.get(), action);
 
         StringBuffer normdnbuf;
@@ -4081,7 +4115,7 @@ public:
             struct berval** sd_values = (struct berval**)alloca(sizeof(struct berval*)*(numberOfSegs+1));
             MemoryBuffer& sdbuf = newsd->getDescriptor();
 
-            // Active Directory acutally has only one segment.
+            // Active Directory actually has only one segment.
             if(servertype == ACTIVE_DIRECTORY)
             {
                 struct berval* sd_val = (struct berval*)alloca(sizeof(struct berval));
@@ -4140,6 +4174,7 @@ public:
 
         SDServerCtlWrapper ctlwrapper(m_ldapconfig->isAzureAD());
 
+        //Apply the modified permissions
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = lconn.get()->getLd();
         int rc = ldap_modify_ext_s(ld, (char*)normdnbuf.str(), attrs, ctlwrapper.ctls, NULL);
