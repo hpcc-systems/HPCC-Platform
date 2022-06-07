@@ -38,7 +38,7 @@ interface DevTitleProps {
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
     const theme = useTheme();
-    const toolbarThemeDefaults = { active: "false", text: "", color: theme.palette.themeLight };
+    const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
     const [logIconColor, setLogIconColor] = React.useState(theme.semanticColors.link);
 
     const [showAbout, setShowAbout] = React.useState(false);
@@ -47,9 +47,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
-    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
-    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
-    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
+    const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
+    const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
+    const [titlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
 
     const [showBannerConfig, setShowBannerConfig] = React.useState(false);
     const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
@@ -167,12 +167,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             ;
     }, [setCurrentUser]);
 
-    React.useEffect(() => {
-        if (!environmentTitle) return;
-        document.title = environmentTitle;
-    }, [environmentTitle]);
-
-    return <div style={{ backgroundColor: titlebarColor ?? theme.palette.themeLight }}>
+    return <div style={{ backgroundColor: showEnvironmentTitle && titlebarColor ? titlebarColor : theme.palette.themeLight }}>
         <BannerMessageBar />
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
             <Stack.Item align="center">
@@ -183,8 +178,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     <Stack.Item align="center">
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
-                                <b style={{ color: (titlebarColor !== toolbarThemeDefaults.color) ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
-                                    ECL Watch - 9{environmentTitle !== "" && showEnvironmentTitle ? ` | ${environmentTitle}` : ""}
+                                <b title="ECL Watch - 9" style={{ color: showEnvironmentTitle && titlebarColor ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                                    {showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch - 9"}
                                 </b>
                             </Text>
                         </Link>
@@ -202,7 +197,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         </Stack.Item>
                     }
                     <Stack.Item align="center" >
-                        <ComingSoon defaultValue style={{ color: titlebarColor !== toolbarThemeDefaults.color ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
+                        <ComingSoon defaultValue style={{ color: showEnvironmentTitle && titlebarColor ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
                     </Stack.Item>
                     <Stack.Item align="center">
                         <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: log.length > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
@@ -232,13 +227,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         </Panel>
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
-        <TitlebarConfig
-            toolbarThemeDefaults={toolbarThemeDefaults}
-            showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig}
-            showEnvironmentTitle={showEnvironmentTitle} setShowEnvironmentTitle={setShowEnvironmentTitle}
-            environmentTitle={environmentTitle} setEnvironmentTitle={setEnvironmentTitle}
-            titlebarColor={titlebarColor} setTitlebarColor={setTitlebarColor}
-        />
+        <TitlebarConfig toolbarThemeDefaults={toolbarThemeDefaults} showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />
         <BannerConfig />
     </div>;
 };

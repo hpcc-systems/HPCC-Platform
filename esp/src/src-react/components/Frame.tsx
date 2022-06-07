@@ -10,6 +10,7 @@ import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
 import { CookieConsent } from "./forms/CookieConsent";
 import { userKeyValStore } from "../../src/KeyValStore";
+import { useGlobalStore } from "../hooks/store";
 
 const logger = scopedLogger("../components/Frame.tsx");
 
@@ -19,16 +20,17 @@ interface FrameProps {
 export const Frame: React.FunctionComponent<FrameProps> = () => {
 
     const [showCookieConsent, setShowCookieConsent] = React.useState(false);
-    const [location, setLocation] = React.useState<string>(window.location.hash.split("#").join(""));
+    const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
     const [theme, , isDark] = useUserTheme();
+    const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
+    const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", "", true);
 
     React.useEffect(() => {
 
         const unlisten = hashHistory.listen(async (location, action) => {
             logger.debug(location.pathname);
-            setLocation(location.pathname);
-            document.title = `ECL Watch - 9${location.pathname.split("/").join(" | ")}`;
+            setLocationPathname(location.pathname);
             setBody(await router.resolve(location));
         });
 
@@ -44,6 +46,10 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     }, []);
 
     React.useEffect(() => {
+        document.title = `${showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch - 9"}${locationPathname.split("/").join(" | ")}`;
+    }, [environmentTitle, locationPathname, showEnvironmentTitle]);
+
+    React.useEffect(() => {
         d3Select("body")
             .classed("flat-dark", isDark)
             ;
@@ -52,9 +58,9 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     return <ThemeProvider theme={theme} style={{ height: "100%" }}>
         <HolyGrail
             header={<DevTitle />}
-            left={<MainNavigation hashPath={location} />}
+            left={<MainNavigation hashPath={locationPathname} />}
             main={<HolyGrail
-                header={<SubNavigation hashPath={location} />}
+                header={<SubNavigation hashPath={locationPathname} />}
                 main={body}
             />}
         />
