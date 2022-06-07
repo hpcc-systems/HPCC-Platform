@@ -6754,4 +6754,151 @@ void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
     async.For(fileDesc->numParts(), 100);
 }
 
+
+struct _ownerInfo {
+    std::string name;
+    long long int totalFiles;
+    long long int totalSize;
+};
+
+struct _groupInfo {
+    std::string name;
+    long long int totalSize;
+    long long int totalFiles;
+    std::map<std::string, std::shared_ptr<_ownerInfo>> owners;
+};
+
+
+bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & req, IEspDFUGroupSpaceResponse & resp)
+{
+    //bool filterByOwner = false, filterByGroup = false;
+    StringBuffer username;
+    context.getUserID(username);
+
+    context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::DFUQuery: Permission denied.");
+
+    Owned<IUserDescriptor> userdesc;
+    if (username.length() > 0)
+    {
+        userdesc.setown(createUserDescriptor());
+        userdesc->set(username.str(), context.queryPassword(), context.querySignature());
+    }
+
+    String filterGroup(req.getGroup());
+    bool filterByGroup = !isEmptyString(filterGroup.str()) && filterGroup.compareTo("*");
+
+    String filterOwner(req.getOwner());
+    bool filterByOwner = !isEmptyString(filterOwner.str());
+    bool addAllOwners = filterByOwner && !filterOwner.compareTo("*");
+
+    PROGLOG("DFUGroupSpace: Getting files");
+    Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator("*", userdesc.get(), true, true, NULL);
+    if(!fi)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"DFUGroupSpace: Cannot get information from file system.");
+
+    long long int totalFiles = 0, totalFileSize = 0;
+    std::map<std::string, std::shared_ptr<_groupInfo>> groups;
+
+    ForEach (*fi)
+    {
+        IPropertyTree &attr = fi->query();
+        String fileGroupName(attr.queryProp("@group"));
+
+        if (!isEmptyString(fileGroupName.str()))
+        {
+            StringArray fileGroupNames;
+            fileGroupNames.appendListUniq(fileGroupName.str(), ",");
+            ForEachItemIn(index, fileGroupNames)
+            {
+                String groupName(fileGroupNames.item(index));
+                bool addGroup = true;
+                if (filterByGroup)
+                {
+                    if (!filterGroup.equalsIgnoreCase(groupName))
+                    {
+                        addGroup = false;
+                    }
+                }
+
+                if (addGroup)
+                {
+                    long long int fileSize = attr.getPropInt64("@size", 0);
+                    auto groupIt = groups.find(std::string(groupName.str()));
+                    if (groupIt != groups.end())
+                    {
+                        groupIt->second->totalFiles++;
+                        groupIt->second->totalSize += fileSize;
+                    }
+                    else
+                    {
+                        std::shared_ptr<_groupInfo> pGi = std::make_shared<_groupInfo>();
+                        pGi->totalFiles = 1;
+                        pGi->totalSize = fileSize;
+                        groupIt = groups.insert({std::string(groupName.str()), pGi}).first;
+                    }
+
+                    totalFiles++;
+                    totalFileSize += fileSize;
+
+                    if (filterByOwner)
+                    {
+                        String owner(attr.queryProp("@owner"));
+
+                        if (addAllOwners || filterOwner.equalsIgnoreCase(owner))
+                        {
+                            std::string ownerStr(owner.str());
+                            auto ownerIt = groupIt->second->owners.find(std::string(ownerStr));
+                            if (ownerIt != groupIt->second->owners.end())
+                            {
+                                ownerIt->second->totalFiles++;
+                                ownerIt->second->totalSize += fileSize;
+                            }
+                            else
+                            {
+                                std::shared_ptr<_ownerInfo> pOwner = std::make_shared<_ownerInfo>();
+                                pOwner->name = ownerStr;
+                                pOwner->totalFiles = 1;
+                                pOwner->totalSize = fileSize;
+                                groupIt->second->owners.insert({ownerStr, pOwner});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // build response
+    IArrayOf<IEspDFUGroupInfo> responseGroups;
+    for (auto const &groupIt: groups)
+    {
+        Owned<IEspDFUGroupInfo> pGi = createDFUGroupInfo();
+        pGi->setTotalFiles(groupIt.second->totalFiles);
+        pGi->setTotalSize(groupIt.second->totalSize);
+        pGi->setName(groupIt.first.c_str());
+
+        if (filterByOwner)
+        {
+            IArrayOf<IEspDFUGroupOwnerInfo> groupOwners;
+            for (auto const &ownerIt: groupIt.second->owners)
+            {
+                Owned<IEspDFUGroupOwnerInfo> pOi = createDFUGroupOwnerInfo();
+
+                pOi->setName(ownerIt.first.c_str());
+                pOi->setTotalFiles(ownerIt.second->totalFiles);
+                pOi->setTotalSize(ownerIt.second->totalSize);
+                groupOwners.append(*pOi.getLink());
+            }
+            pGi->setOwners(groupOwners);
+        }
+        responseGroups.append(*pGi.getLink());
+    }
+
+    resp.setTotalSize(totalFileSize);
+    resp.setTotalFiles(totalFiles);
+    resp.setGroups(responseGroups);
+
+    return true;
+}
+
 //////////////////////HPCC Browser//////////////////////////

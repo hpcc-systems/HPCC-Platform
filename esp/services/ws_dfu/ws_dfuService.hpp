@@ -190,6 +190,7 @@ public:
     // NB: the following 3 methods are deprecated from ver >= 1.50
     virtual bool onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp);
     virtual bool onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp);
+    virtual bool onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & req, IEspDFUGroupSpaceResponse & resp);
 
 private:
     void setFileIterateFilter(unsigned maxFiles, StringBuffer &filterBuf);
@@ -306,4 +307,3 @@ inline const char * splitName(const char * name)
 }
 
 #endif //_ESPWIZ_WsDfu_HPP__
-

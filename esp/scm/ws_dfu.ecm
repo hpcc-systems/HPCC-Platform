@@ -973,11 +973,40 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 {
 };
 
+ESPStruct DFUGroupOwnerInfo
+{
+    string Name;
+    int64 TotalFiles;
+    int64 TotalSize;
+};
+
+ESPStruct DFUGroupInfo
+{
+    string Name;
+    int64 TotalSize;
+    int64 TotalFiles;
+    ESParray<EspStruct DFUGroupOwnerInfo> Owners;
+};
+
+ESPrequest DFUGroupSpaceRequest
+{
+    string Group;
+    string Owner;
+};
+
+ESPresponse DFUGroupSpaceResponse
+{
+    int64 TotalSize;
+    int64 TotalFiles;
+    ESParray<EspStruct DFUGroupInfo> Groups;
+};
+
+
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.64"),
-    default_client_version("1.64"),
+    version("1.65"),
+    default_client_version("1.65"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
@@ -1014,6 +1043,8 @@ ESPservice [
 // NB: these methods are deprecated from ver >= 1.50
     ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.39")] DFUFileAccess(DFUFileAccessRequest, DFUFileAccessResponse);
     ESPmethod [auth_feature("DfuAccess:FULL"), min_ver("1.39")] DFUFileCreate(DFUFileCreateRequest, DFUFileCreateResponse);
+
+    ESPmethod [auth_feature("DfuAccess:READ"), min_ver("1.65")] DFUGroupSpace(DFUGroupSpaceRequest, DFUGroupSpaceResponse);
 };
 
 SCMexportdef(WSDFU);
