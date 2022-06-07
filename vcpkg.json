@@ -3,25 +3,12 @@
     "name": "hpcc-platform",
     "version": "8.6.0",
     "dependencies": [
-        "icu",
-        "zlib",
-        "openssl",
-        "libxml2",
-        {
-            "name": "libxslt",
-            "default-features": false,
-            "features": []
-        },
-        "boost-property-tree",
-        "boost-regex",
-        "python3",
         "apr",
         "apr-util",
-        {
-            "name": "libiconv",
-            "platform": "osx"
-        },
+        "boost-property-tree",
+        "boost-regex",
         "curl",
+        "icu",
         {
             "name": "libarchive",
             "default-features": false,
@@ -30,14 +17,27 @@
             ]
         },
         {
-            "name": "winflexbison",
-            "platform": "windows"
+            "name": "libiconv",
+            "platform": "osx"
         },
+        "librdkafka",
         {
             "name": "libmysql",
             "platform": "!(windows & x86)"
         },
-        "librdkafka",
-        "openblas"
+        "libxml2",
+        {
+            "name": "libxslt",
+            "default-features": false,
+            "features": []
+        },
+        "openblas",
+        "openssl",
+        "python3",
+        {
+            "name": "winflexbison",
+            "platform": "windows"
+        },
+        "zlib"
     ]
 }

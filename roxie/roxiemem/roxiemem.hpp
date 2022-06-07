@@ -226,7 +226,7 @@ public:
     void Release();
     inline unsigned queryCount() const
     {
-        return count.load(std::memory_order_relaxed);
+        return count.load(std::memory_order_acquire);
     }
     void noteReleased(const void *ptr);
     void noteLinked(const void *ptr);
@@ -538,6 +538,7 @@ interface IDataBufferManager : extends IInterface
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
 extern roxiemem_decl void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback);
+extern roxiemem_decl void setMemoryOptions(IPropertyTree * options);
 extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();

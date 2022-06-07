@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.generator": "Unix Makefiles",
+		"cmake.configureArgs": [
+			"-DRUNTIME_USER=${env:USER}",
+			"-DDESTDIR=${userHome}/hpcc-${buildType}",
+			"-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+			"-DVCPKG_OVERLAY_PORTS=${workspaceFolder}/vcpkg-overlays",
+			"-DUSE_OPTIONAL=OFF",
+			"-DINCLUDE_PLUGINS=ON",
+			"-DSUPPRESS_V8EMBED=ON",
+			"-DSUPPRESS_REMBED=ON",
+			"-DSUPPRESS_COUCHBASEEMBED=ON",
+			"-DUSE_NLP=OFF"
+		],
+		"cmake.buildToolArgs": [
+			"-j"
+		],
+	}
+}

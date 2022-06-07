@@ -1942,6 +1942,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
         {
             info->setState("<Hidden>");
+            info->setNoAccess(true);
             results.append(*info.getClear());
             continue;
         }
@@ -2143,6 +2144,7 @@ void doWULightWeightQueryWithSort(IEspContext &context, IEspWULightWeightQueryRe
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
         {
             info->setStateDesc("<Hidden>");
+            info->setNoAccess(true);
             results.append(*info.getClear());
             continue;
         }
@@ -2358,6 +2360,7 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         if (!canAccess)
         {
             info->setState("<Hidden>");
+            info->setNoAccess(true);
             return info.getClear();
         }
 
@@ -2382,6 +2385,7 @@ class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
         if (!canAccess)
         {
             info->setStateDesc("<Hidden>");
+            info->setNoAccess(true);
             return info.getClear();
         }
 
@@ -2570,7 +2574,11 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
         else if(notEmpty(wuid) && looksLikeAWuid(wuid, 'W'))
+        {
+            if (!validateWsWorkunitAccess(context, wuid, SecAccess_Read))
+                throw makeStringExceptionV(ECLWATCH_ECL_WU_ACCESS_DENIED, "WorkUnit access denied: %s.", wuid);
             doWUQueryBySingleWuid(context, wuid, resp);
+        }
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
         else
