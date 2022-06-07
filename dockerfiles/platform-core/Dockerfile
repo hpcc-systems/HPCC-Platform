@@ -33,6 +33,7 @@ RUN apt-get install -y \
   g++ \
   openssh-client \
   libapr1 \
+  libaprutil1 \
   libnuma1 \
   libboost-regex1.71.0 \
   libpython3.8 \
