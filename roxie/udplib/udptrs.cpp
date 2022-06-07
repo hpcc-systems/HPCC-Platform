@@ -512,6 +512,7 @@ public:
         if (udpTraceFlow)
             DBGLOG("Sending %u packets [..%u] from max of %u [resend %u queued %u]",
                    (unsigned)toSend.size(), nextSendSequence.load(), permit.max_data, resendList ? resendList->numActive() : 0, packetsQueued.load(std::memory_order_relaxed));
+        CCycleTimer socketTimer;
         sendStart(toSend.size());
         for (DataBuffer *buffer: toSend)
         {
@@ -572,6 +573,13 @@ public:
                 ::Release(buffer);
         }
         activePermitSeq = 0;
+        unsigned elapsed = socketTimer.elapsedMs();
+        if (udpTraceLevel > 2 || elapsed > udpSendTraceThresholdMs)
+        {
+            StringBuffer s;
+            DBGLOG("UdpSender: socket->write() %u blocks, %u bytes to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, elapsed);
+        }
+
         sendDone(toSend.size());
         return totalSent;
     }
@@ -1049,7 +1057,7 @@ class CSendManager : implements ISendManager, public CInterface
                 if (udpTraceLevel > 2 || elapsed > udpSendTraceThresholdMs)
                 {
                     StringBuffer s;
-                    DBGLOG("UdpSender[%s]: sent %u bytes to node=%s under permit %" SEQF "u in %ums", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq, elapsed);
+                    DBGLOG("UdpSender[%s]: sentData() %u bytes to node=%s under permit %" SEQF "u in %ums", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq, elapsed);
                 }
             }
             if (udpTraceLevel > 0)
