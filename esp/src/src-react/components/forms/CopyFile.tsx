@@ -22,6 +22,7 @@ interface CopyFileFormValues {
     superCopy: boolean;
     preserveCompression: boolean;
     ExpireDays: string;
+    maxConnections: string;
 }
 
 const defaultValues: CopyFileFormValues = {
@@ -34,7 +35,8 @@ const defaultValues: CopyFileFormValues = {
     Wrap: false,
     superCopy: false,
     preserveCompression: true,
-    ExpireDays: ""
+    ExpireDays: "",
+    maxConnections: ""
 };
 
 interface CopyFileProps {
@@ -243,6 +245,9 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                                 field: { onChange, name: fieldName, value }
                             }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.PreserveCompression} />}
                         /></td>
+                        <td></td>
+                    </tr>
+                    <tr>
                         <td><Controller
                             control={control} name="ExpireDays" defaultValue={""}
                             render={({
@@ -252,6 +257,25 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                                     name={fieldName}
                                     onChange={onChange}
                                     label={nlsHPCC.ExpireDays}
+                                    value={value}
+                                    errorMessage={error && error.message}
+                                />}
+                            rules={{
+                                min: {
+                                    value: 1,
+                                    message: `${nlsHPCC.ValidationErrorNumberLess} 1`
+                                }
+                            }}
+                        /></td>
+                        <td><Controller
+                            control={control} name="maxConnections" defaultValue={""}
+                            render={({
+                                field: { onChange, name: fieldName, value },
+                                fieldState: { error }
+                            }) => <TextField
+                                    name={fieldName}
+                                    onChange={onChange}
+                                    label={nlsHPCC.MaxConnections}
                                     value={value}
                                     errorMessage={error && error.message}
                                 />}
