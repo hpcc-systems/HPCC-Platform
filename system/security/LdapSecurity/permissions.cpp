@@ -774,7 +774,8 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
     if(*lpdwAbsoluteSecurityDescriptorSize < sizeof(SECURITY_DESCRIPTOR))
     {
         ok = false;
-        DBGLOG("MakeAbsoluteSD : pdwAbsoluteSecurityDescriptorSize < sizeof(SECURITY_DESCRIPTOR)");
+        if (*lpdwAbsoluteSecurityDescriptorSize > 0)
+            DBGLOG("MakeAbsoluteSD : pdwAbsoluteSecurityDescriptorSize(%d) < sizeof(SECURITY_DESCRIPTOR)",*lpdwAbsoluteSecurityDescriptorSize);
         *lpdwAbsoluteSecurityDescriptorSize = sizeof(SECURITY_DESCRIPTOR);
     }
 
@@ -787,7 +788,8 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
         if(*lpdwOwnerSize < owner_size)
         {
             ok = false;
-            DBGLOG("MakeAbsoluteSD : *lpdwOwnerSize < owner_size");
+            if (*lpdwOwnerSize > 0)
+                DBGLOG("MakeAbsoluteSD : *lpdwOwnerSize(%d) < owner_size", *lpdwOwnerSize);
             *lpdwOwnerSize = owner_size;
         }
     }
@@ -801,7 +803,8 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
         if(*lpdwPrimaryGroupSize < group_size)
         {
             ok = false;
-            DBGLOG("MakeAbsoluteSD : *lpdwPrimaryGroupSize < group_size");
+            if (*lpdwPrimaryGroupSize > 0)
+                DBGLOG("MakeAbsoluteSD : *lpdwPrimaryGroupSize(%d) < group_size", *lpdwPrimaryGroupSize);
             *lpdwPrimaryGroupSize = group_size;
         }
     }
@@ -815,7 +818,8 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
         if(*lpdwDaclSize < DaclSizeInfo.AclBytesInUse)
         {
             ok = false;
-            DBGLOG("MakeAbsoluteSD : *lpdwDaclSize < DaclSizeInfo.AclBytesInUse");
+            if (*lpdwDaclSize > 0)
+                DBGLOG("MakeAbsoluteSD : *lpdwDaclSize(%d) < DaclSizeInfo.AclBytesInUse", *lpdwDaclSize);
             *lpdwDaclSize = DaclSizeInfo.AclBytesInUse;
         }
     }
@@ -829,7 +833,8 @@ bool MakeAbsoluteSD(PSECURITY_DESCRIPTOR pSelfRelativeSecurityDescriptor,
         if(*lpdwSaclSize < SaclSizeInfo.AclBytesInUse)
         {
             ok = false;
-            DBGLOG("MakeAbsoluteSD : *lpdwSaclSize < SaclSizeInfo.AclBytesInUse");
+            if (*lpdwSaclSize > 0)
+                DBGLOG("MakeAbsoluteSD : *lpdwSaclSize(%d) < SaclSizeInfo.AclBytesInUse", *lpdwSaclSize);
             *lpdwSaclSize = SaclSizeInfo.AclBytesInUse;
         }
     }
@@ -1616,7 +1621,7 @@ CSecurityDescriptor::CSecurityDescriptor(const char* name)
 {
     if(name == NULL || name[0] == '\0')
         throw MakeStringException(-1, "name can't be empty for CSecurityDescriptor");
-    
+
     const char* resourcename = name;
     if(resourcename[0] == '/')
         resourcename = resourcename + 1;
