@@ -1261,6 +1261,7 @@ void CWsSMCEx::addWUsToResponse(IEspContext &context, const IArrayOf<IEspActiveW
                 cw->setInstance(instanceName); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
             if (targetClusterName && *targetClusterName)
                 cw->setTargetClusterName(targetClusterName);
+            cw->setNoAccess(true);
             awsReturned.append(*cw.getClear());
 
             e->Release();
@@ -2523,7 +2524,7 @@ void CWsSMCEx::setActiveWUs(IEspContext &context, IEspActiveWorkunit& wu, IEspAc
             wuToSet->setInstance(instanceName); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
         if (targetClusterName && *targetClusterName)
             wuToSet->setTargetClusterName(targetClusterName);
-
+        wuToSet->setNoAccess(true);
         e->Release();
     }
 }
