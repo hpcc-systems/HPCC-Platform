@@ -30,32 +30,44 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "windows-2019", "windows-2022", "macos-11"]
+        os: ["ubuntu-20.04", "ubuntu-22.04", "windows-2019", "windows-2022", "macos-11", "macos-12"]
         include:
           - os: "ubuntu-20.04"
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON"
-            cmake_build_options: "-- -j$(nproc)"
+            cmake_config_options: '-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON'
+            cmake_build_options: "-- -j$(nproc) -k"
+          - os: "ubuntu-22.04"
+            triplet: "x64-linux"
+            mono: "mono"
+            sudo: "sudo"
+            cmake_config_options: '-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON'
+            cmake_build_options: "-- -j$(nproc) -k"
           - os: "windows-2019"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
             cmake_build_options: "--config Debug -- -m"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
             cmake_build_options: "--config Debug -- -m"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
-            cmake_build_options: "-- -j$(nproc)"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_build_options: "-- -j$(nproc) -k"
+          - os: "macos-12"
+            triplet: "x64-osx"
+            mono: "mono"
+            sudo: "sudo"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_build_options: "-- -j$(nproc) -k"
       fail-fast: false
 
     name: "Build with vcpkg"
@@ -70,7 +82,7 @@ jobs:
           echo "Platform Changed:  ${{ needs.check-skip.outputs.platform }}"
 
       - name: Ubuntu Dependencies
-        if: ${{ needs.check-skip.outputs.platform && matrix.os == 'ubuntu-20.04' }}
+        if: ${{ needs.check-skip.outputs.platform && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04') }}
         shell: "bash"
         run: |
           sudo apt-get update -y
@@ -78,15 +90,19 @@ jobs:
             zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
             libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
             default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config uuid-dev libtool autotools-dev automake \
-            libssl-dev xmlstarlet
+            libssl-dev xmlstarlet libncurses-dev
 
-          curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
-          sudo apt-add-repository "deb https://deb.nodesource.com/node_16.x $(lsb_release -sc) main"
+      - name: Ubuntu-22.04 Mono Dependencies
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        shell: "bash"
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
           sudo apt-get update -y
-          sudo apt-get install -y nodejs
+          sudo apt-get -yq install mono-complete
 
       - name: OSX Dependencies
-        if: ${{ needs.check-skip.outputs.platform && matrix.os == 'macos-11' }}
+        if: ${{ needs.check-skip.outputs.platform && (matrix.os == 'macos-11' || matrix.os == 'macos-12') }}
         shell: "bash"
         run: |
           brew install bison flex pkg-config automake libtool cmake openjdk@11
@@ -134,7 +150,15 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../vcpkg-overlays -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+
+      - name: "Remove vcpkg build files"
+        if: ${{ needs.check-skip.outputs.platform }}
+        working-directory: ./vcpkg
+        shell: "bash"
+        run: |
+          rm -rf ./buildtrees
+          rm -rf ./downloads
 
       - name: "Build HPCC-Platform"
         if: ${{ needs.check-skip.outputs.platform }}

@@ -38,6 +38,7 @@ protected:
     StringAttr optTargetAddress;
     StringAttr optTargetPort;
     bool       optOverWrite;
+    bool       optSSL = false;
 
     Owned<EsdlCmdHelper> esdlHelper;
 
@@ -71,9 +72,12 @@ public:
 
     virtual void usage()
     {
+        //      >------------------------ 80 columns --------------------------------------------<
          printf(
                 "   -s, --server <ip>            IP of server running WsESDLConfig service\n"
                 "   --port <port>                WsESDLConfig service port\n"
+                "   --ssl                        Use secure connection to the server running\n"
+                "                                WsESDLConfig service, even when localhost default.\n"
                 "   -u, --username <name>        Username for accessing WsESDLConfig service\n"
                 "   -pw, --password <pw>         Password for accessing WsESDLConfig service\n"
                 );
@@ -96,6 +100,8 @@ public:
             return true;
         if (iter.matchFlag(optOverWrite, ESDL_OPTION_OVERWRITE) )
             return true;
+        if (iter.matchFlag(optSSL, ESDL_OPTION_SSL))
+            return true;
 
         return false;
     }
@@ -110,6 +116,16 @@ public:
 
         return true;
     }
+
+protected:
+    void outputServerException(IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        DBGLOG("Error communicating with the ESDLConfig service at %s://%s:%s : %s", optSSL ? "https" : "http", optWSProcAddress.get(), optWSProcPort.get(), msg.str());
+        e->Release();
+    }
+
 };
 
 class EsdlPublishCmd : public EsdlPublishCmdCommon
@@ -117,7 +133,7 @@ class EsdlPublishCmd : public EsdlPublishCmdCommon
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientPublishESDLDefinitionRequest> request = esdlConfigClient->createPublishESDLDefinitionRequest();
 
         StringBuffer esxml;
@@ -136,7 +152,16 @@ public:
         request->setXMLDefinition(esxml.str());
         request->setDeletePrevious(optOverWrite);
 
-        Owned<IClientPublishESDLDefinitionResponse> resp = esdlConfigClient->PublishESDLDefinition(request);
+        Owned<IClientPublishESDLDefinitionResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->PublishESDLDefinition(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         bool validateMessages = false;
         if (resp->getExceptions().ordinality()>0)
@@ -268,7 +293,7 @@ protected:
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientPublishESDLBindingRequest> request = esdlConfigClient->createPublishESDLBindingRequest();
 
         fprintf(stdout,"\nAttempting to publish ESDL binding on process %s %s %s\n", optTargetESPProcName.get(), optBindingName.length() > 0?"binding":"port", optPortOrName.get());
@@ -285,7 +310,16 @@ public:
         if (optVerbose)
             fprintf(stdout,"\nMethod config: %s\n", optInput.get());
 
-        Owned<IClientPublishESDLBindingResponse> resp = esdlConfigClient->PublishESDLBinding(request);
+        Owned<IClientPublishESDLBindingResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->PublishESDLBinding(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -452,14 +486,23 @@ protected:
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientDeleteESDLBindingRequest> request = esdlConfigClient->createDeleteESDLBindingRequest();
 
         fprintf(stdout,"\nAttempting to un-bind ESDL Service: '%s'\n", optBindingId.get());
 
         request->setId(optBindingId);
 
-        Owned<IClientDeleteESDLRegistryEntryResponse> resp = esdlConfigClient->DeleteESDLBinding(request);
+        Owned<IClientDeleteESDLRegistryEntryResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->DeleteESDLBinding(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -557,14 +600,23 @@ class EsdlDeleteESDLDefCmd : public EsdlPublishCmdCommon
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientDeleteESDLDefinitionRequest> request = esdlConfigClient->createDeleteESDLDefinitionRequest();
 
         fprintf(stdout,"\nAttempting to delete ESDL definition: '%s'\n", optESDLDefID.get());
 
         request->setId(optESDLDefID.get());
 
-        Owned<IClientDeleteESDLRegistryEntryResponse> resp = esdlConfigClient->DeleteESDLDefinition(request);
+        Owned<IClientDeleteESDLRegistryEntryResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->DeleteESDLDefinition(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -659,12 +711,21 @@ class EsdlListESDLDefCmd : public EsdlPublishCmdCommon
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientListESDLDefinitionsRequest> req = esdlConfigClient->createListESDLDefinitionsRequest();
 
         fprintf(stdout,"\nAttempting to list ESDL definitions.\n");
 
-        Owned<IClientListESDLDefinitionsResponse> resp = esdlConfigClient->ListESDLDefinitions(req);
+        Owned<IClientListESDLDefinitionsResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->ListESDLDefinitions(req));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -727,12 +788,23 @@ class EsdlListESDLBindingsCmd : public EsdlPublishCmdCommon
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientListESDLBindingsRequest> req = esdlConfigClient->createListESDLBindingsRequest();
 
         fprintf(stdout,"\nAttempting to list ESDL bindings.\n");
 
-        Owned<IClientListESDLBindingsResponse> resp = esdlConfigClient->ListESDLBindings(req);
+
+        Owned<IClientListESDLBindingsResponse> resp;
+
+        try
+        {
+            resp.setown(esdlConfigClient->ListESDLBindings(req));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -813,7 +885,7 @@ protected:
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientConfigureESDLBindingMethodRequest> request = esdlConfigClient->createConfigureESDLBindingMethodRequest();
 
         fprintf(stdout,"\nAttempting to configure Method : '%s' for binding '%s'\n", optMethod.get(), optBindingId.get());
@@ -825,7 +897,16 @@ public:
         if (optVerbose)
             fprintf(stdout,"\nMethod config: %s\n", optInput.get());
 
-        Owned<IClientConfigureESDLBindingMethodResponse> resp = esdlConfigClient->ConfigureESDLBindingMethod(request);
+        Owned<IClientConfigureESDLBindingMethodResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->ConfigureESDLBindingMethod(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -942,13 +1023,22 @@ public:
     int processCMD()
     {
         int success = -1;
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientGetESDLBindingRequest> getrequest = esdlConfigClient->createGetESDLBindingRequest();
         if (optVerbose)
             fprintf(stdout,"\nFetching current ESDL binging configuration for (%s)\n", optBindingId.get());
         getrequest->setEsdlBindingId(optBindingId.get());
 
-        Owned<IClientGetESDLBindingResponse> getresp = esdlConfigClient->GetESDLBinding(getrequest);
+        Owned<IClientGetESDLBindingResponse> getresp;
+        try
+        {
+            getresp.setown(esdlConfigClient->GetESDLBinding(getrequest));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (getresp->getExceptions().ordinality()>0)
         {
@@ -1104,7 +1194,7 @@ protected:
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientConfigureESDLBindingLogTransformRequest> request = esdlConfigClient->createConfigureESDLBindingLogTransformRequest();
 
         fprintf(stdout,"\nAttempting to configure LogTransform : '%s' for binding '%s'\n", optLogTransform.get(), optBindingId.get());
@@ -1117,7 +1207,16 @@ public:
         if (optVerbose)
             fprintf(stdout,"\nLogTransform config: %s\n", optInput.get());
 
-        Owned<IClientConfigureESDLBindingLogTransformResponse> resp = esdlConfigClient->ConfigureESDLBindingLogTransform(request);
+        Owned<IClientConfigureESDLBindingLogTransformResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->ConfigureESDLBindingLogTransform(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {
@@ -1250,13 +1349,22 @@ public:
     int processCMD()
     {
         int success = -1;
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientGetESDLBindingRequest> getrequest = esdlConfigClient->createGetESDLBindingRequest();
         if (optVerbose)
-            fprintf(stdout,"\nFetching current ESDL binding configuration for (%s)\n", optBindingId.get());
+            fprintf(stdout,"\nFetching current ESDL binding configuration for (%s) to unbind log transform (%s)\n", optBindingId.get(), optLogTransform.get());
         getrequest->setEsdlBindingId(optBindingId.get());
 
-        Owned<IClientGetESDLBindingResponse> getresp = esdlConfigClient->GetESDLBinding(getrequest);
+        Owned<IClientGetESDLBindingResponse> getresp;
+        try
+        {
+            getresp.setown(esdlConfigClient->GetESDLBinding(getrequest));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (getresp->getExceptions().ordinality()>0)
         {
@@ -1297,7 +1405,16 @@ public:
                         request->setConfig(newconfig.str());
                         request->setOverwrite(true);
 
-                        Owned<IClientPublishESDLBindingResponse> resp = esdlConfigClient->PublishESDLBinding(request);
+                        Owned<IClientPublishESDLBindingResponse> resp;
+                        try
+                        {
+                            resp.setown(esdlConfigClient->PublishESDLBinding(request));
+                        }
+                        catch (IException* e)
+                        {
+                            outputServerException(e);
+                            return 1;
+                        }
 
                         if (resp->getExceptions().ordinality() > 0)
                         {
@@ -1472,14 +1589,23 @@ class EsdlGetDefinitionCmd : public EsdlGetCmd
     public:
         int processCMD()
         {
-            Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+            Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
             Owned<IClientGetESDLDefinitionRequest> request = esdlConfigClient->createGetESDLDefinitionRequest();
 
             fprintf(stdout,"\nAttempting to get ESDL definition: %s\n", optId.get());
 
             request->setId(optId);
 
-            Owned<IClientGetESDLDefinitionResponse> resp = esdlConfigClient->GetESDLDefinition(request);
+            Owned<IClientGetESDLDefinitionResponse> resp;
+            try
+            {
+                resp.setown(esdlConfigClient->GetESDLDefinition(request));
+            }
+            catch (IException* e)
+            {
+                outputServerException(e);
+                return 1;
+            }
 
             if (resp->getExceptions().ordinality()>0)
             {
@@ -1526,14 +1652,23 @@ class EsdlGetBindingCmd : public EsdlGetCmd
 public:
     int processCMD()
     {
-        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optWSProcAddress, optWSProcPort, optUser, optPass);
+        Owned<IClientWsESDLConfig> esdlConfigClient = EsdlCmdHelper::getWsESDLConfigSoapService(optSSL, optWSProcAddress, optWSProcPort, optUser, optPass);
         Owned<IClientGetESDLBindingRequest> request = esdlConfigClient->createGetESDLBindingRequest();
 
         fprintf(stdout,"\nAttempting to get ESDL binding: %s\n", optId.get());
 
         request->setEsdlBindingId(optId);
 
-        Owned<IClientGetESDLBindingResponse> resp = esdlConfigClient->GetESDLBinding(request);
+        Owned<IClientGetESDLBindingResponse> resp;
+        try
+        {
+            resp.setown(esdlConfigClient->GetESDLBinding(request));
+        }
+        catch (IException* e)
+        {
+            outputServerException(e);
+            return 1;
+        }
 
         if (resp->getExceptions().ordinality()>0)
         {

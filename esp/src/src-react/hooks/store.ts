@@ -2,14 +2,49 @@ import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { globalKeyValStore, IKeyValStore, userKeyValStore } from "src/KeyValStore";
 
-function useStore(store: IKeyValStore, key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void, reset: () => void] {
+function toString<T>(value: T, defaultValue: T): string {
+    if (value === undefined) value = defaultValue;
+    switch (typeof defaultValue) {
+        case "number":
+            return isNaN(value as any) ? defaultValue.toString() : value.toString();
+        case "boolean":
+            return value ? "true" : "false";
+        case "object":
+            return JSON.stringify(value);
+        case "string":
+        default:
+            return value as any;
+    }
+}
 
-    const [value, setValue] = React.useState<string>();
+function fromString<T>(value: string, defaultValue: T): T {
+    if (value === undefined) return defaultValue;
+    try {
+        switch (typeof defaultValue) {
+            case "number":
+                const numericValue = Number(value);
+                return isNaN(numericValue) ? defaultValue : numericValue as any;
+            case "boolean":
+                return value === "true" ? true : false as any;
+            case "object":
+                return JSON.parse(value);
+            case "string":
+            default:
+                return value as any;
+        }
+    } catch (e) {
+        return defaultValue;
+    }
+}
+
+function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor: boolean = false): [value: T, setValue: (value: T) => void, reset: () => void] {
+
+    const [value, setValue] = React.useState<T>(defaultValue);
 
     React.useEffect(() => {
         if (!store) return;
         store.get(key).then(value => {
-            setValue(typeof value !== "string" ? defaultValue : value);
+            setValue(fromString<T>(value, defaultValue));
         }).catch(e => {
             setValue(defaultValue);
         });
@@ -18,38 +53,36 @@ function useStore(store: IKeyValStore, key: string, defaultValue?: string, monit
     React.useEffect(() => {
         if (!store || !monitor) return;
         const handle = store.monitor((messages) => {
-            setValue(messages[0].value);
+            messages.filter(row => row.key === key).forEach(row => {
+                setValue(fromString<T>(row.value, defaultValue));
+            });
         });
         return () => handle.release();
-    }, [store, monitor]);
+    }, [defaultValue, key, monitor, store]);
 
-    const extSetValue = useConst(() => {
-        return (value: string) => {
-            store.set(key, value, monitor).then(() => {
-                setValue(value);
-            });
-        };
-    });
+    const extSetValue = React.useCallback((value: T) => {
+        store.set(key, toString<T>(value, defaultValue), monitor).then(() => {
+            setValue(value);
+        });
+    }, [defaultValue, key, monitor, store]);
 
-    const reset = useConst(() => {
-        return () => {
-            store.delete(key, monitor).then(() => {
-                setValue(defaultValue);
-            });
-        };
-    });
+    const reset = React.useCallback(() => {
+        store.delete(key, monitor).then(() => {
+            setValue(defaultValue);
+        });
+    }, [defaultValue, key, monitor, store]);
 
     return [value, extSetValue, reset];
 }
 
-export function useUserStore(key: string, defaultValue?: string, monitor: boolean = false) {
+export function useUserStore<T>(key: string, defaultValue: T, monitor: boolean = false) {
 
     const store = useConst(() => userKeyValStore());
-    return useStore(store, key, defaultValue, monitor);
+    return useStore<T>(store, key, defaultValue, monitor);
 }
 
-export function useGlobalStore(key: string, defaultValue?: string, monitor: boolean = false) {
+export function useGlobalStore<T>(key: string, defaultValue: T, monitor: boolean = false) {
 
     const store = useConst(() => globalKeyValStore());
-    return useStore(store, key, defaultValue, monitor);
+    return useStore<T>(store, key, defaultValue, monitor);
 }

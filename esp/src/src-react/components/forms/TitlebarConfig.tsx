@@ -19,13 +19,7 @@ const defaultValues: TitlebarConfigValues = {
 };
 
 interface TitlebarConfigProps {
-    toolbarThemeDefaults: { active: string, text: string, color: string };
-    showEnvironmentTitle: string;
-    setShowEnvironmentTitle: (_: string) => void;
-    environmentTitle: string;
-    setEnvironmentTitle: (_: string) => void;
-    titlebarColor: string;
-    setTitlebarColor: (_: string) => void;
+    toolbarThemeDefaults: Readonly<{ active: boolean, text: string, color: string }>;
     showForm: boolean;
     setShowForm: (_: boolean) => void;
 }
@@ -34,18 +28,15 @@ const white = getColorFromString("#ffffff");
 
 export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     toolbarThemeDefaults,
-    showEnvironmentTitle,
-    setShowEnvironmentTitle,
-    environmentTitle,
-    setEnvironmentTitle,
-    titlebarColor,
-    setTitlebarColor,
     showForm,
     setShowForm
 }) => {
     const { handleSubmit, control, reset } = useForm<TitlebarConfigValues>({ defaultValues });
     const [color, setColor] = React.useState(white);
     const updateColor = React.useCallback((evt: any, colorObj: IColor) => setColor(colorObj), []);
+    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
+    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text, true);
+    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color, true);
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -57,7 +48,7 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
                 const request: any = data;
                 request.titlebarColor = color.str;
 
-                setShowEnvironmentTitle(request?.showEnvironmentTitle.toString());
+                setShowEnvironmentTitle(request?.showEnvironmentTitle);
                 setEnvironmentTitle(request?.environmentTitle);
                 setTitlebarColor(request.titlebarColor);
 
@@ -79,7 +70,7 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
     React.useEffect(() => {
         setColor(getColorFromString(titlebarColor));
         const values = {
-            showEnvironmentTitle: showEnvironmentTitle === "false" ? false : true,
+            showEnvironmentTitle: showEnvironmentTitle,
             environmentTitle: environmentTitle || ""
         };
         reset(values);

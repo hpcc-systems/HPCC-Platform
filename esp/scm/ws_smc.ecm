@@ -46,6 +46,7 @@ ESPStruct ActiveWorkunit
     [min_ver("1.15")] string ClusterType;
     [min_ver("1.15")] string ClusterQueueName;
     [min_ver("1.16")] string TargetClusterName;
+    [min_ver("1.25")] bool NoAccess(false);
 };
 
 ESPStruct TargetCluster
@@ -431,7 +432,7 @@ ESPresponse [exceptions_inline] GetBuildInfoResponse
     ESParray<ESPstruct NamedValue> BuildInfo;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.24"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.25"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
