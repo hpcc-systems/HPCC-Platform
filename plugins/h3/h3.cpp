@@ -43,7 +43,7 @@ ECL_H3_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
-#include <h3api.h>
+#include <h3/h3api.h>
 
 static void toSetOf(bool &__isAllResult, size32_t &__lenResult, void *&__result, H3Index *buff, int maxBuffLen)
 {

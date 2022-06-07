@@ -134,6 +134,9 @@ jobs:
             USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
 
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+
       - name: PR image
         uses: docker/build-push-action@v2
         with:
@@ -147,3 +150,4 @@ jobs:
             GITHUB_REPO=${{ github.repository }}
             GITHUB_PRREF=${{ github.ref }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
+            
