@@ -1297,22 +1297,22 @@ public:
     }
 
     // interface IRoxieServerContext
-    virtual bool collectingDetailedStatistics() const
+    virtual bool collectingDetailedStatistics() const override
     {
         return (workUnit != nullptr) || (statsWu != nullptr);
     }
 
-    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
         logctx.noteStatistic(kind, value);
     }
 
-    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
         logctx.setStatistic(kind, value);
     }
 
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
     {
         logctx.mergeStats(from);
     }
@@ -1410,7 +1410,7 @@ public:
     {
         loadedLibraries.appendUniq(*LINK(library));
     }
-    virtual void checkAbort()
+    virtual void checkAbort() override
     {
         // MORE - really should try to apply limits at agent end too
 #ifdef __linux__
@@ -1467,7 +1467,7 @@ public:
         return interval;
     }
 
-    virtual void notifyAbort(IException *E)
+    virtual void notifyAbort(IException *E) override
     {
         CriticalBlock b(abortLock);
         if (!aborted && QUERYINTERFACE(E, InterruptedSemaphoreException) == NULL)
@@ -1476,6 +1476,22 @@ public:
             exception.set(E);
             setWUState(WUStateAborting);
         }
+    }
+
+    virtual void notifyException(IException *E) override
+    {
+        CriticalBlock b(abortLock);
+        if (!exception && QUERYINTERFACE(E, InterruptedSemaphoreException) == NULL)
+        {
+            exception.set(E);
+        }
+    }
+
+    virtual void throwPendingException() override
+    {
+        CriticalBlock b(abortLock);
+        if (exception)
+            throw exception.getClear();
     }
 
     virtual void setWUState(WUState state)
