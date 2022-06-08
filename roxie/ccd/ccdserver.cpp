@@ -195,6 +195,14 @@ public:
     {
         ctx->notifyAbort(E);
     }
+    virtual void notifyException(IException *E)
+    {
+        ctx->notifyException(E);
+    }
+    virtual void throwPendingException()
+    {
+        ctx->throwPendingException();
+    }
     virtual IActivityGraph * queryChildGraph(unsigned id) 
     {
         return ctx->queryChildGraph(id);
@@ -9752,18 +9760,26 @@ public:
 
     virtual void stop()
     {
-        if (!aborted && helper.getSequence() >= 0)
+        try
         {
-            WorkunitUpdate wu = ctx->updateWorkUnit();
-            if (wu)
+            if (!aborted && helper.getSequence() >= 0)
             {
-                Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
-                if (result)
+                WorkunitUpdate wu = ctx->updateWorkUnit();
+                if (wu)
                 {
-                    result->setResultTotalRowCount(processed);
-                    result->setResultStatus(ResultStatusCalculated);
+                    Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+                    if (result)
+                    {
+                        result->setResultTotalRowCount(processed);
+                        result->setResultStatus(ResultStatusCalculated);
+                    }
                 }
             }
+        }
+        catch (IException * e)
+        {
+            ctx->notifyException(e);
+            e->Release();
         }
         CRoxieServerActivity::stop();
         pipe.clear();
@@ -11767,26 +11783,34 @@ public:
 
     virtual void stop()
     {
-        if (aborted)
+        try
         {
-            if (writer)
-                writer->finish(false, this);
-        }
-        else
-        {
-            if (outSeq)
-                outSeq->flush(&crc);
-            if (outSeq)
-                uncompressedBytesWritten = outSeq->getPosition();
-            outSeq.clear();
-            diskout.clear();  // Make sure file is properly closed or date may not match published info
-            if (writer)
+            if (aborted)
             {
-                updateWorkUnitResult(processed);
-                writer->finish(true, this);
+                if (writer)
+                    writer->finish(false, this);
             }
+            else
+            {
+                if (outSeq)
+                    outSeq->flush(&crc);
+                if (outSeq)
+                    uncompressedBytesWritten = outSeq->getPosition();
+                outSeq.clear();
+                diskout.clear();  // Make sure file is properly closed or date may not match published info
+                if (writer)
+                {
+                    updateWorkUnitResult(processed);
+                    writer->finish(true, this);
+                }
+            }
+            writer.clear();
         }
-        writer.clear();
+        catch (IException * e)
+        {
+            ctx->notifyException(e);
+            e->Release();
+        }
         CRoxieServerActivity::stop();
     }
 
@@ -12354,12 +12378,20 @@ public:
 
     virtual void stop()
     {
-        if (writer)
+        try
         {
-            if (!aborted)
-                updateWorkUnitResult();
-            writer->finish(!aborted, this);
-            writer.clear();
+            if (writer)
+            {
+                if (!aborted)
+                    updateWorkUnitResult();
+                writer->finish(!aborted, this);
+                writer.clear();
+            }
+        }
+        catch (IException * e)
+        {
+            ctx->notifyException(e);
+            e->Release();
         }
         CRoxieServerActivity::stop();
     }
@@ -20914,7 +20946,15 @@ public:
             cond = helper.getCondition();
         }
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
-        executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+        try
+        {
+            executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+        }
+        catch (...)
+        {
+            stopDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+            throw;
+        }
     }
 
     virtual void stop() override
@@ -21100,7 +21140,22 @@ public:
         else if (state != STATEstopped)
         {
             stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
-            executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId); // These ones do
+            try
+            {
+                executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId); // These ones do
+            }
+            catch (IException * e)
+            {
+                // The exception needs to be perserved, to be rethrown after all stops are called.
+                // If it is thrown now upstream activities will not have stop() called.
+                ctx->notifyException(e);
+                e->Release();
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
+            catch (...)
+            {
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
         }
         CRoxieServerActivity::stop();
     }
@@ -21184,7 +21239,20 @@ public:
         if (state != STATEstopped)
         {
             stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
-            executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            try
+            {
+                executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
+            catch (IException * e)
+            {
+                ctx->notifyException(e);
+                e->Release();
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
+            catch (...)
+            {
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
         }
         CRoxieServerActionBaseActivity::stop();
     }
@@ -27711,6 +27779,7 @@ public:
                 sink.execute(parentExtractSize, parentExtract);
             }
         }
+        graphAgentContext.throwPendingException();
     }
 
     virtual IEclGraphResults *evaluate(unsigned parentExtractSize, const byte * parentExtract)
