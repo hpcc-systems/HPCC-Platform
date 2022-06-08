@@ -824,8 +824,9 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
         output= &tempOutput;
 
     EnvironmentVector env;
+    const char * username = getenv("HPCC_GIT_USERNAME");
     //If fetching from git and the username is specified then use the script file to provide the username/password
-    if (needCredentials && getenv("HPCC_GIT_USERNAME"))
+    if (needCredentials && username)
     {
         StringBuffer scriptPath;
         getPackageFolder(scriptPath);
@@ -837,13 +838,14 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
     VStringBuffer runcmd("%s %s", cmd, args);
     StringBuffer error;
     unsigned ret = runExternalCommand(cmd, *output, error, runcmd, nullptr, cwd, &env);
-    if (options.optVerbose)
+    if (ret > 0)
     {
-        if (ret > 0)
-            printf("%s return code was %d\n%s\n", runcmd.str(), ret, error.str());
-        else
-            printf("%s\n", output->str());
+        if (!username)
+            DBGLOG("HPCC_GIT_USERNAME was not set");
+        DBGLOG("%s return code was %d\nError: %s\n", runcmd.str(), ret, error.str());
     }
+    else if (options.optVerbose)
+        printf("%s\n", output->str());
     return ret;
 }
 
