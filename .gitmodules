@@ -67,9 +67,6 @@
 [submodule "system/logaccess/ElasticStack/elasticlient"]
 	path = system/logaccess/ElasticStack/elasticlient
 	url = https://github.com/hpcc-systems/elasticlient.git
-[submodule "common/remote/hooks/git/libgit2"]
-	path = common/remote/hooks/git/libgit2
-	url = https://github.com/hpcc-systems/libgit2.git
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/hpcc-systems/vcpkg.git
