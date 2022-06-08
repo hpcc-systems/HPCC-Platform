@@ -2228,6 +2228,7 @@ public:
     {
         CRoxieServerStrandedActivity::reset();
         prefiltered = false;
+        eof = false;
     }
 
 };
