@@ -21089,7 +21089,9 @@ public:
 
     virtual void stop()
     {
-        if (state == STATEreset || (!aborted && !eofseen))  // If someone else aborted, then WHEN clauses don't trigger, whatever
+        //MORE: What happens if only some of the dataset is read?  This logic seems flawed.
+        bool readAll = eofseen || (eogseen && !meta.isGrouped());
+        if (state == STATEreset || (!aborted && !readAll))  // If someone else aborted, then WHEN clauses don't trigger, whatever
         {
             stopDependencies(savedExtractSize, savedExtract, WhenSuccessId);
             stopDependencies(savedExtractSize, savedExtract, WhenFailureId);
