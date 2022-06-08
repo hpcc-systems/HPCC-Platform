@@ -4499,8 +4499,10 @@ public:
         return totalCycles;
     }
 
-    void gatherStats(CRuntimeStatisticCollection & merged) const
+    void gatherStats(CRuntimeStatisticCollection & merged, bool includeTotalCycles) const
     {
+        if (includeTotalCycles)
+            merged.mergeStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
         if (rowAllocator)
             rowAllocator->gatherStats(merged);
     }
@@ -17612,7 +17614,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
     }
 };
 
@@ -22082,7 +22084,7 @@ public:
     {
         CRoxieServerActivity::gatherStats(merged);
         if (remote)
-            remote->gatherStats(merged);
+            remote->gatherStats(merged, true);
     }
 };
 
@@ -23299,7 +23301,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
     }
 };
 
@@ -24916,7 +24918,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -25425,7 +25427,6 @@ public:
     {
         eof = false;
         joinProcessed = 0;
-        activityStats.totalCycles = 0;
         allPulled = false;
         assertex(ready.ordinality()==0);
         CRemoteResultAdaptor::start(parentExtractSize, parentExtract, paused);
@@ -25480,7 +25481,8 @@ public:
 
     void gatherStats(CRuntimeStatisticCollection & merged) const
     {
-        CRemoteResultAdaptor::gatherStats(merged);
+        activityStats.addStatistics(merged);
+        CRemoteResultAdaptor::gatherStats(merged, false);
         if (ccdRecordAllocator)
             ccdRecordAllocator->gatherStats(merged);
     }
@@ -25884,7 +25886,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
         if (indexReadAllocator)
             indexReadAllocator->gatherStats(merged);
     }
@@ -26020,7 +26022,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = remote.activityStats.totalCycles;
+        __int64 localCycles = queryTotalCycles();
         localCycles -= puller.queryTotalCycles(); // MORE - debatable... but probably fair.
         if (localCycles < 0)
             localCycles = 0;
@@ -26043,10 +26045,13 @@ public:
             return NULL;
     }
 
+    virtual unsigned __int64 queryTotalCycles() const override
+    {
+        return remote.queryTotalCycles();
+    }
+
     virtual void reset()
     {
-        activityStats.totalCycles = remote.activityStats.totalCycles;
-        remote.activityStats.totalCycles = 0;
         processed = remote.joinProcessed;
         remote.joinProcessed = 0;
         defaultRight.clear();
