@@ -1134,7 +1134,7 @@ function createNavigationTree(navTreeData) {
           selComps += "</BuildSets>";
 
           var url = '/WsDeploy/ImportBuild?BuildSets=' + selComps;
-          url.replace("\\", "\\\\");
+          url.replaceAll("\\", "\\\\");
 
           YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/ImportBuild', {
             success: function(o) {
