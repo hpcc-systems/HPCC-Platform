@@ -1675,7 +1675,11 @@ private:
             //Subgraph iteration
             case SGraphFirstSubGraph:
             {
-                Owned<IPropertyTreeIterator> treeIter = curGraph->getElements("node");
+                Owned<IPropertyTreeIterator> treeIter;
+                if (curGraph->getPropBool("@library"))
+                    treeIter.setown(curGraph->getElements("node/att/graph/node"));
+                else
+                    treeIter.setown(curGraph->getElements("node"));
                 if (treeIter && treeIter->first())
                 {
                     treeIter.setown(createSortedIterator(*treeIter, compareSubGraphNode));
