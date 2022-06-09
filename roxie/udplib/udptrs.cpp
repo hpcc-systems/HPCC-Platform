@@ -300,7 +300,7 @@ public:
         //requestExpiryTime to 0 (and indicate the operation is done)even though there packetsQueued is non-zero.
 
         hadAcknowledgement = false;
-        CriticalBlock b(activeCrit);
+        CLeavableCriticalBlock block(activeCrit);
         bool dataRemaining;
         if (resendList)
             dataRemaining = (packetsQueued.load(std::memory_order_relaxed) && resendList->canRecord(nextSendSequence)) || resendList->numActive();
@@ -327,6 +327,7 @@ public:
                 msg.packets = 0;
                 msg.flowSeq = nextFlowSequence();
                 requestExpiryTime = msTick() + udpFlowAckTimeout;
+                block.leave();
                 sendRequest(msg, false);
             }
             else
@@ -338,14 +339,16 @@ public:
 
                 //The flow event is sent on the data socket, so it needs to wait for all the data to be sent before being received
                 //therefore use the updDataSendTimeout instead of udpFlowAckTimeout
-                sendRequest(msg, true);
                 requestExpiryTime = msTick() + updDataSendTimeout;
+                block.leave();
+                sendRequest(msg, true);
             }
         }
         else
         {
             msg.cmd = flowType::send_completed;
             requestExpiryTime = 0;
+            block.leave();
             sendRequest(msg, true);
         }
     }
@@ -353,7 +356,7 @@ public:
     void requestToSendNew()
     {
         //See comment in sendDone() on a potential race condition.
-        CriticalBlock b(activeCrit);
+        CLeavableCriticalBlock block(activeCrit);
         // This is called from data thread when new data added to a previously-empty list
         if (!requestExpiryTime)
         {
@@ -365,6 +368,7 @@ public:
             msg.flowSeq = nextFlowSequence();
             msg.sourceNode = sourceIP;
             requestExpiryTime = msTick() + udpFlowAckTimeout;
+            block.leave();
             sendRequest(msg, false);
         }
     }
@@ -387,7 +391,7 @@ public:
 
         hadAcknowledgement = false;
         // 0 (zero) value of maxRequestDeadTimeouts means NO limit on retries.  Not likely to be a good idea....
-        CriticalBlock b(activeCrit);
+        CLeavableCriticalBlock block(activeCrit);
         if (maxRequestDeadTimeouts && (timeouts >= maxRequestDeadTimeouts))
         {
             abort();
@@ -402,6 +406,7 @@ public:
             msg.flowSeq = activeFlowSequence;
             msg.sourceNode = sourceIP;
             requestExpiryTime = msTick() + udpFlowAckTimeout;
+            block.leave();
             sendRequest(msg, false);
         }
     }
