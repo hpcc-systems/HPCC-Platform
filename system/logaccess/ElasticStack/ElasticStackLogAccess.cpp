@@ -37,11 +37,11 @@ static constexpr const char * DEFAULT_ES_PORT = "9200";
 static constexpr int DEFAULT_ES_DOC_LIMIT = 100;
 static constexpr int DEFAULT_ES_DOC_START = 0;
 
-static constexpr const char * DEFAULT_TS_NAME = "@timestamp";
+static constexpr const char * DEFAULT_TS_NAME = "@timestamp"; //as of hpccpipeline 10206 contents of hpcc.log.timestamp are super imposed onto @timestamp
 static constexpr const char * DEFAULT_INDEX_PATTERN = "hpcc-logs*";
 
 static constexpr const char * DEFAULT_HPCC_LOG_SEQ_COL         = "hpcc.log.sequence";
-static constexpr const char * DEFAULT_HPCC_LOG_TIMESTAMP_COL   = "hpcc.log.timestamp";
+static constexpr const char * DEFAULT_HPCC_LOG_TIMESTAMP_COL   = "hpcc.log.timestamp"; //as of hpccpipeline 10206 contents of hpcc.log.timestamp are super imposed onto @timestamp
 static constexpr const char * DEFAULT_HPCC_LOG_PROCID_COL      = "hpcc.log.procid";
 static constexpr const char * DEFAULT_HPCC_LOG_THREADID_COL    = "hpcc.log.threadid";
 static constexpr const char * DEFAULT_HPCC_LOG_MESSAGE_COL     = "hpcc.log.message";
@@ -60,13 +60,13 @@ static constexpr std::size_t  DEFAULT_MAX_RECORDS_PER_FETCH = 100;
 void ElasticStackLogAccess::getMinReturnColumns(std::string & columns)
 {
     //timestamp, source component, message
-    columns.append(" \"").append(DEFAULT_HPCC_LOG_TIMESTAMP_COL).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"").append(m_globalSearchColName).append("\" ");
+    columns.append(" \"").append(m_globalIndexTimestampField).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"").append(m_globalSearchColName).append("\" ");
 }
 
 void ElasticStackLogAccess::getDefaultReturnColumns(std::string & columns)
 {
     //timestamp, source component, all hpcc.log fields
-    columns.append(" \"").append(DEFAULT_HPCC_LOG_TIMESTAMP_COL).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"hpcc.log.*\" ");
+    columns.append(" \"").append(m_globalIndexTimestampField).append("\", \"").append(m_componentsSearchColName.str()).append("\", \"hpcc.log.*\" ");
 }
 
 void ElasticStackLogAccess::getAllColumns(std::string & columns)
@@ -426,9 +426,27 @@ void esMatchQueryString(std::string & search, const char *searchval, const char 
 }
 
 /*
+Translates LogAccess defined SortBy direction enum value to 
+the Elastic Search query language corresponding counterpart
+*/
+const char * ElasticStackLogAccess::sortByDirectionToES(SortByDirection direction)
+{
+    switch (direction)
+    {
+    case SORTBY_DIRECTION_ascending:
+        return "asc";
+    case SORTBY_DIRECTION_descending:
+        return "desc";
+    case SORTBY_DIRECTION_none:
+    default:
+        return nullptr;
+    }
+}
+
+/*
  * Construct Elasticsearch query directives string
  */
-void ElasticStackLogAccess::esSearchMetaData(std::string & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, unsigned size = DEFAULT_ES_DOC_LIMIT, offset_t from = DEFAULT_ES_DOC_START)
+void ElasticStackLogAccess::esSearchMetaData(std::string & search, const LogAccessReturnColsMode retcolmode, const StringArray & selectcols, const SortByConditions & sortByConditions, unsigned size = DEFAULT_ES_DOC_LIMIT, offset_t from = DEFAULT_ES_DOC_START)
 {
     //Query parameters:
     //https://www.elastic.co/guide/en/elasticsearch/reference/6.8/search-request-body.html
@@ -477,6 +495,74 @@ void ElasticStackLogAccess::esSearchMetaData(std::string & search, const LogAcce
     search += ", \"size\": ";
     search += std::to_string(size);
     search += ", ";
+
+    if (sortByConditions.length() > 0)
+    {
+        bool first = true;
+        search += "\"sort\" : [{ ";
+        ForEachItemIn(index, sortByConditions)
+        {
+            if (!first)
+                search += ", ";
+
+            SortByCondition condition = sortByConditions.item(index);
+            search += "\"";
+            const char * sortByFieldName = nullptr;
+            const char * format = nullptr;
+            {
+                switch (condition.byKnownField)
+                {
+                case LOGACCESS_MAPPEDFIELD_timestamp:
+                    sortByFieldName = m_globalIndexTimestampField.str();
+                    format = "strict_date_optional_time_nanos";
+                    break;
+                case LOGACCESS_MAPPEDFIELD_jobid:
+                    sortByFieldName = m_workunitSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_component:
+                    sortByFieldName = m_componentsSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_class:
+                    sortByFieldName = m_classSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_audience:
+                    sortByFieldName = m_audienceSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_instance:
+                    sortByFieldName = m_instanceSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_host:
+                    sortByFieldName = m_hostSearchColName.str();
+                    break;
+                case LOGACCESS_MAPPEDFIELD_unmapped:
+                default:
+                    sortByFieldName = condition.fieldName.get();
+                    break;
+                }
+                search += sortByFieldName;
+            }
+            search += "\" : {";
+            const char * direction = sortByDirectionToES(condition.direction);
+            if (!isEmptyString(direction))
+            {
+                search += "\"order\" : \"";
+                search += direction;
+                search += "\"";
+            }
+            if (!isEmptyString(format))
+            {
+                if (!isEmptyString(direction))
+                    search += ", ";
+
+                search += "\"format\" : \"";
+                search += format;
+                search += "\"";
+            }
+            search += "}";
+            first = false;
+        }
+        search += " }], ";
+    }
 }
 
 /*
@@ -640,7 +726,7 @@ void ElasticStackLogAccess::populateQueryStringAndQueryIndex(std::string & query
     try
     {
         queryString = "{";
-        esSearchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
+        esSearchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getSortByConditions(), options.getLimit(), options.getStartFrom());
 
         queryString += "\"query\": { \"bool\": { \"filter\": [ ";
         if (options.queryFilter()->filterType() == LOGACCESS_FILTER_wildcard) // No filter

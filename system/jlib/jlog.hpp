@@ -1483,6 +1483,34 @@ enum LogAccessReturnColsMode
     RETURNCOLS_MODE_all
 };
 
+enum LogAccessMappedField
+{
+    LOGACCESS_MAPPEDFIELD_timestamp,
+    LOGACCESS_MAPPEDFIELD_jobid,
+    LOGACCESS_MAPPEDFIELD_component,
+    LOGACCESS_MAPPEDFIELD_class,
+    LOGACCESS_MAPPEDFIELD_audience,
+    LOGACCESS_MAPPEDFIELD_instance,
+    LOGACCESS_MAPPEDFIELD_host,
+    LOGACCESS_MAPPEDFIELD_unmapped
+};
+
+enum SortByDirection
+{
+    SORTBY_DIRECTION_none,
+    SORTBY_DIRECTION_ascending,
+    SORTBY_DIRECTION_descending
+};
+
+struct SortByCondition
+{
+    LogAccessMappedField byKnownField;
+    StringAttr fieldName;
+    SortByDirection direction = SORTBY_DIRECTION_none;
+};
+
+typedef ArrayOf<SortByCondition> SortByConditions;
+
 struct LogAccessConditions
 {
 private:
@@ -1492,10 +1520,12 @@ private:
     LogAccessTimeRange timeRange;
     unsigned limit = 100;
     offset_t startFrom = 0;
+    SortByConditions sortByConditions;
 
 public:
     LogAccessConditions & operator = (const LogAccessConditions & l)
     {
+        copySortByConditions(l.sortByConditions);
         copyLogFieldNames(l.logFieldNames);
         limit = l.limit;
         timeRange = l.timeRange;
@@ -1537,6 +1567,29 @@ public:
         ForEachItemIn(fieldsindex,fields)
         {
             appendLogFieldName(fields.item(fieldsindex));
+        }
+    }
+
+    void addSortByCondition(LogAccessMappedField knownCol, const char * fieldName, SortByDirection direction)
+    {
+        SortByCondition condition;
+        condition.byKnownField = knownCol;
+        condition.fieldName.set(fieldName);
+        condition.direction = direction;
+
+        sortByConditions.append(condition);
+    }
+
+    const SortByConditions& getSortByConditions() const
+    {
+        return sortByConditions;
+    }
+
+    void copySortByConditions(const SortByConditions & SourceSortByConditions)
+    {
+        ForEachItemIn(conditionsIndex,SourceSortByConditions)
+        {
+           sortByConditions.append(SourceSortByConditions.item(conditionsIndex));
         }
     }
 
