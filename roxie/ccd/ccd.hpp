@@ -390,6 +390,7 @@ extern bool reloadRetriesFailed;
 extern bool selfTestMode;
 extern bool defaultCollectFactoryStatistics;
 extern bool oneShotRoxie;
+extern bool traceStrands;
 
 extern int backgroundCopyClass;
 extern int backgroundCopyPrio;

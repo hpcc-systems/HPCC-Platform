@@ -2112,8 +2112,8 @@ public:
                         streams.append(sourceJunction->queryOutput(strandNo));
                     }
 #ifdef TRACE_STRANDS
-                    if (traceLevel > 2)
-                        DBGLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
+                    if (traceStrands)
+                        CTXLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
 #endif
                     return recombiner.getClear();
                 }
@@ -2127,8 +2127,8 @@ public:
         ForEachItemIn(i, strands)
             streams.append(&strands.item(i));
 #ifdef TRACE_STRANDS
-        if (traceLevel > 2)
-            DBGLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
+        if (traceStrands)
+            CTXLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
 #endif
 
         return recombiner.getClear();
@@ -11144,8 +11144,10 @@ public:
     }
     virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
     {
-        if (traceLevel > 4)
-            DBGLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+#ifdef TRACE_STRANDS
+        if (traceStrands)
+            CTXLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+#endif
         return new AggregateProcessor(*this, instream, (IHThorAggregateArg &) basehelper, isInputGrouped && !combineStreams, abortEarly);
     }
     virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
