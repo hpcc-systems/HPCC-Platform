@@ -25497,7 +25497,6 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        joinProcessed = 0;
         allPulled = false;
         assertex(ready.ordinality()==0);
         CRemoteResultAdaptor::start(parentExtractSize, parentExtract, paused);
@@ -26123,8 +26122,6 @@ public:
 
     virtual void reset()
     {
-        processed = remote.joinProcessed;
-        remote.joinProcessed = 0;
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
@@ -26136,6 +26133,11 @@ public:
         {
             ::Release(groups.dequeue());
         }
+    }
+
+    virtual unsigned getTotalRowsProcessed() const override
+    {
+        return remote.joinProcessed;
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
