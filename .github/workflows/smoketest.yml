@@ -294,6 +294,14 @@ jobs:
           setapikey "${{ secrets.GITHUB_TOKEN }}" \
           -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
+    - name: "vcpkg install dependencies"
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
+      working-directory: ./src/vcpkg
+      shell: "bash"
+      run: |
+        rm ./vcpkg.json
+        ./vcpkg install --overlay-ports=../vcpkg-overlays
+
     # Subsequent cache hit builds use cache-timestamp to ensure all sources are marked 'old',
     # except those changed between the cache SHA and the SHA being built.
     # NB: BUILD_TAG is overridden to a constant "smoketest", this is to prevent the auto-generated build tag being
