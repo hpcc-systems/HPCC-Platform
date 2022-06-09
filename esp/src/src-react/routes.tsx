@@ -100,7 +100,15 @@ export const routes: RoutesEx = [
         mainNav: ["files"],
         path: "/files",
         children: [
-            { path: "", action: (context) => import("./components/Files").then(_ => <_.Files filter={parseSearch(context.search) as any} />) },
+            {
+                path: "", action: (context) => import("./components/Files").then(_ => {
+                    let filter = parseSearch(context.search);
+                    if (Object.keys(filter).length === 0) {
+                        filter = { LogicalFiles: true, SuperFiles: true, Indexes: true };
+                    }
+                    return <_.Files filter={filter as any} />;
+                })
+            },
             { path: "/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={undefined} logicalFile={params.Name as string} />) },
             { path: "/:NodeGroup/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} />) },
             { path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} />) },
