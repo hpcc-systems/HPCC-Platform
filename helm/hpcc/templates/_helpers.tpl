@@ -1383,7 +1383,7 @@ lifecycle:
       - "/bin/bash"
       - "-c"
       - >-
-          [ -s tmpdir ] && [ -d $(cat tmpdir) ] && rm -rf $(cat tmpdir)
+          [ -s tmpdir ] && [ -d $(cat tmpdir) ] && rm -rf $(cat tmpdir) || true
 {{- if and (not $misc.postJobCommandViaSidecar) $postJobCommand }} ;
           {{ $postJobCommand }}
 {{- end }}
@@ -1399,7 +1399,7 @@ args:
 {{- end }}
 - >-
     {{ $check_cmd.command }};
-    [ -s tmpdir ] && [ -d $(cat tmpdir) ] && rm -rf $(cat tmpdir)
+    [ -s tmpdir ] && [ -d $(cat tmpdir) ] && rm -rf $(cat tmpdir) || true
 {{- if $misc.postJobCommandViaSidecar -}} ;
     touch /wait-and-run/{{ .me.name }}.jobdone
 {{- else if $postJobCommand -}} ;
