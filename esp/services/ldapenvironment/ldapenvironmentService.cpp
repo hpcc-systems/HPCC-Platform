@@ -71,6 +71,14 @@ void CldapenvironmentEx::init(IPropertyTree *_cfg, const char *_process, const c
         cfg->getProp(xpath.str(), sharedWorkunitsBaseDN);
         if (sharedWorkunitsBaseDN.isEmpty())
             throw MakeStringException(-1, "sharedWorkunitsBaseDN must be specified in configuration (ex. 'ou=workunits,ou=shared,ou=hpcc,dc=myldap,dc=com')");
+
+        //get other environment settings to be placed in HELM response
+        prefix.clear().appendf("Software/EspProcess[@name='%s']/ldapSecurity/@", _process);
+        xpath.set(prefix).append("ldapAddress");
+        cfg->getProp(xpath.str(), ldapAddress);
+
+        xpath.set(prefix).append("serverType");
+        cfg->getProp(xpath.str(), serverType);
     }
 }
 
@@ -451,6 +459,8 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "- name: eclwatch\n"
                                "  auth: ldap\n"
                                "  ldap:\n"
+                               "    ldapAddress: %s\n"
+                               "    serverType: %s\n"
                                "    adminGroupName: %s\n"
                                "%s%s%s%s"
                                "    filesBasedn: %s\n"
@@ -460,6 +470,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "    workunitsBasedn: %s\n"
                                "    systemBasedn: %s\n\n",
                                helmSecrets.str(),
+                               ldapAddress.str(), serverType.str(),
                                adminGroupName.str(),
                                ldapAdminKey.str(), ldapAdminVKey.str(),
                                hpccAdminKey.str(), hpccAdminVKey.str(),
