@@ -1025,6 +1025,25 @@ class CSendManager : implements ISendManager, public CInterface
 
         bool pushPermit(const UdpPermitToSendMsg &msg)
         {
+            auto updateTrackingIfMatches = [&msg](UdpPermitToSendMsg &m)
+            {
+                if (!m.matches(msg))
+                    return false;
+                m.seen = msg.seen; // Update the queue entry with the most recent tracking information
+                return true;
+            };
+
+            //First check to see if there is a matching permit in the queue.  If so update the tracking information and return.
+            if (send_queue.walk(updateTrackingIfMatches))
+            {
+                if ((udpTraceLevel > 2) || udpTraceFlow)
+                {
+                    StringBuffer s;
+                    DBGLOG("UdpSender[%s]: duplicate permit ignored node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
+                }
+                return true; // permit has been processed, but didn't need to add it to the queue.
+            }
+
             if (send_queue.push(msg, 15)) 
                 return true;
             else 

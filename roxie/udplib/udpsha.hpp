@@ -187,6 +187,22 @@ public:
         return res;
     }
 
+    // Walk the elements in the list - if the callback function returns true then stop and return true
+    // can be used for contains(callback) or updateIfMatch(callback)
+    template <class FUNC>
+    bool walk(FUNC walkFunc)
+    {
+        CriticalBlock block(c_region);
+        unsigned cur = first;
+        for (unsigned i=0; i < active_buffers; i++)
+        {
+            if (walkFunc(elements[cur]))
+                return true;
+            cur = (cur + 1) % element_count;
+        }
+        return false;
+    }
+
     simple_queue(unsigned int queue_size) 
     {
         element_count = queue_size;
@@ -247,6 +263,13 @@ public:
 #pragma pack(push,1)
 struct UdpPermitToSendMsg
 {
+public:
+    bool matches(const UdpPermitToSendMsg & other) const
+    {
+        return cmd == other.cmd && max_data == other.max_data && flowSeq == other.flowSeq && destNode == other.destNode;
+    }
+
+public:
     flowType::flowCmd cmd;
     unsigned short max_data;
     sequence_t flowSeq;
