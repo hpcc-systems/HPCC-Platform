@@ -19,6 +19,8 @@
 
 #include <memory>
 #include "jliball.hpp"
+
+#include <opensslcommon.hpp>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>

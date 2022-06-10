@@ -45,6 +45,7 @@
 #endif
 
 #ifdef _USE_OPENSSL
+#include <opensslcommon.hpp>
 #include <openssl/x509v3.h>
 #endif
 
