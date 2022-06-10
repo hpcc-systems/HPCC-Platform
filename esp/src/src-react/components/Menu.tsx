@@ -7,6 +7,7 @@ import { pushUrl } from "../util/history";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useUserTheme } from "../hooks/theme";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { Settings } from "./Settings";
 
 //  Top Level Nav  ---
 const navLinkGroups: INavLinkGroup[] = [
@@ -92,19 +93,22 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
 }) => {
 
     const menu = useConst([...navLinkGroups]);
-    const { theme, setTheme, isDark } = useUserTheme();
+    const { theme, setThemeDark, isDark } = useUserTheme();
+
+    const [showSettings, setShowSettings] = React.useState(false);
 
     const selKey = React.useMemo(() => {
         return navSelectedKey(hashPath);
     }, [hashPath]);
 
-    return <Stack verticalAlign="space-between" styles={{ root: { width: `${FIXED_WIDTH}px`, height: "100%", position: "relative", backgroundColor: theme.palette.themeLighterAlt } }}>
+    return <Stack verticalAlign="space-between" styles={{ root: { width: `${FIXED_WIDTH}px`, height: "100%", position: "relative", backgroundColor: theme?.palette?.themeLighterAlt ?? "white" } }}>
         <Stack.Item>
             <Nav selectedKey={selKey} groups={menu} />
         </Stack.Item>
         <Stack.Item>
-            <IconButton iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }} onClick={() => setTheme(isDark ? "light" : "dark")} />
-            <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => { }} />
+            <IconButton iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }} onClick={() => setThemeDark(isDark ? "light" : "dark")} />
+            <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => setShowSettings(true)} />
+            <Settings show={showSettings} onClose={() => setShowSettings(false)} />
         </Stack.Item>
     </Stack>;
 };

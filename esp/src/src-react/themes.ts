@@ -33,6 +33,14 @@ const lightThemeOld: PartialTheme = {
         neutralDark: "#222222",
         black: "#000000",
         white: "#ffffff",
+    },
+    semanticColors: {
+        infoIcon: "#605e5c",
+        errorIcon: "#A80000",
+        blockingIcon: "#FDE7E9",
+        warningIcon: "#D1B331",
+        severeWarningIcon: "#D83B01",
+        successIcon: "#107C10",
     }
 };
 
@@ -60,6 +68,14 @@ const darkThemeOld: PartialTheme = {
         neutralDark: "#f0f0f0",
         black: "#ffffff",
         white: "#000000",
+    },
+    semanticColors: {
+        infoIcon: "#605e5c",
+        errorIcon: "#A80000",
+        blockingIcon: "#FDE7E9",
+        warningIcon: "#D1B331",
+        severeWarningIcon: "#D83B01",
+        successIcon: "#107C10",
     }
 };
 
