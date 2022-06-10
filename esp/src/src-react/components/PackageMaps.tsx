@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, mergeStyleSets, MessageBar, MessageBarType, Pivot, PivotItem, Stack } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, Link, mergeStyleSets, MessageBar, MessageBarType, Pivot, PivotItem, Stack } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import * as ESPPackageProcess from "src/ESPPackageProcess";
@@ -195,7 +195,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             Id: {
                 label: nlsHPCC.PackageMap,
                 formatter: function (Id, idx) {
-                    return `<a href="#/packagemaps/${Id}" class='dgrid-row-url'>${Id}</a>`;
+                    return <Link href={`#/packagemaps/${Id}`}>{Id}</Link>;
                 }
             },
             Target: { label: nlsHPCC.Target },

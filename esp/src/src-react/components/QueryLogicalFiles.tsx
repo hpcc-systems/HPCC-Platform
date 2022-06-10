@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
@@ -42,7 +42,7 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
             File: {
                 label: nlsHPCC.File,
                 formatter: function (item, row) {
-                    return `<a href="#/files/${querySet}/${item}">${item}</a>`;
+                    return <Link href={`#/files/${item}`}>{item}</Link>;
                 }
             },
         }

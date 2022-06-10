@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
@@ -38,7 +38,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
         name: {
             label: nlsHPCC.GroupName,
             formatter: function (_name, idx) {
-                return `<a href="#/security/groups/${_name}">${_name}</a>`;
+                return <Link href={`#/security/groups/${_name}`}>{_name}</Link>;
             }
         },
         groupOwner: { label: nlsHPCC.ManagedBy },

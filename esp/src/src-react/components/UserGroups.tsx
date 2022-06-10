@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
@@ -42,7 +42,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             label: nlsHPCC.GroupName,
             formatter: function (_name, idx) {
                 _name = _name.replace(/[^-_a-zA-Z0-9\s]+/g, "");
-                return `<a href="#/security/groups/${_name}">${_name}</a>`;
+                return <Link href={`#/security/groups/${_name}`}>{_name}</Link>;
             }
         }
     });
