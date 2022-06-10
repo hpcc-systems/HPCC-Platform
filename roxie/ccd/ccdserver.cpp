@@ -124,12 +124,10 @@ class RestartableThread : public CInterface
         }
         virtual int run()
         {
-            owner->started.signal();
             return owner->run();
         }
     };
     friend class MyThread;
-    Semaphore started;
     Owned<MyThread> thread;
     CriticalSection crit;
     StringAttr name;
@@ -147,7 +145,6 @@ public:
             thread.setown(new MyThread(this, s));
             thread->start();
         }
-        started.wait();
     }
 
     virtual void join()
@@ -2305,7 +2302,6 @@ protected:
     unsigned sourceIdx = 0;
     IEngineRowStream *inputStream;
     IRecordPullerCallback *helper;
-    Semaphore started;                      // MORE: GH->RKC I'm pretty sure this can be deleted, since handled by RestartableThread
     bool groupAtOnce, eog;
     std::atomic<bool> eof;
 
@@ -2377,7 +2373,6 @@ public:
                     if (ctx) ctx->getLogPrefix(logPrefix);
                     logPrefix.append("] ");
                     RestartableThread::start(logPrefix);
-                    started.wait();
                 }
             }
         }
@@ -2413,7 +2408,6 @@ public:
 
     virtual int run()
     {
-        started.signal();
         try
         {
             if (groupAtOnce)
