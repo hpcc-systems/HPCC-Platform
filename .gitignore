@@ -1,6 +1,7 @@
 build/
 build-vcpkg/
 node_modules/
+vcpkg-cache/
 vcpkg_installed/
 externals/
 .project

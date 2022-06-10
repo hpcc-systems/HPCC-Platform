@@ -1,0 +1,117 @@
+name: smoketest-vcpkg
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-8.6.*"
+      - "!candidate-8.4.*"
+      - "!candidate-8.2.*"
+      - "!candidate-8.0.*"
+      - "!candidate-7.*"
+      - "!candidate-6.*"
+
+jobs:
+  check-skip:
+    runs-on: ubuntu-20.04
+    outputs:
+      platform: ${{ steps.skip_check.outputs.platform }}
+    steps:
+      - id: skip_check
+        uses: hpcc-systems/github-actions/changed-modules@main
+        with:
+          github_token: ${{ github.token }}
+
+  vcpkg-cache:
+    name: "Fetch / Create vcpkg packages"
+    needs: check-skip
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: setup vcpkg cache
+        uses: actions/cache@v3
+        with:
+          path: ${PWD}/vcpkg-cache
+          key: ${{ github.base_ref }}
+
+      - name: docker vcpkg install
+        working-directory: . 
+        shell: "bash"
+        run: |
+          docker build --pull --rm -f "dockerfiles/vcpkg/install/Dockerfile" -t vcpkg-install:latest "."
+          docker run --rm \
+            -v ${PWD}/vcpkg-cache:/vcpkg-cache \
+            vcpkg-install:latest
+
+  build:
+    name: "Build HPCC-Platform"
+    needs: vcpkg-cache
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: setup vcpkg cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${PWD}/vcpkg-cache
+            ${PWD}/build/Debug
+            ${PWD}/build/RelWithDebInfo
+          key: ${{ github.base_ref }}
+
+      - name: docker vcpkg configure
+        working-directory: . 
+        shell: "bash"
+        run: |
+          docker build --pull --rm -f "dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest "."
+          docker run --rm \
+            -v ${PWD}/.:/hpcc-source \
+            vcpkg-configure:latest
+
+      - name: docker vcpkg build
+        working-directory: . 
+        shell: "bash"
+        run: |
+          docker build --pull --rm -f "dockerfiles/vcpkg/build/Dockerfile" -t vcpkg-build:latest "."
+          docker run --rm \
+            -v ${PWD}/.:/hpcc-source \
+            vcpkg-build:latest
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: deb-package
+          path: ${PWD}/build/*.deb
+
+  test:
+    name: "Test HPCC-Platform"
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: deb-package
+          path: ${PWD}/build/*.deb
+
+      - name: install
+        shell: "bash"
+        run: |
+          sudo dpkg -i ${PWD}/build/*.deb
+          apt-get -yq install -f
+
+      - name: start
+        shell: "bash"
+        run: |
+          sudo /etc/init.d/hpcc-init start
