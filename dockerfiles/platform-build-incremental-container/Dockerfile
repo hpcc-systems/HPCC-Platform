@@ -34,6 +34,13 @@ RUN git fetch upstream +${GITHUB_PRREF}
 RUN git checkout FETCH_HEAD
 RUN git submodule update --init --recursive
 
+VOLUME ["/vcpkg-cache"]
+ENV VCPKG_BINARY_SOURCES="clear;files,/vcpkg-cache,readwrite"
+
+WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
+RUN ./bootstrap-vcpkg.sh
+RUN ./vcpkg install --overlay-ports=./overlays
+
 WORKDIR /hpcc-dev/build
 
 ARG BUILD_TYPE=RelWithDebInfo

@@ -134,15 +134,14 @@ jobs:
             USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
 
-      - uses: satackey/action-docker-layer-caching@v0.0.11
-        continue-on-error: true
-
       - name: PR image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./dockerfiles/platform-build-incremental-container/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=registry,ref=${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:buildcache
+          cache-to: type=registry,ref=${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:buildcache,mode=max
           build-args: |
             CR_USER=${{ steps.vars.outputs.cr_user }}
             CR_REPO=${{ steps.vars.outputs.container_registry }}
@@ -150,4 +149,3 @@ jobs:
             GITHUB_REPO=${{ github.repository }}
             GITHUB_PRREF=${{ github.ref }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
-            
