@@ -73,9 +73,9 @@ jobs:
 
       - name: vcpkg hash
         run: |
-          echo "VCPKG_SHA=$(echo git -C ./vcpkg rev-parse HEAD)" >> $GITHUB_ENV
+          echo "VCPKG_SHA=$(git -C ./vcpkg rev-parse HEAD)" >> $GITHUB_ENV
 
-      - name: setup vcpkg cache
+      - name: platform vcpkg cache
         id: cache-vcpkg
         uses: actions/cache@v3
         with:
@@ -90,7 +90,7 @@ jobs:
         run: |
           docker build --pull --rm -f "dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest "."
           docker run --rm \
-            -v ${PWD}:/hpcc-source \
+            -v ${PWD}/.:/hpcc-source \
             vcpkg-configure:latest
 
       - name: docker vcpkg build
