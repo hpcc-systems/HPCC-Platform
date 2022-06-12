@@ -22,7 +22,15 @@ ARG CR_REPO=docker.io
 ARG PLATFORM_PRBASE_VER
 FROM ${CR_REPO}/${CR_USER}/smoketest-platform-build:${PLATFORM_PRBASE_VER}
 
-USER hpcc
+ENV DEBIAN_FRONTEND=noninteractive
+ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,read"
+ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
+
+RUN apt-get update
+RUN apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+RUN apt-add-repository 'deb https://download.mono-project.com/repo/ubuntu stable-focal main'
+RUN apt install -y mono-complete 
 
 WORKDIR /hpcc-dev/HPCC-Platform
 ARG GITHUB_REPO

@@ -25,72 +25,26 @@ jobs:
 
   vcpkg-cache:
     name: "Fetch / Create vcpkg packages"
-    needs: check-skip
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out source code
-        uses: actions/checkout@v3
-
-      - name: Checkout submodule vcpkg
-        shell: "bash"
-        run: |
-          git submodule update --init --recursive ./vcpkg
-
-      - name: vcpkg hash
-        run: |
-          echo "VCPKG_SHA=$(git -C ./vcpkg rev-parse HEAD)" >> $GITHUB_ENV
-
-      - name: Test
-        run: echo ${{ env.VCPKG_SHA }}
-
-      - name: setup vcpkg cache
-        id: cache-vcpkg
-        uses: actions/cache@v3
-        with:
-          path: ./vcpkg-cache/**/*
-          key: vcpkg-${{ env.VCPKG_SHA }}
-          restore-keys: |
-            vcpkg-
-
-      - name: docker vcpkg install
-        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-        shell: "bash"
-        run: |
-          docker build --pull --rm -f "dockerfiles/vcpkg/install/Dockerfile" -t vcpkg-install:latest "."
-          docker run --rm \
-            -v ${PWD}/vcpkg-cache:/vcpkg-cache \
-            vcpkg-install:latest
-
-  build:
-    name: "Build HPCC-Platform"
-    needs: vcpkg-cache
+    # needs: check-skip
     runs-on: ubuntu-20.04
     steps:
       - name: Check out source code
         uses: actions/checkout@v3
         with:
-          submodules: recursive
-
-      - name: vcpkg hash
-        run: |
-          echo "VCPKG_SHA=$(git -C ./vcpkg rev-parse HEAD)" >> $GITHUB_ENV
-
-      - name: platform vcpkg cache
-        id: cache-vcpkg
-        uses: actions/cache@v3
-        with:
-          path: ./vcpkg-cache/**/*
-          key: vcpkg-${{ env.VCPKG_SHA }}-${{ hashFiles('./vcpkg.json') }}
-          restore-keys: |
-            vcpkg-${{ env.VCPKG_SHA }}
-            vcpkg-
+          submodules: true
+          path: "src"
 
       - name: docker vcpkg configure
         shell: "bash"
         run: |
-          docker build --pull --rm -f "dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest "."
+          docker build --pull --rm -f "./src/dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest \
+          --build-arg GITHUB_OWNER=${{ github.repository_owner }} \
+          --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+          "."
+          mkdir build
           docker run --rm \
-            -v ${PWD}/.:/hpcc-source \
+            -v ${PWD}/build:/build \
+            -v ${PWD}/src:/src \
             vcpkg-configure:latest
 
       - name: docker vcpkg build
@@ -98,36 +52,37 @@ jobs:
         run: |
           docker build --pull --rm -f "dockerfiles/vcpkg/build/Dockerfile" -t vcpkg-build:latest "."
           docker run --rm \
-            -v ${PWD}:/hpcc-source \
+            -v ${PWD}/build:/build \
+            -v ${PWD}/src:/src \
             vcpkg-build:latest
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: deb-package
-          path: ./build/*.deb
+  #     - uses: actions/upload-artifact@v3
+  #       with:
+  #         name: deb-package
+  #         path: ./build/*.deb
 
-  test:
-    name: "Test HPCC-Platform"
-    needs: build
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check out source code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
+  # test:
+  #   name: "Test HPCC-Platform"
+  #   needs: build
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - name: Check out source code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
 
-      - uses: actions/download-artifact@v3
-        with:
-          name: deb-package
-          path: ./build/*.deb
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: deb-package
+  #         path: ./build/*.deb
 
-      - name: install
-        shell: "bash"
-        run: |
-          sudo dpkg -i ./build/*.deb
-          apt-get -yq install -f
+  #     - name: install
+  #       shell: "bash"
+  #       run: |
+  #         sudo dpkg -i ./build/*.deb
+  #         apt-get -yq install -f
 
-      - name: start
-        shell: "bash"
-        run: |
-          sudo /etc/init.d/hpcc-init start
+  #     - name: start
+  #       shell: "bash"
+  #       run: |
+  #         sudo /etc/init.d/hpcc-init start
