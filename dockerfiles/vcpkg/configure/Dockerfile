@@ -39,7 +39,7 @@ RUN echo BUILD_BRANCH is ${BUILD_BRANCH}
 ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,readwrite"
 ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
 
-COPY ./src/vcpkg/* /tmp/
+COPY ./src/vcpkg /tmp
 WORKDIR /tmp
 RUN ./bootstrap-vcpkg.sh
 

@@ -1,4 +1,4 @@
-build/
+/build
 build-vcpkg/
 node_modules/
 vcpkg-cache/
