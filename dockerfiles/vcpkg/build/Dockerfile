@@ -23,9 +23,6 @@ ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
 FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
 
-VOLUME ["/build"]
-VOLUME ["/src"]
-
 WORKDIR /build
 
 CMD cmake --build . --target package -- -j$(nproc)
