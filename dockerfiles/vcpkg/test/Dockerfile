@@ -15,21 +15,16 @@
 #    limitations under the License.
 ##############################################################################
 
+# Base container image that builds all HPCC platform components
+
 ARG BASE_VER=8.6 
 ARG CR_USER=hpccsystems
 ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
 FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV VCPKG_BINARY_SOURCES="clear;files,/vcpkg-cache,readwrite"
+RUN apt install -f /build/*.deb
 
-COPY ./vcpkg/ /vcpkg/
+RUN /etc/init.d/hpcc-init start
 
-VOLUME ["/vcpkg-cache"]
-
-WORKDIR /vcpkg
-
-RUN ./bootstrap-vcpkg.sh
-
-CMD ["./vcpkg", "install", "--overlay-ports=./overlays", "--debug"]
+CMD top
