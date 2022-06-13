@@ -39,7 +39,7 @@ RUN echo BUILD_BRANCH is ${BUILD_BRANCH}
 ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,readwrite"
 ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
 
-COPY ./src/vcpkg /tmp
+COPY ./vcpkg /tmp
 WORKDIR /tmp
 RUN ./bootstrap-vcpkg.sh
 
@@ -51,6 +51,7 @@ RUN mono `./vcpkg fetch nuget | tail -n 1` \
     -username "${GITHUB_OWNER}" \
     -password "${GITHUB_TOKEN}"
 
-WORKDIR /build
+VOLUME ["/build", "/src"]
 
-CMD cmake ../src -DCMAKE_TOOLCHAIN_FILE=../src/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../src/vcpkg-overlays -DUSE_OPTIONAL=OFF -DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON
+CMD ls /build && ls /src
+# CMD cmake /src -DCMAKE_TOOLCHAIN_FILE=/src/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../src/vcpkg-overlays -DUSE_OPTIONAL=OFF -DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON
