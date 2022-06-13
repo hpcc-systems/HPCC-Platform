@@ -346,8 +346,8 @@ define([
 
         //  Implementation  ---
         getFilter: function () {
+            var retVal = this.filter.toObject();
             if (this.workunitsGrid) {
-                var retVal = this.filter.toObject();
                 if (retVal.Sortby) {
                     switch (retVal.Sortby) {
                         case "Smallest":
@@ -367,7 +367,28 @@ define([
                     }
                 }
             }
-            var retVal = this.filter.toObject();
+            if (retVal.LogicalFiles || retVal.SuperFiles) {
+                retVal.FileType = "";
+                if (!retVal.Indexes) {
+                    retVal.ContentType = "key";
+                    retVal.InvertContent = true;
+                }
+                if (retVal.LogicalFiles && !retVal.SuperFiles) {
+                    retVal.FileType = "Logical Files Only";
+                } else if (!retVal.LogicalFiles && retVal.SuperFiles) {
+                    retVal.FileType = "Superfiles Only";
+                }
+            } else if (retVal.NotInSuperfiles) {
+                retVal.FileType = "Not in Superfiles";
+                if (!retVal.Indexes) {
+                    retVal.ContentType = "key";
+                    retVal.InvertContent = true;
+                }
+            }
+            delete retVal.LogicalFiles;
+            delete retVal.SuperFiles;
+            delete retVal.NotInSuperFiles;
+            delete retVal.Indexes;
             if (retVal.StartDate && retVal.FromTime) {
                 lang.mixin(retVal, {
                     StartDate: this.getISOString("FromDate", "FromTime")
@@ -390,6 +411,42 @@ define([
             this.updatedFilter = JSON.parse(JSON.stringify(retVal));    // Deep copy as checkIfWarning will append _rawxml to it  ---
 
             return retVal;
+        },
+
+        _onFileTypeCheckboxClick: function (event) {
+            var logicalFilesCheckbox = registry.byId(this.id + "LogicalFiles");
+            var superFilesCheckbox = registry.byId(this.id + "SuperFiles");
+            var notInSuperfilesCheckbox = registry.byId(this.id + "NotInSuperfiles");
+            if (logicalFilesCheckbox.checked || superFilesCheckbox.checked) {
+                notInSuperfilesCheckbox.set("disabled", true);
+            } else {
+                notInSuperfilesCheckbox.set("disabled", false);
+            }
+        },
+
+        _onIndexCheckboxClick: function (event) {
+            var logicalFilesCheckbox = registry.byId(this.id + "LogicalFiles");
+            var superFilesCheckbox = registry.byId(this.id + "SuperFiles");
+            var indexesCheckbox = registry.byId(this.id + "Indexes");
+            var notInSuperfilesCheckbox = registry.byId(this.id + "NotInSuperfiles");
+            if (indexesCheckbox.checked && !notInSuperfilesCheckbox.checked) {
+                notInSuperfilesCheckbox.set("disabled", true);
+                logicalFilesCheckbox.set("checked", true);
+                superFilesCheckbox.set("checked", true);
+            }
+        },
+
+        _onNotInSuperFilesClick: function (event) {
+            var logicalFilesCheckbox = registry.byId(this.id + "LogicalFiles");
+            var superFilesCheckbox = registry.byId(this.id + "SuperFiles");
+            if (superFilesCheckbox.checked) {
+                logicalFilesCheckbox.set("disabled", true);
+                superFilesCheckbox.set("disabled", true);
+            } else {
+                logicalFilesCheckbox.set("disabled", false);
+                superFilesCheckbox.set("disabled", false);
+                this._onIndexCheckboxClick();
+            }
         },
 
         checkIfWarning: function () {

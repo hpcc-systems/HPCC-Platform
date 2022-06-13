@@ -383,9 +383,9 @@ void WUDetailsVisitor::buildAttribListToReturn(IConstWUPropertiesToReturn & prop
         return;
 
     if (statisticsPostFilterRequired)
-        propertiesToReturnStats.set(createBitSet(StatisticFilterMaskSize));
+        propertiesToReturnStats.setown(createBitSet(StatisticFilterMaskSize));
     if (attributesPostFilterRequired)
-        propertiesToReturnAttribs.set(createBitSet(AttributeFilterMaskSize));
+        propertiesToReturnAttribs.setown(createBitSet(AttributeFilterMaskSize));
 
     StringArray & propertiesToReturnList = propertiesToReturn.getProperties();
     ForEachItemIn(idx1,propertiesToReturnList)
@@ -415,8 +415,8 @@ void WUDetailsVisitor::resetScope()
     currentStatisticScopeType = SSTnone;
     extraStatisticsForCurScope = nullptr;
     extraAttributesForCurScope = nullptr;
-    EspWUResponseProperties.clear();
-    EspWUResponseNotes.clear();
+    EspWUResponseProperties.kill();
+    EspWUResponseNotes.kill();
     endListAttr();
 }
 

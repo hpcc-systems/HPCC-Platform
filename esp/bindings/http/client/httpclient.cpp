@@ -32,6 +32,7 @@
 
 static Owned<CHttpClientContext> theHttpClientContext;
 static MapStringToMyClass<CHttpClientContext> httpClientContextsUsingSecrets;
+static Owned<IEspPlugin> theSSLPlugin;
 static CriticalSection httpCrit;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -43,6 +44,7 @@ MODULE_EXIT()
 {
     theHttpClientContext.clear();
     httpClientContextsUsingSecrets.kill();
+    theSSLPlugin.clear();
 }
 
 /*************************************************************************
@@ -98,14 +100,17 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
         if(m_ssctx.get() == NULL)
         {
             StringBuffer libName;
-            IEspPlugin *pplg = loadPlugin(libName.append(SharedObjectPrefix).append(SSLIB).append(SharedObjectExtension));
-            if (!pplg)
-                throw MakeStringException(-1, "dll/shared-object %s can't be loaded", libName.str());
+            if (!theSSLPlugin)
+            {
+                theSSLPlugin.setown(loadPlugin(libName.append(SharedObjectPrefix).append(SSLIB).append(SharedObjectExtension)));
+                if (!theSSLPlugin)
+                    throw MakeStringException(-1, "dll/shared-object %s can't be loaded", libName.str());
+            }
 
             if(m_config.get() == NULL)
             {
                 createSecureSocketContextSecret_t xproc = NULL;
-                xproc = (createSecureSocketContextSecret_t) pplg->getProcAddress("createSecureSocketContextSecret");
+                xproc = (createSecureSocketContextSecret_t) theSSLPlugin->getProcAddress("createSecureSocketContextSecret");
                 if (xproc)
                     m_ssctx.setown(xproc(m_mtls_secret.str(), ClientSocket));
                 else
@@ -114,7 +119,7 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
             else
             {
                 createSecureSocketContextEx2_t xproc = NULL;
-                xproc = (createSecureSocketContextEx2_t) pplg->getProcAddress("createSecureSocketContextEx2");
+                xproc = (createSecureSocketContextEx2_t) theSSLPlugin->getProcAddress("createSecureSocketContextEx2");
                 if (xproc)
                     m_ssctx.setown(xproc(m_config.get(),ClientSocket));
                 else
@@ -950,10 +955,13 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
 
     int statusCode = atoi(status.str());
     char statusClass = '0';
+    errmsg.clear();
     if(status.length() > 0)
+    {
         statusClass = status.charAt(0);
+        errmsg.appendf("HTTP Status %s", status.str());
+    }
 
-    errmsg.clear().appendf("HTTP Status %s", status.str());
     if(statusClass == '2')
     {
         response.set_status(SOAP_OK);
@@ -994,7 +1002,8 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     }
     else
     {
-        DBGLOG("%s", errmsg.str());
+        if (errmsg.length()>0)
+            DBGLOG("%s", errmsg.str());
 
         StringBuffer msg;
         if (m_exceptions->ordinality())
@@ -1010,6 +1019,8 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
             }
 
         }
+        if (-1 == ret)
+            msg.append("No response from server");
         DBGLOG("SOAP_RPC_ERROR = %s", msg.str());
         response.set_status(SOAP_RPC_ERROR);
         response.set_err(msg);

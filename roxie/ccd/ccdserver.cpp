@@ -195,6 +195,14 @@ public:
     {
         ctx->notifyAbort(E);
     }
+    virtual void notifyException(IException *E)
+    {
+        ctx->notifyException(E);
+    }
+    virtual void throwPendingException()
+    {
+        ctx->throwPendingException();
+    }
     virtual IActivityGraph * queryChildGraph(unsigned id) 
     {
         return ctx->queryChildGraph(id);
@@ -2106,8 +2114,8 @@ public:
                         streams.append(sourceJunction->queryOutput(strandNo));
                     }
 #ifdef TRACE_STRANDS
-                    if (traceLevel > 2)
-                        DBGLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
+                    if (traceStrands)
+                        CTXLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
 #endif
                     return recombiner.getClear();
                 }
@@ -2121,8 +2129,8 @@ public:
         ForEachItemIn(i, strands)
             streams.append(&strands.item(i));
 #ifdef TRACE_STRANDS
-        if (traceLevel > 2)
-            DBGLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
+        if (traceStrands)
+            CTXLOG("Executing activity %u with %u strands", activityId, strands.ordinality());
 #endif
 
         return recombiner.getClear();
@@ -2230,6 +2238,7 @@ public:
     {
         CRoxieServerStrandedActivity::reset();
         prefiltered = false;
+        eof = false;
     }
 
 };
@@ -4501,8 +4510,10 @@ public:
         return totalCycles;
     }
 
-    void gatherStats(CRuntimeStatisticCollection & merged) const
+    void gatherStats(CRuntimeStatisticCollection & merged, bool includeTotalCycles) const
     {
+        if (includeTotalCycles)
+            merged.mergeStatistic(StTimeTotalExecute, cycle_to_nanosec(totalCycles));
         if (rowAllocator)
             rowAllocator->gatherStats(merged);
     }
@@ -9762,18 +9773,26 @@ public:
 
     virtual void stop()
     {
-        if (!aborted && helper.getSequence() >= 0)
+        try
         {
-            WorkunitUpdate wu = ctx->updateWorkUnit();
-            if (wu)
+            if (!aborted && helper.getSequence() >= 0)
             {
-                Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
-                if (result)
+                WorkunitUpdate wu = ctx->updateWorkUnit();
+                if (wu)
                 {
-                    result->setResultTotalRowCount(processed);
-                    result->setResultStatus(ResultStatusCalculated);
+                    Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+                    if (result)
+                    {
+                        result->setResultTotalRowCount(processed);
+                        result->setResultStatus(ResultStatusCalculated);
+                    }
                 }
             }
+        }
+        catch (IException * e)
+        {
+            ctx->notifyException(e);
+            e->Release();
         }
         CRoxieServerActivity::stop();
         pipe.clear();
@@ -11136,8 +11155,10 @@ public:
     }
     virtual StrandProcessor *createStrandProcessor(IEngineRowStream *instream)
     {
-        if (traceLevel > 4)
-            DBGLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+#ifdef TRACE_STRANDS
+        if (traceStrands)
+            CTXLOG("Create aggregate strand processor %u", strandOptions.numStrands);
+#endif
         return new AggregateProcessor(*this, instream, (IHThorAggregateArg &) basehelper, isInputGrouped && !combineStreams, abortEarly);
     }
     virtual StrandProcessor *createStrandSourceProcessor(bool inputOrdered) { throwUnexpected(); }
@@ -11777,26 +11798,34 @@ public:
 
     virtual void stop()
     {
-        if (aborted)
+        try
         {
-            if (writer)
-                writer->finish(false, this);
-        }
-        else
-        {
-            if (outSeq)
-                outSeq->flush(&crc);
-            if (outSeq)
-                uncompressedBytesWritten = outSeq->getPosition();
-            outSeq.clear();
-            diskout.clear();  // Make sure file is properly closed or date may not match published info
-            if (writer)
+            if (aborted)
             {
-                updateWorkUnitResult(processed);
-                writer->finish(true, this);
+                if (writer)
+                    writer->finish(false, this);
             }
+            else
+            {
+                if (outSeq)
+                    outSeq->flush(&crc);
+                if (outSeq)
+                    uncompressedBytesWritten = outSeq->getPosition();
+                outSeq.clear();
+                diskout.clear();  // Make sure file is properly closed or date may not match published info
+                if (writer)
+                {
+                    updateWorkUnitResult(processed);
+                    writer->finish(true, this);
+                }
+            }
+            writer.clear();
         }
-        writer.clear();
+        catch (IException * e)
+        {
+            ctx->notifyException(e);
+            e->Release();
+        }
         CRoxieServerActivity::stop();
     }
 
@@ -12364,12 +12393,20 @@ public:
 
     virtual void stop()
     {
-        if (writer)
+        try
         {
-            if (!aborted)
-                updateWorkUnitResult();
-            writer->finish(!aborted, this);
-            writer.clear();
+            if (writer)
+            {
+                if (!aborted)
+                    updateWorkUnitResult();
+                writer->finish(!aborted, this);
+                writer.clear();
+            }
+        }
+        catch (IException * e)
+        {
+            ctx->notifyException(e);
+            e->Release();
         }
         CRoxieServerActivity::stop();
     }
@@ -13335,6 +13372,11 @@ public:
         processRow(NULL);
     }
 
+    unsigned __int64 queryTotalCycles() const
+    {
+        return puller.queryTotalCycles();
+    }
+
     virtual bool fireException(IException *e)
     {
         // called from puller thread on failure
@@ -13440,7 +13482,13 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        return 0;
+        //This is likely to be 0, but interesting if it is not - it suggest overhead (e.g. in group processing)
+        __int64 localCycles = queryTotalCycles();
+        for (unsigned i = 0; i < numInputs; i++)
+            localCycles -= pullers.item(i).queryTotalCycles();
+        if (localCycles < 0)
+            localCycles = 0;
+        return localCycles;
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -13501,6 +13549,8 @@ public:
                 if (fetched)
                 {
                     inGroup = (ret != NULL);
+                    if (ret)
+                        processed++;
                     return ret;
                 }
                 if (inGroup && grouped)
@@ -17623,7 +17673,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
     }
 };
 
@@ -20924,7 +20974,15 @@ public:
             cond = helper.getCondition();
         }
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
-        executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+        try
+        {
+            executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+        }
+        catch (...)
+        {
+            stopDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+            throw;
+        }
     }
 
     virtual void stop() override
@@ -21100,7 +21158,9 @@ public:
 
     virtual void stop()
     {
-        if (state == STATEreset || (!aborted && !eofseen))  // If someone else aborted, then WHEN clauses don't trigger, whatever
+        //MORE: What happens if only some of the dataset is read?  This logic seems flawed.
+        bool readAll = eofseen || (eogseen && !meta.isGrouped());
+        if (state == STATEreset || (!aborted && !readAll))  // If someone else aborted, then WHEN clauses don't trigger, whatever
         {
             stopDependencies(savedExtractSize, savedExtract, WhenSuccessId);
             stopDependencies(savedExtractSize, savedExtract, WhenFailureId);
@@ -21108,7 +21168,22 @@ public:
         else if (state != STATEstopped)
         {
             stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
-            executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId); // These ones do
+            try
+            {
+                executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId); // These ones do
+            }
+            catch (IException * e)
+            {
+                // The exception needs to be perserved, to be rethrown after all stops are called.
+                // If it is thrown now upstream activities will not have stop() called.
+                ctx->notifyException(e);
+                e->Release();
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
+            catch (...)
+            {
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
         }
         CRoxieServerActivity::stop();
     }
@@ -21192,7 +21267,20 @@ public:
         if (state != STATEstopped)
         {
             stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
-            executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            try
+            {
+                executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
+            catch (IException * e)
+            {
+                ctx->notifyException(e);
+                e->Release();
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
+            catch (...)
+            {
+                stopDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
+            }
         }
         CRoxieServerActionBaseActivity::stop();
     }
@@ -22093,7 +22181,7 @@ public:
     {
         CRoxieServerActivity::gatherStats(merged);
         if (remote)
-            remote->gatherStats(merged);
+            remote->gatherStats(merged, true);
     }
 };
 
@@ -23310,7 +23398,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
     }
 };
 
@@ -24927,7 +25015,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -25435,8 +25523,6 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
-        joinProcessed = 0;
-        activityStats.totalCycles = 0;
         allPulled = false;
         assertex(ready.ordinality()==0);
         CRemoteResultAdaptor::start(parentExtractSize, parentExtract, paused);
@@ -25491,7 +25577,8 @@ public:
 
     void gatherStats(CRuntimeStatisticCollection & merged) const
     {
-        CRemoteResultAdaptor::gatherStats(merged);
+        activityStats.addStatistics(merged);
+        CRemoteResultAdaptor::gatherStats(merged, false);
         if (ccdRecordAllocator)
             ccdRecordAllocator->gatherStats(merged);
     }
@@ -25895,7 +25982,7 @@ public:
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         CRoxieServerActivity::gatherStats(merged);
-        remote.gatherStats(merged);
+        remote.gatherStats(merged, true);
         if (indexReadAllocator)
             indexReadAllocator->gatherStats(merged);
     }
@@ -26031,7 +26118,7 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        __int64 localCycles = remote.activityStats.totalCycles;
+        __int64 localCycles = queryTotalCycles();
         localCycles -= puller.queryTotalCycles(); // MORE - debatable... but probably fair.
         if (localCycles < 0)
             localCycles = 0;
@@ -26054,12 +26141,13 @@ public:
             return NULL;
     }
 
+    virtual unsigned __int64 queryTotalCycles() const override
+    {
+        return remote.queryTotalCycles();
+    }
+
     virtual void reset()
     {
-        activityStats.totalCycles = remote.activityStats.totalCycles;
-        remote.activityStats.totalCycles = 0;
-        processed = remote.joinProcessed;
-        remote.joinProcessed = 0;
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
@@ -26071,6 +26159,11 @@ public:
         {
             ::Release(groups.dequeue());
         }
+    }
+
+    virtual unsigned getTotalRowsProcessed() const override
+    {
+        return remote.joinProcessed;
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -27719,6 +27812,7 @@ public:
                 sink.execute(parentExtractSize, parentExtract);
             }
         }
+        graphAgentContext.throwPendingException();
     }
 
     virtual IEclGraphResults *evaluate(unsigned parentExtractSize, const byte * parentExtract)

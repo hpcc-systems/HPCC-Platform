@@ -71,6 +71,26 @@ static CriticalSection * protectedGeneratorCs;
 mach_timebase_info_data_t timebase_info  = { 1,1 };
 #endif
 
+bool getEnvVar(const char * varName, StringBuffer & varValue)
+{
+    if (isEmptyString(varName))
+        return false;
+
+    try
+    {
+        varValue.set(std::getenv(varName));
+        if (varValue.isEmpty())
+            return false;
+    }
+    catch(const std::exception& e)
+    {
+        ERRLOG("Encountered error fetching '%s' environment variable: '%s'.", varName, e.what());
+        return false;
+    }
+
+    return true;
+}
+
 HPCCBuildInfo hpccBuildInfo;
 
 #define stringify(x) # x
@@ -1580,7 +1600,7 @@ void StringArray::appendListUniq(const char *list, const char *delim, bool trimS
     DelimToStringArray(list, *this, delim, true, trimSpaces);
 }
 
-StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim)
+StringBuffer &StringArray::getString(StringBuffer &ret, const char *delim) const
 {
     ForEachItemIn(i, *this)
     {
@@ -3211,6 +3231,26 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
 jlib_decl StringBuffer &getSpillFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
 {
     return doGetTempFilePath(target, "spill", component, pTree);
+}
+
+jlib_decl StringBuffer &createUniqueTempDirectoryName(StringBuffer & ret)
+{
+    StringBuffer dir;
+    getConfigurationDirectory(nullptr, "temp", nullptr, nullptr, dir);
+    recursiveCreateDirectory(dir);
+    dir.append(PATHSEPCHAR).append("HPCCSystems-XXXXXX");
+    OwnedMalloc<char> uniqueDir(dir.detach());
+    char *td = mkdtemp(uniqueDir);
+    if (!td)
+        throw makeStringException(-1, "Unable to create temp directory");
+    return ret.append(uniqueDir);
+}
+
+jlib_decl IFile *createUniqueTempDirectory()
+{
+    StringBuffer dir;
+    createUniqueTempDirectoryName(dir);
+    return createIFile(dir);
 }
 
 const char *getEnumText(int value, const EnumMapping *map)

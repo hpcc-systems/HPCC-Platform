@@ -9,6 +9,7 @@ import { FileList, States as DFUStates } from "src/FileSpray";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useLogicalClusters } from "../../hooks/platform";
+import { useContainerNames } from "../../hooks/cloud";
 
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
 
@@ -128,7 +129,8 @@ export type FieldType = "string" | "password" | "number" | "checkbox" | "choiceg
     "target-cluster" | "target-dropzone" | "target-server" | "target-group" |
     "target-dfuqueue" | "user-groups" | "group-members" | "permission-type" |
     "logicalfile-type" | "dfuworkunit-state" |
-    "esdl-esp-processes" | "esdl-definitions";
+    "esdl-esp-processes" | "esdl-definitions" |
+    "cloud-containername";
 
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
 
@@ -285,6 +287,11 @@ interface ProgressField extends BaseField {
     value?: string;
 }
 
+interface CloudContainerNameField extends BaseField {
+    type: "cloud-containername";
+    value?: string;
+}
+
 type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
@@ -292,7 +299,8 @@ type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | Dat
     TargetClusterField | TargetDropzoneField | TargetServerField | TargetGroupField |
     TargetDfuSprayQueueField | UserGroupsField | GroupMembersField | PermissionTypeField |
     LogicalFileType | DFUWorkunitStateField |
-    EsdlEspProcessesField | EsdlDefinitionsField;
+    EsdlEspProcessesField | EsdlDefinitionsField |
+    CloudContainerNameField;
 
 export type Fields = { [id: string]: Field };
 
@@ -622,6 +630,37 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
     }, []);
 
     return <AsyncDropdown {...props} options={baseDns} />;
+};
+
+export interface CloudContainerNameFieldProps extends Omit<AsyncDropdownProps, "options"> {
+}
+
+export const CloudContainerNameField: React.FunctionComponent<CloudContainerNameFieldProps> = (props) => {
+
+    const [cloudContainerNames] = useContainerNames();
+    const [options, setOptions] = React.useState<IDropdownOption[]>();
+    const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
+    const { onChange, required, selectedKey } = { ...props };
+
+    React.useEffect(() => {
+        const options = cloudContainerNames?.map(row => {
+            return {
+                key: row,
+                text: row
+            };
+        }) || [];
+        setOptions(options);
+
+        if (autoSelectDropdown(selectedKey, required)) {
+            const selectedItem = options[0];
+            if (selectedItem) {
+                setDefaultRow(selectedItem);
+                onChange(undefined, selectedItem);
+            }
+        }
+    }, [onChange, required, selectedKey, cloudContainerNames]);
+
+    return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
 };
 
 const states = Object.keys(States).map(s => States[s]);
@@ -1064,6 +1103,23 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "cloud-containername":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <CloudContainerNameField
+                        key={fieldID}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => {
+                            onChange(fieldID, row.key);
+                            setDropzone(row.key as string);
+                        }}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+
         }
     }
     return retVal;

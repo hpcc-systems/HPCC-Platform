@@ -663,10 +663,10 @@ class CWsWuFileHelper
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
 
     void cleanFolder(IFile *folder, bool removeFolder);
-    int zipAFolder(const char *folder, const char *passwordReq, const char *zipFileNameWithPath);
+    void zipAllZAPFiles(const char *zapWorkingFolder, StringArray &localFiles, const char *passwordReq, const char *zipFileNameWithFullPath);
+    void zipZAPFiles(const char *parentFolder, const char *zapFiles, const char *passwordReq, const char *zipFileNameWithFullPath);
     int zipAFolder(const char *folder, bool gzip, const char *zipFileNameWithPath);
-    void setZAPFile(const char *zipFileNameReq, const char *zipFileNamePrefix, StringBuffer &zipFileName,
-        StringBuffer &zipFileNameWithPath);
+    const char *setZAPReportName(const char *zapFileNameReq, const char *wuid, StringBuffer &zapReportName);
     void writeToFile(const char *fileName, size32_t contentLength, const void *content);
     void writeToFileIOStream(const char *folder, const char *file, MemoryBuffer &mb);
     void readWUFile(const char *wuid, const char *zipFolder, WsWuInfo &winfo, IConstWUFileOption &item,
@@ -678,13 +678,14 @@ class CWsWuFileHelper
         const char *whatChanged, const char *timing, IConstWorkUnit *cwu, const char *pathNameStr);
     void createZAPWUXMLFile(WsWuInfo &winfo, const char *pathNameStr);
     void createZAPECLQueryArchiveFiles(IConstWorkUnit *cwu, const char *pathNameStr);
-    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate);
+    void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate, StringArray &localFiles);
     void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
 #ifndef _CONTAINERIZED
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
 #else
     void readWUComponentLogOptionsReq(IConstWUFileOption &logOptionReq, WUComponentLogOptions &options);
+    void findPostMortemFolder(const char *wuid, StringBuffer &postMortemFolder);
 #endif
     void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
@@ -692,10 +693,10 @@ class CWsWuFileHelper
 public:
     CWsWuFileHelper(IPropertyTree *_directories) : directories(_directories) {};
 
-    void createWUZAPFile(IEspContext &context, IConstWorkUnit* cwu, CWsWuZAPInfoReq &request,
+    void createWUZAPFile(IEspContext &context, IConstWorkUnit* cwu, CWsWuZAPInfoReq &request, const char* tempDirName,
         StringBuffer &zipFileName, StringBuffer &zipFileNameWithPath, unsigned _thorSlaveLogThreadPoolSize);
     IFileIOStream* createWUZAPFileIOStream(IEspContext &context, IConstWorkUnit *cwu,
-        CWsWuZAPInfoReq &request, unsigned _thorSlaveLogThreadPoolSize);
+        CWsWuZAPInfoReq &request, const char *tempDirName, unsigned _thorSlaveLogThreadPoolSize);
 
     IFileIOStream* createWUFileIOStream(IEspContext &context, const char *wuid, IArrayOf<IConstWUFileOption> &wuFileOptions,
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);

@@ -25,7 +25,10 @@ const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
     "Description": { type: "string", label: nlsHPCC.Description, placeholder: nlsHPCC.SomeDescription },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
-    "Index": { type: "checkbox", label: nlsHPCC.Index },
+    "LogicalFiles": { type: "checkbox", label: nlsHPCC.LogicalFiles },
+    "SuperFiles": { type: "checkbox", label: nlsHPCC.SuperFiles },
+    "Indexes": { type: "checkbox", label: nlsHPCC.Indexes },
+    "NotInSuperfiles": { type: "checkbox", label: nlsHPCC.NotInSuperfiles },
     "NodeGroup": { type: "target-group", label: nlsHPCC.Group, placeholder: nlsHPCC.Cluster },
     "FileSizeFrom": { type: "string", label: nlsHPCC.FromSizes, placeholder: "4096" },
     "FileSizeTo": { type: "string", label: nlsHPCC.ToSizes, placeholder: "16777216" },
@@ -38,10 +41,28 @@ const FilterFields: Fields = {
 
 function formatQuery(_filter, mine, currentUser) {
     const filter = { ..._filter };
-    if (filter.Index) {
-        filter.ContentType = "key";
-        delete filter.Index;
+    if (filter.LogicalFiles || filter.SuperFiles) {
+        filter.FileType = "";
+        if (!filter.Indexes) {
+            filter.ContentType = "key";
+            filter.InvertContent = true;
+        }
+        if (filter.LogicalFiles && !filter.SuperFiles) {
+            filter.FileType = "Logical Files Only";
+        } else if (!filter.LogicalFiles && filter.SuperFiles) {
+            filter.FileType = "Superfiles Only";
+        }
+    } else if (filter.NotInSuperfiles) {
+        filter.FileType = "Not in Superfiles";
+        if (!filter.Indexes) {
+            filter.ContentType = "key";
+            filter.InvertContent = true;
+        }
     }
+    delete filter.LogicalFiles;
+    delete filter.SuperFiles;
+    delete filter.NotInSuperFiles;
+    delete filter.Indexes;
     if (filter.StartDate) {
         filter.StartDate = new Date(filter.StartDate).toISOString();
     }

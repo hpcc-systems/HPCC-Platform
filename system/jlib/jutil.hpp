@@ -36,6 +36,8 @@ extern mach_timebase_info_data_t timebase_info;   // Calibration for nanosecond 
 
 //#define NAMEDCOUNTS
 
+bool jlib_decl getEnvVar(const char * varName, StringBuffer & varValue);
+
 interface IPropertyTree;
 interface IProperties;
 
@@ -246,7 +248,7 @@ public:
     void appendList(const char *list, const char *delim, bool trimSpaces = true);
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim, bool trimSpaces = true);
-    StringBuffer &getString(StringBuffer &ret, const char *delim); // get CSV string of array contents
+    StringBuffer &getString(StringBuffer &ret, const char *delim) const; // get CSV string of array contents
     void sortAscii(bool nocase=false);
     void sortAsciiReverse(bool nocase=false);
     void sortCompare(int (*compare)(const char * const * l, const char * const * r));
@@ -477,6 +479,8 @@ extern jlib_decl bool safe_ecvt(size_t len, char * buffer, double value, int num
 extern jlib_decl bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * decimal, int * sign);
 extern jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 extern jlib_decl StringBuffer &getSpillFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
+extern jlib_decl StringBuffer &createUniqueTempDirectoryName(StringBuffer & ret);
+extern jlib_decl IFile *createUniqueTempDirectory();
 
 interface jlib_thrown_decl ICorruptDllException: extends IException
 {

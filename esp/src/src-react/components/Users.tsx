@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
@@ -59,7 +59,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 width: 180,
                 label: nlsHPCC.Username,
                 formatter: function (_name, idx) {
-                    return `<a href="#/security/users/${_name}">${_name}</a>`;
+                    return <Link href={`#/security/users/${_name}`}>{_name}</Link>;
                 }
             },
             employeeID: { width: 180, label: nlsHPCC.EmployeeID },
