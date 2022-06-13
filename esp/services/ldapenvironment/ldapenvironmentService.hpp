@@ -41,6 +41,7 @@ private:
         ST_AUTHN_VAULT = 1
     };
     bool createSecret(SecretType type, const char * secretName, const char * username, const char * pwd, StringBuffer & notes);
+    bool createUser(StringBuffer &userName, const char * prefix, const char * envName, const char * baseDN, const char * pwd, StringBuffer &notes);
 
 public:
     IMPLEMENT_IINTERFACE;
