@@ -4845,11 +4845,13 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         zapInfoReq.includeThorSlaveLog = req.getIncludeThorSlaveLog();
         zapInfoReq.zapFileName = req.getZAPFileName();
         zapInfoReq.password = req.getZAPPassword();
-    
+
+        Owned<IFile> tempDir = createUniqueTempDirectory();
+
         StringBuffer zipFileName, zipFileNameWithPath;
         //CWsWuFileHelper may need ESP's <Directories> settings to locate log files. 
         CWsWuFileHelper helper(directories);
-        helper.createWUZAPFile(context, cwu, zapInfoReq, zipFileName, zipFileNameWithPath, thorSlaveLogThreadPoolSize);
+        helper.createWUZAPFile(context, cwu, zapInfoReq, tempDir->queryFilename(), zipFileName, zipFileNameWithPath, thorSlaveLogThreadPoolSize);
 
         //Download ZIP file to user
         Owned<IFile> f = createIFile(zipFileNameWithPath.str());
@@ -4869,7 +4871,7 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         headerStr.append(zipFileName.str());
         context.addCustomerHeader("Content-disposition", headerStr.str());
         io->close();
-        f->remove();
+        recursiveRemoveDirectory(tempDir);
     }
     catch(IException* e)
     {

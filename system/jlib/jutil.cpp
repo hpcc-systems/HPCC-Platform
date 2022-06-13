@@ -3213,6 +3213,26 @@ jlib_decl StringBuffer &getSpillFilePath(StringBuffer & target, const char * com
     return doGetTempFilePath(target, "spill", component, pTree);
 }
 
+jlib_decl StringBuffer &createUniqueTempDirectoryName(StringBuffer & ret)
+{
+    StringBuffer dir;
+    getConfigurationDirectory(nullptr, "temp", nullptr, nullptr, dir);
+    recursiveCreateDirectory(dir);
+    dir.append(PATHSEPCHAR).append("HPCCSystems-XXXXXX");
+    OwnedMalloc<char> uniqueDir(dir.detach());
+    char *td = mkdtemp(uniqueDir);
+    if (!td)
+        throw makeStringException(-1, "Unable to create temp directory");
+    return ret.append(uniqueDir);
+}
+
+jlib_decl IFile *createUniqueTempDirectory()
+{
+    StringBuffer dir;
+    createUniqueTempDirectoryName(dir);
+    return createIFile(dir);
+}
+
 const char *getEnumText(int value, const EnumMapping *map)
 {
     while (map->str)
