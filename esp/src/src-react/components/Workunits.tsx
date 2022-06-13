@@ -118,11 +118,11 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 }
             },
             Wuid: {
-                label: nlsHPCC.WUID, width: 180,
+                label: nlsHPCC.WUID, width: 120,
                 formatter: function (Wuid, row) {
                     const wu = Get(Wuid);
                     return <>
-                        <Image src={wu.getStateImage()} />
+                        <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
                         &nbsp;
                         <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>
                     </>;

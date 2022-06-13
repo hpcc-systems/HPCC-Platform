@@ -2,6 +2,7 @@ import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
+import { service } from "src/ESPLog";
 import { useWorkunit } from "../hooks/workunit";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -17,6 +18,7 @@ import { Workflows } from "./Workflows";
 import { Metrics } from "./Metrics";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { Result } from "./Result";
+import { Logs } from "./Logs";
 
 interface WorkunitDetailsProps {
     wuid: string;
@@ -35,6 +37,13 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const [workunit] = useWorkunit(wuid, true);
 
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;
+
+    const [logCount, setLogCount] = React.useState<number | string>("*");
+    React.useEffect(() => {
+        service.GetLogsEx({ ...queryParams, jobId: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
+            setLogCount(response.total);
+        });
+    }, [queryParams, wuid]);
 
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
@@ -70,6 +79,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <FetchEditor mode={queryParams?.mode as any} url={queryParams?.src as string} /> :
                     <Helpers wuid={wuid} />
                 }
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.Logs} itemKey="logs" itemCount={logCount} style={pivotItemStyle(size, 0)}>
+                <Logs wuid={wuid} filter={queryParams} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="eclsummary" style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />

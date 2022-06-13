@@ -83,7 +83,7 @@ export const routes: RoutesEx = [
             { path: "", action: (ctx) => import("./components/Workunits").then(_ => <_.Workunits filter={parseSearch(ctx.search) as any} />) },
             { path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />) },
             { path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} />) },
-            { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} />) },
+            { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} queryParams={parseSearch(ctx.search) as any} />) },
             { path: "/:Wuid/:Tab/:State", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} state={(params.State as string)} queryParams={parseSearch(ctx.search) as any} />) },
         ]
     },

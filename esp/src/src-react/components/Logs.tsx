@@ -1,75 +1,62 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { LogsQueryStore, CreateLogsQueryStore } from "src/ESPLog";
+import { useConst } from "@fluentui/react-hooks";
+import { GetLogsExRequest } from "@hpcc-js/comms";
+import { CreateLogsQueryStore } from "src/ESPLog";
+import nlsHPCC from "src/nlsHPCC";
 import { useFluentPagedGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
-import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
 
 const FilterFields: Fields = {
-    "LogCategory": {
-        type: "dropdown", label: nlsHPCC.Category,
-        options: [
-            { key: "0", text: "All" },
-            { key: "1", text: "WorkunitID" },
-            { key: "2", text: "Component" },
-            { key: "3", text: "Log Type" },
-            { key: "4", text: "Target Audience" },
-            { key: "5", text: "Source Instance" },
-            { key: "6", text: "Source Node" },
-        ]
-    },
-    "SearchByValue": { type: "string", label: nlsHPCC.Value, placeholder: nlsHPCC.somefile },
+    containerName: { type: "cloud-containername", label: nlsHPCC.ContainerName },
+    audience: { type: "string", label: nlsHPCC.Audience },
+    class: { type: "string", label: nlsHPCC.Class },
+    jobId: { type: "string", label: nlsHPCC.JobID },
+    procId: { type: "string", label: nlsHPCC.ProcessID },
+    threadId: { type: "string", label: nlsHPCC.ThreadID },
+    message: { type: "string", label: nlsHPCC.Message },
     "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter) {
-    const filter = { ..._filter };
-    if (!filter.LogCategory) {
-        filter.LogCategory = "0";
+function formatQuery(_request: any): Partial<GetLogsExRequest> {
+    const request: Partial<GetLogsExRequest> = { ..._request };
+    if (_request.StartDate) {
+        request.StartDate = new Date(_request.StartDate);
     }
-    filter.Range = {};
-    if (filter.StartDate) {
-        filter.Range.StartDate = new Date(filter.StartDate).toISOString();
-        delete filter.StartDate;
-    } else {
-        filter.Range.StartDate = new Date().toISOString();
+    if (_request.EndDate) {
+        request.EndDate = new Date(_request.EndDate);
     }
-    if (filter.EndDate) {
-        filter.Range.EndDate = new Date(filter.EndDate).toISOString();
-        delete filter.EndDate;
-    }
-    filter.Format = "JSON";
-    return filter;
+    return request;
 }
 
 interface LogsProps {
-    filter?: object;
-    store?: LogsQueryStore;
+    wuid?: string;
+    filter?: Partial<GetLogsExRequest>;
 }
-const emptyFilter = {};
+const emptyFilter: Partial<GetLogsExRequest> = {};
 
 export const Logs: React.FunctionComponent<LogsProps> = ({
+    wuid,
     filter = emptyFilter,
-    store
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
-
     const [showFilter, setShowFilter] = React.useState(false);
 
     //  Grid ---
-    const gridStore = React.useMemo(() => {
-        return store ? store : CreateLogsQueryStore();
-    }, [store]);
+    const gridStore = useConst(CreateLogsQueryStore());
 
     const query = React.useMemo(() => {
+        if (wuid !== undefined) {
+            filter.jobId = wuid;
+        }
         return formatQuery(filter);
-    }, [filter]);
+    }, [filter, wuid]);
 
     const { Grid, GridPagination, refreshTable, copyButtons } = useFluentPagedGrid({
         persistID: "cloudlogs",
@@ -77,15 +64,15 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         query,
         filename: "logaccess",
         columns: {
-            Timestamp: { label: nlsHPCC.TimeStamp, width: 140, },
-            Message: { label: "Message", },
-            ContainerName: { label: "Container Name", width: 100 },
-            Audience: { label: "Audience", width: 60, },
-            Class: { label: "Class", width: 40, },
-            JobId: { label: "JobId", width: 40, sortable: false, },
-            ProcId: { label: "ProcId", width: 46, },
-            Sequence: { label: "Sequence", width: 70, sortable: false, },
-            ThreadId: { label: "ThreadId", width: 60, },
+            timestamp: { label: nlsHPCC.TimeStamp, width: 140, sortable: false, },
+            message: { label: nlsHPCC.Message, sortable: false, },
+            containerName: { label: nlsHPCC.ContainerName, width: 100, sortable: false },
+            audience: { label: nlsHPCC.Audience, width: 60, sortable: false, },
+            class: { label: nlsHPCC.Class, width: 40, sortable: false, },
+            jobId: { label: nlsHPCC.JobID, width: 140, sortable: false, hidden: wuid !== undefined, },
+            procId: { label: nlsHPCC.ProcessID, width: 46, sortable: false, },
+            sequence: { label: nlsHPCC.Sequence, width: 70, sortable: false, },
+            threadId: { label: nlsHPCC.ThreadID, width: 60, sortable: false, },
         }
     });
 
@@ -97,18 +84,24 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
         },
-    ], [hasFilter, refreshTable, store]);
+    ], [hasFilter, refreshTable]);
 
     //  Filter  ---
-    const filterFields: Fields = {};
-    for (const field in FilterFields) {
-        filterFields[field] = { ...FilterFields[field], value: filter[field] };
-    }
+    const filterFields: Fields = React.useMemo(() => {
+        const retVal: Fields = {};
+        for (const field in FilterFields) {
+            retVal[field] = { ...FilterFields[field], value: filter[field] };
+            if (wuid !== undefined) {
+                delete retVal.jobId;
+            }
+        }
+        return retVal;
+    }, [filter, wuid]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
