@@ -31,7 +31,7 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v3
         with:
-          submodules: true
+          submodules: recursive
           path: "src"
 
       - name: docker vcpkg configure
@@ -50,6 +50,7 @@ jobs:
       - name: docker vcpkg build
         shell: "bash"
         run: |
+          sudo chown -R $USER .
           docker build --pull --rm -f "./src/dockerfiles/vcpkg/build/Dockerfile" -t vcpkg-build:latest "."
           docker run --rm \
             -v ${PWD}/build:/build \
