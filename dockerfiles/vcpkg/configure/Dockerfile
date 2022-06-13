@@ -51,7 +51,6 @@ RUN mono `./vcpkg fetch nuget | tail -n 1` \
     -username "${GITHUB_OWNER}" \
     -password "${GITHUB_TOKEN}"
 
-VOLUME ["/build", "/src"]
+WORKDIR /build 
 
-CMD ls /build && ls /src
-# CMD cmake /src -DCMAKE_TOOLCHAIN_FILE=/src/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../src/vcpkg-overlays -DUSE_OPTIONAL=OFF -DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON
+CMD cmake /src -DCMAKE_TOOLCHAIN_FILE=/src/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../src/vcpkg-overlays -DUSE_OPTIONAL=OFF -DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON

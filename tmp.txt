@@ -1,0 +1,32 @@
+[  0%] Performing configure step for 'aws-sdk-cpp'
+[  0%] Built target libbase58
+[  0%] Performing configure step for 'azure-storage-cpplite'
+[  0%] Built target lz4
+[  0%] Performing configure step for 'elasticlient-build'
+[  0%] Built target yaml
+[  0%] Built target lzma
+[  0%] Built target hidl
+[  0%] Built target processor
+[  1%] Built target aeron_client
+[  1%] Built target build-example-java-classes
+[  2%] Built target aeron_driver_agent
+[  2%] Built target start-stop-daemon
+[  2%] Built target BundleBase-ecl
+[  2%] Built target http-parser
+[  2%] Built target BLAS-ecl
+[  2%] Built target File-ecl
+[  2%] Built target ntlmclient
+[  2%] Built target Metaphone3-ecl
+[  2%] Built target prosysinfo
+[  2%] Built target Crypto-ecl
+[  5%] Built target aeron_driver
+Scanning dependencies of target Metaphone-ecl
+Scanning dependencies of target Math-ecl
+[  5%] Built target Date-ecl
+[  5%] Built target Audit-ecl
+[  8%] Built target aeron_driver_static
+[  8%] Adding unsigned Metaphone.ecl to project
+[  8%] Adding unsigned Math.ecl to project
+[  8%] Built target Metaphone-ecl
+[  8%] Built target Math-ecl
+[ 17%] Built target git2internal

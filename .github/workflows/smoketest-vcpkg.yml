@@ -40,7 +40,7 @@ jobs:
           docker build --pull --rm -f "./src/dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest \
           --build-arg GITHUB_OWNER=${{ github.repository_owner }} \
           --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-          "."
+          "./src"
           mkdir build
           docker run --rm \
             -v ${PWD}/build:/build \
@@ -55,6 +55,8 @@ jobs:
             -v ${PWD}/build:/build \
             -v ${PWD}/src:/src \
             vcpkg-build:latest
+
+# docker run --rm -v ${PWD}/build:/build -v ${PWD}/src:/src vcpkg-build:latest
 
   #     - uses: actions/upload-artifact@v3
   #       with:
