@@ -23,8 +23,18 @@ ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
 FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
 
+ARG UID=10001
+ARG GID=10000
+RUN echo hpcc is ${UID}:${GID}
+
+RUN groupadd -g ${UID} hpcc
+RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u ${GID} -g hpcc hpcc
+RUN passwd -l hpcc 
+
 RUN apt install -f /build/*.deb
 
 RUN /etc/init.d/hpcc-init start
+
+USER hpcc
 
 CMD top

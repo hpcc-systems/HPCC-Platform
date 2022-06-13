@@ -23,6 +23,14 @@ ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
 FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
 
+ARG UID=10001
+ARG GID=10000
+RUN echo hpcc is ${UID}:${GID}
+
+RUN groupadd -g ${UID} hpcc
+RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u ${GID} -g hpcc hpcc
+RUN passwd -l hpcc 
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update
@@ -52,5 +60,7 @@ RUN mono `./vcpkg fetch nuget | tail -n 1` \
     -password "${GITHUB_TOKEN}"
 
 WORKDIR /build 
+
+USER hpcc
 
 CMD cmake /src -DCMAKE_TOOLCHAIN_FILE=/src/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=/src/vcpkg-overlays -DUSE_OPTIONAL=OFF -DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON
