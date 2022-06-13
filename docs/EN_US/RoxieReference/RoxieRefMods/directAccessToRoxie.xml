@@ -97,23 +97,22 @@
 
         <para>The WsECL service provides a form interface to your published
         queries. This form also provides some options that are useful in
-        troubleshooting or optimizing your queries. </para>
+        troubleshooting or optimizing your queries.</para>
 
         <para><graphic
         fileref="../../images/wseclCreateWUOption.jpg" /></para>
 
         <para>You can choose to "call" your query (the default) or create a
-        workunit. </para>
+        workunit.</para>
 
         <para>Typically, you provide input to a query's input parameters, then
-        submit. This calls the query and gets results back immediately.
-        </para>
+        submit. This calls the query and gets results back immediately.</para>
 
         <para>If you want to examine the query in more detail, you can provide
         input, select <emphasis role="bold">Create Workunit</emphasis>, then
         submit. This also provides results, but creates a workunit that you
         can examine later in ECL Watch. This allows you to view the Workunit's
-        graph, timings, variables, and other details. </para>
+        graph, timings, variables, and other details.</para>
       </sect3>
     </sect2>
 
@@ -150,8 +149,8 @@
 
         <para>8002 is the default port. If you have a modified the port
         setting, use the port you have selected for that purpose. With the 7.0
-        release of HPCC Systems you will need to enter your credentials to log in to
-        the interface, and your session will lock after a (configurable)
+        release of HPCC Systems you will need to enter your credentials to log
+        in to the interface, and your session will lock after a (configurable)
         period of inactivity.</para>
 
         <para>The syntax and functionality of the SOAP protocol itself is also
@@ -367,6 +366,37 @@ Regs.Reg.1.Codes.Code=MCO</programlisting></para>
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
 to
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName/expanded</programlisting></para>
+    </sect2>
+
+    <sect2>
+      <title>Blind Logging</title>
+
+      <para>Blind logging suppresses anything that might be potentially
+      sensitive or might contain Personally Identifiable Information (PII)
+      from being written to logs. This includes contents of rows, contents of
+      queries, and contents of fields. </para>
+
+      <para>You can cause a query to log blind by setting either a top level
+      “&lt;_blind&gt;” tag in the request, or by setting an attribute “blind”
+      on the root of the request to 1 or true.</para>
+
+      <para><programlisting>&lt;/soap:Envelope&gt;
+  &lt;soap:Body&gt;
+    &lt;exampleRequest xmlns="urn:hpccsystems:ecl:example"&gt;
+      &lt;_blind&gt;1&lt;/_blind&gt;
+      &lt;acctno&gt;1111111&lt;/acctno&gt;
+    &lt;/exampleRequest&gt;
+  &lt;/soap:Body&gt;
+&lt;/soap:Envelope&gt;
+</programlisting>or</para>
+
+      <para><programlisting>&lt;soap:Envelope&gt; 
+  &lt;soap:Body&gt; 
+    &lt;exampleRequest xmlns="urn:hpccsystems:ecl:example" blind=’1’&gt; 
+      &lt;acctno&gt;1111111&lt;/acctno&gt; 
+    &lt;/exampleRequest&gt; 
+  &lt;/soap:Body&gt; 
+&lt;/soap:Envelope&gt;</programlisting></para>
     </sect2>
 
     <sect2 id="RESTful_access" role="brk">

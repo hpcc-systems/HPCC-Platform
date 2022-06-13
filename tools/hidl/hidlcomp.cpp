@@ -6559,7 +6559,7 @@ void EspServInfo::write_esp_client()
         outs("{\n");
         outs("\tif(soap_url.length()== 0){ throw MakeStringExceptionDirect(-1, \"url not set\"); }\n\n");
         outf("\tC%s* esprequest = static_cast<C%s*>(request);\n", mthi->getReq(), mthi->getReq());
-        outf("\tC%s* espresponse = new C%s(\"%s\");\n\n", mthi->getResp(), mthi->getResp(), name_);
+        outf("\tOwned<C%s> espresponse = new C%s(\"%s\");\n\n", mthi->getResp(), mthi->getResp(), name_);
         outs("\tespresponse->setReqId(soap_reqid++);\n");
         //dom
         outs("\tesprequest->soap_setUserId( soap_userid.str());\n");
@@ -6567,7 +6567,7 @@ void EspServInfo::write_esp_client()
         outs("\tesprequest->soap_setRealm(soap_realm.str());\n");
         outs("\tconst char *soapaction=(soap_action.length()) ? soap_action.str() : NULL;\n");
         outs("\tesprequest->post(soap_proxy.str(), soap_url.str(), *espresponse, soapaction);\n");
-        outs("\treturn espresponse;\n");
+        outs("\treturn espresponse.getClear();\n");
         outs("}\n");
         
         outf("\nvoid CClient%s::async_%s(IClient%s *request, IClient%sEvents *events,IInterface* state)\n", name_, mthi->getName(), mthi->getReq(), name_);

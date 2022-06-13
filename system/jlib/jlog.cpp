@@ -3505,40 +3505,43 @@ IRemoteLogAccess &queryRemoteLogAccessor()
     return *logAccessor.query([]
         {
             Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
-    #ifdef LOGACCESSDEBUG
+#ifdef LOGACCESSDEBUG
             if (!logAccessPluginConfig)
             {
                 const char * simulatedGlobalYaml = R"!!(global:
-                logAccess:
-                    name: "localES"
-                    type: "elasticstack"
-                    connection:
-                    protocol: "http"
-                    host: "elasticsearch-master.default.svc.cluster.local"
-                    port: 9200
-                    logMaps:
-                    - type: "global"
-                    storeName: "hpcc-logs*"
-                    searchColumn: "message"
-                    timeStampColumn: "created_ts"
-                    - type: "workunits"
-                    storeName: "hpcc-logs*"
-                    searchColumn: "hpcc.log.jobid"
-                    - type: "components"
-                    searchColumn: "kubernetes.container.name"
-                    - type: "audience"
-                    searchColumn: "hpcc.log.audience"
-                    - type: "class"
-                    searchColumn: "hpcc.log.class"
-                    - type: "instance"
-                    searchColumn: "kubernetes.pod.name"
-                    - type: "host"
-                    searchColumn: "kubernetes.node.hostname"
+  logAccess:
+    name: "Azure LogAnalytics LogAccess"
+    type: "AzureLogAnalyticsCurl"
+    connection:
+      #workspaceID: "ef060646-ef24-48a5-b88c-b1f3fbe40271"
+      workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
+      #tenantID: "ABC"         #The Tenant ID, required for KQL API access
+      clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access
+      clientSecret: "XYZ123"  #The secret associated with the Azure Active Directory registered application
+    logMaps:
+    - type: "global"
+      storeName: "ContainerLog"
+      searchColumn: "LogEntry"
+      timeStampColumn: "TimeGenerated"
+    - type: "workunits"
+      storeName: "ContainerLog"
+      searchColumn: "hpcc_log_jobid"
+    - type: "components"
+      searchColumn: "ContainerID"
+    - type: "audience"
+      searchColumn: "hpcc_log_audience"
+    - type: "class"
+      searchColumn: "hpcc_log_class"
+    - type: "instance"
+      storeName: "ContainerInventory"
+      searchColumn: "Name"
+    - type: "host"
+      searchColumn: "Computer"
                 )!!";
                 Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
                 logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
             }
-    #endif
+#endif
 
             if (!logAccessPluginConfig)
                 throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");

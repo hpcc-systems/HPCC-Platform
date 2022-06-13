@@ -31,8 +31,8 @@ RUN pip3 install       \
     scikit-learn       \
     statsmodels        \
     networkx           \
-    setuptools==46.1.3 \
-    scipy==1.4.1       \
-    tensorflow==2.6.0
+    setuptools         \
+    scipy              \
+    tensorflow
 
 USER hpcc

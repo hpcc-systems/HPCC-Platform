@@ -3712,7 +3712,9 @@ IStoragePlane * getDataStoragePlane(const char * name, bool required)
     StringBuffer group;
     group.append(name).toLowerCase();
 
-    return getStoragePlane(group, { "data", "lz" }, required);
+    // NB: need to include "remote" planes too, because std. file access will encounter
+    // files on the "remote" planes, when they have been remapped to them via ~remote access
+    return getStoragePlane(group, { "data", "lz", "remote" }, required);
 }
 
 IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
