@@ -31,6 +31,9 @@ private:
     StringBuffer    sharedWorkunitsBaseDN;
     StringBuffer    adminGroupName;
 
+    StringBuffer    ldapAddress;
+    StringBuffer    serverType;
+
     const char * formatOUname(StringBuffer &ou, const char * envName, int mode, const char * sharedOU, const char * reqBaseDN, const char * privateOU);
     void createLDAPBaseDN(const char * baseDN, SecPermissionType pt, const char * description, StringBuffer & notes);
     bool changePermissions(const char * ou, const char * userFQDN, SecAccessFlags allows, SecAccessFlags denies);
