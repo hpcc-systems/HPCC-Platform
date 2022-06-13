@@ -95,8 +95,8 @@ spec:
   accessModes:
     - {{ .plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
   azureFile:
-    secretName: {{ $common.secretName }}
-    secretNamespace: {{ $common.secretNamespace }}
+    secretName: {{ .plane.secretName | default $common.secretName }}
+    secretNamespace: {{ .plane.secretNamespace | default $common.secretNamespace }}
     shareName: {{ .plane.shareName }}
     readOnly: false
   {{- include "hpcc-azurefile.addCommonMountOptions" . | indent 2}}

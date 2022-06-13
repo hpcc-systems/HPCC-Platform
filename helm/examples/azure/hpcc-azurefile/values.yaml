@@ -11,6 +11,8 @@ planes:
   category: dali
   #sku: "Standard_LRS"
   #shareName: dalishare
+  #secretName: "dali-secret"
+  #secretNamespace: "dali-ns"
 - name: dll
   subPath: queries # cannot currently be changed
   size: 1Gi

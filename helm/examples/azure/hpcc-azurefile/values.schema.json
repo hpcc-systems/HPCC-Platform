@@ -71,6 +71,14 @@
         "shareName": {
           "description": "Azure storage share name",
           "type": "string"
+        },
+        "secretName": {
+          "description": "Kubernetes secret name to use for the Azure storage account for this plane",
+          "type": "string"
+        },
+        "secretNamespace": {
+          "description": "Kubernetes namespace for the Kubernetes secret named by secretName",
+          "type": "string"
         }
       },
       "required": [ "name", "subPath", "size" ],
