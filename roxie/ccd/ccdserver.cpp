@@ -13361,6 +13361,11 @@ public:
         processRow(NULL);
     }
 
+    unsigned __int64 queryTotalCycles() const
+    {
+        return puller.queryTotalCycles();
+    }
+
     virtual bool fireException(IException *e)
     {
         // called from puller thread on failure
@@ -13466,7 +13471,13 @@ public:
 
     virtual unsigned __int64 queryLocalCycles() const
     {
-        return 0;
+        //This is likely to be 0, but interesting if it is not - it suggest overhead (e.g. in group processing)
+        __int64 localCycles = queryTotalCycles();
+        for (unsigned i = 0; i < numInputs; i++)
+            localCycles -= pullers.item(i).queryTotalCycles();
+        if (localCycles < 0)
+            localCycles = 0;
+        return localCycles;
     }
 
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
@@ -13527,6 +13538,8 @@ public:
                 if (fetched)
                 {
                     inGroup = (ret != NULL);
+                    if (ret)
+                        processed++;
                     return ret;
                 }
                 if (inGroup && grouped)
