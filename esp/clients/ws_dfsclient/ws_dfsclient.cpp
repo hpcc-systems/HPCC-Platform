@@ -378,6 +378,9 @@ public:
                         newPath.append(clusterDir); // add remaining tail of path
                     cluster->setProp("@defaultBaseDir", newPath.str());
 
+                    // need to rename Cluster/@name too, because local plane will be referenced e.g. for numStripedDevices
+                    cluster->setProp("@name", localMappedPlaneName);
+
                     const char *dir = file->queryProp("@directory");
                     assertex(startsWith(dir, filePlanePrefix));
                     dir += filePlanePrefix.length();

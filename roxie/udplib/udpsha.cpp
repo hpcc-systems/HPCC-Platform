@@ -173,10 +173,12 @@ void queue_t::pushOwnWait(DataBuffer * buf)
             signal_free_sl++;
         }
 
-        while (!free_sl.wait(3000))
+        unsigned delay = 3;
+        while (!free_sl.wait(delay * 1000))
         {
             if (udpTraceLevel >= 1)
-                DBGLOG("queue_t::pushOwnWait blocked for 3 seconds waiting for free_sl semaphore");
+                DBGLOG("queue_t::pushOwnWait blocked for %u seconds waiting for free_sl semaphore [%u/%u]", delay, count.load(), limit);
+            delay *= 2;
         }
     }
     data_avail.signal();

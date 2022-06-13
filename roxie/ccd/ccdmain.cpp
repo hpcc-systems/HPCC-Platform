@@ -76,6 +76,7 @@ time_t startupTime;
 unsigned statsExpiryTime = 3600;
 unsigned miscDebugTraceLevel = 0;      // separate trace settings purely for debugging specific items (i.e. all possible locations to look for files at startup)
 bool traceRemoteFiles = false;
+bool traceStrands = false;
 unsigned readTimeout = 300;            // timeout (in ms) for reading input data blocks in roxiepipe mode
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
@@ -955,6 +956,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
         linuxYield = topology->getPropBool("@linuxYield", false);
         traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
+        traceStrands = topology->getPropBool("@traceStrands", false);
+
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
         flushJHtreeCacheOnOOM = topology->getPropBool("@flushJHtreeCacheOnOOM", true);
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);

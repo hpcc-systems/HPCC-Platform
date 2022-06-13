@@ -46,7 +46,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     }, []);
 
     React.useEffect(() => {
-        document.title = `${showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch - 9"}${locationPathname.split("/").join(" | ")}`;
+        document.title = `${showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch v9"}${locationPathname.split("/").join(" | ")}`;
     }, [environmentTitle, locationPathname, showEnvironmentTitle]);
 
     React.useEffect(() => {

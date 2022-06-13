@@ -107,8 +107,8 @@ spec:
       resourceGroup: EXISTING_RESOURCE_GROUP_NAME  # optional, only set this when storage account is not in the same resource group as agent node
       shareName: {{ .plane.shareName }}
     nodeStageSecretRef:
-      name: {{ $common.secretName }}
-      namespace: {{ $common.secretNamespace }}
+      name: {{ .plane.secretName | default $common.secretName }}
+      namespace: {{ .plane.secretNamespace | default $common.secretNamespace }}
   {{- include "hpcc-azurefile.addCommonMountOptions" . | indent 2}}
 {{- end -}}
 

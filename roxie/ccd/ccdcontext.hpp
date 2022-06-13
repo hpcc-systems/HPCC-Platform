@@ -48,6 +48,8 @@ interface IRoxieAgentContext : extends IRoxieContextLogger
     virtual ICodeContext *queryCodeContext() = 0;
     virtual void checkAbort() = 0;
     virtual void notifyAbort(IException *E) = 0;
+    virtual void notifyException(IException *E) = 0; // Non aborting exception - to be rethrown later by throwPendingException()
+    virtual void throwPendingException() = 0;
     virtual IActivityGraph * queryChildGraph(unsigned id) = 0;
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;

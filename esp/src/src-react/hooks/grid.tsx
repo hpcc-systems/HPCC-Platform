@@ -105,7 +105,7 @@ function columnsAdapter(columns: DojoColumns, sorted?: QuerySortItem): IColumn[]
     const retVal: IColumn[] = [];
     for (const key in columns) {
         const column = columns[key];
-        if (column?.selectorType === undefined) {
+        if (column?.selectorType === undefined && column?.hidden !== true) {
             retVal.push({
                 key,
                 name: column.label ?? key,
@@ -153,7 +153,7 @@ function useFluentStoreGrid({
     filename
 }: useFluentStoreGridProps): useFluentStoreGridResponse {
 
-    const memoizedColumns = useDeepMemo(() => columns, [columns], [columns]);
+    const memoizedColumns = useDeepMemo(() => columns, [], [columns]);
     const [sorted, setSorted] = React.useState<QuerySortItem>(sort);
     const [selection, setSelection] = React.useState([]);
     const [items, setItems] = React.useState<any[]>([]);
@@ -373,7 +373,7 @@ export function useFluentPagedGrid({
                 ]} selectedKey={pageSize} onChange={dropdownChange} />
             </Stack.Item>
         </Stack>;
-    }, [dropdownChange, page, pageSize, paginationStyles, total]);
+    }, [dropdownChange, page, pageSize, paginationStyles.pageControls, paginationStyles.paginationLabel, paginationStyles.root, total]);
 
     return { Grid, GridPagination, selection, refreshTable, copyButtons };
 }

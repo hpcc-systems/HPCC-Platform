@@ -2707,7 +2707,7 @@ public:
             compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
             bool report = logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 3 || si.length() >= continuationWarnThreshold);
             if (report)
-                DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+                logctx.CTXLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
             siLen = compressed.length() - sizeof(siLen);
             compressed.writeDirect(0, sizeof(siLen), &siLen);
             output->sendMetaInfo(compressed.toByteArray(), compressed.length());
@@ -2715,9 +2715,9 @@ public:
         }
         else
         {
-            DBGLOG("ERROR: continuation data size %u for %d cursor positions is too large", si.length(), tlk->numActiveKeys());
-            DBGLOG("ERROR: set continuationCompressThreshold to compress it");
-            DBGLOG("ERROR: result will be sent as single message, and performance may be degraded");
+            logctx.CTXLOG("ERROR: continuation data size %u for %d cursor positions is too large", si.length(), tlk->numActiveKeys());
+            logctx.CTXLOG("ERROR: set continuationCompressThreshold to compress it");
+            logctx.CTXLOG("ERROR: result will be sent as single message, and performance may be degraded");
             return false;
         }
     }
@@ -2732,7 +2732,7 @@ public:
             MemoryBuffer decompressed;
             decompressToBuffer(decompressed, resentInfo);
             if (logctx.queryTraceLevel() > 3)
-                 DBGLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
+                 logctx.CTXLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
             resentInfo.swapWith(decompressed);
             resentInfo.reset(0);
         }

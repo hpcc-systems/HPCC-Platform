@@ -300,7 +300,7 @@ public:
         //requestExpiryTime to 0 (and indicate the operation is done)even though there packetsQueued is non-zero.
 
         hadAcknowledgement = false;
-        CriticalBlock b(activeCrit);
+        CLeavableCriticalBlock block(activeCrit);
         bool dataRemaining;
         if (resendList)
             dataRemaining = (packetsQueued.load(std::memory_order_relaxed) && resendList->canRecord(nextSendSequence)) || resendList->numActive();
@@ -327,6 +327,7 @@ public:
                 msg.packets = 0;
                 msg.flowSeq = nextFlowSequence();
                 requestExpiryTime = msTick() + udpFlowAckTimeout;
+                block.leave();
                 sendRequest(msg, false);
             }
             else
@@ -338,14 +339,16 @@ public:
 
                 //The flow event is sent on the data socket, so it needs to wait for all the data to be sent before being received
                 //therefore use the updDataSendTimeout instead of udpFlowAckTimeout
-                sendRequest(msg, true);
                 requestExpiryTime = msTick() + updDataSendTimeout;
+                block.leave();
+                sendRequest(msg, true);
             }
         }
         else
         {
             msg.cmd = flowType::send_completed;
             requestExpiryTime = 0;
+            block.leave();
             sendRequest(msg, true);
         }
     }
@@ -353,7 +356,7 @@ public:
     void requestToSendNew()
     {
         //See comment in sendDone() on a potential race condition.
-        CriticalBlock b(activeCrit);
+        CLeavableCriticalBlock block(activeCrit);
         // This is called from data thread when new data added to a previously-empty list
         if (!requestExpiryTime)
         {
@@ -365,6 +368,7 @@ public:
             msg.flowSeq = nextFlowSequence();
             msg.sourceNode = sourceIP;
             requestExpiryTime = msTick() + udpFlowAckTimeout;
+            block.leave();
             sendRequest(msg, false);
         }
     }
@@ -387,7 +391,7 @@ public:
 
         hadAcknowledgement = false;
         // 0 (zero) value of maxRequestDeadTimeouts means NO limit on retries.  Not likely to be a good idea....
-        CriticalBlock b(activeCrit);
+        CLeavableCriticalBlock block(activeCrit);
         if (maxRequestDeadTimeouts && (timeouts >= maxRequestDeadTimeouts))
         {
             abort();
@@ -402,6 +406,7 @@ public:
             msg.flowSeq = activeFlowSequence;
             msg.sourceNode = sourceIP;
             requestExpiryTime = msTick() + udpFlowAckTimeout;
+            block.leave();
             sendRequest(msg, false);
         }
     }
@@ -463,6 +468,8 @@ public:
             }
             return 0;
         }
+
+        CCycleTimer sendTimer;
         unsigned maxPackets = permit.max_data;
         std::vector<DataBuffer *> toSend;
         unsigned totalSent = 0;
@@ -512,7 +519,14 @@ public:
         if (udpTraceFlow)
             DBGLOG("Sending %u packets [..%u] from max of %u [resend %u queued %u]",
                    (unsigned)toSend.size(), nextSendSequence.load(), permit.max_data, resendList ? resendList->numActive() : 0, packetsQueued.load(std::memory_order_relaxed));
-        CCycleTimer socketTimer;
+
+        unsigned gatherElapsed = sendTimer.elapsedMs();
+        if (udpTraceLevel > 2 || gatherElapsed > udpSendTraceThresholdMs)
+        {
+            StringBuffer s;
+            DBGLOG("UdpSender: gatherSendBlocks() %u blocks to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), permit.destNode.getTraceText(s).str(), permit.flowSeq, gatherElapsed);
+        }
+
         sendStart(toSend.size());
         for (DataBuffer *buffer: toSend)
         {
@@ -573,14 +587,28 @@ public:
                 ::Release(buffer);
         }
         activePermitSeq = 0;
-        unsigned elapsed = socketTimer.elapsedMs();
-        if (udpTraceLevel > 2 || elapsed > udpSendTraceThresholdMs)
+        unsigned socketElapsed = sendTimer.elapsedMs();
+        if (udpTraceLevel > 2 || (socketElapsed - gatherElapsed) > udpSendTraceThresholdMs)
         {
             StringBuffer s;
-            DBGLOG("UdpSender: socket->write() %u blocks, %u bytes to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, elapsed);
+            DBGLOG("UdpSender: socket->write() %u blocks, %u bytes to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, (socketElapsed - gatherElapsed));
         }
 
         sendDone(toSend.size());
+
+        unsigned doneElapsed = sendTimer.elapsedMs();
+        if (udpTraceLevel > 2 || (doneElapsed - socketElapsed) > udpSendTraceThresholdMs)
+        {
+            StringBuffer s;
+            DBGLOG("UdpSender: sendDone() %u blocks, %u bytes to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, doneElapsed - socketElapsed);
+        }
+
+        if (udpTraceLevel > 2 || doneElapsed > udpSendTraceThresholdMs)
+        {
+            StringBuffer s;
+            DBGLOG("UdpSender: sendData() %u bytes to node=%s under permit %" SEQF "u in %ums", totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, doneElapsed);
+        }
+
         return totalSent;
     }
 
@@ -1049,15 +1077,12 @@ class CSendManager : implements ISendManager, public CInterface
                 if (!running)
                     return 0;
 
-                CCycleTimer timer;
                 UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.destNode];
                 unsigned payload = receiverInfo.sendData(permit, bucket);
-                unsigned elapsed = timer.elapsedMs();
-                
-                if (udpTraceLevel > 2 || elapsed > udpSendTraceThresholdMs)
+                if (udpTraceLevel > 2)
                 {
                     StringBuffer s;
-                    DBGLOG("UdpSender[%s]: sentData() %u bytes to node=%s under permit %" SEQF "u in %ums", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq, elapsed);
+                    DBGLOG("UdpSender[%s]: sent %u bytes to node=%s under permit %" SEQF "u", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq);
                 }
             }
             if (udpTraceLevel > 0)

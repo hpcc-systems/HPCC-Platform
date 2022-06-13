@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, MessageBar, MessageBarType } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
@@ -48,7 +48,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
             Part: {
                 label: nlsHPCC.Parts,
                 formatter: function (part, row) {
-                    return `<a href="#/packagemaps/${name}/parts/${part}" class='dgrid-row-url'>${part}</a>`;
+                    return <Link href={`#/packagemaps/${name}/parts/${part}`}>{part}</Link>;
                 }
             },
         }
