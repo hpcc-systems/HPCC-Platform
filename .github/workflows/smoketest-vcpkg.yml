@@ -39,11 +39,11 @@ jobs:
         run: |
           mkdir build
           docker build --pull --rm -f "./src/dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest \
-          --build-arg UID=$(id -u) \
-          --build-arg GID=$(id -g) \
-          --build-arg GITHUB_OWNER=${{ github.repository_owner }} \
-          --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-          "./src"
+            --build-arg UID=$(id -u) \
+            --build-arg GID=$(id -g) \
+            --build-arg GITHUB_OWNER=${{ github.repository_owner }} \
+            --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            "./src"
 
       - name: docker-run vcpkg-configure
         shell: "bash"
@@ -56,12 +56,17 @@ jobs:
       - name: docker-build vcpkg-build
         shell: "bash"
         run: |
-          docker build --pull --rm -f "./src/dockerfiles/vcpkg/build/Dockerfile" -t vcpkg-build:latest "."
+          docker build --pull --rm -f "./src/dockerfiles/vcpkg/build/Dockerfile" -t vcpkg-build:latest \
+            --build-arg UID=$(id -u) \
+            --build-arg GID=$(id -g) \
+            --build-arg GITHUB_OWNER=${{ github.repository_owner }} \
+            --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            "./src"
 
       - name: docker-run vcpkg-build
         shell: "bash"
         run: |
-          docker run --rm \
+          docker run  -u $(id -u):$(id -g) --rm \
             -v ${PWD}/build:/build \
             -v ${PWD}/src:/src \
             vcpkg-build:latest
@@ -69,7 +74,12 @@ jobs:
       - name: docker-build vcpkg-test
         shell: "bash"
         run: |
-          docker build --pull --rm -f "./src/dockerfiles/vcpkg/test/Dockerfile" -t vcpkg-test:latest "."
+          docker build --pull --rm -f "./src/dockerfiles/vcpkg/test/Dockerfile" -t vcpkg-test:latest \
+            --build-arg UID=$(id -u) \
+            --build-arg GID=$(id -g) \
+            --build-arg GITHUB_OWNER=${{ github.repository_owner }} \
+            --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            "./src"
 
       - name: docker-run vcpkg-test
         shell: "bash"
@@ -78,37 +88,3 @@ jobs:
             -v ${PWD}/build:/build \
             -v ${PWD}/src:/src \
             vcpkg-test:latest
-
-# docker run -u $(id -u):$(id -g) --rm -v ${PWD}/build:/build -v ${PWD}:/src vcpkg-configure:latest
-# docker run --rm -v ${PWD}/build:/build -v ${PWD}:/src vcpkg-build:latest
-
-  #     - uses: actions/upload-artifact@v3
-  #       with:
-  #         name: deb-package
-  #         path: ./build/*.deb
-
-  # test:
-  #   name: "Test HPCC-Platform"
-  #   needs: build
-  #   runs-on: ubuntu-20.04
-  #   steps:
-  #     - name: Check out source code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: deb-package
-  #         path: ./build/*.deb
-
-  #     - name: install
-  #       shell: "bash"
-  #       run: |
-  #         sudo dpkg -i ./build/*.deb
-  #         apt-get -yq install -f
-
-  #     - name: start
-  #       shell: "bash"
-  #       run: |
-  #         sudo /etc/init.d/hpcc-init start

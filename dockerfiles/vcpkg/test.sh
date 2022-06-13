@@ -1,9 +1,5 @@
 #!/bin/bash
 
-rm -rf ./build
-rm -rf ./vcpkg
-git submodule update --init --recursive
-
 mkdir build
 docker build --pull --rm -f "./dockerfiles/vcpkg/configure/Dockerfile" -t vcpkg-configure:latest \
     --build-arg UID=$(id -u) \
@@ -28,4 +24,3 @@ docker run -u $(id -u):$(id -g) --rm \
 docker build --pull --rm -f "./dockerfiles/vcpkg/test/Dockerfile" -t vcpkg-test:latest "."
 
 docker run --rm vcpkg-test:latest
-
