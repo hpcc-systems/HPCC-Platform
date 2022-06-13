@@ -1100,18 +1100,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             maxTotalMemoryLimit = friendlyStringToSize(resourcedMemory);
             maxTotalMemoryLimit = maxTotalMemoryLimit / 100.0 * roxieMemResourcedMemoryPct;
         }
-        if (totalMemoryLimit)
-        {
-            if (totalMemoryLimit >= maxTotalMemoryLimit)
-            {
-                LOG(MCoperatorWarning, "roxie.totalMemoryLimit(%zu) is greater than %.1f%% of resources/@memory, limiting to %zu", totalMemoryLimit, roxieMemResourcedMemoryPct, maxTotalMemoryLimit);
-                totalMemoryLimit = maxTotalMemoryLimit;
-            }
-        }
-        else
-        {
-            // default in absence of either explicit totalMemoryLimit or resource memory settings
+        if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000; // 1 Gb
+        if (maxTotalMemoryLimit && (totalMemoryLimit > maxTotalMemoryLimit))
+        {
+            LOG(MCoperatorWarning, "roxie.totalMemoryLimit(%zu) is greater than %.1f%% of resources/@memory, limiting to %zu", totalMemoryLimit, roxieMemResourcedMemoryPct, maxTotalMemoryLimit);
+            totalMemoryLimit = maxTotalMemoryLimit;
         }
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
         roxiemem::setMemoryOptions(topology);
