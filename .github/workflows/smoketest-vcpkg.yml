@@ -46,8 +46,6 @@ jobs:
       - name: docker-run vcpkg-configure
         shell: "bash"
         run: |
-          sudo chown -R $USER:$GROUP ./build
-          sudo chown -R $USER:$GROUP ./src
           docker run --rm \
             -v ${PWD}/build:/build \
             -v ${PWD}/src:/src \
@@ -56,15 +54,11 @@ jobs:
       - name: docker-build vcpkg-build
         shell: "bash"
         run: |
-          sudo chown -R $USER:$GROUP ./build
-          sudo chown -R $USER:$GROUP ./src
           docker build --pull --rm -f "./src/dockerfiles/vcpkg/build/Dockerfile" -t vcpkg-build:latest "."
 
       - name: docker-run vcpkg-build
         shell: "bash"
         run: |
-          sudo chown -R $USER:$GROUP ./build
-          sudo chown -R $USER:$GROUP ./src
           docker run --rm \
             -v ${PWD}/build:/build \
             -v ${PWD}/src:/src \
@@ -73,15 +67,11 @@ jobs:
       - name: docker-build vcpkg-test
         shell: "bash"
         run: |
-          sudo chown -R $USER:$GROUP ./build
-          sudo chown -R $USER:$GROUP ./src
           docker build --pull --rm -f "./src/dockerfiles/vcpkg/test/Dockerfile" -t vcpkg-test:latest "."
 
       - name: docker-run vcpkg-test
         shell: "bash"
         run: |
-          sudo chown -R $USER:$GROUP ./build
-          sudo chown -R $USER:$GROUP ./src
           docker run --rm \
             -v ${PWD}/build:/build \
             -v ${PWD}/src:/src \
