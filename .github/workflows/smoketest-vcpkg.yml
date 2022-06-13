@@ -77,7 +77,8 @@ jobs:
             -v ${PWD}/src:/src \
             vcpkg-test:latest
 
-# docker run --rm -v ${PWD}/build:/build -v ${PWD}/src:/src vcpkg-build:latest
+# docker run --rm -v ${PWD}/build:/build -v ${PWD}:/src vcpkg-configure:latest
+# docker run --rm -v ${PWD}/build:/build -v ${PWD}:/src vcpkg-build:latest
 
   #     - uses: actions/upload-artifact@v3
   #       with:
