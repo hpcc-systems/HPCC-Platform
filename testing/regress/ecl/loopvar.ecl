@@ -19,13 +19,13 @@
 #option('warnOnImplicitJoinLimit', false);
 import Std;
 
-filename1 := '~someflatfile1';
-filename2 := '~someflatfile2';
-keyname1 := '~somekey' : STORED('keyname1');
-keyname2 := '~someotherkey' : STORED('keyname2');
+filename1 := '~' + WORKUNIT+ '::someflatfile1';
+filename2 := '~' + WORKUNIT+ '::someflatfile2';
+keyname1 := '~' + WORKUNIT+ '::somekey' : STORED('keyname1');
+keyname2 := '~' + WORKUNIT+ '::someotherkey' : STORED('keyname2');
 
 dummy := 0;
-keynamecalc := IF(Std.System.thorlib.Daliserver() = 'dummy', '~somekey' , '~someotherkey');
+keynamecalc := IF(Std.System.thorlib.Daliserver() = 'dummy', '~' + WORKUNIT + '::somekey' , '~' + WORKUNIT + '::someotherkey');
 
 lVal := RECORD
  INTEGER id := 0;

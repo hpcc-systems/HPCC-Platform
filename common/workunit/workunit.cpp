@@ -6804,6 +6804,7 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
     case WUStateCompleted:
     case WUStateFailed:
     case WUStateArchived:
+    case WUStateUnknown:
         break;
     case WUStateCompiled:
         if (getAction()==WUActionRun || getAction()==WUActionUnknown)
