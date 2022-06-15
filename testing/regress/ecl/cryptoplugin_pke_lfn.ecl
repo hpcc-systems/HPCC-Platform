@@ -35,7 +35,10 @@ dPubKey :=  DATASET([{
 '-----END PUBLIC KEY-----' + '\n'
 }],PKey);
 
-OUTPUT(dPubKey,,'~regress::certificates::pubkey.pem', CSV(SEPARATOR(''), TERMINATOR('')), OVERWRITE);
+pubKeyLfn := '~regress::certificates::' + WORKUNIT + '::pubkey.pem';
+privKeyLfn := '~regress::certificates::' + WORKUNIT + '::privkey.pem';
+
+OUTPUT(dPubKey,,pubKeyLfn, CSV(SEPARATOR(''), TERMINATOR('')), OVERWRITE);
 
 
 
@@ -73,7 +76,28 @@ dPrivKey :=  DATASET([{
 '-----END RSA PRIVATE KEY-----' + '\n'
 }],PRKey);
 
-OUTPUT(dPrivKey,,'~regress::certificates::privkey.pem', CSV(SEPARATOR(''), TERMINATOR('')), OVERWRITE);
+encModuleLFN := Std.Crypto.PublicKeyEncryptionFromLFN('RSA', pubKeyLfn, privKeyLfn, '');
+DATA sig1 := encModuleLFN.Sign((DATA)'The quick brown fox jumps over the lazy dog');
+DATA sig2 := encModuleLFN.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
+DATA sig3 := encModuleLFN.Sign((DATA)'The most beautiful thing in the world is, of course, the world itself!');
+
+DATA enc1 := encModuleLFN.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+DATA enc2 := encModuleLFN.Encrypt((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
+DATA enc3 := encModuleLFN.Encrypt((DATA)'The most beautiful thing in the world is, of course, the world itself!');//this should use the cached key file
+
+encModuleLFN2 := Std.Crypto.PKEncryptionFromLFN('RSA', pubKeyLfn, privKeyLfn, (DATA)'PassPhrase');
+DATA sig12 := encModuleLFN2.Sign((DATA)'The quick brown fox jumps over the lazy dog');
+DATA sig22 := encModuleLFN2.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
+DATA sig32 := encModuleLFN2.Sign((DATA)'The most beautiful thing in the world is, of course, the world itself!');
+
+DATA enc12 := encModuleLFN2.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
+DATA enc22 := encModuleLFN2.Encrypt((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
+DATA enc32 := encModuleLFN2.Encrypt((DATA)'The most beautiful thing in the world is, of course, the world itself!');//this should use the cached key file
+
+
+
+SEQUENTIAL(
+OUTPUT(dPrivKey,,privKeyLfn, CSV(SEPARATOR(''), TERMINATOR('')), OVERWRITE);
 
 
 /*###############################
@@ -83,17 +107,11 @@ output('PKIEncryption Tests enumerating supported public key algorithms');
 output(Std.Crypto.SupportedPublicKeyAlgorithms());
 
 
-encModuleLFN := Std.Crypto.PublicKeyEncryptionFromLFN('RSA', '~regress::certificates::pubkey.pem', '~regress::certificates::privkey.pem', '');
-
 //Digital Signature tests
 output('Testing PKI PublicKeyEncryptionFromLFN Digital Signatures');
 
-DATA sig1 := encModuleLFN.Sign((DATA)'The quick brown fox jumps over the lazy dog');
 output(encModuleLFN.VerifySignature(sig1, (DATA)'This should fail'));
 output(encModuleLFN.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog'));//this should pass
-
-DATA sig2 := encModuleLFN.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
-DATA sig3 := encModuleLFN.Sign((DATA)'The most beautiful thing in the world is, of course, the world itself!');
 
 output(encModuleLFN.VerifySignature(sig1, (DATA)'The quick brown fox jumps over the lazy dog'));//this should pass
 output(encModuleLFN.VerifySignature(sig2, (DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,'));//this should pass
@@ -104,11 +122,8 @@ output(encModuleLFN.VerifySignature(sig3, (DATA)'The most beautiful thing in the
 //Encrypt/Decrypt tests
 output('Testing PKI PublicKeyEncryptionFromLFN Encrypt/Decrypt');
 
-DATA enc1 := encModuleLFN.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
 output( (STRING)encModuleLFN.Decrypt(enc1) );
 
-DATA enc2 := encModuleLFN.Encrypt((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
-DATA enc3 := encModuleLFN.Encrypt((DATA)'The most beautiful thing in the world is, of course, the world itself!');//this should use the cached key file
 output( (STRING)encModuleLFN.Decrypt(enc2) );//this should use the cached key file
 output( (STRING)encModuleLFN.Decrypt(enc3) );//this should use the cached key file
 
@@ -119,17 +134,11 @@ output( (STRING)encModuleLFN.Decrypt(enc1) );//this should use the cached key fi
 
 
 
-encModuleLFN2 := Std.Crypto.PKEncryptionFromLFN('RSA', '~regress::certificates::pubkey.pem', '~regress::certificates::privkey.pem', (DATA)'PassPhrase');
-
 //Digital Signature tests
 output('Testing PKI PKEncryptionFromLFN Digital Signatures');
 
-DATA sig12 := encModuleLFN2.Sign((DATA)'The quick brown fox jumps over the lazy dog');
 output(encModuleLFN2.VerifySignature(sig12, (DATA)'This should fail'));
 output(encModuleLFN2.VerifySignature(sig12, (DATA)'The quick brown fox jumps over the lazy dog'));//this should pass
-
-DATA sig22 := encModuleLFN2.Sign((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
-DATA sig32 := encModuleLFN2.Sign((DATA)'The most beautiful thing in the world is, of course, the world itself!');
 
 output(encModuleLFN2.VerifySignature(sig12, (DATA)'The quick brown fox jumps over the lazy dog'));//this should pass
 output(encModuleLFN2.VerifySignature(sig22, (DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,'));//this should pass
@@ -140,15 +149,12 @@ output(encModuleLFN2.VerifySignature(sig32, (DATA)'The most beautiful thing in t
 //Encrypt/Decrypt tests
 output('Testing PKI PKEncryptionFromLFN Encrypt/Decrypt');
 
-DATA enc12 := encModuleLFN2.Encrypt((DATA)'The quick brown fox jumps over the lazy dog');
 output( (STRING)encModuleLFN2.Decrypt(enc12) );
 
-DATA enc22 := encModuleLFN2.Encrypt((DATA)'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTTUVWXYZ`~!@#$%^&*()_-+=|}]{[":;?/>.<,');
-DATA enc32 := encModuleLFN2.Encrypt((DATA)'The most beautiful thing in the world is, of course, the world itself!');//this should use the cached key file
 output( (STRING)encModuleLFN2.Decrypt(enc22) );//this should use the cached key file
 output( (STRING)encModuleLFN2.Decrypt(enc32) );//this should use the cached key file
 
 output( (STRING)encModuleLFN2.Decrypt(enc32) );//this should use the cached key file
 output( (STRING)encModuleLFN2.Decrypt(enc22) );//this should use the cached key file
 output( (STRING)encModuleLFN2.Decrypt(enc12) );//this should use the cached key file
-
+);

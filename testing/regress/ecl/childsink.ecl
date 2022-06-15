@@ -93,7 +93,7 @@ Layout SimpleRollup(Layout r, DATASET(Layout) rs) := TRANSFORM
   SELF := r;
 END;
 SimpleResult := ROLLUP(GROUP(Source, UID), GROUP, SimpleRollup(LEFT, ROWS(LEFT)));
-IF(Simple, OUTPUT(SimpleResult, , '~tmp::kel::rollupslowdown::simple', OVERWRITE, EXPIRE(1)));
+IF(Simple, OUTPUT(SimpleResult, , '~tmp::' + WORKUNIT + '::kel::rollupslowdown::simple', OVERWRITE, EXPIRE(1)));
 
 Layout FullRollup(Layout r, DATASET(Layout) rs) := TRANSFORM
   SELF.F1 := TOPN(TABLE(rs, {F1,UNSIGNED C:=COUNT(GROUP)}, F1, FEW), 1, -C)[1].F1;  
