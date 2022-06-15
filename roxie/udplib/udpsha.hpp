@@ -126,65 +126,69 @@ class simple_queue
 {
     _et             *elements;
     unsigned int    element_count;
-    int             first;
-    int             last;
-    int             active_buffers;
+    unsigned        first = 0;
+    unsigned        last = 0;
+    unsigned        active_buffers = 0;
     CriticalSection c_region;
     Semaphore       data_avail;
     Semaphore       free_space;
     
 public: 
-    void push(const _et &element)
+    bool push(const _et &element, unsigned timeout = (unsigned)-1)
     {
-        free_space.wait();
-        c_region.enter();
-        int next = (last + 1) % element_count;
-        elements[last] = element;
-        last = next;
-        active_buffers++;
-        c_region.leave();
-        data_avail.signal();
-    }
-    
-    bool push(const _et &element,long timeout)
-    {
-        if (free_space.wait(timeout) ) {
-            c_region.enter();
-            int next = (last + 1) % element_count;
-            elements[last] = element;
-            last = next;
-            active_buffers++;
-            c_region.leave();
-            data_avail.signal();
-            return true;
+        if (!free_space.wait(timeout))
+            return false;
+
+        {
+            CriticalBlock block(c_region);
+            doPush(element);
         }
-        return false;
+
+        data_avail.signal();
+        return true;
     }
+
+    template <class FUNC>
+    bool pushOrModify(const _et &element, FUNC walkFunc, unsigned timeout = (unsigned)-1)
+    {
+        if (!free_space.wait(timeout))
+            return false;
+
+        {
+            CriticalBlock block(c_region);
+            if (doWalk(walkFunc))
+                return true;
+            doPush(element);
+        }
+
+        data_avail.signal();
+        return true;
+    }
+
     
     void pop (_et &element) 
     {
         data_avail.wait();
-        c_region.enter();
-        element = elements[first];
-        first = (first + 1) % element_count;
-        active_buffers--;
-        c_region.leave();
+
+        {
+            CriticalBlock block(c_region);
+            element = elements[first];
+            first = (first + 1) % element_count;
+            active_buffers--;
+        }
+
         free_space.signal();
     }
     
     unsigned in_queue() {
-        c_region.enter();
-        unsigned res = active_buffers;
-        c_region.leave();
-        return res;
+        CriticalBlock block(c_region);
+        return active_buffers;
     }
     
     bool empty() 
     {
-        c_region.enter();
-        bool res = (active_buffers == 0);
-        c_region.leave();
-        return res;
+        CriticalBlock block(c_region);
+        return (active_buffers == 0);
     }
 
     // Walk the elements in the list - if the callback function returns true then stop and return true
@@ -193,14 +197,7 @@ public:
     bool walk(FUNC walkFunc)
     {
         CriticalBlock block(c_region);
-        unsigned cur = first;
-        for (unsigned i=0; i < active_buffers; i++)
-        {
-            if (walkFunc(elements[cur]))
-                return true;
-            cur = (cur + 1) % element_count;
-        }
-        return false;
+        return doWalk(walkFunc);
     }
 
     simple_queue(unsigned int queue_size) 
@@ -215,6 +212,28 @@ public:
     
     ~simple_queue() {
         delete [] elements;
+    }
+
+protected:
+    template <class FUNC>
+    bool doWalk(FUNC walkFunc)
+    {
+        unsigned cur = first;
+        for (unsigned i=0; i < active_buffers; i++)
+        {
+            if (walkFunc(elements[cur]))
+                return true;
+            cur = (cur + 1) % element_count;
+        }
+        return false;
+    }
+
+    void doPush(const _et &element)
+    {
+        int next = (last + 1) % element_count;
+        elements[last] = element;
+        last = next;
+        active_buffers++;
     }
 
 };

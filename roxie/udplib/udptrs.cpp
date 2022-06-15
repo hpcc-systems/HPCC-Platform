@@ -1025,33 +1025,38 @@ class CSendManager : implements ISendManager, public CInterface
 
         bool pushPermit(const UdpPermitToSendMsg &msg)
         {
-            auto updateTrackingIfMatches = [&msg](UdpPermitToSendMsg &m)
+            unsigned pushTimeoutMs = 15;
+            if (udpRemoveDuplicatePermits)
             {
-                if (!m.matches(msg))
-                    return false;
-                m.seen = msg.seen; // Update the queue entry with the most recent tracking information
-                return true;
-            };
-
-            //First check to see if there is a matching permit in the queue.  If so update the tracking information and return.
-            if (send_queue.walk(updateTrackingIfMatches))
-            {
-                if ((udpTraceLevel > 2) || udpTraceFlow)
+                bool wasDuplicate = false;
+                auto updateTrackingIfMatches = [&msg,&wasDuplicate](UdpPermitToSendMsg &m)
                 {
-                    StringBuffer s;
-                    DBGLOG("UdpSender[%s]: duplicate permit ignored node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
+                    if (!m.matches(msg))
+                        return false;
+                    m.seen = msg.seen; // Update the queue entry with the most recent tracking information
+                    wasDuplicate = true;
+                    return true;
+                };
+
+                if (send_queue.pushOrModify(msg, updateTrackingIfMatches, pushTimeoutMs))
+                {
+                    if (wasDuplicate && ((udpTraceLevel > 2) || udpTraceFlow))
+                    {
+                        StringBuffer s;
+                        DBGLOG("UdpSender[%s]: duplicate permit ignored node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
+                    }
+                    return true; // permit has been processed, but didn't need to add it to the queue.
                 }
-                return true; // permit has been processed, but didn't need to add it to the queue.
+            }
+            else
+            {
+                if (send_queue.push(msg, pushTimeoutMs))
+                    return true;
             }
 
-            if (send_queue.push(msg, 15)) 
-                return true;
-            else 
-            {
-                StringBuffer s;
-                DBGLOG("UdpSender[%s]: push() failed - ignored ok_to_send msg - node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
-                return false;
-            }
+            StringBuffer s;
+            DBGLOG("UdpSender[%s]: push() failed - ignored ok_to_send msg - node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
+            return false;
         }
 
         virtual int doRun() 

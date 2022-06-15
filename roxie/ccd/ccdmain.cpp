@@ -1009,6 +1009,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpAdjustThreadPriorities = topology->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
         udpAllowAsyncPermits = topology->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
         udpMinSlotsPerSender = topology->getPropInt("@udpMinSlotsPerSender", udpMinSlotsPerSender);
+        udpRemoveDuplicatePermits = topology->getPropBool("@udpRemoveDuplicatePermits", udpRemoveDuplicatePermits);
 
         unsigned __int64 defaultNetworkSpeed = 10 * U64C(0x40000000); // 10Gb/s
         unsigned __int64 networkSpeed = topology->getPropInt64("@udpNetworkSpeed", defaultNetworkSpeed);   // only used to sanity check the different udp options
