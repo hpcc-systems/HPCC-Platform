@@ -517,7 +517,7 @@ ESPStruct [nil_remove] ResubmittedWU
 
 ESPStruct WUFileOption
 {
-    ESPenum WUFileType FileType;
+    ESPenum WUFileType FileType("XML");
     string Name; //CPP, ThorLog, and EclAgentLog: required; XML: optional
     string IPAddress; //CPP/XML: required; ThorSlaveLog: required for legacy WU
     string Description; //CPP/XML: required
@@ -528,8 +528,8 @@ ESPStruct WUFileOption
     int SlaveNumber(1); //ThorSlaveLog: optional
     int64 SizeLimit(0);
     [min_ver("1.90"), nil_remove] unsigned MaxLogRecords;
-    [min_ver("1.90"), nil_remove] ESPenum LogSelectColumnMode LogSelectColumnMode;
-    [min_ver("1.90"), nil_remove] ESPenum LogAccessLogFormat LogFormat;
+    [min_ver("1.90"), nil_remove] ESPenum LogSelectColumnMode LogSelectColumnMode(1);
+    [min_ver("1.90"), nil_remove] ESPenum LogAccessLogFormat LogFormat(0);
     [min_ver("1.90"), nil_remove] unsigned LogSearchTimeBuffSecs;
     [min_ver("1.90"), nil_remove] ESParray<string> LogColumns;
 };

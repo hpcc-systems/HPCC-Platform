@@ -95,6 +95,8 @@ filebeat:
           - /var/log/containers/roxie-*.log
           - /var/log/containers/sasha-*.log
           - /var/log/containers/thor-*.log
+          - /var/log/containers/spray-service-*.log
+          - /var/log/containers/dfs-*.log
         #exclude_files: ['(myelk-kibana|myelk-filebeat)+(.*).log']
         processors:
         - add_kubernetes_metadata:
