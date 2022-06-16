@@ -257,6 +257,9 @@ public:
         if (isEmptyString(defaultGitPrefix))
             defaultGitPrefix = "https://github.com/";
         optDefaultGitPrefix.set(defaultGitPrefix);
+        const char * gitUser = getenv("HPCC_GIT_USERNAME");
+        if (!isEmptyString(gitUser))
+            optGitUser.set(gitUser);
     }
     ~EclCC()
     {
@@ -379,6 +382,8 @@ protected:
     StringAttr optMetaLocation;
     StringBuffer neverSimplifyRegEx;
     StringAttr optDefaultGitPrefix;
+    StringAttr optGitUser;
+    StringAttr optGitPasswordPath;
 
     bool defaultAllowed[2];
 
@@ -2178,7 +2183,7 @@ bool EclCC::processFiles()
     {
         //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
         //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
-        repositoryManager.setOptions(eclRepoPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, logVerbose);
+        repositoryManager.setOptions(eclRepoPath, optGitUser, optGitPasswordPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, logVerbose);
         ForEachItemIn(iMapping, repoMappings)
         {
             const char * cur = repoMappings.item(iMapping);
@@ -2768,6 +2773,13 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "-scope"))
         {
             optScope.set(tempArg);
+        }
+        else if (iter.matchOption(optGitUser, "--gituser"))
+        {
+        }
+        else if (iter.matchOption(optGitPasswordPath, "--gitpasswordpath"))
+        {
+            //This option is primarily to help debug the git authentication, unlikely to be used by end users.
         }
         else if (iter.matchFlag(showHelp, "-help") || iter.matchFlag(showHelp, "--help"))
         {

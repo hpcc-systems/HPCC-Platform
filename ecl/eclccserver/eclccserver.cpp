@@ -615,6 +615,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             if (token.length())
                 eclccCmd.appendf(" -wuid=%s -token=%s", workunit->queryWuid(), token.str());
         }
+
+        if (config->hasProp("@gitUsername"))
+            eclccCmd.appendf(" --gituser=%s", config->queryProp("@gitUsername"));
+
         Owned<IPipeProcess> pipe = createPipeProcess();
         pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
         Owned<IPropertyTreeIterator> options = config->getElements(isContainerized() ? "./options" : "./Option");

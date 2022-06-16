@@ -91,6 +91,7 @@ const char * const helpText[] = {
     "!   --expand <path> Expand the contents of an archive to a directory",
     "?!  --fastsyntax  Delay expanding functions when parsing.  May speed up processing for some queries",
     "?   --fetchrepos  Automatically download missing repositories associated with dependencies",
+    "!   --gituser=x   Which user should be used for accessing git repositories (for servers)",
     "    -help, --help Display this message",
     "    -help -v      Display verbose help message",
     "!   --ignoresimplified Do not use simplified expressions when syntax checking",
