@@ -23,19 +23,12 @@
 #include "jstring.hpp"
 #include <ctime>
 
-
-#ifndef AZURE_LOGANALYTICS_CURL_LOGACCESS_EXPORTS
-#define AZURE_LOGANALYTICS_CURL_LOGACCESS_API DECL_IMPORT
-#else
-#define AZURE_LOGANALYTICS_CURL_LOGACCESS_API DECL_EXPORT
-#endif
-
 #define COMPONENT_NAME "AzureLogAnalyticsCurlClient"
 
 static constexpr int defaultEntryLimit = 100;
 static constexpr int defaultEntryStart = 0;
 
-class AZURE_LOGANALYTICS_CURL_LOGACCESS_API AzureLogAnalyticsCurlClient : public CInterfaceOf<IRemoteLogAccess>
+class AzureLogAnalyticsCurlClient : public CInterfaceOf<IRemoteLogAccess>
 {
 private:
     static constexpr const char * type = "azureloganalyticscurl";
