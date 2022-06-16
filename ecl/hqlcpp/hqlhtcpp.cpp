@@ -19253,6 +19253,18 @@ void HqlCppTranslator::buildActivityFramework(ActivityInstance * instance, bool 
             tracking.activityCrcs.append(crc);
         }
     }
+
+    if (options.traceActivityIds.contains(instance->activityId))
+    {
+        DBGLOG("Match %u", instance->activityId);
+        tracedActivities.append(*LINK(instance->activityExpr));
+        unsigned num = tracedActivities.ordinality();
+        if (num > 1)
+        {
+            EclIR::dbglogIR(tracedActivities);
+            traceFindFirstDifference(&tracedActivities.item(num-2), &tracedActivities.item(num-1));
+        }
+    }
 }
 
 void HqlCppTranslator::buildConnectOrders(BuildCtx & ctx, ABoundActivity * slaveActivity, ABoundActivity * masterActivity)

@@ -157,6 +157,7 @@ const char * const helpText[] = {
     "?!  -ftimeParser            Add timings for parsing each ECL attribute",
     "?!  -ftimeTransforms        Add timings for internal transforms to the workunit",
     "?!  -faddDefaultBloom       Generate Bloom filter for first field of index if none specified",
+    "?!  -ftraceActivities=n1,n2 Dump information about differences between activites",
     "!",
     "!Features controlled by --allow, --allowsigned and --deny:",
     "!   all           Indicates all features not specifically overridden using one of the below",

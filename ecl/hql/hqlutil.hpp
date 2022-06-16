@@ -386,8 +386,9 @@ extern HQL_API void checkDependencyConsistency(const HqlExprArray & exprs);
 extern HQL_API void checkSelectConsistency(IHqlExpression * expr);
 extern HQL_API bool isUngroup(IHqlExpression * expr);
 extern HQL_API bool containsExpression(IHqlExpression * expr, IHqlExpression * search);
-extern HQL_API bool containsSelfWithinExpr(IHqlExpression * expr, IHqlExpression * self); // Search for use of self in an expression (not lhs of an assignment)
 extern HQL_API bool containsOperator(IHqlExpression * expr, node_operator search);
+extern HQL_API bool containsSeqId(IHqlExpression * expr, unsigned __int64 search);
+extern HQL_API bool containsSelfWithinExpr(IHqlExpression * expr, IHqlExpression * self); // Search for use of self in an expression (not lhs of an assignment)
 extern HQL_API bool containsIfBlock(IHqlExpression * record);
 extern HQL_API bool canCreateRtlTypeInfo(IHqlExpression * record); // Can we generate completely valid rtltypeinfo?
 extern HQL_API IHqlExpression * removeAnnotations(IHqlExpression * expr, IHqlExpression * search);
@@ -713,7 +714,7 @@ extern HQL_API bool hasNonNullRecord(ITypeInfo * type);
 extern HQL_API void encryptEclAttribute(IStringVal & out, size32_t len, const void * in);
 extern void decryptEclAttribute(MemoryBuffer & out, const char * in);
 
-extern HQL_API bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right);
+extern HQL_API bool traceFindFirstDifference(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API void debugTrackDifference(IHqlExpression * expr);
 
 extern HQL_API StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned inlen);

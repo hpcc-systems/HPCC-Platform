@@ -4534,17 +4534,40 @@ IHqlExpression * createNullTransform(IHqlExpression * record)
 }
 
 
-static bool foundDifference()
+static bool foundDifference(const char * reason)
 {
-    return false;
+    DBGLOG("--- %s ---", reason);
+    //Place a breakpoint in a debugger in this function to allow you to examine the difference between two expressions
+    return true;
 }
 
-bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
+static void traceExpr(StringBuffer & out, IHqlExpression * expr)
+{
+    out.appendf("%p:%s", expr, expr ? getOpString(expr->getOperator()) : "<nullptr>");
+    if (expr && querySeqId(expr))
+        out.appendf("(%llu)", querySeqId(expr)); // sequence number is useful for reproducibly identifying an expression
+    if (expr && expr->queryName())
+        out.appendf(" [%s]", str(expr->queryName()));
+}
+
+//return true if there was a difference, false if the expressions are identical
+static bool traceFindFirstDifference(IHqlExpression * left, IHqlExpression * right, unsigned indent, unsigned arg)
 {
     if (left == right)
-        return true;
+        return false;
+    StringBuffer msg;
+    msg.pad(indent);
+    if (arg != UINT_MAX)
+        msg.appendf("@%u", arg);
+    msg.append("{");
+    traceExpr(msg,left);
+    msg.append(" .. ");
+    traceExpr(msg,right);
+    msg.append("}");
+    DBGLOG("%s", msg.str());
+
     if (!left || !right)
-        return foundDifference();
+        return foundDifference("null");
     if (left->queryBody() == right->queryBody())
     {
         if ((left->getOperator() == no_call) && (right->getOperator() == no_call))
@@ -4553,10 +4576,10 @@ bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
             IHqlExpression * rightDefinition = right->queryDefinition();
             if ((left != leftDefinition) || (right != rightDefinition))
             {
-                if (debugFindFirstDifference(left->queryDefinition(), right->queryDefinition()))
+                if (traceFindFirstDifference(left->queryDefinition(), right->queryDefinition(), indent+1, UINT_MAX))
                     return false;
             }
-            return foundDifference();       // break point here.
+            return foundDifference("Call annotations");
         }
 
         IHqlExpression * leftBody = left->queryBody(true);
@@ -4566,30 +4589,51 @@ bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
         if (leftBody != rightBody)
         {
             if ((left == leftBody) || (right == rightBody))
-                return foundDifference();  // one side has an annotation, the other doesn't
-            return debugFindFirstDifference(leftBody, rightBody);
+                return foundDifference("Mismatched annotations");  // one side has an annotation, the other doesn't
+            return traceFindFirstDifference(leftBody, rightBody, indent+1, UINT_MAX);
         }
         if (leftAK != rightAK)
-            return foundDifference();  // different annotation
-        return foundDifference();  // some difference in the annotation details
+            return foundDifference("Different annotation");  // different annotation
+        return foundDifference("Detail of annotation");  // some difference in the annotation details
     }
     if (left->getOperator() != right->getOperator())
-        return foundDifference();
-    if (left->queryName() != right->queryName())
-        return foundDifference();
+    {
+        foundDifference("Different operator");
+        bool differ = true;
+        if (left->getOperator() == no_split)
+            differ = traceFindFirstDifference(left->queryChild(0), right, indent, arg);
+        else if (right->getOperator() == no_split)
+            differ = traceFindFirstDifference(left, right->queryChild(0), indent, arg);
+        else if (left->getOperator() == no_preservemeta)
+            differ = traceFindFirstDifference(left->queryChild(0), right, indent, arg);
+        else if (right->getOperator() == no_preservemeta)
+            differ = traceFindFirstDifference(left, right->queryChild(0), indent, arg);
+        if (!differ)
+            DBGLOG("--- same after skipping ---");
+        return true;
+    }
+    bool differ = false;
     ForEachChild(i, left)
     {
-        if (!debugFindFirstDifference(left->queryChild(i), right->queryChild(i)))
-            return false;
+        if (traceFindFirstDifference(left->queryChild(i), right->queryChild(i), indent+1, i))
+        {
+            differ = true;
+            //Return otherwise a difference in a selector sequence can cause very large numbers of differences
+            return true;
+        }
     }
+    if (differ)
+        return true;
+    if (left->queryName() != right->queryName())
+        return foundDifference("Different same argument");
     if (left->getOperator() != no_record)
     {
         IHqlExpression * leftRecord = queryOriginalRecord(left);
         IHqlExpression * rightRecord = queryOriginalRecord(right);
-        if (leftRecord || rightRecord)
+        if ((leftRecord || rightRecord) && (leftRecord != rightRecord))
         {
-            if (!debugFindFirstDifference(leftRecord, rightRecord))
-                return false;
+            if (traceFindFirstDifference(leftRecord, rightRecord, indent+1, UINT_MAX))
+                return true;
         }
     }
     if (left->queryType() != right->queryType())
@@ -4598,18 +4642,23 @@ bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
         IHqlExpression * rTypeExpr = queryExpression(right->queryType());
         if (((left != lTypeExpr) || (right != rTypeExpr)) &&
             (lTypeExpr && rTypeExpr && lTypeExpr != rTypeExpr))
-            return debugFindFirstDifference(lTypeExpr, rTypeExpr);
-        return foundDifference();
+            return traceFindFirstDifference(lTypeExpr, rTypeExpr, indent+1, UINT_MAX);
+        return foundDifference("Type mismatch");
     }
 
-    return foundDifference();//something else
+    return foundDifference("Unknown difference");//something else
+}
+
+bool traceFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
+{
+    return traceFindFirstDifference(left, right, 0, UINT_MAX);
 }
 
 void debugTrackDifference(IHqlExpression * expr)
 {
     static IHqlExpression * prev;
     if (prev && prev != expr)
-        debugFindFirstDifference(prev, expr);
+        traceFindFirstDifference(prev, expr);
     prev = expr;
 }
 
@@ -4965,6 +5014,34 @@ bool containsExpression(IHqlExpression * expr, IHqlExpression * search)
 {
     TransformMutexBlock lock;
     return doContainsExpression(expr, search);
+}
+
+static bool doContainsSeqId(IHqlExpression * expr, unsigned __int64 search)
+{
+    for (;;)
+    {
+        if (expr->queryTransformExtra())
+            return false;
+        if (querySeqId(expr) == search)
+            return true;
+        expr->setTransformExtraUnlinked(expr);
+        IHqlExpression * body = expr->queryBody(true);
+        if (body == expr)
+            break;
+        expr = body;
+    }
+    ForEachChild(i, expr)
+    {
+        if (doContainsSeqId(expr->queryChild(i), search))
+            return true;
+    }
+    return false;
+}
+
+bool containsSeqId(IHqlExpression * expr, unsigned __int64 search)
+{
+    TransformMutexBlock lock;
+    return doContainsSeqId(expr, search);
 }
 
 static bool doContainsOperator(IHqlExpression * expr, node_operator search)
