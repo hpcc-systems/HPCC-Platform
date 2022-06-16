@@ -7,8 +7,6 @@
 	"settings": {
 		"cmake.generator": "Unix Makefiles",
 		"cmake.configureArgs": [
-			"-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/vcpkg/scripts/buildsystems/vcpkg.cmake",
-			"-DVCPKG_OVERLAY_PORTS=${workspaceFolder}/vcpkg-overlays",
 			"-DUSE_OPTIONAL=OFF",
 			"-DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON",
 			"-DINCLUDE_PLUGINS=OFF",
@@ -18,8 +16,13 @@
 			"-DWSSQL_SERVICE=OFF",
 			"-DUSE_CASSANDRA=OFF"
 		],
-		"cmake.buildToolArgs": [
-			"-j"
-		],
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-vscode.cpptools-extension-pack",
+			"ms-vscode.cmake-tools",
+			"twxs.cmake",
+		]
 	}
 }
