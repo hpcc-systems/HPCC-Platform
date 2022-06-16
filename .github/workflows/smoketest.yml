@@ -30,6 +30,7 @@
 name: smoketest
 env:
   cacheversion: 3
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
 
 on:
   pull_request:
@@ -269,6 +270,24 @@ jobs:
         cd src
         git checkout ${{ steps.vars.outputs.sha }}
         git submodule update --init --recursive --jobs 4
+
+    - name: "vcpkg Bootstrap"
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
+      working-directory: ./src/vcpkg
+      run: |
+        ./bootstrap-vcpkg.sh
+
+    - name: "Setup NuGet credentials"
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
+      working-directory: ./src/vcpkg
+      run: |
+        mono `./vcpkg fetch nuget | tail -n 1` \
+          sources add \
+          -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+          -storepasswordincleartext \
+          -name "GitHub" \
+          -username "${{ github.actor }}" \
+          -password "${{ secrets.GITHUB_TOKEN }}"
 
     # Subsequent cache hit builds use cache-timestamp to ensure all sources are marked 'old',
     # except those changed between the cache SHA and the SHA being built.
