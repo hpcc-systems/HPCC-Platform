@@ -423,6 +423,12 @@ void AzureLogAnalyticsCurlClient::azureLogAnalyticsTimestampQueryRangeString(Str
     }
 }
 
+void throwIfMultiIndexDetected(const char * currentIndex, const char * proposedIndex)
+{
+    if (!isEmptyString(currentIndex) && !strsame(currentIndex,proposedIndex))
+        throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, currentIndex, proposedIndex);
+}
+
 void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryString, StringBuffer & queryIndex, const ILogAccessFilter * filter)
 {
     if (filter == nullptr)
@@ -443,8 +449,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         if (!m_workunitIndexSearchPattern.isEmpty())
         {
-            if (!queryIndex.isEmpty() && strsame(queryIndex, m_workunitIndexSearchPattern.str()))
-                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.str(), m_workunitIndexSearchPattern.str());
+            throwIfMultiIndexDetected(queryIndex.str(), m_workunitIndexSearchPattern.str());
             queryIndex = m_workunitIndexSearchPattern;
         }
 
@@ -460,8 +465,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         if (!m_classIndexSearchPattern.isEmpty())
         {
-            if (!queryIndex.isEmpty() && strsame(queryIndex.str(), m_classIndexSearchPattern.str()))
-                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.str(), m_classIndexSearchPattern.str());
+            throwIfMultiIndexDetected(queryIndex.str(), m_classIndexSearchPattern.str());
             queryIndex = m_classIndexSearchPattern.str();
         }
 
@@ -477,10 +481,8 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         if (!m_audienceIndexSearchPattern.isEmpty())
         {
-            if (!queryIndex.isEmpty() && strsame(queryIndex.str(), m_audienceIndexSearchPattern.str()))
-                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.str(), m_audienceIndexSearchPattern.str());
-
-            queryIndex = m_audienceIndexSearchPattern.str();
+           throwIfMultiIndexDetected(queryIndex.str(), m_audienceIndexSearchPattern.str());
+           queryIndex = m_audienceIndexSearchPattern.str();
         }
 
         DBGLOG("%s: Searching log entries by target audience: '%s'...", COMPONENT_NAME, queryValue.str());
@@ -495,10 +497,8 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         if (!m_componentsIndexSearchPattern.isEmpty())
         {
-            if (!queryIndex.isEmpty() && strsame(queryIndex.str(), m_componentsIndexSearchPattern.str()))
-                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.str(), m_componentsIndexSearchPattern.str());
-
-            queryIndex = m_componentsIndexSearchPattern.str();
+           throwIfMultiIndexDetected(queryIndex.str(), m_componentsIndexSearchPattern.str());
+           queryIndex = m_componentsIndexSearchPattern.str();
         }
 
         DBGLOG("%s: Searching '%s' component log entries...", COMPONENT_NAME, queryValue.str());
@@ -513,9 +513,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         if (!m_hostIndexSearchPattern.isEmpty())
         {
-            if (!queryIndex.isEmpty() && strsame(queryIndex.str(), m_hostIndexSearchPattern.str()))
-                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.str(), m_hostIndexSearchPattern.str());
-
+            throwIfMultiIndexDetected(queryIndex.str(), m_hostIndexSearchPattern.str());
             queryIndex = m_hostIndexSearchPattern.str();
         }
 
@@ -531,9 +529,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         if (!m_instanceIndexSearchPattern.isEmpty())
         {
-            if (!queryIndex.isEmpty() && strsame(queryIndex.str(), m_instanceIndexSearchPattern.str()))
-                throw makeStringExceptionV(-1, "%s: Multi-index query not supported: '%s' - '%s'", COMPONENT_NAME, queryIndex.str(), m_instanceIndexSearchPattern.str());
-
+            throwIfMultiIndexDetected(queryIndex.str(),  m_instanceIndexSearchPattern.str());
             queryIndex = m_instanceIndexSearchPattern.str();
         }
 
