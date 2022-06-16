@@ -471,12 +471,14 @@
             with no matching <emphasis>rightrecset</emphasis> records),
             whereas LIMIT would either fail the job entirely, or SKIP the
             record (eliminating the <emphasis>leftrecset</emphasis> record
-            entirely from the output). If omitted, the default is
-            LIMIT(10000). The LIMIT is applied to the set of records that meet
-            the the hard match ("equality") portion of the
+            entirely from the output). The LIMIT is applied to the set of
+            records that meet the the hard match ("equality") portion of the
             <emphasis>joincondition</emphasis> but before the soft match
             ("non-equality") portion of the <emphasis>joincondition</emphasis>
-            is evaluated.</entry>
+            is evaluated. If omitted, the default is LIMIT(10000). The
+            implicit limit is only added if there is no explicit LIMIT, no
+            ATMOST, and no KEEP, or has a non-keyed filter and isn't a left
+            only JOIN.</entry>
           </row>
 
           <row>
