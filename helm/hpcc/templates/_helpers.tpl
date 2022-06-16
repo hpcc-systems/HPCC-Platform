@@ -990,13 +990,13 @@ Generate list of available services
 {{ end -}}
 {{- end -}}
 {{- range $.Values.dafilesrv -}}
- {{- if not .disabled -}}
+ {{- if not .disabled }}
 - name: {{ .name }}
   type: {{ .application | default "stream" }}
   port: {{ .service.servicePort | default 7600 }}
   public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}
- {{- end -}}
-{{- end -}}
+ {{ end -}}
+{{ end -}}
 {{- end -}}
 
 {{/*
