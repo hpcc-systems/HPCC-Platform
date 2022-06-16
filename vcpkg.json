@@ -1,13 +1,14 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
     "name": "hpcc-platform",
-    "version": "8.6.0",
+    "version": "8.8.0",
     "dependencies": [
         "apr",
         "apr-util",
         "boost-property-tree",
         "boost-regex",
         "curl",
+        "h3",
         "icu",
         {
             "name": "libarchive",
@@ -20,11 +21,11 @@
             "name": "libiconv",
             "platform": "osx"
         },
-        "librdkafka",
         {
             "name": "libmysql",
             "platform": "!(windows & x86)"
         },
+        "librdkafka",
         "libxml2",
         {
             "name": "libxslt",
@@ -33,7 +34,10 @@
         },
         "openblas",
         "openssl",
-        "python3",
+        {
+            "name": "python3",
+            "platform": "windows"
+        },
         {
             "name": "winflexbison",
             "platform": "windows"

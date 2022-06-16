@@ -59,7 +59,7 @@ IF ( COUCHBASEEMBED )
     add_custom_command(
         OUTPUT ${LIBCOUCHBASE_LIB}
         COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build
-        COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build && ${CMAKE_COMMAND} ${SSL2_LIB} ${SSL_INC} ${SSL_LIB}  ${CMAKE_CURRENT_SOURCE_DIR}/libcouchbase && ${CMAKE_MAKE_PROGRAM}
+        COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build && ${CMAKE_COMMAND} ${SSL2_LIB} ${SSL_INC} ${CYP_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/libcouchbase && ${CMAKE_MAKE_PROGRAM}
         COMMENT Building libcouchbase for import)
     add_custom_target(libcouchbase-build ALL DEPENDS ${LIBCOUCHBASE_LIB})
     add_library(libcouchbase SHARED IMPORTED)

@@ -47,7 +47,7 @@ jobs:
           echo ::set-output name=build_type::RelWithDebInfo
           echo ::set-output name=use_cppunit::1
           echo ::set-output name=platform_build_base::smoketest-platform-build-base
-          echo ::set-output name=platform_build::smoketest-platform-build
+          echo ::set-output name=platform_build::smoketest-platform-build-vcpkg
 
       - name: tracing
         run: |
@@ -127,10 +127,13 @@ jobs:
           build-args: |
             CR_USER=${{ steps.vars.outputs.cr_user }}
             CR_REPO=${{ steps.vars.outputs.container_registry }}
+            CR_CONTAINER_NAME=${{ steps.vars.outputs.platform_build_base }}
             BASE_VER=${{ steps.vars.outputs.base_ver }}
             BUILD_USER=${{ github.repository_owner }}
+            GITHUB_ACTOR=${{ github.actor }}
             BUILD_TAG=${{ steps.vars.outputs.build_prbase_sha }}
             BUILD_TYPE=${{ steps.vars.outputs.build_type }}
+            BUILD_TOKEN=${{ secrets.GITHUB_TOKEN }}
             USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
 
