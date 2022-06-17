@@ -363,7 +363,8 @@ public:
             { "X-Vault-Token", token.str() }
         };
 
-        if (httplib::Result res = cli.Get(location, headers))
+        httplib::Result res = cli.Get(location, headers);
+        if (res)
         {
             if (res->status == 200)
             {
@@ -377,6 +378,8 @@ public:
                 DBGLOG("Vault %s error accessing secret %s.%s [%d](%d) - response: %s", name.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
             }
         }
+        else
+            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s", name.str(), res.error(), secret, version ? version : "");
         return false;
     }
 };
