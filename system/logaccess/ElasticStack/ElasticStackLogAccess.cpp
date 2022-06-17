@@ -294,6 +294,7 @@ unsigned processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & return
                     reportHeader = false;
                 }
 
+                //Process each column
                 ForEach(*fieldElementsItr)
                 {
                     if (!first)
@@ -302,9 +303,9 @@ unsigned processHitsJsonResp(IPropertyTreeIterator * iter, StringBuffer & return
                         first = false;
 
                     fieldElementsItr->query().getProp(nullptr, returnbuf); // commas in data should be escaped
-                    recsProcessed++;
                 }
                 returnbuf.newline();
+                recsProcessed++;
             }
             break;
         }
