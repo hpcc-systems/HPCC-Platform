@@ -163,10 +163,10 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             }),
             filesize: {
                 label: nlsHPCC.Size, width: 100,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.convertedSize(value);
-                },
+                }, []),
             },
             modifiedtime: { label: nlsHPCC.Date, width: 162 }
         }

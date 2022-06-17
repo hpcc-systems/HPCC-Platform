@@ -6,7 +6,6 @@ import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -32,27 +31,27 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         sort: { attribute: "Name", descending: false },
         filename: "sourceFiles",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Name: {
                 label: "Name", sortable: true,
-                formatter: function (Name, row) {
+                formatter: React.useCallback(function (Name, row) {
                     return <>
                         <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} />
                         &nbsp;
                         <Link href={`#/files/${row.FileCluster}/${Name}`}>{Name}</Link>
                     </>;
-                }
+                }, [])
             },
             FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
             Count: {
                 label: nlsHPCC.Usage, width: 72, sortable: true,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
-                },
+                }, [])
             }
         }
     });

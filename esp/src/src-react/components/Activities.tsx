@@ -68,12 +68,12 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 sortable: false
             }),
             Priority: {
-                renderHeaderCell: function (node) {
+                renderHeaderCell: React.useCallback(function (node) {
                     node.innerHTML = Utility.getImageHTML("priority.png", nlsHPCC.Priority);
-                },
+                }, []),
                 width: 25,
                 sortable: false,
-                formatter: function (Priority) {
+                formatter: React.useCallback(function (Priority) {
                     switch (Priority) {
                         case "high":
                             return Utility.getImageHTML("priority_high.png");
@@ -81,7 +81,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                             return Utility.getImageHTML("priority_low.png");
                     }
                     return "";
-                }
+                }, [])
             },
             DisplayName: tree({
                 label: nlsHPCC.TargetWuid,
@@ -107,19 +107,19 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             }),
             GID: {
                 label: nlsHPCC.Graph, width: 90, sortable: true,
-                formatter: function (_gid, row) {
+                formatter: React.useCallback(function (_gid, row) {
                     if (activity.isInstanceOfWorkunit(row)) {
                         if (row.GraphName) {
                             return <Link href={`#/graphs/${row.GraphName}/${row.GID}`}>{row.GraphName}-{row.GID}</Link>;
                         }
                     }
                     return "";
-                }
+                }, [activity])
             },
             State: {
                 label: nlsHPCC.State,
                 sortable: false,
-                formatter: function (state, row) {
+                formatter: React.useCallback(function (state, row) {
                     if (activity.isInstanceOfQueue(row)) {
                         return row.isNormal() ? "" : row.StatusDetails;
                     }
@@ -129,7 +129,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                         return state + " [" + row.Instance + "]";
                     }
                     return state;
-                }
+                }, [activity])
             },
             Owner: { label: nlsHPCC.Owner, width: 90, sortable: false },
             Jobname: { label: nlsHPCC.JobName, sortable: false }

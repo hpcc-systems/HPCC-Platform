@@ -6,7 +6,6 @@ import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 function getStateImageName(row) {
     if (row.Complete) {
@@ -43,19 +42,19 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
         primaryID: "Name",
         filename: "graphs",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Name: {
                 label: nlsHPCC.Name, sortable: true,
-                formatter: function (Name, row) {
+                formatter: React.useCallback(function (Name, row) {
                     return <>
                         <Image src={Utility.getImageURL(getStateImageName(row))} />
                         &nbsp;
                         <Link href={`#/workunits/${row?.Wuid}/metrics/${Name}`}>{Name}</Link>
                     </>;
-                }
+                }, [])
             }
         }
     });

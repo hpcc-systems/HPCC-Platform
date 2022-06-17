@@ -37,22 +37,22 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
             positiveSkew: {
                 width: 30,
                 label: nlsHPCC.SkewPositive,
-                renderCell: (object, value, node, options) => {
+                renderCell: React.useCallback((object, value, node, options) => {
                     if (value === undefined) {
                         return "";
                     }
                     node.innerText = value;
-                }
+                }, [])
             },
             negativeSkew: {
                 width: 30,
                 label: nlsHPCC.SkewNegative,
-                renderCell: (object, value, node, options) => {
+                renderCell: React.useCallback((object, value, node, options) => {
                     if (value === undefined) {
                         return "";
                     }
                     node.innerText = value;
-                }
+                }, [])
             }
         }
     });

@@ -35,7 +35,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
         filename: "errorwarnings",
         columns: {
             dateTime: { label: nlsHPCC.Time, width: 160, sortable: false },
-            level: { label: nlsHPCC.Severity, width: 112, sortable: false, formatter: level => Level[level].toUpperCase() },
+            level: { label: nlsHPCC.Severity, width: 112, sortable: false, formatter: React.useCallback(level => Level[level].toUpperCase(), []) },
             id: { label: nlsHPCC.Source, width: 212, sortable: false },
             message: { label: nlsHPCC.Message, sortable: false }
         }

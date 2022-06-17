@@ -6,7 +6,6 @@ import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
-import { selector } from "./DojoGrid";
 import { ShortVerticalDivider } from "./Common";
 
 const logger = scopedLogger("../components/QueryLogicalFiles.tsx");
@@ -38,12 +37,12 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
         sort: { attribute: "__hpcc_id", descending: false },
         filename: "queryLogicalFiles",
         columns: {
-            col1: selector({ selectorType: "checkbox", width: 25 }),
+            col1: { selectorType: "checkbox", width: 25 },
             File: {
                 label: nlsHPCC.File,
-                formatter: function (item, row) {
+                formatter: React.useCallback(function (item, row) {
                     return <Link href={`#/files/${item}`}>{item}</Link>;
-                }
+                }, [])
             },
         }
     });

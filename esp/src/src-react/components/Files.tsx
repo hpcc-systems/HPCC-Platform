@@ -121,36 +121,36 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         columns: {
             col1: {
                 width: 27,
-                disabled: function (item) {
+                disabled: React.useCallback(function (item) {
                     return item ? item.__hpcc_isDir : true;
-                },
+                }, []),
                 selectorType: "checkbox"
             },
             IsProtected: {
                 headerIcon: "LockSolid",
                 width: 25,
                 sortable: false,
-                formatter: function (_protected) {
+                formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }
+                }, [])
             },
             IsCompressed: {
                 headerIcon: "ZipFolder",
                 width: 25,
                 sortable: false,
-                formatter: function (compressed) {
+                formatter: React.useCallback(function (compressed) {
                     if (compressed === true) {
                         return <Icon iconName="ZipFolder" />;
                     }
                     return "";
-                }
+                }, [])
             },
             __hpcc_displayName: {
                 label: nlsHPCC.LogicalName, width: 600,
-                formatter: function (name, row) {
+                formatter: React.useCallback(function (name, row) {
                     if (row.__hpcc_isDir) {
                         return name;
                     }
@@ -160,7 +160,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                         &nbsp;
                         <Link href={url}>{name}</Link>
                     </>;
-                },
+                }, []),
             },
             Owner: { label: nlsHPCC.Owner, width: 75 },
             SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
@@ -168,43 +168,43 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 85,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
-                },
+                }, []),
             },
             IntSize: {
                 label: nlsHPCC.Size, width: 100,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.convertedSize(value);
-                },
+                }, []),
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 60,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
-                },
+                }, []),
             },
             MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: (value, row) => value ?? ""
+                label: nlsHPCC.MinSkew, width: 60, formatter: React.useCallback((value, row) => value ?? "", [])
             },
             MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: (value, row) => value ?? ""
+                label: nlsHPCC.MaxSkew, width: 60, formatter: React.useCallback((value, row) => value ?? "", [])
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest, width: 100,
-                formatter: function (cost, row) {
+                formatter: React.useCallback(function (cost, row) {
                     return `${formatCost(cost)}`;
-                }
+                }, [])
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: function (cost, row) {
+                formatter: React.useCallback(function (cost, row) {
                     return `${formatCost(cost)}`;
-                }
+                }, [])
             }
         }
     });
