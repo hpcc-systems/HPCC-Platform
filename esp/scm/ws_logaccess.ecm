@@ -18,7 +18,7 @@
 ESPenum LogAccessType : int
 {
     All(0, "All"),
-    ByJobIdID(1, "ByJobIdID"),
+    ByJobID(1, "ByJobID"),
     ByComponent(2, "ByComponent"),
     ByLogType(3, "ByLogType"),
     ByTargetAudience(4, "ByTargetAudience"),
@@ -77,7 +77,7 @@ ESPenum LogAccessFilterOperator : int
 * SearchbyValue contains value used to identify target log entries.
 * Limited to values associated with the the LogCategory choice.
 *
-* If searching by "ByJobIdID", the SearchByValue should contain the jobid of interest
+* If searching by "ByJobID", the SearchByValue should contain the jobid of interest
 * If searching by "ByComponent", the SearchByValue should contain the component of interest
 * If searching by "ByLogType", the SearchByValue should contain the 3 letter code associated with the log type of interest.
 * valid values at time of writing are:
