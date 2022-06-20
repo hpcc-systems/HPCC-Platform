@@ -25,6 +25,8 @@
 project( ws_workunits )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
+include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
+
 
 set (    SRCS
          ../../../dali/sasha/sacmd.cpp
