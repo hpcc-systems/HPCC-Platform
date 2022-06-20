@@ -542,6 +542,7 @@ ESPrequest FileListRequest
 ESPStruct PhysicalFileStruct
 {
     string name;
+    [min_ver("1.23")] string Server;
     bool isDir;
     int64 filesize;
     string modifiedtime;
