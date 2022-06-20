@@ -56,10 +56,18 @@ if [ "$domainname" = "" ]; then
     domainname=local
 fi
 
-subjbase="/C=US/ST=FL/L=Boca Raton/O=HPCCSystems/OU=Customer"
+subjbase="/C=US/ST=NA/L=Local/O=HPCCSystems/OU=Community"
 
 regenerate=0
-if [ ! -e ${certPath}/cacert-key.pem ] || [ ! -e ${certPath}/cacert.pem ]; then
+if [ "${CAUrl}" == "" ]; then
+    CAUrl=${caurl}
+    if [ "${CAUrl}" == "" ]; then
+        CAUrl=${CAURL}
+    fi
+fi
+CAUser=""
+CAPass=""
+if [ "${CAUrl}" == "" ] && ([ ! -e ${certPath}/cacert-key.pem ] || [ ! -e ${certPath}/cacert.pem ]); then
     rm -rf ${certPath}/cacert-key.pem ${certPath}/cacert.pem
     subj="${subjbase}/CN=ca.${domainname}"
     openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/cacert-key.pem -out ${certPath}/cacert.csr -subj "${subj}"
@@ -85,6 +93,11 @@ for i in "" ${compArray[@]} ; do
     fi
 
     if [ "${regenerate}" = "1" ] || [ ! -e ${certPath}/${compName}/key.pem ] || [ ! -e ${certPath}/${compName}/certificate.pem ] || [ ! -e ${certPath}/${compName}/public.key.pem ]; then
+        if [ "${CAUrl}" != "" ] && [ "${CAUser}" == "" ]; then
+            read -p "CA Username: " CAUser
+            read -s -p "CA Password: " CAPass
+            printf "\n"
+        fi
         if [ "${compName}" != "" ]; then
              cn="${compName}.${domainname}"
         else
@@ -96,19 +109,39 @@ for i in "" ${compArray[@]} ; do
         openssl req -nodes -newkey rsa:2048 -keyout ${certPath}/${compName}/key.pem -out ${certPath}/${compName}/my.csr -subj "${compSubject}"
         chmod 400 ${certPath}/${compName}/key.pem
         openssl rsa -in ${certPath}/${compName}/key.pem -pubout -out ${certPath}/${compName}/public.key.pem
-        printf "PKI keys installed for user %-32s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+        printf "PKI keys installed for user %s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
         log_success_msg
-        openssl x509 -req -days 365 -in ${certPath}/${compName}/my.csr -CA ${certPath}/cacert.pem -CAkey ${certPath}/cacert-key.pem -sha256 -CAcreateserial -CAserial ca.seq -out ${certPath}/${compName}/certificate.pem
-        rm ${certPath}/${compName}/my.csr
-        if [ ! -e ${certPath}/${compName}/certificate.pem ]; then
-            printf "Failed to generate certificate for component %-15s\n" "${compNamePrint}"
-            exit 1
+        if [ "${CAUrl}" != "" ]; then
+            csrtxt=$(sed -e ':a' -e 'N;$!ba' -e 's/\n/\\n/g' ${certPath}/${compName}/my.csr)
+            now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            oneyear=$(date -u --date '+ 1 year' +"%Y-%m-%dT%H:%M:%SZ")
+            reqtxt="{\"hosts\":[\"${cn}\"],\"certificate_request\":\"${csrtxt}\",\"profile\":\"${CAUser}\",\"crl_override\":\"\",\"label\":\"default\",\"NotBefore\":\"${now}\",\"NotAfter\":\"${oneyear}\",\"ReturnPrecert\":false,\"metadata\":null}"
+            csrtoken=$(echo ${reqtxt} | openssl sha256 -hmac ${CAPass} -binary | openssl base64)
+            reqbase64=$(echo ${reqtxt} | openssl base64 -e -A)
+            csrreq="{\"timestamp\":$(date +%s),\"token\":\"${csrtoken}\",\"request\":\"${reqbase64}\"}"
+            echo ${csrreq} | curl -s -H "Content-Type: application/json" -X POST --data-binary @- ${CAUrl}/api/v1/cfssl/authsign > ${certPath}/${compName}/myresp.json
+            jq -r '.result.certificate' ${certPath}/${compName}/myresp.json > ${certPath}/${compName}/certificate.pem
+            rm -f ${certPath}/${compName}/my.csr ${certPath}/${compName}/myresp.json
+            if [ ! -e ${certPath}/${compName}/certificate.pem ]; then
+                printf "Failed to generate certificate from remote CA for component %-15s\n" "${compNamePrint}"
+                exit 1
+            else
+                printf "Certificate from remote CA installed for user %s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+                log_success_msg
+            fi
         else
-            printf "Certificate from local CA installed for user %-14s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
-            log_success_msg
+            openssl x509 -req -days 365 -in ${certPath}/${compName}/my.csr -CA ${certPath}/cacert.pem -CAkey ${certPath}/cacert-key.pem -sha256 -CAcreateserial -CAserial ca.seq -out ${certPath}/${compName}/certificate.pem
+            rm ${certPath}/${compName}/my.csr
+            if [ ! -e ${certPath}/${compName}/certificate.pem ]; then
+                printf "Failed to generate certificate for component %-15s\n" "${compNamePrint}"
+                exit 1
+            else
+                printf "Certificate from local CA installed for user %s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+                log_success_msg
+            fi
         fi
     else
-            printf "PKI key and certificate are already installed for user %s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
+        printf "PKI key and certificate are already installed for user %s component %-15s ..." "${USER_NAME}" "${compNamePrint}"
         log_success_msg
     fi
 done
@@ -119,10 +152,10 @@ if [ ! -e ${homePath}/.ssh/id_rsa ]; then
     cp ${certPath}/key.pem ${homePath}/.ssh/id_rsa
     ssh-keygen -y -f ${certPath}/key.pem > ${homePath}/.ssh/id_rsa.pub
     cat ${homePath}/.ssh/id_rsa.pub >> ${homePath}/.ssh/authorized_keys
-    printf "ssh keys installed for user %-12s ..." "${USER_NAME}"
+    printf "ssh keys installed for user %s ..." "${USER_NAME}"
     log_success_msg
 else
-    printf "ssh keys already installed for %-9s ..." "${USER_NAME}"
+    printf "ssh keys already installed for %s ..." "${USER_NAME}"
     log_success_msg
 fi
 
