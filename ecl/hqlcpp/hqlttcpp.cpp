@@ -6197,7 +6197,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 if(prevValue->queryType() != value->queryBody()->queryType())
                 {
 #ifdef _DEBUG
-                    debugFindFirstDifference(alreadyProcessedExpr.item(match).queryBody(), expr->queryBody());
+                    traceFindFirstDifference(alreadyProcessedExpr.item(match).queryBody(), expr->queryBody());
 #endif
                     if (curOp == no_stored)
                         throwError1(HQLERR_DuplicateStoredDiffType, s.str());
@@ -11606,7 +11606,7 @@ public:
                 {
                     ForEachItemIn(i, info->matches)
                     {
-                        debugFindFirstDifference(body, &info->matches.item(i));
+                        traceFindFirstDifference(body, &info->matches.item(i));
                     }
                     info->matches.append(*LINK(body));
                 }

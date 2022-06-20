@@ -1483,7 +1483,6 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     HqlDummyLookupContext dummyctx(NULL);
     OwnedHqlExpr internalScopeLookup = cppSystemScope->lookupSymbol(createIdAtom("InternalCppService"), LSFsharedOK, dummyctx);
     internalScope = internalScopeLookup->queryScope();
-    _clear(options);                    // init options is called later, but depends on the workunit.
     startCursorSet = 0;
     requireTable = true;
     activeGraphCtx = NULL;
@@ -1947,6 +1946,14 @@ void HqlCppTranslator::cacheOptions()
     options.implicitLinkedChildRows = true;
     options.finalizeAllRows = true;     // inline temporary rows should actually be ok.
 
+    SCMStringBuffer traceActivities;
+    if (wu()->getDebugValue("traceActivities", traceActivities).length())
+    {
+        StringArray activities;
+        activities.appendList(traceActivities.str(), ",", true);
+        ForEachItemIn(i, activities)
+            options.traceActivityIds.append(atoi(activities.item(i)));
+    }
     postProcessOptions();
 }
 
