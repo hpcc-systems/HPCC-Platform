@@ -21,16 +21,13 @@
 #
 # This hook expects environment variables to be set as follows:
 # HPCC_GIT_USERNAME   - The name of the service account used to read the repos
-# HPCC_GIT_SECRETPATH - The path to the root of the secret directory
+# HPCC_GIT_PASSPATH   - The path to the file containing the access token
 #
-# The filename providing the password is git/<username>/password within the
-# HPCC_GIT_SECRETPATH directory
 ################################################################################
 
 #!/bin/bash
-secretPath="${HPCC_GIT_SECRETPATH:-/opt/HPCCSystems/secrets}"
 if [[ $1 =~ ^[Uu]sername ]]; then
   echo $HPCC_GIT_USERNAME
 elif [[ $1 =~ ^[Pp]assword ]]; then
-  cat $secretPath/git/$HPCC_GIT_USERNAME/password
+  cat $HPCC_GIT_PASSPATH
 fi
