@@ -34,6 +34,7 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_workunits_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_queryset_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_logaccess_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits_struct.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits_req_resp.ecm
