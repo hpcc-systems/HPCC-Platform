@@ -710,6 +710,7 @@ unsigned AzureLogAnalyticsCurlClient::processHitsJsonResp(IPropertyTreeIterator 
                 returnbuf.newline();
             }
 
+            //Process each column
             ForEach(*lines)
             {
                 Owned<IPropertyTreeIterator> fieldElementsItr = lines->query().getElements("*");
@@ -723,9 +724,9 @@ unsigned AzureLogAnalyticsCurlClient::processHitsJsonResp(IPropertyTreeIterator 
                         first = false;
 
                     fieldElementsItr->query().getProp(nullptr, returnbuf); // commas in data should be escaped
-                    recsProcessed++;
                 }
                 returnbuf.newline();
+                recsProcessed++;
             }
             break;
         }
