@@ -14,6 +14,7 @@
 project( ecl-queries )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
+include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp

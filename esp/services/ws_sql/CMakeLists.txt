@@ -28,6 +28,7 @@ if(WSSQL_SERVICE AND USE_JAVA)
 
     include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
     include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
+    include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
     include(antlr3c.cmake)
 
