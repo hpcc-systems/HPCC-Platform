@@ -10361,10 +10361,12 @@ public:
         {
             try
             {
-                ActivityTimer t(activityStats, timeActivities);
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
-                helper.action();
+                {
+                    ActivityTimer t(activityStats, timeActivities);
+                    helper.action();
+                }
                 stop();
             }
             catch(IException *E)
@@ -13868,9 +13870,12 @@ public:
         try
         {
             start(parentExtractSize, parentExtract, false);
-            assertex(!rows);
-            IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
-            helper.execute(&activityContext);
+            {
+                assertex(!rows);
+                IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
+                ActivityTimer t(activityStats, timeActivities);
+                helper.execute(&activityContext);
+            }
             stop();
         }
         catch (IException * E)
@@ -20919,7 +20924,10 @@ public:
             {
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
-                doExecuteAction(parentExtractSize, parentExtract);
+                {
+                    ActivityTimer t(activityStats, timeActivities);
+                    doExecuteAction(parentExtractSize, parentExtract);
+                }
                 stop();
             }
             catch (IException * E)
@@ -20963,11 +20971,7 @@ public:
 
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) override
     {
-        bool cond;
-        {
-            ActivityTimer t(activityStats, timeActivities);
-            cond = helper.getCondition();
-        }
+        bool cond = helper.getCondition();
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
         try
         {
