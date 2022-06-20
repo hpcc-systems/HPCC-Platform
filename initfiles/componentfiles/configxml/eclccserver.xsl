@@ -71,8 +71,10 @@
 
       <xsl:apply-templates select="@*[string(.) != '']"/>
       
-     
       <xsl:apply-templates select="Option[string(@name) != '']" mode="copy"/>
+
+      <xsl:copy-of select="/Environment/Software/vaults"/>
+
    </EclCCserver>
 </xsl:template>
 

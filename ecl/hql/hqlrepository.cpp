@@ -835,6 +835,9 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
         {
             env.emplace_back("HPCC_GIT_USERNAME", options.gitUser.str());
 
+            // If gituser is specified never prompt for credentials, otherwise the server can hang.
+            env.emplace_back("GIT_TERMINAL_PROMPT", "0");
+
             if (!options.gitPasswordPath.isEmpty())
             {
                 //Convert to an absolute path, and check the file exists, because git will be run in a different directory
