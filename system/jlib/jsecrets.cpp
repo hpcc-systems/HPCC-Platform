@@ -258,7 +258,11 @@ public:
             //for now only support direct access token.  we can support other combinations for example login token, ldap login, etc later.
             Owned<IPropertyTree> clientSecret = getLocalSecret("system", vault->queryProp("@client-secret"));
             if (clientSecret)
-                token.set(clientSecret->queryProp("token"));
+            {
+                StringBuffer tokenText;
+                getSecretKeyValue(tokenText, clientSecret, "token");
+                token.set(tokenText.str());
+            }
         }
     }
     CVaultKind getVaultKind() const { return kind; }

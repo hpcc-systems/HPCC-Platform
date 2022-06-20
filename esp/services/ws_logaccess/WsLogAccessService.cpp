@@ -77,7 +77,7 @@ ILogAccessFilter * buildLogFilterByFields(CLogAccessType searchByCategory, const
     {
         case CLogAccessType_All:
             return getWildCardLogAccessFilter();
-        case CLogAccessType_ByJobIdID:
+        case CLogAccessType_ByJobID:
             return getJobIDLogAccessFilter(searchByValue);
         case CLogAccessType_ByComponent:
             return getComponentLogAccessFilter(searchByValue);
