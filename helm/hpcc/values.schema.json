@@ -1605,7 +1605,6 @@
         },
         "totalMemoryLimit": { 
           "type": "string",
-          "default": "1G",
           "description": "Maximum amount of memory available for row data in all active queries"
         },
         "heapUseHugePages": { 

@@ -658,7 +658,7 @@ roxie:
   ## Adjust traceLevel to taste (1 is default)
   traceLevel: 1
   ## set totalMemoryLimit to indicate how much memory is preallocated for roxie row data
-  totalMemoryLimit: "1Gi"
+  # totalMemoryLimit: "1Gi" # Default 1Gi, capped to 75% of resources.memory if defined.
   ## Set mtuPayload to the maximum amount of data Roxie will put in a single packet. This should be just less than the system MTU. Default is 1400
   # mtuPayload: 3800
 
