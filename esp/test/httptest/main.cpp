@@ -17,6 +17,9 @@
 
 #include "httptest.hpp"
 
+constexpr unsigned TIMES_LIMIT = 10000000; //10M
+constexpr unsigned THREADS_LIMIT = 50;
+
 void usage()
 {
     puts("Usage:");
@@ -25,8 +28,8 @@ void usage()
     puts("   -c:  start as a client, which is the default");
     puts("   -s:  start as a server");
     puts("   -x:  start as a proxy");
-    puts("   -r <times> :  number of times for the client to send the request");
-    puts("   -t <number-of-threads> :  number of concurrent threads for the client to send the request");
+    printf("   -r <times> :  number of times for the client to send the request. The upper limit is %u.\n", TIMES_LIMIT);
+    printf("   -t <number-of-threads> :  number of concurrent threads for the client to send the request. The upper limit is %u.\n", THREADS_LIMIT);
     puts("   -i <filename> : input file name the client uses as request, or the server uses as response");
     puts("   -o <filename> : out file name");
     puts("   -url <[http|https]://[user:passwd@]host:port/path>: when starting as a client, the url to request");
@@ -127,11 +130,21 @@ int main(int argc, char* argv[])
         {
             i++;
             times = atoi(argv[i++]);
+            if (times > TIMES_LIMIT)
+            {
+                printf("Error: the limit for the times is %u\n", TIMES_LIMIT);
+                exit(-1);
+            }
         }
         else if (stricmp(argv[i],"-t")==0)
         {
             i++;
             threads = atoi(argv[i++]);
+            if (threads > THREADS_LIMIT)
+            {
+                printf("Error: the limit for the number-of-threads is %u\n", THREADS_LIMIT);
+                exit(-1);
+            }
         }
         else if (stricmp(argv[i], "-h")==0)
         {
