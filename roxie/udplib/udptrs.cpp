@@ -445,7 +445,7 @@ public:
     }
 #endif
 
-    unsigned sendData(const UdpPermitToSendMsg &permit, TokenBucket *bucket)
+    void sendData(const UdpPermitToSendMsg &permit, TokenBucket *bucket)
     {
         //NOTE: If a send_complete happens to be lost, it is possible for a permit to come in for a previous flowId
         //but this function sends the data as if it comes from the current requested flow-id.  That should not cause
@@ -466,7 +466,7 @@ public:
                 StringBuffer s;
                 DBGLOG("UdpFlow: ignoring out-of-date permit_to_send seq %" SEQF "u (expected %" SEQF "u) to node %s", permit.flowSeq, activeFlowSequence+0, permit.destNode.getTraceText(s).str());
             }
-            return 0;
+            return;
         }
 
         CCycleTimer sendTimer;
@@ -527,64 +527,68 @@ public:
             DBGLOG("UdpSender: gatherSendBlocks() %u blocks to node=%s under permit %" SEQF "u in %ums", (unsigned)toSend.size(), permit.destNode.getTraceText(s).str(), permit.flowSeq, gatherElapsed);
         }
 
-        sendStart(toSend.size());
-        for (DataBuffer *buffer: toSend)
+        //Avoid sending a start flow message if not sending any data - the completed message is sufficient
+        if (toSend.size())
         {
-            UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
-            unsigned length = header->length;
-            if (bucket)
+            sendStart(toSend.size());
+            for (DataBuffer *buffer: toSend)
             {
-                MTIME_SECTION(queryActiveTimer(), "bucket_wait");
-                bucket->wait((length / 1024)+1);
-            }
-            try
-            {
-#ifdef TEST_DROPPED_PACKETS
-                if (udpDropDataPackets && dropUdpPacket(header->pktSeq))
+                UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
+                unsigned length = header->length;
+                if (bucket)
                 {
-                    if (udpTraceTimeouts)
-                        DBGLOG("Deliberately dropping packet %" SEQF "u [%" SEQF "x]", header->sendSeq, header->pktSeq);
+                    MTIME_SECTION(queryActiveTimer(), "bucket_wait");
+                    bucket->wait((length / 1024)+1);
+                }
+                try
+                {
+    #ifdef TEST_DROPPED_PACKETS
+                    if (udpDropDataPackets && dropUdpPacket(header->pktSeq))
+                    {
+                        if (udpTraceTimeouts)
+                            DBGLOG("Deliberately dropping packet %" SEQF "u [%" SEQF "x]", header->sendSeq, header->pktSeq);
+                    }
+                    else
+    #endif
+                    if (encrypted)
+                    {
+                        encryptBuffer.clear();
+                        encryptBuffer.append(sizeof(UdpPacketHeader), header);    // We don't encrypt the header
+                        length -= sizeof(UdpPacketHeader);
+                        const char *data = buffer->data + sizeof(UdpPacketHeader);
+                        const MemoryAttr &udpkey = getSecretUdpKey(true);
+                        aesEncrypt(udpkey.get(), udpkey.length(), data, length, encryptBuffer);
+                        header->length = encryptBuffer.length();
+                        encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
+                        assert(length <= DATA_PAYLOAD);
+                        if (udpTraceLevel > 5)
+                            DBGLOG("ENCRYPT: Writing %u bytes to data socket", encryptBuffer.length());
+                        data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
+                    }
+                    else
+                        data_socket->write(buffer->data, length);
+                    dataPacketsSent++;
+                }
+                catch(IException *e)
+                {
+                    StringBuffer s;
+                    DBGLOG("UdpSender: write exception - write(%p, %u) - %s", buffer->data, length, e->errorMessage(s).str());
+                    e->Release();
+                }
+                catch(...)
+                {
+                    DBGLOG("UdpSender: write exception - unknown exception");
+                }
+                if (resendList)
+                {
+                    if (resending)
+                        resending--;   //Don't add the ones I am resending back onto list - they are still there!
+                    else
+                        resendList->append(buffer);
                 }
                 else
-#endif
-                if (encrypted)
-                {
-                    encryptBuffer.clear();
-                    encryptBuffer.append(sizeof(UdpPacketHeader), header);    // We don't encrypt the header
-                    length -= sizeof(UdpPacketHeader);
-                    const char *data = buffer->data + sizeof(UdpPacketHeader);
-                    const MemoryAttr &udpkey = getSecretUdpKey(true);
-                    aesEncrypt(udpkey.get(), udpkey.length(), data, length, encryptBuffer);
-                    header->length = encryptBuffer.length();
-                    encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
-                    assert(length <= DATA_PAYLOAD);
-                    if (udpTraceLevel > 5)
-                        DBGLOG("ENCRYPT: Writing %u bytes to data socket", encryptBuffer.length());
-                    data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
-                }
-                else
-                    data_socket->write(buffer->data, length);
-                dataPacketsSent++;
+                    ::Release(buffer);
             }
-            catch(IException *e)
-            {
-                StringBuffer s;
-                DBGLOG("UdpSender: write exception - write(%p, %u) - %s", buffer->data, length, e->errorMessage(s).str());
-                e->Release();
-            } 
-            catch(...)
-            {
-                DBGLOG("UdpSender: write exception - unknown exception");
-            }
-            if (resendList)
-            {
-                if (resending)
-                    resending--;   //Don't add the ones I am resending back onto list - they are still there!
-                else
-                    resendList->append(buffer);
-            }
-            else
-                ::Release(buffer);
         }
         activePermitSeq = 0;
         unsigned socketElapsed = sendTimer.elapsedMs();
@@ -608,8 +612,6 @@ public:
             StringBuffer s;
             DBGLOG("UdpSender: sendData() %u bytes to node=%s under permit %" SEQF "u in %ums", totalSent, permit.destNode.getTraceText(s).str(), permit.flowSeq, doneElapsed);
         }
-
-        return totalSent;
     }
 
     bool dataQueued(const UdpPacketHeader &key)
@@ -1078,12 +1080,7 @@ class CSendManager : implements ISendManager, public CInterface
                     return 0;
 
                 UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.destNode];
-                unsigned payload = receiverInfo.sendData(permit, bucket);
-                if (udpTraceLevel > 2)
-                {
-                    StringBuffer s;
-                    DBGLOG("UdpSender[%s]: sent %u bytes to node=%s under permit %" SEQF "u", parent.myId, payload, permit.destNode.getTraceText(s).str(), permit.flowSeq);
-                }
+                receiverInfo.sendData(permit, bucket);
             }
             if (udpTraceLevel > 0)
                 DBGLOG("UdpSender[%s]: send_data stopped", parent.myId);
