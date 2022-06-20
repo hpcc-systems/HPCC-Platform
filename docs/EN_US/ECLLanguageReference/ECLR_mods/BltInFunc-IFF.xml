@@ -50,11 +50,26 @@
       </tgroup>
     </informaltable></para>
 
-   <para>The <emphasis role="bold">IFF</emphasis> function performs the same
+  <para>The <emphasis role="bold">IFF</emphasis> function performs the same
   functionality as IF, but ensures that an <emphasis>expression</emphasis>
   containing complex boolean logic is evaluated exactly as it appears.</para>
 
-  <para>See Also: <link linkend="IF">IF</link>, <link linkend="MAP">MAP</link>,
-  <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>,
-  <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
+  <para>The main difference between IF and IFF is with conditional scalar
+  expressions. Generally the arguments to dataset IF() operators are always
+  evaluated lazily, but there are situations, if the expression type is a row
+  or a scalar, where they might not be.</para>
+
+  <para>For example:</para>
+
+  <para><programlisting>foo := IF (age &lt; 18, '', expensiveFunction());
+</programlisting></para>
+
+  <para>Then there is no guarantee that expensiveFunction will not be
+  executed. If you use IFF() the code generator internally converts it to a
+  dataset expression, ensuring it is evaluated lazily.</para>
+
+  <para>See Also: <link linkend="IF">IF</link>, <link
+  linkend="MAP">MAP</link>, <link linkend="EVALUATE">EVALUATE</link>, <link
+  linkend="CASE">CASE</link>, <link linkend="CHOOSE">CHOOSE</link>, <link
+  linkend="SET">SET</link></para>
 </sect1>

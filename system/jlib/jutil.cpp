@@ -3143,6 +3143,10 @@ static StringBuffer &doGetTempFilePath(StringBuffer & target, const char *tempCa
     StringBuffer dir;
     if (pTree)
         getConfigurationDirectory(pTree->queryPropTree("Directories"),tempCategory,component,pTree->queryProp("@name"),dir);
+#ifdef _CONTAINERIZED
+    else
+        getConfigurationDirectory(nullptr,tempCategory,component,nullptr,dir);
+#endif
     bool ok = false;
     if (!dir.isEmpty())
     {

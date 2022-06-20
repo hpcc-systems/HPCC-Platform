@@ -1141,13 +1141,49 @@ void DebugDifferenceAnalyser::doAnalyse(IHqlExpression * expr)
     {
         if (prev && prev->queryBody() != expr->queryBody())
         {
-            debugFindFirstDifference(expr, prev);
+            traceFindFirstDifference(expr, prev);
             return;
         }
         else
             prev = expr;
     }
     QuickHqlTransformer::doAnalyse(expr);
+}
+
+
+//-------------------------------------------------------------------------------------------------
+
+static HqlTransformerInfo matchExprTracerInfo("MatchExprTracer");
+MatchExprTracer::MatchExprTracer(callback _matches) : QuickHqlTransformer(matchExprTracerInfo, NULL), matches(_matches)
+{
+}
+
+void MatchExprTracer::reportMatches(const char * title)
+{
+    if (matchedExprs.ordinality() < 2)
+        return;
+
+    DBGLOG("Matches for %s", title);
+//    EclIR::dbglogIR(matchedExprs);
+
+    for (unsigned i= 1; i < matchedExprs.ordinality(); i++)
+        traceFindFirstDifference(&matchedExprs.item(i-1), &matchedExprs.item(i));
+}
+
+
+void MatchExprTracer::doAnalyse(IHqlExpression * expr)
+{
+    if (matches(expr))
+        matchedExprs.append(*LINK(expr));
+    QuickHqlTransformer::doAnalyse(expr);
+}
+
+
+void traceMatchExpr(const char * title, const HqlExprArray & exprs, std::function<bool(IHqlExpression *)> matches)
+{
+    MatchExprTracer tracer(matches);
+    tracer.analyseArray(exprs);
+    tracer.reportMatches(title);
 }
 
 

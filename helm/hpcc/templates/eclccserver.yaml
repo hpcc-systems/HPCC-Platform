@@ -115,10 +115,6 @@ data:
 {{- $prefix := include "hpcc.getPlanePrefix" (dict "root" .root "planeName" $gitPlane) -}}
 {{- $_ := set $result "value" (list (dict "name" "ECLCC_ECLREPO_PATH" "value" $prefix)) -}}
 {{- end -}}
-{{- if .me.gitUsername -}}
-{{- $entry := list (dict "name" "HPCC_GIT_USERNAME" "value" .me.gitUsername) -}}
-{{- $_ := set $result "value" (concat (get $result "value") $entry) -}}
-{{- end -}}
 {{- toYaml $result -}}
 {{- end -}}
 

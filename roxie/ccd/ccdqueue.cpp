@@ -1181,8 +1181,8 @@ public:
 #endif
             CriticalBlock qc(qcrit);
             waiting.enqueue(x);
-            noteQueued();
         }
+        noteQueued();
         available.signal();
     }
 
@@ -1218,9 +1218,9 @@ public:
                 l.CTXLOG("Ignored retry on subchannel %u for queued activity %s", subChannel, header.toString(xx).str());
             }
             if (!subChannel)
-                retriesIgnoredPrm++;
+                retriesIgnoredPrm.fastInc();
             else
-                retriesIgnoredSec++;
+                retriesIgnoredSec.fastInc();
             x->Release();
         }
         else
@@ -1343,12 +1343,14 @@ class CRoxieWorker : public CInterface, implements IPooledThread
 #ifndef NEW_IBYTI
     Semaphore ibytiSem;
 #endif
-    bool stopped;
-    bool abortJob;
-    bool busy;
+    std::atomic<bool> stopped;
+    std::atomic<bool> abortJob;
+    std::atomic<bool> busy;
     Owned<IRoxieAgentActivity> activity;
     Owned<IRoxieQueryPacket> packet;
+#ifndef SUBCHANNELS_IN_HEADER
     Owned<const ITopologyServer> topology;
+#endif
     AgentContextLogger logctx;
 
 public:
@@ -1510,31 +1512,13 @@ public:
     {
         RoxiePacketHeader &header = packet->queryHeader();
         unsigned channel = header.channel;
-        hash64_t queryHash = packet->queryHeader().queryHash;
-        unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
-        Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
 #ifdef SUBCHANNELS_IN_HEADER
         unsigned mySubChannel = header.mySubChannel();
 #else
         unsigned numAgents = topology->queryAgents(channel).ordinality();
         unsigned mySubChannel = topology->queryChannelInfo(channel).subChannel();
 #endif
-        if (!queryFactory && logctx.queryWuid())
-        {
-            Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-            Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid());
-            queryFactory.setown(createAgentQueryFactoryFromWu(wu, channel));
-            if (queryFactory)
-                cacheOnDemandQuery(queryHash, channel, queryFactory);
-        }
-        if (!queryFactory)
-        {
-            StringBuffer hdr;
-            IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", packet->queryHeader().toString(hdr).str());
-            EXCLOG(E, "doActivity");
-            throwRemoteException(E, activity, packet, false);
-            return;
-        }
+
         try
         {   
             bool debugging = logctx.queryDebuggerActive();
@@ -1611,9 +1595,9 @@ public:
                 {
 #ifndef NO_IBYTI_DELAYS_COUNT
                     if (!mySubChannel)
-                        ibytiNoDelaysPrm++;
+                        ibytiNoDelaysPrm.fastInc();
                     else
-                        ibytiNoDelaysSec++;
+                        ibytiNoDelaysSec.fastInc();
 #endif
                     if (logctx.queryTraceLevel() > 6)
                     {
@@ -1624,9 +1608,9 @@ public:
             }
 #endif
 #endif
+
             if (abortJob)
             {
-                CriticalBlock b(actCrit);
                 busy = false;  // Keep order - before setActivity below
                 if (logctx.queryTraceLevel() > 5)
                 {
@@ -1635,9 +1619,31 @@ public:
                 }
                 return;
             }
+
+            hash64_t queryHash = packet->queryHeader().queryHash;
+            Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
+            if (!queryFactory && logctx.queryWuid())
+            {
+                Owned <IRoxieDaliHelper> daliHelper = connectToDali();
+                Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid());
+                queryFactory.setown(createAgentQueryFactoryFromWu(wu, channel));
+                if (queryFactory)
+                    cacheOnDemandQuery(queryHash, channel, queryFactory);
+            }
+            if (!queryFactory)
+            {
+                StringBuffer hdr;
+                IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", packet->queryHeader().toString(hdr).str());
+                EXCLOG(E, "doActivity");
+                throwRemoteException(E, activity, packet, false);
+                return;
+            }
+
             if (!debugging)
                 ROQ->sendIbyti(header, logctx, mySubChannel);
+
             activitiesStarted++;
+            unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
             Owned <IAgentActivityFactory> factory = queryFactory->getAgentActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
@@ -1712,7 +1718,9 @@ public:
                             packetWaitCount++;
                         }
 #endif
+#ifndef SUBCHANNELS_IN_HEADER
                         topology.setown(getTopology());
+#endif
                         if (logctx.queryTraceLevel() > 10)
                         {
                             StringBuffer x;
@@ -1751,7 +1759,9 @@ public:
                     {
                         CriticalBlock b(actCrit);
                         packet.clear();
+#ifndef SUBCHANNELS_IN_HEADER
                         topology.clear();
+#endif
                         logctx.set(NULL);
                     }
                     agentsActive--;
@@ -1768,7 +1778,9 @@ public:
                 }
                 else
                     E->Release();
+#ifndef SUBCHANNELS_IN_HEADER
                 topology.clear();
+#endif
             }
             catch(...)
             {
@@ -1780,7 +1792,9 @@ public:
                     throwRemoteException(E.getClear(), NULL, packet, false);
                     packet.clear();
                 }
+#ifndef SUBCHANNELS_IN_HEADER
                 topology.clear();
+#endif
             }
         }
     }
@@ -2546,13 +2560,13 @@ public:
         }
         else
         {
-            ibytiPacketsReceived++;
+            ibytiPacketsReceived.fastInc();
             unsigned subChannel = header.getRespondingSubChannel();
             if (subChannel == mySubChannel)
             {
                 if (traceRoxiePackets || traceLevel > 10)
                     DBGLOG("doIBYTI packet was from self");
-                ibytiPacketsFromSelf++;
+                ibytiPacketsFromSelf.fastInc();
             }
             else
             {
@@ -2574,7 +2588,7 @@ public:
                         StringBuffer s; 
                         DBGLOG("Removed activity from Q : %s", header.toString(s).str());
                     }
-                    ibytiPacketsWorked++;
+                    ibytiPacketsWorked.fastInc();
                     return;
                 }
                 if (abortRunning(header, queue, true, preActivity))
@@ -2585,9 +2599,9 @@ public:
                         DBGLOG("Aborted running activity : %s", header.toString(s).str());
                     }
                     if (preActivity)
-                        ibytiPacketsWorked++;
+                        ibytiPacketsWorked.fastInc();
                     else 
-                        ibytiPacketsHalfWorked++;
+                        ibytiPacketsHalfWorked.fastInc();
                     return;
                 }               
                 if (traceRoxiePackets || traceLevel > 10)
@@ -2595,7 +2609,7 @@ public:
                     StringBuffer s;
                     DBGLOG("doIBYTI packet was too late (or too early) : %s", header.toString(s).str());
                 }
-                ibytiPacketsTooLate++; // meaning either I started and reserve the right to finish, or I finished already
+                ibytiPacketsTooLate.fastInc(); // meaning either I started and reserve the right to finish, or I finished already
                 if (IBYTIbufferSize)
                     queue.noteOrphanIBYTI(header);
             }
@@ -2627,12 +2641,7 @@ public:
                 queue.enqueue(packet.getClear());
                 return;
             }
-#ifdef SUBCHANNELS_IN_HEADER
-            unsigned mySubchannel = header.mySubChannel();
-#else
-            Owned<const ITopologyServer> topology = getTopology();
-            unsigned mySubchannel = topology->queryChannelInfo(header.channel).subChannel();
-#endif
+
             if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
             {
                 Owned<IRoxieQueryPacket> packet = deserializeCallbackPacket(mb);
@@ -2650,13 +2659,18 @@ public:
                     StringBuffer s;
                     DBGLOG("doIBYTI packet was too early : %s", header.toString(s).str());
                 }
-                ibytiPacketsTooLate--;
-                ibytiPacketsTooEarly++;
+                ibytiPacketsTooLate.fastDec();
+                ibytiPacketsTooEarly.fastInc();
             }
             else
             {
+#ifdef SUBCHANNELS_IN_HEADER
+                unsigned mySubchannel = header.mySubChannel();
+#else
+                Owned<const ITopologyServer> topology = getTopology();
+                unsigned mySubchannel = topology->queryChannelInfo(header.channel).subChannel();
+#endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
-                AgentContextLogger logctx(packet);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
                 if (retries)
                 {
@@ -2665,6 +2679,7 @@ public:
                     if (retries >= SUBCHANNEL_MASK)
                         return; // someone sent a failure or something - ignore it
 
+                    AgentContextLogger logctx(packet);
                     // Send back an out-of-band immediately, to let Roxie server know that channel is still active
                     if (!(testAgentFailure & 0x800))
                     {
@@ -2677,9 +2692,9 @@ public:
                     // if found, send an IBYTI and discard retry request
 
                     if (!mySubchannel)
-                        retriesReceivedPrm++;
+                        retriesReceivedPrm.fastInc();
                     else
-                        retriesReceivedSec++;
+                        retriesReceivedSec.fastInc();
                     bool alreadyRunning = false;
                     Owned<IPooledThreadIterator> wi = queue.running();
                     ForEach(*wi)
@@ -2689,9 +2704,9 @@ public:
                         {
                             alreadyRunning = true;
                             if (!mySubchannel)
-                                retriesIgnoredPrm++;
+                                retriesIgnoredPrm.fastInc();
                             else
-                                retriesIgnoredSec++;
+                                retriesIgnoredSec.fastInc();
                             ROQ->sendIbyti(header, logctx, mySubchannel);
                             if (logctx.queryTraceLevel() > 10)
                             {
@@ -2704,9 +2719,9 @@ public:
                     {
                         alreadyRunning = true;
                         if (!mySubchannel)
-                            retriesIgnoredPrm++;
+                            retriesIgnoredPrm.fastInc();
                         else 
-                            retriesIgnoredSec++;
+                            retriesIgnoredSec.fastInc();
                         ROQ->sendIbyti(header, logctx, mySubchannel);
                         if (logctx.queryTraceLevel() > 10)
                         {
@@ -2746,9 +2761,10 @@ public:
             DBGLOG("RoxieSocketQueueManager::run() starting: doIbytiDelay=%s minIbytiDelay=%u initIbytiDelay=%u",
                     doIbytiDelay?"YES":"NO", minIbytiDelay, initIbytiDelay);
 
+        MemoryBuffer mb;
         for (;;)
         {
-            MemoryBuffer mb;
+            mb.clear();
             try
             {
                 // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
@@ -2763,7 +2779,7 @@ public:
                 unsigned l;
                 multicastSocket->readtms(mb.reserve(maxPacketSize), sizeof(RoxiePacketHeader), maxPacketSize, l, timeout);
                 mb.setLength(l);
-                packetsReceived++;
+                packetsReceived.fastInc(); // Only incremented from this thread
                 RoxiePacketHeader &header = *(RoxiePacketHeader *) mb.toByteArray();
                 if (l != header.packetlength)
                     DBGLOG("sock->read returned %d but packetlength was %d", l, header.packetlength);

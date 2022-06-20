@@ -18,9 +18,9 @@
 import Std.File AS FileServices;
 // Super File regression test 2 (RemoveSuperFile)
 
-string fsuper := '~superfile3';
-string fsub := '~superfile4';
-string fsample := '~subfile6';
+string fsuper := '~' + WORKUNIT + '::superfile3';
+string fsub := '~' + WORKUNIT + '::superfile4';
+string fsample := '~' + WORKUNIT + '::subfile6';
 ds := DATASET ([{'aaa'}, {'bbb'}, {'ccc'}, {'ddd'}], {string name});
 
 sequential (

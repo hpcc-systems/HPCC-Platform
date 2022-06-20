@@ -184,7 +184,7 @@
             <entry><emphasis>numthreads</emphasis></entry>
 
             <entry>Optional. Try to evaluate this activity using
-            <emphasis>numthreads</emphasis> threads.</entry>
+            <emphasis>numthreads</emphasis> threads per node.</entry>
           </row>
 
           <row>
@@ -294,10 +294,9 @@
                 <primary>PARALLEL</primary>
               </indexterm>(<emphasis>n</emphasis>)</entry>
 
-            <entry>Specifies the number of concurrent threads to have
-            processing Data Delivery Engine queries, to a maximum of 50 (the
-            default is 2). This is intended to limit the number of concurrent
-            sessions.</entry>
+            <entry>Specifies the number of concurrent threads per node to
+            process queries, to a maximum of 50 (the default is 2). This is
+            intended to limit the number of concurrent sessions. </entry>
           </row>
 
           <row>

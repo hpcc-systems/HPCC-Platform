@@ -717,7 +717,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 # This is only required when mounting a remote filing systems from another container or machine.
 # NB: this includes where the filing system is on the containers host machine .
 # Examples include, minikube, docker for desktop, or NFS mounted storage.
-{{- $permCmd := printf "chown -R %v:%v %s" .uid .gid .volumePath }}
+{{- $permCmd := printf "chown -R %v:%v %s || true" .uid .gid .volumePath }}
 - name: volume-mount-hack
   image: busybox
   command: [
@@ -990,13 +990,13 @@ Generate list of available services
 {{ end -}}
 {{- end -}}
 {{- range $.Values.dafilesrv -}}
- {{- if not .disabled -}}
+ {{- if not .disabled }}
 - name: {{ .name }}
   type: {{ .application | default "stream" }}
   port: {{ .service.servicePort | default 7600 }}
   public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}
- {{- end -}}
-{{- end -}}
+ {{ end -}}
+{{ end -}}
 {{- end -}}
 
 {{/*

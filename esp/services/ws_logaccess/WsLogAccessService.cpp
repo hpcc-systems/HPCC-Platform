@@ -77,7 +77,7 @@ ILogAccessFilter * buildLogFilterByFields(CLogAccessType searchByCategory, const
     {
         case CLogAccessType_All:
             return getWildCardLogAccessFilter();
-        case CLogAccessType_ByJobIdID:
+        case CLogAccessType_ByJobID:
             return getJobIDLogAccessFilter(searchByValue);
         case CLogAccessType_ByComponent:
             return getComponentLogAccessFilter(searchByValue);
@@ -240,6 +240,60 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
     logFetchOptions.setLimit(limit);
     logFetchOptions.setStartFrom((offset_t)startFrom);
 
+    if (version >= 1.03)
+    {
+        IArrayOf<IConstSortCondition> & sortby = req.getSortBy();
+        for (int index = 0; index < sortby.length(); index++)
+        {
+            IConstSortCondition& condition = sortby.item(index);
+            CSortDirection espdirection = condition.getDirection();
+            SortByDirection direction = SORTBY_DIRECTION_none;
+            if (espdirection == CSortDirection_ASC)
+                direction = SORTBY_DIRECTION_ascending;
+            else if (espdirection == CSortDirection_DSC)
+                direction = SORTBY_DIRECTION_descending;
+
+            if (condition.getBySortType() <= -1) //only known sortby types processed
+                throw makeStringExceptionV(-1, "WsLogAccess: Unknown SortType encountered!");
+
+            if (condition.getBySortType() != CSortColumType_ByFieldName && !isEmptyString(condition.getColumnName()))
+                throw makeStringExceptionV(-1, "WsLogAccess: SortBy ColumnName not allowed unless coupled with ByFieldName BySortType!");
+
+            LogAccessMappedField mappedField = LOGACCESS_MAPPEDFIELD_unmapped;
+            switch (condition.getBySortType())
+            {
+            case CSortColumType_ByDate:
+                mappedField = LOGACCESS_MAPPEDFIELD_timestamp;
+                break;
+            case CSortColumType_ByJobID:
+                mappedField = LOGACCESS_MAPPEDFIELD_jobid;
+                break;
+            case CSortColumType_ByComponent:
+                mappedField = LOGACCESS_MAPPEDFIELD_component;
+                break;
+            case CSortColumType_ByLogType:
+                mappedField = LOGACCESS_MAPPEDFIELD_class;
+                break;
+            case CSortColumType_ByTargetAudience:
+                mappedField = LOGACCESS_MAPPEDFIELD_audience;
+                break;
+            case CSortColumType_BySourceInstance:
+                mappedField = LOGACCESS_MAPPEDFIELD_instance;
+                break;
+            case CSortColumType_BySourceNode:
+                mappedField = LOGACCESS_MAPPEDFIELD_host;
+                break;
+            case CSortColumType_ByFieldName:
+                if (isEmptyString(condition.getColumnName()))
+                    throw makeStringExceptionV(-1, "WsLogAccess: SortByFieldName option requires ColumnName!");
+                break;
+            default:
+                throw makeStringExceptionV(-1, "WsLogAccess: Unknown SortType encountered!");
+            }
+
+            logFetchOptions.addSortByCondition(mappedField, condition.getColumnName(), direction);
+        }
+    }
     StringBuffer logcontent;
     LogQueryResultDetails LogQueryResultDetails;
     m_remoteLogAccessor->fetchLog(LogQueryResultDetails, logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));

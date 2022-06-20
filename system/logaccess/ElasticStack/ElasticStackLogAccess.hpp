@@ -81,7 +81,7 @@ private:
     const IPropertyTree * getTimestampTypeFormat(const char * indexpattern, const char * fieldname);
     const IPropertyTree * performAndLogESRequest(Client::HTTPMethod httpmethod, const char * url, const char * reqbody, const char * logmessageprefix, LogMsgCategory reqloglevel, LogMsgCategory resploglevel);
 
-    void esSearchMetaData(std::string & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, unsigned size, offset_t from);
+    void esSearchMetaData(std::string & search, const LogAccessReturnColsMode retcolmode, const StringArray & selectcols, const SortByConditions & sortByConditions, unsigned size, offset_t from);
     void getMinReturnColumns(std::string & columns);
     void getDefaultReturnColumns(std::string & columns);
     void getAllColumns(std::string & columns);
@@ -90,6 +90,7 @@ public:
     ElasticStackLogAccess(const std::vector<std::string> &hostUrlList, IPropertyTree & logAccessPluginConfig);
     virtual ~ElasticStackLogAccess() override = default;
 
+    static const char * sortByDirectionToES(SortByDirection direction);
     void populateQueryStringAndQueryIndex(std::string & queryString, std::string & queryIndex, const LogAccessConditions & options);
 
     // IRemoteLogAccess methods

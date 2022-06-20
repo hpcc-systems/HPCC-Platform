@@ -85,6 +85,8 @@ public:
     inline void add(T _value, std::memory_order order = std::memory_order_relaxed) { if (_value) add_fetch(_value, order); }
     // add() that avoids the inter-thread lock - can be used if value is only updated from a single thread
     inline void fastAdd(T _value) { store(load()+_value); }
+    inline void fastDec() { fastAdd(-1); }
+    inline void fastInc() { fastAdd(1); }
 };
 
 // Class to accumulate values locally and only add atomically once
