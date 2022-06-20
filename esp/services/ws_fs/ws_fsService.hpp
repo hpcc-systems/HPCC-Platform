@@ -68,6 +68,8 @@ class CFileSprayEx : public CFileSpray
 {
     void readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcplane,
         StringBuffer& sourceIPReq, StringBuffer& sourcePathReq);
+    void getServersInDropZone(const char* dropZoneName, IArrayOf<IConstTpDropZone>& dropZoneList,
+        bool isECLWatchVisibleOnly, StringArray& serverList);
 
 public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
@@ -150,8 +152,8 @@ protected:
     void getDropZoneInfoByIP(double clientVersion, const char* destIP, const char* destFile, StringBuffer& path, StringBuffer& mask);
     void getDropZoneInfoByDestPlane(double clientVersion, const char* destGroup, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask, StringBuffer & hostip);
     bool checkDropZoneIPAndPath(double clientVersion, const char* dropZone, const char* netAddr, const char* path);
-    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char pathSep, IArrayOf<IEspPhysicalFileStruct>&files);
-    void searchDropZoneFiles(IEspContext& context, IpAddress& ip, const char* dir, const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files, unsigned& filesFound);
+    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char pathSep, const char* server, IArrayOf<IEspPhysicalFileStruct>&files);
+    void searchDropZoneFiles(IEspContext& context, const char* server, const char* dir, const char* nameFilter, IArrayOf<IEspPhysicalFileStruct>& files, unsigned& filesFound);
     void setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu);
     void setUserAuth(IEspContext &context, IDFUWorkUnit* wu);
 };

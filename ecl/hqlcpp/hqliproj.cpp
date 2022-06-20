@@ -2868,7 +2868,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 {
                 case no_inlinetable:
                     {
-                        IHqlExpression * transforms = expr->queryChild(0);
+                        OwnedHqlExpr transforms = transform(expr->queryChild(0));
                         HqlExprArray newTransforms;
                         ForEachChild(i, transforms)
                         {
@@ -2880,9 +2880,9 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                     }
                 case no_dataset_from_transform:
                     {
-                        IHqlExpression * transform = expr->queryChild(1);
-                        args.append(*LINK(expr->queryChild(0)));
-                        args.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
+                        OwnedHqlExpr transformExpr = transform(expr->queryChild(1));
+                        args.append(*transform(expr->queryChild(0)));
+                        args.append(*complexExtra->outputFields.createFilteredTransform(transformExpr, NULL));
                         break;
                     }
                 }
@@ -3031,7 +3031,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     default:
         throwUnexpected();
     }
-    
+
     return transformed.getClear();
 }
 

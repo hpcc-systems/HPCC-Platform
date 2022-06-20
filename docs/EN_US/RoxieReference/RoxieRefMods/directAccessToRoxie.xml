@@ -368,13 +368,47 @@ to
 /WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName/expanded</programlisting></para>
     </sect2>
 
-    <sect2>
+    <sect2 id="RoxieLogging" role="brk">
+      <title>Roxie Logging and Trace Levels</title>
+
+      <para>When running a Roxie query using a WsECL form, you can check a box
+      to request Roxie logging information for the query. You can also set the
+      trace level to specify the amount of detail written to the logs.</para>
+
+      <para><graphic fileref="../../images/RDDE_RoxieLogging.jpg" /></para>
+
+      <para>Check the <emphasis role="bold">Capture Log Info.</emphasis> box
+      to enable logging for the request. </para>
+
+      <para>Optionally, you can specify the level of detail by entering a
+      number between 1-10 in the <emphasis role="bold">Trace Level
+      </emphasis>box. </para>
+
+      <para>In addition, the option can be provided as properties of the
+      Request: </para>
+
+      <para><programlisting>&lt;addthis.1Request xmlns="urn:hpccsystems:ecl:addthis.1" log="true" traceLevel="10"&gt;</programlisting></para>
+
+      <para>Logging is returned in the SOAP Response: </para>
+
+      <para><programlisting>&lt;Tracing&gt; 
+  &lt;Log&gt; 
+    &lt;Category&gt;TRACE&lt;/Category&gt; 
+    &lt;Channel&gt;0&lt;/Channel&gt; 
+    &lt;Time&gt;0.001&lt;/Time&gt;  
+    &lt;Prefix&gt;10.239.20.60:9876 {7} &lt;/Prefix&gt; 
+    &lt;Text&gt;Executing graph graph1&lt;/Text&gt; 
+  &lt;/Log&gt; 
+&lt;/Tracing&gt;</programlisting></para>
+    </sect2>
+
+    <sect2 role="brk">
       <title>Blind Logging</title>
 
       <para>Blind logging suppresses anything that might be potentially
       sensitive or might contain Personally Identifiable Information (PII)
       from being written to logs. This includes contents of rows, contents of
-      queries, and contents of fields. </para>
+      queries, and contents of fields.</para>
 
       <para>You can cause a query to log blind by setting either a top level
       “&lt;_blind&gt;” tag in the request, or by setting an attribute “blind”

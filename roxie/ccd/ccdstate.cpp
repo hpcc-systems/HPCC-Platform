@@ -1483,16 +1483,19 @@ public:
                     reply.appendf(" <wuid>%s</wuid>\n", statsWu->queryWuid());
                 else
                 {
+                    reply.appendf("<Graphs>\n");
                     Owned<IConstWUGraphIterator> graphs = &statsWu->getGraphs(GraphTypeActivities);
                     ForEach(*graphs)
                     {
                         IConstWUGraph &graph = graphs->query();
-                        SCMStringBuffer s;
-                        reply.appendf("<Graph id='%s'>\n <xgmml>\n", graph.getName(s).str());
                         Owned<IPropertyTree> xgmml = graph.getXGMMLTree(true, false);  // We can't merge between nodes if we format the values
+                        unsigned wfid = xgmml->getPropInt("@wfid");
+                        SCMStringBuffer s;
+                        reply.appendf("<Graph name='%s' wfid='%u'>\n <xgmml>\n", graph.getName(s).str(), wfid);
                         toXML(xgmml, reply, 2);
                         reply.append(" </xgmml>\n</Graph>\n");
                     }
+                    reply.appendf("</Graphs>\n");
                 }
                 reply.append("</Query>\n");
                 return true;
@@ -2725,7 +2728,7 @@ private:
                             ForEachItemIn(idx, graphNames)
                             {
                                 const char *graphName = graphNames.item(idx);
-                                reply.appendf("<Graph id='%s'/>", graphName);
+                                reply.appendf("<Graph name='%s'/>", graphName);
                             }
                             reply.appendf("</Query>\n");
                         }

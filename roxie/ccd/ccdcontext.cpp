@@ -2561,6 +2561,7 @@ public:
 };
 
 enum LogActReset { LogResetSkip=0, LogResetOK, LogResetInit };
+static constexpr char hexchar[] = "0123456789ABCDEF";
 
 class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext, implements IEngineContext
 {
@@ -3123,7 +3124,6 @@ public:
     }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data)
     {
-        static char hexchar[] = "0123456789ABCDEF";
         if (isSpecialResultSequence(sequence))
         {
             StringBuffer s;

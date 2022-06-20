@@ -258,7 +258,11 @@ public:
             //for now only support direct access token.  we can support other combinations for example login token, ldap login, etc later.
             Owned<IPropertyTree> clientSecret = getLocalSecret("system", vault->queryProp("@client-secret"));
             if (clientSecret)
-                token.set(clientSecret->queryProp("token"));
+            {
+                StringBuffer tokenText;
+                getSecretKeyValue(tokenText, clientSecret, "token");
+                token.set(tokenText.str());
+            }
         }
     }
     CVaultKind getVaultKind() const { return kind; }
@@ -359,7 +363,8 @@ public:
             { "X-Vault-Token", token.str() }
         };
 
-        if (httplib::Result res = cli.Get(location, headers))
+        httplib::Result res = cli.Get(location, headers);
+        if (res)
         {
             if (res->status == 200)
             {
@@ -373,6 +378,8 @@ public:
                 DBGLOG("Vault %s error accessing secret %s.%s [%d](%d) - response: %s", name.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
             }
         }
+        else
+            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s", name.str(), res.error(), secret, version ? version : "");
         return false;
     }
 };

@@ -24,6 +24,7 @@
 #include "hqlexpr.ipp"
 #include "hqlerror.hpp"
 #include "hqlutil.hpp"
+#include "jsecrets.hpp"
 
 static const char * queryExtractFilename(const char * urn)
 {
@@ -823,29 +824,82 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
     if (!output)
         output= &tempOutput;
 
+    Owned<IFile> extractedKey;
     EnvironmentVector env;
-    const char * username = getenv("HPCC_GIT_USERNAME");
     //If fetching from git and the username is specified then use the script file to provide the username/password
-    if (needCredentials && username)
+    if (needCredentials)
     {
-        StringBuffer scriptPath;
-        getPackageFolder(scriptPath);
-        addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
-        env.emplace_back("GIT_ASKPASS", scriptPath);
+        //If the username is supplied, then get the secret and write it to a temporary location.
+        bool useScript = false;
+        if (options.gitUser.length())
+        {
+            env.emplace_back("HPCC_GIT_USERNAME", options.gitUser.str());
+
+            // If gituser is specified never prompt for credentials, otherwise the server can hang.
+            env.emplace_back("GIT_TERMINAL_PROMPT", "0");
+
+            if (!options.gitPasswordPath.isEmpty())
+            {
+                //Convert to an absolute path, and check the file exists, because git will be run in a different directory
+                StringBuffer absolutePath;
+                makeAbsolutePath(options.gitPasswordPath.str(), absolutePath, true);
+
+                env.emplace_back("HPCC_GIT_PASSPATH", absolutePath);
+                useScript = true;
+            }
+            else
+            {
+                Owned<IPropertyTree> secret = getSecret("git", options.gitUser.str());
+                if (secret)
+                {
+                    MemoryBuffer gitKey;
+                    if (getSecretKeyValue(gitKey, secret, "password"))
+                    {
+                        StringBuffer tempDir;
+                        getTempFilePath(tempDir, "eclcc", nullptr);
+
+                        StringBuffer extractedKeyFilename;
+                        OwnedIFileIO io = createUniqueFile(tempDir, "git", NULL, extractedKeyFilename);
+                        io->write(0, gitKey.length(), gitKey.toByteArray());
+                        io->close();
+
+                        //Prevent any other users from accessing the file
+                        extractedKey.setown(createIFile(extractedKeyFilename));
+                        extractedKey->setFilePermissions(0700);
+
+                        env.emplace_back("HPCC_GIT_PASSPATH", extractedKeyFilename.str());
+                        useScript = true;
+                    }
+                }
+            }
+        }
+
+        if (useScript)
+        {
+            //If fetching from git and the username is specified then use the script file to provide the username/password
+            StringBuffer scriptPath;
+            getPackageFolder(scriptPath);
+            addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
+            env.emplace_back("GIT_ASKPASS", scriptPath);
+        }
     }
 
     const char * cmd = "git";
     VStringBuffer runcmd("%s %s", cmd, args);
     StringBuffer error;
     unsigned ret = runExternalCommand(cmd, *output, error, runcmd, nullptr, cwd, &env);
+    if (extractedKey)
+        extractedKey->remove();
+
     if (ret > 0)
     {
-        if (!username)
+        if (options.gitUser.isEmpty())
             DBGLOG("HPCC_GIT_USERNAME was not set");
         DBGLOG("%s return code was %d\nError: %s\n", runcmd.str(), ret, error.str());
     }
     else if (options.optVerbose)
         printf("%s\n", output->str());
+
     return ret;
 }
 

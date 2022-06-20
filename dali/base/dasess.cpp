@@ -1252,6 +1252,10 @@ public:
 };
 
 
+static unsigned last=0;
+static unsigned lasttick=0;
+static unsigned first50=0;
+
 class CCovenSessionManager: public CSessionManagerBase, implements ISessionManagerServer, implements ISubscriptionManager
 {
     CSessionRequestServer   sessionrequestserver;
@@ -1508,9 +1512,6 @@ public:
             }
             else {
                 unsigned waiting = ldapwaiting;
-                static unsigned last=0;
-                static unsigned lasttick=0;
-                static unsigned first50=0;
                 if ((waiting!=last)&&(msTick()-lasttick>1000)) {
                     OWARNLOG("%d threads waiting for ldap",waiting);
                     last = waiting;

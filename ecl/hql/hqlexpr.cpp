@@ -16558,7 +16558,7 @@ bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
         return true;
 
 #ifdef _DEBUG
-    debugFindFirstDifference(unadornedLeft, unadornedRight);
+    //traceFindFirstDifference(unadornedLeft, unadornedRight);
 #endif
 
     return false;

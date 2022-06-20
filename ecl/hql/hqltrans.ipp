@@ -281,6 +281,24 @@ protected:
     IIdAtom * search;
 };
 
+class HQL_API MatchExprTracer : public QuickHqlTransformer
+{
+    using callback = std::function<bool(IHqlExpression *)>;
+public:
+    MatchExprTracer(callback _matches);
+
+    virtual void doAnalyse(IHqlExpression * expr);
+    void reportMatches(const char * title);
+
+protected:
+    callback matches;
+    HqlExprArray matchedExprs;
+};
+
+
+//E.g. traceMatchExpr("afterX", curWorkflow.queryExprs(), [](IHqlExpression * expr) -> bool { return expr->queryName() == createAtom("SearchSymbol"); });
+void traceMatchExpr(const char * title, const HqlExprArray & exprs, std::function<bool(IHqlExpression *)> matches);
+
 //---------------------------------------------------------------------------
 
 class HQL_API HqlSectionAnnotator : public QuickHqlTransformer

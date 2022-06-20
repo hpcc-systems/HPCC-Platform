@@ -2308,7 +2308,6 @@ protected:
     Semaphore started;                      // MORE: GH->RKC I'm pretty sure this can be deleted, since handled by RestartableThread
     bool groupAtOnce, eog;
     std::atomic<bool> eof;
-    CriticalSection crit;
 
 public:
     RecordPullerThread(bool _groupAtOnce) 
@@ -2396,13 +2395,14 @@ public:
     {
         if (traceStartStop)
             DBGLOG("RecordPullerThread::stop");
-        {
-            CriticalBlock c(crit); // stop is called on our consumer's thread. We need to take care calling stop for our input to make sure it is not in mid-nextRow etc etc.
-            if (inputStream)
-                inputStream->stop();
-            eof = true;
-        }
+
+        //Force the reading thread to terminate
+        eof = true;
         RestartableThread::join();
+
+        //Reader thread is now guaranteed to have stopped, so it is safe to call stop()
+        if (inputStream)
+            inputStream->stop();
     }
 
     void reset()
@@ -2445,11 +2445,8 @@ public:
         while (preload && !eof)
         {
             const void * row = nullptr;
-            {
-                CriticalBlock c(crit); // See comments in stop for why this is needed
-                if (!eof)
-                    row = inputStream->nextRow();
-            }
+            if (!eof)
+                row = inputStream->nextRow();
             if (row)
             {
                 eog = false;
@@ -2478,17 +2475,15 @@ public:
         while (preload && !eof)
         {
             const void *row = nullptr;
-            {
-                CriticalBlock c(crit);
-                if (!eof)
-                    row = inputStream->nextRow();
-            }
+            if (!eof)
+                row = inputStream->nextRow();
+
             if (row)
             {
                 thisGroup.append(row);
                 rowsDone++;
             }
-            else if (thisGroup.length())
+            else if (thisGroup.length() && !eof)
             {
                 helper->processGroup(thisGroup);
                 thisGroup.kill();
@@ -10366,10 +10361,12 @@ public:
         {
             try
             {
-                ActivityTimer t(activityStats, timeActivities);
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
-                helper.action();
+                {
+                    ActivityTimer t(activityStats, timeActivities);
+                    helper.action();
+                }
                 stop();
             }
             catch(IException *E)
@@ -13873,9 +13870,12 @@ public:
         try
         {
             start(parentExtractSize, parentExtract, false);
-            assertex(!rows);
-            IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
-            helper.execute(&activityContext);
+            {
+                assertex(!rows);
+                IHThorExternalArg & helper = static_cast<IHThorExternalArg &>(basehelper);
+                ActivityTimer t(activityStats, timeActivities);
+                helper.execute(&activityContext);
+            }
             stop();
         }
         catch (IException * E)
@@ -20924,7 +20924,10 @@ public:
             {
                 executed = true;
                 start(parentExtractSize, parentExtract, false);
-                doExecuteAction(parentExtractSize, parentExtract);
+                {
+                    ActivityTimer t(activityStats, timeActivities);
+                    doExecuteAction(parentExtractSize, parentExtract);
+                }
                 stop();
             }
             catch (IException * E)
@@ -20968,11 +20971,7 @@ public:
 
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) override
     {
-        bool cond;
-        {
-            ActivityTimer t(activityStats, timeActivities);
-            cond = helper.getCondition();
-        }
+        bool cond = helper.getCondition();
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
         try
         {

@@ -18,7 +18,7 @@
 ESPenum LogAccessType : int
 {
     All(0, "All"),
-    ByJobIdID(1, "ByJobIdID"),
+    ByJobID(1, "ByJobID"),
     ByComponent(2, "ByComponent"),
     ByLogType(3, "ByLogType"),
     ByTargetAudience(4, "ByTargetAudience"),
@@ -77,7 +77,7 @@ ESPenum LogAccessFilterOperator : int
 * SearchbyValue contains value used to identify target log entries.
 * Limited to values associated with the the LogCategory choice.
 *
-* If searching by "ByJobIdID", the SearchByValue should contain the jobid of interest
+* If searching by "ByJobID", the SearchByValue should contain the jobid of interest
 * If searching by "ByComponent", the SearchByValue should contain the component of interest
 * If searching by "ByLogType", the SearchByValue should contain the 3 letter code associated with the log type of interest.
 * valid values at time of writing are:
@@ -124,6 +124,31 @@ ESPStruct BinaryLogFilter
     ESParray<ESPstruct BinaryLogFilter> rightBinaryFilter;
 };
 
+ESPenum SortDirection : int
+{
+    ASC(0, "ASC"),
+    DSC(1, "DSC")
+};
+
+ESPenum SortColumType : int
+{
+    ByDate(0, "ByDate"),
+    ByJobID(1, "ByJobID"),
+    ByComponent(2, "ByComponent"),
+    ByLogType(3, "ByLogType"),
+    ByTargetAudience(4, "ByTargetAudience"),
+    BySourceInstance(5, "BySourceInstance"),
+    BySourceNode(6, "BySourceNode"),
+    ByFieldName(7, "ByFieldName")
+};
+
+ESPStruct SortCondition
+{
+    ESPenum SortColumType BySortType(0);  //Choose Sortby type - known/mapped fields, or by a free-hand field name
+    string ColumnName;                    //Name of field to sortby - Only used in conjunction with BySortType=ByFieldName(7)
+    ESPenum SortDirection Direction(1);
+};
+
 ESPRequest GetLogsRequest
 {
     [min_ver("1.02")] ESPStruct BinaryLogFilter Filter;
@@ -135,6 +160,7 @@ ESPRequest GetLogsRequest
     [min_ver("1.01")] ESPenum LogSelectColumnMode SelectColumnMode(1);
     ESParray<string> Columns;
     LogAccessLogFormat Format("JSON");
+    [min_ver("1.03")] ESParray<ESPstruct SortCondition> SortBy;
 };
 
 ESPResponse GetLogsResponse
@@ -144,7 +170,7 @@ ESPResponse GetLogsResponse
     [min_ver("1.02")] unsigned int TotalLogLinesAvailable;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.02"), default_client_version("1.02"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.03"), default_client_version("1.03"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);

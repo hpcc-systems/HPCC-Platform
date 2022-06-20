@@ -928,16 +928,16 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
         ESPLOG(LogMax, "WsSQL: checking query cache...");
         if(cacheeligible && getCachedQuery(normalizedSQL.str(), compiledwuid.s))
         {
-           ESPLOG(LogMax, "WsSQL: cache hit opening wuid %s...", compiledwuid.str());
-           Owned<IConstWorkUnit> cw = factory->openWorkUnit(compiledwuid.str(), false);
-           if (!cw)//cache hit but unavailable WU
-           {
-               ESPLOG(LogMax, "WsSQL: cache hit but unavailable WU...");
-               removeQueryFromCache(normalizedSQL.str());
-               compiledwuid.clear();
-           }
-           else
-               clonable = true;
+            ESPLOG(LogMax, "WsSQL: cache hit opening wuid %s...", compiledwuid.str());
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(compiledwuid.str(), false);
+            if (!cw)//cache hit but unavailable WU
+            {
+                ESPLOG(LogMax, "WsSQL: cache hit but unavailable WU...");
+                removeQueryFromCache(normalizedSQL.str());
+                compiledwuid.clear();
+            }
+            else
+                clonable = true;
         }
 
         if (compiledwuid.length()==0)
