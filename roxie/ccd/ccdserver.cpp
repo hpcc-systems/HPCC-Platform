@@ -452,11 +452,13 @@ extern SinkMode getSinkMode(const char *val)
         return SinkMode::ParallelPersistent;
     else if (strieq(val, "sequential"))
         return SinkMode::Sequential;
+    else if (strieq(val, "parallel"))
+        return SinkMode::Parallel;
     else
     {
-        if (!strieq(val, "parallel"))
-            WARNLOG("Unsupported sinkmode %s - assuming parallel", val);
-        return SinkMode::Parallel;
+        if (!strieq(val, "automatic"))
+            WARNLOG("Unsupported sinkmode %s - assuming auto", val);
+        return SinkMode::Automatic;
     }
 }
 
@@ -475,7 +477,7 @@ protected:
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
     bool isCodeSigned = false;
-    SinkMode sinkMode = SinkMode::Parallel;
+    SinkMode sinkMode = SinkMode::Automatic;
     unsigned heapFlags;
 
 public:
@@ -27639,7 +27641,7 @@ protected:
     IRoxieServerActivity *parentActivity;
     unsigned id;
     unsigned loopCounter;
-    SinkMode sinkMode = SinkMode::Parallel;
+    SinkMode sinkMode = SinkMode::Automatic;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -27724,7 +27726,7 @@ public:
             if (donor.isSink())
             {
                 IRoxieServerActivity &activity = activities.item(idx2);
-                if (activity.isSimpleSink())
+                if (sinkMode == SinkMode::Automatic && activity.isSimpleSink())
                 {
                     if (!simpleSinks)
                     {
@@ -27887,7 +27889,7 @@ public:
                 }
                 checkAbort();
             }
-            else if (sinkMode == SinkMode::Parallel)
+            else if (sinkMode == SinkMode::Parallel || sinkMode == SinkMode::Automatic)
             {
                 class casyncfor: public CAsyncFor
                 {

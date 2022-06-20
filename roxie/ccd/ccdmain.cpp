@@ -142,7 +142,7 @@ unsigned parallelQueryLoadThreads = 0;               // Number of threads to use
 bool alwaysFailOnLeaks = false;
 bool ignoreFileDateMismatches = false;
 int fileTimeFuzzySeconds = 0;
-SinkMode defaultSinkMode = SinkMode::Parallel;
+SinkMode defaultSinkMode = SinkMode::Automatic;
 unsigned continuationCompressThreshold = 1024;
 
 bool useOldTopology = false;

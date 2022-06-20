@@ -279,7 +279,8 @@ enum class SinkMode : byte
 {
     Parallel = 0,           // Execute sinks in parallel - this is the default
     ParallelPersistent = 1, // Execute sinks in parallel using persistent threads. May be faster for a heavily-reused child query, but lead to higher thread usage
-    Sequential = 2          // Execute sinks sequentially - sometimes faster if sinks not doing much work
+    Sequential = 2,         // Execute sinks sequentially - sometimes faster if sinks not doing much work
+    Automatic = 3           // Combine simple sinks into a single sequential sink, execute remaining sinks in parallel
 };
 
 
