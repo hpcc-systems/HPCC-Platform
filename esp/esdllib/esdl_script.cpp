@@ -29,16 +29,11 @@
 #include <fxpp/FragmentedXmlPullParser.hpp>
 using namespace xpp;
 
-interface IEsdlTransformOperation : public IInterface
-{
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) = 0;
-    virtual void toDBGLog() = 0;
-};
 
-IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
-void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
-void createEsdlTransformChooseOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
-typedef void (*esdlOperationsFactory_t)(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister, bool canCreateFunctions);
+void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister);
+void createEsdlTransformChooseOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister);
+typedef void (*esdlOperationsFactory_t)(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister);
 
 bool getStartTagValueBool(StartTag &stag, const char *name, bool defaultValue)
 {
@@ -50,14 +45,28 @@ bool getStartTagValueBool(StartTag &stag, const char *name, bool defaultValue)
     return strToBool(value);
 }
 
-inline void esdlOperationError(int code, const char *op, const char *msg, const char *traceName, bool exception)
+
+inline void buildEsdlOperationMessage(StringBuffer &s, int code, const char *op, const char *msg, const char *traceName)
 {
-    StringBuffer s("ESDL Script: ");
+    s.set("ESDL Script: ");
     if (!isEmptyString(traceName))
         s.append(" '").append(traceName).append("' ");
     if (!isEmptyString(op))
         s.append(" ").append(op).append(" ");
     s.append(msg);
+}
+
+inline void esdlOperationWarning(int code, const char *op, const char *msg, const char *traceName)
+{
+    StringBuffer s;
+    buildEsdlOperationMessage(s, code, op, msg, traceName);
+    IWARNLOG("%s", s.str());
+}
+
+inline void esdlOperationError(int code, const char *op, const char *msg, const char *traceName, bool exception)
+{
+    StringBuffer s;
+    buildEsdlOperationMessage(s, code, op, msg, traceName);
     IERRLOG("%s", s.str());
     if(exception)
         throw MakeStringException(code, "%s", s.str());
@@ -108,15 +117,16 @@ class CEsdlTransformOperationWithChildren : public CEsdlTransformOperationBase
 protected:
     IArrayOf<IEsdlTransformOperation> m_children;
     bool m_withVariables = false;
+    XpathVariableScopeType m_childScopeType = XpathVariableScopeType::simple;
 
 public:
-    CEsdlTransformOperationWithChildren(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, bool withVariables, esdlOperationsFactory_t factory) : CEsdlTransformOperationBase(xpp, stag, prefix), m_withVariables(withVariables)
+    CEsdlTransformOperationWithChildren(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, bool withVariables, IEsdlFunctionRegister *functionRegister, esdlOperationsFactory_t factory) : CEsdlTransformOperationBase(xpp, stag, prefix), m_withVariables(withVariables)
     {
         //load children
         if (factory)
-            factory(m_children, xpp, prefix, withVariables, m_ignoreCodingErrors);
+            factory(m_children, xpp, prefix, withVariables, m_ignoreCodingErrors, functionRegister);
         else
-            createEsdlTransformOperations(m_children, xpp, prefix, withVariables, m_ignoreCodingErrors);
+            createEsdlTransformOperations(m_children, xpp, prefix, withVariables, m_ignoreCodingErrors, functionRegister);
     }
 
     virtual ~CEsdlTransformOperationWithChildren(){}
@@ -126,7 +136,7 @@ public:
         if (!m_children.length())
             return false;
 
-        Owned<CXpathContextScope> scope = m_withVariables ? new CXpathContextScope(sourceContext, m_tagname) : nullptr;
+        Owned<CXpathContextScope> scope = m_withVariables ? new CXpathContextScope(sourceContext, m_tagname, m_childScopeType, nullptr) : nullptr;
         bool ret = false;
         ForEachItemIn(i, m_children)
         {
@@ -155,7 +165,6 @@ public:
     }
 
     virtual ~CEsdlTransformOperationWithoutChildren(){}
-
 };
 
 class CEsdlTransformOperationVariable : public CEsdlTransformOperationWithChildren
@@ -165,7 +174,8 @@ protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationVariable(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationVariable(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
         if (m_traceName.isEmpty())
             m_traceName.set(stag.getValue("name"));
@@ -211,7 +221,8 @@ class CEsdlTransformOperationHttpContentXml : public CEsdlTransformOperationWith
 {
 
 public:
-    CEsdlTransformOperationHttpContentXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationHttpContentXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
     }
 
@@ -717,7 +728,7 @@ protected:
     Owned<IEsdlTransformOperation> m_content;
 
 public:
-    CEsdlTransformOperationHttpPostXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    CEsdlTransformOperationHttpPostXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister) : CEsdlTransformOperationBase(xpp, stag, prefix)
     {
         m_name.set(stag.getValue("name"));
         if (m_traceName.isEmpty())
@@ -747,7 +758,7 @@ public:
                     if (streq(op, "http-header"))
                         m_headers.append(*new CEsdlTransformOperationHttpHeader(xpp, stag, prefix));
                     else if (streq(op, "content"))
-                        m_content.setown(new CEsdlTransformOperationHttpContentXml(xpp, stag, prefix));
+                        m_content.setown(new CEsdlTransformOperationHttpContentXml(xpp, stag, prefix, functionRegister));
                     else
                         xpp.skipSubTreeEx();
                     break;
@@ -892,7 +903,8 @@ public:
 class CEsdlTransformOperationParameter : public CEsdlTransformOperationVariable
 {
 public:
-    CEsdlTransformOperationParameter(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationVariable(xpp, stag, prefix)
+    CEsdlTransformOperationParameter(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationVariable(xpp, stag, prefix, functionRegister)
     {
     }
 
@@ -1506,7 +1518,8 @@ protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationForEach(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationForEach(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
         const char *select = stag.getValue("select");
         if (isEmptyString(select))
@@ -1569,7 +1582,8 @@ private:
     char m_op = 'i'; //'i'=if, 'w'=when, 'o'=otherwise
 
 public:
-    CEsdlTransformOperationConditional(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationConditional(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
         const char *op = stag.getLocalName();
         if (isEmptyString(op)) //should never get here, we checked already, but
@@ -1639,7 +1653,7 @@ private:
     }
 };
 
-void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister)
 {
     Owned<CEsdlTransformOperationConditional> otherwise;
 
@@ -1654,12 +1668,12 @@ void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullP
                 xpp.readStartTag(opTag);
                 const char *op = opTag.getLocalName();
                 if (streq(op, "when"))
-                    operations.append(*new CEsdlTransformOperationConditional(xpp, opTag, prefix));
+                    operations.append(*new CEsdlTransformOperationConditional(xpp, opTag, prefix, functionRegister));
                 else if (streq(op, "otherwise"))
                 {
                     if (otherwise)
                         esdlOperationError(ESDL_SCRIPT_Error, op, "only 1 otherwise per choose statement allowed", ignoreCodingErrors);
-                    otherwise.setown(new CEsdlTransformOperationConditional(xpp, opTag, prefix));
+                    otherwise.setown(new CEsdlTransformOperationConditional(xpp, opTag, prefix, functionRegister));
                 }
                 break;
             }
@@ -1677,7 +1691,8 @@ void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullP
 class CEsdlTransformOperationChoose : public CEsdlTransformOperationWithChildren
 {
 public:
-    CEsdlTransformOperationChoose(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, loadChooseChildren)
+    CEsdlTransformOperationChoose(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, functionRegister, loadChooseChildren)
     {
     }
 
@@ -1692,7 +1707,7 @@ public:
     {
         if (m_children.length())
         {
-            CXpathContextScope scope(sourceContext, "choose");
+            CXpathContextScope scope(sourceContext, "choose", XpathVariableScopeType::simple, nullptr);
             ForEachItemIn(i, m_children)
             {
                 if (m_children.item(i).process(scriptContext, targetContext, sourceContext))
@@ -1712,6 +1727,113 @@ public:
     }
 };
 
+void loadCallWithParameters(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister)
+{
+    int type = 0;
+    while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+    {
+        switch(type)
+        {
+            case XmlPullParser::START_TAG:
+            {
+                StartTag opTag;
+                xpp.readStartTag(opTag);
+                const char *op = opTag.getLocalName();
+                if (streq(op, "with-param"))
+                    operations.append(*new CEsdlTransformOperationVariable(xpp, opTag, prefix, functionRegister));
+                else
+                    esdlOperationError(ESDL_SCRIPT_Error, op, "Unrecognized operation, only 'with-param' allowed within 'call-function'", ignoreCodingErrors);
+
+                break;
+            }
+            case XmlPullParser::END_TAG:
+            case XmlPullParser::END_DOCUMENT:
+                return;
+        }
+    }
+}
+
+class CEsdlTransformOperationCallFunction : public CEsdlTransformOperationWithChildren
+{
+private:
+    StringAttr m_name;
+    //the localFunctionRegister is used at compile time to register this object,
+    // and then only for looking up functions defined inside the local script
+    IEsdlFunctionRegister *localFunctionRegister = nullptr;
+    IEsdlTransformOperation *esdlFunc = nullptr;
+
+public:
+    CEsdlTransformOperationCallFunction(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *_functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false /* we need to handle variable scope below (see comment)*/, _functionRegister, loadCallWithParameters), localFunctionRegister(_functionRegister)
+    {
+        m_name.set(stag.getValue("name"));
+        if (m_name.isEmpty())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, "call-function", "without name parameter", m_traceName.str(), !m_ignoreCodingErrors);
+        localFunctionRegister->registerEsdlFunctionCall(this);
+    }
+    virtual ~CEsdlTransformOperationCallFunction()
+    {
+    }
+    void bindFunctionCall(const char *scopeDescr, IEsdlFunctionRegister *activeFunctionRegister, bool bindLocalOnly)
+    {
+        //we always use / cache function pointer defined local to current script
+        esdlFunc = localFunctionRegister->findEsdlFunction(m_name, true);
+        if (!esdlFunc)
+        {
+            //the activeFunctionRegister is associated with the ESDL method currently being bound
+            IEsdlTransformOperation *foundFunc = activeFunctionRegister->findEsdlFunction(m_name, false);
+            if (foundFunc)
+            {
+                if (!bindLocalOnly)
+                    esdlFunc = foundFunc;
+            }
+            else
+            {
+                //if bindLocalOnly, it's just a warning if we didn't cache the function pointer
+                //  this is intended for function calls in service level scripts which will be looked up at runtime if they aren't local to the script
+                VStringBuffer msg("function (%s) not found for %s", m_name.str(), scopeDescr);
+                if (bindLocalOnly)
+                    esdlOperationWarning(ESDL_SCRIPT_Warning, "call-function", msg.str(), m_traceName.str());
+                else
+                    esdlOperationError(ESDL_SCRIPT_Error, "call-function", msg.str(), m_traceName.str(), true);
+            }
+        }
+    }
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        //we should only get here with esdlFunc==nullptr for calls made in service level scripts where the function
+        //  isn't defined locally to the script
+        IEsdlTransformOperation *callFunc = esdlFunc;
+        if (!callFunc)
+        {
+            IEsdlFunctionRegister *activeRegister = static_cast<IEsdlFunctionRegister*>(scriptContext->queryFunctionRegister());
+            if (!activeRegister)
+                throw MakeStringException(ESDL_SCRIPT_Error, "Runtime function register not found (looking up %s)", m_name.str());
+            callFunc = activeRegister->findEsdlFunction(m_name, false);
+            if (!callFunc)
+                throw MakeStringException(ESDL_SCRIPT_Error, "Function (%s) not found (runtime)", m_name.str());
+        }
+
+        //Can't have CEsdlTransformOperationWithChildren create the scope, it would be destroyed before esdlFunc->process() was called below
+        Owned<CXpathContextScope> scope = new CXpathContextScope(sourceContext, m_tagname, XpathVariableScopeType::parameter, nullptr);
+
+        //in this case, processing children is setting up parameters for the function call that follows
+        processChildren(scriptContext, targetContext, sourceContext);
+
+        return callFunc->process(scriptContext, targetContext, sourceContext);
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG (">>>>>>>>>>> %s %s >>>>>>>>>>", m_tagname.str(), m_name.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
 class CEsdlTransformOperationTarget : public CEsdlTransformOperationWithChildren
 {
 protected:
@@ -1720,7 +1842,8 @@ protected:
     bool m_ensure = false;
 
 public:
-    CEsdlTransformOperationTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
         const char *xpath = stag.getValue("xpath");
         if (isEmptyString(xpath))
@@ -1759,7 +1882,8 @@ public:
 class CEsdlTransformOperationIfTarget : public CEsdlTransformOperationTarget
 {
 public:
-    CEsdlTransformOperationIfTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
+    CEsdlTransformOperationIfTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationTarget(xpp, stag, prefix, functionRegister)
     {
         m_required = false;
     }
@@ -1770,7 +1894,8 @@ public:
 class CEsdlTransformOperationEnsureTarget : public CEsdlTransformOperationTarget
 {
 public:
-    CEsdlTransformOperationEnsureTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
+    CEsdlTransformOperationEnsureTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationTarget(xpp, stag, prefix, functionRegister)
     {
         m_ensure = true;
     }
@@ -1785,7 +1910,8 @@ protected:
     bool m_required = true;
 
 public:
-    CEsdlTransformOperationSource(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationSource(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
         const char *xpath = stag.getValue("xpath");
         if (isEmptyString(xpath))
@@ -1818,7 +1944,8 @@ public:
 class CEsdlTransformOperationIfSource : public CEsdlTransformOperationSource
 {
 public:
-    CEsdlTransformOperationIfSource(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSource(xpp, stag, prefix)
+    CEsdlTransformOperationIfSource(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationSource(xpp, stag, prefix, functionRegister)
     {
         m_required = false;
     }
@@ -1834,7 +1961,8 @@ protected:
     StringBuffer m_nsuri;
 
 public:
-    CEsdlTransformOperationElement(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationElement(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
     {
         m_name.set(stag.getValue("name"));
         if (m_name.isEmpty())
@@ -1870,7 +1998,7 @@ public:
     }
 };
 
-void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister)
 {
     int type = 0;
     while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
@@ -1879,7 +2007,7 @@ void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations
         {
             case XmlPullParser::START_TAG:
             {
-                Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, prefix, withVariables, ignoreCodingErrors);
+                Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, prefix, withVariables, ignoreCodingErrors, functionRegister, false);
                 if (operation)
                     operations.append(*operation.getClear());
                 break;
@@ -1892,26 +2020,69 @@ void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations
     }
 }
 
-IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+class CEsdlTransformOperationFunction : public CEsdlTransformOperationWithChildren
+{
+public:
+    StringAttr m_name;
+
+public:
+    CEsdlTransformOperationFunction(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
+    {
+        m_name.set(stag.getValue("name"));
+        if (m_name.isEmpty())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, "function", "without name parameter", m_traceName.str(), !m_ignoreCodingErrors);
+        m_childScopeType = XpathVariableScopeType::isolated;
+    }
+
+    virtual ~CEsdlTransformOperationFunction(){}
+
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        return processChildren(scriptContext, targetContext, sourceContext);
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s %s >>>>", m_traceName.str(), m_tagname.str(), m_name.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister, bool canDeclareFunctions)
 {
     StartTag stag;
     xpp.readStartTag(stag);
     const char *op = stag.getLocalName();
     if (isEmptyString(op))
         return nullptr;
+    if (functionRegister)
+    {
+        if (streq(op, "function"))
+        {
+            if (!canDeclareFunctions)
+                esdlOperationError(ESDL_SCRIPT_Error, "function", "can only declare functions at root level", !ignoreCodingErrors);
+            Owned<CEsdlTransformOperationFunction> esdlFunc = new CEsdlTransformOperationFunction(xpp, stag, prefix, functionRegister);
+            functionRegister->registerEsdlFunction(esdlFunc->m_name.str(), static_cast<IEsdlTransformOperation*>(esdlFunc.get()));
+            return nullptr;
+        }
+    }
     if (withVariables)
     {
         if (streq(op, "variable"))
-            return new CEsdlTransformOperationVariable(xpp, stag, prefix);
+            return new CEsdlTransformOperationVariable(xpp, stag, prefix, functionRegister);
         if (streq(op, "param"))
-            return new CEsdlTransformOperationParameter(xpp, stag, prefix);
+            return new CEsdlTransformOperationParameter(xpp, stag, prefix, functionRegister);
     }
     if (streq(op, "choose"))
-        return new CEsdlTransformOperationChoose(xpp, stag, prefix);
+        return new CEsdlTransformOperationChoose(xpp, stag, prefix, functionRegister);
     if (streq(op, "for-each"))
-        return new CEsdlTransformOperationForEach(xpp, stag, prefix);
+        return new CEsdlTransformOperationForEach(xpp, stag, prefix, functionRegister);
     if (streq(op, "if"))
-        return new CEsdlTransformOperationConditional(xpp, stag, prefix);
+        return new CEsdlTransformOperationConditional(xpp, stag, prefix, functionRegister);
     if (streq(op, "set-value") || streq(op, "SetValue"))
         return new CEsdlTransformOperationSetValue(xpp, stag, prefix);
     if (streq(op, "append-to-value") || streq(op, "AppendValue"))
@@ -1933,27 +2104,29 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
     if (streq(op, "remove-node"))
         return new CEsdlTransformOperationRemoveNode(xpp, stag, prefix);
     if (streq(op, "source"))
-        return new CEsdlTransformOperationSource(xpp, stag, prefix);
+        return new CEsdlTransformOperationSource(xpp, stag, prefix, functionRegister);
     if (streq(op, "if-source"))
-        return new CEsdlTransformOperationIfSource(xpp, stag, prefix);
+        return new CEsdlTransformOperationIfSource(xpp, stag, prefix, functionRegister);
     if (streq(op, "target"))
-        return new CEsdlTransformOperationTarget(xpp, stag, prefix);
+        return new CEsdlTransformOperationTarget(xpp, stag, prefix, functionRegister);
     if (streq(op, "if-target"))
-        return new CEsdlTransformOperationIfTarget(xpp, stag, prefix);
+        return new CEsdlTransformOperationIfTarget(xpp, stag, prefix, functionRegister);
     if (streq(op, "ensure-target"))
-        return new CEsdlTransformOperationEnsureTarget(xpp, stag, prefix);
+        return new CEsdlTransformOperationEnsureTarget(xpp, stag, prefix, functionRegister);
     if (streq(op, "element"))
-        return new CEsdlTransformOperationElement(xpp, stag, prefix);
+        return new CEsdlTransformOperationElement(xpp, stag, prefix, functionRegister);
     if (streq(op, "copy-of"))
         return new CEsdlTransformOperationCopyOf(xpp, stag, prefix);
     if (streq(op, "namespace"))
         return new CEsdlTransformOperationNamespace(xpp, stag, prefix);
     if (streq(op, "http-post-xml"))
-        return new CEsdlTransformOperationHttpPostXml(xpp, stag, prefix);
+        return new CEsdlTransformOperationHttpPostXml(xpp, stag, prefix, functionRegister);
     if (streq(op, "mysql"))
         return new CEsdlTransformOperationMySqlCall(xpp, stag, prefix);
     if (streq(op, "trace"))
         return new CEsdlTransformOperationTrace(xpp, stag, prefix);
+    if (streq(op, "call-function"))
+        return new CEsdlTransformOperationCallFunction(xpp, stag, prefix, functionRegister);
     return nullptr;
 }
 
@@ -1968,10 +2141,60 @@ static inline void replaceVariable(StringBuffer &s, IXpathContext *xpathContext,
     }
 }
 
+class CEsdlFunctionRegister : public CInterfaceOf<IEsdlFunctionRegister>
+{
+private:
+    CEsdlFunctionRegister *parent = nullptr; //usual hierarchy of function registries is: service / method / script
+    MapStringToMyClass<IEsdlTransformOperation> functions;
+    IArrayOf<CEsdlTransformOperationCallFunction> functionCalls;
+
+    //noLocalFunctions
+    // - true if we are in an entry point of the type "functions".. adding functions to the service or method scopes, not locally.
+    // - false if we are defining a function for local use within an idividual script.
+    bool noLocalFunctions = false;
+
+public:
+    CEsdlFunctionRegister(CEsdlFunctionRegister *_parent, bool _noLocalFunctions) : parent(_parent), noLocalFunctions(_noLocalFunctions)
+    {
+        if (noLocalFunctions)
+           assertex(parent); //should never happen
+    }
+    virtual void registerEsdlFunction(const char *name, IEsdlTransformOperation *esdlFunc) override
+    {
+        if (noLocalFunctions) //register with parent, not locally
+            parent->registerEsdlFunction(name, esdlFunc);
+        else
+            functions.setValue(name, esdlFunc);
+    }
+    virtual IEsdlTransformOperation *findEsdlFunction(const char *name, bool localOnly) override
+    {
+        IEsdlTransformOperation *esdlFunc =  functions.getValue(name);
+        if (!esdlFunc && !localOnly && parent)
+            return parent->findEsdlFunction(name, false);
+        return esdlFunc;
+    }
+    virtual void registerEsdlFunctionCall(IEsdlTransformOperation *esdlFuncCall) override
+    {
+        //in the case of call-function, if noLocalFunctions is true we are a call-function inside another function that is not local inside a script
+        //  so same registration semantics apply
+        if (noLocalFunctions) //register with parent, not locally
+            parent->registerEsdlFunctionCall(esdlFuncCall);
+        else
+            functionCalls.append(*LINK(static_cast<CEsdlTransformOperationCallFunction*>(esdlFuncCall)));
+    }
+    void bindFunctionCalls(const char *scopeDescr, IEsdlFunctionRegister *activeFunctionRegister, bool bindLocalOnly)
+    {
+        ForEachItemIn(idx, functionCalls)
+            functionCalls.item(idx).bindFunctionCall(scopeDescr, activeFunctionRegister, bindLocalOnly);
+    }
+};
+
 class CEsdlCustomTransform : public CInterfaceOf<IEsdlCustomTransform>
 {
 private:
     IArrayOf<IEsdlTransformOperation> m_operations;
+    CEsdlFunctionRegister functionRegister;
+
     Owned<IProperties> namespaces = createProperties(false);
     StringAttr m_name;
     StringAttr m_target;
@@ -1979,9 +2202,11 @@ private:
     StringBuffer m_prefix;
 
 public:
-    CEsdlCustomTransform(){}
+    CEsdlCustomTransform(CEsdlFunctionRegister *parentRegister, bool loadingCommonFunctions)
+        : functionRegister(parentRegister, loadingCommonFunctions) {}
 
-    CEsdlCustomTransform(IXmlPullParser &xpp, StartTag &stag, const char *ns_prefix) : m_prefix(ns_prefix)
+    CEsdlCustomTransform(IXmlPullParser &xpp, StartTag &stag, const char *ns_prefix, CEsdlFunctionRegister *parentRegister, bool loadingCommonFunctions)
+        : functionRegister(parentRegister, loadingCommonFunctions), m_prefix(ns_prefix)
     {
         const char *tag = stag.getLocalName();
 
@@ -2006,7 +2231,7 @@ public:
             {
                 case XmlPullParser::START_TAG:
                 {
-                    Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, m_prefix, true, false);
+                    Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, m_prefix, true, false, &functionRegister, true);
                     if (operation)
                         m_operations.append(*operation.getClear());
                     break;
@@ -2060,7 +2285,7 @@ public:
             sourceContext->registerNamespace(prefix, namespaces->queryProp(prefix));
             targetXpath->registerNamespace(prefix, namespaces->queryProp(prefix));
         }
-        CXpathContextScope scope(sourceContext, "transform", savedNamespaces);
+        CXpathContextScope scope(sourceContext, "transform", XpathVariableScopeType::simple, savedNamespaces);
         if (!isEmptyString(target) && !streq(target, "."))
             targetXpath->setLocation(target, true);
         if (!m_source.isEmpty() && !streq(m_source, "."))
@@ -2068,6 +2293,10 @@ public:
         ForEachItemIn(i, m_operations)
             m_operations.item(i).process(scriptContext, targetXpath, sourceContext);
         scriptContext->cleanupBetweenScripts();
+    }
+    void bindFunctionCalls(const char *scopeDescr, IEsdlFunctionRegister *activeFunctionRegister, bool bindLocalOnly)
+    {
+        functionRegister.bindFunctionCalls(scopeDescr, activeFunctionRegister, bindLocalOnly);
     }
 
     void processTransform(IEsdlScriptContext * scriptCtx, const char *srcSection, const char *tgtSection) override;
@@ -2251,7 +2480,7 @@ IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const cha
             xpp->readStartTag(stag);
             if (strieq(stag.getLocalName(), "Transforms")) //allow common mistake,.. starting with the outer tag, not the script
                 continue;
-            return new CEsdlCustomTransform(*xpp, stag, ns_prefix);
+            return new CEsdlCustomTransform(*xpp, stag, ns_prefix, nullptr, false);
         }
     }
     return nullptr;
@@ -2259,10 +2488,11 @@ IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const cha
 
 class CEsdlTransformSet : public CInterfaceOf<IEsdlTransformSet>
 {
-        IArrayOf<CEsdlCustomTransform> transforms;
+    IArrayOf<CEsdlCustomTransform> transforms;
+    CEsdlFunctionRegister *functions = nullptr;
 
 public:
-    CEsdlTransformSet()
+    CEsdlTransformSet(CEsdlFunctionRegister *_functions) : functions(_functions)
     {
     }
     virtual void appendPrefixes(StringArray &prefixes) override
@@ -2278,21 +2508,41 @@ public:
     }
     virtual void add(IXmlPullParser &xpp, StartTag &stag)
     {
-        transforms.append(*new CEsdlCustomTransform(xpp, stag, nullptr));
+        transforms.append(*new CEsdlCustomTransform(xpp, stag, nullptr, functions, false));
     }
     virtual aindex_t length() override
     {
         return transforms.length();
     }
+    void bindFunctionCalls(const char *scopeDescr, IEsdlFunctionRegister *activeFunctionRegister, bool bindLocalOnly)
+    {
+        ForEachItemIn(idx, transforms)
+            transforms.item(idx).bindFunctionCalls(scopeDescr, activeFunctionRegister, bindLocalOnly);
+    }
+
 };
 
 class CEsdlTransformEntryPointMap : public CInterfaceOf<IEsdlTransformEntryPointMap>
 {
     MapStringToMyClass<CEsdlTransformSet> map;
+    CEsdlFunctionRegister functionRegister;
 
 public:
-    CEsdlTransformEntryPointMap()
+    CEsdlTransformEntryPointMap(CEsdlFunctionRegister *parentRegister) : functionRegister(parentRegister, false)
     {
+    }
+
+    ~CEsdlTransformEntryPointMap(){}
+
+    virtual IEsdlFunctionRegister *queryFunctionRegister() override
+    {
+        return &functionRegister;
+    }
+
+    void addFunctions(IXmlPullParser &xpp, StartTag &esdlFuncTag)
+    {
+        //child functions will be loaded directly into the common register, container class is then no longer needed
+        CEsdlCustomTransform factory(xpp, esdlFuncTag, nullptr, &functionRegister, true);
     }
 
     virtual void addChild(IXmlPullParser &xpp, StartTag &childTag, bool &foundNonLegacyTransforms)
@@ -2300,6 +2550,8 @@ public:
         const char *tagname = childTag.getLocalName();
         if (streq("Scripts", tagname) || streq("Transforms", tagname)) //allow nesting of root structure
             add(xpp, childTag, foundNonLegacyTransforms);
+        else if (streq(tagname, ESDLScriptEntryPoint_Functions))
+            addFunctions(xpp, childTag);
         else
         {
             if (streq(tagname, ESDLScriptEntryPoint_Legacy))
@@ -2311,7 +2563,7 @@ public:
                 set->add(xpp, childTag);
             else
             {
-                Owned<CEsdlTransformSet> set = new CEsdlTransformSet();
+                Owned<CEsdlTransformSet> set = new CEsdlTransformSet(&functionRegister);
                 map.setValue(tagname, set);
                 set->add(xpp, childTag);
             }
@@ -2374,23 +2626,42 @@ public:
     {
         map.remove(name);
     }
+    void bindFunctionCalls(const char *scopeDescr, IEsdlFunctionRegister *activeFunctionRegister, bool bindLocalOnly)
+    {
+        functionRegister.bindFunctionCalls(scopeDescr, activeFunctionRegister, bindLocalOnly);
+        HashIterator it(map);
+        ForEach (it)
+        {
+            CEsdlTransformSet *item = map.getValue((const char *)it.query().getKey());
+            if (item)
+                item->bindFunctionCalls(scopeDescr, activeFunctionRegister, bindLocalOnly);
+        }
+    }
 };
-
 
 class CEsdlTransformMethodMap : public CInterfaceOf<IEsdlTransformMethodMap>
 {
     MapStringToMyClass<CEsdlTransformEntryPointMap> map;
+    Owned<CEsdlTransformEntryPointMap> service;
+    IEsdlFunctionRegister *serviceFunctionRegister = nullptr;
 
 public:
     CEsdlTransformMethodMap()
     {
+        //ensure the service entry (name = "") exists right away, the function hierarchy depends on it
+        service.setown(new CEsdlTransformEntryPointMap(nullptr));
+        serviceFunctionRegister = service->queryFunctionRegister();
+        map.setValue("", service.get());
     }
-
     virtual IEsdlTransformEntryPointMap *queryMethod(const char *name) override
     {
         return map.getValue(name);
     }
-
+    virtual IEsdlFunctionRegister *queryFunctionRegister(const char *method) override
+    {
+        IEsdlTransformEntryPointMap *methodEntry = queryMethod(method);
+        return (methodEntry) ? methodEntry->queryFunctionRegister() : nullptr;
+    }
     virtual IEsdlTransformSet *queryMethodEntryPoint(const char *method, const char *name) override
     {
         IEsdlTransformEntryPointMap *epm = queryMethod(method);
@@ -2402,6 +2673,11 @@ public:
     virtual void removeMethod(const char *name) override
     {
         map.remove(name);
+        if (isEmptyString(name))
+        {
+            service.setown(new CEsdlTransformEntryPointMap(nullptr));
+            serviceFunctionRegister = service->queryFunctionRegister();
+        }
     }
     virtual void addMethodTransforms(const char *method, const char *scriptXml, bool &foundNonLegacyTransforms) override
     {
@@ -2412,7 +2688,8 @@ public:
                 entry->add(scriptXml, foundNonLegacyTransforms);
             else
             {
-                Owned<CEsdlTransformEntryPointMap> epm = new CEsdlTransformEntryPointMap();
+                //casting up from interface to known implementation, do it explicitly
+                Owned<CEsdlTransformEntryPointMap> epm = new CEsdlTransformEntryPointMap(static_cast<CEsdlFunctionRegister*>(serviceFunctionRegister));
                 epm->add(scriptXml, foundNonLegacyTransforms);
                 map.setValue(method, epm.get());
             }
@@ -2422,6 +2699,26 @@ public:
             VStringBuffer msg("Error parsing ESDL transform script (method '%s', line %d, col %d) %s", method ? method : "", xppe.getLineNumber(), xppe.getColumnNumber(), xppe.what());
             IERRLOG("%s", msg.str());
             throw MakeStringException(ESDL_SCRIPT_Error, "%s", msg.str());
+        }
+    }
+    virtual void bindFunctionCalls() override
+    {
+        HashIterator it(map);
+        ForEach (it)
+        {
+            const char *method = (const char *)it.query().getKey();
+            if (isEmptyString(method)) //we validate the service level function calls against each method, not separately, (they are quasi virtual)
+                continue;
+            CEsdlTransformEntryPointMap *item = map.getValue(method);
+            if (item)
+            {
+                item->bindFunctionCalls(method, item->queryFunctionRegister(), false);
+
+                //service level function calls are resolved at runtime unless defined locally and called from the same script
+                //  but we can issue a warning if they can't be resolved while handling the current method
+                VStringBuffer serviceScopeDescr("service level at method %s", method);
+                service->bindFunctionCalls(serviceScopeDescr, item->queryFunctionRegister(), true);
+            }
         }
     }
 };

@@ -259,12 +259,22 @@ static constexpr const char* selectPathResult = R"!!(<soap:Envelope xmlns:soap="
   </soap:Body>
 </soap:Envelope>)!!";
 
-bool areEquivalentTestXMLStrings(const char *xml1, const char *xml2)
+bool areEquivalentTestXMLStrings(const char *xml1, const char *xml2, bool exact=false)
 {
     if (isEmptyString(xml1) || isEmptyString(xml2))
         return false;
     Owned<IPropertyTree> tree1 = createPTreeFromXMLString(xml1);
     Owned<IPropertyTree> tree2 = createPTreeFromXMLString(xml2);
+
+    //areMatchingPTrees may not compare actual tag content
+    if (exact)
+    {
+      StringBuffer s1;
+      StringBuffer s2;
+      toXML(tree1, s1);
+      toXML(tree2, s2);
+      return streq(s1, s2);
+    }
     return areMatchingPTrees(tree1, tree2);
 }
 
@@ -298,7 +308,7 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testTargetElement);
       //The following require setup, uncomment for development testing for now:
       //CPPUNIT_TEST(testMysql);
-      //CPPUNIT_TEST(testScriptMap); //requires a particular roxie query
+      //CPPUNIT_TEST(testCallFunctions); //requires a particular roxie query
       //CPPUNIT_TEST(testHTTPPostXml); //requires a particular roxie query
     CPPUNIT_TEST_SUITE_END();
 
@@ -313,9 +323,9 @@ public:
         return testname;
     }
 
-    IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config)
+    IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config, IInterface *functionRegister=nullptr)
     {
-        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx);
+        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, functionRegister);
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
@@ -2263,6 +2273,271 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           fputs(output.str(), stdout);
           fflush(stdout);
           throw MakeStringException(100, "Test failed(%s)", "transform map");
+      }
+    }
+
+    void testCallFunctions()
+    {
+        constexpr const char * serviceScripts = R"!!(<Transforms xmlns:es='urn:hpcc:esdl:script'>
+      <es:Functions>
+        <es:function name="inServiceCommonFunction">
+          <es:param name="paramCommonInService1" select="'paramCommonInService1-fail-using-default'"/>
+          <es:param name="paramCommonInService2" select="'paramCommonInService2-success-using-default'"/>
+          <es:set-value target="ds1:Row/ds1:InServiceCommonParam1" value="$paramCommonInService1" />
+          <es:set-value target="ds1:Row/ds1:InServiceCommonParam2" value="$paramCommonInService2" />
+        </es:function>
+        <es:function name="inServiceCommonFunction2">
+          <es:set-value target="ds1:Row/ds1:ServiceCommonFunctionFromService" value="'service-common-instance-called-from-service'" />
+        </es:function>
+        <es:function name="inServiceLocalFunction">
+          <es:set-value target="ds1:Row/ds1:InServiceLocalInheritanceError" value="'service-common-instance-called'" />
+        </es:function>
+        <es:function name="inMethodCommonFunction">
+          <es:set-value target="ds1:Row/ds1:InMethodCommonInheritanceError" value="'service-common-instance-called'" />
+        </es:function>
+      </es:Functions>
+      <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+        <es:variable name="paramLocalInService1" select="'paramLocalInService1-fail-from-top-o-the-script'"/>
+        <es:variable name="paramLocalInService2" select="'paramLocalInService2-fail-from-top-o-the-script'"/>
+        <es:function name="inServiceLocalFunction">
+          <es:param name="paramLocalInService1" select="'paramLocalInService1-fail-using-default'"/>
+          <es:param name="paramLocalInService2" select="'paramLocalInService2-success-using-default'"/>
+          <es:set-value target="ds1:Row/ds1:InServiceLocalParam1" value="$paramLocalInService1" />
+          <es:set-value target="ds1:Row/ds1:InServiceLocalParam2" value="$paramLocalInService2" />
+        </es:function>
+        <es:target xpath="soap:Body">
+          <es:target xpath="resp:roxieechopersoninfoResponse">
+            <es:target xpath="resp:Results/resp:Result">
+              <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+              <es:call-function name="inServiceLocalFunction">
+                <es:with-param name="paramLocalInService1" select="'paramLocalInService1-success-with-param'"/>
+              </es:call-function>
+              <es:call-function name="inMethodCommonFunction2"/>
+              <es:call-function name="inServiceCommonFunction2"/>
+                <es:set-value target="ds1:Row/ds1:Name/ds1:Last" value="'modified-response-at-service'" />
+              </es:target>
+            </es:target>
+          </es:target>
+        </es:target>
+      </es:BackendResponse>
+      <es:BackendResponse>
+        <es:set-value target="BRESPSRV2" value="'s22'" />
+      </es:BackendResponse>
+      <es:BackendResponse>
+        <es:set-value target="BRESPSRV3" value="'s33'" />
+      </es:BackendResponse>
+  </Transforms>)!!";
+
+        constexpr const char * methodScripts = R"!!(<Transforms xmlns:es='urn:hpcc:esdl:script'>
+  <es:Functions>
+    <es:function name="inMethodCommonFunction">
+      <es:param name="paramCommonInMethod1" select="'paramCommonInMethod1-fail-using-default'"/>
+      <es:param name="paramCommonInMethod2" select="'paramCommonInMethod2-success-using-default'"/>
+      <es:set-value target="ds1:Row/ds1:InMethodCommonParam1" value="$paramCommonInMethod1" />
+      <es:set-value target="ds1:Row/ds1:InMethodCommonParam2" value="$paramCommonInMethod2" />
+    </es:function>
+    <es:function name="inMethodLocalFunction">
+      <es:set-value target="ds1:Row/ds1:InMethodLocalInheritanceError" value="'method-common-instance-called'" />
+    </es:function>
+    <es:function name="inMethodCommonFunction2">
+      <es:set-value target="ds1:Row/ds1:MethodCommonFunctionFromService" value="'method-common-instance-called-from-service'" />
+    </es:function>
+  </es:Functions>
+  <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+    <es:variable name="paramLocalInMethod1" select="'paramLocalInMethod1-fail-from-top-o-the-script'"/>
+    <es:variable name="paramLocalInMethod2" select="'paramLocalInMethod2-fail-from-top-o-the-script'"/>
+    <es:function name="inMethodLocalFunction">
+      <es:param name="paramLocalInMethod1" select="'paramLocalInMethod1-fail-using-default'"/>
+      <es:param name="paramLocalInMethod2" select="'paramLocalInMethod2-success-using-default'"/>
+      <es:set-value target="ds1:Row/ds1:InMethodLocalParam1" value="$paramLocalInMethod1" />
+      <es:set-value target="ds1:Row/ds1:InMethodLocalParam2" value="$paramLocalInMethod2" />
+    </es:function>
+    <es:target xpath="soap:Body">
+      <es:target xpath="resp:roxieechopersoninfoResponse">
+        <es:target xpath="resp:Results/resp:Result">
+          <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+            <es:variable name="paramLocalInMethod1" select="'paramLocalInMethod1-fail-from-just-above'"/>
+            <es:variable name="paramLocalInMethod2" select="'paramLocalInMethod2-fail-from-just-above'"/>
+            <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="'-and-method'" />
+            <es:call-function name="inMethodLocalFunction">
+              <es:with-param name="paramLocalInMethod1" select="'paramLocalInMethod1-success-with-param'"/>
+            </es:call-function>
+            <es:call-function name="inMethodCommonFunction">
+              <es:with-param name="paramCommonInMethod1" select="'paramCommonInMethod1-success-with-param'"/>
+            </es:call-function>
+            <es:call-function name="inServiceCommonFunction">
+              <es:with-param name="paramCommonInService1" select="'paramCommonlInService1-success-with-param'"/>
+            </es:call-function>
+          </es:target>
+        </es:target>
+      </es:target>
+    </es:target>
+  </es:BackendResponse>
+  <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+    <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDataset" name="roxie_call_success">
+      <es:content>
+        <es:element name="Envelope">
+          <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+          <es:element name="Body">
+            <es:element name="roxieechopersoninfoRequest">
+              <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+              <es:element name="roxieechopersoninforequest">
+                <es:element name="Row">
+                  <es:element name="Name">
+                    <es:set-value target="First" value="'echoFirst'"/>
+                    <es:set-value target="Last" value="'echoLast'"/>
+                    <es:element name="Aliases">
+                      <es:set-value target="Alias" value="'echoA1'"/>
+                      <es:add-value target="Alias" value="'echoA2'"/>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:element>
+            </es:element>
+          </es:element>
+        </es:element>
+      </es:content>
+    </es:http-post-xml>
+    <es:target xpath="soap:Body">
+    <es:target xpath="resp:roxieechopersoninfoResponse">
+    <es:target xpath="resp:Results/resp:Result">
+    <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+        <es:source xpath="$roxie_call_success/response/content">
+          <es:source xpath="soap:Envelope/soap:Body">
+            <es:source xpath="resp:roxieechopersoninfoResponse/resp:Results/resp:Result">
+              <es:source xpath="ds1:Dataset/ds1:Row">
+                <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="concat('-plus-echoed-alias-', ds1:Name/ds1:Aliases/ds1:Alias[2])" />
+              </es:source>
+            </es:source>
+          </es:source>
+        </es:source>
+    </es:target>
+    </es:target>
+    </es:target>
+    </es:target>
+  </es:BackendResponse>
+  <es:BackendResponse>
+    <es:set-value target="BRESPMTH3" value="'m33'" />
+  </es:BackendResponse>
+  </Transforms>)!!";
+
+        constexpr const char * input = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+   <Results>
+    <Result>
+     <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+      <Row>
+       <Name>
+        <First>aaa</First>
+        <Last>bbbb</Last>
+        <Aliases>
+         <Alias>a</Alias>
+         <Alias>b</Alias>
+         <Alias>c</Alias>
+        </Aliases>
+       </Name>
+       <Addresses>
+        <Address>
+         <Line1>111</Line1>
+         <Line2>222</Line2>
+         <City>Boca Raton</City>
+         <State>FL</State>
+         <Zip>33487</Zip>
+         <type>ttt</type>
+        </Address>
+       </Addresses>
+      </Row>
+     </Dataset>
+    </Result>
+   </Results>
+  </roxieechopersoninfoResponse>
+ </soap:Body>
+</soap:Envelope>)!!";
+
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="transform map"/>
+          </Transform>
+        </config>)!!";
+
+        constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+      <Results>
+        <Result>
+          <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+            <Row>
+              <Name>
+                <First>aaa</First>
+                <Last>modified-response-at-service-and-method-plus-echoed-alias-echoA2</Last>
+                <Aliases>
+                  <Alias>a</Alias>
+                  <Alias>b</Alias>
+                  <Alias>c</Alias>
+                </Aliases>
+              </Name>
+              <Addresses>
+                <Address>
+                  <Line1>111</Line1>
+                  <Line2>222</Line2>
+                  <City>Boca Raton</City>
+                  <State>FL</State>
+                  <Zip>33487</Zip>
+                  <type>ttt</type>
+                </Address>
+              </Addresses>
+              <InServiceLocalParam1>paramLocalInService1-success-with-param</InServiceLocalParam1>
+              <InServiceLocalParam2>paramLocalInService2-success-using-default</InServiceLocalParam2>
+              <MethodCommonFunctionFromService>method-common-instance-called-from-service</MethodCommonFunctionFromService>
+              <ServiceCommonFunctionFromService>service-common-instance-called-from-service</ServiceCommonFunctionFromService>
+              <InMethodLocalParam1>paramLocalInMethod1-success-with-param</InMethodLocalParam1>
+              <InMethodLocalParam2>paramLocalInMethod2-success-using-default</InMethodLocalParam2>
+              <InMethodCommonParam1>paramCommonInMethod1-success-with-param</InMethodCommonParam1>
+              <InMethodCommonParam2>paramCommonInMethod2-success-using-default</InMethodCommonParam2>
+              <InServiceCommonParam1>paramCommonlInService1-success-with-param</InServiceCommonParam1>
+              <InServiceCommonParam2>paramCommonInService2-success-using-default</InServiceCommonParam2>
+            </Row>
+          </Dataset>
+        </Result>
+      </Results>
+    </roxieechopersoninfoResponse>
+  </soap:Body>
+  <BRESPSRV2>s22</BRESPSRV2>
+  <BRESPSRV3>s33</BRESPSRV3>
+  <BRESPMTH3>m33</BRESPMTH3>
+</soap:Envelope>)!!";
+      try
+      {
+        Owned<IEspContext> ctx = createEspContext(nullptr);
+
+        bool legacy = false;
+        Owned<IEsdlTransformMethodMap> map = createEsdlTransformMethodMap();
+        map->addMethodTransforms("", serviceScripts, legacy);
+        map->addMethodTransforms("mymethod", methodScripts, legacy);
+        map->bindFunctionCalls();
+
+        IEsdlTransformSet *serviceSet = map->queryMethodEntryPoint("", "BackendResponse");
+        IEsdlTransformSet *methodSet = map->queryMethodEntryPoint("mymethod", "BackendResponse");
+
+        Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1, map->queryFunctionRegister("mymethod"));
+        scriptContext->setContent(ESDLScriptCtxSection_InitialResponse, input);
+
+        processServiceAndMethodTransforms(scriptContext, {serviceSet, methodSet}, ESDLScriptCtxSection_InitialResponse, "MyResult");
+        StringBuffer output;
+        scriptContext->toXML(output, "MyResult");
+        if (result && !areEquivalentTestXMLStrings(result, output.str(), true))
+        {
+            fputs(output.str(), stdout);
+            fflush(stdout);
+            throw MakeStringException(100, "Test failed(%s)", "call functions");
+        }
+      }
+      catch(IException *E)
+      {
+        StringBuffer msg;
+        printf("\nOOOPs Exception %d - %s\n", E->errorCode(), E->errorMessage(msg).str());
+        throw E;
       }
     }
 };
