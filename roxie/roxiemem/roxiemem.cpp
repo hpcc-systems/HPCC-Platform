@@ -224,9 +224,14 @@ typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsiz
 
 static CriticalSection heapBitCrit;
 
-static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t pages, memsize_t largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
+static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t pages, memsize_t largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
+
+#ifndef _WIN32
+    if (lockMemory && !retainMemory)
+        retainMemory = true;
+#endif
 
     // CriticalBlock b(heapBitCrit); // unnecessary - must call this exactly once before any allocations anyway!
     memsize_t bitmapSize = (pages + HEAP_BITS - 1) / HEAP_BITS;
@@ -387,6 +392,20 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
         if (!retainMemory)
             DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*%u (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
                     HEAP_BITS, (unsigned __int64)(HEAP_ALIGNMENT_SIZE * HEAP_BITS), (unsigned __int64) getHugePageSize());
+        else if (lockMemory)
+        {
+#ifndef _WIN32
+            // mlock() should fault in all pages ...
+            int srtn = mlock(heapBase, memsize);
+            if (srtn)
+            {
+                int errnum = errno;
+                DBGLOG("Attempt to lock heap memory failed, errno = %d", errnum);
+            }
+            else
+                DBGLOG("MEMORY LOCKED");
+#endif
+        }
     }
 
     assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
@@ -6678,7 +6697,7 @@ extern void setMemoryStatsInterval(unsigned secs)
     lastStatsCycles = get_cycles_now();
 }
 
-extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
+extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
     memsize_t totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
@@ -6687,7 +6706,7 @@ extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePa
         totalMemoryLimit = 1;
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: Setting memory limit to %" I64F "d bytes (%" I64F "u pages)", (unsigned __int64) max, (unsigned __int64)totalMemoryLimit);
-    initializeHeap(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
+    initializeHeap(allowHugePages, allowTransparentHugePages, retainMemory, lockMemory, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
     initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
 }
 
@@ -6996,7 +7015,8 @@ protected:
 
         memsize_t memory = (useLargeMemory ? largeMemory : smallMemory) * (unsigned __int64)0x100000U;
         const bool retainMemory = true; // remove the time releasing pages from the timing overhead
-        initializeHeap(false, true, retainMemory, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
+        const bool lockMemory = false; // remove the time faulting in pages from the timing overhead
+        initializeHeap(false, true, retainMemory, lockMemory, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
         initAllocSizeMappings(defaultAllocSizes);
     }
 
@@ -8733,7 +8753,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, true, false, memorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, false, false, memorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -9054,7 +9074,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, true, false, hugeMemorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, false, false, hugeMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -9135,7 +9155,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, true, true, tuningMemorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, true, true, tuningMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
