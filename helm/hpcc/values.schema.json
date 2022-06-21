@@ -270,6 +270,11 @@
         "defaultEsp": {
           "type": "string"
         },
+        "busybox": {
+          "description": "image for busybox containers",
+          "type": "string",
+          "default": "busybox:stable"
+        },
         "defaultDataPath": {
           "type": "string"
         },
