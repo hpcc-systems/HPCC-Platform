@@ -13,6 +13,9 @@ global:
     ## If you need to provide credentials to pull your image, they should be added as a k8s secret, and the secret name provided here
     # imagePullSecrets: xxx
 
+  ## busybox image is used for some initialization/termination tasks - you can override the location here
+  #busybox: "myrepo/busybox:stable"
+
   ## It is possible (but not recommended) to change the uid/gid that the HPCC containers run under
   ## user:
   ##  uid: 10000
