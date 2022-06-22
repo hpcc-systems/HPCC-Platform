@@ -799,7 +799,7 @@ bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails
     return processSearchJsonResp(resultDetails, readBuffer, returnbuf, format, true);
 }
 
-class AZURE_LOGANALYTICS_CURL_LOGACCESS_API AzureLogAnalyticsStream : public CInterfaceOf<IRemoteLogAccessStream>
+class AzureLogAnalyticsStream : public CInterfaceOf<IRemoteLogAccessStream>
 {
 public:
     virtual bool readLogEntries(StringBuffer & record, unsigned & recsRead) override
