@@ -719,7 +719,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 # Examples include, minikube, docker for desktop, or NFS mounted storage.
 {{- $permCmd := printf "chown -R %v:%v %s || true" .uid .gid .volumePath }}
 - name: volume-mount-hack
-  image: busybox
+  image: {{ .root.Values.global.busybox | default "busybox:stable" }}
   command: [
              "sh",
              "-c",
@@ -737,6 +737,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 */}}
 {{- define "hpcc.changePlaneMountPerms" -}}
 {{- $user := (.root.Values.global.user | default dict) -}}
+{{- $root := .root -}}
 {{- $uid := $user.uid | default 10000 -}}
 {{- $gid := $user.gid | default 10001 -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
@@ -749,7 +750,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
    {{- $mountpath := $plane.prefix -}}
    {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) -}}
     {{- $volumeName := (printf "%s-pv" $plane.name) -}}
-   {{- include "hpcc.changeMountPerms" (dict "root" .root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+   {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
    {{- end -}}
   {{- end -}}
  {{- end -}}
@@ -763,7 +764,7 @@ NB: an alternative to sleep loop would be to install and make use of inotifywait
 */}}
 {{- define "hpcc.addWaitAndRunContainer" -}}
 - name: wait-and-run
-  image: busybox
+  image: {{ .root.Values.global.busybox | default "busybox:stable" }}
   command:
     - sh
     - "-c"

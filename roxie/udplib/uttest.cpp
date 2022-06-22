@@ -767,7 +767,7 @@ int main(int argc, char * argv[] )
             printf("ERROR: my ip does not appear to be in range\n");
             usage();
         }
-        roxiemem::setTotalMemoryLimit(false, true, false, 1048576000, 0, NULL, NULL);
+        roxiemem::setTotalMemoryLimit(false, true, false, false, 1048576000, 0, NULL, NULL);
         testNxN();
         roxiemem::releaseRoxieHeap();
     }

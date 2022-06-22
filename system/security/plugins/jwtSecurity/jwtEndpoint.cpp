@@ -17,6 +17,8 @@
 
 #include <curl/curl.h>
 #include <iostream>
+
+#include <opensslcommon.hpp>
 #include <openssl/sha.h>
 #include <string.h>
 

@@ -378,8 +378,8 @@ public:
     {
         if (locked)
             return;
-        crit.enter();
         locked = true;
+        crit.enter();
     }
     inline void leave()
     {

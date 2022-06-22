@@ -20,6 +20,7 @@
 
 #if defined(_USE_OPENSSL)
 
+#include <opensslcommon.hpp>
 #include <openssl/pem.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>

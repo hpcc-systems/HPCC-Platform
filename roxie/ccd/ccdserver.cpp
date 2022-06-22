@@ -28527,7 +28527,7 @@ protected:
     void testSetup()
     {
         selfTestMode = true;
-        roxiemem::setTotalMemoryLimit(false, true, false, 100 * 1024 * 1024, 0, NULL, NULL);
+        roxiemem::setTotalMemoryLimit(false, true, false, false, 100 * 1024 * 1024, 0, NULL, NULL);
     }
 
     void testCleanup()

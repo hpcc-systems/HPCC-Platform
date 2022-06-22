@@ -16,6 +16,7 @@
 ############################################################################## */
 #include "jliball.hpp"
 #if defined(_USE_OPENSSL)
+#include <opensslcommon.hpp>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
