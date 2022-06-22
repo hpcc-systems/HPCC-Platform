@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include "hidl_utils.hpp"
+#include <string>
 
 #undef YYSTYPE
 #define YYSTYPE attribute
@@ -647,9 +648,11 @@ public:
 
    void write_cpp_header()
     {
-        outf("#ifndef %s_API\n", name_);
-        outf("#define %s_API\n", name_);
-        outf("#endif //%s_API\n\n", name_);
+        outf("#ifdef %s_API_EXPORTS\n", name_);
+        outf("    #define %s_API DECL_EXPORT\n", name_);
+        outs("#else\n");
+        outf("    #define %s_API DECL_IMPORT\n", name_);
+        outf("#endif //%s_API_EXPORTS\n\n", name_);
     }
 
     char          *name_;
@@ -1299,7 +1302,7 @@ public:
 extern bool isSCM;
 extern bool isESP;
 extern bool isESPng;
-extern char *esp_def_export_tag;
+extern std::string esp_def_export_tag;
 
 extern StrBuffer clarion;
 extern char srcFileExt[4];
