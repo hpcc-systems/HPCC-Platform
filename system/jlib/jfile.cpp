@@ -4530,6 +4530,7 @@ void RemoteFilename::clear()
     localhead.clear();
     sharehead.clear();
     tailpath.clear();
+    mountPathLength = 0;
 }
 
 void RemoteFilename::serialize(MemoryBuffer & out)
@@ -4560,6 +4561,16 @@ StringBuffer & RemoteFilename::getPath(StringBuffer & name) const
         return getLocalPath(name);
     else
         return getRemotePath(name);
+}
+StringBuffer  & RemoteFilename::getPathInStoragePlane(StringBuffer & name) const
+{
+    if (isLocal())
+        getLocalPath(name);
+    else
+        getRemotePath(name);
+    if (mountPathLength)
+        name.remove(0, mountPathLength);
+    return name;
 }
 
 bool RemoteFilename::isUnixPath() const // bit arbitrary
@@ -4670,6 +4681,7 @@ void RemoteFilename::set(const RemoteFilename & other)
     localhead.set(other.localhead);
     sharehead.set(other.sharehead);
     tailpath.set(other.tailpath);
+    mountPathLength = other.mountPathLength;
 
 }
 
@@ -4703,12 +4715,12 @@ void RemoteFilename::setExtension(const char * newext)
     tailpath.set(newtail);
 }
 
-
-void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
+void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename, unsigned _mountPathLength)
 {
     const char * filename=_filename;
     StringBuffer full;
     ep.set(_ep);
+    mountPathLength = _mountPathLength;
     localhead.clear();
     sharehead.clear();
     if (filename&&*filename) {
@@ -4792,8 +4804,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
                     localhead.set("c:");
                     sharestr.append("\\c").append(getShareChar());
                 }
-            }   
-                        
+            }
             sharehead.set(sharestr);
         }
         tailpath.set(filename);

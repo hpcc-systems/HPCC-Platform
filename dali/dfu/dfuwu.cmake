@@ -26,6 +26,9 @@
 
 project( dfuwu ) 
 
+find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
+find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
+
 set (    SRCS 
          dfuwu.cpp 
     )
@@ -52,5 +55,7 @@ target_link_libraries ( dfuwu
          hrpc 
          remote 
          dalibase 
+         Azure::azure-storage-blobs
+         Azure::azure-storage-files-shares
     )
 

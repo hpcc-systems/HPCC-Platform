@@ -32,6 +32,7 @@
 #include "dafdesc.hpp"
 #include "dadfs.hpp"
 #include "dameta.hpp"
+#include "jsecrets.hpp"
 
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
@@ -636,6 +637,7 @@ public:
     virtual unsigned queryDrive(unsigned partidx, unsigned copy) = 0;           // query drive
     virtual StringBuffer &getPartTail(StringBuffer &name,unsigned idx) = 0;
     virtual StringBuffer &getPartDirectory(StringBuffer &name,unsigned idx,unsigned copy = 0) = 0;  // get filename dir
+    virtual StringBuffer &getPartDirectory(StringBuffer &buf,unsigned & mountPathLength,unsigned idx,unsigned copy) = 0;
     virtual void serializePart(MemoryBuffer &mb,unsigned idx) = 0;
     virtual const char *queryDefaultDir() = 0;
     virtual IFileDescriptor &querySelf() = 0;
@@ -1206,6 +1208,12 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
 
     StringBuffer &getPartDirectory(StringBuffer &buf,unsigned idx,unsigned copy)
     {
+        unsigned basePathLength;
+        return getPartDirectory(buf,basePathLength,idx,copy);
+    }
+    StringBuffer &getPartDirectory(StringBuffer &buf,unsigned & mountPathLength,unsigned idx,unsigned copy)
+    {
+        mountPathLength=0;
         unsigned n = numParts();
         if (idx<n) {
             StringBuffer fullpath;
@@ -1277,7 +1285,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                             }
                         }
                         StringBuffer stripeDir;
-                        addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices);
+                        addStripeDirectory(stripeDir, fullpath, planePrefix, idx, lfnHash, cluster->queryPartDiskMapping().numStripedDevices, mountPathLength);
                         if (!stripeDir.isEmpty())
                             fullpath.swapWith(stripeDir);
                     }
@@ -3653,6 +3661,47 @@ public:
     virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
     virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
+    virtual bool hasStorageApi() const override { return xml->hasProp("storageapi"); }
+    virtual StorageType getStorageType() const override
+    {
+        const char * storageTypeStr = xml->queryProp("storageapi/@type");
+        if (strcmp(storageTypeStr, "azurefile")==0)
+            return StorageType::StorageTypeAzureFile;
+        else if (strcmp(storageTypeStr, "azureblob")==0)
+            return StorageType::StorageTypeAzureBlob;
+        return StorageType::StorageTypeUnknown;
+    }
+    virtual const char * queryStorageApiAccount() const override
+    {
+        if(xml->hasProp("storageapi/@account"))
+            return xml->queryProp("storageapi/@account");
+        else
+            return getenv("AZURE_ACCOUNT_NAME");
+    }
+    virtual const char * queryStorageContainer() const override
+    {
+        return xml->hasProp("storageapi/@container") ? xml->queryProp("storageapi/@container"):"";
+    }
+    virtual const StringBuffer & querySASToken (StringBuffer & token) const override
+    {
+        const char *encodedToken = xml->queryProp("storageapi/@sastoken");
+        if (!isEmptyString(encodedToken))
+        {
+            JBASE64_Decode(encodedToken, token);
+        }
+        else
+        {
+            const char * accountName = queryStorageApiAccount();
+            StringBuffer secretName;
+            secretName.appendf("azure-%s",accountName);
+            StringBuffer encToken;
+            getSecretValue(encToken, "storage", secretName, "key", false);
+            encToken.trimRight();
+            JBASE64_Decode(encToken.str(), token);
+        }
+        return token.trimRight();
+    }
+
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
     {
         if (AccessMode::none == desiredModes)

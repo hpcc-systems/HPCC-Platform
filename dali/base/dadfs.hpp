@@ -145,6 +145,7 @@ interface IDistributedFilePart: implements IInterface
     virtual RemoteFilename &getFilename(RemoteFilename &ret,unsigned copy = 0) = 0;     // get filename info
     virtual StringBuffer &getPartName(StringBuffer &name) = 0;                          // Tail Name (e.g. "test.d00._1_of_3")
     virtual StringBuffer &getPartDirectory(StringBuffer &name,unsigned copy = 0) = 0;   // get filename info
+    virtual StringBuffer &getPartDirectory(StringBuffer &ret,unsigned & mountPathLength, unsigned copy)=0;
 
     virtual IPropertyTree &queryAttributes() = 0;                               // part attributes
 

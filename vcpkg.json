@@ -5,6 +5,10 @@
     "dependencies": [
         "apr",
         "apr-util",
+	    "azure-core-cpp",
+        "azure-storage-common-cpp",
+        "azure-storage-blobs-cpp",
+        "azure-storage-files-shares-cpp",
         "boost-property-tree",
         "boost-regex",
         "curl",

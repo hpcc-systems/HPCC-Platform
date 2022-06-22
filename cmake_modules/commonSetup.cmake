@@ -153,7 +153,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(PLATFORM OFF)
         set(INCLUDE_PLUGINS OFF)
         set(SIGN_MODULES OFF)
-        set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
+        set(USE_OPTIONAL ON) # Force failure if we can't find the plugin dependencies
     ENDMACRO()
   
     # Plugin options

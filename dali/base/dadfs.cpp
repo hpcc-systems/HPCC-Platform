@@ -2375,6 +2375,7 @@ public:
     unsigned queryDrive(unsigned copy);
     StringBuffer &getPartName(StringBuffer &name);
     StringBuffer &getPartDirectory(StringBuffer &name,unsigned copy);
+    StringBuffer &getPartDirectory(StringBuffer &ret,unsigned &mountPathLength, unsigned copy);
     const char *queryOverrideName() { return overridename; }
     void clearOverrideName()
     {
@@ -7016,6 +7017,13 @@ unsigned CDistributedFilePart::copyClusterNum(unsigned copy,unsigned *replicate)
 
 StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned copy)
 {
+    unsigned basePathLength;
+    return getPartDirectory(ret,basePathLength,copy);
+}
+
+StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned &mountPathLength,unsigned copy)
+{
+    mountPathLength=0;
     const char *defdir = parent.queryDefaultDir();
     StringBuffer dir;
     const char *pn;
@@ -7070,7 +7078,7 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
 
                 StringBuffer stripeDir;
                 unsigned numStripedDevices = parent.queryPartDiskMapping(cn).numStripedDevices;
-                addStripeDirectory(stripeDir, dir, planePrefix, partIndex, parent.lfnHash, numStripedDevices);
+                addStripeDirectory(stripeDir, dir, planePrefix, partIndex, parent.lfnHash, numStripedDevices, mountPathLength);
                 if (!stripeDir.isEmpty())
                     dir.swapWith(stripeDir);
             }
@@ -7114,18 +7122,20 @@ IPropertyTree &CDistributedFilePart::queryAttributes()
     return *attr;
 }
 
+
 RemoteFilename &CDistributedFilePart::getFilename(RemoteFilename &ret,unsigned copy)
 {
     // this is probably not as efficient as could be
+    unsigned mountPathLength;
     StringBuffer fullpath;
-    getPartDirectory(fullpath,copy);
+    getPartDirectory(fullpath,mountPathLength,copy);
     addPathSepChar(fullpath);
     getPartName(fullpath);
     SocketEndpoint ep;
     INode *node=queryNode(copy);
     if (node)
         ep = node->endpoint();
-    ret.setPath(ep,fullpath.str());
+    ret.setPath(ep,fullpath.str(),mountPathLength);
     return ret;
 }
 

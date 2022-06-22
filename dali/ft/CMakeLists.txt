@@ -22,6 +22,8 @@ if ( PLATFORM )
     include (ftslave.cmake)
 endif()
 include (ftslavelib.cmake)
+set(CMAKE_CXX_STANDARD 14)
+
 include (dalift.cmake)
 
 

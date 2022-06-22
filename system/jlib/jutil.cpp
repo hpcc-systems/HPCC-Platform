@@ -2405,6 +2405,35 @@ jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const char* i
     return out;
 }
 
+jlib_decl StringBuffer& encode_url(StringBuffer& out, const char* in)
+{
+    for (const char *p = in; *p; ++p)
+    {
+        switch (*p)
+        {
+            case ' ': out.append("%20"); break;
+            case '+': out.append("%2B"); break;
+            case '\r': out.append("%0D"); break;
+            case '\n': out.append("%0A"); break;
+            case '\'': out.append("%27"); break;
+            case ',': out.append("%2C"); break;
+            case ':': out.append("%3A"); break;
+            case ';': out.append("%3B"); break;
+            default:
+                auto c = static_cast<uint8_t>(*p);
+                if (c >= 0x80)
+                {
+                    out.append("%");
+                    out.appendhex(c, false);
+                }
+                else
+                    out.append(*p);
+            break;
+        }
+    }
+
+    return out;
+}
 
 jlib_decl StringBuffer &  passwordInput(const char* prompt, StringBuffer& passwd)
 {

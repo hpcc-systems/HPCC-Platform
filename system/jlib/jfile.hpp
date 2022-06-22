@@ -373,6 +373,7 @@ class jlib_decl RemoteFilename
     StringAttr          localhead;  // local base directory 
     StringAttr          sharehead;  // remote share equvalent to localbase (always starts with separator if present)
     StringAttr          tailpath;   // tail directory and filename appended to one of the above (always starts with separator)
+    unsigned            mountPathLength; // length of the path in the storage plane
 public:
     void clear();
 
@@ -380,6 +381,7 @@ public:
     StringBuffer & getPath(StringBuffer & name) const;      // Either local or full depending on location 
     StringBuffer & getLocalPath(StringBuffer &name) const;  // Local Path (e.g. "c:\dfsdata\test.d00._1_of_3")
     StringBuffer & getRemotePath(StringBuffer &name) const; // Full Remote Path  (e.g. "\\192.168.0.123\c$\dfsdata\test.d00._1_of_3")
+    StringBuffer & getPathInStoragePlane(StringBuffer & name) const;
 
     const FileSystemProperties & queryFileSystemProperties() const;
     bool isLocal() const;                                   // on calling node
@@ -389,11 +391,11 @@ public:
     const SocketEndpoint & queryEndpoint() const            { return ep; } // node containing file
     const IpAddress      & queryIP() const                  { return ep; }
     unsigned short getPort() const                          { return ep.port; }
-    bool isNull() const;                        
+    bool isNull() const;
 
     // the following overwrite previous contents
-    void set(const RemoteFilename & other);         
-    void setPath(const SocketEndpoint & _ep, const char * filename); // filename should be full windows or unix path (local)
+    void set(const RemoteFilename & other);
+    void setPath(const SocketEndpoint & _ep, const char * filename, unsigned _mountPathLength=0); // filename should be full windows or unix path (local)
     void setLocalPath(const char *name);                    // local path - can partial but on linux must be under \c$ or \d$
     void setRemotePath(const char * url,const char *local=NULL); // url should be full (share) path including ep
 
@@ -405,11 +407,9 @@ public:
     void setLocalHead(const char *name)                     { localhead.set(name); }
     void setTailPath(const char *name)                      { tailpath.set(name); }
     void setExtension(const char * newext);
-
     void split(StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext) const;   
         // same buffer can be passed to several
         // note that this is for a *local* file
-
 
     void deserialize(MemoryBuffer & in);
     void serialize(MemoryBuffer & out);

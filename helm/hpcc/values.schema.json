@@ -525,7 +525,8 @@
             "hosts": {},
             "umask": {},
             "numMounts": {},
-            "cost": {}
+            "cost": {},
+            "storageapi": {}
           },
           "additionalProperties": false
         }

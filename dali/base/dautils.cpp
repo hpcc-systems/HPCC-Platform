@@ -3480,10 +3480,8 @@ extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe
     return conn.getClear();
 }
 
-void addStripeDirectory(StringBuffer &out, const char *directory, const char *planePrefix, unsigned partNum, unsigned lfnHash, unsigned numStripes)
+void addStripeDirectory(StringBuffer &out, const char *directory, const char *planePrefix, unsigned partNum, unsigned lfnHash, unsigned numStripes, unsigned & mountPathLength)
 {
-    if (numStripes <= 1)
-        return;
     /* 'directory' is the prefix+logical file path, we need to know
     * the base plane prefix to manipulate it and insert the stripe directory.
     */
@@ -3493,13 +3491,22 @@ void addStripeDirectory(StringBuffer &out, const char *directory, const char *pl
         const char *tail = directory+strlen(planePrefix);
         if (isPathSepChar(*tail))
             tail++;
+
+        mountPathLength = tail-directory;
+        if (numStripes <= 1)
+            return;
+
         out.append(planePrefix);
         assertex(lfnHash);
         unsigned stripeNum = calcStripeNumber(partNum, lfnHash, numStripes);
         addPathSepChar(out).append('d').append(stripeNum);
         if (*tail)
-            addPathSepChar(out).append(tail);
+            addPathSepChar(out);
+        mountPathLength = out.length();
+        out.append(tail);
     }
+    else
+        mountPathLength = 0;
 }
 
 static CriticalSection dafileSrvNodeCS;

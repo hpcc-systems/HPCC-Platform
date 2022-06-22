@@ -260,6 +260,7 @@ protected:
     void pullParts();
     void pushWholeParts();
     void pushParts();
+    bool transferUsingAPI();
     const char * queryFixedSlave() const;
     const char * querySlaveExecutable(const IpAddress &ip, StringBuffer &ret) const;
     const char * querySplitPrefix();
@@ -271,6 +272,7 @@ protected:
     bool usePullOperation() const;
     bool usePushOperation() const;
     bool usePushWholeOperation() const;
+    bool useAPICopy();
     void updateSizeRead();
     void waitForTransferSem(Semaphore & sem);
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
@@ -297,8 +299,6 @@ private:
     // Get and store Remote File Name parts into the History record
     void splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
                                  bool isDistributedSource = true);
-
-
 protected:
     CIArrayOf<FilePartInfo> sources;
     Linked<IDistributedFile> distributedTarget;

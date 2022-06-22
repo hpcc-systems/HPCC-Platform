@@ -23,6 +23,10 @@
 
 project( dalift ) 
 
+find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
+find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
+find_package(azure-storage-common-cpp CONFIG REQUIRED)
+
 set (    SRCS 
          daft.cpp 
          daftformat.cpp 
@@ -56,6 +60,9 @@ target_link_libraries ( dalift
          hrpc 
          dafsclient
          dalibase 
+         Azure::azure-storage-common
+         Azure::azure-storage-blobs
+         Azure::azure-storage-files-shares
     )
 
 if (NOT CONTAINERIZED)
