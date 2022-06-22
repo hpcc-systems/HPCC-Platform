@@ -2773,7 +2773,8 @@ void CJobBase::applyMemorySettings(const char *context)
     gmemAllowHugePages = getBoolSetting("heapMasterUseHugePages", gmemAllowHugePages);
     bool gmemAllowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
     bool gmemRetainMemory = getBoolSetting("heapRetainMemory", false);
-    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
+    bool gmemLockMemory = getBoolSetting("heapLockMemory", false);
+    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, gmemLockMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
 
     PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
 }
