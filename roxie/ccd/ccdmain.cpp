@@ -1099,7 +1099,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             maxTotalMemoryLimit = friendlyStringToSize(resourcedMemory);
             maxTotalMemoryLimit = maxTotalMemoryLimit / 100.0 * roxieMemResourcedMemoryPct;
         }
-        bool lockMemory = topology->getPropBool("@heapLockMemory", false);
+        bool lockMemory = topology->getPropBool("@heapLockMemory", true);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000; // 1 Gb
         if (maxTotalMemoryLimit && (totalMemoryLimit > maxTotalMemoryLimit))
