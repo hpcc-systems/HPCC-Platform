@@ -160,6 +160,7 @@ int main(int argc, const char **argv)
                 header->load(*(KeyHdr*)block.get());
                 if (header->getKeyType() & USE_TRAILING_HEADER)
                 {
+                    printf("Reading trailing header at position %" I64F "d\n", in->size() - header->getNodeSize());
                     if (io->read(in->size() - header->getNodeSize(), sizeof(KeyHdr), (void *)block.get()) != sizeof(KeyHdr))
                         throw MakeStringException(4, "Invalid key %s: failed to read trailing key header", keyName);
                     header->load(*(KeyHdr*)block.get());
