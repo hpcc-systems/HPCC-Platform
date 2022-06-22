@@ -42,6 +42,7 @@ ENDIF()
 include_directories ( 
          ${ZLIB_INCLUDE_DIR}
          ${OPENSSL_INCLUDE_DIR}
+         ./../../security/shared
          ./../../include 
          ./../../jlib
     )

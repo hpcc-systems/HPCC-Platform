@@ -12040,7 +12040,7 @@ IHqlExpression * HqlGram::createCheckMatchAttr(attribute & attr, type_t tc)
         type.setown(makeUtf8Type(UNKNOWN_LENGTH, NULL));
         break;
     default:
-        throwUnexpectedType(type);
+        throwUnexpected();
     }
 
     OwnedHqlExpr arg = attr.getExpr();

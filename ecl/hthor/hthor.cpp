@@ -6254,6 +6254,7 @@ const void * CHThorAllJoinActivity::nextRow()
                     return ret;
                 }
             }
+            break;
         case TAKalldenormalize:
             {
                 OwnedConstRoxieRow newLeft;

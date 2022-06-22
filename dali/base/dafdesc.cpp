@@ -672,7 +672,7 @@ public:
     {
         partIndex = idx;
         ismulti = false;
-        if (!isEmptyPTree(pt)) {
+        if (pt && !isEmptyPTree(pt)) {
             if (pt->getPropInt("@num",idx+1)-1!=idx)
                 IERRLOG("CPartDescriptor part index mismatch");
             overridename.set(pt->queryProp("@name"));

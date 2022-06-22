@@ -1167,7 +1167,7 @@ void retrieveQuerysetDetailsFromAlias(IEspContext &context, IPropertyTree *regis
         Owned<IEspQuerySetAlias> a = createQuerySetAlias();
         gatherQuerySetAliasDetails(&alias, a);
         xpath.clear().append("Query[@id='").append(a->getId()).append("']");
-        aliases.append(*a.getClear());
+        aliases.append(*a.getLink());
 
         IPropertyTree *query = registry->queryPropTree(xpath);
         if (!query)
