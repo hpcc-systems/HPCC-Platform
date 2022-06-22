@@ -44,6 +44,8 @@
 #define ESDL_SCRIPT_MissingOperationAttr          5710
 #define ESDL_SCRIPT_UnknownOperation              5720
 
+#define ESDL_SCRIPT_Warning                       5800
+
 interface IEsdlCustomTransform : extends IInterface
 {
     virtual void processTransform(IEsdlScriptContext * context, const char *srcSection, const char *tgtSection) = 0;
@@ -72,19 +74,38 @@ inline bool isEmptyTransformSet(IEsdlTransformSet *set)
 #define ESDLScriptEntryPoint_ScriptedService "Service"
 #define ESDLScriptEntryPoint_InitialEsdlResponse "EsdlResponse"
 #define ESDLScriptEntryPoint_PreLogging "PreLogging"
+#define ESDLScriptEntryPoint_Functions "Functions"
+
+interface IEsdlTransformOperation;
+
+interface IEsdlFunctionRegister : extends IInterface
+{
+    virtual void registerEsdlFunction(const char *name, IEsdlTransformOperation *esdlFunc) = 0;
+    virtual void registerEsdlFunctionCall(IEsdlTransformOperation *esdlFunc) = 0;
+    virtual IEsdlTransformOperation *findEsdlFunction(const char *name, bool localOnly) = 0;
+};
+
+interface IEsdlTransformOperation : public IInterface
+{
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) = 0;
+    virtual void toDBGLog() = 0;
+};
 
 interface IEsdlTransformEntryPointMap : extends IInterface
 {
     virtual IEsdlTransformSet *queryEntryPoint(const char *name) = 0;
     virtual void removeEntryPoint(const char *name) = 0;
+    virtual IEsdlFunctionRegister *queryFunctionRegister() = 0;
 };
 
 interface IEsdlTransformMethodMap : extends IInterface
 {
     virtual IEsdlTransformEntryPointMap *queryMethod(const char *method) = 0;
+    virtual IEsdlFunctionRegister *queryFunctionRegister(const char *method) = 0;
     virtual IEsdlTransformSet *queryMethodEntryPoint(const char *method, const char *name) = 0;
     virtual void removeMethod(const char *method) = 0;
     virtual void addMethodTransforms(const char *method, const char *script, bool &foundNonLegacyTransforms) = 0;
+    virtual void bindFunctionCalls() = 0;
 };
 
 esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap();

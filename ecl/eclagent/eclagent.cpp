@@ -2229,9 +2229,10 @@ void EclAgent::runProcess(IEclProcess *process)
     bool allowHugePages = getBoolSetting("heapUseHugePages", false);
     bool allowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
     bool retainMemory = getBoolSetting("heapRetainMemory", false);
+    bool lockMemory = getBoolSetting("heapLockMemory", false);
 
     memsize_t memLimitBytes = (memsize_t)queryMemoryMB * 1024 * 1024;
-    roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, memLimitBytes, 0, NULL, NULL);
+    roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, lockMemory, memLimitBytes, 0, NULL, NULL);
 
     PROGLOG("Total memory = %u MB, query memory = %u MB", memLimitMB, queryMemoryMB);
 

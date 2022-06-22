@@ -40,6 +40,7 @@
 #include <signal.h>
 
 //openssl
+#include <opensslcommon.hpp>
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
 #ifndef _WIN32

@@ -88,22 +88,40 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
         VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/token", tenantID);
         VStringBuffer tokenRequestFields("grant_type=client_credentials&resource=https://api.loganalytics.io&client_secret=%s&client_id=%s", clientSecret, clientID);
 
-        try
-        {
+        
             /*"curl -X POST -d 'grant_type=client_credentials&client_id=<ADApplicationID>&client_secret=<thesecret>&resource=https://api.loganalytics.io'
                https://login.microsoftonline.com/<tenantID>/oauth2/token
             "*/
 
-            curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str());
-            curl_easy_setopt(curlHandle, CURLOPT_POST, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDS, tokenRequestFields.str());
-            curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer));
-            curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer);
-            curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client");
-            curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L); // non HTTP Success treated as error
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME,  tokenRequestURL.str());
 
+        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POST' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDS, tokenRequestFields.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POSTFIELDS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not disable 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer)) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_FAILONERROR' option!", COMPONENT_NAME);
+
+        try
+        {
             curlResponseCode = curl_easy_perform(curlHandle);
         }
         catch (...)
@@ -169,29 +187,50 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
         curlErrBuffer[0] = '\0';
 
         char * encodedKQL = curl_easy_escape(curlHandle, kql, strlen(kql));
-
         VStringBuffer tokenRequestURL("https://api.loganalytics.io/v1/workspaces/%s/query?query=%s", workspaceID, encodedKQL);
+        curl_free(encodedKQL);
+
         VStringBuffer bearerHeader("Authorization: Bearer %s", token);
+
+        /*curl -X GET 
+        -H "Authorization: Bearer <TOKEN>"
+            "https://api.loganalytics.io/v1/workspaces/<workspaceID>/query?query=ContainerLog20%7C%20limit%20100"
+        */
+
+        headers = curl_slist_append(headers, bearerHeader.str());
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers.getClear()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPHEADER'", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, tokenRequestURL.str());
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 0) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not disable 'CURLOPT_POST' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPGET' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, stringCallback) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, &readBuffer) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_FAILONERROR'option!", COMPONENT_NAME);
 
         try
         {
-            /*curl -X GET 
-            -H "Authorization: Bearer <TOKEN>"
-             "https://api.loganalytics.io/v1/workspaces/<workspaceID>/query?query=ContainerLog20%7C%20limit%20100"
-            */
-
-            headers = curl_slist_append(headers, bearerHeader.str());
-            curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers.getClear());
-            curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str());
-            curl_easy_setopt(curlHandle, CURLOPT_POST, 0);
-            curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, stringCallback);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, &readBuffer);
-            curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client");
-            curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer);
-            curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L); // non HTTP Success treated as error
- 
             curlResponseCode = curl_easy_perform(curlHandle);
         }
         catch (...)
@@ -760,7 +799,7 @@ bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails
     return processSearchJsonResp(resultDetails, readBuffer, returnbuf, format, true);
 }
 
-class AZURE_LOGANALYTICS_CURL_LOGACCESS_API AzureLogAnalyticsStream : public CInterfaceOf<IRemoteLogAccessStream>
+class AzureLogAnalyticsStream : public CInterfaceOf<IRemoteLogAccessStream>
 {
 public:
     virtual bool readLogEntries(StringBuffer & record, unsigned & recsRead) override

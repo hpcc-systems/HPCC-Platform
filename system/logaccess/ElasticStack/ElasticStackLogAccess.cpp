@@ -801,7 +801,7 @@ bool ElasticStackLogAccess::fetchLog(LogQueryResultDetails & resultDetails, cons
     return processESSearchJsonResp(resultDetails, esresp, returnbuf, format, true);
 }
 
-class ELASTICSTACKLOGACCESS_API ElasticStackLogStream : public CInterfaceOf<IRemoteLogAccessStream>
+class ElasticStackLogStream : public CInterfaceOf<IRemoteLogAccessStream>
 {
 public:
     virtual bool readLogEntries(StringBuffer & record, unsigned & recsRead) override

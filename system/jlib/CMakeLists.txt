@@ -179,6 +179,7 @@ set (    INCLUDES
         junicode.hpp
         jutil.hpp
         ${HPCC_SOURCE_DIR}/system/httplib/httplib.h
+        ${HPCC_SOURCE_DIR}/system/security/shared/opensslcommon.hpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/cryptocommon.cpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/digisign.cpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/pke.cpp
@@ -204,6 +205,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/lzma
          ${HPCC_SOURCE_DIR}/system/lz4_sm/lz4/lib
          ${HPCC_SOURCE_DIR}/system/globalid
+         ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
          ${HPCC_SOURCE_DIR}/system/yaml/libyaml/include
          ${HPCC_SOURCE_DIR}/system/httplib

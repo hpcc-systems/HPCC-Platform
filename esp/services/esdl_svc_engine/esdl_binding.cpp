@@ -673,6 +673,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                 configureUrlMethod(method, methodCfg);
             DBGLOG("Method %s configured", method);
         }
+        m_transforms->bindFunctionCalls();
     }
     else
         DBGLOG("ESDL Binding: While configuring method targets: method configuration not found for %s.", service);
@@ -737,7 +738,7 @@ IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspCon
     if (!serviceEPm && !methodEPm)
         return nullptr;
 
-    Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(&context);
+    Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(&context, m_transforms->queryFunctionRegister(mthdef.queryMethodName()));
 
     scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", srvdef.queryName());
     scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", mthdef.queryMethodName());

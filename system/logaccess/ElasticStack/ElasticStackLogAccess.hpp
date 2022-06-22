@@ -19,13 +19,6 @@
 #include "jstring.hpp"
 #include "jfile.ipp"
 
-
-#ifndef ELASTICSTACKLOGACCESS_EXPORTS
-#define ELASTICSTACKLOGACCESS_API DECL_IMPORT
-#else
-#define ELASTICSTACKLOGACCESS_API DECL_EXPORT
-#endif
-
 #define COMPONENT_NAME "ES Log Access"
 
 /* undef verify definitions to avoid collision in cpr submodule */
@@ -40,7 +33,7 @@
 
 using namespace elasticlient;
 
-class ELASTICSTACKLOGACCESS_API ElasticStackLogAccess : public CInterfaceOf<IRemoteLogAccess>
+class ElasticStackLogAccess : public CInterfaceOf<IRemoteLogAccess>
 {
 private:
     static constexpr const char * type = "elasticstack";
