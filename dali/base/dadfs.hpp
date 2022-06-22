@@ -164,7 +164,7 @@ interface IDistributedFilePart: implements IInterface
                                                         // note does not affect cluster order
 
     virtual unsigned copyClusterNum(unsigned copy,unsigned *replicate=NULL)=0;      // map copy number to cluster (and optionally replicate number)
-
+    virtual StringBuffer &getStorageFilePath(StringBuffer & path, unsigned copy)=0;
 };
 
 
@@ -797,7 +797,9 @@ enum DistributedFileSystemError
     DFSERR_LookupConnectionTimout,       // only raised if timeout specified on lookup etc.
     DFSERR_FailedToDeleteFile,
     DFSERR_PassIterateFilesLimit,
-    DFSERR_RestrictedFileAccessDenied
+    DFSERR_RestrictedFileAccessDenied,
+    DFSERR_EmptyStoragePlane,
+    DFSERR_MissingStoragePlane
 };
 
 

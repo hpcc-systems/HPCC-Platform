@@ -109,7 +109,7 @@
 #define DFTERR_UnknownFileFormatX_Text          "Unknown format '%s' for source file"
 #define DFTERR_CouldNotOpenFilePart_Text        "Could not open file part %s"
 #define DFTERR_FailedStartSlave_Text            "Failed to start child slave '%s'"
-#define DFTERR_CopyFailed_Text                  "Copy failed (unknown reason)"
+#define DFTERR_CopyFailed_Text                  "Copy failed (%s)"
 #define DFTERR_ReplicateNumPartsDiffer_Text     "Number of parts in source and target must match when replicating"
 #define DFTERR_CopyFileOntoSelf_Text            "Trying to copy a file (%s) onto itself"
 #define DFTERR_TargetFormatUnknownSource_Text   "Cannot omit source format if target format is supplied"
@@ -159,7 +159,6 @@
 #define DFTERR_NoMatchingDropzonePlane_Text     "No Drop Zone for '%s'"
 #define DFTERR_LocalhostAddressUsed_Text        "Localhost address used in remote file name: '%s'"
 #define DFTERR_InvalidSuperindexCopy_Text       "Source file %s is a super index file but copying as a simple logical file"
-
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%" I64F "d expected %" I64F "d) at %s of block %d"
 #define DFTERR_NoSolarisDir_Text                "Directory not yet supported for solaris"

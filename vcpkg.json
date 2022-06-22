@@ -13,6 +13,8 @@
                 "sqs"
             ]
         },
+        "azure-storage-blobs-cpp",
+        "azure-storage-files-shares-cpp",
         "boost-property-tree",
         "boost-regex",
         "cpp-driver",

@@ -168,6 +168,11 @@ storage:
   #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
   #   cost:                                 # The storage cost
   #     storageAtRest: 0.0135               # Storage at rest cost: cost per GiB/month
+  #   storageapi:                           # Optional information to allow access to storage api
+  #     type: azurefile | azureblob
+  #     account: <account-name>             # azure storage account name
+  #     container: <container>              # azure container name
+  #     secret: <secret-for-sas-token>      # secret name (under secrets/storage) for accessing SAS token
 
   - name: dali
     storageClass: ""

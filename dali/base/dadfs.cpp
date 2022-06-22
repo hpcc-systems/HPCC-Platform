@@ -310,6 +310,10 @@ public:
             return str.append(": Failed to delete file: ").append(errstr);
         case DFSERR_RestrictedFileAccessDenied:
             return str.append(": Access to restricted file denied: ").append(errstr);
+        case DFSERR_EmptyStoragePlane:
+            return str.append(": Cluster does not have storage plane: ").append(errstr);
+        case DFSERR_MissingStoragePlane:
+            return str.append(": Storage plane missing: ").append(errstr);
         }
         return str.append("Unknown DFS Exception");
     }
@@ -2432,6 +2436,7 @@ public:
         dirty = false;
         return ret;
     }
+    virtual StringBuffer &getStorageFilePath(StringBuffer & path, unsigned copy) override;
 };
 
 // --------------------------------------------------------
@@ -4885,6 +4890,36 @@ public:
         }
     }
 };
+
+StringBuffer &CDistributedFilePart::getStorageFilePath(StringBuffer & path, unsigned copy)
+{
+    unsigned nc = copyClusterNum(copy, nullptr);
+    IClusterInfo &cluster = parent.clusters.item(nc);
+    const char *planeName = cluster.queryGroupName();
+    if (isEmptyString(planeName))
+    {
+        StringBuffer lname;
+        parent.getLogicalName(lname);
+        throw new CDFS_Exception(DFSERR_EmptyStoragePlane, lname.str());
+    }
+    // Need storage path(prefix) to work out path on storage plane
+    // (After removing prefix, the remaining path is the path on storage plane)
+    Owned<IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
+    if (!storagePlane)
+        throw new CDFS_Exception(DFSERR_MissingStoragePlane, planeName);
+
+    // Note: striping to be implemented as a separate jira as additional information
+    // will be needed in the configuration
+    path.append(parent.directory);
+    if (parent.hasDirPerPart())
+        addPathSepChar(path).append(partIndex+1); // part subdir 1 based
+    addPathSepChar(path);
+    getPartName(path);
+
+    unsigned prefixLength = strlen(storagePlane->queryPrefix());
+    path.remove(0, prefixLength);
+    return path;
+}
 
 static unsigned findSubFileOrd(const char *name)
 {
