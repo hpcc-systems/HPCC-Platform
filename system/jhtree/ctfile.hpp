@@ -25,7 +25,7 @@
 #include "jio.hpp"
 #include "jfile.hpp"
 
-#define NODESIZE 8192
+#define NODESIZE 16384
 
 #define TRAILING_HEADER_ONLY  0x01 // Leading header not updated - use trailing one
 #define HTREE_TOPLEVEL_KEY  0x02
