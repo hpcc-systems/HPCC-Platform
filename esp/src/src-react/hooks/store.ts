@@ -44,7 +44,11 @@ function useStore<T>(store: IKeyValStore, key: string, defaultValue: T, monitor:
     React.useEffect(() => {
         if (!store) return;
         store.get(key).then(value => {
-            setValue(fromString<T>(value, defaultValue));
+            if (value === null) {
+                setValue(defaultValue);
+            } else {
+                setValue(fromString<T>(value, defaultValue));
+            }
         }).catch(e => {
             setValue(defaultValue);
         });
