@@ -43,6 +43,7 @@ public:
     virtual void setOnlyCompile(bool _onlyCompile) { onlyCompile = _onlyCompile; }
     virtual void setCreateExe(bool _createExe); 
     virtual void setOptimizeLevel(unsigned level);
+    virtual void setStripSymbols(bool stripSymbols);
     virtual void setTargetBitLength(unsigned bitlength);
     virtual void setMaxCompileThreads(const unsigned max) { maxCompileThreads = max; }
     virtual IPooledThread *createNew();
