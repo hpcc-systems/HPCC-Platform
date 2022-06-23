@@ -454,6 +454,10 @@ extern SinkMode getSinkMode(const char *val)
         return SinkMode::Sequential;
     else if (strieq(val, "parallel"))
         return SinkMode::Parallel;
+    else if (strieq(val, "automatic-parallel"))
+        return SinkMode::AutomaticParallel;
+    else if (strieq(val, "automatic-persistent"))
+        return SinkMode::AutomaticPersistent;
     else
     {
         if (!strieq(val, "automatic"))
@@ -27726,7 +27730,7 @@ public:
             if (donor.isSink())
             {
                 IRoxieServerActivity &activity = activities.item(idx2);
-                if (sinkMode == SinkMode::Automatic && activity.isSimpleSink())
+                if (sinkMode >= SinkMode::Automatic && activity.isSimpleSink())
                 {
                     if (!simpleSinks)
                     {
@@ -27855,7 +27859,7 @@ public:
 #ifdef PARALLEL_EXECUTE
         else if (!probeManager && !graphDefinition.isSequential() && sinkMode != SinkMode::Sequential)
         {
-            if (sinkMode == SinkMode::ParallelPersistent)
+            if (sinkMode == SinkMode::ParallelPersistent || sinkMode == SinkMode::AutomaticPersistent)
             {
                 if (!threads.ordinality())
                 {
@@ -27889,7 +27893,7 @@ public:
                 }
                 checkAbort();
             }
-            else if (sinkMode == SinkMode::Parallel || sinkMode == SinkMode::Automatic)
+            else if (sinkMode == SinkMode::Parallel || sinkMode == SinkMode::Automatic  || sinkMode == SinkMode::AutomaticParallel)
             {
                 class casyncfor: public CAsyncFor
                 {
@@ -28512,6 +28516,10 @@ public:
     virtual IIndexReadActivityInfo *queryIndexReadActivity()
     {
         throwUnexpected();
+    }
+    virtual bool isSimpleSink() const override
+    {
+        return false;
     }
     virtual void stop()
     {
