@@ -892,6 +892,16 @@ void CppCompiler::setOptimizeLevel(unsigned level)
         addCompileOption(option);
 }
 
+void CppCompiler::setStripSymbols(bool stripSymbols)
+{
+    if (stripSymbols)
+    {
+        if (targetCompiler == GccCppCompiler)
+            addLinkOption("-s");
+    }
+}
+
+
 void CppCompiler::setTargetBitLength(unsigned bitlength)
 {
     const char * option = NULL;

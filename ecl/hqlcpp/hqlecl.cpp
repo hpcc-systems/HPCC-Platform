@@ -702,6 +702,9 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     StringBufferAdaptor linkOptionAdaptor(options);
     wu->getDebugValue("linkOptions", linkOptionAdaptor);
     compiler->addLinkOption(options.str());
+    if (wu->getDebugValueBool("stripHelperSymbols", true))
+        compiler->setStripSymbols(true);
+
     options.clear();
     StringBufferAdaptor optionAdaptor(options);
     wu->getDebugValue("compileOptions", optionAdaptor);

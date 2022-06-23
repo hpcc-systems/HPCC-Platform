@@ -60,6 +60,7 @@ public:
     virtual void setOnlyCompile(bool _onlyCompile) = 0;
     virtual void setCreateExe(bool _createExe) = 0;
     virtual void setOptimizeLevel(unsigned level) = 0;
+    virtual void setStripSymbols(bool stripSymbols) = 0;
     virtual void setTargetBitLength(unsigned bitlength) = 0;
     virtual void setMaxCompileThreads(const unsigned max) = 0;
     virtual void setCCLogPath(const char* path) = 0;
