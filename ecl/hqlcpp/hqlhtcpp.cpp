@@ -9053,11 +9053,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityEmbed(BuildCtx & ctx, IHqlExpr
     {
         MemberFunction func(*this, instance->startctx, "virtual IRowStream * createOutput(IThorActivityContext * activityContext) override");
         OwnedITypeInfo streamedType = setStreamedAttr(newCall->queryType(), true);
+        func.ctx.associateExpr(activityContextMarkerExpr, queryBoolExpr(true));
         buildReturn(func.ctx, newCall, streamedType);
     }
     else
     {
         MemberFunction func(*this, instance->startctx, "virtual void execute(IThorActivityContext * activityContext) override");
+        func.ctx.associateExpr(activityContextMarkerExpr, queryBoolExpr(true));
         buildStmt(func.ctx, newCall);
     }
 
