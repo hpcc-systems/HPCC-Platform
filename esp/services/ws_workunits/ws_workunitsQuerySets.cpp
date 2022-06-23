@@ -1479,7 +1479,7 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
         return 0;
 #endif
 
-    VStringBuffer xpath("<control:querystats><Query id='%s'/></control:querystats>", queryId);
+    VStringBuffer xpath("<control:querystats><Query id='%s' action='listGraphNames'/></control:querystats>", queryId);
 #ifndef _CONTAINERIZED
     Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
     Owned<IPropertyTree> querystats = sendRoxieControlQuery(sock, xpath.str(), ROXIECONTROLQUERYTIMEOUT);
@@ -1489,11 +1489,16 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
     if (!querystats)
         return 0;
 
-    Owned<IPropertyTreeIterator> graphs = querystats->getElements("Endpoint/Query/Graph");
+    Owned<IPropertyTreeIterator> graphs = querystats->getElements("Endpoint/Query/Graphs/Graph");
+    if (!graphs->first())
+        graphs.setown(querystats->getElements("Endpoint/Query/Graph"));
+
     ForEach(*graphs)
     {
         IPropertyTree &graph = graphs->query();
-        const char* graphId = graph.queryProp("@id");
+        const char* graphId = graph.queryProp("@name");
+        if (!graphId)
+            graphId = graph.queryProp("@id");
         if (graphId && *graphId)
             graphIds.appendUniq(graphId);
     }
@@ -3494,11 +3499,16 @@ void CWsWorkunitsEx::getGraphsByQueryId(const char *target, const char *queryId,
     if (!querystats)
         return;
 
-    Owned<IPropertyTreeIterator> graphs = querystats->getElements("Endpoint/Query/Graph");
+    Owned<IPropertyTreeIterator> graphs = querystats->getElements("Endpoint/Query/Graphs/Graph");
+    if (!graphs->first())
+        graphs.setown(querystats->getElements("Endpoint/Query/Graph"));
+
     ForEach(*graphs)
     {
         IPropertyTree &graph = graphs->query();
-        const char* aGraphId = graph.queryProp("@id");
+        const char* aGraphId = graph.queryProp("@name");
+        if (!aGraphId)
+            aGraphId = graph.queryProp("@id");
         if (graphId && *graphId && !strieq(graphId, aGraphId))
             continue;
 
