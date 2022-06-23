@@ -1132,6 +1132,14 @@
           "type": "string",
           "description": "The username to use for all remote repository access"
         },
+        "defaultRepo": {
+          "type": "string",
+          "description": "The default package/repo used to resolve code if not compiling from an archive"
+        },
+        "defaultRepoVersion": {
+          "type": "string",
+          "description": "The default repo version used if not supplied for the defaultRepo"
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         },
