@@ -24,7 +24,7 @@
 #include <algorithm>
 
 
-extern "C" HPCCConfigSupport* getCfgMgrSupportInstance(EnvironmentMgr *pEnvMgr)
+extern "C" DECL_EXPORT HPCCConfigSupport* getCfgMgrSupportInstance(EnvironmentMgr *pEnvMgr)
 {
     HPCCConfigSupport *pInstance = new CheckPortBindings(pEnvMgr);
     return pInstance;
