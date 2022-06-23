@@ -461,7 +461,7 @@ extern SinkMode getSinkMode(const char *val)
     else
     {
         if (!strieq(val, "automatic"))
-            WARNLOG("Unsupported sinkmode %s - assuming auto", val);
+            WARNLOG("Unsupported sinkmode %s - assuming automatic", val);
         return SinkMode::Automatic;
     }
 }
@@ -2751,7 +2751,14 @@ public:
         startJunction(junction1);
     }
 
-    virtual void stop()
+    virtual bool isSimpleSink() const override
+    {
+        if (!CRoxieServerActivity::isSimpleSink())
+            return false;
+        return input1->isSimpleSink();
+    }
+
+    virtual void stop() override
     {
         inputStream1->stop();
         CRoxieServerActivity::stop();
@@ -4421,6 +4428,7 @@ public:
     }
     virtual bool isSimpleSink() const
     {
+        // Some activities that use a remote adaptor inject results and can therefore be simple...
         return activity.isSimpleSink(); // MORE - false might be another option!
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8903,6 +8911,8 @@ public:
     unsigned headIdx;
     Owned<IException> readError;
     Owned<IException> startError;
+    mutable std::atomic<bool> simpleSinkCalculated = { false };
+    mutable std::atomic<bool> cachedSimpleSink = { false };
 
     class OutputAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
     {
@@ -8992,7 +9002,6 @@ public:
         }
         virtual bool isSimpleSink() const override
         {
-            // DBGLOG("Not simple because splitter");
             return parent->isSimpleSink();  // Debateable
         }
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -9270,6 +9279,18 @@ public:
         CRoxieServerActivity::stop();
     };
 
+    virtual bool isSimpleSink() const override
+    {
+        // Note - there's a possibility that two threads arriving here very close together will result in parent isSimpleSink being called twice,
+        // but that is harmless
+        if (!simpleSinkCalculated)
+        {
+            simpleSinkCalculated = true;
+            cachedSimpleSink = CRoxieServerActivity::isSimpleSink();
+        }
+        return cachedSimpleSink;
+    }
+
     void reset(unsigned oid)
     {
         if (traceStartStop)
@@ -9280,7 +9301,10 @@ public:
         startError.clear();
         readError.clear();
         if (state != STATEreset) // make sure input is only reset once
+        {
             CRoxieServerActivity::reset();
+            simpleSinkCalculated = false;  // Can this vary between child query calls?
+        }
     };
 
     void connectInputStreams(bool consumerOrdered)
@@ -13518,6 +13542,11 @@ public:
         ForEachItemIn(idx, pullers)
             pullers.item(idx).stop();
         CRoxieServerActivity::stop();
+    }
+
+    virtual bool isSimpleSink() const override
+    {
+        return false;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -27005,6 +27034,13 @@ public:
         CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         authToken.append(ctx->queryAuthToken());
     }
+
+    virtual bool isSimpleSink() const override
+    {
+        return false;
+    }
+
+
     virtual void reset()
     {
         // MORE - Shouldn't we make sure thread is stopped etc???
