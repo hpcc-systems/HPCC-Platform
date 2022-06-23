@@ -241,11 +241,7 @@ public:
     {
         SELF::doSwapWith(other);
     }
-    void clear()
-    {
-        SELF::used = 0;
-    }
-    void kill(bool nodestruct = false)
+    void clear(bool nodestruct = false)
     {
         aindex_t count = SELF::used;
         SELF::used = 0;
@@ -254,6 +250,10 @@ public:
             for (aindex_t i=0; i<count; i++)
                  SELF::destruct(i);
         }
+    }
+    void kill(bool nodestruct = false)
+    {
+        clear(nodestruct);
         PARENT::kill();
     }
     MEMBER & element(aindex_t pos)

@@ -474,7 +474,7 @@ bool LocalDiskRowReader::setInputFile(IFile * inputFile, const char * _logicalFi
     //MORE: Allow a previously created input stream to be reused to avoid reallocating the buffer
     inputStream.setown(createFileSerialStream(inputfileio, startOffset, length, readBufferSize));
 
-    expectedFilter.clear();
+    expectedFilter.kill();
     ForEachItemIn(i, _expectedFilter)
         expectedFilter.append(OLINK(_expectedFilter.item(i)));
     return true;

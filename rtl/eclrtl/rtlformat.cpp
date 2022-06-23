@@ -1328,7 +1328,7 @@ IXmlWriterExt& CommonCSVWriter::clear()
     currentParentXPath.clear();
     headerXPathList.kill();
     topHeaderNameMap.kill();
-    contentRowsBuffer.clear();
+    contentRowsBuffer.kill();
     csvItems.kill();
     out.clear();
     auditOut.clear();

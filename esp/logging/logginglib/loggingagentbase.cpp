@@ -50,7 +50,7 @@ void CLogContentFilter::readAllLogFilters(IPropertyTree* cfg)
 
     if (!groupFilterRead)
     {
-        groupFilters.clear();
+        groupFilters.kill();
         readLogFilters(cfg, ESPLCGAll);
     }
 }

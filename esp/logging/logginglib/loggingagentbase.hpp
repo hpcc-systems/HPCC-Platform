@@ -331,7 +331,7 @@ public:
     CESPLogContentGroupFilters(ESPLogContentGroup _group) : group(_group) {};
     ESPLogContentGroup getGroup() { return group; };
     StringArray& getFilters() { return filters; };
-    void clearFilters() { filters.clear(); };
+    void clearFilters() { filters.kill(); };
     unsigned getFilterCount() { return filters.length(); };
     void addFilter(const char* filter)
     {

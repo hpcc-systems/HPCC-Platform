@@ -2149,7 +2149,7 @@ public:
                 {
                     if (!inputs.item(idx2).nextRow())
                     {
-                        inputs.clear(); // Make sure next() fails next time it is called
+                        inputs.kill(); // Make sure next() fails next time it is called
                         break;
                     }
                 }
