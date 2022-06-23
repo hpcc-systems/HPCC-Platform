@@ -211,7 +211,7 @@ define([
                 }
             }).then(function (response) {
                 if (lang.exists("ValidatePackageResponse", response)) {
-                    var responseText = context.validateResponseToText(response.ValidatePackageResponse);
+                    var responseText = context.validateResponseToText(response.ValidatePackageResponse?.Results.Result[0]);
                     if (responseText === "") {
                         context.resultControl.setText(context.i18n.Empty);
                     } else {
@@ -243,9 +243,9 @@ define([
                 text = this.addArrayToText(this.i18n.Warnings, response.Warnings, text);
             }
             text += "\n";
-            text = this.addArrayToText(this.i18n.QueriesNoPackage, response.queries.Unmatched, text);
-            text = this.addArrayToText(this.i18n.PackagesNoQuery, response.packages.Unmatched, text);
-            text = this.addArrayToText(this.i18n.FilesNoPackage, response.files.Unmatched, text);
+            text = this.addArrayToText(this.i18n.QueriesNoPackage, response?.queries.Unmatched, text);
+            text = this.addArrayToText(this.i18n.PackagesNoQuery, response?.packages.Unmatched, text);
+            text = this.addArrayToText(this.i18n.FilesNoPackage, response?.files.Unmatched, text);
             return text;
         },
 
