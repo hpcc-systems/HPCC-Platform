@@ -67,7 +67,7 @@ EspMessageInfo * LastEspMessage=NULL;
 EspServInfo * LastService=NULL;
 //EspMethodInfo * LastMethod=NULL;
 
-char *esp_def_export_tag=NULL;
+std::string esp_def_export_tag;
 
 bool rettype;
 unsigned linenum=1;
@@ -169,7 +169,7 @@ ExportDef
 EspDefExport
  : ESPDEFEXPORT '(' ID ')' ';'
  {
-    esp_def_export_tag=strdup($3.getName());
+    esp_def_export_tag = $3.getName();
  }
  ;
 
@@ -938,6 +938,8 @@ ApiStart
    CurProc = new ProcInfo();
     CurModule = NULL;
    LastProc = NULL;
+   if (esp_def_export_tag.empty())
+     esp_def_export_tag.append(hcp->getPackageName()).append("_API");
  }
  | SCMAPI '(' ')'
  {
@@ -945,6 +947,8 @@ ApiStart
    CurProc = new ProcInfo();
     CurModule = NULL;
    LastProc = NULL;
+   if (esp_def_export_tag.empty())
+     esp_def_export_tag.append(hcp->getPackageName()).append("_API");
  }
  | SCMAPI '(' ID ')'
  {
@@ -952,6 +956,8 @@ ApiStart
    CurProc = new ProcInfo();
     CurModule = NULL;
    LastProc = NULL;
+   if (esp_def_export_tag.empty())
+     esp_def_export_tag.append($3.getName()).append("_API");
  }
  ;
 

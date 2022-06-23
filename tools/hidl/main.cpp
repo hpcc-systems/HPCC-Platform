@@ -127,8 +127,6 @@ int main(int argc, char* argv[])
     hc.Process();
 
     delete[] gArgv;
-    if (esp_def_export_tag)
-        free(esp_def_export_tag);
 
     return 0;
 }
