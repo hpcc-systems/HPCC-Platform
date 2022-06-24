@@ -41,7 +41,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -1795,14 +1795,6 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 in the application will create an entry in
                 Eclwatch&gt;&gt;User/Permissions&gt;&gt;Repository
                 Modules</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
-              <term>sudoersBasedn</term>
-
-              <listitem>
-                <para>Deprecated.</para>
               </listitem>
             </varlistentry>
 
