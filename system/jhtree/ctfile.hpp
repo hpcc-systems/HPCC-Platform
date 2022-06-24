@@ -213,6 +213,7 @@ public:
     inline bool isBloom() const { return hdr.leafFlag == NodeBloom; }
     inline bool isLeaf() const { return hdr.leafFlag != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
     inline NodeType getNodeType() const { return (NodeType)hdr.leafFlag; }
+    const char * getNodeTypeName() const;
 
     inline bool isReady() const { return ready; }
     inline void noteReady() { ready = true; }

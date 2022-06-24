@@ -328,10 +328,8 @@ protected:
             {
                 prevLeafNode->setRightSib(node->getFpos());
                 node->setLeftSib(prevLeafNode->getFpos());
-                nodeInfo.append(* new CNodeInfo(prevLeafNode->getFpos(), prevLeafNode->getLastKeyValue(), keyedSize, lastSequence));
             }
-            else
-                nodeInfo.append(* new CNodeInfo(prevLeafNode->getFpos(), NULL, keyedSize, lastSequence));
+            nodeInfo.append(* new CNodeInfo(prevLeafNode->getFpos(), prevLeafNode->getLastKeyValue(), keyedSize, lastSequence));
             if ((keyHdr->getKeyType() & TRAILING_HEADER_ONLY) != 0 && activeBlobNode && activeBlobNode->getFpos() < prevLeafNode->getFpos())
                 pendingNodes.append(*prevLeafNode);
             else
@@ -350,10 +348,9 @@ protected:
 
     void buildTree(NodeInfoArray &children)
     {
-        if (children.ordinality() != 1 || levels==0) 
+        if (children.ordinality() != 1)
         {
-            // Note that we always create at least 2 levels as various places assume it
-            // Also when building keys for Moxie (bias != 0), need parent level due to assumptions in DKC...
+            // Note that we used to always create at least 2 levels as various places used to assume this.
             offset_t offset = nextLevel();
             if (offset)
             {
