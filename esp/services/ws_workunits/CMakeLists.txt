@@ -97,7 +97,7 @@ include_directories (
          ./../../../testing/unittests
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
 add_dependencies ( ws_workunits espscm )

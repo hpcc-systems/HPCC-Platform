@@ -33,7 +33,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/common/thorhelper
 )
 
-ADD_DEFINITIONS ( -D_USRDLL -DLOGGINGCOMMON_EXPORTS )
+ADD_DEFINITIONS ( -D_USRDLL -DLOGGINGCOMMON_EXPORTS -DWSLOGGING_API_EXPORTS )
 
 set ( SRCS
     ${ESPSCM_GENERATED_DIR}/ws_loggingservice_esp.cpp

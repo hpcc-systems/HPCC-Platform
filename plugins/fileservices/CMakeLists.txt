@@ -61,7 +61,7 @@ include_directories (
          ./../../system/jlib
             )
 
-ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS -DWSDFU_API_LOCAL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_LIBRARY( fileservices SHARED ${SRCS} )  
 add_dependencies ( fileservices espscm )

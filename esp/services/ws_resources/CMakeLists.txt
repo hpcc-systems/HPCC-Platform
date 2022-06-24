@@ -54,7 +54,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/sasha
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_RESOURCES_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_RESOURCES_EXPORTS -DWsResources_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_resources SHARED ${SRCS} )
 add_dependencies ( ws_resources espscm )
