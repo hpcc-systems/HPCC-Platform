@@ -29,6 +29,21 @@
 #include <fxpp/FragmentedXmlPullParser.hpp>
 using namespace xpp;
 
+class OptionalCriticalBlock
+{
+    CriticalSection *crit = nullptr;
+public:
+    inline OptionalCriticalBlock(CriticalSection *c) : crit(c)
+    {
+        if (crit)
+            crit->enter();
+    }
+    inline ~OptionalCriticalBlock()
+    {
+        if (crit)
+            crit->leave();
+    }
+};
 
 IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister, bool canCreateFunctions);
 void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister);
@@ -109,6 +124,14 @@ public:
         m_tagname.set(stag.getLocalName());
         m_traceName.set(stag.getValue("trace"));
         m_ignoreCodingErrors = getStartTagValueBool(stag, "optional", false);
+    }
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        return exec(nullptr, nullptr, scriptContext, targetContext, sourceContext);
+    }
+    virtual IInterface *prepareForAsync(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        return nullptr;
     }
 };
 
@@ -191,8 +214,10 @@ public:
     {
     }
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if (m_select)
             return sourceContext->addCompiledVariable(m_name, m_select);
         else if (m_children.length())
@@ -228,8 +253,10 @@ public:
 
     virtual ~CEsdlTransformOperationHttpContentXml(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         CXpathContextLocation location(targetContext);
         targetContext->addElementToLocation("content");
         return processChildren(scriptContext, targetContext, sourceContext);
@@ -298,7 +325,7 @@ public:
 
     virtual ~CEsdlTransformOperationMySqlBindParmeter(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         return false;
     }
@@ -601,8 +628,14 @@ public:
         if (defaultValue && s.isEmpty())
             s.set(defaultValue);
     }
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        //OperationMySqlCall is optimized to write directly into the document object
+        //  In future we can create a different version that is optimized to work more asynchronously
+        //  If we did, then inside a synchronous tag we might to have it optional which mode is used. For example efficiently streaming in data while
+        //  an HTTP call is being made to an external service may still work best in the current mode
+        OptionalCriticalBlock block(crit);
+
         StringBuffer section;
         getXpathStringValue(section, sourceContext, m_section, "temporaries");
 
@@ -682,8 +715,9 @@ public:
 
     virtual ~CEsdlTransformOperationHttpHeader(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
         return processHeader(scriptContext, targetContext, sourceContext, nullptr);
     }
 
@@ -718,6 +752,16 @@ public:
     }
 };
 
+class OperationStateHttpPostXml : public CInterfaceOf<IInterface> //plain CInterface doesn't actually give us our opaque IInterface pointer
+{
+public:
+    Owned<IProperties> headers = createProperties();
+    StringBuffer url;
+    StringBuffer content;
+    unsigned testDelay = 0;
+};
+
+
 class CEsdlTransformOperationHttpPostXml : public CEsdlTransformOperationBase
 {
 protected:
@@ -726,6 +770,7 @@ protected:
     Owned<ICompiledXpath> m_url;
     IArrayOf<IEsdlTransformOperationHttpHeader> m_headers;
     Owned<IEsdlTransformOperation> m_content;
+    Owned<ICompiledXpath> m_testDelay;
 
 public:
     CEsdlTransformOperationHttpPostXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister) : CEsdlTransformOperationBase(xpp, stag, prefix)
@@ -742,6 +787,9 @@ public:
         if (isEmptyString(url))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without url", m_traceName, !m_ignoreCodingErrors);
         m_url.setown(compileXpath(url));
+        const char *msTestDelayStr = stag.getValue("test-delay");
+        if (!isEmptyString(msTestDelayStr))
+            m_testDelay.setown(compileXpath(msTestDelayStr));
 
         int type = 0;
         while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
@@ -782,62 +830,120 @@ public:
         targetContext->addElementToLocation("headers");
         ForEachItemIn(i, m_headers)
             m_headers.item(i).processHeader(scriptContext, targetContext, sourceContext, headers);
+        if (!headers->hasProp("Accept"))
+            headers->setProp("Accept", "text/html, application/xml");
     }
 
-    void buildRequest(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, const char *url, IProperties *headers)
+    void buildRequest(OperationStateHttpPostXml &preparedState, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext)
     {
         CXpathContextLocation location(targetContext);
         targetContext->addElementToLocation("request");
-        targetContext->ensureSetValue("@url", url, true);
-        buildHeaders(scriptContext, targetContext, sourceContext, headers);
+        targetContext->ensureSetValue("@url", preparedState.url, true);
+        buildHeaders(scriptContext, targetContext, sourceContext, preparedState.headers);
         if (m_content)
             m_content->process(scriptContext, targetContext, sourceContext);
+        VStringBuffer xpath("/esdl_script_context/%s/%s/request/content/*[1]", m_section.str(), m_name.str());
+        sourceContext->toXml(xpath, preparedState.content);
     }
 
-    void postRequest(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, const char *url, IProperties *headers)
+    virtual IInterface *prepareForAsync(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        VStringBuffer xpath("/esdl_script_context/%s/%s/request/content/*[1]", m_section.str(), m_name.str());
-
-        StringBuffer content;
-        sourceContext->toXml(xpath, content);
-        if (!content)
-            return;
+        Owned<OperationStateHttpPostXml> preparedState = new OperationStateHttpPostXml;
         CXpathContextLocation location(targetContext);
-        targetContext->addElementToLocation("response");
+        VStringBuffer xpath("/esdl_script_context/%s/%s", m_section.str(), m_name.str());
+        targetContext->ensureLocation(xpath, true);
+        if (m_url)
+            sourceContext->evaluateAsString(m_url, preparedState->url);
 
-        Owned<IHttpClientContext> httpCtx = getHttpClientContext();
-        Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
-        if (!httpclient)
-            return;
+        //don't complain if test-delay is used but test mode is off. Any script can be instrumented for testing but won't run those features outside of testing
+        if (scriptContext->getTestMode() && m_testDelay)
+            preparedState->testDelay = (unsigned) sourceContext->evaluateAsNumber(m_testDelay);
+
+        buildRequest(*preparedState, scriptContext, targetContext, sourceContext);
+        return preparedState.getClear();
+    }
+
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        //if process is called here we are not currently a child of "synchronize", but because we do support synchronize
+        //  we keep our state isolated.  Therefor unlike other operations we still need to prepare our "pre async" state object before calling exec
+        //  in future additional operations may be optimized for synchronize in this way.
+        Owned<IInterface> state = prepareForAsync(scriptContext, targetContext, sourceContext);
+        return exec(nullptr, state, scriptContext, targetContext, sourceContext);
+    }
+
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        OperationStateHttpPostXml &preparedState = *static_cast<OperationStateHttpPostXml *>(preparedForAsync);
+        if (preparedState.content.isEmpty())
+            return false;
+        HttpClientErrCode code = HttpClientErrCode::OK;
+        Owned<IHttpMessage> resp;
+
+        StringBuffer err;
+        StringBuffer status;
+        StringBuffer contentType;
+        StringBuffer response;
+        StringBuffer exceptionXml;
 
         try
         {
-            StringBuffer status;
-            StringBuffer response;
+            Owned<IHttpClientContext> httpCtx = getHttpClientContext();
+            Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, preparedState.url);
+            if (!httpclient)
+                return false;
+
             StringBuffer errmsg;
-
-            if (headers && !headers->hasProp("Accept"))
-                headers->setProp("Accept", "text/html, application/xml");
-
-            HttpClientErrCode code = HttpClientErrCode::OK;
-            Owned<IHttpMessage> resp = httpclient->sendRequestEx("POST", "text/xml", content, code, errmsg, headers);
-            targetContext->ensureSetValue("@status", status.str(), true);
-
-            StringBuffer err;
+            resp.setown(httpclient->sendRequestEx("POST", "text/xml", preparedState.content, code, errmsg, preparedState.headers));
             err.append((int) code);
-            targetContext->ensureSetValue("@error-code", err.str(), true);
-            if (code != HttpClientErrCode::OK)
-                throw MakeStringException(ESDL_SCRIPT_Error, "ESDL Script error sending request in http-post-xml %s url(%s)", m_traceName.str(), url);
 
-            resp->getStatus(status);
-            targetContext->ensureSetValue("@status", status.str(), true);
+            if (code != HttpClientErrCode::OK)
+                throw MakeStringException(ESDL_SCRIPT_Error, "ESDL Script error sending request in http-post-xml %s url(%s)", m_traceName.str(), preparedState.url.str());
 
             resp->getContent(response);
             if (!response.trim().length())
-                throw MakeStringException(ESDL_SCRIPT_Error, "ESDL Script empty result calling http-post-xml %s url(%s)", m_traceName.str(), url);
+                throw MakeStringException(ESDL_SCRIPT_Error, "ESDL Script empty result calling http-post-xml %s url(%s)", m_traceName.str(), preparedState.url.str());
 
-            StringBuffer contentType;
+            resp->getStatus(status);
             resp->getContentType(contentType);
+        }
+        catch(IMultiException *me)
+        {
+            me->serialize(exceptionXml);
+            me->Release();
+        }
+        catch(IException *E)
+        {
+            Owned<IMultiException> me = makeMultiException("ESDLScript");
+            me->append(*LINK(E));
+            me->serialize(exceptionXml);
+            E->Release();
+        }
+
+        if (preparedState.testDelay)
+            MilliSleep(preparedState.testDelay);
+
+        VStringBuffer xpath("/esdl_script_context/%s/%s", m_section.str(), m_name.str());
+
+        //No need to synchronize until we hit this point and start updating the scriptContext / xml document
+        OptionalCriticalBlock block(crit);
+
+        CXpathContextLocation location(targetContext);
+        targetContext->ensureLocation(xpath, true);
+
+        if (exceptionXml.length())
+        {
+            CXpathContextLocation content_location(targetContext);
+            targetContext->addElementToLocation("content");
+            targetContext->ensureSetValue("@status", "error", true);
+            targetContext->addXmlContent(exceptionXml.str());
+        }
+        else
+        {
+            CXpathContextLocation response_location(targetContext);
+            targetContext->addElementToLocation("response");
+            targetContext->ensureSetValue("@status", status.str(), true);
+            targetContext->ensureSetValue("@error-code", err.str(), true);
             targetContext->ensureSetValue("@content-type", contentType.str(), true);
             if (strnicmp("text/xml", contentType.str(), 8)==0 || strnicmp("application/xml", contentType.str(), 15) ==0)
             {
@@ -847,46 +953,9 @@ public:
             }
             else
             {
-                targetContext->ensureSetValue("@status", "error", true);
                 targetContext->ensureSetValue("text", response.str(), true);
             }
         }
-        catch(IMultiException *me)
-        {
-            StringBuffer xml;
-            me->serialize(xml);
-            CXpathContextLocation content_location(targetContext);
-            targetContext->ensureSetValue("@status", "error", true);
-            targetContext->addElementToLocation("content");
-            targetContext->addXmlContent(xml.str());
-            me->Release();
-        }
-        catch(IException *E)
-        {
-            StringBuffer xml;
-            Owned<IMultiException> me = makeMultiException("ESDLScript");
-            me->append(*LINK(E));
-            me->serialize(xml);
-            CXpathContextLocation content_location(targetContext);
-            targetContext->ensureSetValue("@status", "error", true);
-            targetContext->addElementToLocation("content");
-            targetContext->addXmlContent(xml.str());
-            E->Release();
-        }
-    }
-
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
-    {
-        VStringBuffer xpath("/esdl_script_context/%s/%s", m_section.str(), m_name.str());
-        CXpathContextLocation location(targetContext);
-        targetContext->ensureLocation(xpath, true);
-        StringBuffer url;
-        if (m_url)
-            sourceContext->evaluateAsString(m_url, url);
-
-        Owned<IProperties> headers = createProperties();
-        buildRequest(scriptContext, targetContext, sourceContext, url, headers);
-        postRequest(scriptContext, targetContext, sourceContext, url, headers);
 
         sourceContext->addXpathVariable(m_name, xpath);
         return false;
@@ -912,8 +981,10 @@ public:
     {
     }
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if (m_select)
             return sourceContext->declareCompiledParameter(m_name, m_select);
         return sourceContext->declareParameter(m_name, "");
@@ -962,8 +1033,10 @@ public:
 
     virtual const char *getSectionName() = 0;
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if ((!m_name && !m_xpath_name) || !m_select)
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful)
         try
@@ -1070,8 +1143,10 @@ public:
 
     virtual ~CEsdlTransformOperationSetValue(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if ((!m_xpath_target && m_target.isEmpty()) || !m_select)
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful
         try
@@ -1144,8 +1219,10 @@ public:
 
     virtual ~CEsdlTransformOperationNamespace(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         targetContext->setLocationNamespace(m_prefix, m_uri, m_current);
         return false;
     }
@@ -1198,8 +1275,10 @@ public:
 
     virtual ~CEsdlTransformOperationRenameNode(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if ((!m_xpath_target && m_target.isEmpty()) || (!m_xpath_new_name && m_new_name.isEmpty()))
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful
         try
@@ -1260,8 +1339,10 @@ public:
 
     virtual ~CEsdlTransformOperationCopyOf(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         try
         {
             targetContext->copyFromPrimaryContext(m_select, m_new_name);
@@ -1313,8 +1394,10 @@ public:
 
     virtual ~CEsdlTransformOperationTrace(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         try
         {
             if (m_test && !sourceContext->evaluateAsBoolean(m_test))
@@ -1371,8 +1454,10 @@ public:
 
     virtual ~CEsdlTransformOperationRemoveNode(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if ((!m_xpath_target && m_target.isEmpty()))
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful
         try
@@ -1460,7 +1545,7 @@ public:
     {
     }
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    bool doFail(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext)
     {
         int code = m_code.get() ? (int) sourceContext->evaluateAsNumber(m_code) : ESDL_SCRIPT_Error;
         StringBuffer msg;
@@ -1468,6 +1553,12 @@ public:
             sourceContext->evaluateAsString(m_message, msg);
         throw makeStringException(code, msg.str());
         return true; //avoid compilation error
+    }
+
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        OptionalCriticalBlock block(crit);
+        return doFail(scriptContext, targetContext, sourceContext);
     }
 
     virtual void toDBGLog() override
@@ -1496,11 +1587,13 @@ public:
     {
     }
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if (m_test && sourceContext->evaluateAsBoolean(m_test))
             return false;
-        return CEsdlTransformOperationFail::process(scriptContext, targetContext, sourceContext);
+        return CEsdlTransformOperationFail::doFail(scriptContext, targetContext, sourceContext);
     }
 
     virtual void toDBGLog() override
@@ -1529,8 +1622,10 @@ public:
 
     virtual ~CEsdlTransformOperationForEach(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         Owned<IXpathContextIterator> contexts = evaluate(sourceContext);
         if (!contexts)
             return false;
@@ -1575,6 +1670,65 @@ private:
     }
 };
 
+class CEsdlTransformOperationSynchronize : public CEsdlTransformOperationWithChildren
+{
+    Owned<ICompiledXpath> m_maxAtOnce;
+public:
+    CEsdlTransformOperationSynchronize(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, functionRegister, nullptr)
+    {
+        const char *maxAtOnce = stag.getValue("max-at-once");
+        if (!isEmptyString(maxAtOnce))
+            m_maxAtOnce.setown(compileXpath(maxAtOnce));
+    }
+
+    virtual ~CEsdlTransformOperationSynchronize(){}
+
+    virtual bool exec(CriticalSection *externalCrit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        if (!m_children.length())
+            return false;
+
+        IPointerArray preps;
+        ForEachItemIn(i, m_children)
+            preps.append(m_children.item(i).prepareForAsync(scriptContext, targetContext, sourceContext));
+
+        class casyncfor: public CAsyncFor
+        {
+            CriticalSection synchronizeCrit;
+            IPointerArray &preps;
+            IArrayOf<IEsdlTransformOperation> &children;
+            IEsdlScriptContext *scriptContext = nullptr;
+            IXpathContext *targetContext = nullptr;
+            IXpathContext *sourceContext = nullptr;
+
+        public:
+            casyncfor(IPointerArray &_preps, IArrayOf<IEsdlTransformOperation> &_children, IEsdlScriptContext *_scriptContext, IXpathContext *_targetContext, IXpathContext *_sourceContext)
+                : preps(_preps), children(_children), scriptContext(_scriptContext), targetContext(_targetContext), sourceContext(_sourceContext)
+            {
+            }
+            void Do(unsigned i)
+            {
+                children.item(i).exec(&synchronizeCrit, preps.item(i), scriptContext, targetContext, sourceContext);
+            }
+        } afor(preps, m_children, scriptContext, targetContext, sourceContext);
+
+        unsigned maxAtOnce = m_maxAtOnce.get() ? (unsigned) sourceContext->evaluateAsNumber(m_maxAtOnce) : 5;
+        afor.For(m_children.ordinality(), maxAtOnce, false, false);
+
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG (">>>>%s ", m_tagname.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG ("<<<<%s<<<<<", m_tagname.str());
+    #endif
+    }
+};
+
 class CEsdlTransformOperationConditional : public CEsdlTransformOperationWithChildren
 {
 private:
@@ -1609,8 +1763,10 @@ public:
 
     virtual ~CEsdlTransformOperationConditional(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         if (!evaluate(sourceContext))
             return false;
         processChildren(scriptContext, targetContext, sourceContext);
@@ -1698,8 +1854,10 @@ public:
 
     virtual ~CEsdlTransformOperationChoose(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         return processChildren(scriptContext, targetContext, sourceContext);
     }
 
@@ -1800,7 +1958,7 @@ public:
         }
     }
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         //we should only get here with esdlFunc==nullptr for calls made in service level scripts where the function
         //  isn't defined locally to the script
@@ -1855,8 +2013,10 @@ public:
 
     virtual ~CEsdlTransformOperationTarget(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         CXpathContextLocation location(targetContext);
         bool success = false;
         if (m_ensure)
@@ -1873,6 +2033,35 @@ public:
     {
     #if defined(_DEBUG)
         DBGLOG(">>>%s> %s(%s)>>>>", m_traceName.str(), m_tagname.str(), m_xpath.get() ? m_xpath->getXpath() : "");
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+//the script element serves as a simple wrapper around a section of script content
+//  the initial use to put a script section child within a synchronize element, providing a section of script to run while other synchronize children are blocked
+//but script is supported anywhere and might be useful elsewhere for providing some scope for variables and for structuring code
+class CEsdlTransformOperationScript : public CEsdlTransformOperationWithChildren
+{
+public:
+    CEsdlTransformOperationScript(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
+    {
+    }
+
+    virtual ~CEsdlTransformOperationScript(){}
+
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        OptionalCriticalBlock block(crit);
+        return processChildren(scriptContext, targetContext, sourceContext);
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s>>>>", m_traceName.str(), m_tagname.str());
         CEsdlTransformOperationWithChildren::toDBGLog();
         DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
     #endif
@@ -1923,8 +2112,10 @@ public:
 
     virtual ~CEsdlTransformOperationSource(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         CXpathContextLocation location(sourceContext);
         if (sourceContext->setLocation(m_xpath, m_required))
             return processChildren(scriptContext, targetContext, sourceContext);
@@ -1981,8 +2172,10 @@ public:
 
     virtual ~CEsdlTransformOperationElement(){}
 
-    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        OptionalCriticalBlock block(crit);
+
         CXpathContextLocation location(targetContext);
         targetContext->addElementToLocation(m_name);
         return processChildren(scriptContext, targetContext, sourceContext);
@@ -2037,7 +2230,7 @@ public:
 
     virtual ~CEsdlTransformOperationFunction(){}
 
-    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         return processChildren(scriptContext, targetContext, sourceContext);
     }
@@ -2127,6 +2320,10 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
         return new CEsdlTransformOperationTrace(xpp, stag, prefix);
     if (streq(op, "call-function"))
         return new CEsdlTransformOperationCallFunction(xpp, stag, prefix, functionRegister);
+    if (streq(op, "synchronize"))
+        return new CEsdlTransformOperationSynchronize(xpp, stag, prefix, functionRegister);
+    if (streq(op, "script"))
+        return new CEsdlTransformOperationScript(xpp, stag, prefix, functionRegister);
     return nullptr;
 }
 

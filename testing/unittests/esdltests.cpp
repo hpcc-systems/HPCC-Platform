@@ -310,6 +310,7 @@ class ESDLTests : public CppUnit::TestFixture
       //CPPUNIT_TEST(testMysql);
       //CPPUNIT_TEST(testCallFunctions); //requires a particular roxie query
       //CPPUNIT_TEST(testHTTPPostXml); //requires a particular roxie query
+      //CPPUNIT_TEST(testSynchronizeHTTPPostXml); //requires a particular roxie query
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -326,6 +327,8 @@ public:
     IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config, IInterface *functionRegister=nullptr)
     {
         Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, functionRegister);
+        scriptContext->setTestMode(true);
+
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
@@ -339,9 +342,12 @@ public:
 
     void runTransform(IEsdlScriptContext *scriptContext, const char *scriptXml, const char *srcSection, const char *tgtSection, const char *testname, int code)
     {
+        unsigned startTime = msTick();
         Owned<IEsdlCustomTransform> tf = createEsdlCustomTransform(scriptXml, nullptr);
 
         tf->processTransform(scriptContext, srcSection, tgtSection);
+        fprintf(stdout, "\nTest (%s) time ms(%u)\n", testname, msTick() - startTime);
+
         if (code)
             throw MakeStringException(99, "Test failed(%s): expected an explicit exception %d", testname, code);
     }
@@ -1758,8 +1764,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
                             <es:set-value target="Last" value="'bbb'"/>
                             <es:element name="Aliases">
                               <es:set-value target="Alias" value="'ccc'"/>
-                              <es:set-value target="Alias" value="'ddd'"/>
-                              <es:add-value target="Alias" value="'eee'"/>
+                              <es:add-value target="Alias" value="'ddd'"/>
                             </es:element>
                           </es:element>
                         </es:element>
@@ -1825,8 +1830,8 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
                             <First>aaa</First>
                             <Last>bbb</Last>
                             <Aliases>
+                              <Alias>ccc</Alias>
                               <Alias>ddd</Alias>
-                              <Alias>eee</Alias>
                             </Aliases>
                           </Name>
                           <Addresses/>
@@ -1863,6 +1868,235 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         {
             StringBuffer m;
             fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "http post xml", E->errorCode(), E->errorMessage(m).str());
+            E->Release();
+            CPPUNIT_ASSERT(false);
+        }
+    }
+    void testSynchronizeHTTPPostXml()
+    {
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+         <root>
+            <Person>
+               <FullName>
+                  <First>Joe</First>
+                  <ID>GI101</ID>
+                  <ID>GI102</ID>
+               </FullName>
+            </Person>
+          </root>
+        )!!";
+
+        static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
+            <es:variable name='value' select="'abc'"/>
+            <es:synchronize max-at-once="3">
+              <es:script>
+                <es:element name="SyncBackgroundStuff">
+                  <es:for-each select="es:tokenize('aaa,bbb,ccc,yyy', ',')">
+                      <es:add-value target="value" value="."/>
+                  </es:for-each>
+                </es:element>
+              </es:script>
+              <es:http-post-xml url="'http://127.0.0.1:9876'" section="logging" name="roxiestuff1" test-delay="1000">
+                <es:content>
+                  <es:element name="Envelope">
+                    <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+                    <es:element name="Body">
+                      <es:element name="roxieechopersoninfoRequest">
+                        <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+                        <es:element name="roxieechopersoninforequest">
+                          <es:element name="Row">
+                            <es:element name="Name">
+                              <es:set-value target="First" value="'aaa'"/>
+                              <es:set-value target="Last" value="'bbb'"/>
+                              <es:element name="Aliases">
+                                <es:set-value target="Alias" value="'ccc'"/>
+                                <es:add-value target="Alias" value="'ddd'"/>
+                              </es:element>
+                            </es:element>
+                          </es:element>
+                        </es:element>
+                      </es:element>
+                    </es:element>
+                  </es:element>
+                </es:content>
+              </es:http-post-xml>
+              <es:http-post-xml url="'http://127.0.0.1:9876'" section="logging" name="roxiestuff2" test-delay="1100">
+                <es:content>
+                  <es:element name="Envelope">
+                    <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+                    <es:element name="Body">
+                      <es:element name="roxieechopersoninfoRequest">
+                        <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+                        <es:element name="roxieechopersoninforequest">
+                          <es:element name="Row">
+                            <es:element name="Name">
+                              <es:set-value target="First" value="'lll'"/>
+                              <es:set-value target="Last" value="'mmm'"/>
+                              <es:element name="Aliases">
+                                <es:set-value target="Alias" value="'nnn'"/>
+                                <es:add-value target="Alias" value="'ooo'"/>
+                              </es:element>
+                            </es:element>
+                          </es:element>
+                        </es:element>
+                      </es:element>
+                    </es:element>
+                  </es:element>
+                </es:content>
+              </es:http-post-xml>
+            </es:synchronize>
+            <es:element name="HttpPostStuff">
+              <es:copy-of select="$roxiestuff1"/>
+              <es:copy-of select="$roxiestuff2"/>
+            </es:element>
+        </es:CustomRequestTransform>
+        )!!";
+
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="new features"/>
+          </Transform>
+        </config>)!!";
+
+        constexpr const char * result = R"!!(<root>
+  <Person>
+    <FullName>
+      <First>Joe</First>
+      <ID>GI101</ID>
+      <ID>GI102</ID>
+    </FullName>
+    <SyncBackgroundStuff>
+      <value>aaa</value>
+      <value>bbb</value>
+      <value>ccc</value>
+      <value>yyy</value>
+    </SyncBackgroundStuff>
+    <HttpPostStuff>
+      <roxiestuff1>
+        <request url="http://127.0.0.1:9876">
+          <content>
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <roxieechopersoninfoRequest xmlns="urn:hpccsystems:ecl:roxieechopersoninfo">
+                  <roxieechopersoninforequest>
+                    <Row>
+                      <Name>
+                        <First>aaa</First>
+                        <Last>bbb</Last>
+                        <Aliases>
+                          <Alias>ccc</Alias>
+                          <Alias>ddd</Alias>
+                        </Aliases>
+                      </Name>
+                    </Row>
+                  </roxieechopersoninforequest>
+                </roxieechopersoninfoRequest>
+              </soap:Body>
+            </soap:Envelope>
+          </content>
+        </request>
+        <response status="200 OK" error-code="0" content-type="text/xml">
+          <content>
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+                  <Results>
+                    <Result>
+                      <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+                        <Row>
+                          <Name>
+                            <First>aaa</First>
+                            <Last>bbb</Last>
+                            <Aliases>
+                              <Alias>ccc</Alias>
+                              <Alias>ddd</Alias>
+                            </Aliases>
+                          </Name>
+                          <Addresses/>
+                        </Row>
+                      </Dataset>
+                    </Result>
+                  </Results>
+                </roxieechopersoninfoResponse>
+              </soap:Body>
+            </soap:Envelope>
+          </content>
+        </response>
+      </roxiestuff1>
+      <roxiestuff2>
+        <request url="http://127.0.0.1:9876">
+          <content>
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <roxieechopersoninfoRequest xmlns="urn:hpccsystems:ecl:roxieechopersoninfo">
+                  <roxieechopersoninforequest>
+                    <Row>
+                      <Name>
+                        <First>lll</First>
+                        <Last>mmm</Last>
+                        <Aliases>
+                          <Alias>nnn</Alias>
+                          <Alias>ooo</Alias>
+                        </Aliases>
+                      </Name>
+                    </Row>
+                  </roxieechopersoninforequest>
+                </roxieechopersoninfoRequest>
+              </soap:Body>
+            </soap:Envelope>
+          </content>
+        </request>
+        <response status="200 OK" error-code="0" content-type="text/xml">
+          <content>
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+                  <Results>
+                    <Result>
+                      <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+                        <Row>
+                          <Name>
+                            <First>lll</First>
+                            <Last>mmm</Last>
+                            <Aliases>
+                              <Alias>nnn</Alias>
+                              <Alias>ooo</Alias>
+                            </Aliases>
+                          </Name>
+                          <Addresses/>
+                        </Row>
+                      </Dataset>
+                    </Result>
+                  </Results>
+                </roxieechopersoninfoResponse>
+              </soap:Body>
+            </soap:Envelope>
+          </content>
+        </response>
+      </roxiestuff2>
+    </HttpPostStuff>
+  </Person>
+</root>)!!";
+
+        try {
+
+            Owned<IEspContext> ctx = createEspContext(nullptr);
+            Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "synchronize", 0);
+
+            StringBuffer output;
+            scriptContext->toXML(output, "MyResult");
+            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            {
+                fputs(output.str(), stdout);
+                fflush(stdout);
+                throw MakeStringException(100, "Test failed(%s)", "synchronize");
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "synchronize", E->errorCode(), E->errorMessage(m).str());
             E->Release();
             CPPUNIT_ASSERT(false);
         }
