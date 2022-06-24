@@ -50,7 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS( -D_CONSOLE -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( wumanager ${SRCS} )
 add_dependencies ( wumanager espscm )

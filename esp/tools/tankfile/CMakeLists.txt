@@ -49,7 +49,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS( -D_CONSOLE -DWSDecoupledLog_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( tankfile ${SRCS} )
 add_dependencies ( tankfile espscm )

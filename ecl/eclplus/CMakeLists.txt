@@ -65,7 +65,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -DECLPLUS_EXPORTS -D_CONSOLE )
+ADD_DEFINITIONS( -DECLPLUS_EXPORTS -D_CONSOLE -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( eclplus ${SRCS} )
 add_dependencies ( eclplus espscm )

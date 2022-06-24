@@ -57,7 +57,7 @@ include_directories (
 
 set_source_files_properties (dfuplus.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LOCAL)
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS( -D_CONSOLE -DWSDFU_API_LOCAL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( dfuplus ${SRCS} )
 add_dependencies ( dfuplus espscm )

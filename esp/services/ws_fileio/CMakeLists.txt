@@ -61,7 +61,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/sasha
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DWsFileIO_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_fileio SHARED ${SRCS} )
 install ( TARGETS ws_fileio RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
