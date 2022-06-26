@@ -3,25 +3,12 @@
     "name": "hpcc-platform",
     "version": "8.6.0",
     "dependencies": [
-        "icu",
-        "zlib",
-        "openssl",
-        "libxml2",
-        {
-            "name": "libxslt",
-            "default-features": false,
-            "features": []
-        },
-        "boost-property-tree",
-        "boost-regex",
-        "python3",
         "apr",
         "apr-util",
-        {
-            "name": "libiconv",
-            "platform": "osx"
-        },
+        "boost-property-tree",
+        "boost-regex",
         "curl",
+        "icu",
         {
             "name": "libarchive",
             "default-features": false,
@@ -30,8 +17,24 @@
             ]
         },
         {
+            "name": "libiconv",
+            "platform": "osx"
+        },
+        "libxml2",
+        {
+            "name": "libxslt",
+            "default-features": false,
+            "features": []
+        },
+        "openssl",
+        {
+            "name": "python3",
+            "platform": "windows"
+        },
+        {
             "name": "winflexbison",
             "platform": "windows"
-        }
+        },
+        "zlib"
     ]
 }

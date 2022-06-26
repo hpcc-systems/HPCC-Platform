@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.generator": "Unix Makefiles",
+		"cmake.configureArgs": [
+			"-DRUNTIME_USER=${env:USER}",
+			"-DDESTDIR=${userHome}/hpcc-${buildType}",
+			"-DUSE_OPTIONAL=OFF",
+			"-DINCLUDE_PLUGINS=ON",
+			"-DSUPPRESS_V8EMBED=ON",
+			"-DSUPPRESS_REMBED=ON",
+			"-DSUPPRESS_COUCHBASEEMBED=ON"
+		],
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-vscode.cpptools-extension-pack",
+			"ms-vscode.cmake-tools",
+			"twxs.cmake",
+		]
+	}
+}

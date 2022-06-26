@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.generator": "Unix Makefiles",
+		"cmake.configureArgs": [
+			"-DUSE_OPTIONAL=OFF",
+			"-DINCLUDE_PLUGINS=OFF",
+			"-DUSE_OPENLDAP=OFF",
+			"-DUSE_AZURE=OFF",
+			"-DUSE_AWS=OFF",
+			"-DWSSQL_SERVICE=OFF",
+			"-DUSE_CASSANDRA=OFF"
+		],
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-vscode.cpptools",
+			"ms-vscode.cpptools-extension-pack",
+			"ms-vscode.cmake-tools",
+			"twxs.cmake",
+		]
+	}
+}
