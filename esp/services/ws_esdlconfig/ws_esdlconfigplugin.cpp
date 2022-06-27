@@ -17,10 +17,6 @@
 
 #pragma warning (disable : 4786)
 
-#ifndef WsESDLConfig_API
-#define WsESDLConfig_API DECL_EXPORT
-#endif //WsESDLConfig_API
-
 #include "ws_esdlconfig_esp.ipp"
 
 //ESP Bindings
