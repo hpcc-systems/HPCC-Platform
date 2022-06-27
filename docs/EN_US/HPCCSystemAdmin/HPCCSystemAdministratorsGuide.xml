@@ -1831,14 +1831,6 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
             </varlistentry>
 
             <varlistentry>
-              <term>sudoersBasedn</term>
-
-              <listitem>
-                <para>Deprecated.</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
               <term>workunitsBasedn</term>
 
               <listitem>
