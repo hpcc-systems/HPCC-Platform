@@ -198,26 +198,13 @@ void CMasterWatchdogBase::threadmain()
     unsigned lastcheck=lastbeat;
 
     retrycount = 0;
-    try
+    while (!stopped)
     {
-        while (!stopped)
+        try
         {
             HeartBeatPacketHeader hb;
             MemoryBuffer progressData;
-            unsigned sz = 0;
-            try
-            {
-                sz = readPacket(hb, progressData);
-            }
-            catch (IMP_Exception *e)
-            {
-                if (MPERR_link_closed != e->errorCode())
-                    throw;
-                const SocketEndpoint &ep = e->queryEndpoint();
-                StringBuffer epStr;
-                ep.getUrlStr(epStr);
-                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor slave: %s (Process terminated or node down?)", epStr.str()), TEC_Watchdog);
-            }
+            unsigned sz = readPacket(hb, progressData);
             if (stopped)
                 break;
             else if (sz)
@@ -253,11 +240,27 @@ void CMasterWatchdogBase::threadmain()
                 lastbeat = msTick();
             }
         }
-    }
-    catch (IException *e)
-    {
-        FLLOG(MCexception(e), thorJob, e,"Watchdog Server Exception");
-        e->Release();
+        catch (IMP_Exception *e)
+        {
+            if (MPERR_link_closed != e->errorCode())
+            {
+                FLLOG(MCexception(e), thorJob, e,"Watchdog Server Exception");
+                e->Release();
+            }
+            else
+            {
+                const SocketEndpoint &ep = e->queryEndpoint();
+                StringBuffer epStr;
+                ep.getUrlStr(epStr);
+                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor slave: %s (Process terminated or node down?)", epStr.str()), TEC_Watchdog);
+            }
+        }
+        catch (IException *e)
+        {
+            FLLOG(MCexception(e), thorJob, e,"Watchdog Server Exception");
+            e->Release();
+            // NB: it is important to continue with master watchdog, to continue to consume packets from workers
+        }
     }
 }
 
