@@ -3101,6 +3101,18 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
 #endif
+            else if (strieq(req.getType(), getEnumText(FileTypePostMortem, queryFileTypes)))
+            {
+                const char* file = req.getName();
+                helper.validateWUFile(file, winfo, CWUFileType_PostMortem);
+
+                StringBuffer fileName;
+                splitFilename(file, nullptr, nullptr, &fileName, &fileName);
+                resp.setFileName(fileName.str());
+
+                helper.readLocalFileToBuffer(file, req.getSizeLimit(), mb);
+                openSaveFile(context, opt, req.getSizeLimit(), fileName.str(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
+            }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
                 const char* name  = req.getName();

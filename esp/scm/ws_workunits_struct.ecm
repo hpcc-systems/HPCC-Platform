@@ -67,6 +67,7 @@ ESPenum WUFileType : string
     EclAgentLog("EclAgentLog"),
     ArchiveQuery("ArchiveQuery"),
     ComponentLog("ComponentLog"),
+    PostMortem("PostMortem"),
 };
 
 ESPenum WUFileDownloadOption : int

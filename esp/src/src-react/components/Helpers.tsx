@@ -33,6 +33,9 @@ function getURL(item: HelperRow, option) {
         case "ComponentLog":
             params = "/WUFile/" + item.Type + "?Wuid=" + item.workunit.Wuid + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
             break;
+        case "postmortem":
+            params = "/WUFile/" + item.Type + "?Wuid=" + encodeURIComponent(item.workunit.Wuid) + "&Name=" + encodeURIComponent(item.Orig.Name) + "&Type=" + encodeURIComponent(item.Orig.Type);
+            break;
         case "EclAgentLog":
             params = "/WUFile/" + item.Type + "?Wuid=" + item.workunit.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
             break;

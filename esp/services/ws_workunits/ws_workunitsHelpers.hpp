@@ -179,7 +179,9 @@ class WsWuInfo
         const char* sourceAlias, const char *outFileName);
     void initWULogReader();
     void setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs);
-
+    void getPostMortemFiles(IFile* file, unsigned& helpersCount, StringArray& postMortemFiles);
+    void addPostMortemFiles(StringArray& postMortemFiles, IArrayOf<IEspECLHelpFile>& helpers);
+    void validatePostMortemFile(IFile* file, const char* fileToBeValidated, bool& validated);
 
 public:
     /*
@@ -690,6 +692,8 @@ class CWsWuFileHelper
     void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
+    void readWUIDRequest(CHttpRequest *request, StringBuffer &wuid);
+
 public:
     CWsWuFileHelper(IPropertyTree *_directories) : directories(_directories) {};
 
@@ -703,6 +707,8 @@ public:
 
     void validateFilePath(const char *file, WsWuInfo &winfo, CWUFileType wuFileType, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
     bool validateWUFile(const char *file, WsWuInfo &winfo, CWUFileType wuFileType);
+    void readLocalFileToBuffer(const char *file, offset_t sizeLimit, MemoryBuffer &mb);
+    void sendLocalFileStreaming(CHttpRequest *request, CHttpResponse *response);
 #ifdef _CONTAINERIZED
     void sendWUComponentLogStreaming(CHttpRequest *request, CHttpResponse *response);
 #endif
