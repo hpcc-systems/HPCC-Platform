@@ -43,7 +43,7 @@
     "@hpcc-js/chart": "2.79.0",
     "@hpcc-js/codemirror": "2.59.5",
     "@hpcc-js/common": "2.69.0",
-    "@hpcc-js/comms": "2.78.0",
+    "@hpcc-js/comms": "2.78.2",
     "@hpcc-js/dataflow": "7.0.0",
     "@hpcc-js/eclwatch": "2.72.14",
     "@hpcc-js/graph": "2.80.2",
