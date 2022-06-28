@@ -24,6 +24,7 @@
 #include <openssl/pem.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
+#include <openssl/rsa.h>
 
 #include "jiface.hpp"
 #include "jbuff.hpp"
