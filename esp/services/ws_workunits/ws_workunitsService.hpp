@@ -242,6 +242,7 @@ public:
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     IWorkUnitFactory *queryWUFactory() { return wuFactory; };
     const char *getTempDirectory() const { return tempDirectory.str(); };
+    const char *getQueryDirectory() const { return queryDirectory.str(); };
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWULightWeightQuery(IEspContext &context, IEspWULightWeightQueryRequest &req, IEspWULightWeightQueryResponse &resp);
