@@ -68,9 +68,6 @@ define([
                 case "postmortem":
                     params = `/WUFile/${item.Type}?Wuid=${uriEncodedParams.Wuid}&Name=${uriEncodedParams.Name}&Type=${uriEncodedParams.Type}`;
                     break;
-                case "postmortem":
-                    params = "/WUFile/" + item.Type + "?Wuid=" + encodeURIComponent(this.wu.Wuid) + "&Name=" + encodeURIComponent(item.Orig.Name) + "&Type=" + encodeURIComponent(item.Orig.Type);
-                    break;
                 case "EclAgentLog":
                     params = `/WUFile/${item.Type}?Wuid=${uriEncodedParams.Wuid}&Process=${uriEncodedParams.PID}&Name=${uriEncodedParams.Name}&Type=${uriEncodedParams.Type}`;
                     break;
