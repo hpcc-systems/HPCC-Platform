@@ -12,7 +12,10 @@ import { DojoComponent } from "../layouts/DojoAdapter";
 
 import "src-react-css/components/DojoGrid.css";
 
-export { editor, selector, tree };
+export type Selector<T> = (_: T, type?: string) => T;
+const typedSelector = selector as Selector<any>;
+
+export { editor, typedSelector as selector, tree };
 
 const SimpleGrid = declare([ESPUtil.Grid(false, false, undefined, false, "SimpleGrid")]);
 const PageSelGrid = declare([ESPUtil.Grid(true, true, undefined, false, "PageSelGrid")]);

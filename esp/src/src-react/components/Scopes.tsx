@@ -143,23 +143,23 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 headerIcon: "LockSolid",
                 width: 25,
                 sortable: false,
-                formatter: (_protected) => {
+                formatter: React.useCallback((_protected) => {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }
+                }, [])
             },
             IsCompressed: {
                 headerIcon: "ZipFolder",
                 width: 25,
                 sortable: false,
-                formatter: (compressed) => {
+                formatter: React.useCallback((compressed) => {
                     if (compressed === true) {
                         return <Icon iconName="ZipFolder" />;
                     }
                     return "";
-                }
+                }, [])
             },
             __hpcc_displayName: {
                 label: nlsHPCC.LogicalName, width: 600,
@@ -185,24 +185,24 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 85,
-                formatter: (value, row) => Utility.valueCleanUp(value),
+                formatter: React.useCallback((value, row) => Utility.valueCleanUp(value), []),
             },
             IntSize: {
                 label: nlsHPCC.Size, width: 100,
-                formatter: (value, row) => Utility.convertedSize(value),
+                formatter: React.useCallback((value, row) => Utility.convertedSize(value), []),
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 60,
-                formatter: (value, row) => Utility.valueCleanUp(value),
+                formatter: React.useCallback((value, row) => Utility.valueCleanUp(value), []),
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {
                 label: nlsHPCC.FileCostAtRest, width: 100,
-                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`,
+                formatter: React.useCallback((cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`, [currencyCode]),
             },
             AccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: (cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`,
+                formatter: React.useCallback((cost, row) => `${formatCost(cost ?? 0)} (${currencyCode || "$"})`, [currencyCode]),
             }
         }
     });

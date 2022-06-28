@@ -29,7 +29,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
             text: { width: 50, label: nlsHPCC.Message },
             status: {
                 label: nlsHPCC.Status, width: 10, sortable: true,
-                renderCell: (object, value, node, options) => {
+                renderCell: React.useCallback((object, value, node, options) => {
                     switch (value) {
                         case "Error":
                             node.classList.add("ErrorCell");
@@ -42,7 +42,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
                             break;
                     }
                     node.innerText = value;
-                }
+                }, [])
             }
         }
     });

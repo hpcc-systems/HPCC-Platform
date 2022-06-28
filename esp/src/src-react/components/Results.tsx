@@ -7,7 +7,6 @@ import { useWorkunitResults } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
 import { ShortVerticalDivider } from "./Common";
 import { Result } from "./Result";
-import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -33,21 +32,21 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         sort: { attribute: "Wuid", descending: true },
         filename: "results",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Name: {
                 label: nlsHPCC.Name, width: 180, sortable: true,
-                formatter: function (Name, row) {
+                formatter: React.useCallback(function (Name, row) {
                     return <Link href={`#/workunits/${row.Wuid}/outputs/${Name}`}>{Name}</Link>;
-                }
+                }, [])
             },
             FileName: {
                 label: nlsHPCC.FileName, sortable: true,
-                formatter: function (FileName, row) {
+                formatter: React.useCallback(function (FileName, row) {
                     return <Link href={`#/files/${FileName}`}>{FileName}</Link>;
-                }
+                }, [])
             },
             Value: {
                 label: nlsHPCC.Value,
@@ -56,11 +55,11 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             },
             ResultViews: {
                 label: nlsHPCC.Views, sortable: true,
-                formatter: function (ResultViews, idx) {
+                formatter: React.useCallback(function (ResultViews, idx) {
                     return <>
                         {ResultViews?.map((item, idx) => <Link href='#' viewName={encodeURIComponent(item)}>{item}</Link>)}
                     </>;
-                }
+                }, [])
             }
         }
     });

@@ -54,19 +54,19 @@ export const Monitoring: React.FunctionComponent<MonitoringProps> = ({
             StatusDetails: { label: "Details", sortable: false },
             URL: {
                 label: "URL", width: 200, sortable: false,
-                formatter: function (Name, row) {
+                formatter: React.useCallback(function (Name, row) {
                     if (Name) {
                         return <Link href={`http://${Name}`} target="_blank">{Name}</Link>;
                     } else {
                         return "";
                     }
-                }
+                }, [])
             },
             EndPoint: { label: "IP", sortable: true, width: 140 },
             TimeReportedStr: { label: "Time Reported", width: 140, sortable: true },
             Status: {
                 label: nlsHPCC.Severity, width: 130, sortable: false,
-                formatter: function (object, value, node, options) {
+                formatter: React.useCallback(function (object, value, node, options) {
                     switch (value) {
                         case "Error":
                             node.classList.add("ErrorCell");
@@ -79,7 +79,7 @@ export const Monitoring: React.FunctionComponent<MonitoringProps> = ({
                             break;
                     }
                     node.innerText = value;
-                }
+                }, [])
             }
         }
     });

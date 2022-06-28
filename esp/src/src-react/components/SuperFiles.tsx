@@ -4,7 +4,6 @@ import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -31,16 +30,16 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
         sort: { attribute: "Name", descending: false },
         filename: "superFiles",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Name: {
                 label: nlsHPCC.Name,
                 sortable: true,
-                formatter: function (name, row) {
+                formatter: React.useCallback(function (name, row) {
                     return <Link href={`#/files/${cluster}/${name}`}>{name}</Link>;
-                }
+                }, [cluster])
             },
         }
     });

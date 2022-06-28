@@ -194,20 +194,20 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             }),
             Id: {
                 label: nlsHPCC.PackageMap,
-                formatter: function (Id, row) {
+                formatter: React.useCallback(function (Id, row) {
                     return <Link href={`#/packagemaps/${Id}`}>{Id}</Link>;
-                }
+                }, [])
             },
             Target: { label: nlsHPCC.Target },
             Process: { label: nlsHPCC.ProcessFilter },
             Active: {
                 label: nlsHPCC.Active,
-                formatter: function (active) {
+                formatter: React.useCallback(function (active) {
                     if (active === true) {
                         return "A";
                     }
                     return "";
-                }
+                }, [])
             },
             Description: { label: nlsHPCC.Description }
         }

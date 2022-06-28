@@ -7,7 +7,6 @@ import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 function canShowContent(type: string) {
     switch (type) {
@@ -126,20 +125,20 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         primaryID: "id",
         filename: "helpers",
         columns: {
-            sel: selector({
+            sel: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             Type: {
                 label: nlsHPCC.Type,
                 width: 160,
-                formatter: function (Type, row) {
+                formatter: React.useCallback(function (Type, row) {
                     const target = getTarget(row.id, row);
                     if (target) {
                         return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?mode=${encodeURIComponent(target.sourceMode)}&src=${encodeURIComponent(target.url)}`}>{Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</Link>;
                     }
                     return Type;
-                }
+                }, [])
             },
             Description: {
                 label: nlsHPCC.Description
@@ -147,10 +146,10 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             FileSize: {
                 label: nlsHPCC.FileSize,
                 width: 90,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
-                },
+                }, []),
             }
         }
     });
