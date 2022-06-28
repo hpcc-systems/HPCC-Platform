@@ -37,13 +37,13 @@ jobs:
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON'
+            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON'
             cmake_build_options: "-- -j$(nproc) -k"
           - os: "ubuntu-22.04"
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON'
+            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON'
             cmake_build_options: "-- -j$(nproc) -k"
           - os: "windows-2019"
             triplet: "x64-windows"

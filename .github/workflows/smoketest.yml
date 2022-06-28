@@ -243,24 +243,6 @@ jobs:
 
         echo "node.js version = $(node --version), npm version = $(npm --version), release = $(lsb_release -sc)"
 
-    # See: https://discourse.cmake.org/t/error-when-installing-targets-and-exports-in-3-19-1/2245/6
-    - name: cmake-3.19.1-workaround
-      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
-      run: |
-        mkdir cmake
-        cd cmake
-        cmake_version=$(cmake --version | head -n1 | awk '{ print $3 }')
-        echo "cmake_version = ${cmake_version}"
-        if [[ ${cmake_version} == '3.19.1' ]]
-        then
-          echo "cmake 3.19.1 causes aws build failure, fetching and installing cmake 3.18.5"
-          wget https://github.com/Kitware/CMake/releases/download/v3.18.5/cmake-3.18.5-Linux-x86_64.tar.gz
-          tar xpfz cmake-3.18.5-Linux-x86_64.tar.gz
-          ln -s  cmake-3.18.5-Linux-x86_64/bin/cmake ./cmake
-        else
-          ln -s `which cmake` ./cmake
-        fi
-
     - name: Cache miss prep
       if: ${{ steps.check-cache.outputs.state == 'miss' }}
       run: |
@@ -302,7 +284,7 @@ jobs:
         rm -f CMakeCache.txt
         if [[ ! -f cache-timestamp ]]; then touch cache-timestamp; fi
         touch ../cmake-timestamp
-        ../cmake/cmake ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON2=0 -DUSE_PYTHON3=1 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_CASSANDRA=Off -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest" -DSTRIP_RELEASE_SYMBOLS=1
+        `../src/vcpkg/vcpkg fetch cmake | tail -n 1` ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON2=0 -DUSE_PYTHON3=1 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_CASSANDRA=Off -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest" -DSTRIP_RELEASE_SYMBOLS=1
         make -j$(nproc) install
 
     - name: build-logs-artifact

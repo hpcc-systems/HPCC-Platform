@@ -39,6 +39,7 @@ RUN yum install -y \
     heimdal-devel \
     java-11-openjdk-devel \
     sqlite-devel \
+    libevent-devel \
     v8-devel
 
 RUN yum group install -y "Development Tools"
@@ -105,7 +106,6 @@ RUN bash -c "`/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc
     -DUSE_AWS=OFF \
     -DUSE_ELASTICSTACK_CLIENT=OFF \
     -DUSE_CASSANDRA=OFF \
-    -DSUPPRESS_COUCHBASEEMBED=ON \
     -DSUPPRESS_V8EMBED=ON \
     -DSUPPRESS_REMBED=ON \
     -DUSE_CPPUNIT=${USE_CPPUNIT}"
