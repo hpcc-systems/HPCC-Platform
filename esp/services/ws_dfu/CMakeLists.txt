@@ -80,7 +80,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS -DWSDFU_API_LOCAL -DWSDFUXREF_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_dfu SHARED ${SRCS} )
 add_dependencies ( ws_dfu espscm )

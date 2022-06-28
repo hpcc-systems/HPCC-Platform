@@ -51,7 +51,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DLOGGINGCOMMON_EXPORTS)
+ADD_DEFINITIONS( -D_USRDLL -DLOGGINGCOMMON_EXPORTS -DWSDecoupledLog_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_decoupledlogging SHARED ${SRCS} )
 add_dependencies( ws_decoupledlogging espscm )

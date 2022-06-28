@@ -63,7 +63,7 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         ${HPCC_SOURCE_DIR}/common/thorhelper
         )
 
-    add_definitions(-D_USRDLL)
+    add_definitions(-D_USRDLL -Dwsstore_API_LOCAL )
     HPCC_ADD_LIBRARY(ws_store SHARED ${SRCS})
 
     target_link_libraries(

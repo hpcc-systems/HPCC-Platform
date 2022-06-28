@@ -56,7 +56,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS( -D_CONSOLE -DWSSMC_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( ecl-bundle ${SRCS} )
 install ( TARGETS ecl-bundle RUNTIME DESTINATION ${EXEC_DIR} )
