@@ -1803,6 +1803,7 @@ public:
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
     virtual unsigned getPriority() const { throwUnexpected(); }
     virtual char *getPlatform() { throwUnexpected(); }
+    virtual char *getDeploymentName() { throwUnexpected(); }
     virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); }
 
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
@@ -3775,6 +3776,14 @@ public:
         else
             return strdup("roxie");
 #endif
+    }
+    virtual char *getDeploymentName()
+    {
+        StringBuffer deploymentName;
+        getGlobalConfigSP()->getProp("@deployment", deploymentName);
+        if (0 == deploymentName.length()) // for backward compatibility return something (dali)
+            return getDaliServers();
+        return deploymentName.detach();
     }
     virtual char *getWuid()
     {
