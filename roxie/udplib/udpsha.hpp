@@ -285,7 +285,8 @@ struct UdpPermitToSendMsg
 public:
     bool matches(const UdpPermitToSendMsg & other) const
     {
-        return cmd == other.cmd && max_data == other.max_data && flowSeq == other.flowSeq && destNode == other.destNode;
+        //Comparisons ordered to fail as quickly as possible (called on a high priority thread)
+        return flowSeq == other.flowSeq && destNode == other.destNode && cmd == other.cmd && max_data == other.max_data;
     }
 
 public:

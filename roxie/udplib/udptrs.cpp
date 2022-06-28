@@ -1025,7 +1025,7 @@ class CSendManager : implements ISendManager, public CInterface
 
         bool pushPermit(const UdpPermitToSendMsg &msg)
         {
-            unsigned pushTimeoutMs = 15;
+            const unsigned pushTimeoutMs = 15;
             if (udpRemoveDuplicatePermits)
             {
                 bool wasDuplicate = false;
