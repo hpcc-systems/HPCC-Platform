@@ -4552,8 +4552,14 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Only one WU ZAP report is allowed.");
 
             VStringBuffer fileName("%s%s", zipFolder, fileNames.item(0));
+#ifdef _CONTAINERIZED
+            VStringBuffer importDir("%s%simport", wswService->getQueryDirectory(), PATHSEPSTR);
+            wswService->queryWUFactory()->importWorkUnit(fileName, password,
+                importDir, "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+#else
             wswService->queryWUFactory()->importWorkUnit(fileName, password,
                 wswService->getTempDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+#endif
         }
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);
