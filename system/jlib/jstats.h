@@ -582,6 +582,11 @@ public:
 #endif
         return values[index];
     }
+    inline const CRuntimeStatistic & queryStatisticByIndex(unsigned index) const
+    {
+        return values[index];
+    }
+
 
     void addStatistic(StatisticKind kind, unsigned __int64 value)
     {
@@ -629,6 +634,9 @@ public:
     virtual bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in);
     virtual void deserializeMerge(MemoryBuffer& in);
+
+    // Nested statistics need to be protected before merging, non nested are merged atomically
+    inline bool isThreadSafeMergeSource() const { return nested == nullptr; }
 
 protected:
     virtual CNestedRuntimeStatisticMap *createNested() const;
@@ -874,7 +882,6 @@ extern jlib_decl const char * queryCreatorTypeName(StatisticCreatorType sct);
 extern jlib_decl const char * queryScopeTypeName(StatisticScopeType sst);
 extern jlib_decl const char * queryMeasureName(StatisticMeasure measure);
 extern jlib_decl const char * queryMeasurePrefix(StatisticMeasure measure);
-extern jlib_decl StatsMergeAction queryMergeMode(StatisticMeasure measure);
 extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind);
 
 extern jlib_decl StatisticMeasure queryMeasure(const char *  measure, StatisticMeasure dft);

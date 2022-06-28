@@ -700,8 +700,15 @@ public:
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
-        CriticalBlock block(statsCrit);
-        stats.merge(from);
+        if (from.isThreadSafeMergeSource())
+        {
+            stats.merge(from);
+        }
+        else
+        {
+            CriticalBlock block(statsCrit);
+            stats.merge(from);
+        }
     }
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
