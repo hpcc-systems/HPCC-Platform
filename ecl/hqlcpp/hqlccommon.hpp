@@ -25,6 +25,7 @@ extern IHqlExpression * activeMatchUtf8Expr;
 extern IHqlExpression * activeNlpMarkerExpr;
 extern IHqlExpression * activeProductionMarkerExpr;
 extern IHqlExpression * activeValidateMarkerExpr;
+extern IHqlExpression * activityContextMarkerExpr;
 extern IHqlExpression * classMarkerExpr;
 extern IHqlExpression * codeContextMarkerExpr;
 extern IHqlExpression * colocalSameClassPreserveExpr;

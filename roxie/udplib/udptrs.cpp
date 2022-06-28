@@ -1055,14 +1055,38 @@ class CSendManager : implements ISendManager, public CInterface
 
         bool pushPermit(const UdpPermitToSendMsg &msg)
         {
-            if (send_queue.push(msg, 15)) 
-                return true;
-            else 
+            const unsigned pushTimeoutMs = 15;
+            if (udpRemoveDuplicatePermits)
             {
-                StringBuffer s;
-                DBGLOG("UdpSender[%s]: push() failed - ignored ok_to_send msg - node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
-                return false;
+                bool wasDuplicate = false;
+                auto updateTrackingIfMatches = [&msg,&wasDuplicate](UdpPermitToSendMsg &m)
+                {
+                    if (!m.matches(msg))
+                        return false;
+                    m.seen = msg.seen; // Update the queue entry with the most recent tracking information
+                    wasDuplicate = true;
+                    return true;
+                };
+
+                if (send_queue.pushOrModify(msg, updateTrackingIfMatches, pushTimeoutMs))
+                {
+                    if (wasDuplicate && ((udpTraceLevel > 2) || udpTraceFlow))
+                    {
+                        StringBuffer s;
+                        DBGLOG("UdpSender[%s]: duplicate permit ignored node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
+                    }
+                    return true; // permit has been processed, but didn't need to add it to the queue.
+                }
             }
+            else
+            {
+                if (send_queue.push(msg, pushTimeoutMs))
+                    return true;
+            }
+
+            StringBuffer s;
+            DBGLOG("UdpSender[%s]: push() failed - ignored ok_to_send msg - node=%s, maxData=%u", parent.myId, msg.destNode.getTraceText(s).str(), msg.max_data);
+            return false;
         }
 
         virtual int doRun() 

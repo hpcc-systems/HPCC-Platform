@@ -22,6 +22,7 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <ctime>
+#include "jsecrets.hpp"
 
 #define COMPONENT_NAME "AzureLogAnalyticsCurlClient"
 
@@ -58,9 +59,9 @@ private:
     StringBuffer m_hostIndexSearchPattern;
 
     StringBuffer m_logAnalyticsWorkspaceID;
-    StringBuffer m_tenantID;
-    StringBuffer m_clientID;
-    StringBuffer m_clientSecret;
+    StringBuffer m_aadTenantID;
+    StringBuffer m_aadClientID;
+    StringBuffer m_aadClientSecret;
 
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);

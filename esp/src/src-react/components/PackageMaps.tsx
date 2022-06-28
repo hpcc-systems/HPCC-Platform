@@ -1,12 +1,11 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, Link, mergeStyleSets, MessageBar, MessageBarType, Pivot, PivotItem, Stack } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
+import { PackageProcessService } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
-import * as ESPPackageProcess from "src/ESPPackageProcess";
-import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushParams, pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
@@ -20,22 +19,20 @@ import { TextSourceEditor, XMLSourceEditor } from "./SourceEditor";
 
 const logger = scopedLogger("../components/PackageMaps.tsx");
 
+const packageService = new PackageProcessService({ baseUrl: "" });
+
 const FilterFields: Fields = {
     "Target": { type: "dropdown", label: nlsHPCC.Target, options: [], value: "*" },
     "Process": { type: "dropdown", label: nlsHPCC.Process, options: [], value: "*" },
     "ProcessFilter": { type: "dropdown", label: nlsHPCC.ProcessFilter, options: [], value: "*" },
 };
 
-function formatQuery(filter) {
-    return filter;
-}
-
 const defaultUIState = {
     hasSelection: false
 };
 
 interface PackageMapsProps {
-    filter?: object;
+    filter?: { [key: string]: any };
     store?: any;
     tab?: string;
 }
@@ -64,10 +61,10 @@ const addArrayToText = (title, items, text): string => {
 
 const validateResponseToText = (response): string => {
     let text = "";
-    if (!response.Errors || response.Errors.length < 1) {
+    if (!response?.Errors || response?.Errors.length < 1) {
         text += nlsHPCC.NoErrorFound;
     } else {
-        text = addArrayToText(nlsHPCC.Errors, response.Errors, text);
+        text = addArrayToText(nlsHPCC?.Errors, response?.Errors, text);
     }
     if (!response.Warnings || response.Warnings.length < 1) {
         text += nlsHPCC.NoWarningFound;
@@ -76,9 +73,9 @@ const validateResponseToText = (response): string => {
         text = addArrayToText(nlsHPCC.Warnings, response.Warnings, text);
     }
     text += "\n";
-    text = addArrayToText(nlsHPCC.QueriesNoPackage, response.queries.Unmatched, text);
-    text = addArrayToText(nlsHPCC.PackagesNoQuery, response.packages.Unmatched, text);
-    text = addArrayToText(nlsHPCC.FilesNoPackage, response.files.Unmatched, text);
+    text = addArrayToText(nlsHPCC.QueriesNoPackage, response?.queries.Unmatched, text);
+    text = addArrayToText(nlsHPCC.PackagesNoQuery, response?.packages.Unmatched, text);
+    text = addArrayToText(nlsHPCC.FilesNoPackage, response?.files.Unmatched, text);
     return text;
 };
 
@@ -95,6 +92,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     const [activeMapTarget, setActiveMapTarget] = React.useState("");
     const [activeMapProcess, setActiveMapProcess] = React.useState("");
     const [contentsTarget, setContentsTarget] = React.useState("");
+    const [contentsProcess, setContentsProcess] = React.useState("");
 
     const [processFilters, setProcessFilters] = React.useState<IDropdownOption[]>();
     const [showFilter, setShowFilter] = React.useState(false);
@@ -119,6 +117,9 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     const changeContentsTarget = React.useCallback((evt, option) => {
         setContentsTarget(option.key.toString());
     }, [setContentsTarget]);
+    const changeContentsProcess = React.useCallback((evt, option) => {
+        setContentsProcess(option.key.toString());
+    }, [setContentsProcess]);
 
     const handleFileSelect = React.useCallback((evt) => {
         evt.preventDefault();
@@ -133,60 +134,59 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
 
     const validateActiveMap = React.useCallback(() => {
         setActiveMapValidationResult(nlsHPCC.Validating);
-        WsPackageMaps.validatePackage({
-            request: {
-                Target: activeMapTarget,
-                Info: activeMapXml
-            }
+        packageService.ValidatePackage({
+            Target: activeMapTarget,
+            Process: activeMapProcess,
+            Info: activeMapXml
         })
-            .then(({ ValidatePackageResponse, Exceptions }) => {
-                if (Exceptions?.Exception.length > 0) {
-                    setShowError(true);
-                    setErrorMessage(Exceptions?.Exception[0].Message);
-                } else {
-                    setActiveMapValidationResult(validateResponseToText(ValidatePackageResponse));
-                }
+            .then(({ Results }) => {
+                setShowError(false);
+                setActiveMapValidationResult(validateResponseToText(Results?.Result[0]));
             })
-            .catch(err => logger.error(err))
-            ;
-    }, [activeMapTarget, activeMapXml, setActiveMapValidationResult, setErrorMessage, setShowError]);
+            .catch(err => logger.error(err));
+    }, [activeMapProcess, activeMapTarget, activeMapXml, setActiveMapValidationResult]);
 
     const validateContents = React.useCallback(() => {
         setContentsValidationResult(nlsHPCC.Validating);
-        WsPackageMaps.validatePackage({
-            request: {
-                Target: contentsTarget,
-                Info: contentsXml
-            }
+        packageService.ValidatePackage({
+            Target: contentsTarget,
+            Info: contentsXml
         })
-            .then(({ ValidatePackageResponse, Exceptions }) => {
-                if (Exceptions?.Exception.length > 0) {
-                    setShowError(true);
-                    setErrorMessage(Exceptions?.Exception[0].Message);
-                } else {
-                    setContentsValidationResult(validateResponseToText(ValidatePackageResponse));
-                }
+            .then(({ Results }) => {
+                setShowError(false);
+                setContentsValidationResult(validateResponseToText(Results?.Result[0]));
             })
-            .catch(err => logger.error(err))
-            ;
-    }, [contentsTarget, contentsXml, setContentsValidationResult, setErrorMessage, setShowError]);
+            .catch(err => logger.error(err));
+    }, [contentsTarget, contentsXml, setContentsValidationResult]);
 
     React.useEffect(() => {
         if (activeMapProcess !== "" && activeMapTarget !== "") {
-            WsPackageMaps.getPackage({ target: activeMapTarget, process: activeMapProcess })
-                .then(({ GetPackageResponse }) => {
-                    setActiveMapXml(GetPackageResponse.Info);
+            packageService.GetPackage({ Target: activeMapTarget, Process: activeMapProcess })
+                .then(({ Info }) => {
+                    setActiveMapXml(Info);
                 })
-                .catch(err => logger.error(err))
-                ;
+                .catch(err => logger.debug(err));
         }
     }, [activeMapProcess, activeMapTarget]);
 
+    React.useEffect(() => {
+        if (contentsProcess !== "" && contentsTarget !== "") {
+            packageService.GetPackage({ Target: contentsTarget, Process: contentsProcess })
+                .then(({ Info }) => {
+                    setContentsXml(Info);
+                })
+                .catch(err => logger.debug(err));
+        }
+    }, [contentsProcess, contentsTarget]);
+
+    const [data, setData] = React.useState<any[]>([]);
+
     //  Grid ---
-    const { Grid, selection, refreshTable, copyButtons } = useGrid({
-        store: store || ESPPackageProcess.CreatePackageMapQueryObjectStore({}),
-        query: formatQuery(filter),
-        filename: "packageMap",
+    const { Grid, selection, copyButtons } = useFluentGrid({
+        data,
+        primaryID: "Id",
+        sort: { attribute: "Id", descending: true },
+        filename: "packageMaps",
         columns: {
             col1: selector({
                 width: 27,
@@ -194,65 +194,87 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             }),
             Id: {
                 label: nlsHPCC.PackageMap,
-                formatter: function (Id, idx) {
+                formatter: React.useCallback(function (Id, row) {
                     return <Link href={`#/packagemaps/${Id}`}>{Id}</Link>;
-                }
+                }, [])
             },
             Target: { label: nlsHPCC.Target },
             Process: { label: nlsHPCC.ProcessFilter },
             Active: {
                 label: nlsHPCC.Active,
-                formatter: function (active) {
+                formatter: React.useCallback(function (active) {
                     if (active === true) {
                         return "A";
                     }
                     return "";
-                }
+                }, [])
             },
             Description: { label: nlsHPCC.Description }
         }
     });
+
+    const refreshData = React.useCallback(() => {
+        packageService.ListPackages({
+            Target: filter?.Target ?? "*",
+            Process: filter?.Process ?? "*",
+            ProcessFilter: filter?.ProcessFilter ?? "*"
+        }).then(({ PackageMapList }) => {
+            const packageMaps = PackageMapList?.PackageListMapData;
+            if (packageMaps) {
+                setData(packageMaps.map((packageMap, idx) => {
+                    return {
+                        Id: packageMap.Id,
+                        Target: packageMap.Target,
+                        Process: packageMap.Process,
+                        Active: packageMap.Active,
+                        Description: packageMap.Description
+                    };
+                }));
+            }
+        });
+    }, [filter]);
+
+    React.useEffect(() => refreshData(), [refreshData]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedPackages,
         onSubmit: React.useCallback(() => {
             selection.forEach((item, idx) => {
-                WsPackageMaps.deletePackageMap({
-                    request: {
-                        PackageMap: item.Id,
-                        Target: item.Target,
-                        Process: item.Process
-                    }
+                packageService.DeletePackage({
+                    PackageMap: item.Id,
+                    Target: item.Target,
+                    Process: item.Process
                 })
-                    .then(({ DeletePackageResponse, Exceptions }) => {
-                        if (DeletePackageResponse?.status?.Code === 0) {
-                            refreshTable();
-                        } else if (Exceptions?.Exception.length > 0) {
-                            setShowError(true);
-                            setErrorMessage(Exceptions?.Exception[0].Message);
+                    .then(({ status }) => {
+                        if (status?.Code === 0) {
+                            setShowError(false);
+                            refreshData();
                         }
                     })
-                    .catch(err => logger.error(err))
-                    ;
+                    .catch(err => {
+                        setShowError(true);
+                        setErrorMessage(err.Exception[0].Message);
+                        logger.debug(err);
+                    });
             });
-        }, [refreshTable, selection])
+        }, [refreshData, selection])
     });
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`#/packagemaps/${selection[0]?.Id}`);
+                    pushUrl(`/packagemaps/${selection[0]?.Id}`);
                 } else {
                     selection.forEach(item => {
-                        window.open(`#/packagemaps/${item?.Id}`, "_blank");
+                        window.open(`/packagemaps/${item?.Id}`, "_blank");
                     });
                 }
             }
@@ -269,42 +291,40 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         {
             key: "activate", text: nlsHPCC.Activate, disabled: selection.length !== 1,
             onClick: () => {
-                WsPackageMaps.activatePackageMap({
-                    request: {
-                        Target: selection[0].Target,
-                        Process: selection[0].Process,
-                        PackageMap: selection[0].Id
-                    }
+                packageService.ActivatePackage({
+                    Target: selection[0].Target,
+                    Process: selection[0].Process,
+                    PackageMap: selection[0].Id
                 })
-                    .then(({ ActivatePackageResponse }) => {
-                        if (ActivatePackageResponse?.status?.Code === 0) {
-                            refreshTable();
+                    .then(({ status }) => {
+                        if (status?.Code === 0) {
+                            setShowError(false);
+                            refreshData();
                         }
                     })
-                    .catch(err => logger.error(err))
+                    .catch(err => logger.debug(err))
                     ;
             }
         },
         {
             key: "deactivate", text: nlsHPCC.Deactivate, disabled: selection.length !== 1,
             onClick: () => {
-                WsPackageMaps.deactivatePackageMap({
-                    request: {
-                        Target: selection[0].Target,
-                        Process: selection[0].Process,
-                        PackageMap: selection[0].Id
-                    }
+                packageService.DeActivatePackage({
+                    Target: selection[0].Target,
+                    Process: selection[0].Process,
+                    PackageMap: selection[0].Id
                 })
-                    .then(({ DeActivatePackageResponse, Exceptions }) => {
-                        if (DeActivatePackageResponse?.status?.Code === 0) {
-                            refreshTable();
-                        } else if (Exceptions?.Exception.length > 0) {
-                            setShowError(true);
-                            setErrorMessage(Exceptions?.Exception[0].Message);
+                    .then(({ status }) => {
+                        if (status?.Code === 0) {
+                            setShowError(false);
+                            refreshData();
                         }
                     })
-                    .catch(err => logger.error(err))
-                    ;
+                    .catch(err => {
+                        setShowError(true);
+                        setErrorMessage(err.Exception[0].Message);
+                        logger.debug(err);
+                    });
             }
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -314,7 +334,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 setShowFilter(true);
             }
         },
-    ], [hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
+    ], [hasFilter, refreshData, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -334,15 +354,15 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     }
 
     React.useEffect(() => {
-        WsPackageMaps
-            .GetPackageMapSelectTargets({ request: { IncludeProcesses: true } })
-            .then(({ GetPackageMapSelectOptionsResponse }) => {
-                setProcessFilters(GetPackageMapSelectOptionsResponse?.ProcessFilters?.Item.map(item => {
+        packageService
+            .GetPackageMapSelectOptions({ IncludeProcesses: true })
+            .then(({ ProcessFilters, Targets }) => {
+                setProcessFilters(ProcessFilters?.Item.map(item => {
                     return { key: item, text: item };
                 }));
                 const _targets = [{ key: "*", text: "ANY" }];
                 const _processes = [{ key: "*", text: "ANY" }];
-                GetPackageMapSelectOptionsResponse?.Targets?.TargetData.map(target => {
+                Targets?.TargetData.map(target => {
                     if (_targets.filter(t => t.key === target.Type).length === 0) {
                         _targets.push({ key: target.Type, text: target.Type });
                     }
@@ -356,7 +376,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 setTargets(_targets);
                 setProcesses(_processes);
             })
-            .catch(err => logger.error(err))
+            .catch(err => logger.debug(err))
             ;
     }, []);
 
@@ -394,13 +414,9 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 <PivotItem headerText={nlsHPCC.PackageMaps} itemKey="list" style={pivotItemStyle(size)} >
                     <HolyGrail
                         header={<CommandBar items={buttons} farItems={copyButtons} />}
-                        main={
-                            <>
-                                <Grid />
-                                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-                            </>
-                        }
+                        main={<Grid />}
                     />
+                    <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.ValidateActivePackageMap} itemKey="activeMap" style={pivotItemStyle(size, 0)}>
                     <HolyGrail
@@ -453,6 +469,14 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                                     />
                                 </Stack>
                                 <Stack horizontal tokens={validateMapStackTokens}>
+                                    <Label>{nlsHPCC.Process}</Label>
+                                    <Dropdown
+                                        id="contentsProcess" className={validateMapStyles.dropdown}
+                                        options={processes} selectedKey={contentsProcess} placeholder={nlsHPCC.SelectEllipsis}
+                                        onChange={changeContentsProcess}
+                                    />
+                                </Stack>
+                                <Stack horizontal tokens={validateMapStackTokens}>
                                     <input id="uploadMapFromFile" type="file" className={validateMapStyles.displayNone} accept="*.xml" onChange={handleFileSelect} />
                                     <DefaultButton
                                         id="loadMapFromFile" text={nlsHPCC.LoadPackageFromFile}
@@ -479,7 +503,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         }</SizeMe>
         <AddPackageMap
             showForm={showAddForm} setShowForm={setShowAddForm}
-            refreshTable={refreshTable} targets={targets} processes={processes}
+            refreshData={refreshData} targets={targets} processes={processes}
         />
         <DeleteConfirm />
     </>;

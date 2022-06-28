@@ -55,7 +55,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -Dws_config_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_config SHARED ${SRCS} )
 install ( TARGETS ws_config RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} COMPONENT Runtime )

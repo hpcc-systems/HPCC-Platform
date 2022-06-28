@@ -253,43 +253,55 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
     }
 }
 
+static constexpr const char * azureLogAccessSecretCategory = "esp";
+static constexpr const char * azureLogAccessSecretName = "azure-logaccess";
+
+static constexpr const char * azureLogAccessSecretAADTenantID = "aad-tenant-id";
+static constexpr const char * azureLogAccessSecretAADClientID = "aad-client-id";
+static constexpr const char * azureLogAccessSecretAADClientSecret = "aad-client-secret";
+static constexpr const char * azureLogAccessSecretWorkspaceID = "ala-workspace-id";
+
 AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig)
 {
     PROGLOG("%s: Resolving all required configuration values...", COMPONENT_NAME);
-    if (!getEnvVar("AZURE_TENANT_ID", m_tenantID))
-    {
-        WARNLOG("%s: Environment variable 'AZURE_TENANT_ID' not found!", COMPONENT_NAME);
-        m_tenantID.set(logAccessPluginConfig.queryProp("connection/@tenantID"));
 
-        if (m_tenantID.isEmpty())
-           throw makeStringException(-1, "Could not determine Azure Tenant ID, set 'AZURE_TENANT_ID' env var, or connection/@tenantID in AzureClient LogAccess configuration!");
+    Owned<IPropertyTree> secretTree = getSecret(azureLogAccessSecretCategory, azureLogAccessSecretName);
+    if (!secretTree)
+        throw makeStringExceptionV(-1, "%s: Could not fetch %s information!", COMPONENT_NAME, azureLogAccessSecretName);
+
+    getSecretKeyValue(m_aadTenantID.clear(), secretTree, azureLogAccessSecretAADTenantID);
+    if (m_aadTenantID.isEmpty())
+    {
+        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
+        m_aadTenantID.set(logAccessPluginConfig.queryProp("connection/@tenantID"));
+        if (m_aadTenantID.isEmpty())
+            throw makeStringExceptionV(-1, "%s: Could not find AAD Tenant ID, provide it as part of '%s.%s' secret, or connection/@tenantID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
     }
 
-    if (!getEnvVar("AZURE_CLIENT_ID", m_clientID))
+    getSecretKeyValue(m_aadClientID.clear(), secretTree, azureLogAccessSecretAADClientID);
+    if (m_aadClientID.isEmpty())
     {
-        WARNLOG("%s: Environment variable 'AZURE_CLIENT_ID' not found!", COMPONENT_NAME);
-        m_clientID.set(logAccessPluginConfig.queryProp("connection/@clientID"));
+        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
+        m_aadClientID.set(logAccessPluginConfig.queryProp("connection/@clientID"));
 
-        if (m_clientID.isEmpty())
-           throw makeStringException(-1, "Could not find Azure AD client ID, set 'AZURE_CLIENT_ID' env var, or connection/@clientID in AzureClient LogAccess configuration - format is '00000000-0000-0000-0000-000000000000'!");
+        if (m_aadClientID.isEmpty())
+            throw makeStringExceptionV(-1, "%s: Could not find AAD Client ID, provide it as part of %s.%s secret, or connection/@clientID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
     }
 
-    if (!getEnvVar("AZURE_CLIENT_SECRET", m_clientSecret))
+    getSecretKeyValue(m_aadClientSecret.clear(),secretTree, azureLogAccessSecretAADClientSecret);
+    if (m_aadClientSecret.isEmpty())
     {
-        WARNLOG("%s: Environment variable 'AZURE_CLIENT_SECRET' not found!", COMPONENT_NAME);
-        m_clientSecret.set(logAccessPluginConfig.queryProp("connection/@clientSecret"));
-
-        if (m_clientSecret.isEmpty())
-           throw makeStringException(-1, "Could not determine Azure AD client secret, set 'AZURE_CLIENT_SECRET' env var, or connection/@clientSecret in AzureClient LogAccess configuration!");
+        throw makeStringExceptionV(-1, "%s: Required secret '%s.%s' not found!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientSecret);
     }
 
-    if (!getEnvVar("AZURE_LOGANALYTICS_WORKSPACE_ID", m_logAnalyticsWorkspaceID))
+    getSecretKeyValue(m_logAnalyticsWorkspaceID.clear(), secretTree, azureLogAccessSecretWorkspaceID);
+    if (m_logAnalyticsWorkspaceID.isEmpty())
     {
-        WARNLOG("%s: Environment variable 'AZURE_LOGANALYTICS_WORKSPACE_ID' not found!", COMPONENT_NAME);
+        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
         m_logAnalyticsWorkspaceID.set(logAccessPluginConfig.queryProp("connection/@workspaceID"));
 
         if (m_logAnalyticsWorkspaceID.isEmpty())
-           throw makeStringException(-1, "Could not determine Azure LogAnalytics workspace ID (aka workspace customer ID), set 'AZURE_LOGANALYTICS_WORKSPACE_ID' env var, or connection/@workspaceID in AzureClient LogAccess configuration!");
+            throw makeStringExceptionV(-1, "%s: Could not find ALA Workspace ID, provide it as part of %s.%s secret, or connection/@workspaceID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
     }
 
     m_pluginCfg.set(&logAccessPluginConfig);
@@ -785,7 +797,7 @@ bool AzureLogAnalyticsCurlClient::processSearchJsonResp(LogQueryResultDetails & 
 bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     StringBuffer token;
-    requestLogAnalyticsAccessToken(token, m_clientID, m_clientSecret, m_tenantID); //throws if issues encountered
+    requestLogAnalyticsAccessToken(token, m_aadClientID, m_aadClientSecret, m_aadTenantID); //throws if issues encountered
 
     if (token.isEmpty())
         throw makeStringExceptionV(-1, "%s Could not fetch valid Azure Log Analytics access token!", COMPONENT_NAME);

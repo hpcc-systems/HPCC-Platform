@@ -233,8 +233,7 @@ public:
                 stdout);
 
         fputs("\n"
-            "   --wait=<ms>            Max time to wait in milliseconds\n"
-            " Common Options:\n",
+            "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -356,8 +355,7 @@ public:
                 stdout);
 
         fputs("\n"
-            "   --wait=<ms>            Max time to wait in milliseconds\n"
-            " Common Options:\n",
+            "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -452,8 +450,7 @@ public:
         fputs("\n"
             "   --check-all-nodes      Gets query file information from all nodes (slow)\n"
             "   --queryids=<csv list>  The queries to get file information for (default is all queries)\n"
-            "   --wait=<ms>            Max time to wait in milliseconds\n"
-            " Common Options:\n",
+            "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -601,8 +598,7 @@ public:
             "   --delete-subfiles      Delete unused files from DFS and remove them from\n"
             "                          superfiles.\n"
             "   --delete-recursive     Delete unused files from DFS and remove them from\n"
-            "                          superfiles recursively.\n"
-            " Common Options:\n",
+            "                          superfiles recursively.\n",
             stdout);
         EclCmdCommon::usage();
     }

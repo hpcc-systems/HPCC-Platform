@@ -1490,61 +1490,91 @@ int CDfuPlusHelper::add()
     return 0;
 }
 
-
+bool isDfuPublisherWuid(const char *wuid)
+{
+    return (!isEmptyString(wuid) && 'P'==*wuid && !strchr(wuid, 'T'));
+}
 int CDfuPlusHelper::status()
 {
     const char* wuid = globals->queryProp("wuid");
     if(!wuid || !*wuid)
         throw MakeStringException(-1, "wuid not specified");
+    if (isDfuPublisherWuid(wuid))
+        return reportDfuPublisherStatus(wuid);
+    return reportDfuWorkunitStatus(wuid);
+}
 
-    Owned<IClientGetDFUWorkunit> req = sprayclient->createGetDFUWorkunitRequest();
-    req->setWuid(wuid);
-
-    Owned<IClientGetDFUWorkunitResponse> resp = sprayclient->GetDFUWorkunit(req);
-    const IMultiException* excep = &resp->getExceptions();
-    if(excep != nullptr &&  excep->ordinality() > 0)
+int CDfuPlusHelper::reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo)
+{
+    const char *wuid = dfuwu.getID();
+    if (isEmptyString(wuid))
     {
-        StringBuffer errmsg;
-        excep->errorMessage(errmsg);
-        error("%s\n", errmsg.str());
+        info("Workunit entry with missing wuid found\n");
         return -1;
     }
 
-    IConstDFUWorkunit & dfuwu = resp->getResult();
-
+    StringBuffer jobinfoText;
+    if (jobinfo && dfuwu.getJobName())
+        jobinfoText.appendf(" [%s]", dfuwu.getJobName());
     switch(dfuwu.getState())
     {
         case DFUstate_unknown:
-            progress("%s status: unknown\n", wuid);
+            progress("%s status: unknown%s\n", wuid, jobinfoText.str());
             break;
         case DFUstate_scheduled:
-            progress("%s status: scheduled\n", wuid);
+            progress("%s status: scheduled%s\n", wuid, jobinfoText.str());
             break;
         case DFUstate_queued:
-            progress("%s status: queued\n", wuid);
+            progress("%s status: queued%s\n", wuid, jobinfoText.str());
             break;
         case DFUstate_started:
-            progress("%s\n", dfuwu.getProgressMessage());
+            progress("%s%s\n", dfuwu.getProgressMessage(), jobinfoText.str());
             break;
 
         case DFUstate_aborted:
-            info("%s status: aborted\n", wuid);
+            info("%s status: aborted%s\n", wuid, jobinfoText.str());
             return -1;
 
         case DFUstate_failed:
-            info("%s status: failed - %s\n", wuid, dfuwu.getSummaryMessage());
+            info("%s status: failed - %s%s\n", wuid, dfuwu.getSummaryMessage(), jobinfoText.str());
             return -1;
 
         case DFUstate_finished:
-            info("%s Finished\n", wuid);
-            progress("%s\n", dfuwu.getSummaryMessage());
+            info("%s Finished%s\n", wuid, jobinfoText.str());
+            if (dfuwu.getSummaryMessage())
+                progress("%s\n", dfuwu.getSummaryMessage());
             break;
         default:
             error("%s is in an unrecognizable state - %d\n", wuid, dfuwu.getState());
     }
-
     return 0;
+}
 
+int CDfuPlusHelper::reportDfuWorkunitStatus(const char *wuid)
+{
+    Owned<IClientGetDFUWorkunit> req = sprayclient->createGetDFUWorkunitRequest();
+    req->setWuid(wuid);
+
+    Owned<IClientGetDFUWorkunitResponse> resp = sprayclient->GetDFUWorkunit(req);
+    if (outputServiceCallExceptions(resp.get()))
+        return -1;
+
+    return reportDfuWorkunitStatus(resp->getResult(), false);
+}
+
+int CDfuPlusHelper::reportDfuPublisherStatus(const char *wuid)
+{
+    Owned<IClientGetDFUWorkunits> req = sprayclient->createGetDFUWorkunitsRequest();
+    req->setPublisherWuid(wuid);
+
+    Owned<IClientGetDFUWorkunitsResponse> resp = sprayclient->GetDFUWorkunits(req);
+    if (outputServiceCallExceptions(resp.get()))
+        return -1;
+
+    IArrayOf<IConstDFUWorkunit> & dfuwus = resp->getResults();
+    ForEachItemIn(i, dfuwus)
+        reportDfuWorkunitStatus(dfuwus.item(i), true);
+    return 0;
 }
 
 int CDfuPlusHelper::abort()

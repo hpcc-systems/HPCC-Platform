@@ -3,16 +3,17 @@ global:
   logAccess:
     name: "Azure LogAnalytics LogAccess"
     type: "AzureLogAnalyticsCurl"
-    connection:
-      #All connection attributes are optional **IF** defined as environment variables on the HPCC container
+    #connection:
+      #All connection attributes are optional.
+      #It is preferable to provide connection values as secret values category 'esp', secret name 'azure_logaccess'
+      # NOTE: secret 'azure_logaccess' must include 'aad-client-secret' and it cannot be provided in configuration
+      #
       #workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
-                               # Env var equivalent: AZURE_LOGANALYTICS_WORKSPACE_ID
-      #tenantID: "ABC"         #The Tenant ID, required for KQL API access
-                               # Env var equivalent: AZURE_TENANT_ID
+                               # Secret value equivalent: 'ala-workspace-id'
       #clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access - format: 00000000-0000-0000-0000-000000000000
-                               # Env var equivalent: AZURE_CLIENT_ID
-      #clientSecret: "XYZ123"  #The secret associated with the Azure Active Directory registered application
-                               # Env var equivalent: AZURE_CLIENT_SECRET
+                               # Secret value equivalent: 'aad-client-id'
+      #tenantID: "ABC"         #The Azure Active Directory Tenant ID, required for KQL API access
+                               # Secret value equivalent: 'aad-tenant-id'
     logMaps:
     - type: "global"
       storeName: "ContainerLog"

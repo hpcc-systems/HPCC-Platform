@@ -49,7 +49,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/daliadmin
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DWSDali_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_dali SHARED ${SRCS} )
 install ( TARGETS ws_dali RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

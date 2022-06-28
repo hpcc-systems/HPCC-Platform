@@ -61,7 +61,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/codesigner
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -Dws_codesign_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_codesign SHARED ${SRCS}  )
 add_dependencies (ws_codesign espscm )

@@ -1215,7 +1215,7 @@ CJHTreeNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *
 void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool raw)
 {
     if (!raw)
-        fprintf(out, "Node dump: fpos(%" I64F "d) leaf(%d)\n", node->getFpos(), node->isLeaf());
+        fprintf(out, "Node dump: fpos(%" I64F "d) type %s\n", node->getFpos(), node->getNodeTypeName());
     if (rowCount==0 || rowCount > node->getNumKeys())
         rowCount = node->getNumKeys();
     for (unsigned int i=0; i<rowCount; i++)

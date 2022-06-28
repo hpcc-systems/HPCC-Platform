@@ -55,7 +55,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS( -D_CONSOLE -DWsPackageProcess_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( ecl-packagemap ${SRCS} )
 

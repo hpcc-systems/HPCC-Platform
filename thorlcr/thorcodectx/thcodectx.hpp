@@ -64,6 +64,7 @@ public:
     virtual char *getClusterName() override;
     virtual unsigned getPriority() const override { return 0; }
     virtual char *getPlatform() override { return strdup("thor"); };
+    virtual char *getDeploymentName();
     virtual char *getEnv(const char *name, const char *defaultValue) const override
     {
         const char *val = getenv(name);

@@ -155,12 +155,6 @@ public:
     virtual int run() { owner->threadmain(); return 1; }
 };
 
-extern jlib_decl void asyncStart(IThreaded & threaded);
-extern jlib_decl void asyncStart(const char * name, IThreaded & threaded);
-#if defined(__cplusplus) && __cplusplus >= 201100
-extern jlib_decl void asyncStart(std::function<void()> func);
-#endif
-
 // Similar to above, but the underlying thread always remains running. This can make repeated start + join's significantly quicker
 class jlib_decl CThreadedPersistent
 {

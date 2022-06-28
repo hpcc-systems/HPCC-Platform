@@ -23,6 +23,12 @@
 #include "package.h"
 #include "dfuutil.hpp"
 
+#ifdef PKGFILES_EXPORTS
+    #define REFFILES_API DECL_EXPORT
+#else
+    #define REFFILES_API DECL_IMPORT
+#endif
+
 #define RefFileNone           0x0000
 #define RefFileIndex          0x0001
 #define RefFileNotOnCluster   0x0002
@@ -48,6 +54,7 @@ interface IReferencedFile : extends IInterface
     virtual __int64 getFileSize()=0;
     virtual unsigned getNumParts()=0;
     virtual const StringArray &getSubFileNames() const =0;
+    virtual bool needsCopying(bool cloneForeign) const = 0;
 };
 
 interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
@@ -64,17 +71,18 @@ interface IReferencedFileList : extends IInterface
 
     virtual IReferencedFileIterator *getFiles()=0;
     virtual void resolveFiles(const StringArray &locations, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveForeign=false)=0;
-    virtual void cloneAllInfo(const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
-    virtual void cloneFileInfo(const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
+    virtual void cloneAllInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
+    virtual void cloneFileInfo(StringBuffer &publisherWuid, const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defRepFolder)=0;
     virtual void cloneRelationships()=0;
+    virtual void setDfuQueue(const char *dfu_queue) = 0;
 };
 
-extern WORKUNIT_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
+extern REFFILES_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
 
-extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc);
-extern WORKUNIT_API IReferencedFileList *createReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles, bool allowFileSizeCalc);
+extern REFFILES_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc, const char *jobname = nullptr);
+extern REFFILES_API IReferencedFileList *createReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles, bool allowFileSizeCalc, const char *jobname = nullptr);
 
-extern WORKUNIT_API void splitDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster);
-extern WORKUNIT_API void splitDerivedDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster, const char *baseCluster, const char *baseIP, const char *basePrefix);
+extern REFFILES_API void splitDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster);
+extern REFFILES_API void splitDerivedDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster, const char *baseCluster, const char *baseIP, const char *basePrefix);
 
 #endif //REFFILE_LIST_HPP

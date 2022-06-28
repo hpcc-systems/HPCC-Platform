@@ -7,7 +7,6 @@ import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/QuerySuperFiles.tsx");
 
@@ -38,12 +37,12 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
         sort: { attribute: "__hpcc_id", descending: false },
         filename: "querySuperFiles",
         columns: {
-            col1: selector({ selectorType: "checkbox", width: 25 }),
+            col1: { selectorType: "checkbox", width: 25 },
             File: {
                 label: nlsHPCC.File,
-                formatter: function (item, row) {
+                formatter: React.useCallback(function (item, row) {
                     return <Link href={`#/files/${item}`}>{item}</Link>;
-                }
+                }, [])
             },
         }
     });

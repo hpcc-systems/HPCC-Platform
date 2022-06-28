@@ -1,13 +1,11 @@
 import * as React from "react";
 import { deepEquals, verboseDeepEquals } from "@hpcc-js/util";
 
-//  Inspired by:  https://github.com/kentcdodds/use-deep-compare-effect
-
 function useDeepCompareMemoize<T>(value: T, verbose: boolean) {
     const ref = React.useRef<T>(value);
     const signalRef = React.useRef<number>(0);
 
-    const equals = verbose ? verboseDeepEquals(value, ref.current) : deepEquals(value, ref.current);
+    const equals = verbose ? verboseDeepEquals(value, ref.current, true) : deepEquals(value, ref.current, true);
     if (!equals) {
         ref.current = value;
         signalRef.current += 1;

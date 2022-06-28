@@ -254,13 +254,13 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
 
         if (req.getFilesMode() == COUMode_CreateCustom  && isEmptyString(req.getCustomFilesBaseDN()))
             throw MakeStringException(-1, "CustomFilesBaseDN must be specified (ex. 'ou=files,ou=hpcc,dc=myldap,dc=com')");
-        if (!req.getGroupsMode() == COUMode_CreateCustom && isEmptyString(req.getCustomGroupsBaseDN()))
+        if (req.getGroupsMode() == COUMode_CreateCustom && isEmptyString(req.getCustomGroupsBaseDN()))
             throw MakeStringException(-1, "CustomGroupsBaseDN must be specified (ex. 'ou=groups,ou=hpcc,dc=myldap,dc=com')");
-        if (!req.getUsersMode() == COUMode_CreateCustom && isEmptyString(req.getCustomUsersBaseDN()))
+        if (req.getUsersMode() == COUMode_CreateCustom && isEmptyString(req.getCustomUsersBaseDN()))
             throw MakeStringException(-1, "CustomUsersBaseDN must be specified (ex. 'ou=users,ou=hpcc,dc=myldap,dc=com')");
-        if (!req.getResourcesMode() == COUMode_CreateCustom && isEmptyString(req.getCustomResourcesBaseDN()))
+        if (req.getResourcesMode() == COUMode_CreateCustom && isEmptyString(req.getCustomResourcesBaseDN()))
             throw MakeStringException(-1, "CustomResourcesBaseDN must be specified (ex. 'ou=smc,ou=espservices,ou=hpcc,dc=myldap,dc=com')");
-        if (!req.getWorkunitsMode() == COUMode_CreateCustom && isEmptyString(req.getCustomWorkunitsBaseDN()))
+        if (req.getWorkunitsMode() == COUMode_CreateCustom && isEmptyString(req.getCustomWorkunitsBaseDN()))
             throw MakeStringException(-1, "CustomWorkunitsBaseDN must be specified (ex. 'ou=workunits,ou=hpcc,dc=myldap,dc=com')");
 
         if (req.getCreateVaultSecrets() && isEmptyString(req.getVaultName()))

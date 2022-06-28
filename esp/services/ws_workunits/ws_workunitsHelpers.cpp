@@ -1928,9 +1928,24 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
         if (cur.getType() != type)
             continue;
 
-        helpersCount++;
+        StringArray postMortemFiles;
+        if (cur.getType() != FileTypePostMortem)
+            helpersCount++;
+        else
+        {
+            cur.getName(name);
+            Owned<IFile> f = createIFile(name.str());
+            getPostMortemFiles(f, helpersCount, postMortemFiles);
+        }
+
         if (!(flags & WUINFO_IncludeHelpers))
             continue;
+
+        if (cur.getType() == FileTypePostMortem)
+        {
+            addPostMortemFiles(postMortemFiles, helpers);
+            continue;
+        }
 
         cur.getName(name);
         Owned<IEspECLHelpFile> h= createECLHelpFile("","");
@@ -1967,6 +1982,43 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
             }
         }
         helpers.append(*h.getLink());
+    }
+}
+
+//Called by WsWuInfo::getHelpFiles().
+//Read file names with path into the postMortemFiles array and count the files.
+//Skip folder name. It is not not needed for WUInfo.
+void WsWuInfo::getPostMortemFiles(IFile* file, unsigned& helpersCount, StringArray& postMortemFiles)
+{
+    if (file->isFile() == fileBool::foundYes)
+    {
+        postMortemFiles.append(file->queryFilename());
+        helpersCount++;
+        return;
+    }
+
+    Owned<IDirectoryIterator> files = file->directoryFiles(nullptr, false, true);
+    ForEach(*files)
+        getPostMortemFiles(&files->query(), helpersCount, postMortemFiles);
+}
+
+void WsWuInfo::addPostMortemFiles(StringArray& postMortemFiles, IArrayOf<IEspECLHelpFile>& helpers)
+{
+    const char* typeStr = getEnumText(FileTypePostMortem, queryFileTypes);
+    ForEachItemIn(i, postMortemFiles)
+    {
+        const char* postMortemFile = postMortemFiles.item(i);
+        Owned<IEspECLHelpFile> helpFile = createECLHelpFile();
+        helpFile->setName(postMortemFile);
+        helpFile->setType(typeStr);
+
+        if (version >= 1.43)
+        {
+            offset_t fileSize;
+            if (getFileSize(postMortemFile, nullptr, fileSize))//postMortemFiles are local files.
+                helpFile->setFileSize(fileSize);
+        }
+        helpers.append(*helpFile.getLink());
     }
 }
 
@@ -2500,10 +2552,40 @@ bool WsWuInfo::validateWUAssociatedFile(const char* file, WUFileType type)
         if (name.length() < 1)
             continue;
 
+        if (type == FileTypePostMortem)
+        {
+            bool validated = false;
+            //Workunit Associated Files only stores the name of the folder
+            //which contains Post Mortem files.
+            Owned<IFile> postMortemFile = createIFile(name.str());
+            validatePostMortemFile(postMortemFile, file, validated);
+            return validated;
+        }
+
         if (strieq(file, name.str()))
             return true;
     }
     return false;
+}
+
+void WsWuInfo::validatePostMortemFile(IFile* postMortemFile, const char* fileToBeValidated, bool& validated)
+{
+    if (postMortemFile->isFile() == fileBool::foundYes)
+    {
+        if (strieq(fileToBeValidated, postMortemFile->queryFilename()))
+        {
+            validated = true;
+            return;
+        }
+    }
+
+    Owned<IDirectoryIterator> files = postMortemFile->directoryFiles(nullptr, false, true);
+    ForEach(*files)
+    {
+        validatePostMortemFile(&files->query(), fileToBeValidated, validated);
+        if (validated)
+            break;
+    }
 }
 
 void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
@@ -4495,6 +4577,11 @@ bool CWsWuFileHelper::validateWUFile(const char* file, WsWuInfo& winfo, CWUFileT
         valid = winfo.validateWUAssociatedFile(file, FileTypeXml);
         break;
     }
+    case CWUFileType_PostMortem:
+    {
+        valid = winfo.validateWUAssociatedFile(file, FileTypePostMortem);
+        break;
+    }
     default:
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", wuFileType);
     }
@@ -4642,6 +4729,122 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     default:
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unsupported file type %d.", fileType);
     }
+}
+
+void CWsWuFileHelper::sendLocalFileStreaming(CHttpRequest* request, CHttpResponse* response)
+{
+    StringBuffer wuid;
+    readWUIDRequest(request, wuid);
+
+    IEspContext* ctx = request->queryContext();
+    ensureWsWorkunitAccess(*ctx, wuid, SecAccess_Read);
+
+    StringBuffer localFileName, localFileNameWithPath, zipFileNameWithPath, headerStr;
+    request->getParameter("Name", localFileNameWithPath);
+    if (localFileNameWithPath.isEmpty())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Empty File Name detected");
+
+    WsWuInfo winfo(*ctx, wuid);
+    if (!validateWUFile(localFileNameWithPath, winfo, CWUFileType_PostMortem))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file %s", localFileNameWithPath.str());
+
+    //Find localFileName which will be used in HTTP attachment header.
+    splitFilename(localFileNameWithPath, nullptr, nullptr, &localFileName, &localFileName);
+
+    int option = request->getParameterInt("Option", CWUFileDownloadOption_OriginalText); //0: original content; 1: content as attachment; 2: zip; 3: gzip.
+    if ((option < CWUFileDownloadOption_OriginalText) || (option > CWUFileDownloadOption_GZIP))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid WU File Download option detected: '%d'", option);
+
+    Owned<IFile> tempDir;
+    bool noZIP = (option == CWUFileDownloadOption_OriginalText) || (option == CWUFileDownloadOption_Attachment);
+    if (noZIP)
+    {
+        if (option == CWUFileDownloadOption_OriginalText)
+            response->setContentType(HTTP_TYPE_TEXT_PLAIN);
+        else
+        {
+            headerStr.setf("attachment;filename=%s", localFileName.str());
+            ctx->addCustomerHeader("Content-disposition", headerStr);
+        }
+    }
+    else
+    {
+        //ZIP the local file inside a tempDir.
+        tempDir.setown(createUniqueTempDirectory());
+        zipFileNameWithPath.setf("%s%c%s", tempDir->queryFilename(), PATHSEPCHAR, localFileName.str());
+        zipFileNameWithPath.append(option == CWUFileDownloadOption_GZIP ? ".gz" : ".zip");
+
+        VStringBuffer zipCommand("%s %s %s", option == CWUFileDownloadOption_GZIP ? "tar -czf" : "zip -j",
+            zipFileNameWithPath.str(), localFileNameWithPath.str());
+        if (system(zipCommand) != 0)
+            throw makeStringExceptionV(ECLWATCH_CANNOT_COMPRESS_DATA, "Failed to execute system command '%s'. Please make sure that zip utility is installed.",
+                (option == CWUFileDownloadOption_GZIP) ? "tar" : "zip");
+
+        //Set HTTP headers.
+        headerStr.setf("attachment;filename=%s", localFileName.str());
+        if (option == CWUFileDownloadOption_GZIP)
+        {
+            headerStr.append(".gz");
+            response->setContentType("application/x-gzip");
+        }
+        else
+        {
+            headerStr.append(".zip");
+            response->setContentType("application/zip");
+        }
+        ctx->addCustomerHeader("Content-disposition", headerStr);
+    }
+
+    const char* fileToSent = noZIP ? localFileNameWithPath.str() : zipFileNameWithPath.str();
+    IFileIOStream* stream = createIOStreamFromFile(fileToSent, IFOread);
+    if (stream == nullptr)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for file %s", fileToSent);
+    response->setContent(stream);
+    response->send();
+    if (tempDir)
+        recursiveRemoveDirectory(tempDir);
+}
+
+void CWsWuFileHelper::readWUIDRequest(CHttpRequest* request, StringBuffer& wuid)
+{
+    request->getParameter("Wuid", wuid);
+    if (wuid.trim().isEmpty())
+    {
+        StringBuffer querySet, queryReq;
+        request->getParameter("QuerySet", querySet);
+        request->getParameter("Query", queryReq);
+        if (queryReq.trim().isEmpty() || querySet.trim().isEmpty())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "WU ID or QuerySet/Query not specified");
+
+        Owned<IPropertyTree> registry = getQueryRegistry(querySet, false);
+        if (!registry)
+            throw makeStringExceptionV(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", querySet.str());
+        Owned<IPropertyTree> query = resolveQueryAlias(registry, queryReq);
+        if (!query)
+            throw makeStringExceptionV(ECLWATCH_QUERYID_NOT_FOUND, "Query %s not found", queryReq.str());
+        wuid.set(query->queryProp("@wuid"));
+    }
+
+    if (!looksLikeAWuid(wuid, 'W'))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID");
+}
+
+void CWsWuFileHelper::readLocalFileToBuffer(const char* file, offset_t sizeLimit, MemoryBuffer &mb)
+{
+    OwnedIFile source = createIFile(file);
+    if (!source)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s.", file);
+
+    OwnedIFileIO sourceIO = source->openShared(IFOread,IFSHfull);
+    if (!sourceIO)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_READ_FILE, "Cannot open %s.", file);
+
+    offset_t len = source->size();
+    if (len > sizeLimit)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "The file size (%lld) exceeds the size limit (%lld).", len, sizeLimit);
+
+    if (read(sourceIO, 0, len, mb) != len)
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot read %s.", file);
 }
 
 void CWsWuEmailHelper::send(const char* body, const void* attachment, size32_t lenAttachment, StringArray& warnings)

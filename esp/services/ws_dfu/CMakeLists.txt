@@ -65,6 +65,7 @@ include_directories (
          ./../../../system/security/shared 
          ./../../../system/security/cryptohelper 
          ./../../../system/include 
+         ./../../../common/pkgfiles
          ./../../../common/workunit 
          ./../../../fs/dafsclient 
          ./../../../fs/dafsstream
@@ -80,7 +81,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_DFU_EXPORTS -DWSDFU_API_LOCAL -DWSDFUXREF_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_dfu SHARED ${SRCS} )
 add_dependencies ( ws_dfu espscm )
@@ -107,6 +108,7 @@ target_link_libraries ( ws_dfu
          dfuwu 
          roxiecommlib 
          wsdfuaccess
+         pkgfiles
     )
 
 if (NOT CONTAINERIZED)

@@ -62,7 +62,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DWsDeploy_API_LOCAL )
 
 HPCC_ADD_LIBRARY( WsDeploy SHARED ${SRCS}  )
 add_dependencies (WsDeploy espscm)

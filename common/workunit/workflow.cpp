@@ -532,7 +532,7 @@ public:
     {
         if(logicalSuccessors.empty())
             throwUnexpected();
-        logicalSuccessors.clear();
+        logicalSuccessors.kill();
     }
     IWorkflowDependencyIterator * getDependentSuccessors() const
     {

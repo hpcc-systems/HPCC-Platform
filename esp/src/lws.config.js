@@ -67,5 +67,6 @@ let rewrite = [
 
 module.exports = {
     port: 8080,
-    rewrite: rewrite
+    rewrite: rewrite,
+    stack: ['lws-basic-auth', 'lws-request-monitor', 'lws-log', 'lws-cors', 'lws-json', 'lws-compress', 'lws-rewrite', 'lws-blacklist', 'lws-conditional-get', 'lws-mime', 'lws-range', 'lws-spa', 'lws-static', 'lws-index']
 };

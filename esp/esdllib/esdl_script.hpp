@@ -88,6 +88,8 @@ interface IEsdlFunctionRegister : extends IInterface
 interface IEsdlTransformOperation : public IInterface
 {
     virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) = 0;
+    virtual IInterface *prepareForAsync(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) = 0;
+    virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) = 0;
     virtual void toDBGLog() = 0;
 };
 

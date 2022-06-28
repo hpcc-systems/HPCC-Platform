@@ -6,7 +6,6 @@ import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 import { Workunits } from "./Workunits";
 import { Files } from "./Files";
 import { Queries } from "./Queries";
@@ -62,19 +61,19 @@ export const Search: React.FunctionComponent<SearchProps> = ({
         sort: { attribute: "__hpcc_id", descending: false },
         filename: "search",
         columns: {
-            col1: selector({ width: 27, selectorType: "checkbox" }),
+            col1: { width: 27, selectorType: "checkbox" },
             What: {
                 label: nlsHPCC.What, width: 108, sortable: true,
-                formatter: function (_, row) {
+                formatter: React.useCallback(function (_, row) {
                     return <Link href={`${searchResultUrl(row)}`}>{row.Type}</Link>;
-                }
+                }, [])
             },
             Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
             Summary: {
                 label: nlsHPCC.Who, sortable: true,
-                formatter: function (Summary, row) {
+                formatter: React.useCallback(function (Summary, row) {
                     return <Link href={`${searchResultUrl(row)}`}>{Summary}</Link>;
-                }
+                }, [])
             }
         }
     });

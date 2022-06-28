@@ -77,35 +77,35 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 selectorType: "checkbox"
             }),
             isProtected: {
-                renderHeaderCell: function (node) {
+                renderHeaderCell: React.useCallback(function (node) {
                     node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
-                },
+                }, []),
                 width: 25,
                 sortable: false,
-                formatter: function (_protected) {
+                formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
                         return Utility.getImageHTML("locked.png");
                     }
                     return "";
-                }
+                }, [])
             },
             ID: {
                 label: nlsHPCC.ID,
                 width: 180,
-                formatter: function (ID, idx) {
+                formatter: React.useCallback(function (ID, idx) {
                     const wu = ESPDFUWorkunit.Get(ID);
                     return `<img src='${wu.getStateImage()}'>&nbsp;<a href='#/dfuworkunits/${ID}' class='dgrid-row-url'>${ID}</a>`;
-                }
+                }, [])
             },
             Command: {
                 label: nlsHPCC.Type,
                 width: 117,
-                formatter: function (command) {
+                formatter: React.useCallback(function (command) {
                     if (command in FileSpray.CommandMessages) {
                         return FileSpray.CommandMessages[command];
                     }
                     return "Unknown";
-                }
+                }, [])
             },
             User: { label: nlsHPCC.Owner, width: 90 },
             JobName: { label: nlsHPCC.JobName, width: 500 },
@@ -113,10 +113,10 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             StateMessage: { label: nlsHPCC.State, width: 72 },
             PercentDone: {
                 label: nlsHPCC.PctComplete, width: 90, sortable: false,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
-                }
+                }, [])
             }
         }
     });

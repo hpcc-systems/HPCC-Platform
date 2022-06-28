@@ -144,8 +144,13 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
     req->setFileName(cmd.optObj.value.str());
     if ((int)cmd.optResultLimit > 0)
         req->setResultLimit(cmd.optResultLimit);
-    if (cmd.optAttributePath.length())
-        req->setQueryMainDefinition(cmd.optAttributePath);
+    if (cmd.getFullAttributePath(s.clear()))
+        req->setQueryMainDefinition(s);
+    if (!cmd.optDefaultRepo.isEmpty())
+        addNamedValue("eclcc--defaultrepo", cmd.optDefaultRepo, cmd.debugValues);
+    if (!cmd.optDefaultRepoVersion.isEmpty())
+        addNamedValue("eclcc--defaultrepoversion", cmd.optDefaultRepoVersion, cmd.debugValues);
+
     if (cmd.optLegacy)
         addNamedValue("eclcc-legacy", "true", cmd.debugValues);
     if (cmd.optSnapshot.length())
@@ -379,6 +384,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdWithEclTarget::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -489,20 +496,23 @@ public:
         if (optComment.get()) //allow empty
             req->setComment(optComment);
 
+        dfuOptions.updateRequest(req.get());
+
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
         const char *id = resp->getQueryId();
         if (id && *id)
         {
             const char *qs = resp->getQuerySet();
             fprintf(stdout, "\n%s/%s\n", qs ? qs : "", resp->getQueryId());
+            if (resp->getReloadFailed())
+                fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
         }
-        if (resp->getReloadFailed())
-            fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
 
         int ret = outputMultiExceptionsEx(resp->getExceptions());
         if (outputQueryFileCopyErrors(resp->getFileErrors()))
             ret = 1;
 
+        dfuOptions.report(resp.get());
         return ret;
     }
     virtual void usage()
@@ -551,6 +561,7 @@ public:
             "   --comment=<string>     Set the comment associated with this query\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
+        dfuOptions.usage();
         EclCmdWithEclTarget::usage();
     }
 private:
@@ -561,6 +572,9 @@ private:
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
+
+    EclCmdOptionsDFU dfuOptions;
+
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;

@@ -588,6 +588,7 @@ public:
     // The below are called on Roxie server and passed in context
     virtual unsigned getPriority() const { throwUnexpected(); }
     virtual char *getPlatform() { throwUnexpected(); }
+    virtual char *getDeploymentName() { return getDaliServers(); }
     virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); }
     virtual char *getOS() { throwUnexpected(); }
 

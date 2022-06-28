@@ -42,12 +42,12 @@
 
 
 class jlib_decl ICopyArray : public CopyReferenceArrayOf<IInterface> {};
-class jlib_decl IArray : public OwnedReferenceArrayOf<IInterface> {};
+class jlib_decl IArray : public OwnedReferenceArrayOf<IInterface> { inline void clear(bool) = delete; };
 class jlib_decl IPointerArray : public OwnedPointerArrayOf<IInterface> {};
-class jlib_decl IConstPointerArray : public OwnedConstPointerArrayOf<IInterface> {};
+class jlib_decl IConstPointerArray : public OwnedConstPointerArrayOf<IInterface> { inline void clear(bool) = delete; };
 
 class jlib_decl CICopyArray : public CopyReferenceArrayOf<CInterface> {};
-class jlib_decl CIArray : public OwnedReferenceArrayOf<CInterface> {};
+class jlib_decl CIArray : public OwnedReferenceArrayOf<CInterface> { inline void clear(bool) = delete; };
 
 class jlib_decl CharArray : public ArrayOf<char> { };
 class jlib_decl IntArray : public ArrayOf<int> { };

@@ -10,6 +10,14 @@ import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
 import { useUserStore } from "./store";
 import { useUserTheme } from "./theme";
 
+/*  ---  Debugging dependency changes  ---
+ *
+ *  import { useWhatChanged } from "@simbathesailor/use-what-changed"; 
+ *
+ *  useWhatChanged([count, selectionHandler, sorted, start, store, query], "count, selectionHandler, sorted, start, store, query");
+ *
+ */
+
 interface DojoColumn {
     selectorType?: string;
     label?: string;
@@ -21,6 +29,7 @@ interface DojoColumn {
     disabled?: boolean | ((item: any) => boolean);
     hidden?: boolean;
     formatter?: (object, value, node, options) => any;
+    renderHeaderCell?: (object, value, node, options) => any;
     renderCell?: (object, value, node, options) => any;
 }
 
@@ -30,7 +39,7 @@ interface useGridProps {
     store: any,
     query?: QueryRequest,
     sort?: QuerySortItem,
-    columns: object,
+    columns: DojoColumns,
     getSelected?: () => any[],
     filename: string
 }
@@ -165,23 +174,23 @@ function useFluentStoreGrid({
         }
     }));
 
-    const refreshTable = React.useCallback((clearSelection = false) => {
+    const refreshTable = useDeepCallback((clearSelection = false) => {
         if (isNaN(start) || (isNaN(count) || count === 0)) return;
         if (clearSelection) {
             selectionHandler.setItems([], true);
         }
-        const storeQuery = store.query(query ?? {}, { start, count, sort: sorted ? [sorted] : undefined });
+        const storeQuery = store.query({ ...query }, { start, count, sort: sorted ? [sorted] : undefined });
         storeQuery.total.then(total => {
             setTotal(total);
         });
         storeQuery.then(items => {
             setItems(items);
         });
-    }, [count, query, selectionHandler, sorted, start, store]);
+    }, [count, selectionHandler, sorted, start, store], [query]);
 
-    React.useEffect(() => {
+    useDeepEffect(() => {
         refreshTable();
-    }, [refreshTable]);
+    }, [], [query]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, sorted);

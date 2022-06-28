@@ -616,6 +616,11 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 eclccCmd.appendf(" -wuid=%s -token=%s", workunit->queryWuid(), token.str());
         }
 
+        if (config->queryProp("@defaultRepo"))
+            eclccCmd.appendf(" --defaultrepo=%s", config->queryProp("@defaultRepo"));
+        if (config->queryProp("@defaultRepoVersion"))
+            eclccCmd.appendf(" --defaultrepoversion=%s", config->queryProp("@defaultRepoVersion"));
+
         if (config->hasProp("@gitUsername"))
             eclccCmd.appendf(" --gituser=%s", config->queryProp("@gitUsername"));
 

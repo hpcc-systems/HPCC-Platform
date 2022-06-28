@@ -1,5 +1,5 @@
 import * as React from "react";
-import { LogicalFile, WsDfu, DFUDefFileFormat } from "@hpcc-js/comms";
+import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./workunit";
@@ -41,7 +41,7 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
     return [file, isProtected, lastUpdate, increment];
 }
 
-export function useDefFile(cluster: string, name: string, format: DFUDefFileFormat): [string, () => void] {
+export function useDefFile(cluster: string, name: string, format: WsDfu.DFUDefFileFormat): [string, () => void] {
 
     const [file] = useFile(cluster, name);
     const [defFile, setDefFile] = React.useState("");

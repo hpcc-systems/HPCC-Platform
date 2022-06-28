@@ -30,6 +30,8 @@ endif()
 
 project( unittests )
 
+include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
+
 set (    SRCS
          unittests.cpp
          remotetests.cpp
@@ -42,8 +44,9 @@ set (    SRCS
          txSummarytests.cpp
          accessmaptests.cpp
          fxpptests.cpp
-         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp;
-         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp;
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp
+         ${CMAKE_BINARY_DIR}/generated/ws_loggingservice_esp.cpp
     )
 
 if (NOT CONTAINERIZED)

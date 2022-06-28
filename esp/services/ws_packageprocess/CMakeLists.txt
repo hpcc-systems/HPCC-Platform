@@ -44,12 +44,13 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/dfu
          ${HPCC_SOURCE_DIR}/dali/sasha
          ${HPCC_SOURCE_DIR}/fs/dafsclient
+         ${HPCC_SOURCE_DIR}/common/pkgfiles
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DWsPackageProcess_API_LOCAL -DFileSpray_API_LOCAL -DWSDFU_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
 install ( TARGETS ws_packageprocess RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
@@ -60,6 +61,7 @@ target_link_libraries ( ws_packageprocess
          esphttp
          dalibase
          ws_fs
+         pkgfiles
     )
 
 IF (USE_OPENSSL)

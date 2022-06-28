@@ -482,10 +482,11 @@ public:
     }
 
 #ifndef _CONTAINERIZED
-    int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
+    virtual int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method) override;
 #endif
-    int onGet(CHttpRequest* request, CHttpResponse* response);
-    int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method);
+    virtual int onGet(CHttpRequest* request, CHttpResponse* response) override;
+    virtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method) override;
+    virtual int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method) override;
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {

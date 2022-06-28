@@ -179,6 +179,30 @@ define([
             this.updateProcessSelections(null, this.targetSelected);
         },
 
+        _onChangeProcess: function (event) {
+            var context = this;
+            var process = this.processSelectControl.getValue();
+
+            if (process === "ANY") {
+                process = "*";
+            }
+
+            this.editorControl.setText("");
+            WsPackageMaps.getPackage({
+                target: this.targetSelectControl.getValue(),
+                process: process
+            }).then(function (response) {
+                if (!lang.exists("GetPackageResponse.Info", response))
+                    context.editorControl.setText(this.i18n.NoContent);
+                else
+                    context.editorControl.setText(response.GetPackageResponse.Info);
+                return response;
+            }, function (err) {
+                context.showErrors(err);
+                return err;
+            });
+        },
+
         _onLoadBtnClicked: function (event) {
             this.selectFileControl.click();
         },
@@ -200,7 +224,7 @@ define([
                 }
             }).then(function (response) {
                 if (lang.exists("ValidatePackageResponse", response)) {
-                    var responseText = context.validateResponseToText(response.ValidatePackageResponse);
+                    var responseText = context.validateResponseToText(response.ValidatePackageResponse?.Results.Result[0]);
                     if (responseText === "") {
                         context.resultControl.setText(context.i18n.Empty);
                     } else {
@@ -232,9 +256,9 @@ define([
             }
 
             text += "\n";
-            text = this.addArrayToText(this.i18n.QueriesNoPackage, response.queries.Unmatched, text);
-            text = this.addArrayToText(this.i18n.PackagesNoQuery, response.packages.Unmatched, text);
-            text = this.addArrayToText(this.i18n.FilesNoPackage, response.files.Unmatched, text);
+            text = this.addArrayToText(this.i18n.QueriesNoPackage, response?.queries.Unmatched, text);
+            text = this.addArrayToText(this.i18n.PackagesNoQuery, response?.packages.Unmatched, text);
+            text = this.addArrayToText(this.i18n.FilesNoPackage, response?.files.Unmatched, text);
             return text;
         },
 

@@ -41,7 +41,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -1625,21 +1625,53 @@ lock=/var/lock/HPCCSystems</programlisting>
         Then set the values as appropriate for your system.</para>
 
         <para><programlisting>#enable SSL for dafilesrv remote file access
-dfsUseSSL=true
-dfsSSLCertFile=/certfilepath/certfile
-dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
-        role="blue">dfsUseSSL=true</emphasis> and set the value for the paths
-        to point to the certificate and key file paths on your system. Then
-        deploy the <emphasis>environment.conf</emphasis> file (and cert/key
-        files) to all nodes as appropriate.</para>
+#HPCCPassPhrase=true
+HPCCCertFile=/certfilepath/certfile
+HPCCPrivateKeyFile=/keyfilepath/keyfile
+</programlisting>Set the <emphasis role="blue">dfsUseSSL=true</emphasis> and
+        set the value for the paths to point to the certificate and key file
+        paths on your system. Then deploy the
+        <emphasis>environment.conf</emphasis> file (and cert/key files) to all
+        nodes as appropriate.</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>HPCCPassPhrase should be left commented out unless a
+              passphrase was used to create the keys.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
 
         <para>When dafilesrv is enabled for TLS (port 7600), it can still
         connect over a non-TLS connection (port 7100) to allow legacy clients
         to work.</para>
+
+        <sect3>
+          <title id="SA-KeyFileAddlInfo">Key file Additional
+          Information</title>
+
+          <para>The Private and public keys need to be generated in PEM
+          format. The same key file pairs should be installed across the
+          cluster. These keys <emphasis role="bold">must</emphasis> be the
+          same on every node in the cluster. </para>
+
+          <para>The HPCCCertFile and HPCCPublicKeyFile values must exist and
+          be uncommented in environment.conf file as indicated above. The
+          HPCCPassPhrase is only used when a passphrase was used in creation
+          of the keys. </para>
+
+          <para>A good way to ensure the appropriate implementation of the
+          secure key files is, as documented in the <emphasis>Installing &amp;
+          Running the HPCC Systems Platform</emphasis> book, to use the
+          <emphasis>install-cluster.sh</emphasis> script. </para>
+        </sect3>
       </sect2>
     </sect1>
 
-    <!--Inclusions-As-Sect1-->
+    <!-- Inclusions-As-Sect1-->
 
     <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/hpcc_ldap.xml"
                 xpointer="element(/1)"
@@ -1795,14 +1827,6 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Set the <emphasis
                 in the application will create an entry in
                 Eclwatch&gt;&gt;User/Permissions&gt;&gt;Repository
                 Modules</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
-              <term>sudoersBasedn</term>
-
-              <listitem>
-                <para>Deprecated.</para>
               </listitem>
             </varlistentry>
 

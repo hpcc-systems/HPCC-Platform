@@ -1058,7 +1058,7 @@ void CLogRequestReader::updateAckedFileList()
         pos += len;
     }
 
-    newAckedLogFiles.clear();
+    newAckedLogFiles.kill();
 
     ESPLOG(LogMax, "#### Leave updateAckedFileList()");
 }
