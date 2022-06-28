@@ -579,10 +579,10 @@ class jlib_decl LogMsg : public CInterface
 public:
     LogMsg() : category(), sysInfo(), jobInfo(), remoteFlag(false) {}
     LogMsg(LogMsgJobId id, const char *job);  // Used for tracking job ids
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned _compo, unsigned port, LogMsgSessionId session);
-    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned _compo, unsigned port, LogMsgSessionId session);
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned port, LogMsgSessionId session);
+    LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session);
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
-           unsigned _compo, unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
+           unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
     StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
     StringBuffer &            toStringXML(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
     StringBuffer &            toStringTable(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
@@ -594,7 +594,6 @@ public:
     inline const LogMsgCategory  queryCategory() const { return category; }
     inline const LogMsgSysInfo & querySysInfo() const { return sysInfo; }
     inline const LogMsgJobInfo & queryJobInfo() const { return jobInfo; }
-    inline unsigned           queryComponent() const { return component; }
     inline LogMsgCode         queryCode() const { return msgCode; }
     inline const char *       queryText() const { return text.str(); }
     void                      serialize(MemoryBuffer & out) const { category.serialize(out); sysInfo.serialize(out); jobInfo.serialize(out); out.append(msgCode); text.serialize(out); }
@@ -605,7 +604,6 @@ protected:
     LogMsgSysInfo             sysInfo;
     LogMsgJobInfo             jobInfo;
     LogMsgCode                msgCode = NoLogMsgCode;
-    unsigned                  component = 0;    // Not sure this is used
     StringBuffer              text;
     bool                      remoteFlag = false;
 };
@@ -705,24 +703,12 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual void              report(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
-    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const char * format, va_list args) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
-    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) = 0;
     virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
     virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
     virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) = 0;
     virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 5, 6))) = 0;
-    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) __attribute__((format(printf, 6, 7))) = 0;
-    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) = 0;
-    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) = 0;
-    virtual void              mreport_direct(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg) = 0;
     virtual void              mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg) = 0;
-    virtual void              mreport_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
     virtual void              mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) = 0;
     virtual void              report(const LogMsg & msg) const = 0;
     virtual LogMsgId          getNextID() = 0;
@@ -735,35 +721,12 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
 
 // CONCRETE CLASSES
 
-// Class which mimics the report methods of a manager, registering an additional component field
-
-class jlib_decl LogMsgComponentReporter
-{
-public:
-    LogMsgComponentReporter(unsigned _compo) : component(_compo) {}
-    void                  report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4)));
-    void                  report_va(const LogMsgCategory & cat, const char * format, va_list args);
-    void                  report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
-    void                  report_va(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args);
-    void                  report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
-    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 4, 5)));
-    void                  report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args);
-    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 5, 6)));
-    void                  report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args);
-    void                  report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
-    void                  report(const LogMsg & msg);
-    void                  mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg);
-    void                  mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args);
-private:
-    unsigned                  component;
-};
-
 // Class which mimics the report methods of a manager, prepending the given file and line (intended only for use in the FLLOG macro, below)
 
 class jlib_decl LogMsgPrepender
 {
 public:
-    LogMsgPrepender(LogMsgComponentReporter * r, char const * f, unsigned l) : reporter(r), file(sanitizeSourceFile(f)), line(l) { }
+    LogMsgPrepender(char const * f, unsigned l) : file(sanitizeSourceFile(f)), line(l) { }
     void                      report(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 3, 4)));
     void                      report_va(const LogMsgCategory & cat, const char * format, va_list args);
     void                      report(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
@@ -776,7 +739,6 @@ public:
     void                      report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
     IException *              report(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls), unknownJob, handy for EXCLOG
 private:
-    LogMsgComponentReporter * reporter;
     char const *              file;
     unsigned                  line;
 };
@@ -804,7 +766,6 @@ extern jlib_decl ILogMsgFilter * getIpLogMsgFilter(bool local = false);
 extern jlib_decl ILogMsgFilter * getJobLogMsgFilter(LogMsgJobId job, bool local = false);
 extern jlib_decl ILogMsgFilter * getUserLogMsgFilter(LogMsgUserId user, bool local = false);
 extern jlib_decl ILogMsgFilter * getSessionLogMsgFilter(LogMsgSessionId session, bool local = false);
-extern jlib_decl ILogMsgFilter * getComponentLogMsgFilter(unsigned component, bool local = false);
 extern jlib_decl ILogMsgFilter * getRegexLogMsgFilter(const char *regex, bool local = false);
 extern jlib_decl ILogMsgFilter * getNotLogMsgFilter(ILogMsgFilter * arg);
 extern jlib_decl ILogMsgFilter * getNotLogMsgFilterOwn(ILogMsgFilter * arg);
@@ -900,7 +861,6 @@ extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
 #ifdef _CONTAINERIZED
 extern jlib_decl void setupContainerizedLogMsgHandler();
 #endif
-extern jlib_decl LogMsgComponentReporter * queryLogMsgComponentReporter(unsigned compo);
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
@@ -909,17 +869,8 @@ extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
 
 // Macros to make logging as simple as possible
 
-#ifdef LOGMSGCOMPONENT
-#define LOGMSGREPORTER queryLogMsgComponentReporter(LOGMSGCOMPONENT)
-#define FLLOG LogMsgPrepender(LOGMSGREPORTER, __FILE__, __LINE__).report
-#else // LOGMSGCOMPONENT
 #define LOGMSGREPORTER queryLogMsgManager()
-#define FLLOG LogMsgPrepender(NULL, __FILE__, __LINE__).report
-#endif // LOGMSGCOMPONENT
-
-#ifdef LOGMSGCOMPONENT
-#else // LOGMSGCOMPONENT
-#endif // LOGMSGCOMPONENT
+#define FLLOG LogMsgPrepender(__FILE__, __LINE__).report
 
 #ifdef _PROFILING_WITH_TRUETIME_
 //It can't cope with the macro definition..... at least v6.5 can't.

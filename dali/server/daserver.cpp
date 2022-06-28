@@ -73,13 +73,6 @@ MODULE_EXIT()
 #define DEFAULT_PERF_REPORT_DELAY 60
 #define DEFAULT_MOUNT_POINT "/mnt/dalimirror/"
 
-void setMsgLevel(ILogMsgHandler * fileMsgHandler, unsigned level)
-{
-    ILogMsgFilter *filter = getSwitchLogMsgFilterOwn(getComponentLogMsgFilter(3), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, level, true), getDefaultLogMsgFilter());
-    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-    queryLogMsgManager()->changeMonitorFilterOwn(fileMsgHandler, filter);
-}
-
 void AddServers(const char *auditdir)
 {
     // order significant
@@ -700,7 +693,6 @@ int main(int argc, const char* argv[])
         Owned<IMPServer> mpServer = getMPServer();
         Owned<IAllowListHandler> allowListHandler = createAllowListHandler(populateAllowListFromEnvironment, formatDaliRole);
         mpServer->installAllowListCallback(allowListHandler);
-        setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", DebugMsgThreshold));
 #endif
         startLogMsgChildReceiver();
         startLogMsgParentReceiver();
