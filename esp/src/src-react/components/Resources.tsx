@@ -4,7 +4,6 @@ import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResources } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -30,15 +29,15 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
         sort: { attribute: "Wuid", descending: true },
         filename: "resources",
         columns: {
-            col1: selector({
+            col1: {
                 width: 27,
                 selectorType: "checkbox"
-            }),
+            },
             DisplayPath: {
                 label: nlsHPCC.Name, sortable: true,
-                formatter: function (url, row) {
+                formatter: React.useCallback(function (url, row) {
                     return <Link href={`#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}`}>{url}</Link>;
-                }
+                }, [])
             }
         }
     });

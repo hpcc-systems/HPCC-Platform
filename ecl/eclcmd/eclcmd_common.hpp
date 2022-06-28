@@ -153,6 +153,10 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
+#define ECLOPT_MAIN_REPO "--mainrepo"
+#define ECLOPT_MAIN_REPO_VERSION "--mainrepoversion"
+#define ECLOPT_DEFAULT_REPO "--defaultrepo"
+#define ECLOPT_DEFAULT_REPO_VERSION "--defaultrepoversion"
 #define ECLOPT_SNAPSHOT "--snapshot"
 #define ECLOPT_SNAPSHOT_S "-sn"
 #define ECLOPT_ECL_ONLY "--ecl-only"
@@ -347,6 +351,7 @@ public:
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
     virtual bool finalizeOptions(IProperties *globals);
+    bool getFullAttributePath(StringBuffer & result);
     bool setTarget(const char *target);
     bool setParam(const char *in, bool final);
 
@@ -397,6 +402,10 @@ public:
     StringBuffer optImpPath;
     StringAttr optManifest;
     StringAttr optAttributePath;
+    StringAttr optAttributeRepo;
+    StringAttr optAttributeRepoVersion;
+    StringAttr optDefaultRepo;
+    StringAttr optDefaultRepoVersion;
     StringAttr optSnapshot;
     IArrayOf<IEspNamedValue> debugValues;
     IArrayOf<IEspNamedValue> definitions;

@@ -6,7 +6,6 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { selector } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/QueryGraphs.tsx");
 
@@ -43,16 +42,16 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
         sort: { attribute: "__hpcc_id", descending: false },
         filename: "queryGraphs",
         columns: {
-            col1: selector({ width: 27, selectorType: "checkbox" }),
+            col1: { width: 27, selectorType: "checkbox" },
             Name: {
                 label: nlsHPCC.Name,
-                formatter: function (Name, row) {
+                formatter: React.useCallback(function (Name, row) {
                     return <>
                         <Image src={Utility.getImageURL(getStateImageName(row))} />
                         &nbsp;
                         <Link href={`#/workunits/${row.Wuid}/metrics/${Name}`}>{Name}</Link>
                     </>;
-                }
+                }, [])
             },
             Type: { label: nlsHPCC.Type, width: 72 },
         }

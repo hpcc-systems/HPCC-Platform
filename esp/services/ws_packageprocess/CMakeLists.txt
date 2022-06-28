@@ -50,7 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DWsPackageProcess_API_LOCAL -DFileSpray_API_LOCAL -DWSDFU_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
 install ( TARGETS ws_packageprocess RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

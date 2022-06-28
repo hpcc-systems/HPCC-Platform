@@ -28,21 +28,21 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
             EventText: { label: nlsHPCC.Subtype },
             Count: {
                 label: nlsHPCC.Count, width: 180,
-                formatter: function (count) {
+                formatter: React.useCallback(function (count) {
                     if (count === -1) {
                         return 0;
                     }
                     return count;
-                }
+                }, [])
             },
             CountRemaining: {
                 label: nlsHPCC.Remaining, width: 180,
-                formatter: function (countRemaining) {
+                formatter: React.useCallback(function (countRemaining) {
                     if (countRemaining === -1) {
                         return 0;
                     }
                     return countRemaining;
-                }
+                }, [])
             }
         }
     });

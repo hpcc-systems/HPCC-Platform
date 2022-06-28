@@ -65,7 +65,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_fs SHARED ${SRCS} )
 add_dependencies ( ws_fs espscm )

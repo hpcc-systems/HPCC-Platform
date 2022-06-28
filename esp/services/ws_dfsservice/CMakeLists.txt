@@ -61,7 +61,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_DFS_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_DFS_EXPORTS -DWsDfs_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_dfsservice SHARED ${SRCS} )
 add_dependencies ( ws_dfsservice espscm )

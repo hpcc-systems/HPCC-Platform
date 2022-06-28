@@ -46,7 +46,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_CONSOLE )
+ADD_DEFINITIONS( -D_CONSOLE -DWSSMC_API_LOCAL -DWSDFU_API_LOCAL -DWSDFUXREF_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( ecl-roxie ${SRCS} )
 add_dependencies ( ecl-roxie espscm )

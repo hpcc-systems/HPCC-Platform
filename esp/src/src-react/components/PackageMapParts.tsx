@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, MessageBar, MessageBarType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
@@ -47,9 +47,9 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
             col1: selector({ width: 27, selectorType: "checkbox" }),
             Part: {
                 label: nlsHPCC.Parts,
-                formatter: function (part, row) {
-                    return <Link href={`#/packagemaps/${name}/parts/${part}`}>{part}</Link>;
-                }
+                formatter: React.useCallback(function (part, row) {
+                    return `<a href="#/packagemaps/${name}/parts/${part}">${part}</a>`;
+                }, [name])
             },
         }
     });
@@ -62,7 +62,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                 WsPackageMaps.RemovePartFromPackageMap({
                     request: {
                         PackageMap: name.split("::")[1],
-                        Target: _package.Target,
+                        Target: _package?.Target,
                         PartName: item.Part
                     }
                 })
@@ -78,7 +78,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                     .catch(err => logger.error(err))
                     ;
             });
-        }, [_package.Target, name, refreshTable, selection, store])
+        }, [_package?.Target, name, refreshTable, selection, store])
     });
 
     //  Command Bar ---

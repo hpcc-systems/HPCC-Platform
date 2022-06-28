@@ -2589,6 +2589,15 @@ private:
                 miscDebugTraceLevel = control->getPropInt("@level", 0);
                 topology->setPropInt("@miscDebugTraceLevel", miscDebugTraceLevel);
             }
+            else if (strieq(queryName, "control:memlock"))
+            {
+                roxiemem::lockRoxieMem(true);
+            }
+            else if (strieq(queryName, "control:memunlock"))
+            {
+                // ought to have some acl restriction / key for this ...
+                roxiemem::lockRoxieMem(false);
+            }
             else
                 unknown = true;
             break;

@@ -226,6 +226,8 @@ extern UDPLIB_API bool udpResendAllMissingPackets;
 extern UDPLIB_API unsigned udpStatsReportInterval;
 extern UDPLIB_API bool udpAdjustThreadPriorities;
 extern UDPLIB_API bool udpAllowAsyncPermits;
+extern UDPLIB_API bool udpRemoveDuplicatePermits;
+
 
 //Should be in ccd
 extern UDPLIB_API unsigned multicastTTL;

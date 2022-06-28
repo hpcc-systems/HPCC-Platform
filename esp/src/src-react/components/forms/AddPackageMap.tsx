@@ -5,7 +5,6 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../layouts/MessageBox";
-import * as FormStyles from "./landing-zone/styles";
 
 const logger = scopedLogger("../components/forms/AddPackageMap.tsx");
 
@@ -32,9 +31,7 @@ const defaultValues: AddPackageMapValues = {
 interface AddPackageMapProps {
     showForm: boolean;
     setShowForm: (_: boolean) => void;
-
-    refreshTable: (_: boolean) => void;
-
+    refreshData: (_: boolean) => void;
     processes: IDropdownOption[];
     targets: IDropdownOption[];
 }
@@ -42,7 +39,7 @@ interface AddPackageMapProps {
 export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
     showForm,
     setShowForm,
-    refreshTable,
+    refreshData,
     processes,
     targets
 }) => {
@@ -62,7 +59,7 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                     .then(({ AddPackageResponse, Exceptions }) => {
                         if (AddPackageResponse?.status?.Code === 0) {
                             closeForm();
-                            refreshTable(true);
+                            refreshData(true);
                             reset(defaultValues);
                         } else if (Exceptions) {
                             closeForm();
@@ -76,13 +73,13 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                 logger.error(err);
             }
         )();
-    }, [closeForm, handleSubmit, refreshTable, reset]);
+    }, [closeForm, handleSubmit, refreshData, reset]);
 
     React.useEffect(() => {
         reset({ ...defaultValues, Target: "*", Process: "*" });
     }, [reset]);
 
-    return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm}
+    return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm} minWidth={500}
         footer={<>
             <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
@@ -182,9 +179,6 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                     }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
                 />
             </div>
-        </Stack>
-        <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>
-            <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
         </Stack>
     </MessageBox>;
 };

@@ -62,7 +62,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         columns: {
             Severity: {
                 label: nlsHPCC.Severity, field: "", width: 72, sortable: false,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     switch (value) {
                         case "Error":
                             domClass.add(node, "ErrorCell");
@@ -75,14 +75,14 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                             break;
                     }
                     node.innerText = value;
-                }
+                }, [])
             },
             Source: { label: nlsHPCC.Source, field: "", width: 144, sortable: false },
             Code: { label: nlsHPCC.Code, field: "", width: 45, sortable: false },
             Message: {
                 label: nlsHPCC.Message, field: "",
                 sortable: false,
-                formatter: function (Message, idx) {
+                formatter: React.useCallback(function (Message, idx) {
                     const info = extractGraphInfo(Message);
                     if (info.graphID && info.subgraphID && info.activityID) {
                         const txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
@@ -94,7 +94,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                         Message = Utility.xmlEncode2(Message);
                     }
                     return Message;
-                }
+                }, [])
             },
             Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
             LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },

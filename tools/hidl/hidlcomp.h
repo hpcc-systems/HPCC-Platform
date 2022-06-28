@@ -648,11 +648,15 @@ public:
 
    void write_cpp_header()
     {
-        outf("#ifdef %s_API_EXPORTS\n", name_);
-        outf("    #define %s_API DECL_EXPORT\n", name_);
+        outf("#ifdef %s_API_LOCAL\n", name_);
+        outf("    #define %s_API\n", name_);
         outs("#else\n");
-        outf("    #define %s_API DECL_IMPORT\n", name_);
-        outf("#endif //%s_API_EXPORTS\n\n", name_);
+        outf("    #ifdef %s_API_EXPORTS\n", name_);
+        outf("        #define %s_API DECL_EXPORT\n", name_);
+        outs("    #else\n");
+        outf("        #define %s_API DECL_IMPORT\n", name_);
+        outs("    #endif\n");
+        outs("#endif\n\n");
     }
 
     char          *name_;

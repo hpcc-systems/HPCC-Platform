@@ -58,9 +58,9 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             username: {
                 width: 180,
                 label: nlsHPCC.Username,
-                formatter: function (_name, idx) {
+                formatter: React.useCallback(function (_name, idx) {
                     return <Link href={`#/security/users/${_name}`}>{_name}</Link>;
-                }
+                }, [])
             },
             employeeID: { width: 180, label: nlsHPCC.EmployeeID },
             employeeNumber: { width: 180, label: nlsHPCC.EmployeeNumber },

@@ -69,7 +69,7 @@ if (USE_OPENLDAP)
     include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 endif ()
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS -DWSSMC_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_smc SHARED ${SRCS}  )
 add_dependencies ( ws_smc espscm )

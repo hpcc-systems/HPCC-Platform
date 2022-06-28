@@ -144,8 +144,13 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, unsigned wai
     req->setFileName(cmd.optObj.value.str());
     if ((int)cmd.optResultLimit > 0)
         req->setResultLimit(cmd.optResultLimit);
-    if (cmd.optAttributePath.length())
-        req->setQueryMainDefinition(cmd.optAttributePath);
+    if (cmd.getFullAttributePath(s.clear()))
+        req->setQueryMainDefinition(s);
+    if (!cmd.optDefaultRepo.isEmpty())
+        addNamedValue("eclcc--defaultrepo", cmd.optDefaultRepo, cmd.debugValues);
+    if (!cmd.optDefaultRepoVersion.isEmpty())
+        addNamedValue("eclcc--defaultrepoversion", cmd.optDefaultRepoVersion, cmd.debugValues);
+
     if (cmd.optLegacy)
         addNamedValue("eclcc-legacy", "true", cmd.debugValues);
     if (cmd.optSnapshot.length())
