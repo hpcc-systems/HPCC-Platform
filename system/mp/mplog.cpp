@@ -280,7 +280,7 @@ bool disconnectLogMsgManagerFromChildOwn(INode * childNode)
 void startLogMsgChildReceiver()
 {
     childReceiver = new LogMsgChildReceiverThread();
-    childReceiver->startRelease();
+    childReceiver->start();
 }
 
 // CHILD-SIDE CLASSES
@@ -559,7 +559,7 @@ bool disconnectLogMsgManagerFromParentOwn(INode * parentNode)
 void startLogMsgParentReceiver()
 {
     parentReceiver = new LogMsgParentReceiverThread();
-    parentReceiver->startRelease();
+    parentReceiver->start();
 }
 
 // MISC. HELPER FUNCTION
@@ -573,18 +573,16 @@ void stopLogMsgReceivers()
 {
     if(parentReceiver)
     {
-        parentReceiver->Link();
         parentReceiver->stop();
         parentReceiver->Release();
+        parentReceiver = nullptr;
     }
-    parentReceiver = 0;
     if(childReceiver)
     {
-        childReceiver->Link();
         childReceiver->stop();
         childReceiver->Release();
+        childReceiver = nullptr;
     }
-    childReceiver = 0;
     queryLogMsgManager()->removeMonitorsMatching(isMPLogMsgMonitor);
     queryLogMsgManager()->removeAllChildren();
 }
