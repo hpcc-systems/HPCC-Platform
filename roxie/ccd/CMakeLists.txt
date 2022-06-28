@@ -68,6 +68,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/common/pkgfiles
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/dfu
@@ -128,6 +129,7 @@ target_link_libraries ( ccd
          udplib 
          workunit 
          ws_dfsclient
+         pkgfiles
     )
 
 if (NOT CONTAINERIZED)

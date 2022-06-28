@@ -5445,6 +5445,10 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     publishReq->setWait(timeLeft);
     publishReq->setNoReload(req.getNoReload());
     publishReq->setDontCopyFiles(req.getDontCopyFiles());
+    publishReq->setDfuCopyFiles(req.getDfuCopyFiles());
+    publishReq->setDfuOverwrite(req.getDfuOverwrite());
+    publishReq->setDfuQueue(req.getDfuQueue());
+
     publishReq->setAllowForeignFiles(req.getAllowForeign());
     publishReq->setUpdateDfs(req.getUpdateDfs());
     publishReq->setUpdateSuperFiles(req.getUpdateSuperfiles());

@@ -23,6 +23,12 @@
 #include "workunit.hpp"
 #include "rtldynfield.hpp"
 
+#ifdef PKGFILES_EXPORTS
+    #define PKGFILES_API DECL_EXPORT
+#else
+    #define PKGFILES_API DECL_IMPORT
+#endif
+
 // error codes
 #define PACKAGE_TARGET_NOT_FOUND      PACKAGE_ERROR_START
 #define PACKAGE_MISSING_ID            PACKAGE_ERROR_START+1
@@ -62,16 +68,16 @@ interface IHpccPackageSet : extends IInterface
      virtual const IHpccPackageMap *queryActiveMap(const char *queryset) const = 0;
 };
 
-extern WORKUNIT_API IHpccPackageMap *createPackageMapFromXml(const char *xml, const char *queryset, const char *id);
-extern WORKUNIT_API IHpccPackageMap *createPackageMapFromPtree(IPropertyTree *t, const char *queryset, const char *id);
+extern PKGFILES_API IHpccPackageMap *createPackageMapFromXml(const char *xml, const char *queryset, const char *id);
+extern PKGFILES_API IHpccPackageMap *createPackageMapFromPtree(IPropertyTree *t, const char *queryset, const char *id);
 
-extern WORKUNIT_API IHpccPackageSet *createPackageSet(const char *process);
-extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool readonly);
-extern WORKUNIT_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly);
-extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool readonly);
-extern WORKUNIT_API IPropertyTree * resolvePackageSetRegistry(const char *process, bool readonly);
-extern WORKUNIT_API IPropertyTree * resolveActivePackageMap(const char *process, const char *target, bool readonly);
-extern WORKUNIT_API hash64_t pkgHash64Data(size32_t len, const void *buf, hash64_t hval);
+extern PKGFILES_API IHpccPackageSet *createPackageSet(const char *process);
+extern PKGFILES_API IPropertyTree * getPackageMapById(const char * id, bool readonly);
+extern PKGFILES_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly);
+extern PKGFILES_API IPropertyTree * getPackageSetById(const char * id, bool readonly);
+extern PKGFILES_API IPropertyTree * resolvePackageSetRegistry(const char *process, bool readonly);
+extern PKGFILES_API IPropertyTree * resolveActivePackageMap(const char *process, const char *target, bool readonly);
+extern PKGFILES_API hash64_t pkgHash64Data(size32_t len, const void *buf, hash64_t hval);
 
 
 #endif

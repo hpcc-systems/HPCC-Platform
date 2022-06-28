@@ -65,6 +65,7 @@ include_directories (
          ./../../../system/security/shared 
          ./../../../system/security/cryptohelper 
          ./../../../system/include 
+         ./../../../common/pkgfiles
          ./../../../common/workunit 
          ./../../../fs/dafsclient 
          ./../../../fs/dafsstream
@@ -107,6 +108,7 @@ target_link_libraries ( ws_dfu
          dfuwu 
          roxiecommlib 
          wsdfuaccess
+         pkgfiles
     )
 
 if (NOT CONTAINERIZED)

@@ -151,6 +151,8 @@ ESPrequest GetDFUWorkunits
     string Sortby;
     bool Descending(false);
     int64 CacheHint(-1);
+    string ParentWuid;
+    string PublisherWuid;
 };
 
 ESPresponse [encode(0), exceptions_inline]

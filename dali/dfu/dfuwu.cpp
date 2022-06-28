@@ -43,17 +43,28 @@
 
 #define COPY_WAIT_SECONDS 30
 
-
 #define SDS_LOCK_TIMEOUT 30000
+#define NOTE_SUBTASK_SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
 static StringBuffer &getXPathBase(StringBuffer &wuRoot)
 {
     return wuRoot.append("/DFU/WorkUnits");
 }
 
+static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid, unsigned int task)
+{
+    getXPathBase(wuRoot);
+    if (task)
+        return wuRoot.append('/').append(wuid).append("/Tasks/").append(wuid).append("T").append(task);
+    return wuRoot.append('/').append(wuid);
+}
+
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)
 {
     getXPathBase(wuRoot);
+    const char *task = strchr(wuid, 'T');
+    if (task)
+        return wuRoot.append('/').append(task-wuid, wuid).appendf("/Tasks/").append(wuid);
     return wuRoot.append('/').append(wuid);
 }
 
@@ -64,9 +75,9 @@ static void removeTree(IPropertyTree *root,const char *name)
         root->removeTree(t);
 }
 
-static StringBuffer &newWUID(StringBuffer &wuid)
+static StringBuffer &newWUID(StringBuffer &wuid, const char prefix)
 {
-    wuid.append('D');
+    wuid.append(prefix);
     char result[32];
     time_t ltime;
     time( &ltime );
@@ -108,6 +119,7 @@ struct DFUcmdStruct { int val; const char *str; } DFUcmds[] =
     {DFUcmd_monitor,            "monitor"},
     {DFUcmd_copymerge,          "copymerge"},
     {DFUcmd_supercopy,          "supercopy"},
+    {DFUcmd_publish,            "publish"},
     {DFUcmd_none,               ""}             // must be last
 };
 
@@ -233,6 +245,60 @@ StringBuffer &encodeDFUsortfield(DFUsortfield fmt,StringBuffer &str,bool incmodi
     return str.append(DFUsortfields[i].str);
 }
 
+bool DfuParseLogicalPath(const IPropertyTree *directories, const char * pLogicalPath, const char* groupName,
+                StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder)
+{
+    if (isEmptyString(pLogicalPath))
+        return false;
+
+    if (!isEmptyString(groupName))
+    {
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTree> plane = getStoragePlane(groupName);
+        if (plane)
+            defaultFolder.append(plane->queryProp("@prefix"));
+#else
+        StringBuffer basedir;
+        GroupType groupType;
+        Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
+        if (group)
+        {
+            if (directories)
+            {
+                switch (groupType)
+                {
+                case grp_roxie:
+                    getConfigurationDirectory(directories, "data", "roxie", nullptr, defaultFolder);
+                    getConfigurationDirectory(directories, "data2", "roxie", nullptr, defaultReplicateFolder);
+                    // MORE - should extend to systems with higher redundancy
+                    break;
+                case grp_hthor:
+                    getConfigurationDirectory(directories, "data", "eclagent", nullptr, defaultFolder);
+                    break;
+                case grp_thor:
+                default:
+                    getConfigurationDirectory(directories, "data", "thor", nullptr, defaultFolder);
+                    getConfigurationDirectory(directories, "mirror", "thor", nullptr, defaultReplicateFolder);
+                }
+            }
+        }
+        else
+        {
+            // Ignore at least for now for backward compatability.
+        }
+#endif
+    }
+
+    getLFNDirectoryUsingBaseDir(folder, pLogicalPath, defaultFolder.str());
+
+    CDfsLogicalFileName lfn;
+    lfn.set(pLogicalPath);
+    lfn.getTail(title);
+
+    return true;
+}
+
+
 
 class CDFUWorkUnitBase: public CInterface, implements IDFUWorkUnit , implements ISDSSubscription
 {
@@ -306,6 +372,55 @@ public:
 #define IMPLEMENT_DFUWUCHILD    virtual void Link(void) const       { CLinkedDFUWUchild::Link(); } \
                                 virtual bool Release(void) const    { return CLinkedDFUWUchild::Release(); }
 
+static StringBuffer &getSubTaskParentXPath(StringBuffer &wuRoot, const char *wuid)
+{
+    getXPathBase(wuRoot);
+    const char *task = strchr(wuid, 'T');
+    if (task)
+        return wuRoot.append('/').append(task-wuid, wuid);
+    return wuRoot.append('/').append(wuid);
+}
+
+static bool notePublisherSubTaskState(const char *subtaskWuid, DFUstate state)
+{
+    if (!subtaskWuid || 'P'!=*subtaskWuid || !strchr(subtaskWuid, 'T'))
+        return false;
+    switch (state)
+    {
+        case DFUstate_aborted:
+        case DFUstate_failed:
+        case DFUstate_finished:
+            break;
+        default:
+            return false;
+    }
+    StringBuffer publisherRoot;
+    getSubTaskParentXPath(publisherRoot, subtaskWuid);
+
+    //Only lock the Progress section to avoid parent child lock issues
+    publisherRoot.append("/Progress");
+    Owned<IRemoteConnection> conn = querySDS().connect(publisherRoot.str(), myProcessSession(), RTM_LOCK_WRITE, NOTE_SUBTASK_SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return false;
+    IPropertyTree *root = conn->queryRoot();
+    int count = root->getPropInt("@taskcount", 0);
+    int finished = root->getPropInt("@tasksfinished", 0);
+    int failed = root->getPropInt("@tasksfailed", 0);
+    if (state == DFUstate_finished)
+        root->setPropInt("@tasksfinished", ++finished);
+    else
+        root->setPropInt("@tasksfailed", ++failed);
+    if (count>0)
+        root->setPropInt("@percentdone", (finished * 100) / count);
+    if (count==finished)
+        root->setProp("@state", "finished");
+    else if (count==(finished+failed))
+        root->setProp("@state", "failed");
+    unsigned edition = (unsigned) root->getPropInt("Edition",0);
+    root->setPropInt("Edition", ++edition);
+    conn->commit();
+    return true;
+}
 
 class CDFUprogress: public CLinkedDFUWUchild, implements IDFUprogress
 {
@@ -322,6 +437,12 @@ public:
     {
         CriticalBlock block(parent->crit);
         return (unsigned)queryRoot()->getPropInt("@percentdone");
+    }
+
+    unsigned getPublisherTaskCount() const override
+    {
+        CriticalBlock block(parent->crit);
+        return (unsigned)queryRoot()->getPropInt("@taskcount");
     }
 
     unsigned getSecsLeft() const
@@ -545,6 +666,7 @@ public:
         encodeDFUstate(state,s);
         queryRoot()->setProp("@state",s.str());
         parent->commit();
+        notePublisherSubTaskState(parent->queryId(), state);
     }
     void setTimeStarted(const CDateTime &val)
     {
@@ -600,6 +722,13 @@ public:
     {
         CriticalBlock block(parent->crit);
         queryRoot()->setPropReal("@fileAccessCost", fileAccessCost);
+    }
+    unsigned incPublisherTaskCount()
+    {
+        CriticalBlock block(parent->crit);
+        int count = queryRoot()->getPropInt("@taskcount", 0);
+        queryRoot()->setPropInt("@taskcount", ++count);
+        return count;
     }
 };
 
@@ -2521,6 +2650,32 @@ public:
         return queryProgress(true)->getState();
     }
 
+    DFUstate pollForCompletion(unsigned timeout)
+    {
+        unsigned startTime = msTick();
+        unsigned sleepTime = 1000;
+        DFUstate ret = DFUstate_unknown;
+        for (;;) {
+            ret = queryProgress(true)->getState();
+            switch (ret) {
+            case DFUstate_aborted:
+            case DFUstate_failed:
+            case DFUstate_finished:
+                return ret;
+            }
+            unsigned timeTaken = msTick() - startTime;
+            if (timeTaken >= timeout)
+                return ret;
+            unsigned remaining = timeout - timeTaken;
+            if (sleepTime < 32000)
+                sleepTime *= 2;
+            if (sleepTime > remaining)
+                sleepTime = remaining;
+            Sleep(sleepTime);
+        }
+        return ret;
+    }
+
     void reinit()
     {
         if (checkconn()) {
@@ -2957,19 +3112,45 @@ class CDFUWorkUnitFactory : implements IDFUWorkUnitFactory, implements ISDSSubsc
 
 
 public:
-
-
     IMPLEMENT_IINTERFACE;
     IDFUWorkUnit * createWorkUnit()
     {
         StringBuffer wuid;
-        newWUID(wuid);
+        newWUID(wuid, 'D');
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid.str());
         IRemoteConnection* conn = querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
         IDFUWorkUnit *ret = new CDFUWorkUnit(this, conn, NULL, true);
         // created time stamp? TBD
+        return ret;
+    }
+
+    IDFUWorkUnit * createPublisherWorkUnit() override
+    {
+        StringBuffer wuid;
+        newWUID(wuid, 'P');
+        StringBuffer wuRoot;
+        getXPath(wuRoot, wuid.str());
+        Owned<IRemoteConnection> conn = querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
+        conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        IDFUWorkUnit *ret = new CDFUWorkUnit(this, conn.getClear(), NULL, true);
+        ret->setCommand(DFUcmd_publish);
+        return ret;
+    }
+
+    IDFUWorkUnit * createPublisherSubTask(IDFUWorkUnit *publisherWu) override
+    {
+        IDFUprogress *progress = publisherWu->queryUpdateProgress();
+        unsigned taskId = progress->incPublisherTaskCount();
+
+        StringBuffer wuRoot;
+        getXPath(wuRoot, publisherWu->queryId(), taskId);
+        Owned<IRemoteConnection> conn = querySDS().connect(wuRoot.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
+        conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        IDFUWorkUnit *ret = new CDFUWorkUnit(this, conn.getClear(), NULL, true);
+        StringBuffer s;
+        ret->setQueue(publisherWu->getQueue(s));
         return ret;
     }
     bool deleteWorkUnit(const char * wuid)
@@ -3057,7 +3238,8 @@ public:
                                                     unsigned maxnum,
                                                     const char *queryowner,
                                                     __int64 *cachehint,
-                                                    unsigned *total)
+                                                    unsigned *total,
+                                                    const char *publisherWuid)
     {
         class CDFUWorkUnitsPager : implements IElementsPager, public CSimpleInterface
         {
@@ -3066,19 +3248,23 @@ public:
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
             StringArray unknownAttributes;
+            StringAttr publisherWuid;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CDFUWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
-                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+            CDFUWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes, const char *_publisherWuid)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi), publisherWuid(_publisherWuid)
             {
                 ForEachItemIn(x, _unknownAttributes)
                     unknownAttributes.append(_unknownAttributes.item(x));
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
-                Owned<IRemoteConnection> conn = querySDS().connect("DFU/WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                StringBuffer wuRoot("DFU/WorkUnits");
+                if (!publisherWuid.isEmpty()) //A collection of workunits created while publishing queries or packagmaps
+                    wuRoot.append('/').append(publisherWuid).append("/Tasks");
+                Owned<IRemoteConnection> conn = querySDS().connect(wuRoot, myProcessSession(), 0, SDS_LOCK_TIMEOUT);
                 if (!conn)
                     return NULL;
                 Owned<IPropertyTreeIterator> iter = conn->getElements(xPath);
@@ -3141,7 +3327,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CDFUWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
+        Owned<IElementsPager> elementsPager = new CDFUWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes, publisherWuid);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total, NULL);
         return new CConstDFUWUArrayIterator(this,conn,results);
     }

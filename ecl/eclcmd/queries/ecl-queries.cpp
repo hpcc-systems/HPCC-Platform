@@ -292,8 +292,7 @@ public:
             "   A                      Query is active\n"
             "   S                      Query is suspended in queryset\n"
 //not yet   "   X                      Query is suspended on selected cluster\n"
-            "   U                      Query with no flags set\n"
-            " Common Options:\n",
+            "   U                      Query with no flags set\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -424,8 +423,7 @@ public:
             "ecl queries files <target> [<query>]\n\n"
             " Options:\n"
             "   <target>               Name of target cluster the query is published on\n"
-            "   <query>                Name of the query to get a list of files in use by\n"
-            " Common Options:\n",
+            "   <query>                Name of the query to get a list of files in use by\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -517,6 +515,8 @@ public:
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -593,6 +593,8 @@ public:
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
 
+        dfuOptions.updateRequest(req.get());
+
         //default to same tcp/tls as our ESP connection, but can be changed using --source-ssl or --source-no-ssl
         req->setSourceSSL(useSSLForSource());
 
@@ -616,6 +618,8 @@ public:
 
         if (resp->getQueryId() && *resp->getQueryId())
             fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.str(), resp->getQueryId());
+
+        dfuOptions.report(resp.get());
         return ret;
     }
     virtual void usage()
@@ -661,9 +665,9 @@ public:
             "   --priority=<val>       Set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             "   --comment=<string>     Set the comment associated with this query\n"
-            "   -n, --name=<val>       Destination query name for the copied query\n"
-            " Common Options:\n",
+            "   -n, --name=<val>       Destination query name for the copied query\n",
             stdout);
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -676,6 +680,9 @@ private:
     StringAttr optPriority;
     StringAttr optComment;
     StringAttr optName;
+
+    EclCmdOptionsDFU dfuOptions;
+
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
@@ -745,6 +752,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -792,6 +801,8 @@ public:
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
 
+        dfuOptions.updateRequest(req.get());
+
         //default to same tcp/tls as our ESP connection, but can be changed using --source-ssl or --source-no-ssl
         req->setSourceSSL(useSSLForSource());
 
@@ -820,6 +831,8 @@ public:
                 fprintf(stdout, "  %s\n", existing.item(i));
             fputs("\n", stdout);
         }
+
+        dfuOptions.report(resp.get());
         return ret;
     }
     virtual void usage()
@@ -850,9 +863,9 @@ public:
             "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
             "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
             "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
-            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
-            " Common Options:\n",
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n",
             stdout);
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -860,6 +873,9 @@ private:
     StringAttr optDestQuerySet;
     StringAttr optDaliIP;
     StringAttr optSourceProcess;
+
+    EclCmdOptionsDFU dfuOptions;
+
     bool optCloneActiveState;
     bool optOverwrite;
     bool optUpdateSuperfiles;
@@ -995,8 +1011,7 @@ public:
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
             "   --priority=<val>       Set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
-            "   --comment=<string>     Set the comment associated with this query\n"
-            " Common Options:\n",
+            "   --comment=<string>     Set the comment associated with this query\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -1093,6 +1108,8 @@ public:
                 continue;
             if (matchVariableOption(iter, 'f', debugValues, true))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -1180,6 +1197,8 @@ public:
         req->setIncludeFileErrors(true);
         req->setDebugValues(debugValues);
 
+        dfuOptions.updateRequest(req.get());
+
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
         if (optWarnTimeLimit != (unsigned) -1)
@@ -1208,6 +1227,7 @@ public:
         if (outputQueryFileCopyErrors(resp->getFileErrors()))
             ret = 1;
 
+        dfuOptions.report(resp.get());
         return ret;
     }
     virtual void usage()
@@ -1250,6 +1270,7 @@ public:
             "   --comment=<string>     Set the comment associated with this query\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -1261,6 +1282,9 @@ private:
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
+
+    EclCmdOptionsDFU dfuOptions;
+
     IArrayOf<IEspNamedValue> debugValues;
     unsigned optMsToWait = (unsigned) -1;
     unsigned optTimeLimit = (unsigned) -1;
@@ -1407,8 +1431,7 @@ public:
             "   <target>               Name of target cluster to export from\n"
             "   -O,--output=<file>     Filename to save exported backup information to (optional)\n"
             "   --active-only          Only include active queries in the exported queryset\n"
-            "   --protect              Protect the workunits for the included queries\n"
-            " Common Options:\n",
+            "   --protect              Protect the workunits for the included queries\n",
             stdout);
         EclCmdCommon::usage();
     }
@@ -1470,6 +1493,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontAppendCluster, ECLOPT_DONT_APPEND_CLUSTER))
                 continue;
+            if (dfuOptions.match(iter))
+                continue;
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -1515,6 +1540,8 @@ public:
         req->setAllowForeignFiles(optAllowForeign);
         req->setIncludeFileErrors(true);
 
+        dfuOptions.updateRequest(req.get());
+
         Owned<IClientWUQuerysetImportResponse> resp = client->WUQuerysetImport(req);
         int ret = outputMultiExceptionsEx(resp->getExceptions());
         if (outputQueryFileCopyErrors(resp->getFileErrors()))
@@ -1550,6 +1577,8 @@ public:
                 fprintf(stdout, "  %s\n", missing.item(i));
             fputs("\n", stdout);
         }
+
+        dfuOptions.report(resp.get());
         return ret;
     }
     virtual void usage()
@@ -1577,9 +1606,9 @@ public:
             "   --update-super-files   Update local DFS super-files if remote DALI has changed\n"
             "   --update-clone-from    Update local clone from location if remote DALI has changed\n"
             "   --dont-append-cluster  Only use to avoid locking issues due to adding cluster to file\n"
-            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
-            " Common Options:\n",
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n",
             stdout);
+        dfuOptions.usage();
         EclCmdCommon::usage();
     }
 private:
@@ -1589,6 +1618,9 @@ private:
     StringAttr optDestQuerySet;
     StringAttr optDaliIP;
     StringAttr optSourceProcess;
+
+    EclCmdOptionsDFU dfuOptions;
+
     bool optReplace = false;
     bool optCloneActiveState = false;
     bool optOverwrite = false;

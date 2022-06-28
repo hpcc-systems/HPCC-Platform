@@ -79,6 +79,7 @@ include_directories (
          ./../../../system/include
          ./../../../common/thorhelper
          ./../../../common/workunit
+         ./../../../common/pkgfiles
          ./../../../common/wuwebview
          ./../../../ecl/schedulectrl
          ./../../clients
@@ -125,6 +126,7 @@ target_link_libraries ( ws_workunits
          jhtree
          fileview2
          thorhelper
+         pkgfiles
          ${CPPUNIT_LIBRARIES}
     )
 

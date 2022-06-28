@@ -105,7 +105,13 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_OVERWRITE_ENV NULL
 
 #define ECLOPT_DONT_COPY_FILES "--no-files"
+#define ECLOPT_DFU_COPY_FILES "--dfu-copy"
+#define ECLOPT_ONLY_COPY_FILES "--only-copy-files"
 #define ECLOPT_ALLOW_FOREIGN "--allow-foreign"
+#define ECLOPT_DFU_OVERWRITE "--dfu-overwrite"
+#define ECLOPT_STOP_IF_FILES_COPIED "--stop-if-files-copied"
+#define ECLOPT_DFU_QUEUE "--dfu-queue"
+#define ECLOPT_DFU_WAIT "--dfu-wait"
 
 #define ECLOPT_ACTIVE "--active"
 #define ECLOPT_ACTIVE_ONLY "--active-only"
@@ -294,6 +300,7 @@ public:
     virtual void usage()
     {
         fprintf(stdout,
+            " Common Options:\n"
             "   --help                 Display usage information for the given command\n"
             "   -v, --verbose          Output additional tracing information\n"
           );
@@ -345,8 +352,8 @@ public:
 
     virtual void usage()
     {
-        EclCmdCommon::usage();
         fprintf(stdout,
+            " ECL Options:\n"
             "   --main=<definition>    Definition to use from legacy ECL repository\n"
             "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
             "   --ecl-only             Send ECL query to HPCC as text rather than as a generated archive\n"
@@ -380,6 +387,7 @@ public:
             else
                 fprintf(stdout, "%s%s\n", wsPrefix.str(), text);
         }
+        EclCmdCommon::usage();
     }
 public:
     StringAttr param;
@@ -420,6 +428,70 @@ public:
 public:
     StringAttr optQuerySet;
     StringAttr optQuery;
+};
+
+class EclCmdOptionsDFU
+{
+public:
+    EclCmdOptionsDFU(){}
+
+    template<class TRequest>
+    void updateRequest(TRequest *req)
+    {
+        req->setDfuCopyFiles(optDfuCopyFiles);
+        req->setDfuQueue(optDfuQueue);
+        req->setDfuWait(optDfuWaitSec);
+        req->setDfuOverwrite(optDfuOverwrite);
+        req->setStopIfFilesCopied(optStopIfFilesCopied);
+        req->setOnlyCopyFiles(optOnlyCopyFiles);
+    }
+
+    template<class TResponse>
+    bool report(TResponse *resp)
+    {
+        if (isEmptyString(resp->getDfuPublisherWuid()))
+            return !optOnlyCopyFiles;
+        fprintf(stdout, "\nDFU publisher file copying Wuid: %s is %s\n", resp->getDfuPublisherWuid(), isEmptyString(resp->getDfuPublisherState()) ? "in unknown state" : resp->getDfuPublisherState());
+        return (!optOnlyCopyFiles && !optStopIfFilesCopied);
+    }
+
+    bool match(ArgvIterator &iter)
+    {
+        if (iter.matchFlag(optDfuCopyFiles, ECLOPT_DFU_COPY_FILES))
+            return true;
+        if (iter.matchOption(optDfuQueue, ECLOPT_DFU_QUEUE))
+            return true;
+        if (iter.matchOption(optDfuWaitSec, ECLOPT_DFU_WAIT))
+            return true;
+        if (iter.matchFlag(optDfuOverwrite, ECLOPT_DFU_OVERWRITE))
+            return true;
+        if (iter.matchFlag(optStopIfFilesCopied, ECLOPT_STOP_IF_FILES_COPIED))
+            return true;
+        if (iter.matchFlag(optOnlyCopyFiles, ECLOPT_ONLY_COPY_FILES))
+            return true;
+        return false;
+    }
+    void usage()
+    {
+        fputs(
+            " DFU Options:\n"
+            "   --dfu-copy             Use DFU to copy files during deployment, not on roxie in the background\n"
+            "   --dfu-queue            DFU Queue to use when doing a DFU copy\n"
+            "   --dfu-wait             Amount of time in seconds to wait for DFU copy to complete (if neither --only-copy-files\n"
+            "                            or --stop-if-files-copied are specified) default is 1800 (30 minutes)\n"
+            "   --dfu-overwrite        Set DFU copy command to overwrite physical files that are already on disk.\n"
+            "   --only-copy-files      Copy the files needed for the query, but don't publish the query\n"
+            "   --stop-if-files-copied If all files already exist, publish the query.\n"
+            "                          Otherwise, copy the files needed for the query, but don't publish the query\n",
+            stdout);
+    }
+public:
+    StringAttr optDfuQueue;
+    unsigned optDfuWaitSec = 1800; //30 minutes
+    bool optDfuCopyFiles = false;
+    bool optDfuOverwrite = false;
+    bool optOnlyCopyFiles = false;
+    bool optStopIfFilesCopied = false;
 };
 
 void outputExceptionEx(IException &e);
