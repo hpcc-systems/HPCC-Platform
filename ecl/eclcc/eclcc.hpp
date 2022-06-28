@@ -86,6 +86,8 @@ const char * const helpText[] = {
 #endif
     "!   -Dname=value  Override the definition of a global attribute 'name'",
     "?!  --defaultgitprefix <prefix>  The default prefix used to access git repos when not specified in package.json",
+    "?!  --defaultrepo=x  The default repo used to resolve code",
+    "?!  --defaultrepoversion=x  The default repo version used (if not specified on --defaultrepo)",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
     "!   --expand <path> Expand the contents of an archive to a directory",
@@ -105,6 +107,8 @@ const char * const helpText[] = {
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
     "!   --logdetail=n Set the level of detail in the log file",
+    "?!  --mainrepo=x  The repo used to resolve --main (if not specified)",
+    "?!  --mainrepoversion=x  The repo version used to resolve --main (if not specified on --mainrepo)",
     "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",
     "    --metacache=x Specify directory to store distributed meta information",
     "!   --neversimplify=x Attributes/directory paths (comma separated list) that should not be simplified",

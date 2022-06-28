@@ -466,8 +466,16 @@ public:
             cmdLine.append(" ").append(cmd.extraOptions.item(i));
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
         appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
-        if (cmd.optAttributePath.length())
-            cmdLine.append(" -main ").append(cmd.optAttributePath.get());
+
+        StringBuffer fullAttributePath;
+        if (cmd.getFullAttributePath(fullAttributePath))
+            cmdLine.append(" -main ").append(fullAttributePath);
+
+        if (!cmd.optDefaultRepo.isEmpty())
+            cmdLine.append(" --defaultrepo ").append(cmd.optDefaultRepo);
+        if (!cmd.optDefaultRepoVersion.isEmpty())
+            cmdLine.append(" --defaultrepoversion ").append(cmd.optDefaultRepoVersion);
+
         if (cmd.optObj.type == eclObjManifest)
             cmdLine.append(" -manifest ").append(cmd.optObj.value.get());
         else
@@ -644,6 +652,23 @@ bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNam
     return true;
 }
 
+bool EclCmdWithEclTarget::getFullAttributePath(StringBuffer & result)
+{
+    if (optAttributePath.isEmpty())
+        return false;
+
+    result.append(optAttributePath);
+    if (!strchr(optAttributePath, '@'))
+    {
+        if (optAttributeRepo.isEmpty())
+            return true;
+        result.append('@').append(optAttributeRepo);
+    }
+    if (!strchr(result, '#') && !optAttributeRepoVersion.isEmpty())
+        result.append('#').append(optAttributeRepoVersion);
+    return true;
+}
+
 bool EclCmdWithEclTarget::setTarget(const char *target)
 {
     if (!optTargetCluster.isEmpty())
@@ -696,6 +721,14 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchOption(optManifest, ECLOPT_MANIFEST) || iter.matchOption(optManifest, ECLOPT_MANIFEST_DASH))
         return EclCmdOptionMatch;
     if (iter.matchOption(optAttributePath, ECLOPT_MAIN) || iter.matchOption(optAttributePath, ECLOPT_MAIN_S))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optAttributeRepo, ECLOPT_MAIN_REPO))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optAttributeRepoVersion, ECLOPT_MAIN_REPO_VERSION))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optDefaultRepo, ECLOPT_DEFAULT_REPO))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optDefaultRepoVersion, ECLOPT_DEFAULT_REPO_VERSION))
         return EclCmdOptionMatch;
     if (iter.matchOption(optSnapshot, ECLOPT_SNAPSHOT) || iter.matchOption(optSnapshot, ECLOPT_SNAPSHOT_S))
         return EclCmdOptionMatch;
