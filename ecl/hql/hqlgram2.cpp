@@ -6362,7 +6362,7 @@ static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
 {
     if (ctx.syntaxChecking() && !ctx.ignoreSimplified())
     {
-        if (category==CategorySyntax || category==CategoryError)
+        if (category==CategorySyntax || category==CategoryError || category==CategoryMistake)
             return true;
         else
             return false;
