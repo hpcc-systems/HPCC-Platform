@@ -89,6 +89,10 @@
         "system": {
           "$ref": "#/definitions/secrets"
         }
+        ,
+        "esp": {
+          "$ref": "#/definitions/secrets"
+        }
       },
       "additionalProperties": false
     },

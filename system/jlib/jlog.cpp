@@ -3256,12 +3256,11 @@ IRemoteLogAccess &queryRemoteLogAccessor()
       workspaceID: "XYZ"      #ID of the Azure LogAnalytics workspace to query logs from
       #tenantID: "ABC"         #The Tenant ID, required for KQL API access
       clientID: "DEF"         #ID of Azure Active Directory registered application with api.loganalytics.io access
-      clientSecret: "XYZ123"  #The secret associated with the Azure Active Directory registered application
     logMaps:
     - type: "global"
       storeName: "ContainerLog"
       searchColumn: "LogEntry"
-      timeStampColumn: "TimeGenerated"
+      timeStampColumn: "hpcc_log_timestamp"
     - type: "workunits"
       storeName: "ContainerLog"
       searchColumn: "hpcc_log_jobid"
