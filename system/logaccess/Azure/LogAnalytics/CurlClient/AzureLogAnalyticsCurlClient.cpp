@@ -381,14 +381,14 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns)
 {
     //timestamp, source component, message
-    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), m_globalSearchColName.str());
+    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol);
 }
 
 void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns)
 {
     //timestamp, source component, all hpcc.log fields
     columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s, %s",
-    m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), m_globalSearchColName.str(), m_classSearchColName.str(),
+    m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
     m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
 }
 
@@ -405,7 +405,7 @@ bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName)
         return false;
     }
 
-    kql.appendf("\n| extend hpcclogfields = extract_all(@\"([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s+(.*)\", %s)[0]", colName);
+    kql.appendf("\n| extend hpcclogfields = extract_all(@\'^([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s+\\\"(.*)\\\"$', %s)[0]", colName);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[0])", defaultHPCCLogSeqCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[1])", defaultHPCCLogAudCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[2])", defaultHPCCLogTypeCol);

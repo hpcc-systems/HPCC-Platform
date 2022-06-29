@@ -37,12 +37,13 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../../common/workunit 
-    )
+         ${HPCC_SOURCE_DIR}/system/security/shared       #seclib.hpp
+         )
 
 HPCC_ADD_LIBRARY( dfuwu SHARED ${SRCS} )
 set_target_properties ( dfuwu PROPERTIES 
         COMPILE_FLAGS "-D_USRDLL"
-        DEFINE_SYMBOL DALI_EXPORTS 
+        DEFINE_SYMBOL DFUWU_EXPORTS
         )
 install ( TARGETS dfuwu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( dfuwu 
