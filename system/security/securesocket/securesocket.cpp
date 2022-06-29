@@ -1498,8 +1498,13 @@ public:
         X509_NAME *name=NULL;
         X509_set_version(x509,3);
         ASN1_INTEGER_set(X509_get_serialNumber(x509), 0); // serial number set to 0
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        X509_gmtime_adj(X509_get_notBefore(x509),0);
+        X509_gmtime_adj(X509_get_notAfter(x509),(long)60*60*24*m_days);
+#else
         X509_gmtime_adj(X509_getm_notBefore(x509),0);
         X509_gmtime_adj(X509_getm_notAfter(x509),(long)60*60*24*m_days);
+#endif
         X509_set_pubkey(x509, pkey);
 
         name=X509_get_subject_name(x509);
@@ -1628,8 +1633,13 @@ public:
         X509_NAME *name=NULL;
         X509_set_version(x509,3);
         ASN1_INTEGER_set(X509_get_serialNumber(x509), 0); // serial number set to 0
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+        X509_gmtime_adj(X509_get_notBefore(x509),0);
+        X509_gmtime_adj(X509_get_notAfter(x509),(long)60*60*24*m_days);
+#else
         X509_gmtime_adj(X509_getm_notBefore(x509),0);
         X509_gmtime_adj(X509_getm_notAfter(x509),(long)60*60*24*m_days);
+#endif
         X509_set_pubkey(x509, pkey);
 
         name=X509_get_subject_name(x509);
@@ -1934,10 +1944,14 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
 
     //set public key in the certificate
     X509_set_pubkey (cert, pkey);
-
     // set duration for the certificate
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    X509_gmtime_adj (X509_get_notBefore (cert), 0);
+    X509_gmtime_adj (X509_get_notAfter (cert), days*24*60*60);
+#else
     X509_gmtime_adj (X509_getm_notBefore (cert), 0);
     X509_gmtime_adj (X509_getm_notAfter (cert), days*24*60*60);
+#endif
 
     // sign the certificate with the CA private key
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
