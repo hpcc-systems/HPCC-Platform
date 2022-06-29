@@ -154,6 +154,7 @@
 #define T63    0x2ad7d2bb
 #define T64 /* 0xeb86d391 */ (T_MASK ^ 0x14792c6e)
 
+static_assert(sizeof(void *) <= sizeof(memsize_t), "Memsize_t too small to represent a pointer");
 
 static void
 md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
@@ -188,7 +189,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
          * On little-endian machines, we can process properly aligned
          * data without copying it.
          */
-        if (!((data - (const md5_byte_t *)0) & 3)) {
+        if (((memsize_t)data & 3) == 0) {
         /* data are properly aligned */
         X = (const md5_word_t *)data;
         } else {
