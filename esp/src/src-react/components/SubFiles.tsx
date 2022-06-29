@@ -7,7 +7,6 @@ import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
 import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 import { pushUrl } from "../util/history";
 import nlsHPCC from "src/nlsHPCC";
 
@@ -37,60 +36,60 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         sort: { attribute: "Modified", descending: true },
         filename: "subfiles",
         columns: {
-            sel: selector({ width: 27, selectorType: "checkbox" }),
+            sel: { width: 27, selectorType: "checkbox" },
             IsCompressed: {
                 width: 25, sortable: false,
                 headerIcon: "ZipFolder",
                 headerTooltip: nlsHPCC.Compressed,
-                formatter: function (compressed) {
+                formatter: React.useCallback(function (compressed) {
                     if (compressed === true) {
                         return <FontIcon iconName="zipFolder" />;
                     }
                     return <></>;
-                }
+                }, [])
             },
             IsKeyFile: {
                 width: 25, sortable: false,
                 headerIcon: "Permissions",
                 headerTooltip: nlsHPCC.Index,
-                formatter: function (keyfile, row) {
+                formatter: React.useCallback(function (keyfile, row) {
                     if (row.ContentType === "key") {
                         return <FontIcon iconName="Permissions" />;
                     }
                     return <></>;
-                }
+                }, [])
             },
             isSuperfile: {
                 width: 25, sortable: false,
                 headerIcon: "Folder",
                 headerTooltip: nlsHPCC.Superfile,
-                formatter: function (superfile) {
+                formatter: React.useCallback(function (superfile) {
                     if (superfile === true) {
                         return <FontIcon iconName="Folder" />;
                     }
                     return <></>;
-                }
+                }, [])
             },
             Name: {
                 label: nlsHPCC.LogicalName,
-                formatter: function (name, row) {
+                formatter: React.useCallback(function (name, row) {
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
                     return <Link href={url}>{name}</Link>;
-                }
+                }, [])
             },
             Owner: { label: nlsHPCC.Owner, width: 72 },
             Description: { label: nlsHPCC.Description, width: 153 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 72, sortable: false,
-                formatter: function (recordCount, row) {
+                formatter: React.useCallback(function (recordCount, row) {
                     return Utility.valueCleanUp(recordCount);
-                },
+                }, [])
             },
             Totalsize: {
                 label: nlsHPCC.Size, width: 72, sortable: false,
-                formatter: function (totalSize, row) {
+                formatter: React.useCallback(function (totalSize, row) {
                     return Utility.valueCleanUp(totalSize);
-                },
+                }, [])
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 45, sortable: false,

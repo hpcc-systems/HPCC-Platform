@@ -6367,7 +6367,7 @@ static bool includeError(HqlLookupContext & ctx, WarnErrorCategory category)
 {
     if (ctx.syntaxChecking() && !ctx.ignoreSimplified())
     {
-        if (category==CategorySyntax || category==CategoryError)
+        if (category==CategorySyntax || category==CategoryError || category==CategoryMistake)
             return true;
         else
             return false;
@@ -12045,7 +12045,7 @@ IHqlExpression * HqlGram::createCheckMatchAttr(attribute & attr, type_t tc)
         type.setown(makeUtf8Type(UNKNOWN_LENGTH, NULL));
         break;
     default:
-        throwUnexpectedType(type);
+        throwUnexpected();
     }
 
     OwnedHqlExpr arg = attr.getExpr();

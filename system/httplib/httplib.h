@@ -194,6 +194,10 @@ using socket_t = int;
 #include <thread>
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+
+#if defined(_USE_OPENSSLV3)
+    #define OPENSSL_API_COMPAT 0x10100000L
+#endif
 #include <openssl/err.h>
 #include <openssl/md5.h>
 #include <openssl/ssl.h>
@@ -3619,7 +3623,7 @@ inline ssize_t Stream::write(const std::string &s) {
 template <typename... Args>
 inline ssize_t Stream::write_format(const char *fmt, const Args &... args) {
   const auto bufsiz = 2048;
-  std::array<char, bufsiz> buf;
+  std::array<char, bufsiz> buf{""};
 
 #if defined(_MSC_VER) && _MSC_VER < 1900
   auto sn = _snprintf_s(buf.data(), bufsiz - 1, buf.size() - 1, fmt, args...);
@@ -4600,7 +4604,7 @@ inline void ClientImpl::close_socket(Socket &socket,
 }
 
 inline bool ClientImpl::read_response_line(Stream &strm, Response &res) {
-  std::array<char, 2048> buf;
+  std::array<char, 2048> buf{""};
 
   detail::stream_line_reader line_reader(strm, buf.data(), buf.size());
 

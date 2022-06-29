@@ -18,8 +18,7 @@
 #include <algorithm>
 #include "AddRequiredInstancesSupport.hpp"
 
-
-extern "C" HPCCConfigSupport* getCfgMgrSupportInstance(EnvironmentMgr *pEnvMgr)
+extern "C" DECL_EXPORT HPCCConfigSupport* getCfgMgrSupportInstance(EnvironmentMgr *pEnvMgr)
 {
     HPCCConfigSupport *pInstance = new AddRequiredInstancesSupport(pEnvMgr);
     return pInstance;

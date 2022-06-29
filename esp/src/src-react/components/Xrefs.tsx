@@ -6,7 +6,6 @@ import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 import { pushUrl } from "../util/history";
 import nlsHPCC from "src/nlsHPCC";
 
@@ -32,13 +31,13 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
         sort: { attribute: "modified", descending: false },
         filename: "xrefs",
         columns: {
-            check: selector({ width: 27 }, "checkbox"),
+            check: { width: 27, selectorType: "checkbox" },
             name: {
                 width: 180,
                 label: nlsHPCC.Name,
-                formatter: function (_name, idx) {
+                formatter: React.useCallback(function (_name, idx) {
                     return <Link href={`#/xref/${_name}`}>{_name}</Link>;
-                }
+                }, [])
             },
             modified: { width: 180, label: nlsHPCC.LastRun },
             status: { width: 180, label: nlsHPCC.LastMessage }

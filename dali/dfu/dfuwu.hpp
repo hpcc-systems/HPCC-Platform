@@ -18,7 +18,9 @@
 #ifndef DFUWU_INCL
 #define DFUWU_INCL
 
-#ifndef dfuwu_decl
+#ifdef DFUWU_EXPORTS
+#define dfuwu_decl DECL_EXPORT
+#else
 #define dfuwu_decl DECL_IMPORT
 #endif
 
@@ -65,7 +67,8 @@ enum DFUcmd
     DFUcmd_server,              // Cmd line only
     DFUcmd_monitor,
     DFUcmd_copymerge,
-    DFUcmd_supercopy
+    DFUcmd_supercopy,
+    DFUcmd_publish
 };
 
 enum DFUreplicateMode
@@ -311,6 +314,7 @@ interface IConstDFUprogress: extends IInterface
     virtual StringBuffer &getSubInProgress(StringBuffer &str) const = 0;    // sub-DFUWUs in progress
     virtual StringBuffer &getSubDone(StringBuffer &str) const = 0;          // sub-DFUWUs done (list)
     virtual double getFileAccessCost() const = 0;
+    virtual unsigned getPublisherTaskCount() const = 0;
 };
 
 interface IDFUprogress: extends IConstDFUprogress
@@ -327,6 +331,7 @@ interface IDFUprogress: extends IConstDFUprogress
     virtual void setSubDone(const char *str) = 0;           // set sub-DFUWUs done
     virtual void clearProgress() = 0;
     virtual void setFileAccessCost(double fileAccessCost) = 0;
+    virtual unsigned incPublisherTaskCount() = 0;
 };
 
 interface IDFUprogressSubscriber: extends IInterface
@@ -394,6 +399,7 @@ interface IConstDFUWorkUnit : extends IInterface
     virtual int getApplicationValueInt(const char * application, const char * propname, int defVal) const = 0;
     virtual StringBuffer &getDebugValue(const char *propname, StringBuffer &str) const = 0;
     virtual StringBuffer &toXML(StringBuffer &buf) = 0;
+    virtual DFUstate pollForCompletion(unsigned timeout) = 0;
 };
 
 
@@ -438,10 +444,11 @@ interface IConstDFUWorkUnitIterator : extends IInterface
     virtual IConstDFUWorkUnit * get() = 0;
 };
 
-
 interface IDFUWorkUnitFactory : extends IInterface
 {
     virtual IDFUWorkUnit * createWorkUnit() = 0;    // opened in exclusive
+    virtual IDFUWorkUnit * createPublisherWorkUnit() = 0;
+    virtual IDFUWorkUnit * createPublisherSubTask(IDFUWorkUnit *publisherWu) = 0;
     virtual bool deleteWorkUnit(const char * wuid) = 0;
     virtual IConstDFUWorkUnit * openWorkUnit(const char * wuid, bool lock) = 0;
     virtual IConstDFUWorkUnitIterator * getWorkUnitsByXPath(const char *xpath) = 0;
@@ -456,7 +463,8 @@ interface IDFUWorkUnitFactory : extends IInterface
                                                         unsigned maxnum,
                                                         const char *queryowner,
                                                         __int64 *cachehint,         // set to NULL if caching not required
-                                                        unsigned *total) = 0;       // set to NULL if caching not required
+                                                        unsigned *total,
+                                                        const char *publisherWuid) = 0;
     virtual unsigned numWorkUnits()=0;
     virtual __int64  subscribe(const char *xpath,void *iface) =0;       // internal use
 };
@@ -470,6 +478,10 @@ extern dfuwu_decl DFUcmd decodeDFUcommand(const char * str);
 extern dfuwu_decl StringBuffer &encodeDFUcommand(DFUcmd cmd,StringBuffer &str);
 extern dfuwu_decl DFUstate decodeDFUstate(const char * str);
 extern dfuwu_decl StringBuffer &encodeDFUstate(DFUstate state,StringBuffer &str);
+
+extern dfuwu_decl bool DfuParseLogicalPath(const IPropertyTree *directories, const char * pLogicalPath, const char* groupName,
+                            StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder);
+
 
 class CDFUfileformat
 {

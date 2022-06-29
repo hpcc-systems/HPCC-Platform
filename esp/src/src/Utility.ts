@@ -250,7 +250,7 @@ export function formatAsDelim(columns, rows: any, delim = ",") {
         const cells: any[] = [];
         for (const key in columns) {
             if (key !== columns[key].id && columns[key].selectorType !== "checkbox") {
-                const cell = row[columns[key].field ?? key];
+                const cell = row[columns[key].field] ?? row[key];
                 cells.push(csvEncode(cell ?? ""));
             }
         }

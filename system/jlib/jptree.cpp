@@ -7437,18 +7437,22 @@ public:
             else if ('#'==*name)
             {
                 dbgassertex(retValue && isValueBinary);
-                *isValueBinary = false;
+                if (isValueBinary)
+                    *isValueBinary = false;
                 if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
                 {
                     if ('\0' == *(name+6)) // #value
                     {
-                        retValue->swapWith(value);
+                        if (retValue)
+                            retValue->swapWith(value);
                         return;
                     }
                     else if (streq(name+6, "bin")) // #valuebin
                     {
-                        *isValueBinary = true;
-                        JBASE64_Decode(value.str(), *retValue);
+                        if (isValueBinary)
+                            *isValueBinary = true;
+                        if (retValue)
+                            JBASE64_Decode(value.str(), *retValue);
                         return;
                     }
                 }

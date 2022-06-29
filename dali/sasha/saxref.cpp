@@ -2143,6 +2143,7 @@ public:
 
     void xrefRequest(const char *servers)
     {
+        //MORE: This could still be running when the server terminates which will likely cause the thread to core
         cRunThread *thread = new cRunThread(*this,servers);
         thread->startRelease();
     }

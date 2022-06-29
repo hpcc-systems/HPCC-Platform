@@ -19,6 +19,8 @@
 
 #include <memory>
 #include "jliball.hpp"
+
+#include <opensslcommon.hpp>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -62,10 +64,10 @@ static void installCallbacks()
 
 static void initSSLLibrary()
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_load_error_strings();
     SSLeay_add_ssl_algorithms();
     OpenSSL_add_all_algorithms();
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
     installCallbacks();
 #endif
 }

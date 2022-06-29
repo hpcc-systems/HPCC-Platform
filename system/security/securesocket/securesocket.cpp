@@ -40,6 +40,7 @@
 #include <signal.h>
 
 //openssl
+#include <opensslcommon.hpp>
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
 #ifndef _WIN32
@@ -57,6 +58,8 @@
 #include <openssl/err.h>
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>
+#include <openssl/bn.h>
+#include <openssl/x509.h>
 
 #include "jsmartsock.ipp"
 #include "securesocket.hpp"
@@ -1495,8 +1498,13 @@ public:
         X509_NAME *name=NULL;
         X509_set_version(x509,3);
         ASN1_INTEGER_set(X509_get_serialNumber(x509), 0); // serial number set to 0
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         X509_gmtime_adj(X509_get_notBefore(x509),0);
         X509_gmtime_adj(X509_get_notAfter(x509),(long)60*60*24*m_days);
+#else
+        X509_gmtime_adj(X509_getm_notBefore(x509),0);
+        X509_gmtime_adj(X509_getm_notAfter(x509),(long)60*60*24*m_days);
+#endif
         X509_set_pubkey(x509, pkey);
 
         name=X509_get_subject_name(x509);
@@ -1610,9 +1618,10 @@ public:
 
         bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
+# if OPENSSL_API_COMPAT < 0x10100000L
         OpenSSL_add_all_algorithms ();
         ERR_load_crypto_strings ();
-
+#endif
         pmem = BIO_new(BIO_s_mem());
         BIO_puts(pmem, privkey);
         if (!(pkey = PEM_read_bio_PrivateKey (pmem, NULL, NULL, (void*)m_passphrase.get())))
@@ -1624,8 +1633,13 @@ public:
         X509_NAME *name=NULL;
         X509_set_version(x509,3);
         ASN1_INTEGER_set(X509_get_serialNumber(x509), 0); // serial number set to 0
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         X509_gmtime_adj(X509_get_notBefore(x509),0);
         X509_gmtime_adj(X509_get_notAfter(x509),(long)60*60*24*m_days);
+#else
+        X509_gmtime_adj(X509_getm_notBefore(x509),0);
+        X509_gmtime_adj(X509_getm_notAfter(x509),(long)60*60*24*m_days);
+#endif
         X509_set_pubkey(x509, pkey);
 
         name=X509_get_subject_name(x509);
@@ -1740,8 +1754,10 @@ public:
 
         bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
+# if OPENSSL_API_COMPAT < 0x10100000L
         OpenSSL_add_all_algorithms ();
         ERR_load_crypto_strings ();
+#endif
 
         pmem = BIO_new(BIO_s_mem());
         BIO_puts(pmem, privkey);
@@ -1888,8 +1904,10 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
     if(days <= 0)
         days = 365;
 
+# if OPENSSL_API_COMPAT < 0x10100000L
     OpenSSL_add_all_algorithms ();
     ERR_load_crypto_strings ();
+#endif
     
     BIO *bio_err;
     bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
@@ -1926,10 +1944,14 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
 
     //set public key in the certificate
     X509_set_pubkey (cert, pkey);
-
     // set duration for the certificate
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     X509_gmtime_adj (X509_get_notBefore (cert), 0);
     X509_gmtime_adj (X509_get_notAfter (cert), days*24*60*60);
+#else
+    X509_gmtime_adj (X509_getm_notBefore (cert), 0);
+    X509_gmtime_adj (X509_getm_notAfter (cert), days*24*60*60);
+#endif
 
     // sign the certificate with the CA private key
 #if OPENSSL_VERSION_NUMBER < 0x10100000L

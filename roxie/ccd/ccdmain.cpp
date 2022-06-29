@@ -1011,6 +1011,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpAdjustThreadPriorities = topology->getPropBool("@udpAdjustThreadPriorities", udpAdjustThreadPriorities);
         udpAllowAsyncPermits = topology->getPropBool("@udpAllowAsyncPermits", udpAllowAsyncPermits);
         udpMinSlotsPerSender = topology->getPropInt("@udpMinSlotsPerSender", udpMinSlotsPerSender);
+        udpRemoveDuplicatePermits = topology->getPropBool("@udpRemoveDuplicatePermits", udpRemoveDuplicatePermits);
 
         unsigned __int64 defaultNetworkSpeed = 10 * U64C(0x40000000); // 10Gb/s
         unsigned __int64 networkSpeed = topology->getPropInt64("@udpNetworkSpeed", defaultNetworkSpeed);   // only used to sanity check the different udp options
@@ -1099,6 +1100,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             maxTotalMemoryLimit = friendlyStringToSize(resourcedMemory);
             maxTotalMemoryLimit = maxTotalMemoryLimit / 100.0 * roxieMemResourcedMemoryPct;
         }
+        bool lockMemory = topology->getPropBool("@heapLockMemory", true);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000; // 1 Gb
         if (maxTotalMemoryLimit && (totalMemoryLimit > maxTotalMemoryLimit))
@@ -1106,7 +1108,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             LOG(MCoperatorWarning, "roxie.totalMemoryLimit(%zu) is greater than %.1f%% of resources/@memory, limiting to %zu", totalMemoryLimit, roxieMemResourcedMemoryPct, maxTotalMemoryLimit);
             totalMemoryLimit = maxTotalMemoryLimit;
         }
-        roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
+        roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, lockMemory, totalMemoryLimit, 0, NULL, NULL);
         roxiemem::setMemoryOptions(topology);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);

@@ -27,6 +27,12 @@ interface XMLLIB_API ICompiledXpath : public IInterface
     virtual const char * getXpath() = 0;
     virtual void extractReferences(StringArray &functions, StringArray &variables) = 0;
 };
+enum class XpathVariableScopeType
+{
+    simple,    //can acess variables from higher scopes, normal variable and parameter processing
+    parameter, //only exists for storing parameter values for next child scope
+    isolated   //can't access variables from higher scopes except while marshalling parameters
+};
 
 interface IXpathContextIterator;
 
@@ -40,7 +46,7 @@ interface XMLLIB_API IXpathContext : public IInterface
     virtual void registerNamespace(const char *prefix, const char *uri) = 0;
     virtual const char *queryNamespace(const char *prefix) = 0;
 
-    virtual void beginScope(const char *name) = 0;
+    virtual void beginScope(const char *name, XpathVariableScopeType variableScopeType) = 0;
     virtual void endScope() = 0;
 
     virtual bool addVariable(const char * name, const char * val) = 0;
@@ -88,9 +94,9 @@ private:
     Linked<IProperties> namespaces;
 public:
     IMPLEMENT_IINTERFACE;
-    CXpathContextScope(IXpathContext *ctx, const char *name, IProperties *ns=nullptr) : context(ctx), namespaces(ns)
+    CXpathContextScope(IXpathContext *ctx, const char *name, XpathVariableScopeType variableScopeType, IProperties *ns) : context(ctx), namespaces(ns)
     {
-        context->beginScope(name);
+        context->beginScope(name, variableScopeType);
     }
     virtual ~CXpathContextScope()
     {
@@ -167,8 +173,11 @@ interface IEsdlScriptContext : extends IInterface
     virtual void cleanupBetweenScripts() = 0;
     virtual void setTraceToStdout(bool val) = 0; //keep it simple for now.  default is to use jlog.  This flag may go away when we give more control over tracing
     virtual bool getTraceToStdout() = 0;
+    virtual IInterface *queryFunctionRegister() = 0;
+    virtual void setTestMode(bool val) = 0; //enable features that help with unit testing but should never be used in production
+    virtual bool getTestMode() = 0;
 };
 
-extern "C" XMLLIB_API IEsdlScriptContext *createEsdlScriptContext(void * espContext);
+extern "C" XMLLIB_API IEsdlScriptContext *createEsdlScriptContext(void * espContext, IInterface *functionRegister);
 
 #endif /* XPATH_MANAGER_HPP_ */

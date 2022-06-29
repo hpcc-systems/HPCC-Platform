@@ -240,6 +240,20 @@ CNodeBase::~CNodeBase()
     ::Release(keyHdr);
 }
 
+const char *CNodeBase::getNodeTypeName() const
+{
+    switch ( (NodeType)hdr.leafFlag)
+    {
+    case NodeBranch: return "NodeBranch";
+    case NodeLeaf: return "NodeLeaf";
+    case NodeBlob: return "NodeBlob";
+    case NodeMeta: return "NodeMeta";
+    case NodeBloom: return "NodeBloom";
+    default: return "Unknown";
+    }
+
+}
+
 
 //=========================================================================================================
 
@@ -321,12 +335,7 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
         if (0xffff == hdr.numKeys)
             return false;
         bool lastnode = false;
-        if (!indata)
-        {
-            lastnode = true;
-            indata = alloca(insize);
-            memset((void *) indata, 0xff, insize);
-        }
+        assertex (indata);
         //assertex(insize==keyLen);
         const void *data;
         int size;

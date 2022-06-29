@@ -29,7 +29,7 @@
 
 CInstDetails::CInstDetails(const char * compName, const StringArray &ipAssigned) : m_compName(compName)
 {
-    m_ipAssigned.clear();
+    m_ipAssigned.kill();
 
     for (unsigned i = 0; i < ipAssigned.ordinality(); i++)
     {
@@ -1325,7 +1325,7 @@ StringArray& CWizardInputs::getIpAddrMap(const char* buildSetName)
         {
             if (stricmp(buildSetName, m_arrBuildSetsWithAssignedIPs.item(i)) == 0)
             {
-                m_sipaddress.clear();
+                m_sipaddress.kill();
                 formIPList(m_arrAssignedIPs.item(i), m_sipaddress);
                 return m_sipaddress;
             }

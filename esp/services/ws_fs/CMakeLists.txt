@@ -29,7 +29,7 @@ project( ws_fs )
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS 
-         ../../../dali/dfu/dfuutil.cpp 
+         ../../../dali/dfu/dfuutil.cpp
          ../../../dali/sasha/sacmd.cpp 
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp 
          ws_fsBinding.cpp 
@@ -58,11 +58,14 @@ include_directories (
          ./../../smc/SMCLib 
          ./../../bindings/SOAP/xpp 
          ./../../../fs/dafsclient 
+         ./../../../common/pkgfiles
          ./../../../common/workunit
          ${HPCC_SOURCE_DIR}/common/thorhelper
-    )
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         )
 
-ADD_DEFINITIONS( -D_USRDLL )
+ADD_DEFINITIONS( -D_USRDLL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_fs SHARED ${SRCS} )
 add_dependencies ( ws_fs espscm )
@@ -74,6 +77,7 @@ target_link_libraries ( ws_fs
          workunit
          SMCLib 
          dfuwu 
+         pkgfiles
     )
 
 if (NOT CONTAINERIZED)

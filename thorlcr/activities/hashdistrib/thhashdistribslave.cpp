@@ -746,7 +746,7 @@ protected:
                         if (maxSz)
                         {
                             // pick candidates that are at >= 50% size of largest
-                            candidates.clear();
+                            candidates.kill();
                             bool doSelf = false;
                             unsigned inactiveWriters = queryInactiveWriters();
                             ForEachItemIn(t, targets)

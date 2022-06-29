@@ -168,6 +168,9 @@ static unsigned heapLWM;
 static unsigned heapHWM;
 static unsigned heapLargeBlocks;
 static unsigned heapLargeBlockGranularity;
+static bool heapLocked = false;
+static bool origHeapRetainMemory = false;
+static bool heapHugePagesPossible = false;
 static ILargeMemCallback * heapLargeBlockCallback;
 static bool heapNotifyUnusedEachFree = true;
 static bool heapNotifyUnusedEachBlock = false;
@@ -218,20 +221,90 @@ inline void notifyMemoryUnused(void * address, memsize_t size)
 #endif
 }
 
+static CriticalSection heapBitCrit;
+
+static void notifyAllUnusedRoxieMem();
+
+extern void lockRoxieMem(bool lock)
+{
+#ifndef _WIN32
+    CriticalBlock b(heapBitCrit);
+
+    if (!heapBase || !heapEnd)
+    {
+        DBGLOG("Attempt to lock/unlock heap memory failed, invalid heapBase or heapEnd");
+        return;
+    }
+
+    memsize_t memsize = heapEnd - heapBase;
+
+    if (lock && !heapLocked)
+    {
+        // mlock() should fault in all pages ...
+        int srtn = mlock(heapBase, memsize);
+        if (!srtn)
+        {
+            heapLocked = true;
+            DBGLOG("MEMORY LOCKED");
+            heapNotifyUnusedEachFree = false;
+            heapNotifyUnusedEachBlock = false;
+        }
+        else
+            DBGLOG("Attempt to lock heap memory failed, errno = %d", errno);
+    }
+    else if (!lock && heapLocked)
+    {
+        int srtn = munlock(heapBase, memsize);
+        if (!srtn)
+        {
+            heapLocked = false;
+            DBGLOG("MEMORY UNLOCKED");
+            if (origHeapRetainMemory)
+            {
+                heapNotifyUnusedEachFree = false;
+                heapNotifyUnusedEachBlock = false;
+            }
+            else
+            {
+                if (heapHugePagesPossible)
+                {
+                    heapNotifyUnusedEachFree = false;
+                    heapNotifyUnusedEachBlock = true;
+                }
+                else
+                {
+                    heapNotifyUnusedEachFree = true;
+                    heapNotifyUnusedEachBlock = false;
+                }
+                notifyAllUnusedRoxieMem();
+            }
+        }
+        else
+            DBGLOG("Attempt to unlock heap memory failed, errno = %d", errno);
+    }
+#endif
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsize;
 
-static CriticalSection heapBitCrit;
-
-static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t pages, memsize_t largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
+static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t pages, memsize_t largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
+
+    origHeapRetainMemory = retainMemory;
+#ifndef _WIN32
+    if (lockMemory && !retainMemory)
+        retainMemory = true;
+#endif
 
     // CriticalBlock b(heapBitCrit); // unnecessary - must call this exactly once before any allocations anyway!
     memsize_t bitmapSize = (pages + HEAP_BITS - 1) / HEAP_BITS;
     memsize_t totalPages = bitmapSize * HEAP_BITS;
     memsize_t memsize = totalPages * HEAP_ALIGNMENT_SIZE;
+
+    // MCK - if using huge pages (below) should we check/round up memsize to a multiple of the huge page size ?
 
     if (totalPages > (unsigned)-1)
         throw makeStringExceptionV(ROXIEMM_TOO_MUCH_MEMORY,
@@ -278,12 +351,13 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
             heapUseHugePages = true;
             heapNotifyUnusedEachFree = false;
             heapNotifyUnusedEachBlock = !retainMemory;
+            heapHugePagesPossible = true;
             DBGLOG("Using Huge Pages for roxiemem");
         }
         else
         {
             heapBase = NULL;
-            DBGLOG("Huge Pages requested but unavailable");
+            DBGLOG("Huge Pages requested but unavailable, errno = %d", errno);
         }
     }
 #else
@@ -349,6 +423,9 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                     //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
                     heapNotifyUnusedEachBlock = !retainMemory;
                 }
+                else
+                    origHeapRetainMemory = true;
+                heapHugePagesPossible = true;
                 if (memTraceLevel)
                     DBGLOG("Transparent huge pages used for roxiemem heap");
             }
@@ -371,6 +448,10 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     }
 #endif
 
+    assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
+
+    heapEnd = heapBase + memsize;
+
     if (heapNotifyUnusedEachFree)
     {
         if (memTraceLevel)
@@ -383,15 +464,18 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
     }
     else
     {
-        DBGLOG("MEMORY WILL NOT BE RELEASED TO OS");
+        StringBuffer memStr("MEMORY WILL NOT BE RELEASED TO OS");
+        if (lockMemory)
+        {
+            lockRoxieMem(true);
+            memStr.append(" (unless unlocked)");
+        }
+        DBGLOG("%s", memStr.str());
         if (!retainMemory)
             DBGLOG("Increase HEAP_ALIGNMENT_SIZE so HEAP_ALIGNMENT_SIZE*%u (0x%" I64F "x) is a multiple of system huge page size (0x%" I64F "x)",
                     HEAP_BITS, (unsigned __int64)(HEAP_ALIGNMENT_SIZE * HEAP_BITS), (unsigned __int64) getHugePageSize());
     }
 
-    assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
-
-    heapEnd = heapBase + memsize;
     heapBitmap = new heap_t [heapBitmapSize];
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(heap_t));
     heapLargeBlocks = 1;
@@ -409,9 +493,14 @@ static void adjustHeapSize(unsigned numPages)
     memsize_t bitmapSize = (numPages + HEAP_BITS - 1) / HEAP_BITS;
     memsize_t totalPages = bitmapSize * HEAP_BITS;
     memsize_t memsize = totalPages * HEAP_ALIGNMENT_SIZE;
+    bool wasLocked = heapLocked;
+    if (wasLocked)
+        lockRoxieMem(false);
     heapEnd = heapBase + memsize;
     heapBitmapSize = (unsigned)bitmapSize;
     heapTotalPages = (unsigned)totalPages;
+    if (wasLocked)
+        lockRoxieMem(true);
 }
 #endif
 
@@ -426,6 +515,8 @@ extern void releaseRoxieHeap()
 #ifdef _WIN32
         VirtualFree(heapBase, 0, MEM_RELEASE);
 #else
+        if (heapLocked)
+            lockRoxieMem(false);
         if (heapUseHugePages)
         {
             memsize_t memsize = memsize_t(heapTotalPages) * HEAP_ALIGNMENT_SIZE;
@@ -439,6 +530,67 @@ extern void releaseRoxieHeap()
         heapEnd = NULL;
         heapBitmapSize = 0;
         heapTotalPages = 0;
+    }
+}
+
+static void notifyAllUnusedRoxieMem()
+{
+    char *blockStart = nullptr;
+    memsize_t blockLen = 0;
+
+    // NOTE heapBitCrit MUST be held while here
+
+    if (heapHugePagesPossible)
+    {
+        // release only large chunks
+        for (unsigned i = 0; i < heapBitmapSize; i++)
+        {
+            heap_t t = heapBitmap[i];
+            if (t==HEAP_ALLBITS)
+            {
+                if (!blockStart)
+                {
+                    blockStart = heapBase + (i * HEAP_BITS * HEAP_ALIGNMENT_SIZE);
+                    blockLen = HEAP_BITS * HEAP_ALIGNMENT_SIZE;
+                }
+                else
+                    blockLen += (HEAP_BITS * HEAP_ALIGNMENT_SIZE);
+            }
+            else if (blockStart)
+            {
+                notifyMemoryUnused(blockStart, blockLen);
+                blockStart = nullptr;
+            }
+        }
+        if (blockStart)
+            notifyMemoryUnused(blockStart, blockLen);
+    }
+    else
+    {
+        // release HEAP_ALIGNMENT_SIZE chunks
+        for (unsigned i = 0; i < heapBitmapSize; i++)
+        {
+            for (unsigned b = 0; b < HEAP_BITS; b++)
+            {
+                if (heapBitmap[i] & (1U<<b))
+                {
+                    if (!blockStart)
+                    {
+                        blockStart = heapBase + (((i * HEAP_BITS) + b) * HEAP_ALIGNMENT_SIZE);
+                        blockLen = HEAP_ALIGNMENT_SIZE;
+                    }
+                    else
+                        blockLen += HEAP_ALIGNMENT_SIZE;
+                }
+                else if (blockStart)
+                {
+                    notifyMemoryUnused(blockStart, blockLen);
+                    blockStart = nullptr;
+                }
+            }
+        }
+        if (blockStart)
+            notifyMemoryUnused(blockStart, blockLen);
     }
 }
 
@@ -6678,7 +6830,7 @@ extern void setMemoryStatsInterval(unsigned secs)
     lastStatsCycles = get_cycles_now();
 }
 
-extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
+extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePages, bool retainMemory, bool lockMemory, memsize_t max, memsize_t largeBlockSize, const unsigned * allocSizes, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
     memsize_t totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
@@ -6687,7 +6839,7 @@ extern void setTotalMemoryLimit(bool allowHugePages, bool allowTransparentHugePa
         totalMemoryLimit = 1;
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: Setting memory limit to %" I64F "d bytes (%" I64F "u pages)", (unsigned __int64) max, (unsigned __int64)totalMemoryLimit);
-    initializeHeap(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
+    initializeHeap(allowHugePages, allowTransparentHugePages, retainMemory, lockMemory, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
     initAllocSizeMappings(allocSizes ? allocSizes : defaultAllocSizes);
 }
 
@@ -6996,7 +7148,8 @@ protected:
 
         memsize_t memory = (useLargeMemory ? largeMemory : smallMemory) * (unsigned __int64)0x100000U;
         const bool retainMemory = true; // remove the time releasing pages from the timing overhead
-        initializeHeap(false, true, retainMemory, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
+        const bool lockMemory = false; // remove the time faulting in pages from the timing overhead
+        initializeHeap(false, true, retainMemory, lockMemory, (unsigned)(memory / HEAP_ALIGNMENT_SIZE), 0, NULL);
         initAllocSizeMappings(defaultAllocSizes);
     }
 
@@ -8733,7 +8886,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, true, false, memorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, false, false, memorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -9054,7 +9207,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, true, false, hugeMemorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, false, false, hugeMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()
@@ -9135,7 +9288,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(true, true, true, tuningMemorySize, 0, NULL, NULL);
+        setTotalMemoryLimit(true, true, true, true, tuningMemorySize, 0, NULL, NULL);
     }
 
     void testCleanup()

@@ -110,23 +110,23 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 headerIcon: "LockSolid",
                 width: 25,
                 sortable: true,
-                formatter: function (_protected) {
+                formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
                         return <Icon iconName="LockSolid" />;
                     }
                     return "";
-                }
+                }, [])
             },
             Wuid: {
                 label: nlsHPCC.WUID, width: 120,
-                formatter: function (Wuid, row) {
+                formatter: React.useCallback(function (Wuid, row) {
                     const wu = Get(Wuid);
                     return <>
                         <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
                         &nbsp;
                         <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>
                     </>;
-                }
+                }, [])
             },
             Owner: { label: nlsHPCC.Owner, width: 90 },
             Jobname: { label: nlsHPCC.JobName, width: 350 },
@@ -135,22 +135,22 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             State: { label: nlsHPCC.State, width: 60 },
             TotalClusterTime: {
                 label: nlsHPCC.TotalClusterTime, width: 115,
-                renderCell: function (object, value, node) {
+                renderCell: React.useCallback(function (object, value, node) {
                     domClass.add(node, "justify-right");
                     node.innerText = value;
-                }
+                }, [])
             },
             ExecuteCost: {
                 label: nlsHPCC.ExecuteCost, width: 100,
-                formatter: function (cost, row) {
+                formatter: React.useCallback(function (cost, row) {
                     return `${formatCost(cost)}`;
-                }
+                }, [])
             },
             FileAccessCost: {
                 label: nlsHPCC.FileAccessCost, width: 100,
-                formatter: function (cost, row) {
+                formatter: React.useCallback(function (cost, row) {
                     return `${formatCost(cost)}`;
-                }
+                }, [])
             }
         }
     });

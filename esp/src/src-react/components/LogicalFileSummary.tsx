@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
-import { DFUService, DFUArrayActions, DFUChangeProtection, DFUChangeRestriction } from "@hpcc-js/comms";
+import { DFUService, WsDfu } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
@@ -46,7 +46,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToDeleteThisFile,
         onSubmit: React.useCallback(() => {
-            dfuService.DFUArrayAction({ Type: DFUArrayActions.Delete, LogicalFiles: { Item: [file.Filename] } }).then(({ ActionResults }) => {
+            dfuService.DFUArrayAction({ Type: WsDfu.DFUArrayActions.Delete, LogicalFiles: { Item: [file.Filename] } }).then(({ ActionResults }) => {
                 const actionInfo = ActionResults?.DFUActionInfo;
                 if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
                     replaceUrl("/files");
@@ -105,8 +105,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 file?.update({
                     UpdateDescription: true,
                     FileDesc: description,
-                    Protect: _protected ? DFUChangeProtection.Protect : DFUChangeProtection.Unprotect,
-                    Restrict: restricted ? DFUChangeRestriction.Restrict : DFUChangeRestriction.Unrestricted,
+                    Protect: _protected ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
+                    Restrict: restricted ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
                 });
             }
         },

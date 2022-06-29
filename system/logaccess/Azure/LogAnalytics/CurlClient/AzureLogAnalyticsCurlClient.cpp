@@ -88,22 +88,40 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
         VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/token", tenantID);
         VStringBuffer tokenRequestFields("grant_type=client_credentials&resource=https://api.loganalytics.io&client_secret=%s&client_id=%s", clientSecret, clientID);
 
-        try
-        {
+        
             /*"curl -X POST -d 'grant_type=client_credentials&client_id=<ADApplicationID>&client_secret=<thesecret>&resource=https://api.loganalytics.io'
                https://login.microsoftonline.com/<tenantID>/oauth2/token
             "*/
 
-            curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str());
-            curl_easy_setopt(curlHandle, CURLOPT_POST, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDS, tokenRequestFields.str());
-            curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer));
-            curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer);
-            curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client");
-            curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L); // non HTTP Success treated as error
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME,  tokenRequestURL.str());
 
+        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POST' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDS, tokenRequestFields.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_POSTFIELDS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not disable 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, captureIncomingCURLReply) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, static_cast<void*>(&captureBuffer)) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
+            throw makeStringExceptionV(-1, "%s Access token request: Could not set 'CURLOPT_FAILONERROR' option!", COMPONENT_NAME);
+
+        try
+        {
             curlResponseCode = curl_easy_perform(curlHandle);
         }
         catch (...)
@@ -169,29 +187,50 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
         curlErrBuffer[0] = '\0';
 
         char * encodedKQL = curl_easy_escape(curlHandle, kql, strlen(kql));
-
         VStringBuffer tokenRequestURL("https://api.loganalytics.io/v1/workspaces/%s/query?query=%s", workspaceID, encodedKQL);
+        curl_free(encodedKQL);
+
         VStringBuffer bearerHeader("Authorization: Bearer %s", token);
+
+        /*curl -X GET 
+        -H "Authorization: Bearer <TOKEN>"
+            "https://api.loganalytics.io/v1/workspaces/<workspaceID>/query?query=ContainerLog20%7C%20limit%20100"
+        */
+
+        headers = curl_slist_append(headers, bearerHeader.str());
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers.getClear()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPHEADER'", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str()) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_URL' (%s)!", COMPONENT_NAME, tokenRequestURL.str());
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_POST, 0) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not disable 'CURLOPT_POST' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_HTTPGET' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_NOPROGRESS' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, stringCallback) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_WRITEFUNCTION' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, &readBuffer) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_WRITEDATA' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client") != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
+            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
+
+        if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_FAILONERROR'option!", COMPONENT_NAME);
 
         try
         {
-            /*curl -X GET 
-            -H "Authorization: Bearer <TOKEN>"
-             "https://api.loganalytics.io/v1/workspaces/<workspaceID>/query?query=ContainerLog20%7C%20limit%20100"
-            */
-
-            headers = curl_slist_append(headers, bearerHeader.str());
-            curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers.getClear());
-            curl_easy_setopt(curlHandle, CURLOPT_URL, tokenRequestURL.str());
-            curl_easy_setopt(curlHandle, CURLOPT_POST, 0);
-            curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_NOPROGRESS, 1);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, stringCallback);
-            curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, &readBuffer);
-            curl_easy_setopt(curlHandle, CURLOPT_USERAGENT, "HPCC Systems Log Access client");
-            curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer);
-            curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L); // non HTTP Success treated as error
- 
             curlResponseCode = curl_easy_perform(curlHandle);
         }
         catch (...)
@@ -214,43 +253,55 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
     }
 }
 
+static constexpr const char * azureLogAccessSecretCategory = "esp";
+static constexpr const char * azureLogAccessSecretName = "azure-logaccess";
+
+static constexpr const char * azureLogAccessSecretAADTenantID = "aad-tenant-id";
+static constexpr const char * azureLogAccessSecretAADClientID = "aad-client-id";
+static constexpr const char * azureLogAccessSecretAADClientSecret = "aad-client-secret";
+static constexpr const char * azureLogAccessSecretWorkspaceID = "ala-workspace-id";
+
 AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig)
 {
     PROGLOG("%s: Resolving all required configuration values...", COMPONENT_NAME);
-    if (!getEnvVar("AZURE_TENANT_ID", m_tenantID))
-    {
-        WARNLOG("%s: Environment variable 'AZURE_TENANT_ID' not found!", COMPONENT_NAME);
-        m_tenantID.set(logAccessPluginConfig.queryProp("connection/@tenantID"));
 
-        if (m_tenantID.isEmpty())
-           throw makeStringException(-1, "Could not determine Azure Tenant ID, set 'AZURE_TENANT_ID' env var, or connection/@tenantID in AzureClient LogAccess configuration!");
+    Owned<IPropertyTree> secretTree = getSecret(azureLogAccessSecretCategory, azureLogAccessSecretName);
+    if (!secretTree)
+        throw makeStringExceptionV(-1, "%s: Could not fetch %s information!", COMPONENT_NAME, azureLogAccessSecretName);
+
+    getSecretKeyValue(m_aadTenantID.clear(), secretTree, azureLogAccessSecretAADTenantID);
+    if (m_aadTenantID.isEmpty())
+    {
+        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
+        m_aadTenantID.set(logAccessPluginConfig.queryProp("connection/@tenantID"));
+        if (m_aadTenantID.isEmpty())
+            throw makeStringExceptionV(-1, "%s: Could not find AAD Tenant ID, provide it as part of '%s.%s' secret, or connection/@tenantID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADTenantID);
     }
 
-    if (!getEnvVar("AZURE_CLIENT_ID", m_clientID))
+    getSecretKeyValue(m_aadClientID.clear(), secretTree, azureLogAccessSecretAADClientID);
+    if (m_aadClientID.isEmpty())
     {
-        WARNLOG("%s: Environment variable 'AZURE_CLIENT_ID' not found!", COMPONENT_NAME);
-        m_clientID.set(logAccessPluginConfig.queryProp("connection/@clientID"));
+        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
+        m_aadClientID.set(logAccessPluginConfig.queryProp("connection/@clientID"));
 
-        if (m_clientID.isEmpty())
-           throw makeStringException(-1, "Could not find Azure AD client ID, set 'AZURE_CLIENT_ID' env var, or connection/@clientID in AzureClient LogAccess configuration - format is '00000000-0000-0000-0000-000000000000'!");
+        if (m_aadClientID.isEmpty())
+            throw makeStringExceptionV(-1, "%s: Could not find AAD Client ID, provide it as part of %s.%s secret, or connection/@clientID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientID);
     }
 
-    if (!getEnvVar("AZURE_CLIENT_SECRET", m_clientSecret))
+    getSecretKeyValue(m_aadClientSecret.clear(),secretTree, azureLogAccessSecretAADClientSecret);
+    if (m_aadClientSecret.isEmpty())
     {
-        WARNLOG("%s: Environment variable 'AZURE_CLIENT_SECRET' not found!", COMPONENT_NAME);
-        m_clientSecret.set(logAccessPluginConfig.queryProp("connection/@clientSecret"));
-
-        if (m_clientSecret.isEmpty())
-           throw makeStringException(-1, "Could not determine Azure AD client secret, set 'AZURE_CLIENT_SECRET' env var, or connection/@clientSecret in AzureClient LogAccess configuration!");
+        throw makeStringExceptionV(-1, "%s: Required secret '%s.%s' not found!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretAADClientSecret);
     }
 
-    if (!getEnvVar("AZURE_LOGANALYTICS_WORKSPACE_ID", m_logAnalyticsWorkspaceID))
+    getSecretKeyValue(m_logAnalyticsWorkspaceID.clear(), secretTree, azureLogAccessSecretWorkspaceID);
+    if (m_logAnalyticsWorkspaceID.isEmpty())
     {
-        WARNLOG("%s: Environment variable 'AZURE_LOGANALYTICS_WORKSPACE_ID' not found!", COMPONENT_NAME);
+        WARNLOG("%s: Could not find '%s.%s' secret value!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
         m_logAnalyticsWorkspaceID.set(logAccessPluginConfig.queryProp("connection/@workspaceID"));
 
         if (m_logAnalyticsWorkspaceID.isEmpty())
-           throw makeStringException(-1, "Could not determine Azure LogAnalytics workspace ID (aka workspace customer ID), set 'AZURE_LOGANALYTICS_WORKSPACE_ID' env var, or connection/@workspaceID in AzureClient LogAccess configuration!");
+            throw makeStringExceptionV(-1, "%s: Could not find ALA Workspace ID, provide it as part of %s.%s secret, or connection/@workspaceID in AzureClient LogAccess configuration!", COMPONENT_NAME, azureLogAccessSecretName, azureLogAccessSecretWorkspaceID);
     }
 
     m_pluginCfg.set(&logAccessPluginConfig);
@@ -330,14 +381,14 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns)
 {
     //timestamp, source component, message
-    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), m_globalSearchColName.str());
+    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol);
 }
 
 void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns)
 {
     //timestamp, source component, all hpcc.log fields
     columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s, %s",
-    m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), m_globalSearchColName.str(), m_classSearchColName.str(),
+    m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
     m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
 }
 
@@ -354,7 +405,7 @@ bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName)
         return false;
     }
 
-    kql.appendf("\n| extend hpcclogfields = extract_all(@\"([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s+(.*)\", %s)[0]", colName);
+    kql.appendf("\n| extend hpcclogfields = extract_all(@\'^([0-9A-Fa-f]+)\\s+(OPR|USR|PRG|AUD|UNK)\\s+(DIS|ERR|WRN|INF|PRO|MET|UNK)\\s+(\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(UNK|[A-Z]\\d{8}-\\d{6}(?:-\\d+)?)\\s+\\\"(.*)\\\"$', %s)[0]", colName);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[0])", defaultHPCCLogSeqCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[1])", defaultHPCCLogAudCol);
     kql.appendf("\n| extend %s = tostring(hpcclogfields.[2])", defaultHPCCLogTypeCol);
@@ -746,7 +797,7 @@ bool AzureLogAnalyticsCurlClient::processSearchJsonResp(LogQueryResultDetails & 
 bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format)
 {
     StringBuffer token;
-    requestLogAnalyticsAccessToken(token, m_clientID, m_clientSecret, m_tenantID); //throws if issues encountered
+    requestLogAnalyticsAccessToken(token, m_aadClientID, m_aadClientSecret, m_aadTenantID); //throws if issues encountered
 
     if (token.isEmpty())
         throw makeStringExceptionV(-1, "%s Could not fetch valid Azure Log Analytics access token!", COMPONENT_NAME);
@@ -760,7 +811,7 @@ bool AzureLogAnalyticsCurlClient::fetchLog(LogQueryResultDetails & resultDetails
     return processSearchJsonResp(resultDetails, readBuffer, returnbuf, format, true);
 }
 
-class AZURE_LOGANALYTICS_CURL_LOGACCESS_API AzureLogAnalyticsStream : public CInterfaceOf<IRemoteLogAccessStream>
+class AzureLogAnalyticsStream : public CInterfaceOf<IRemoteLogAccessStream>
 {
 public:
     virtual bool readLogEntries(StringBuffer & record, unsigned & recsRead) override

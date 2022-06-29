@@ -75,6 +75,7 @@ bool udpAssumeSequential = false;       // If a data packet with a later sequenc
 bool udpAdjustThreadPriorities = false; // Adjust the priorities for the UDP receiving and sending threads so they have priority.
                                         // Enabling tends to cause a big rise in context switches from other threads, so disabled by default
 bool udpAllowAsyncPermits = false;      // Allow requests to send more data to overtake the data packets that are being sent.
+bool udpRemoveDuplicatePermits = true;
 
 unsigned multicastTTL = 1;
 bool traceIBYTIfails = false;

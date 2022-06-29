@@ -121,10 +121,40 @@ void disableThreadSEH() { SEHHandling=false; } // only prevents new threads from
 
 static std::atomic<unsigned> threadCount;
 static size32_t defaultThreadStackSize=0;
-static ICopyArrayOf<Thread> ThreadDestroyList;
-static CriticalSection ThreadDestroyListLock;
 
+/*
+The following variables are used to avoid a race condition between thread termination and join().  There are two situations:
+i) thread is free running. join will never be called.
+ii) thread will be joined
 
+The code in the thread termination code signals a semaphore to indicate it is complete, and then releases the thread
+object.  This ensures the semaphore has not been destroyed before it is signalled, and that threads that are mot joined
+are cleaned up correctly.
+
+The code in join waits for the semaphore to be signalled, and then continues.  If the thread object is a contained
+member the thread object may be destroyed before the release call in the thread termination code - which would lead to
+memory corruption.
+
+Options to prevent this:
+
+* Added the thread to a list before the signal(), and removed after the Release().
+  The joining thread can wake up immediately, but then needs to loop until the thread is not on the list.  (This
+  involved getting a critical section).
+  [This is the previous implementation.]
+
+* The termination code holds the critical section for the { signal(), Release() } duration.
+  The joining thread checks it can get that critical section before continuing.  The joining thread may wake up, try
+  and get the critical section, and then block because the other thread hasn't released it yet, but this is better than
+  the previous situation which would spin-loop.  The join will be blocked by all terminating threads - in a signal,
+  rather than purely user code.
+  [This is the new implementation]
+
+* Terminating thread conditionally signals.
+  The terminating thread could call Release(), and only signal() the semaphore if the object was not destroyed.  This would cope
+  with the common joining pattern, but would fail if another object held onto a reference to the thread but didn't call join().
+  Potentially more efficient, but more scope for accidental bugs.
+*/
+static CriticalSection ThreadDestroyLock;
 
 
 #ifdef _WIN32
@@ -145,28 +175,15 @@ void *Thread::_threadmain(void *v)
 #endif
     int ret = t->begin();
     {
-        // need to ensure joining thread does not race with us to release
-        t->Link();  // extra safety link
+        try
         {
-            CriticalBlock block(ThreadDestroyListLock);
-            ThreadDestroyList.append(*t);
-        }
-        try {
-            t->stopped.signal();        
-            if (t->Release()) {
-                PROGLOG("extra unlinked thread");
-                PrintStackReport();
-            }
-            else
-                t->Release(); 
+            CriticalBlock block(ThreadDestroyLock);
+            t->stopped.signal();
+            t->Release();
         }
         catch (...) {
             PROGLOG("thread release exception");
             throw;
-        }
-        {
-            CriticalBlock block(ThreadDestroyListLock);
-            ThreadDestroyList.zap(*t);  // hopefully won't get too big (i.e. one entry!)
         }
     }
 #if defined(_WIN32)
@@ -477,22 +494,11 @@ bool Thread::join(unsigned timeout)
         stopped.signal();
         return true;
     }
-    unsigned st = 0;
-    for (;;) {                                              // this is to prevent race with destroy
-                                                        // (because Thread objects are not always link counted!)
-        {
-            CriticalBlock block(ThreadDestroyListLock);
-            if (ThreadDestroyList.find(*this)==NotFound)
-                break;
-        }
-#ifdef _DEBUG
-        if (st==10)     
-            PROGLOG("Thread::join race");   
-#endif
-        Sleep(st);      // switch back to exiting thread (not very elegant!)
-        st++;
-        if (st>10)
-            st = 10; // note must be non-zero for high priority threads
+
+    {
+        //Enter and leave the critical section to ensure that the terminating thread has called Release() - it has
+        //already signalled the stopped semaphore
+        CriticalBlock block(ThreadDestroyLock);
     }
 
 #ifdef _DEBUG
@@ -521,7 +527,6 @@ Thread::~Thread()
         // don't need to resignal as we are on way out
     }
 #endif
-    Link();
     threadCount--;
 //  DBGLOG("Thread %x (%s) destroyed\n", threadid, cthreadname.str());
 }
@@ -785,38 +790,6 @@ void CAsyncFor::TaskFor(unsigned num, ITaskScheduler & scheduler)
         completed->spawn([i, this]() { Do(i); });
 
     completed->decAndWait();
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
-class CSimpleFunctionThread : public Thread
-{
-    std::function<void()> func;
-public:
-    inline CSimpleFunctionThread(std::function<void()> _func) : Thread("TaskProcessor"), func(_func) { }
-    virtual int run()
-    {
-        func();
-        return 1;
-    }
-};
-
-void asyncStart(IThreaded & threaded)
-{
-    CThreaded * thread = new CThreaded("AsyncStart", &threaded);
-    thread->startRelease();
-}
-
-void asyncStart(const char * name, IThreaded & threaded)
-{
-    CThreaded * thread = new CThreaded(name, &threaded);
-    thread->startRelease();
-}
-
-//Experimental - is this a useful function to replace some uses of IThreaded?
-void asyncStart(std::function<void()> func)
-{
-    (new CSimpleFunctionThread(func))->startRelease();
 }
 
 // ---------------------------------------------------------------------------
@@ -2495,17 +2468,15 @@ public:
                     e->Release();
                 }
             }
-            CriticalBlock block(crit);
-            parent->worker=NULL;    // this should be safe
             return 0;
         }
         
-    } *worker;
+    };
+    Owned<cWorkerThread> worker;
 
     CWorkQueueThread(unsigned _persisttime)
     {
         persisttime = _persisttime;
-        worker = NULL;
     }
 
     ~CWorkQueueThread()
@@ -2517,8 +2488,8 @@ public:
     {
         CriticalBlock block(crit);
         if (!worker) {
-            worker = new cWorkerThread(this,crit,persisttime);
-            worker->startRelease();
+            worker.setown(new cWorkerThread(this,crit,persisttime));
+            worker->start();
         }
         worker->queue.enqueue(packet);
         worker->sem.signal();
@@ -2526,16 +2497,20 @@ public:
 
     void wait()
     {
-        CriticalBlock block(crit);
-        if (worker) {
-            worker->queue.enqueue(NULL);
-            worker->sem.signal();
-            Linked<cWorkerThread> wt;
-            wt.set(worker);
-            CriticalUnblock unblock(crit);
-            wt->join();
+        Owned<cWorkerThread> wt;
+        {
+            CriticalBlock block(crit);
+            if (worker) {
+                worker->queue.enqueue(NULL);
+                worker->sem.signal();
+                wt.swap(worker);
+            }
         }
+
+        if (wt)
+            wt->join();
     }
+
     unsigned pending()
     {
         CriticalBlock block(crit);

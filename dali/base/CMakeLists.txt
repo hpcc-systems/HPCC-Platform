@@ -72,7 +72,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
     )
 
-ADD_DEFINITIONS( -DLOGMSGCOMPONENT=3 -D_USRDLL -DDALI_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DDALI_EXPORTS )
 
 HPCC_ADD_LIBRARY( dalibase SHARED ${SRCS} ${INCLUDES} )
 

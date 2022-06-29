@@ -677,39 +677,26 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
     return dft;
 }
 
-StatsMergeAction queryMergeMode(StatisticMeasure measure)
+constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
 {
-    switch (measure)
-    {
-    case SMeasureTimeNs:        return StatsMergeSum;
-    case SMeasureTimestampUs:   return StatsMergeKeepNonZero;
-    case SMeasureCount:         return StatsMergeSum;
-    case SMeasureSize:          return StatsMergeSum;
-    case SMeasureLoad:          return StatsMergeMax;
-    case SMeasureSkew:          return StatsMergeMax;
-    case SMeasureNode:          return StatsMergeKeepNonZero;
-    case SMeasurePercent:       return StatsMergeReplace;
-    case SMeasureIPV4:          return StatsMergeKeepNonZero;
-    case SMeasureCycle:         return StatsMergeSum;
-    case SMeasureEnum:          return StatsMergeKeepNonZero;
-    case SMeasureText:          return StatsMergeKeepNonZero;
-    case SMeasureBool:          return StatsMergeKeepNonZero;
-    case SMeasureId:            return StatsMergeKeepNonZero;
-    case SMeasureFilename:      return StatsMergeKeepNonZero;
-    case SMeasureCost:          return StatsMergeSum;
-    default:
-#ifdef _DEBUG
-        throwUnexpected();
-#else
-        return StatsMergeSum;
-#endif
-    }
-}
-
-extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
-{
-    //MORE: Optimize by looking up in the meta
-    return queryMergeMode(queryMeasure(kind));
+    return
+        (measure == SMeasureTimeNs) ? StatsMergeSum :
+        (measure == SMeasureTimestampUs) ? StatsMergeKeepNonZero :
+        (measure == SMeasureCount) ? StatsMergeSum :
+        (measure == SMeasureSize) ? StatsMergeSum :
+        (measure == SMeasureLoad) ? StatsMergeMax :
+        (measure == SMeasureSkew) ? StatsMergeMax :
+        (measure == SMeasureNode) ? StatsMergeKeepNonZero :
+        (measure == SMeasurePercent) ? StatsMergeReplace :
+        (measure == SMeasureIPV4) ? StatsMergeKeepNonZero :
+        (measure == SMeasureCycle) ? StatsMergeSum :
+        (measure == SMeasureEnum) ? StatsMergeKeepNonZero :
+        (measure == SMeasureText) ? StatsMergeKeepNonZero :
+        (measure == SMeasureBool) ? StatsMergeKeepNonZero :
+        (measure == SMeasureId) ? StatsMergeKeepNonZero :
+        (measure == SMeasureFilename) ? StatsMergeKeepNonZero :
+        (measure == SMeasureCost) ? StatsMergeSum :
+        StatsMergeSum;
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -760,15 +747,15 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     "@TimeDelta" # y, \
     "@TimeStdDev" # y,
 
-#define CORESTAT(x, y, m)     St##x##y, m, St##x##y, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
+#define CORESTAT(x, y, m)     St##x##y, m, queryMergeMode(m), St##x##y, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
 #define STAT(x, y, m)         CORESTAT(x, y, m)
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
 //#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define TIMESTAT(y) St##Time##y, SMeasureTimeNs, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeSum, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -776,7 +763,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
-#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
+#define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
 #define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum)
 #define COSTSTAT(y) STAT(Cost, y, SMeasureCost)
 //--------------------------------------------------------------------------------------------------------------------
@@ -786,6 +773,7 @@ class StatisticMeta
 public:
     StatisticKind kind;
     StatisticMeasure measure;
+    StatsMergeAction mergeAction;
     StatisticKind serializeKind;
     StatisticKind rawKind;
     const char * names[StNextModifier/StVariantScale];
@@ -793,9 +781,9 @@ public:
 };
 
 //The order of entries in this table must match the order in the enumeration
-static const StatisticMeta statsMetaData[StMax] = {
-    { StKindNone, SMeasureNone, StKindNone, StKindNone, { "none" }, { "@none" } },
-    { StKindAll, SMeasureAll, StKindAll, StKindAll, { "all" }, { "@all" } },
+static const constexpr StatisticMeta statsMetaData[StMax] = {
+    { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, { "none" }, { "@none" } },
+    { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, { "all" }, { "@all" } },
     { WHENSTAT(GraphStarted) }, // Deprecated - use WhenStart
     { WHENSTAT(GraphFinished) }, // Deprecated - use WhenFinished
     { WHENSTAT(FirstRow) },
@@ -945,6 +933,20 @@ bool includeStatisticIfZero(StatisticKind kind)
     return false;
 }
 
+
+inline StatsMergeAction queryBaseMergeMode(StatisticKind kind)
+{
+    dbgassertex(queryStatsVariant(kind) == 0);
+    dbgassertex(kind >= StKindNone && kind < StMax);
+    return statsMetaData[kind].mergeAction;
+}
+
+extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
+{
+    if (queryStatsVariant(kind) == 0)
+        return queryBaseMergeMode(kind);
+    return queryMergeMode(queryMeasure(kind));
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -2377,11 +2379,23 @@ void CRuntimeStatisticCollection::set(const CRuntimeStatisticCollection & other,
 
 void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & other, unsigned node)
 {
-    ForEachItemIn(i, other)
+    if (&queryMapping() == &other.queryMapping())
     {
-        StatisticKind kind = other.getKind(i);
-        unsigned __int64 value = other.getStatisticValue(kind);
-        mergeStatistic(kind, value, node);
+        ForEachItemIn(i, *this)
+        {
+            StatisticKind kind = getKind(i);
+            unsigned __int64 value = other.queryStatisticByIndex(i).get();
+            values[i].merge(value, queryBaseMergeMode(kind));
+        }
+    }
+    else
+    {
+        ForEachItemIn(i, other)
+        {
+            StatisticKind kind = other.getKind(i);
+            unsigned __int64 value = other.queryStatisticByIndex(i).get();
+            mergeStatistic(kind, value, node);
+        }
     }
 
     CNestedRuntimeStatisticMap *otherNested = other.queryNested();

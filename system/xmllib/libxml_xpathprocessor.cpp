@@ -132,14 +132,17 @@ static xmlXPathObjectPtr variableLookupFunc(void *data, const xmlChar *name, con
 
 typedef std::map<std::string, xmlXPathObjectPtr> XPathObjectMap;
 
+
+
 class CLibXpathScope
 {
 public:
     StringAttr name; //in future allow named parent access?
     XPathObjectMap variables;
+    XpathVariableScopeType variableScopeType = XpathVariableScopeType::simple;
 
 public:
-    CLibXpathScope(const char *_name) : name(_name){}
+    CLibXpathScope(const char *_name, XpathVariableScopeType _variableScopeType) : name(_name), variableScopeType(_variableScopeType) {}
     ~CLibXpathScope()
     {
         for (XPathObjectMap::iterator it=variables.begin(); it!=variables.end(); ++it)
@@ -158,12 +161,15 @@ public:
         ret.first->second = obj;
         return true;
     }
-    xmlXPathObjectPtr getObject(const char *key)
+    xmlXPathObjectPtr getObject(const char *key, bool remove=false)
     {
         XPathObjectMap::iterator it = variables.find(key);
         if (it == variables.end())
             return nullptr;
-        return it->second;
+        xmlXPathObjectPtr obj = it->second;
+        if (remove)
+            variables.erase(it);
+        return obj;
     }
 };
 
@@ -350,7 +356,7 @@ public:
     CLibXpathContext(const char * xmldoc, bool _strictParameterDeclaration, bool removeDocNs) : strictParameterDeclaration(_strictParameterDeclaration), removeDocNamespaces(removeDocNs)
     {
         xmlKeepBlanksDefault(0);
-        beginScope("/");
+        beginScope("/", XpathVariableScopeType::simple);
         setXmlDoc(xmldoc);
         registerExslt();
     }
@@ -359,7 +365,7 @@ public:
     {
         xmlKeepBlanksDefault(0);
         primaryContext.set(_primary);
-        beginScope("/");
+        beginScope("/", XpathVariableScopeType::simple);
         setContextDocument(doc, node);
         registerExslt();
     }
@@ -411,10 +417,10 @@ public:
         saved.pop_back();
     }
 
-    void beginScope(const char *name) override
+    void beginScope(const char *name, XpathVariableScopeType variableScopeType) override
     {
         WriteLockBlock wblock(m_rwlock);
-        scopes.emplace_back(new CLibXpathScope(name));
+        scopes.emplace_back(new CLibXpathScope(name, variableScopeType));
     }
 
     void endScope() override
@@ -507,12 +513,38 @@ public:
             return scope->getObject(fullname);
 
         for (XPathScopeVector::const_reverse_iterator it=scopes.crbegin(); !obj && it!=scopes.crend(); ++it)
+        {
             obj = it->get()->getObject(fullname);
+            if (it->get()->variableScopeType==XpathVariableScopeType::isolated)  //An isolated scope can't use variables from higher level scopes
+                break;
+        }
 
         //check libxml2 level variables, shouldn't happen currently but we may want to wrap existing xpathcontexts in the future
         if (!obj)
             obj = (xmlXPathObjectPtr)xmlHashLookup2(m_xpathContext->varHash, (const xmlChar *)name, (const xmlChar *)ns_uri);
         return obj;
+    }
+
+    CLibXpathScope *queryParameterScope()
+    {
+        if (scopes.size()<2)
+            return nullptr;
+
+        CLibXpathScope *parameterScope = scopes[scopes.size() - 2].get();
+        if (!parameterScope || parameterScope->variableScopeType!=XpathVariableScopeType::parameter)
+            return nullptr;
+        return parameterScope;
+    }
+
+    bool processPassedParameter(CLibXpathScope *parameterScope, const char *name)
+    {
+        if (!parameterScope)
+            return false;
+        xmlXPathObjectPtr paramValueObj = parameterScope->getObject(name, true);
+        if (!paramValueObj)
+            return false;
+        addObjectVariable(name, paramValueObj, nullptr);
+        return true;
     }
 
     xmlXPathObjectPtr getVariableObject(const char *name, const char *ns_uri, CLibXpathScope *scope)
@@ -1075,13 +1107,20 @@ public:
 
     virtual bool declareCompiledParameter(const char * name, ICompiledXpath * compiled) override
     {
-        if (hasVariable(name, nullptr, getCurrentScope()))
+        CLibXpathScope *cur = getCurrentScope();
+        if (hasVariable(name, nullptr, cur))
             return false;
 
-        //use input value
-        ICompiledXpath *inputxp = findInput(name);
-        if (inputxp)
-            return addCompiledVariable(name, inputxp, getCurrentScope());
+        CLibXpathScope *parameterScope = queryParameterScope();
+        if (!parameterScope)
+        {
+            //use input value
+            ICompiledXpath *inputxp = findInput(name);
+            if (inputxp)
+                return addCompiledVariable(name, inputxp, getCurrentScope());
+        }
+        else if (processPassedParameter(parameterScope, name))
+            return true;
 
         //use default provided
         return addCompiledVariable(name, compiled, getCurrentScope());
@@ -1592,10 +1631,12 @@ private:
     xmlDocPtr doc = nullptr;
     xmlNodePtr root = nullptr;
     xmlXPathContextPtr xpathCtx = nullptr;
+    IInterface *functionRegister = nullptr;
     bool traceToStdout = false;
+    bool testMode = false;
 
 public:
-    CEsdlScriptContext(void *ctx) : espCtx(ctx)
+    CEsdlScriptContext(void *ctx, IInterface *_functionRegister) : espCtx(ctx), functionRegister(_functionRegister)
     {
         doc =   xmlParseDoc((const xmlChar *) "<esdl_script_context/>");
         xpathCtx = xmlXPathNewContext(doc);
@@ -1967,11 +2008,23 @@ private:
     {
         return traceToStdout;
     }
+    virtual IInterface *queryFunctionRegister() override
+    {
+        return functionRegister;
+    }
+    void setTestMode(bool val) override //enable features that help with unit testing but should never be used in production
+    {
+        testMode = val;
+    }
+    bool getTestMode() override
+    {
+        return testMode;
+    }
 };
 
-IEsdlScriptContext *createEsdlScriptContext(void * espCtx)
+IEsdlScriptContext *createEsdlScriptContext(void * espCtx, IInterface *functionRegister)
 {
-    return new CEsdlScriptContext(espCtx);
+    return new CEsdlScriptContext(espCtx, functionRegister);
 }
 
 extern IXpathContext* getXpathContext(const char * xmldoc, bool strictParameterDeclaration, bool removeDocNamespaces)
@@ -2002,7 +2055,7 @@ public:
 private:
     IEsdlScriptContext* createScriptContext(const char* section, const char* content)
     {
-        Owned<IEsdlScriptContext> ctx(createEsdlScriptContext(nullptr)); // context holds but does not use IEspContext* parameter
+        Owned<IEsdlScriptContext> ctx(createEsdlScriptContext(nullptr, nullptr)); // context holds but does not use IEspContext* parameter
         ctx->setContent(section, content);
         return ctx.getClear();
     }

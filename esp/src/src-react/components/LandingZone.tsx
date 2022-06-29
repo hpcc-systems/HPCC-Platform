@@ -163,10 +163,10 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             }),
             filesize: {
                 label: nlsHPCC.Size, width: 100,
-                renderCell: function (object, value, node, options) {
+                renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.convertedSize(value);
-                },
+                }, []),
             },
             modifiedtime: { label: nlsHPCC.Date, width: 162 }
         }
@@ -340,8 +340,10 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         evt.preventDefault();
         evt.stopPropagation();
         const files = [...evt.target.files];
-        setUploadFiles(files);
-        setShowFileUpload(true);
+        if (files.length > 0) {
+            setUploadFiles(files);
+            setShowFileUpload(true);
+        }
     }, [setShowFileUpload, setUploadFiles]);
 
     return <HolyGrail

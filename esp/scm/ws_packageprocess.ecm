@@ -42,6 +42,12 @@ ESPrequest AddPackageRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    [min_ver("1.05")] bool DfuCopyFiles(false);
+    [min_ver("1.05")] string DfuQueue;
+    [min_ver("1.05")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.05")] bool DfuOverwrite(false);
+    [min_ver("1.05")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.05")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 
@@ -49,6 +55,8 @@ ESPresponse [exceptions_inline] AddPackageResponse
 {
     ESPstruct BasePackageStatus status;
     ESParray<string, File> FilesNotFound;
+    [min_ver("1.05")] string DfuPublisherWuid;
+    [min_ver("1.05")] string DfuPublisherState;
 };
 
 ESPrequest CopyPackageMapRequest
@@ -68,12 +76,20 @@ ESPrequest CopyPackageMapRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    [min_ver("1.05")] bool DfuCopyFiles(false);
+    [min_ver("1.05")] string DfuQueue;
+    [min_ver("1.05")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.05")] bool DfuOverwrite(false);
+    [min_ver("1.05")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.05")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] CopyPackageMapResponse
 {
     ESPstruct BasePackageStatus status;
     ESParray<string, File> FilesNotFound;
+    [min_ver("1.05")] string DfuPublisherWuid;
+    [min_ver("1.05")] string DfuPublisherState;
 };
 
 ESPrequest DeletePackageRequest
@@ -293,12 +309,20 @@ ESPrequest AddPartToPackageMapRequest
     bool UpdateSuperFiles(false); //usually wouldn't be needed, packagemap referencing superfiles?
     bool UpdateCloneFrom(false); //explicitly wan't to change where roxie will grab from
     bool AppendCluster(true); //file exists on other local cluster, add new one, make optional in case of locking issues, but should be made to work
+    [min_ver("1.05")] bool DfuCopyFiles(false);
+    [min_ver("1.05")] string DfuQueue;
+    [min_ver("1.05")] nonNegativeInteger DfuWait(1800000); //30 minutes
+    [min_ver("1.05")] bool DfuOverwrite(false);
+    [min_ver("1.05")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    [min_ver("1.05")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] AddPartToPackageMapResponse
 {
     ESPstruct BasePackageStatus status;
     ESParray<string, File> FilesNotFound;
+    [min_ver("1.05")] string DfuPublisherWuid;
+    [min_ver("1.05")] string DfuPublisherState;
 };
 
 ESPrequest RemovePartFromPackageMapRequest
@@ -328,7 +352,7 @@ ESPresponse [exceptions_inline] GetPartFromPackageMapResponse
     string Content;
 };
 
-ESPservice [auth_feature("NONE"), version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+ESPservice [auth_feature("NONE"), version("1.05"), default_client_version("1.05"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("PackageMapAccess:WRITE")] AddPackage(AddPackageRequest, AddPackageResponse);

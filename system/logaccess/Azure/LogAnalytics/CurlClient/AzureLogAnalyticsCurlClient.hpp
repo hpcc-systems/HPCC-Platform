@@ -22,20 +22,14 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <ctime>
-
-
-#ifndef AZURE_LOGANALYTICS_CURL_LOGACCESS_EXPORTS
-#define AZURE_LOGANALYTICS_CURL_LOGACCESS_API DECL_IMPORT
-#else
-#define AZURE_LOGANALYTICS_CURL_LOGACCESS_API DECL_EXPORT
-#endif
+#include "jsecrets.hpp"
 
 #define COMPONENT_NAME "AzureLogAnalyticsCurlClient"
 
 static constexpr int defaultEntryLimit = 100;
 static constexpr int defaultEntryStart = 0;
 
-class AZURE_LOGANALYTICS_CURL_LOGACCESS_API AzureLogAnalyticsCurlClient : public CInterfaceOf<IRemoteLogAccess>
+class AzureLogAnalyticsCurlClient : public CInterfaceOf<IRemoteLogAccess>
 {
 private:
     static constexpr const char * type = "azureloganalyticscurl";
@@ -65,9 +59,9 @@ private:
     StringBuffer m_hostIndexSearchPattern;
 
     StringBuffer m_logAnalyticsWorkspaceID;
-    StringBuffer m_tenantID;
-    StringBuffer m_clientID;
-    StringBuffer m_clientSecret;
+    StringBuffer m_aadTenantID;
+    StringBuffer m_aadClientID;
+    StringBuffer m_aadClientSecret;
 
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);

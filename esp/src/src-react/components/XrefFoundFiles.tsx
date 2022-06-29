@@ -6,7 +6,6 @@ import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 import nlsHPCC from "src/nlsHPCC";
 
 const logger = scopedLogger("src-react/components/XrefFoundFiles.tsx");
@@ -32,7 +31,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
         sort: { attribute: "modified", descending: false },
         filename: "xrefsFoundFiles",
         columns: {
-            check: selector({ width: 27 }, "checkbox"),
+            check: { width: 27, selectorType: "checkbox" },
             name: { width: 180, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
             parts: { width: 80, label: nlsHPCC.Parts },

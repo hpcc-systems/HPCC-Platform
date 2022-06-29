@@ -609,8 +609,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
     return true;
 }
 
-void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
-                               bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
+static void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder, bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
 {
     ClusterPartDiskMapSpec spec;
     spec.setDefaultBaseDir(defaultFolder);
@@ -670,7 +669,7 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
     wuFSpecDest->setClusterPartDiskMapSpec(clusterName,spec);
 }
 
-StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
+static StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
 {
     filemask.clear().append(filename).toLowerCase().append("._$P$_of_$N$");
     return filemask;
@@ -1110,7 +1109,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         unsigned numWUs;
         PROGLOG("GetDFUWorkunits: getWorkUnitsSorted");
-        Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), (int) displayFrom, (int) pagesize+1, req.getOwner(), &cacheHint, &numWUs);
+        Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), (int) displayFrom, (int) pagesize+1, req.getOwner(), &cacheHint, &numWUs, req.getPublisherWuid());
         if (version >= 1.07)
             resp.setCacheHint(cacheHint);
         PROGLOG("GetDFUWorkunits: getWorkUnitsSorted done");

@@ -75,6 +75,24 @@ private:
     void progress(const char *format, ...) __attribute__((format(printf, 2, 3)));
     void exc(const IMultiException &e,const char *title);
 
+    template <class T>
+    bool outputServiceCallExceptions(T *resp)
+    {
+        const IMultiException* excep = &resp->getExceptions();
+        if(excep && excep->ordinality())
+        {
+            StringBuffer msg;
+            error("%s\n", excep->errorMessage(msg).str());
+            return true;
+        }
+        return false;
+    }
+
+    int reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo);
+    int reportDfuWorkunitStatus(const char *wuid);
+    int reportDfuPublisherStatus(IConstDFUWorkunit & dfuwu);
+    int reportDfuPublisherStatus(const char *wuid);
+
     Owned<IProperties> globals;
     Owned<IClientFileSpray> sprayclient;
     Owned<IClientWsDfu> dfuclient;

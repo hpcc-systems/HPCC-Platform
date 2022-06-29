@@ -1065,11 +1065,18 @@ ESPrequest [nil_remove] WUEclDefinitionActionRequest
     int MsToWait(-1);
     int TimeLimit(-1); //Publish
     int WarnTimeLimit(-1); //Publish
+    bool DfuCopyFiles(false);
+    bool DfuOverwrite(false);
+    string DfuQueue;
+    bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
+    bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
 };
 
 ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
 {
     ESParray<ESPstruct WUEclDefinitionActionResult> ActionResults;
+    [min_ver("1.89")] string DfuPublisherWuid;
+    [min_ver("1.89")] string DfuPublisherState;
 };
 
 ESPrequest [nil_remove] WUGetPluginsRequest

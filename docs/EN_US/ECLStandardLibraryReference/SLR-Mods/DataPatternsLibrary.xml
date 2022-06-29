@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="DPLib">
+  <title><emphasis>Data Patterns Library</emphasis></title>
+
+  <para>This section covers the Data Patterns methods in the Standard
+  Library.</para>
+
+  <sect1 id="DPProfile">
+    <title>Profile</title>
+
+    <para><emphasis role="bold">STD.DataPatterns.Profile<indexterm>
+        <primary>STD.DataPatterns.Profiles</primary>
+      </indexterm><indexterm>
+        <primary>DataPatterns.Profiles</primary>
+      </indexterm><indexterm>
+        <primary>Profiles</primary>
+      </indexterm></emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><emphasis></emphasis></entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry><emphasis></emphasis></entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry><emphasis></emphasis></entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry><emphasis></emphasis></entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry><emphasis></emphasis></entry>
+
+            <entry></entry>
+          </row>
+
+          <row>
+            <entry><emphasis></emphasis></entry>
+
+            <entry></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>foo</para>
+
+    <para><emphasis role="bold">Example:</emphasis></para>
+
+    <programlisting>IMPORT Std;</programlisting>
+
+    <para></para>
+
+    <para><emphasis role="bold"></emphasis></para>
+  </sect1>
+</chapter>

@@ -72,7 +72,7 @@ public:
     }
 };
 
-class WORKUNIT_API CPackageNode : implements IHpccPackage, public CInterface
+class PKGFILES_API CPackageNode : implements IHpccPackage, public CInterface
 {
 protected:
     Owned<IPropertyTree> node;
@@ -579,7 +579,7 @@ public:
                                 const char *libpkgid = libpkg->locateSuperFile(rf.getLogicalName());
                                 if (libpkgid && !strieq(libpkgid, pkgid))
                                 {
-                                    VStringBuffer msg("For query %s SuperFile %s defined in package %s redefined for library %s in package %s", 
+                                    VStringBuffer msg("For query %s SuperFile %s defined in package %s redefined for library %s in package %s",
                                         queryid, rf.getLogicalName(), pkgid, libpkg->queryId(), libpkgid);
                                     warn.append(msg.str());
                                 }
@@ -635,7 +635,7 @@ typedef CPackageMapOf<CPackageNode, IHpccPackage> CHpccPackageMap;
 // CHpccPackageSet - an implementation of IHpccPackageSet
 //================================================================================================
 
-class WORKUNIT_API CHpccPackageSet : implements IHpccPackageSet, public CInterface
+class PKGFILES_API CHpccPackageSet : implements IHpccPackageSet, public CInterface
 {
     IArrayOf<CHpccPackageMap> packageMaps;
     StringAttr process;

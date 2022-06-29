@@ -84,12 +84,16 @@ void RSAZCryptor::init()
     bio_err=BIO_new_fp(stderr, BIO_NOCLOSE);
 
 #if defined(_WIN32) || defined(__linux__)
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     OpenSSL_add_all_ciphers();
+#endif
 #else
     SSL_library_init();
 #endif
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     ERR_load_crypto_strings ();
+#endif
 
     seed_prng();
 
@@ -229,7 +233,9 @@ RSAZCryptor::~RSAZCryptor()
     if(pub_rsa)
         RSA_free(pub_rsa);      
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     EVP_cleanup();
+#endif
 }
 
 void RSAZCryptor::throw_error()

@@ -2422,7 +2422,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     }
     unsigned getTlkKeyManagers(IArrayOf<IKeyManager> &keyManagers)
     {
-        keyManagers.clear();
+        keyManagers.kill();
         ForEachItemIn(i, tlkKeyIndexes)
         {
             IKeyIndex *tlkKeyIndex = &tlkKeyIndexes.item(i);

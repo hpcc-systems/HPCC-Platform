@@ -1619,26 +1619,6 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             response->send();
             return 0;
         }
-        else if (!strnicmp(path.str(), "/WsWorkunits/WUResultBin", 24))
-        {
-            CWsWuResultOutHelper helper;
-            if (!helper.getWUResultStreaming(request, response, wuResultDownloadFlushThreshold))
-                return CWsWorkunitsSoapBinding::onGet(request,response);
-            return 0;
-        }
-#ifdef _CONTAINERIZED
-        else if (!strnicmp(path.str(), "/WsWorkunits/WUFile", 19))
-        {
-            StringBuffer type;
-            request->getParameter("Type", type);
-            if (strieq(type.str(), File_ComponentLog))
-            {
-                CWsWuFileHelper helper(nullptr);
-                helper.sendWUComponentLogStreaming(request, response);
-                return 0;
-            }
-        }
-#endif
         else if (!strnicmp(path.str(), REQPATH_CREATEANDDOWNLOADZAP, sizeof(REQPATH_CREATEANDDOWNLOADZAP) - 1))
         {
             createAndDownloadWUZAPFile(*ctx, request, response);
@@ -1657,6 +1637,37 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
     }
 
     return CWsWorkunitsSoapBinding::onGet(request,response);
+}
+
+int CWsWorkunitsSoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
+{
+    if (strieq(method, "WUResultBin"))
+    {
+        CWsWuResultOutHelper helper;
+        if (helper.getWUResultStreaming(request, response, wuResultDownloadFlushThreshold))
+            return 0;
+    }
+    else if (strieq(method, "WUFile"))
+    {
+        StringBuffer type;
+        request->getParameter("Type", type);
+#ifdef _CONTAINERIZED
+        if (strieq(type.str(), File_ComponentLog))
+        {
+            CWsWuFileHelper helper(nullptr);
+            helper.sendWUComponentLogStreaming(request, response);
+            return 0;
+        }
+#endif
+        if (strieq(type.str(), getEnumText(FileTypePostMortem, queryFileTypes)))
+        {
+            CWsWuFileHelper helper(nullptr);
+            helper.sendLocalFileStreaming(request, response); //The post-mortem files are local files.
+            return 0;
+        }
+    }
+
+    return CWsWorkunitsSoapBinding::onGetInstantQuery(context, request, response, service, method);
 }
 
 bool CWsWorkunitsEx::onWUClusterJobQueueXLS(IEspContext &context, IEspWUClusterJobQueueXLSRequest &req, IEspWUClusterJobQueueXLSResponse &resp)

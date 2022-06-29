@@ -3101,6 +3101,18 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
 #endif
+            else if (strieq(req.getType(), getEnumText(FileTypePostMortem, queryFileTypes)))
+            {
+                const char* file = req.getName();
+                helper.validateWUFile(file, winfo, CWUFileType_PostMortem);
+
+                StringBuffer fileName;
+                splitFilename(file, nullptr, nullptr, &fileName, &fileName);
+                resp.setFileName(fileName.str());
+
+                helper.readLocalFileToBuffer(file, req.getSizeLimit(), mb);
+                openSaveFile(context, opt, req.getSizeLimit(), fileName.str(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
+            }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
                 const char* name  = req.getName();
@@ -4540,8 +4552,14 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Only one WU ZAP report is allowed.");
 
             VStringBuffer fileName("%s%s", zipFolder, fileNames.item(0));
+#ifdef _CONTAINERIZED
+            VStringBuffer importDir("%s%simport", wswService->getQueryDirectory(), PATHSEPSTR);
+            wswService->queryWUFactory()->importWorkUnit(fileName, password,
+                importDir, "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+#else
             wswService->queryWUFactory()->importWorkUnit(fileName, password,
                 wswService->getTempDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+#endif
         }
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);
@@ -5433,6 +5451,10 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     publishReq->setWait(timeLeft);
     publishReq->setNoReload(req.getNoReload());
     publishReq->setDontCopyFiles(req.getDontCopyFiles());
+    publishReq->setDfuCopyFiles(req.getDfuCopyFiles());
+    publishReq->setDfuOverwrite(req.getDfuOverwrite());
+    publishReq->setDfuQueue(req.getDfuQueue());
+
     publishReq->setAllowForeignFiles(req.getAllowForeign());
     publishReq->setUpdateDfs(req.getUpdateDfs());
     publishReq->setUpdateSuperFiles(req.getUpdateSuperfiles());

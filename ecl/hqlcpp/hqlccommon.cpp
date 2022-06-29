@@ -28,6 +28,7 @@ IHqlExpression * activeMatchUtf8Expr;
 IHqlExpression * activeNlpMarkerExpr;
 IHqlExpression * activeProductionMarkerExpr;
 IHqlExpression * activeValidateMarkerExpr;
+IHqlExpression * activityContextMarkerExpr;
 IHqlExpression * classMarkerExpr;
 IHqlExpression * codeContextMarkerExpr;
 IHqlExpression * colocalSameClassPreserveExpr;
@@ -50,6 +51,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     activeNlpMarkerExpr = createAttribute(activeNlpAtom);
     activeProductionMarkerExpr = createAttribute(activeProductionMarkerAtom);
     activeValidateMarkerExpr = createAttribute(activeValidateMarkerAtom);
+    activityContextMarkerExpr = createQuoted("activityContextMarker", makeVoidType());
     classMarkerExpr = createAttribute(classAtom);
     codeContextMarkerExpr = createQuoted("codeContextMarker", makeVoidType());
     colocalSameClassPreserveExpr = createVariable("internalColocalShouldNeverBeUsed", makeVoidType());
@@ -72,6 +74,7 @@ MODULE_EXIT()
     colocalSameClassPreserveExpr->Release();
     codeContextMarkerExpr->Release();
     classMarkerExpr->Release();
+    activityContextMarkerExpr->Release();
     activeValidateMarkerExpr->Release();
     activeProductionMarkerExpr->Release();
     activeNlpMarkerExpr->Release();

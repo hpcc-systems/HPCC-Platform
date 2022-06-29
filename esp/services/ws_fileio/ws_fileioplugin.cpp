@@ -17,10 +17,6 @@
 
 #pragma warning (disable : 4786)
 
-#ifndef WsFileIO_API
-#define WsFileIO_API DECL_EXPORT
-#endif //WsFileIO_API
-
 #include "ws_fileio_esp.ipp"
 
 //ESP Bindings

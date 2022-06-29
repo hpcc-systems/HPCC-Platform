@@ -6,7 +6,6 @@ import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 import nlsHPCC from "src/nlsHPCC";
 
 const logger = scopedLogger("src-react/components/XrefLostFiles.tsx");
@@ -32,7 +31,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
         sort: { attribute: "modified", descending: false },
         filename: "xrefsLostFiles",
         columns: {
-            check: selector({ width: 27 }, "checkbox"),
+            check: { width: 27, selectorType: "checkbox" },
             name: { width: 180, label: nlsHPCC.Name },
             modified: { width: 80, label: nlsHPCC.Modified },
             numParts: { width: 80, label: nlsHPCC.TotalParts },

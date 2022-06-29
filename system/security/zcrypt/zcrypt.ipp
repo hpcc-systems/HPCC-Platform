@@ -32,6 +32,7 @@
 #include <errno.h>
 #endif
 
+#include <opensslcommon.hpp>
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
 #include <openssl/rand.h>

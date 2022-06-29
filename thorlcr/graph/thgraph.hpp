@@ -354,6 +354,7 @@ public:
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { return ctx->queryIndexMetaData(lfn, xpath); }
     virtual unsigned getPriority() const { return ctx->getPriority(); }
     virtual char *getPlatform() { return ctx->getPlatform(); }
+    virtual char *getDeploymentName() { return ctx->getDeploymentName(); }
     virtual char *getEnv(const char *name, const char *defaultValue) const { return ctx->getEnv(name, defaultValue); }
     virtual char *getOS() { return ctx->getOS(); }
     virtual IThorChildGraph * resolveChildQuery(__int64 gid, IHThorArg * colocal);

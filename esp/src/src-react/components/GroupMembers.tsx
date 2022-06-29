@@ -37,9 +37,9 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         columns: {
             username: {
                 label: nlsHPCC.UserName,
-                formatter: function (_name, idx) {
+                formatter: React.useCallback(function (_name, idx) {
                     return <Link href={`#/security/users/${_name}`}>{_name}</Link>;
-                }
+                }, [])
             },
             employeeID: { label: nlsHPCC.EmployeeID },
             employeeNumber: { label: nlsHPCC.EmployeeNumber },
