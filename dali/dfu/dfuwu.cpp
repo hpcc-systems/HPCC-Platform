@@ -23,12 +23,6 @@
 #include "jptree.hpp"
 #include "jencrypt.hpp"
 
-#ifndef dfuwu_decl
-#define dfuwu_decl DECL_EXPORT
-#endif
-
-
-
 #include "mpbase.hpp"
 #include "daclient.hpp"
 #include "dasds.hpp"

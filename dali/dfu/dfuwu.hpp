@@ -18,7 +18,9 @@
 #ifndef DFUWU_INCL
 #define DFUWU_INCL
 
-#ifndef dfuwu_decl
+#ifdef DFUWU_EXPORTS
+#define dfuwu_decl DECL_EXPORT
+#else
 #define dfuwu_decl DECL_IMPORT
 #endif
 
