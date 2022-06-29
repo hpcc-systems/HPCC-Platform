@@ -5403,7 +5403,7 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
             f->remove();
             return tree.getClear();
         }
-        void updateWUQueryAssociatedFilesAttrs(const char *localIP)
+        void updateWUQueryAssociatedFilesAttrs()
         {
             ICopyArrayOf<IPropertyTree> fileTreesToRemove;
             IPropertyTree *queryAssociatedTreeRoot = wuTree->queryPropTree("Query/Associated");
@@ -5417,7 +5417,11 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
                 fileNameWithPath.append(PATHSEPSTR).append(pathTail(fileName));
                 if (checkFileExists(fileNameWithPath)) //Check if the ZAP report contains this file.
                 {
-                    fileTree.setProp("@ip", localIP);
+#ifdef _CONTAINERIZED
+                    fileTree.setProp("@ip", "localhost");
+#else
+                    fileTree.setProp("@ip", GetCachedHostName());
+#endif
                     fileTree.setProp("@filename", fileNameWithPath);
                 }
                 else
@@ -5471,7 +5475,7 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
             wuTree->setProp("@scope", scope);
 
             //update QueryAssociatedFiles in WU XML;
-            updateWUQueryAssociatedFilesAttrs(GetCachedHostName());
+            updateWUQueryAssociatedFilesAttrs();
 
             graphProgressTree.setown(readWUXMLFile("ZAPReport_*.graphprogress", true));
         }
