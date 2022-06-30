@@ -364,6 +364,7 @@ export = {
         HPCCSystems: "HPCC Systems®",
         Icon: "Icon",
         ID: "ID",
+        IFrameErrorMsg: "Frame could not be loaded, try again.",
         IgnoreGlobalStoreOutEdges: "Ignore Global Store Out Edges",
         Import: "Import",
         Inactive: "Inactive",
