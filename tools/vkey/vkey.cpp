@@ -297,7 +297,7 @@ void checkLevel(int f, KeyHdr &h, unsigned &level, offset_t firstnode)
                 free(nodeData);
                 return;
             }
-            if ((h.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))==HTREE_COMPRESSED_KEY)
+            if ((h.keyFlags & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))==HTREE_COMPRESSED_KEY)
             {
                 unsigned expandSize;
                 memcpy(&expandSize, nodeData+sizeof(NodeHdr)+8, 4);
@@ -409,7 +409,7 @@ int main(int argc, const char *argv[])
                 else
                 {
                     SwapBigEndian(h);
-                    if (h.ktype & USE_TRAILING_HEADER)
+                    if (h.keyFlags & USE_TRAILING_HEADER)
                     {
                         printf("Reading trailing key header\n");
                         lseek(f, -h.nodeSize, SEEK_END);

@@ -27,15 +27,20 @@
 
 #define NODESIZE 8192
 
+//The following constants are used for the keyFlags field (the bottom 8 bits are also stored in the
+//oldktype field for backward compatibility.
 #define TRAILING_HEADER_ONLY  0x01 // Leading header not updated - use trailing one
 #define HTREE_TOPLEVEL_KEY  0x02
 #define COL_PREFIX          0x04
 #define HTREE_QUICK_COMPRESSED 0x08 // See QUICK_COMPRESSED_KEY below
 #define HTREE_VARSIZE       0x10
 #define HTREE_FULLSORT_KEY  0x20
-#define USE_TRAILING_HEADER  0x80 // Real index header node located at end of file
 #define HTREE_COMPRESSED_KEY 0x40
 #define HTREE_QUICK_COMPRESSED_KEY 0x48
+#define USE_TRAILING_HEADER  0x80 // Real index header node located at end of file
+#define INPLACE_COMPRESS_BRANCH 0x100 // Compress branch nodes that can be processed as-is
+#define INPLACE_COMPRESS_LEAF 0x200 // Compress leaf nodes that can be processed as-is
+
 #define KEYBUILD_VERSION 1 // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
 #define KEYBUILD_MAXLENGTH 0x7FFF
 
@@ -44,6 +49,7 @@
 
 struct __declspec(novtable) jhtree_decl KeyHdr
 {
+
     __int64 phyrec; /* last byte offset of file     00x */
     __int64 delstk; /* top of delete stack: fixed len data  08x */
     __int64 numrec; /* last byte offset written     10x */
@@ -63,7 +69,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     unsigned short  maxkbl; /* maximum key bytes leaf-var       5cx */
     unsigned short  maxkbn; /* maximum key bytes non leaf-var   5ex */
     char    updflg; /* update (corrupt) flag        60x */
-    char    ktype;  /* file type flag           61x */
+    char    oldktype;  /* file type flag           61x */
     char    autodup;/* duplicate flag           62x */
     char    deltyp; /* flag for type of idx delete      63x */
     unsigned char   keypad; /* padding byte             64x */
@@ -92,7 +98,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 fileSize; /* fileSize - was once used in the bias calculation e0x */
     short nodeKeyLength; /* key length in intermediate level nodes e8x */
     unsigned short version; /* build version - to be updated if key format changes    eax*/
-    short unused[2]; /* unused ecx */
+    unsigned keyFlags; /* extended version of ktype ecx */
     __int64 blobHead; /* fpos of first blob node f0x */
     __int64 metadataHead; /* fpos of first metadata node f8x */
     __int64 bloomHead; /* fpos of bloom table data, if present 100x */
@@ -110,6 +116,7 @@ enum NodeType : char
 //The following is never stored and only used in code as a value that does not match any of the above.
     NodeNone = 127,
 };
+
 
 //#pragma pack(1)
 #pragma pack(push,1)
@@ -162,7 +169,7 @@ public:
     {
         return (hdr.nodeKeyLength != -1);
     }
-    inline char getKeyType() { return hdr.ktype; }
+    inline unsigned getKeyType() { return hdr.keyFlags; }
     inline offset_t getRootFPos() { return hdr.root; }
     inline unsigned short getMaxNodeBytes() { return hdr.maxkbl; }
     inline KeyHdr *getHdrStruct() { return &hdr; }
@@ -171,7 +178,9 @@ public:
     inline unsigned getNodeSize() { return hdr.nodeSize; }
     inline offset_t getFirstLeafPos() const { return (offset_t)hdr.firstLeaf; }
     inline bool hasSpecialFileposition() const { return true; }
-    inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
+    inline bool isRowCompressed() const { return (hdr.keyFlags & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
+    inline bool isInplaceCompressedBranch() const { return (hdr.keyFlags & INPLACE_COMPRESS_BRANCH) != 0; }
+    inline bool isInplaceCompressedLeaf() const { return (hdr.keyFlags & INPLACE_COMPRESS_LEAF) != 0; }
     __uint64 getPartitionFieldMask()
     {
         if (hdr.partitionFieldMask == (__uint64) -1)
@@ -181,7 +190,7 @@ public:
     }
     unsigned numPartitions()
     {
-        if (hdr.ktype & HTREE_TOPLEVEL_KEY)
+        if (hdr.keyFlags & HTREE_TOPLEVEL_KEY)
             return (unsigned) hdr.nument-1;
         else
             return 0;
@@ -197,7 +206,7 @@ class jhtree_decl CNodeBase : public CWritableKeyNode
 protected:
     NodeHdr hdr;
     CKeyHdr *keyHdr;
-    byte keyType;
+    unsigned keyType;
     bool isVariable;
     std::atomic<bool> ready{false}; // is this node ready for use?  Can be checked outside a critsec, but only set within one.
 
@@ -212,6 +221,7 @@ public:
     inline bool isMetadata() const { return hdr.leafFlag == NodeMeta; }
     inline bool isBloom() const { return hdr.leafFlag == NodeBloom; }
     inline bool isLeaf() const { return hdr.leafFlag != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
+    inline bool isBranch() const { return hdr.leafFlag == NodeBranch; }
     inline NodeType getNodeType() const { return (NodeType)hdr.leafFlag; }
     const char * getNodeTypeName() const;
 
@@ -229,32 +239,35 @@ protected:
     size32_t keyLen = 0;
     size32_t keyCompareLen = 0;
     size32_t keyRecLen;
-    char *keyBuf;
-
-    void unpack(const void *node, bool needCopy);
-    unsigned __int64 firstSequence;
     size32_t expandedSize;
+    char * keyBuf;              // Used for expanded keys or blobs
+    unsigned __int64 firstSequence;
 
     inline size32_t getKeyLen() const { return keyLen; }
-    static char *expandKeys(void *src,size32_t &retsize);
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
 
 public:
     CJHTreeNode();
-    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     ~CJHTreeNode();
-    size32_t getMemSize() { return expandedSize; }
+
+    inline bool isKeyAt(unsigned int num) { return (num < hdr.numKeys); }
+
+//These are the key functions that need to be implemented for a node that can be searched
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) = 0; // has an implementation
+    virtual bool getKeyAt(unsigned int num, char *dest) const = 0;       // Retrieve keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest) const = 0;   // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual size32_t getSizeAt(unsigned int num) const = 0;
+    virtual offset_t getFPosAt(unsigned int num) const = 0;
+    virtual int compareValueAt(const char *src, unsigned int index) const = 0;
+
+    virtual int locateGE(const char * search, unsigned minIndex) const;
+    virtual int locateGT(const char * search, unsigned minIndex) const;
 
 // reading methods
+    size32_t getMemSize() { return expandedSize; }
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
-    inline bool isKeyAt(unsigned int num) { return (num < hdr.numKeys); }
-    virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
-    virtual size32_t getSizeAt(unsigned int num) const;
-    virtual offset_t getFPosAt(unsigned int num) const;
-    virtual int compareValueAt(const char *src, unsigned int index) const;
     bool contains(const char *src) const;
     inline offset_t getRightSib() const { return hdr.rightSib; }
     inline offset_t getLeftSib() const { return hdr.leftSib; }
@@ -263,7 +276,25 @@ public:
     void dump(FILE *out, int length, unsigned rowCount, bool raw) const;
 };
 
-class CJHVarTreeNode : public CJHTreeNode 
+
+class jhtree_decl CJHExpandedTreeNode : public CJHTreeNode
+{
+protected:
+    void unpack(const void *node, bool needCopy);
+
+    static char *expandKeys(void *src,size32_t &retsize);
+
+public:
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
+    virtual bool getKeyAt(unsigned int num, char *dest) const override;       // Retrieve keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest) const override;   // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual size32_t getSizeAt(unsigned int num) const override;
+    virtual offset_t getFPosAt(unsigned int num) const override;
+    virtual int compareValueAt(const char *src, unsigned int index) const override;
+};
+
+
+class CJHVarTreeNode : public CJHExpandedTreeNode
 {
     const char **recArray;
 
@@ -278,7 +309,7 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
-class CJHRowCompressedNode : public CJHTreeNode
+class CJHRowCompressedNode : public CJHExpandedTreeNode
 {
     Owned<IRandRowExpander> rowexp;  // expander for rand rowdiff
     static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
@@ -290,7 +321,7 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
-class CJHTreeBlobNode : public CJHTreeNode
+class CJHTreeBlobNode : public CJHExpandedTreeNode
 {
 public:
     CJHTreeBlobNode ();
@@ -304,7 +335,7 @@ public:
     size32_t getBlobData(unsigned offset, void *dst);
 };
 
-class CJHTreeMetadataNode : public CJHTreeNode
+class CJHTreeMetadataNode : public CJHExpandedTreeNode
 {
 public:
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
@@ -314,7 +345,7 @@ public:
     void get(StringBuffer & out);
 };
 
-class CJHTreeBloomTableNode : public CJHTreeNode
+class CJHTreeBloomTableNode : public CJHExpandedTreeNode
 {
 public:
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
@@ -349,8 +380,9 @@ public:
 
 class jhtree_decl CWriteNode : public CWriteNodeBase
 {
-private:
+protected:
     unsigned keyLen = 0;
+    unsigned keyCompareLen = 0;
     char *lastKeyValue;
     unsigned __int64 lastSequence;
 
@@ -358,10 +390,28 @@ public:
     CWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeaf);
     ~CWriteNode();
 
-    size32_t compressValue(const char *keyData, size32_t size, char *result);
-    bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence);
+    virtual bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence);
+
     const void *getLastKeyValue() const { return lastKeyValue; }
     unsigned __int64 getLastSequence() const { return lastSequence; }
+
+protected:
+    size32_t compressValue(const char *keyData, size32_t size, char *result);
+    void saveLastKey(const void *indata, size32_t insize, unsigned __int64 sequence);
+};
+
+class jhtree_decl CLeafWriteNode : public CWriteNode
+{
+public:
+    CLeafWriteNode(offset_t fpos, CKeyHdr *keyHdr);
+
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
+};
+
+class jhtree_decl CBranchWriteNode : public CWriteNode
+{
+public:
+    CBranchWriteNode(offset_t fpos, CKeyHdr *keyHdr);
 };
 
 class jhtree_decl CBlobWriteNode : public CWriteNodeBase
@@ -371,6 +421,7 @@ public:
     CBlobWriteNode(offset_t _fpos, CKeyHdr *keyHdr);
     ~CBlobWriteNode();
 
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
     unsigned __int64 add(const char * &data, size32_t &size);
 };
 
@@ -397,5 +448,16 @@ enum KeyExceptionCodes
 interface jhtree_decl IKeyException : extends IException { };
 IKeyException *MakeKeyException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
+
+//Following class can be passed to nodes when they are being created to help save context information
+class KeyBuildContext
+{
+public:
+    unsigned numKeyedDuplicates = 0;
+    unsigned singleCounts[256] = { 0 };
+    MemoryBuffer uncompressed;
+    MemoryAttr compressed;
+    const byte * nullRow = nullptr;
+};
 
 #endif

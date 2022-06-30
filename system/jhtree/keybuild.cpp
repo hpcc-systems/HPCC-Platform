@@ -92,6 +92,8 @@ protected:
     CRC32EndHT crcEndPosTable;
     CRC32 headCRC;
     bool doCrc = false;
+    byte * nullRow = nullptr;
+    KeyBuildContext ctx;
 
 private:
     unsigned __int64 duplicateCount;
@@ -133,7 +135,8 @@ public:
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;
         hdr->length = keyValueSize; 
-        hdr->ktype = flags;
+        hdr->oldktype = flags;
+        hdr->keyFlags = flags;
         hdr->timeid = 0;
         hdr->clstyp = 1;  // IDX_CLOSE
         hdr->maxkbn = nodeSize-sizeof(NodeHdr);
@@ -187,11 +190,23 @@ public:
         }
     }
 
+    CWriteNode * createWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeaf)
+    {
+        if (isLeaf)
+        {
+            return new CLeafWriteNode(fpos, keyHdr);
+        }
+        else
+        {
+            return new CBranchWriteNode(fpos, keyHdr);
+        }
+    }
+
     void buildLevel(NodeInfoArray &thisLevel, NodeInfoArray &parents)
     {
         unsigned int leaf = 0;
         CWriteNode *node = NULL;
-        node = new CWriteNode(nextPos, keyHdr, levels==0);
+        node = createWriteNode(nextPos, keyHdr, levels==0);
         nextPos += keyHdr->getNodeSize();
         numBranches++;
         while (leaf<thisLevel.ordinality())
@@ -201,7 +216,7 @@ public:
             {
                 flushNode(node, parents);
                 node->Release();
-                node = new CWriteNode(nextPos, keyHdr, levels==0);
+                node = createWriteNode(nextPos, keyHdr, levels==0);
                 nextPos += keyHdr->getNodeSize();
                 numBranches++;
                 verifyex(node->add(info.pos, info.value, info.size, info.sequence));
@@ -471,7 +486,7 @@ protected:
         if (NULL == activeNode)
         {
             keyHdr->getHdrStruct()->firstLeaf = nextPos;
-            activeNode = new CWriteNode(nextPos, keyHdr, true);
+            activeNode = createWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
             numLeaves++;
         }
@@ -502,7 +517,7 @@ protected:
 
             flushNode(activeNode, leafInfo);
             activeNode->Release();
-            activeNode = new CWriteNode(nextPos, keyHdr, true);
+            activeNode = createWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
             numLeaves++;
             if (!activeNode->add(pos, keyData, recsize, sequence))
