@@ -4536,7 +4536,6 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
     unsigned processed = 0;
     unsigned skipped = 0;
     unsigned __int64 rowLimit = helper->getRowLimit();
-    unsigned totalSizeSent = 0;
 
     CachedOutputMetaData joinFieldsMeta(helper->queryJoinFieldsRecordSize());
     Owned<IEngineRowAllocator> joinFieldsAllocator = getRowAllocator(joinFieldsMeta, basefactory->queryId());
@@ -4580,7 +4579,6 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
         {
             unsigned thisSize = helper->extractJoinFields(jfRowBuilder, rawRHS, (IBlobProvider*)NULL);
             jfRowBuilder.writeToOutput(thisSize, headerPtr->fpos, headerPtr->thisGroup, headerPtr->partNo);
-            totalSizeSent += KEYEDJOIN_RECORD_SIZE(thisSize);
             processed++;
             if (processed > rowLimit)
             {
@@ -4600,7 +4598,6 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
             out->thisGroup = headerPtr->thisGroup;
             out->partNo = (unsigned short) -1;
             output->putBuffer(out, KEYEDJOIN_RECORD_SIZE(0), true);
-            totalSizeSent += KEYEDJOIN_RECORD_SIZE(0);
         }
         inputData += inputSize;
     }

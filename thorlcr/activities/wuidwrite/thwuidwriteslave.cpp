@@ -155,7 +155,6 @@ public:
         reqMsg.append(container.queryOwner().queryGraphId());
         reqMsg.append(container.queryId());
 
-        unsigned totalNum = 0;
         CMessageBuffer msg;
         msg.append((unsigned)0);
         unsigned numGot;
@@ -166,7 +165,6 @@ public:
             {
                 msg.rewrite(sizeof(unsigned));
                 processBlock(numGot, msg);
-                totalNum += numGot;
                 msg.writeDirect(0, sizeof(numGot), &numGot);
             }
             catch(CATCHALL)
