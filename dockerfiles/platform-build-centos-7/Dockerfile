@@ -52,9 +52,9 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN wget https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
 RUN tar xvfz pkg-config-0.29.2.tar.gz
 WORKDIR /pkg-config-0.29.2
-RUN bash -c "./configure --prefix=/usr/local/pkg_config/0_29_2 --with-internal-glib"
-RUN bash -c "make"
-RUN bash -c "make install"
+RUN ./configure --prefix=/usr/local/pkg_config/0_29_2 --with-internal-glib
+RUN make
+RUN make install
 RUN ln -s /usr/local/pkg_config/0_29_2/bin/pkg-config /usr/local/bin/
 RUN mkdir /usr/local/share/aclocal
 RUN ln -s /usr/local/pkg_config/0_29_2/share/aclocal/pkg.m4 /usr/local/share/aclocal/
@@ -79,7 +79,7 @@ RUN git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
-RUN bash -c "./bootstrap-vcpkg.sh"
+RUN ./bootstrap-vcpkg.sh
 ARG GITHUB_TOKEN=none
 RUN mono `./vcpkg fetch nuget | tail -n 1` \
     sources add \
@@ -95,7 +95,7 @@ WORKDIR /hpcc-dev/build
 
 ARG BUILD_TYPE=RelWithDebInfo
 ARG USE_CPPUNIT=0
-RUN bash -c "`/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc-dev/HPCC-Platform -Wno-dev \
+RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc-dev/HPCC-Platform -Wno-dev \
     -DCONTAINERIZED=OFF \
     -DINCLUDE_PLUGINS=ON \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -107,13 +107,13 @@ RUN bash -c "`/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc
     -DUSE_CASSANDRA=OFF \
     -DSUPPRESS_V8EMBED=ON \
     -DSUPPRESS_REMBED=ON \
-    -DUSE_CPPUNIT=${USE_CPPUNIT}"
+    -DUSE_CPPUNIT=${USE_CPPUNIT}
 
 ARG BUILD_THREADS
 RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(nproc) > ~/build_threads ; fi
 RUN echo Building with $(cat ~/build_threads) threads
-RUN bash -c "make -j$(cat ~/build_threads) jlib"
-RUN bash -c "make -j$(cat ~/build_threads) esp"
-RUN bash -c "make -j$(cat ~/build_threads) roxie"
-RUN bash -c "make -j$(cat ~/build_threads) ws_workunits ecl"
-RUN bash -c "make -j$(cat ~/build_threads)"
+RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) jlib
+RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) esp
+RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) roxie
+RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) ws_workunits ecl
+RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads)
