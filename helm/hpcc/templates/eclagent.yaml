@@ -27,7 +27,7 @@ Pass in dict with root and me
 */}}
 {{- define "hpcc.agentConfigMap" }}
 {{- $apptype := .me.type | default "hthor" -}}
-{{- $appJobName := printf "%s-_HPCC_JOBNAME_" $apptype }}
+{{- $appJobName := printf "%s-job-_HPCC_JOBNAME_" $apptype }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
@@ -45,7 +45,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}
 {{- $misc := .root.Values.global.misc | default dict }}
-  {{ $apptype }}-jobspec.yaml:
+  {{ $apptype }}-job.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:

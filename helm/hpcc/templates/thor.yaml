@@ -35,9 +35,9 @@ Pass in dict with root and me
 {{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
-{{- $eclAgentJobName := printf "%s-_HPCC_JOBNAME_" $eclAgentType }}
-{{- $thorManagerJobName := printf "thormanager-_HPCC_JOBNAME_" }}
-{{- $thorWorkerJobName := printf "thorworker-_HPCC_JOBNAME_" }}
+{{- $eclAgentJobName := printf "%s-job-_HPCC_JOBNAME_" $eclAgentType }}
+{{- $thorManagerJobName := printf "thormanager-job-_HPCC_JOBNAME_" }}
+{{- $thorWorkerJobName := printf "thorworker-job-_HPCC_JOBNAME_" }}
 {{- $thorManagerNetworkPolicyName := printf "thormanager-networkpolicy-_HPCC_JOBNAME_" }}
 {{- $thorWorkerNetworkPolicyName := printf "thorworker-networkpolicy-_HPCC_JOBNAME_" }}
 {{- $numWorkersPerPod := .me.numWorkersPerPod | default 1 }}
@@ -70,7 +70,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root| indent 6 }}
 
 {{- if not .eclAgentUseChildProcesses }}
-  {{ $eclAgentType }}-jobspec.yaml:
+  {{ $eclAgentType }}-job.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -134,7 +134,7 @@ data:
       backoffLimit: 0
 {{- end }}
 
-  thormanager-jobspec.yaml:
+  thormanager-job.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -201,7 +201,7 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thorworker-jobspec.yaml:
+  thorworker-job.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -271,7 +271,7 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thormanager-networkspec.yaml:
+  thormanager-networkpolicy.yaml:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
@@ -294,7 +294,7 @@ data:
               app: thor
               job: "_HPCC_JOBNAME_"
 
-  thorworker-networkspec.yaml:
+  thorworker-networkpolicy.yaml:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
