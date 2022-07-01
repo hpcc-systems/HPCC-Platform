@@ -90,10 +90,10 @@
       a simple index pattern).</para>
 
       <para>Out of the box, the Filebeat forwards the HPCC component log
-      entries to a generically named index: 'hpcc-logs'-
-      &lt;DATE_STAMP&gt; and writes the log data into 'hpcc.log.*' prefixed
-      fields. It also aggregates k8s, Docker, and system metadata to help the
-      user query the log entries of their interest.</para>
+      entries to a generically named index: 'hpcc-logs'- &lt;DATE_STAMP&gt;
+      and writes the log data into 'hpcc.log.*' prefixed fields. It also
+      aggregates k8s, Docker, and system metadata to help the user query the
+      log entries of their interest.</para>
 
       <para>A Kibana index pattern is created automatically based on the
       default filebeat index layout.</para>
@@ -217,7 +217,7 @@ myelk-kibana-68688b4d4d-d489b             1/1     Running            0      </pr
       (highlighted above) you can proceed.</para>
     </sect2>
 
-    <sect2 id="confirming_elastic_services">
+    <sect2 id="confirming_elastic_services" role="brk">
       <title>Confirming the Elastic Services</title>
 
       <para>To confirm the Elastic services are running, issue the following
@@ -277,25 +277,25 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
     </sect2>
   </sect1>
 
-  <sect1 id="Azure_AKS_Insights">
-    <title>Azure AKS Insights</title>
+  <sect1 id="Azure_AKS_LogAnalytics">
+    <title>Azure Log Analytics</title>
 
-    <para>Azure AKS Insights is an optional feature designed to help monitor
-    performance and health of Kubernetes based clusters. Once enabled and
-    associated a given AKS with an active HPCC System cluster, the HPCC
-    component logs are automatically captured by Insights. All STDERR/STDOUT
-    data is captured and made available for monitoring and/or querying
-    purposes. As is usually the case with cloud provider features, cost is a
-    significant consideration and should be well understood before
-    implementation. Log content is written to the logs store associated with
-    your Log Analytics workspace.</para>
+    <para>Azure Kubernetes Services (AKS) Log Analytics is an optional feature
+    designed to help monitor performance and health of Kubernetes based
+    clusters. Once enabled and associated a given AKS with an active HPCC
+    System cluster, the HPCC component logs are automatically captured by Log
+    Analytics. All STDERR/STDOUT data is captured and made available for
+    monitoring and/or querying purposes. As is usually the case with cloud
+    provider features, cost is a significant consideration and should be well
+    understood before implementation. Log content is written to the logs store
+    associated with your Log Analytics workspace.</para>
 
     <sect2>
-      <title>Enabling Azure Insights</title>
+      <title>Enabling Azure Log Analytics</title>
 
-      <para>Enabling Azure's Insights on the target AKS cluster can be done
-      from the Azure portal or via CLI. For detailed Azure documentation:
-      Enable Container insights:</para>
+      <para>Enabling Azure's Log Analytics on the target AKS cluster can be
+      done from the Azure portal or via CLI. For detailed Azure documentation:
+      Enable Container Log Analytics:</para>
 
       <para><ulink
       url="https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard">https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard</ulink></para>
@@ -303,7 +303,7 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
       <sect3 id="el4HPCC_EnableInsights_AzurePortal">
         <title>Azure Portal</title>
 
-        <para>To enable the Azure insights on the Azure portal:</para>
+        <para>To enable the Azure Log Analytics on the Azure portal:</para>
 
         <para><orderedlist>
             <listitem>
@@ -342,19 +342,25 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
         <programlisting>az aks enable-addons -g myresourcegroup -n myaks -a monitoring --workspace-resource-id  \
  "/subscriptions/xyz/resourcegroups/myresourcegroup/providers/ \
   microsoft.operationalinsights/workspaces/myworkspace" </programlisting>
+      </sect3>
+    </sect2>
 
-        <para>The AKS Insights interface on Azure provides Kubernetes-centric
-        cluster/node/container-level health metrics visualizations, and direct
-        links to container logs via "log analytics" interfaces. The logs can
-        be queried via “Kusto” query language (KQL).</para>
+    <sect2>
+      <title>Accessing HPCC Systems Logs</title>
 
-        <para>See the Azure documentation for specifics on how to query the
-        logs.</para>
+      <para>The AKS Log Analytics interface on Azure provides
+      Kubernetes-centric cluster/node/container-level health metrics
+      visualizations, and direct links to container logs via "log analytics"
+      interfaces. The logs can be queried via “Kusto” query language
+      (KQL).</para>
 
-        <para>Example KQL query for fetching "Transaction summary" log entries
-        from an ECLWatch container:</para>
+      <para>See the Azure documentation for specifics on how to query the
+      logs.</para>
 
-        <programlisting>let ContainerIdList = KubePodInventory 
+      <para>Example KQL query for fetching "Transaction summary" log entries
+      from an ECLWatch container:</para>
+
+      <programlisting>let ContainerIdList = KubePodInventory 
 | where ContainerName =~ 'xyz/myesp' 
 | where ClusterId =~ '/subscriptions/xyz/resourceGroups/xyz/providers/Microsoft.
                       ContainerService/managedClusters/aks-clusterxyz' 
@@ -366,16 +372,15 @@ ContainerLog
 | order by TimeGenerated desc 
 | render table </programlisting>
 
-        <para>Sample output</para>
+      <para>Sample output</para>
 
-        <para><graphic fileref="../../images/CL-Img03-1.jpg" /></para>
+      <para><graphic fileref="../../images/CL-Img03-1.jpg" /></para>
 
-        <para>More complex queries can be formulated to fetch specific
-        information provided in any of the log columns including unformatted
-        data in the log message. The Insights interface facilitates creation
-        of alerts based on those queries, which can be used to trigger emails,
-        SMS, Logic App execution, and many other actions.</para>
-      </sect3>
+      <para>More complex queries can be formulated to fetch specific
+      information provided in any of the log columns including unformatted
+      data in the log message. The Log Analytics interface facilitates
+      creation of alerts based on those queries, which can be used to trigger
+      emails, SMS, Logic App execution, and many other actions.</para>
     </sect2>
   </sect1>
 
