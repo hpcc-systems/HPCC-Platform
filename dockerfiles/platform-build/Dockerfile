@@ -45,11 +45,11 @@ RUN chown hpcc:hpcc /hpcc-dev
 USER hpcc
 
 ARG BUILD_USER=hpcc-systems
+ARG BUILD_TAG=none
 RUN echo BUILD_USER is ${BUILD_USER}
 RUN git clone --no-checkout https://github.com/${BUILD_USER}/HPCC-Platform.git
 
 WORKDIR /hpcc-dev/HPCC-Platform
-ARG BUILD_TAG=none
 RUN git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
