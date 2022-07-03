@@ -77,7 +77,7 @@ spec:
         command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "dfuserver") }} ] 
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "dfuserver") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "DFU Server" "optional" false) }}
           ]
         env:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}

@@ -659,12 +659,19 @@ Add config arg for a component
 
 {{/*
 Add dali arg for a component
+Pass in dict with root, component (in case of error), optional (true if daliArg is optional)
 */}}
 {{- define "hpcc.daliArg" -}}
-{{- $dali := (index .Values.dali 0) -}}
-{{- $daliService := $dali.service | default dict -}}
-{{- $daliServicePort := $daliService.servicePort | default 7070 -}}
-"--daliServers={{ (index .Values.dali 0).name }}:{{ $daliServicePort }}"
+  {{- if empty .root.Values.dali -}}
+    {{- if not .optional -}}
+      {{- $_ := fail (printf "%s requires a DALI to be defined" .component) -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $dali := (index .root.Values.dali 0) -}}
+    {{- $daliService := $dali.service | default dict -}}
+    {{- $daliServicePort := $daliService.servicePort | default 7070 -}}
+"--daliServers={{ (index .root.Values.dali 0).name }}:{{ $daliServicePort }}"
+  {{- end -}}
 {{- end -}}
 
 {{/*
@@ -1079,7 +1086,7 @@ Pass in dict with root, me and dali if container in dali pod
           {{ include "hpcc.configArg" . }},
 {{- end }}
           "--service={{ .me.name }}",
-{{ include "hpcc.daliArg" .root | indent 10 }}
+{{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false) | indent 10 }}
         ]
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}

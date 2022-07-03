@@ -1,7 +1,6 @@
 esp:
    instance: esdl
    description: ESDL integration
-   daliServers: mydali
    auth: ldap
    authDomain:
      domainName: "default"
