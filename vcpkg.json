@@ -5,6 +5,14 @@
     "dependencies": [
         "apr",
         "apr-util",
+        {
+            "name": "aws-sdk-cpp",
+            "default-features": false,
+            "features": [
+                "s3",
+                "sqs"
+            ]
+        },
         "boost-property-tree",
         "boost-regex",
         "curl",
