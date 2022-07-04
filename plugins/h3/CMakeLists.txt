@@ -26,26 +26,11 @@ project(h3)
 
 if(USE_H3)
 
-    set (CMAKE_C_STANDARD 99)
+    find_package(h3 CONFIG REQUIRED)
 
     set(SRCS
         h3.hpp
         h3.cpp
-        uber-h3/src/h3lib/lib/algos.c
-        uber-h3/src/h3lib/lib/coordijk.c
-        uber-h3/src/h3lib/lib/bbox.c
-        uber-h3/src/h3lib/lib/polygon.c
-        uber-h3/src/h3lib/lib/h3Index.c
-        uber-h3/src/h3lib/lib/vec2d.c
-        uber-h3/src/h3lib/lib/vec3d.c
-        uber-h3/src/h3lib/lib/linkedGeo.c
-        uber-h3/src/h3lib/lib/localij.c
-        uber-h3/src/h3lib/lib/geoCoord.c
-        uber-h3/src/h3lib/lib/h3UniEdge.c
-        uber-h3/src/h3lib/lib/mathExtensions.c
-        uber-h3/src/h3lib/lib/vertexGraph.c
-        uber-h3/src/h3lib/lib/faceijk.c
-        uber-h3/src/h3lib/lib/baseCells.c
         )
 
     include_directories(
@@ -54,7 +39,6 @@ if(USE_H3)
         ./../../rtl/include
         ./../../common/deftype
         ./../../system/jlib
-        ./uber-h3/src/h3lib/include
         )
 
     add_definitions(-D_USRDLL -DECL_H3_EXPORTS)
@@ -75,6 +59,7 @@ if(USE_H3)
     target_link_libraries(h3
         eclrtl
         jlib
+        h3::h3
         ${EXAMPLE_PLUGIN_DEP_LIBRARIES})
 
 endif(USE_H3)
