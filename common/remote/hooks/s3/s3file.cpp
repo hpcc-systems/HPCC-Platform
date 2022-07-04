@@ -15,6 +15,14 @@
     limitations under the License.
 ############################################################################## */
 
+#include <aws/core/Aws.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
+#include <aws/s3/S3Client.h>
+#include <aws/s3/model/GetObjectRequest.h>
+#include <aws/s3/model/HeadObjectRequest.h>
+#include <aws/s3/model/PutObjectRequest.h>
+#include <aws/s3/model/DeleteObjectRequest.h>
+
 #include "platform.h"
 
 #include "jlib.hpp"
@@ -27,14 +35,6 @@
 #include "jlog.hpp"
 
 #include "s3file.hpp"
-
-#include <aws/core/Aws.h>
-#include <aws/core/auth/AWSCredentialsProvider.h>
-#include <aws/s3/S3Client.h>
-#include <aws/s3/model/GetObjectRequest.h>
-#include <aws/s3/model/HeadObjectRequest.h>
-#include <aws/s3/model/PutObjectRequest.h>
-#include <aws/s3/model/DeleteObjectRequest.h>
 
 /*
  * S3 questions:

@@ -13,9 +13,6 @@
 [submodule "plugins/cassandra/cpp-driver"]
 	path = plugins/cassandra/cpp-driver
 	url = https://github.com/hpcc-systems/cpp-driver.git
-[submodule "plugins/kafka/librdkafka"]
-	path = plugins/kafka/librdkafka
-	url = https://github.com/hpcc-systems/librdkafka.git
 [submodule "system/lz4_sm/lz4"]
     path = system/lz4_sm/lz4
     url = https://github.com/hpcc-systems/lz4.git
@@ -31,15 +28,9 @@
 [submodule "system/tbb_sm/tbb"]
     path = system/tbb_sm/tbb
     url = https://github.com/hpcc-systems/tbb.git
-[submodule "plugins/sqs/aws-sdk-cpp"]
-	path = system/aws/aws-sdk-cpp
-	url = https://github.com/hpcc-systems/aws-sdk-cpp
 [submodule "configuration/configmgr/RapidJSON"]
         path = configuration/configmgr/RapidJSON
         url = https://github.com/hpcc-systems/rapidjson
-[submodule "plugins/h3/uber-h3"]
-	path = plugins/h3/uber-h3
-	url = https://github.com/hpcc-systems/h3.git
 [submodule "esp/services/ws_sql/libantlr3c"]
 	path = esp/services/ws_sql/libantlr3c
 	url = https://github.com/hpcc-systems/libantlr3c.git
@@ -67,9 +58,6 @@
 [submodule "system/logaccess/ElasticStack/elasticlient"]
 	path = system/logaccess/ElasticStack/elasticlient
 	url = https://github.com/hpcc-systems/elasticlient.git
-[submodule "common/remote/hooks/git/libgit2"]
-	path = common/remote/hooks/git/libgit2
-	url = https://github.com/hpcc-systems/libgit2.git
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/hpcc-systems/vcpkg.git

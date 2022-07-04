@@ -2,6 +2,7 @@ name: build-vcpkg
 
 env:
   VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
+  VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
 
 on:
   pull_request:
@@ -36,37 +37,37 @@ jobs:
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: '-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON'
+            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON'
             cmake_build_options: "-- -j$(nproc) -k"
           - os: "ubuntu-22.04"
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: '-DCMAKE_BUILD_TYPE=Debug -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_COUCHBASEEMBED=ON'
+            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON'
             cmake_build_options: "-- -j$(nproc) -k"
           - os: "windows-2019"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
-            cmake_build_options: "--config Debug -- -m"
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_build_options: "--config Release -j2 -- -m"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
-            cmake_build_options: "--config Debug -- -m"
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_build_options: "--config Release -j2 -- -m"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Debug -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DUSE_AWS=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
       fail-fast: false
 
@@ -137,11 +138,8 @@ jobs:
             -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
             -storepasswordincleartext \
             -name "GitHub" \
-            -username "hpcc-systems" \
+            -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
-          ${{ matrix.mono }} `./vcpkg fetch nuget | tail -n 1` \
-            setapikey "${{ secrets.GITHUB_TOKEN }}" \
-            -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
       - name: "Generate HPCC-Platform Build Files"
         if: ${{ needs.check-skip.outputs.platform }}
@@ -150,7 +148,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_OVERLAY_PORTS=../vcpkg-overlays -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
 
       - name: "Remove vcpkg build files"
         if: ${{ needs.check-skip.outputs.platform }}
@@ -166,3 +164,38 @@ jobs:
         shell: "bash"
         run: |
           cmake --build . ${{ matrix.cmake_build_options }}
+
+  build-docker:
+    strategy:
+      matrix:
+        os: ["centos-7"]
+      fail-fast: false
+
+    name: "Build with vcpkg"
+    needs: check-skip
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR
+        if: ${{ needs.check-skip.outputs.platform }}
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        if: ${{ needs.check-skip.outputs.platform }}
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+
+      - name: Build ${{ matrix.os }} image
+        if: ${{ needs.check-skip.outputs.platform }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./dockerfiles/platform-build-${{ matrix.os }}/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          build-args: |
+            BUILD_TAG=${{ github.head_ref }}
+            GITHUB_ACTOR=${{ github.actor }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            BUILD_TYPE=Release
+            USE_CPPUNIT=0
