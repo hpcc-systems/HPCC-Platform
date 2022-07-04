@@ -108,6 +108,9 @@ RUN bash -c "`/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc
     -DSUPPRESS_V8EMBED=ON \
     -DSUPPRESS_REMBED=ON \
     -DUSE_CPPUNIT=${USE_CPPUNIT}"
+RUN rm -rf /hpcc-dev/HPCC-Platform/vcpkg/buildtrees
+RUN rm -rf /hpcc-dev/HPCC-Platform/vcpkg/downloads
+RUN rm -rf /hpcc-dev/HPCC-Platform/vcpkg/packages
 
 ARG BUILD_THREADS
 RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(nproc) > ~/build_threads ; fi
@@ -117,3 +120,5 @@ RUN bash -c "make -j$(cat ~/build_threads) esp"
 RUN bash -c "make -j$(cat ~/build_threads) roxie"
 RUN bash -c "make -j$(cat ~/build_threads) ws_workunits ecl"
 RUN bash -c "make -j$(cat ~/build_threads)"
+
+FROM centos:centos7

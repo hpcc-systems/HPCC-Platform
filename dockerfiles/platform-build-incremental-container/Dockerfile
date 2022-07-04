@@ -45,6 +45,12 @@ RUN make -j$(cat ~/build_threads) roxie
 RUN make -j$(cat ~/build_threads) ws_workunits ecl
 RUN make -j$(cat ~/build_threads)
 
+RUN rm -rf /hpcc-dev/HPCC-Platform/vcpkg/buildtrees
+RUN rm -rf /hpcc-dev/HPCC-Platform/vcpkg/downloads
+RUN rm -rf /hpcc-dev/HPCC-Platform/vcpkg/packages
+
 USER root
 
 RUN make -j$(cat ~hpcc/build_threads) install
+
+FROM ${CR_REPO}/${CR_USER}/smoketest-platform-build-vcpkg:${PLATFORM_PRBASE_VER}
