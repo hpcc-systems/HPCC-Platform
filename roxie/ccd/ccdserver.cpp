@@ -9285,8 +9285,8 @@ public:
         // but that is harmless
         if (!simpleSinkCalculated)
         {
-            simpleSinkCalculated = true;
             cachedSimpleSink = CRoxieServerActivity::isSimpleSink();
+            simpleSinkCalculated = true;
         }
         return cachedSimpleSink;
     }
@@ -9301,10 +9301,7 @@ public:
         startError.clear();
         readError.clear();
         if (state != STATEreset) // make sure input is only reset once
-        {
             CRoxieServerActivity::reset();
-            simpleSinkCalculated = false;  // Can this vary between child query calls?
-        }
     };
 
     void connectInputStreams(bool consumerOrdered)
