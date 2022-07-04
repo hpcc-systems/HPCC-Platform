@@ -4340,7 +4340,7 @@ size32_t RtlBitfieldTypeInfo::buildInt(ARowBuilder &builder, size32_t offset, co
     value &= ~(mask << shift);
     value |= ((val << shift) & mask);
 
-    rtlWriteInt(cur, val, getBitfieldIntSize());
+    rtlWriteInt(cur, value, getBitfieldIntSize());
     return offset + getSize();
 }
 
