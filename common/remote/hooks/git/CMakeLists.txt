@@ -24,7 +24,7 @@
 
 project( gitfile )
 
-include (libgit2.cmake)
+find_package(unofficial-git2 CONFIG REQUIRED)
 
 set (    SRCS
          gitfile.cpp
@@ -44,5 +44,5 @@ install ( TARGETS gitfile DESTINATION filehooks )
 
 target_link_libraries ( gitfile
     jlib
-    git2
+    unofficial::git2::git2
     )

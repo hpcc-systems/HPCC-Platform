@@ -131,10 +131,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
 #########################################################
 
-  if (VCPKG_APPLOCAL_DEPS)
-    include(${HPCC_SOURCE_DIR}/cmake_modules/vcpkgSetup.cmake)
-  endif ()
-
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
 
      MACRO(SET_PLUGIN_PACKAGE plugin)

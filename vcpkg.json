@@ -29,6 +29,7 @@
             "name": "libiconv",
             "platform": "osx"
         },
+        "libgit2",
         {
             "name": "libmysql",
             "platform": "!(windows & x86)"
