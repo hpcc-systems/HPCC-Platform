@@ -2809,6 +2809,7 @@ struct IHThorNWayMergeJoinArg : public IHThorArg
 enum
 {
     PPFparallel                 = 0x0001,
+    PPFsequential               = 0x0002,
 };
 
 struct IHThorPrefetchProjectArg : public IHThorArg 
