@@ -27590,6 +27590,17 @@ public:
             sink.reset();
         }    
     }
+
+    virtual IFinalRoxieInput * querySelectOutput(unsigned id) override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IFinalRoxieInput * ret = subsinks.item(idx).querySelectOutput(id);
+            if (ret)
+                return ret;
+        }
+        return NULL;
+    }
 };
 
 class CActivityGraph : implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph, public CInterface
