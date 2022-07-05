@@ -1012,6 +1012,8 @@ protected:
     bool aborted;
     bool connected = false;
     bool collectFactoryStatistics = false;
+    mutable std::atomic<bool> simpleSinkCalculated = { false };
+    mutable std::atomic<bool> cachedSimpleSink = { false };
 
 public:
     IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
@@ -1419,11 +1421,30 @@ public:
     
     virtual bool isSimpleSink() const override 
     {
-        if (!dependencies.empty())
+        // Note - there's a possibility that two threads arriving here very close together will result in parent isSimpleSink being called twice,
+        // but that is harmless. Not even sure this is ever called from multiple threads
+        if (!simpleSinkCalculated)
         {
-            // DBGLOG("Not simple because has dependencies");
-            return false;
+            bool isSimple = allInputsSimple();
+            if (isSimple)
+            {
+                ForEachItemIn(idx, dependencies)
+                {
+                    if (!dependencies.item(idx).isSimpleSink())
+                    {
+                        isSimple = false;
+                        break;
+                    }
+                }
+            }
+            cachedSimpleSink = isSimple;
+            simpleSinkCalculated = true;
         }
+        return cachedSimpleSink;
+    }
+
+    virtual bool allInputsSimple() const
+    {
         if (input)
             return input->isSimpleSink();
         return true;
@@ -2575,7 +2596,6 @@ public:
     }
     virtual bool isSimpleSink() const override
     {
-        // DBGLOG("Not simple because readahead");
         return false;
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -2751,9 +2771,9 @@ public:
         startJunction(junction1);
     }
 
-    virtual bool isSimpleSink() const override
+    virtual bool allInputsSimple() const override
     {
-        if (!CRoxieServerActivity::isSimpleSink())
+        if (!CRoxieServerActivity::allInputsSimple())
             return false;
         return input1->isSimpleSink();
     }
@@ -2871,10 +2891,8 @@ public:
         return localCycles;
     }
 
-    virtual bool isSimpleSink() const override
+    virtual bool allInputsSimple() const override
     {
-        if (!CRoxieServerActivity::isSimpleSink())
-            return false;
         for (unsigned i = 0; i < numInputs; i++)
             if (!inputArray[i]->isSimpleSink())
                 return false;
@@ -4065,6 +4083,7 @@ public:
     const byte * parentExtract;
     bool flowControlled;
     bool deferredStart;
+    bool isSimple = false;
     MemoryBuffer logInfo;
     MemoryBuffer cachedContext;
     const RemoteActivityId &remoteId;
@@ -4178,8 +4197,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled)
-        : preserveOrder(_preserveOrder), helper(_helper), merger(*this), meta(_meta), activity(_activity), flowControlled(_flowControlled), remoteId(_remoteId)
+    CRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _isSimple)
+        : preserveOrder(_preserveOrder), helper(_helper), merger(*this), meta(_meta), activity(_activity), flowControlled(_flowControlled), isSimple(_isSimple), remoteId(_remoteId)
     {
         ctx = _ctx;
         errorHandler = _errorHandler;
@@ -4429,7 +4448,7 @@ public:
     virtual bool isSimpleSink() const
     {
         // Some activities that use a remote adaptor inject results and can therefore be simple...
-        return activity.isSimpleSink(); // MORE - false might be another option!
+        return isSimple;
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -5125,8 +5144,8 @@ class CSkippableRemoteResultAdaptor : public CRemoteResultAdaptor
     }
 
 public:
-    CSkippableRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _skipping) :
-        CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, _meta, _helper, _activity, _preserveOrder, _flowControlled)
+    CSkippableRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _skipping, bool _isSimple) :
+        CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, _meta, _helper, _activity, _preserveOrder, _flowControlled, _isSimple)
     {
         skipping = _skipping;
         index = 0;
@@ -8911,8 +8930,6 @@ public:
     unsigned headIdx;
     Owned<IException> readError;
     Owned<IException> startError;
-    mutable std::atomic<bool> simpleSinkCalculated = { false };
-    mutable std::atomic<bool> cachedSimpleSink = { false };
 
     class OutputAdaptor : implements IEngineRowStream, implements IFinalRoxieInput, public CInterface
     {
@@ -9002,7 +9019,7 @@ public:
         }
         virtual bool isSimpleSink() const override
         {
-            return parent->isSimpleSink();  // Debateable
+            return parent->isSimpleSink();
         }
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
@@ -9279,18 +9296,6 @@ public:
         CRoxieServerActivity::stop();
     };
 
-    virtual bool isSimpleSink() const override
-    {
-        // Note - there's a possibility that two threads arriving here very close together will result in parent isSimpleSink being called twice,
-        // but that is harmless
-        if (!simpleSinkCalculated)
-        {
-            cachedSimpleSink = CRoxieServerActivity::isSimpleSink();
-            simpleSinkCalculated = true;
-        }
-        return cachedSimpleSink;
-    }
-
     void reset(unsigned oid)
     {
         if (traceStartStop)
@@ -9552,6 +9557,11 @@ protected:
             pipe.clear();
         }
     }
+
+    virtual bool isSimpleSink() const override
+    {
+        return false;
+    }
 };
 
 class CRoxieServerPipeThroughActivity : public CRoxieServerActivity, implements IRecordPullerCallback
@@ -9784,6 +9794,11 @@ private:
             pipe.clear();
             pipeVerified.signal();
         }
+    }
+
+    virtual bool isSimpleSink() const override
+    {
+        return false;
     }
 };
 
@@ -17676,7 +17691,7 @@ public:
     CRoxieServerRemoteActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteID)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorRemoteArg &)basehelper),
-          remote(_ctx, this, _remoteID, meta.queryOriginal(), helper, *this, false, false) // MORE - if they need it stable we'll have to think!
+          remote(_ctx, this, _remoteID, meta.queryOriginal(), helper, *this, false, false, false) // MORE - if they need it stable we'll have to think!
     {
     }
 
@@ -22079,7 +22094,7 @@ public:
     {
         forceRemote = factory->queryQueryFactory().queryOptions().disableLocalOptimizations;
         if ((forceRemote || numParts != 1) && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
-            remote.setown(new CSkippableRemoteResultAdaptor(_ctx, this, remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
+            remote.setown(new CSkippableRemoteResultAdaptor(_ctx, this, remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip, false));
         compoundHelper = NULL;
         eof = false;
         rowLimit = (unsigned __int64) -1;
@@ -23251,12 +23266,12 @@ protected:
 
 public:
     CRoxieServerIndexActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        bool _sorted, bool _isLocal, bool _maySkip)
+        bool _sorted, bool _isLocal, bool _maySkip, bool _isSimple)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           indexHelper((IHThorIndexReadBaseArg &)basehelper),
           keySet(_factory->keySet),
           translators(_factory->translators),
-          remote(_ctx, this, _remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip),
+          remote(_ctx, this, _remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip, _isSimple),
           sorted(_sorted),
           isLocal(_isLocal) ,
           remoteId(_remoteId)
@@ -23477,8 +23492,8 @@ protected:
     IHThorSourceLimitTransformExtra * limitTransformExtra = nullptr;
 public:
     CRoxieServerIndexReadBaseActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip)
+        bool _sorted, bool _isLocal, bool _maySkip, bool _isSimple)
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip, _isSimple)
     {
     }
 
@@ -23531,8 +23546,8 @@ protected:
 
 public:
     CRoxieServerIndexReadActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
-        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip),
+        bool _sorted, bool _isLocal, bool _maySkip, bool _isSimple, unsigned _maxSeekLookahead)
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip, _isSimple),
           readHelper((IHThorIndexReadArg &)basehelper)
     {
         limitTransformExtra = &readHelper;
@@ -24286,7 +24301,7 @@ public:
         else if (isSimple && !maySkip)
             return new CRoxieServerSimpleIndexReadActivity(_ctx, this, _probeManager, remoteId, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(_ctx, this, _probeManager, remoteId, sorted, isLocal, maySkip, maxSeekLookahead);
+            return new CRoxieServerIndexReadActivity(_ctx, this, _probeManager, remoteId, sorted, isLocal, maySkip, isSimple, maxSeekLookahead);
     }
 };
 
@@ -24340,7 +24355,7 @@ class CRoxieServerIndexCountActivity : public CRoxieServerIndexActivity
 
 public:
     CRoxieServerIndexCountActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, bool _isLocal)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false, false),
           countHelper((IHThorIndexCountArg &)basehelper),
           done(false)
     {
@@ -24596,7 +24611,7 @@ class CRoxieServerIndexAggregateActivity : public CRoxieServerIndexActivity
 public:
     CRoxieServerIndexAggregateActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager,
                                       const RemoteActivityId &_remoteId, bool _isLocal)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false, false),
           aggregateHelper((IHThorIndexAggregateArg &)basehelper),
           done(false)
     {
@@ -24732,7 +24747,7 @@ class CRoxieServerIndexGroupAggregateActivity : public CRoxieServerIndexActivity
 public:
     CRoxieServerIndexGroupAggregateActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager,
                                             const RemoteActivityId &_remoteId, bool _isLocal)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false, false),
           aggregateHelper((IHThorIndexGroupAggregateArg &)basehelper),
           singleAggregator(aggregateHelper, aggregateHelper),
           resultAggregator(aggregateHelper, aggregateHelper),
@@ -24901,7 +24916,7 @@ class CRoxieServerIndexNormalizeActivity : public CRoxieServerIndexReadBaseActiv
 public:
     CRoxieServerIndexNormalizeActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
                                        bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip),
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip, false),
           readHelper((IHThorIndexNormalizeArg &)basehelper)
     {
         limitTransformExtra = &readHelper;
@@ -25038,7 +25053,7 @@ class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecor
 
 public:
     CRoxieServerFetchActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true), puller(false)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true, false), puller(false)
     {
         needsRHS = helper.transformNeedsRhs();
         if (needsRHS)
@@ -25569,7 +25584,7 @@ public:
     KeyedJoinRemoteAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IHThorKeyedJoinArg &_helper,
                            IRoxieServerActivity &_activity, bool _isFullKey, bool _isSimple,
                            RecordPullerThread &_puller, IJoinProcessor &_processor)
-        : CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, 0, _helper, _activity, true, true),
+        : CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, 0, _helper, _activity, true, true, _isSimple),
           helper(_helper),
           isFullKey(_isFullKey),
           isSimple(_isSimple),
@@ -25730,7 +25745,7 @@ public:
           tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind())),
           keySet(_keySet),
           translators(_translators),
-          remote(_ctx, this, _remoteId, 0, helper, *this, true, true),
+          remote(_ctx, this, _remoteId, 0, helper, *this, true, true, false),
           puller(false),
           indexReadMeta(_indexReadMeta),
           joinHandler(_joinHandler),
