@@ -49,6 +49,6 @@ outrec trans2(in L) := TRANSFORM
 END;
 
 output(project(in, trans1(LEFT))) : independent;
-output(project(in, trans1(LEFT), PREFETCH(20))) : independent;
+output(project(in, trans1(LEFT), PREFETCH(20, SEQUENTIAL))) : independent;
 output(project(in, trans2(LEFT))) : independent;
 output(project(in, trans2(LEFT), PREFETCH(20, PARALLEL))) : independent;
