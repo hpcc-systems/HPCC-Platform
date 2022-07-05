@@ -10138,11 +10138,22 @@ prefetchAttribute
                             $$.setExpr(createExprAttribute(prefetchAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
-    | PREFETCH '(' expression ',' PARALLEL ')'
+    | PREFETCH '(' expression ',' prefetchFlag ')'
                         {
                             parser->normalizeExpression($3, type_int, false);
-                            $$.setExpr(createExprAttribute(prefetchAtom, $3.getExpr(), createExprAttribute(parallelAtom)));
+                            $$.setExpr(createExprAttribute(prefetchAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
+                        }
+    ;
+
+prefetchFlag
+    : PARALLEL
+                        {
+                            $$.setExpr(createExprAttribute(parallelAtom));
+                        }
+    | SEQUENTIAL
+                        {
+                            $$.setExpr(createExprAttribute(sequentialAtom));
                         }
     ;
 

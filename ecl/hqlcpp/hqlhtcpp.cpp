@@ -15455,6 +15455,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
 
     StringBuffer flags;
     if (prefetch && prefetch->hasAttribute(parallelAtom)) flags.append("|PPFparallel");
+    if (prefetch && prefetch->hasAttribute(sequentialAtom)) flags.append("|PPFsequential");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
