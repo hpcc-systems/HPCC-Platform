@@ -6,6 +6,7 @@
 	],
 	"settings": {
 		"cmake.configureArgs": [
+			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
 			"-DUSE_NATIVE_LIBRARIES=ON",
 			"-DINCLUDE_PLUGINS=OFF",

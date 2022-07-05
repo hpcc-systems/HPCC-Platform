@@ -7,6 +7,7 @@
 	"settings": {
 		"cmake.generator": "Unix Makefiles",
 		"cmake.configureArgs": [
+			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
 			"-DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON",
 			"-DINCLUDE_PLUGINS=OFF",
