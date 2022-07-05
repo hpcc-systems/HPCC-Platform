@@ -137,6 +137,8 @@ bool preloadOnceData;
 bool reloadRetriesFailed;
 bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
+bool defaultExecuteDependenciesSequentially = false;
+bool defaultStartInputsSequentially = false;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelQueryLoadThreads = 0;               // Number of threads to use for parallel loading of queries. 0 means don't (may cause CPU starvation on other vms)
 bool alwaysFailOnLeaks = false;
@@ -1140,6 +1142,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
         mergeAgentStatistics = topology->getPropBool("@mergeAgentStatistics", topology->getPropBool("@mergeSlaveStatistics", true));  // legacy name
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
+        defaultExecuteDependenciesSequentially = topology->getPropBool("@executeDependenciesSequentially", defaultExecuteDependenciesSequentially);
+        defaultStartInputsSequentially = topology->getPropBool("@startInputsSequentially", defaultStartInputsSequentially);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
         parallelQueryLoadThreads = topology->getPropInt("@parallelQueryLoadThreads", parallelQueryLoadThreads);
         if (!parallelQueryLoadThreads)

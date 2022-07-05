@@ -393,6 +393,8 @@ extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;
 extern bool defaultCollectFactoryStatistics;
+extern bool defaultExecuteDependenciesSequentially;
+extern bool defaultStartInputsSequentially;
 extern bool oneShotRoxie;
 extern bool traceStrands;
 

@@ -226,6 +226,8 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual bool isActivityCodeSigned() const = 0;
     virtual RecordTranslationMode getEnableFieldTranslation() const = 0;
     virtual SinkMode getSinkMode() const = 0;
+    virtual bool executeDependenciesSequentially() const = 0;
+    virtual bool startInputsSequentially() const = 0;
 };
 interface IGraphResult : public IInterface
 {

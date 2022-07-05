@@ -482,6 +482,8 @@ protected:
     bool optUnordered = false; // is the output specified as unordered?
     bool isCodeSigned = false;
     SinkMode sinkMode = SinkMode::Automatic;
+    bool forceExecuteDependenciesSequentially = false;
+    bool forceStartInputsSequentially = false;
     unsigned heapFlags;
 
 public:
@@ -499,6 +501,8 @@ public:
             sinkMode = ::getSinkMode(sinkModeText);
         else
             sinkMode = _queryFactory.queryOptions().sinkMode;
+        forceExecuteDependenciesSequentially = !_graphNode.getPropBool("att[@name='executeDependenciesSequentially']/@value", false);
+        forceStartInputsSequentially = !_graphNode.getPropBool("att[@name='startInputsSequentially']/@value", false);
         isCodeSigned = ::isActivityCodeSigned(_graphNode);
     }
     
@@ -682,6 +686,14 @@ public:
     virtual SinkMode getSinkMode() const override
     {
         return sinkMode;
+    }
+    virtual bool executeDependenciesSequentially() const override
+    {
+        return forceExecuteDependenciesSequentially;
+    }
+    virtual bool startInputsSequentially() const override
+    {
+        return forceStartInputsSequentially;
     }
 };
 
@@ -1012,6 +1024,7 @@ protected:
     bool aborted;
     bool connected = false;
     bool collectFactoryStatistics = false;
+    bool executeDependenciesSequentially = false;
     mutable std::atomic<bool> simpleSinkCalculated = { false };
     mutable std::atomic<bool> cachedSimpleSink = { false };
 
@@ -1037,8 +1050,9 @@ public:
         colocalParent = NULL;
         createPending = true;
         timeActivities = defaultTimeActivities;
-        collectFactoryStatistics = defaultCollectFactoryStatistics && !debugging && factory;
+        collectFactoryStatistics = defaultCollectFactoryStatistics && !debugging;
         aborted = false;
+        executeDependenciesSequentially = factory->executeDependenciesSequentially() || factory->queryQueryFactory().queryOptions().executeDependenciesSequentially;
     }
     
     CRoxieServerActivity(IRoxieAgentContext *_ctx, IHThorArg & _helper)
@@ -1410,12 +1424,17 @@ public:
         }
 #endif
         executeDependencies(parentExtractSize, parentExtract, 0);
-        if (input)
-            input->start(parentExtractSize, parentExtract, paused);
         ensureCreated();
         basehelper.onStart(parentExtract, NULL);
+        startInputs(parentExtractSize, parentExtract, paused);
         if (collectFactoryStatistics)
             factory->noteStarted();
+    }
+
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        if (input)
+            input->start(parentExtractSize, parentExtract, paused);
         startJunction(junction);
     }
     
@@ -1458,12 +1477,29 @@ public:
         CCycleTimer dependencyTimer(timeActivities);
 
         //MORE: Create a filtered list and then use asyncfor
+        std::vector<unsigned> simpleDependencies;
+        std::vector<unsigned> nonSimpleDependencies;
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == (int) controlId)
-                dependencies.item(idx).execute(parentExtractSize, parentExtract);
+            {
+                if (executeDependenciesSequentially || dependencies.item(idx).isSimpleSink())
+                    simpleDependencies.push_back(idx);
+                else
+                    nonSimpleDependencies.push_back(idx);
+            }
         }
+        if (nonSimpleDependencies.size() > 0)
+        {
+            asyncFor(nonSimpleDependencies.size(), nonSimpleDependencies.size(), [this, &nonSimpleDependencies, parentExtractSize, parentExtract](unsigned i)
+            {
+                dependencies.item(nonSimpleDependencies[i]).execute(parentExtractSize, parentExtract);
+            });
+        }
+        for (unsigned i : simpleDependencies)
+            dependencies.item(i).execute(parentExtractSize, parentExtract);
 
+ 
         stats.addStatistic(StCycleDependenciesCycles, dependencyTimer.elapsedCycles());
     }
 
@@ -1858,24 +1894,9 @@ public:
         prefiltered = false;
         eof = false;
     }
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        IFinalRoxieInput *saveInput = input;
-        Owned<IStrandJunction> saveJunction = junction.getClear();
-        input = NULL;   // Make sure parent does not start the chain yet
-        try
-        {
-            CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
-        }
-        catch (...)
-        {
-            // Make sure we restore these even if there is an exception thrown during start
-            input = saveInput;
-            junction.setown(saveJunction.getClear());
-            throw;
-        }
-        input = saveInput;
-        junction.setown(saveJunction.getClear());
+        // Don't start yet
     }
     virtual void stop()
     {
@@ -2751,24 +2772,53 @@ protected:
 
     unsigned sourceIdx1 = 0;
     Owned<CRoxieServerReadAheadInput> puller;
-
+    bool startInputsSequentially = false;
 public:
     CRoxieServerTwoInputActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         input1 = NULL;
         inputStream1 = NULL;
+        startInputsSequentially = factory->startInputsSequentially() || factory->queryQueryFactory().queryOptions().startInputsSequentially;
     }
 
     ~CRoxieServerTwoInputActivity()
     {
     }
 
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
-        input1->start(parentExtractSize, parentExtract, paused);
-        startJunction(junction1);
+        // NOTE - order matters - do simple one last. If neither are simple, do in parallel
+        if (startInputsSequentially || input1->isSimpleSink())
+        {
+            input->start(parentExtractSize, parentExtract, paused);
+            startJunction(junction);
+            input1->start(parentExtractSize, parentExtract, paused);
+            startJunction(junction1);
+        }
+        else if (input->isSimpleSink())
+        {
+            input1->start(parentExtractSize, parentExtract, paused);
+            startJunction(junction1);
+            input->start(parentExtractSize, parentExtract, paused);
+             startJunction(junction);
+       }
+        else
+        {
+            asyncFor(2, 2, [this, parentExtractSize, parentExtract, paused](unsigned i)
+            {
+                if (i==0)
+                {
+                    input->start(parentExtractSize, parentExtract, paused);
+                    startJunction(junction);
+                }
+                else
+                {
+                    input1->start(parentExtractSize, parentExtract, paused);
+                    startJunction(junction1);
+                }
+            });
+        }
     }
 
     virtual bool allInputsSimple() const override
@@ -2891,6 +2941,13 @@ public:
         return localCycles;
     }
 
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
+    {
+        // We don't start inputs yet as some derived classes want to delay doing so.
+        // CRoxieServerMultiInputActivity::startInputs will start all inputs, and classes that want all inputs started up front
+        // are derived from that.
+    }
+
     virtual bool allInputsSimple() const override
     {
         for (unsigned i = 0; i < numInputs; i++)
@@ -2979,19 +3036,35 @@ protected:
 
 class CRoxieServerMultiInputActivity : public CRoxieServerMultiInputBaseActivity
 {
+    bool startInputsSequentially = false;
 public:
     CRoxieServerMultiInputActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
+        startInputsSequentially = factory->startInputsSequentially() || factory->queryQueryFactory().queryOptions().startInputsSequentially;
     }
 
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerMultiInputBaseActivity::doStart(parentExtractSize, parentExtract, paused);
+        // start all the non-simple ones in parallel first, followed by all the simple ones sequentially
+        std::vector<unsigned> simpleInputs;
+        std::vector<unsigned> nonSimpleInputs;
         for (unsigned i = 0; i < numInputs; i++)
         {
-            inputArray[i]->start(parentExtractSize, parentExtract, paused);
+            if (startInputsSequentially || inputArray[i]->isSimpleSink())
+                simpleInputs.push_back(i);
+            else
+                nonSimpleInputs.push_back(i);
         }
+        if (nonSimpleInputs.size() > 0)
+        {
+            asyncFor(nonSimpleInputs.size(), nonSimpleInputs.size(), [this, &nonSimpleInputs, parentExtractSize, parentExtract, paused](unsigned i)
+            {
+                inputArray[nonSimpleInputs[i]]->start(parentExtractSize, parentExtract, paused);
+            });
+        }
+        for (unsigned i : simpleInputs)
+            inputArray[i]->start(parentExtractSize, parentExtract, paused);
         for (unsigned iS = 0; iS < numStreams; iS++)
         {
             startJunction(junctionArray[iS]);
@@ -20797,12 +20870,11 @@ public:
         cond = false;
     }
 
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         cond = helper.getCondition();
         if (traceStartStop)
-            DBGLOG("IfActivity::doStart %d - cond = %d", activityId, (int) cond);
+            DBGLOG("IfActivity::startInputs %d - cond = %d", activityId, (int) cond);
         if (cond)
         {
             if (inputTrue)
@@ -20824,7 +20896,6 @@ public:
                 streamTrue->stop();
         }
         unusedStopped = true;
-
     }
 
     virtual void stop()

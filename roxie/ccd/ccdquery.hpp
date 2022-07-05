@@ -111,6 +111,8 @@ public:
     bool noSeekBuildIndex;
     bool parallelWorkflow;
     bool statsToWorkunit = false;
+    bool executeDependenciesSequentially = false;
+    bool startInputsSequentially = false;
     SinkMode sinkMode;
     unsigned numWorkflowThreads;
 
