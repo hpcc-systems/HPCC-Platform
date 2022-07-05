@@ -52,6 +52,7 @@
             "name": "python3",
             "platform": "windows"
         },
+        "rapidjson",
         "tbb",
         {
             "name": "winflexbison",

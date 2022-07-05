@@ -16,9 +16,6 @@
 [submodule "plugins/couchbase/libcouchbase"]
 	path = plugins/couchbase/libcouchbase
 	url = https://github.com/hpcc-systems/libcouchbase.git
-[submodule "configuration/configmgr/RapidJSON"]
-        path = configuration/configmgr/RapidJSON
-        url = https://github.com/hpcc-systems/rapidjson
 [submodule "esp/services/ws_sql/libantlr3c"]
 	path = esp/services/ws_sql/libantlr3c
 	url = https://github.com/hpcc-systems/libantlr3c.git

@@ -26,7 +26,6 @@ INCLUDE_DIRECTORIES(
         ${HPCC_SOURCE_DIR}/system/include
         ${HPCC_SOURCE_DIR}/system/jlib
         ${HPCC_SOURCE_DIR}/configuration/configmgr/configmgrlib
-        ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
 )
 
 HPCC_ADD_EXECUTABLE ( envmod ${SRC_FILES} )
