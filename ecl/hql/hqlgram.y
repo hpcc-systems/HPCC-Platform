@@ -8913,6 +8913,15 @@ simpleDataSet
                             $$.setExpr(createDataset(no_nonempty, args));
                             $$.setPosition($1);
                         }
+    | PREFETCH '(' startLeftSeqFilter endSelectorSequence optPrefetchOptions ')'
+                        {
+                            OwnedHqlExpr transform = parser->createRowAssignTransform($3, $3.queryExpr()->queryRecord(), $4);
+                            HqlExprArray args;
+                            $5.unwindCommaList(args);
+                            OwnedHqlExpr prefetchAttr = createExprAttribute(prefetchAtom, args);
+                            $$.setExpr(createDataset(no_hqlproject, { $3.getExpr(), transform.getClear(), prefetchAttr.getClear(), $4.getExpr() }));
+                            $$.setPosition($1);
+                        }
     | PROJECT '(' startLeftSeqFilter ',' beginCounterScope transform endCounterScope projectOptions ')' endSelectorSequence
                         {
                             IHqlExpression *te = createComma($6.getExpr(), $8.getExpr(), $10.getExpr());
@@ -10132,28 +10141,46 @@ prefetchAttribute
                             $$.setExpr(createExprAttribute(prefetchAtom));
                             $$.setPosition($1);
                         }
-    | PREFETCH '(' expression ')'
+    | PREFETCH '(' prefetchOptions ')'
                         {
-                            parser->normalizeExpression($3, type_int, false);
-                            $$.setExpr(createExprAttribute(prefetchAtom, $3.getExpr()));
-                            $$.setPosition($1);
-                        }
-    | PREFETCH '(' expression ',' prefetchFlag ')'
-                        {
-                            parser->normalizeExpression($3, type_int, false);
-                            $$.setExpr(createExprAttribute(prefetchAtom, $3.getExpr(), $5.getExpr()));
-                            $$.setPosition($1);
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(prefetchAtom, args), $1);
                         }
     ;
 
-prefetchFlag
+prefetchOption
     : PARALLEL
                         {
-                            $$.setExpr(createExprAttribute(parallelAtom));
+                            $$.setExpr(createExprAttribute(parallelAtom), $1);
                         }
     | SEQUENTIAL
                         {
-                            $$.setExpr(createExprAttribute(sequentialAtom));
+                            $$.setExpr(createExprAttribute(sequentialAtom), $1);
+                        }
+    ;
+
+prefetchOptions
+    : prefetchOption
+    | expression
+                        {
+                            parser->normalizeExpression($1, type_int, false);
+                        }
+    | expression ',' prefetchOption
+                        {
+                            parser->normalizeExpression($1, type_int, false);
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                        }
+    ;
+
+optPrefetchOptions
+    : ',' prefetchOptions
+                        {
+                            $$.inherit($2);
+                        }
+    |
+                        {
+                            $$.setNullExpr();
                         }
     ;
 
