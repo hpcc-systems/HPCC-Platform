@@ -2350,7 +2350,7 @@ public:
         startJunction(junction);
         try
         {
-            if (preload && !paused)
+            if (preload && !paused && noThread)
             {
                 if (traceLevel > 4)
                     DBGLOG("Preload fetching first %d records", preload);
@@ -2358,12 +2358,12 @@ public:
                     pullGroups(preload);
                 else
                     pullRecords(preload);
-            }
-            if (eof)
-            {
-                if (traceLevel > 4)
-                    DBGLOG("No need to start puller after preload");
-                helper->processDone();
+                if (eof)
+                {
+                    if (traceLevel > 4)
+                        DBGLOG("No need to start puller after preload");
+                    helper->processDone();
+                }
             }
             else
             {
