@@ -14867,7 +14867,7 @@ public:
         recordCount = 0;
         eof = false;
         allPulled = false;
-        isThreaded = (helper.getFlags() & PPFparallel) != 0;
+        isThreaded = (helper.getFlags() & PPFsequential) == 0;
         preload = 0;
     }
 
