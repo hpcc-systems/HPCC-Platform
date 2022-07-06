@@ -24,31 +24,11 @@
 
 project(cassandraembed)
 
-# There is not yet a standard package for cassandra cpp client, and only very modern distros have libuv-dev
+# There is not yet a standard package for cassandra cpp client
 # When there is (and the distros catch up) we may want to add them as dependencies here
 # until then, we build the required libraries from source
-# Build libuv, required by the cassandra driver but not available on all distros
 if(USE_CASSANDRA)
-  if(APPLE)
-	add_custom_command(
-	  OUTPUT ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX}
-	  COMMAND sh ${PROJECT_SOURCE_DIR}/libuv/autogen.sh
-	  COMMAND ${PROJECT_SOURCE_DIR}/libuv/configure --libdir=${CMAKE_INSTALL_PREFIX}/${LIB_DIR}
-	  COMMAND make
-	  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-  else()
-	add_custom_command(
-	  OUTPUT ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX}
-	  COMMAND sh ${PROJECT_SOURCE_DIR}/libuv/autogen.sh
-	  COMMAND ${PROJECT_SOURCE_DIR}/libuv/configure
-	  COMMAND make
-	  WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
-  endif()
-  add_custom_target(
-    libuv ALL
-    DEPENDS ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX})
-  set(LIBUV_LIBRARY ${PROJECT_BINARY_DIR}/.libs/libuv${CMAKE_SHARED_LIBRARY_SUFFIX})
-  set(LIBUV_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/libuv/include/)
+  find_package(unofficial-libuv CONFIG REQUIRED)
 
   # Build the Cassandra cpp driver, only presently available as source
   if(NOT EXISTS "${PROJECT_SOURCE_DIR}/cpp-driver/CMakeLists.txt")
@@ -84,22 +64,9 @@ if(USE_CASSANDRA)
   set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
   set(CASS_ROOT_DIR "${PROJECT_SOURCE_DIR}/cpp-driver")
   add_subdirectory(cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
-  add_dependencies(cassandra libuv)
   set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
 
   install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/.libs:${PROJECT_BINARY_DIR}/cassandra\")")
-  if(APPLE)
-    install(
-      FILES ${LIBUV_LIBRARY} ${PROJECT_BINARY_DIR}/.libs/libuv.1${CMAKE_SHARED_LIBRARY_SUFFIX}
-      DESTINATION ${LIB_DIR}
-      COMPONENT Runtime)
-  else()
-    install(
-      FILES ${LIBUV_LIBRARY} ${LIBUV_LIBRARY}.1 ${LIBUV_LIBRARY}.1.0.0
-      DESTINATION ${LIB_DIR}
-      PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-      COMPONENT Runtime)
-  endif()
 
   ADD_PLUGIN(cassandraembed)
 
@@ -143,7 +110,8 @@ if(USE_CASSANDRA)
     roxiemem
     dalibase
     workunit
-    jlib)
+    jlib
+    unofficial::libuv::libuv)
 
   if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
