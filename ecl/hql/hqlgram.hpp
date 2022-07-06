@@ -879,6 +879,8 @@ protected:
     bool requireLateBind(IHqlExpression* funcdef, const HqlExprArray & actuals);
     IHqlExpression* createDefJoinTransform(IHqlExpression* left,IHqlExpression* right,attribute& errpos, IHqlExpression * seq, IHqlExpression * flags);
     IHqlExpression * createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, const attribute & seqAttr);
+    IHqlExpression * createRowAssignTransform(const attribute & srcAttr, IHqlExpression * res_rec, const attribute & seqAttr);
+    IHqlExpression * createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, IHqlExpression * res_rec, const attribute & seqAttr);
     IHqlExpression * createClearTransform(IHqlExpression * record, const attribute & errpos);
     IHqlExpression * createDefaultAssignTransform(IHqlExpression * record, IHqlExpression * rowValue, const attribute & errpos);
     IHqlExpression * createDefaultProjectDataset(IHqlExpression * record, IHqlExpression * src, const attribute & errpos);

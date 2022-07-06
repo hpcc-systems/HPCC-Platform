@@ -2210,10 +2210,9 @@ void HqlGram::doAddAssignSelf(IHqlExpression * assignall, IHqlExpression * field
     doAddAssignCompoundOwn(assignall, getSelf(curTransform), src, field, errpos);
 }
 
-IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, const attribute & seqAttr)
+IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, IHqlExpression * res_rec, const attribute & seqAttr)
 {
     IHqlExpression * src = srcAttr.queryExpr();
-    IHqlExpression * res_rec = tgtAttr.queryExpr();
     
     // create transform
     OwnedHqlExpr unadornedRecord = getUnadornedRecord(res_rec);
@@ -2228,6 +2227,16 @@ IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, co
     // close transform
     checkAllAssigned(res_rec, unadornedRecord, srcAttr);
     return endTransform(srcAttr);
+}
+
+IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, IHqlExpression * res_rec, const attribute & seqAttr)
+{
+    return createRowAssignTransform(srcAttr, srcAttr, res_rec, seqAttr);
+}
+
+IHqlExpression * HqlGram::createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, const attribute & seqAttr)
+{
+    return createRowAssignTransform(srcAttr, tgtAttr, tgtAttr.queryExpr(), seqAttr);
 }
 
 
@@ -11852,7 +11861,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOCOMBINE, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, UNORDERED, GETSECRET, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, UNORDERED, PREFETCH, GETSECRET, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,
