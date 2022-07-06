@@ -16,9 +16,6 @@
 [submodule "plugins/couchbase/libcouchbase"]
 	path = plugins/couchbase/libcouchbase
 	url = https://github.com/hpcc-systems/libcouchbase.git
-[submodule "plugins/redis/hiredis"]
-	path = plugins/redis/hiredis
-	url = https://github.com/hpcc-systems/hiredis.git
 [submodule "configuration/configmgr/RapidJSON"]
         path = configuration/configmgr/RapidJSON
         url = https://github.com/hpcc-systems/rapidjson
