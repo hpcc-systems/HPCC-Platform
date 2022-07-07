@@ -148,7 +148,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DSKIP_ECLWATCH=ON ${{ matrix.cmake_config_options }}
 
       - name: "Remove vcpkg build files"
         if: ${{ needs.check-skip.outputs.platform }}

@@ -106,7 +106,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_LIBMEMCACHED "Enable libmemcached support" ON)
   option(USE_PYTHON2 "Enable python2 language support for platform build" OFF)
   option(USE_PYTHON3 "Enable python3 language support for platform build" ON)
-  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
   option(JLIB_ONLY  "Build JLIB for other projects such as Configurator, Ganglia Monitoring, etc" OFF)
   # Generates code that is more efficient, but will cause problems if target platforms do not support it.
   if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -150,7 +149,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(PLATFORM OFF)
         set(INCLUDE_PLUGINS OFF)
         set(SIGN_MODULES OFF)
-        set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
     ENDMACRO()
   
     # Plugin options
@@ -597,13 +595,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         if(${pLOG_OPTION})
             message(STATUS "Building Plugin: ${PLUGIN_NAME}" )
         else()
-            message(WARNING "Not Building Plugin: ${PLUGIN_NAME}")
             foreach (dep ${pLOG_MDEPS})
                 message(WARNING "Missing dependency: ${dep}")
             endforeach()
-            if(NOT USE_OPTIONAL)
-                message(FATAL_ERROR "Optional dependencies missing and USE_OPTIONAL OFF")
-            endif()
+            message(FATAL_ERROR "Not Building Plugin: ${PLUGIN_NAME}")
         endif()
     endmacro()
 
@@ -668,10 +663,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ENDIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
   ###########################################################################
-
-    if(USE_OPTIONAL)
-        message(AUTHOR_WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
-    endif()
 
     if(NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
         message(STATUS "Using externals directory at ${EXTERNALS_DIRECTORY}")
