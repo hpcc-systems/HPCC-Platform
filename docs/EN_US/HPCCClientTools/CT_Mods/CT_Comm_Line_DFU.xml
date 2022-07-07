@@ -206,6 +206,14 @@
                 </row>
 
                 <row>
+                  <entry><emphasis><emphasis>nocommon</emphasis></emphasis></entry>
+
+                  <entry>Optional. A boolean flag (0 | 1, default=1). Set to 0
+                  to enable "commoning up" of pull or push processes on same
+                  host.</entry>
+                </row>
+
+                <row>
                   <entry><emphasis><emphasis>throttle</emphasis></emphasis></entry>
 
                   <entry>Optional. The transfer speed (in Mbits/second) to

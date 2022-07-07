@@ -2810,6 +2810,7 @@ enum
 {
     PPFparallel                 = 0x0001,
     PPFsequential               = 0x0002,
+    PPFnulltransform            = 0x0004,
 };
 
 struct IHThorPrefetchProjectArg : public IHThorArg 
