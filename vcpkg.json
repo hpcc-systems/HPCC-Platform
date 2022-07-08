@@ -49,6 +49,7 @@
             "name": "python3",
             "platform": "windows"
         },
+        "tbb",
         {
             "name": "winflexbison",
             "platform": "windows"

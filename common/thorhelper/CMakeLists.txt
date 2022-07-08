@@ -25,6 +25,8 @@
 
 project( thorhelper ) 
 
+find_package(TBB CONFIG REQUIRED)
+
 set (    SRCS 
 
          commonext.cpp
@@ -104,7 +106,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/roxie/roxiemem
          ${HPCC_SOURCE_DIR}/testing/unittests
-         ${HPCC_SOURCE_DIR}/system/tbb_sm/tbb/include
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/fs/dafsclient
     )
@@ -120,7 +121,7 @@ target_link_libraries ( thorhelper
          eclrtl 
          roxiemem
          deftype 
-         dalibase 
+         dalibase
     )
 
 if (USE_NUMA)
@@ -128,8 +129,7 @@ if (USE_NUMA)
 endif ()
 
 if (USE_TBB)
-   add_dependencies ( thorhelper tbb )
-   target_link_libraries ( thorhelper libtbb )
+   target_link_libraries ( thorhelper TBB::tbb )
 endif()
 
 

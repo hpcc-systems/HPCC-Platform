@@ -19,9 +19,6 @@
 [submodule "plugins/redis/hiredis"]
 	path = plugins/redis/hiredis
 	url = https://github.com/hpcc-systems/hiredis.git
-[submodule "system/tbb_sm/tbb"]
-    path = system/tbb_sm/tbb
-    url = https://github.com/hpcc-systems/tbb.git
 [submodule "configuration/configmgr/RapidJSON"]
         path = configuration/configmgr/RapidJSON
         url = https://github.com/hpcc-systems/rapidjson
