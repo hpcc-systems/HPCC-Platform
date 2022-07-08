@@ -17,6 +17,7 @@
         "boost-regex",
         "curl",
         "h3",
+        "hiredis",
         "icu",
         "jwt-cpp",
         {
