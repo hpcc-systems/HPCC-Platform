@@ -18,6 +18,7 @@
         "curl",
         "h3",
         "icu",
+        "jwt-cpp",
         {
             "name": "libarchive",
             "default-features": false,
