@@ -46,6 +46,7 @@
         },
         "libyaml",
         "lz4",
+        "nlohmann-json",
         "openblas",
         "openssl",
         {
