@@ -394,6 +394,20 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     </tr>
                     <tr>
                         <td><Controller
+                            control={control} name="recordStructurePresent"
+                            render={({
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.RecordStructurePresent} />}
+                        /></td>
+                        <td><Controller
+                            control={control} name="quotedTerminator"
+                            render={({
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.QuotedTerminator} />}
+                        /></td>
+                    </tr>
+                    <tr>
+                        <td><Controller
                             control={control} name="expireDays"
                             render={({
                                 field: { onChange, name: fieldName, value },
