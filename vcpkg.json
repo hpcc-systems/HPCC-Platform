@@ -41,6 +41,7 @@
             "default-features": false,
             "features": []
         },
+        "lz4",
         "openblas",
         "openssl",
         {

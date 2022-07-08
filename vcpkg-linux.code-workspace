@@ -15,6 +15,7 @@
 			"-DSUPPRESS_V8EMBED=ON",
 			"-DSUPPRESS_REMBED=ON"
 		],
+		"editor.formatOnSave": false
 	},
 	"extensions": {
 		"recommendations": [
