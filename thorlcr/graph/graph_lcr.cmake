@@ -23,6 +23,8 @@
 
 project( graph_lcr ) 
 
+find_package(TBB CONFIG REQUIRED)
+
 set (    SRCS 
          ../thorutil/thbuf.cpp 
          ../thorutil/thcompressutil.cpp 
@@ -76,8 +78,7 @@ target_link_libraries ( graph_lcr
     )
 
 if (USE_TBBMALLOC)
-   add_dependencies ( graph_lcr tbb)
-   target_link_libraries ( graph_lcr libtbbmalloc_proxy libtbbmalloc)
+   target_link_libraries ( graph_lcr TBB::tbb )
 endif()
 
 

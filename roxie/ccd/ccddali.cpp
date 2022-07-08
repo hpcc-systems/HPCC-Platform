@@ -182,6 +182,7 @@ private:
     {
     private:
         CRoxieDaliHelper *owner;
+        Semaphore abortSem;
         bool aborted;
         bool wasConnected;
     public:
@@ -206,13 +207,14 @@ private:
                         DBGLOG("CRoxieDaliConnectWatcher reconnected");
                     wasConnected = connected;
                 }
-                Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
+                abortSem.wait(ROXIE_DALI_CONNECT_TIMEOUT);
             }
             return 0;
         }
         void stop()
         {
             aborted = true;
+            abortSem.signal();
         }
         virtual void start()
         {

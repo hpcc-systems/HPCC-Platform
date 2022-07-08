@@ -7,39 +7,21 @@
 [submodule "esp/src/dgrid"]
 	path = esp/src/dgrid
 	url = https://github.com/hpcc-systems/dgrid.git
-[submodule "plugins/cassandra/libuv"]
-	path = plugins/cassandra/libuv
-	url = https://github.com/hpcc-systems/libuv.git
 [submodule "plugins/cassandra/cpp-driver"]
 	path = plugins/cassandra/cpp-driver
 	url = https://github.com/hpcc-systems/cpp-driver.git
-[submodule "system/lz4_sm/lz4"]
-    path = system/lz4_sm/lz4
-    url = https://github.com/hpcc-systems/lz4.git
 [submodule "plugins/couchbase/libcouchbase-cxx"]
 	path = plugins/couchbase/libcouchbase-cxx
 	url = https://github.com/hpcc-systems/libcouchbase-cxx.git
 [submodule "plugins/couchbase/libcouchbase"]
 	path = plugins/couchbase/libcouchbase
 	url = https://github.com/hpcc-systems/libcouchbase.git
-[submodule "plugins/redis/hiredis"]
-	path = plugins/redis/hiredis
-	url = https://github.com/hpcc-systems/hiredis.git
-[submodule "system/tbb_sm/tbb"]
-    path = system/tbb_sm/tbb
-    url = https://github.com/hpcc-systems/tbb.git
-[submodule "configuration/configmgr/RapidJSON"]
-        path = configuration/configmgr/RapidJSON
-        url = https://github.com/hpcc-systems/rapidjson
 [submodule "esp/services/ws_sql/libantlr3c"]
 	path = esp/services/ws_sql/libantlr3c
 	url = https://github.com/hpcc-systems/libantlr3c.git
 [submodule "system/aeron"]
 	path = system/aeron
 	url = https://github.com/hpcc-systems/aeron.git
-[submodule "system/libyaml"]
-	path = system/yaml/libyaml
-	url = https://github.com/hpcc-systems/libyaml.git
 [submodule "system/azure_sm/azure-storage-cpplite"]
 	path = system/azure/azure-storage-cpplite
 	url = https://github.com/hpcc-systems/azure-storage-cpplite.git
@@ -49,9 +31,6 @@
 [submodule "plugins/spark/spark-plugin-java-packages"]
 	path = plugins/spark/spark-plugin-java-packages
 	url = https://github.com/hpcc-systems/spark-plugin-java-packages.git
-[submodule "system/security/plugins/jwtSecurity/jwt-cpp"]
-	path = system/security/plugins/jwtSecurity/jwt-cpp
-	url = https://github.com/hpcc-systems/jwt-cpp.git
 [submodule "nlp/nlp-engine"]
 	path = plugins/nlp/nlp-engine
 	url = https://github.com/hpcc-systems/nlp-engine.git

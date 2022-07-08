@@ -78,7 +78,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/ecl/hql
-         ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/esdllib

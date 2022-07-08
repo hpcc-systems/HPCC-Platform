@@ -17,7 +17,9 @@
         "boost-regex",
         "curl",
         "h3",
+        "hiredis",
         "icu",
+        "jwt-cpp",
         {
             "name": "libarchive",
             "default-features": false,
@@ -35,18 +37,23 @@
             "platform": "!(windows & x86)"
         },
         "librdkafka",
+        "libuv",
         "libxml2",
         {
             "name": "libxslt",
             "default-features": false,
             "features": []
         },
+        "libyaml",
+        "lz4",
         "openblas",
         "openssl",
         {
             "name": "python3",
             "platform": "windows"
         },
+        "rapidjson",
+        "tbb",
         {
             "name": "winflexbison",
             "platform": "windows"

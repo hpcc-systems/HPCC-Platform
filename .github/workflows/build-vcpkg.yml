@@ -169,9 +169,12 @@ jobs:
     strategy:
       matrix:
         os: ["centos-7"]
+        include:
+          - os: "centos-7"
+            docker-folder: "dockerfiles/platform-build-centos-7"
       fail-fast: false
 
-    name: "Build with vcpkg"
+    name: "Build with docker+vcpkg"
     needs: check-skip
     runs-on: ubuntu-22.04
     steps:
@@ -190,11 +193,12 @@ jobs:
         if: ${{ needs.check-skip.outputs.platform }}
         uses: docker/build-push-action@v2
         with:
-          context: .
-          file: ./dockerfiles/platform-build-${{ matrix.os }}/Dockerfile
+          context: ${{ matrix.docker-folder }}
+          file: ${{ matrix.docker-folder }}/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           build-args: |
             BUILD_TAG=${{ github.head_ref }}
+            BUILD_USER=${{ github.actor }}
             GITHUB_ACTOR=${{ github.actor }}
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
             BUILD_TYPE=Release
