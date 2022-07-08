@@ -12057,6 +12057,13 @@ protected:
                     {
                         OwnedHqlExpr match = newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
                         //This will return a named symbol and be wrapped in a named symbol.  Return body to avoid duplication.
+                        if (!match)
+                        {
+                            const char * moduleName = str(newScope->queryName());
+                            if (!moduleName)
+                                moduleName = "unknown";
+                            throwError2(HQLERR_MissingDelayedMember, moduleName, str(selectedName));
+                        }
                         return LINK(match->queryBody(true));
                     }
                     return ::replaceChild(expr, 1, newModule);
