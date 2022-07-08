@@ -42,6 +42,7 @@
             "default-features": false,
             "features": []
         },
+        "libyaml",
         "lz4",
         "openblas",
         "openssl",
