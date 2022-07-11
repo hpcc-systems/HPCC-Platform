@@ -70,11 +70,11 @@ ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
 WORKDIR /hpcc-dev
 
 ARG GITHUB_ACTOR=hpcc-systems
+ARG BUILD_TAG=none
 RUN echo GITHUB_ACTOR is ${GITHUB_ACTOR}
 RUN git clone --no-checkout https://github.com/${GITHUB_ACTOR}/HPCC-Platform.git
 
 WORKDIR /hpcc-dev/HPCC-Platform
-ARG BUILD_TAG=none
 RUN git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
