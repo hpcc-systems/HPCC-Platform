@@ -202,6 +202,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     unsigned machineUsageCacheForceRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheMinutes", machineUsageCacheMinutes);
     unsigned machineUsageCacheAutoRebuildMinutes = pServiceNode->getPropInt("MachineUsageCacheAutoRebuildMinutes", defaultMachineUsageCacheAutoBuildMinutes);
     usageCacheReader.setown(new CUsageCacheReader(this, "Usage Reader", machineUsageCacheAutoRebuildMinutes*60, machineUsageCacheForceRebuildMinutes*60));
+    usageCacheReader->init();
 }
 
 StringBuffer& Cws_machineEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
