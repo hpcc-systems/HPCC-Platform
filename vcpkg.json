@@ -15,11 +15,17 @@
         },
         "boost-property-tree",
         "boost-regex",
+        "cpr",
         "curl",
+        {
+            "name": "elasticlient",
+            "platform": "!windows"
+        },
         "h3",
         "hiredis",
         "icu",
         "jwt-cpp",
+        "jsoncpp",
         {
             "name": "libarchive",
             "default-features": false,
