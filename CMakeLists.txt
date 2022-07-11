@@ -75,6 +75,7 @@ include(${HPCC_SOURCE_DIR}/version.cmake)
 if(APPLE OR WIN32)
     set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
     set(VCPKG_OVERLAY_PORTS ${HPCC_SOURCE_DIR}/vcpkg/overlays)
+    set(VCPKG_INSTALL_OPTIONS "--downloads-root=${CMAKE_BINARY_DIR}/vcpkg_downloads;--x-buildtrees-root=${CMAKE_BINARY_DIR}/vcpkg_buildtrees;--x-packages-root=${CMAKE_BINARY_DIR}/vcpkg_packages")
     set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON)
 endif()
 
