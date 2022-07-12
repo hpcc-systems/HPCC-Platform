@@ -65,6 +65,8 @@
 
 #define MAX_FRAC_ALLOCATOR              20
 
+#define TRACK_DATABUFF_STATE
+
 //================================================================================
 // Roxie heap
 
@@ -206,6 +208,7 @@ class DataBuffer;
 interface IDataBufferManager;
 interface IRowManager;
 
+enum class DBState : unsigned { zero, unowned, queued, attached, freed, max };
 class roxiemem_decl DataBuffer
 {
     friend class CDataBufferManager;
@@ -232,9 +235,21 @@ public:
     void noteLinked(const void *ptr);
     bool attachToRowMgr(IRowManager *rowMgr);
 
+#ifdef TRACK_DATABUFF_STATE
+    void initState(DBState newState) { state = newState; }
+    void changeState(DBState oldState, DBState newState);
+#else
+    void initState(DBState newState) { }
+    void changeState(DBState oldState, DBState newState) {}
+#endif
+
 public:
     std::atomic_uint count;
+#ifdef TRACK_DATABUFF_STATE
+    DBState state = DBState::unowned;
+#else
     unsigned filler = 0; // keeps valgrind happy
+#endif
     IRowManager *mgr = nullptr;
     union
     {

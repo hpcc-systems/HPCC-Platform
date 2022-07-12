@@ -1501,6 +1501,7 @@ public:
             try
             {
                 DataBuffer *dataBuff = input_queue->pop(true);
+                dataBuff->changeState(roxiemem::DBState::queued, roxiemem::DBState::unowned);
                 collatePacket(dataBuff);
             }
             catch (IException * e)

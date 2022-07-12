@@ -4634,6 +4634,7 @@ public:
                 logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
                         dfinger->queryCount()-1, dfinger, this);
             dfinger->nextActive = nullptr;
+            dfinger->changeState(DBState::attached, DBState::unowned);
             dfinger->mgr = nullptr; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
             dfinger->count.store(0, std::memory_order_relaxed);
             dfinger->released();
@@ -5024,6 +5025,7 @@ public:
                                     finger, this);
                         finger->mgr = nullptr;
                         finger->nextActive = nullptr;
+                        finger->changeState(DBState::attached, DBState::unowned);
                         finger->Release();
                         if (last)
                             last->nextActive = next;
@@ -5051,10 +5053,7 @@ public:
             }
 
             assert(dataBuff->nextActive == nullptr);
-#ifdef _DEBUG
-            //Optionally assign a sequence number to the attached databuffer to make it easier to investigate issues
-            dataBuff->filler = ++attachSeq;
-#endif
+            dataBuff->changeState(DBState::unowned, DBState::attached);
             dataBuff->nextActive = activeBuffs;
             activeBuffs = dataBuff;
             dataBuffs++;
@@ -6459,13 +6458,16 @@ void DataBuffer::Release()
         released();
     }
     else if (manager && prevCount == 2)
+    {
         manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
+    }
 }
 
 void DataBuffer::released()
 {
     assert(nextDataId == 0);
     DataBufferBottom *bottom = (DataBufferBottom *)findBase(this);
+    changeState(DBState::unowned, DBState::freed);
     assert((char *)bottom != (char *)this);
     if (memTraceLevel >= 4)
         DBGLOG("RoxieMemMgr: DataBuffer::released() releasing DataBuffer - addr=%p", this);
@@ -6489,6 +6491,16 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
         return false;
     }
 }
+
+#ifdef TRACK_DATABUFF_STATE
+static constexpr const char * stateNames[(unsigned)DBState::max] = { "zero", "unowned", "queued", "attached", "freed" };
+void DataBuffer::changeState(DBState oldState, DBState newState)
+{
+    if (state != oldState)
+        DBGLOG("Unexpected state was %s, expected %s", stateNames[(unsigned)state], stateNames[(unsigned)oldState]);
+    state = newState;
+}
+#endif
 
 void DataBuffer::noteReleased(const void *ptr)
 {
@@ -6628,6 +6640,7 @@ public:
                             dataBuffersActive.fetch_add(1);
                             bottom->Link();
                             curFree->nextDataId = 0;
+                            curFree->changeState(DBState::freed, DBState::unowned); // sanity check - will be overriden by the following new
                             if (memTraceLevel >= 4)
                                 DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", curFree);
                             return ::new(curFree) DataBuffer();
@@ -6695,6 +6708,7 @@ public:
                                     dataBuffersActive.fetch_add(1);
                                     finger->Link();
                                     curFree->nextDataId = 0;
+                                    curFree->changeState(DBState::freed, DBState::unowned); // sanity check - will be overriden by the following new
                                     if (memTraceLevel >= 4)
                                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", curFree);
                                     return ::new(curFree) DataBuffer();
