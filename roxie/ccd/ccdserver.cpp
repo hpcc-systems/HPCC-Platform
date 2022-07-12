@@ -449,14 +449,39 @@ extern SinkMode getSinkMode(const char *val)
         return SinkMode::ParallelPersistent;
     else if (strieq(val, "sequential"))
         return SinkMode::Sequential;
+    else if (strieq(val, "parallel"))
+        return SinkMode::Parallel;
+    else if (strieq(val, "automatic-parallel"))
+        return SinkMode::AutomaticParallel;
+    else if (strieq(val, "automatic-persistent"))
+        return SinkMode::AutomaticPersistent;
     else
     {
-        if (!strieq(val, "parallel"))
-            WARNLOG("Unsupported sinkmode %s - assuming parallel", val);
-        return SinkMode::Parallel;
+        if (!strieq(val, "automatic"))
+            WARNLOG("Unsupported sinkmode %s - assuming automatic", val);
+        return SinkMode::Automatic;
     }
 }
 
+extern std::string getText(RoxieSourceCharacteristics flags)
+{
+    if (flags == RSC::none)
+        return "none";
+    std::string ret;
+    if (hasMask(flags, RSC::urgentStart))
+        ret += "urgentStart|";
+    if (hasMask(flags, RSC::hasRowLatency))
+        ret += "hasRowLatency|";
+    if (hasMask(flags, RSC::hasDependencies))
+        ret += "hasDependencies|";
+    if (hasMask(flags, RSC::slowDependencies))
+        ret += "slowDependencies|";
+    if (ret.size() > 0)
+        ret.pop_back();
+    else
+        ret = "????";
+    return ret;
+}
 
 const static unsigned minus1U = (0U-1U);
 class CRoxieServerActivityFactoryBase : public CActivityFactory, implements IRoxieServerActivityFactory
@@ -472,7 +497,10 @@ protected:
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
     bool isCodeSigned = false;
-    SinkMode sinkMode = SinkMode::Parallel;
+    SinkMode sinkMode = SinkMode::Automatic;
+    bool forceExecuteDependenciesSequentially = false;
+    bool forceStartInputsSequentially = false;
+    RoxieSourceCharacteristics defaultActivityCharacteristics = RSC::none;
     unsigned heapFlags;
 
 public:
@@ -490,6 +518,9 @@ public:
             sinkMode = ::getSinkMode(sinkModeText);
         else
             sinkMode = _queryFactory.queryOptions().sinkMode;
+        forceExecuteDependenciesSequentially = _graphNode.getPropBool("hint[@name='executedependenciessequentially']/@value", _queryFactory.queryOptions().executeDependenciesSequentially);
+        forceStartInputsSequentially = _graphNode.getPropBool("hint[@name='startinputssequentially']/@value", _queryFactory.queryOptions().startInputsSequentially);
+        defaultActivityCharacteristics = _graphNode.getPropBool("hint[@name='hasrowlatency']/@value", false) ? RSC::hasRowLatency : RSC::none;
         isCodeSigned = ::isActivityCodeSigned(_graphNode);
     }
     
@@ -532,6 +563,10 @@ public:
     virtual unsigned queryId() const { return id; }
     virtual unsigned querySubgraphId() const { return subgraphId; }
     virtual ThorActivityKind getKind() const { return kind; }
+    virtual std::string describe() const override
+    {
+        return std::to_string(id) + "(" + getActivityText(kind) + ")";
+    }
     virtual IOutputMetaData * queryOutputMeta() const
     {
         return meta;
@@ -673,6 +708,18 @@ public:
     virtual SinkMode getSinkMode() const override
     {
         return sinkMode;
+    }
+    virtual bool executeDependenciesSequentially() const override
+    {
+        return forceExecuteDependenciesSequentially;
+    }
+    virtual bool startInputsSequentially() const override
+    {
+        return forceStartInputsSequentially;
+    }
+    virtual RoxieSourceCharacteristics getActivityCharacteristics() const override
+    {
+        return defaultActivityCharacteristics;
     }
 };
 
@@ -875,7 +922,6 @@ public:
         //only a sink if a root activity
         return isRoot && !internalSpillAllUsesWithinGraph;
     }
-
     virtual void gatherEdgeStats(IStatisticGatherer &builder, int channel, bool reset) const override
     {
         // There is no meaningful info to return along the dependency edge - we don't detect how many times the value has been read from the context
@@ -1004,6 +1050,10 @@ protected:
     bool aborted;
     bool connected = false;
     bool collectFactoryStatistics = false;
+    bool executeDependenciesSequentially = false;
+    bool traceActivityCharacteristics = false;
+    mutable std::atomic<bool> sourceCharacteristicsCalculated = { false };
+    mutable std::atomic<RoxieSourceCharacteristics> cachedSourceCharacteristics = { RSC::none };
 
 public:
     IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
@@ -1027,8 +1077,10 @@ public:
         colocalParent = NULL;
         createPending = true;
         timeActivities = defaultTimeActivities;
-        collectFactoryStatistics = defaultCollectFactoryStatistics && !debugging && factory;
+        collectFactoryStatistics = defaultCollectFactoryStatistics && !debugging;
         aborted = false;
+        executeDependenciesSequentially = factory->executeDependenciesSequentially() || _ctx->queryOptions().executeDependenciesSequentially;
+        traceActivityCharacteristics = _ctx->queryOptions().traceActivityCharacteristics;
     }
     
     CRoxieServerActivity(IRoxieAgentContext *_ctx, IHThorArg & _helper)
@@ -1247,6 +1299,8 @@ public:
         activityStats.addStatistics(merged);
         merged.mergeStatistic(StCycleLocalExecuteCycles, queryLocalCycles());
         merged.mergeStatistic(StNumRowsProcessed, getTotalRowsProcessed());
+        if (sourceCharacteristicsCalculated)
+            merged.mergeStatistic(StEnumActivityCharacteristics, (unsigned) cachedSourceCharacteristics.load());
     }
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
@@ -1400,13 +1454,55 @@ public:
         }
 #endif
         executeDependencies(parentExtractSize, parentExtract, 0);
-        if (input)
-            input->start(parentExtractSize, parentExtract, paused);
         ensureCreated();
         basehelper.onStart(parentExtract, NULL);
+        startInputs(parentExtractSize, parentExtract, paused);
         if (collectFactoryStatistics)
             factory->noteStarted();
+    }
+
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        if (input)
+            input->start(parentExtractSize, parentExtract, paused);
         startJunction(junction);
+    }
+    
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const override 
+    {
+        // Note - there's a possibility that two threads arriving here very close together will result in parent getSourceCharacteristics being called twice,
+        // but that is harmless. Not even sure this is ever called from multiple threads
+        if (!sourceCharacteristicsCalculated)
+        {
+            RoxieSourceCharacteristics characteristics = getActivityCharacteristics() | getAllInputsCharacteristics();
+            if (dependencies.ordinality())
+            {
+                characteristics |= RSC::hasDependencies;
+                ForEachItemIn(idx, dependencies)
+                {
+                    RoxieSourceCharacteristics dependCharacteristics = dependencies.item(idx).getSourceCharacteristics();
+                    if (hasMask(dependCharacteristics, RSC::urgentStart|RSC::hasRowLatency|RSC::slowDependencies))
+                        characteristics |= RSC::slowDependencies;
+                }
+            }
+            cachedSourceCharacteristics = characteristics;
+            sourceCharacteristicsCalculated = true;
+            if (traceActivityCharacteristics && characteristics!=RSC::none)
+                CTXLOG("Activity %s characteristics: %s", factory->describe().c_str(), getText(characteristics).c_str());
+        }
+        return cachedSourceCharacteristics;
+    }
+
+    virtual RoxieSourceCharacteristics getAllInputsCharacteristics() const
+    {
+        if (input)
+            return input->getSourceCharacteristics();
+        return RSC::none;
+    }
+
+    virtual RoxieSourceCharacteristics getActivityCharacteristics() const
+    {
+        return factory->getActivityCharacteristics();
     }
 
     void executeDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
@@ -1416,13 +1512,35 @@ public:
 
         CCycleTimer dependencyTimer(timeActivities);
 
-        //MORE: Create a filtered list and then use asyncfor
+        std::vector<unsigned> urgentDependencies;
+        std::vector<unsigned> parallelDependencies;
+        std::vector<unsigned> simpleDependencies;
         ForEachItemIn(idx, dependencies)
         {
             if (dependencyControlIds.item(idx) == (int) controlId)
-                dependencies.item(idx).execute(parentExtractSize, parentExtract);
+            {
+                RoxieSourceCharacteristics flags = dependencies.item(idx).getSourceCharacteristics();
+                if (executeDependenciesSequentially || !hasMask(flags, RSC::urgentStart | RSC::hasRowLatency | RSC::slowDependencies))
+                    simpleDependencies.push_back(idx);
+                else if (hasMask(flags, RSC::urgentStart) && !hasMask(flags, RSC::hasRowLatency | RSC::slowDependencies))  // i.e. urgent but no need to execute in parallel
+                    urgentDependencies.push_back(idx);
+                else
+                    parallelDependencies.push_back(idx);
+            }
         }
+        for (unsigned i : urgentDependencies)
+            dependencies.item(i).execute(parentExtractSize, parentExtract);
+        if (parallelDependencies.size() > 0)
+        {
+            asyncFor(parallelDependencies.size(), parallelDependencies.size(), [this, &parallelDependencies, parentExtractSize, parentExtract](unsigned i)
+            {
+                dependencies.item(parallelDependencies[i]).execute(parentExtractSize, parentExtract);
+            });
+        }
+        for (unsigned i : simpleDependencies)
+            dependencies.item(i).execute(parentExtractSize, parentExtract);
 
+ 
         stats.addStatistic(StCycleDependenciesCycles, dependencyTimer.elapsedCycles());
     }
 
@@ -1817,24 +1935,9 @@ public:
         prefiltered = false;
         eof = false;
     }
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        IFinalRoxieInput *saveInput = input;
-        Owned<IStrandJunction> saveJunction = junction.getClear();
-        input = NULL;   // Make sure parent does not start the chain yet
-        try
-        {
-            CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
-        }
-        catch (...)
-        {
-            // Make sure we restore these even if there is an exception thrown during start
-            input = saveInput;
-            junction.setown(saveJunction.getClear());
-            throw;
-        }
-        input = saveInput;
-        junction.setown(saveJunction.getClear());
+        // Don't start yet
     }
     virtual void stop()
     {
@@ -2550,7 +2653,11 @@ public:
     {
         return puller.queryInput()->queryIndexReadActivity();
     }
-
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const override
+    {
+        // MORE - is this also urgent, if disabled is false?
+        return puller.queryInput()->getSourceCharacteristics() | RSC::hasRowLatency;
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
@@ -2704,27 +2811,58 @@ protected:
 
     unsigned sourceIdx1 = 0;
     Owned<CRoxieServerReadAheadInput> puller;
-
+    bool startInputsSequentially = false;
 public:
     CRoxieServerTwoInputActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_ctx, _factory, _probeManager)
     {
         input1 = NULL;
         inputStream1 = NULL;
+        startInputsSequentially = factory->startInputsSequentially() || _ctx->queryOptions().startInputsSequentially;
     }
 
     ~CRoxieServerTwoInputActivity()
     {
     }
 
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
-        input1->start(parentExtractSize, parentExtract, paused);
+        // start all the non-simple ones in parallel first, followed by all the simple ones sequentially
+        // see matching code in multiInput...
+        std::vector<IFinalRoxieInput *> urgentInputs;
+        std::vector<IFinalRoxieInput *> parallelInputs;
+        std::vector<IFinalRoxieInput *> simpleInputs;
+        for (IFinalRoxieInput *in : { input, input1 })
+        {
+            RoxieSourceCharacteristics inputCharacteristics = in->getSourceCharacteristics();
+            if (startInputsSequentially || !hasMask(inputCharacteristics, RSC::urgentStart | RSC::slowDependencies))
+                simpleInputs.push_back(in);
+            else if (hasMask(inputCharacteristics, RSC::urgentStart) && !hasMask(inputCharacteristics, RSC::slowDependencies))
+                urgentInputs.push_back(in);
+            else
+                parallelInputs.push_back(in);
+        }
+        for (auto in : urgentInputs)
+            in->start(parentExtractSize, parentExtract, paused);
+        if (parallelInputs.size() > 0)
+        {
+            asyncFor(parallelInputs.size(), parallelInputs.size(), [&parallelInputs, parentExtractSize, parentExtract, paused](unsigned i)
+            {
+                parallelInputs[i]->start(parentExtractSize, parentExtract, paused);
+            });
+        }
+        for (auto in : simpleInputs)
+            in->start(parentExtractSize, parentExtract, paused);
+        startJunction(junction);
         startJunction(junction1);
     }
 
-    virtual void stop()
+    virtual RoxieSourceCharacteristics getAllInputsCharacteristics() const override
+    {
+        return input->getSourceCharacteristics() | input1->getSourceCharacteristics();
+    }
+
+    virtual void stop() override
     {
         inputStream1->stop();
         CRoxieServerActivity::stop();
@@ -2837,6 +2975,21 @@ public:
         return localCycles;
     }
 
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
+    {
+        // We don't start inputs yet as some derived classes want to delay doing so.
+        // CRoxieServerMultiInputActivity::startInputs will start all inputs, and classes that want all inputs started up front
+        // are derived from that.
+    }
+
+    virtual RoxieSourceCharacteristics getAllInputsCharacteristics() const override
+    {
+        RoxieSourceCharacteristics ret = RSC::none;
+        for (unsigned i = 0; i < numInputs; i++)
+            ret |= inputArray[i]->getSourceCharacteristics();
+        return ret;
+    }
+
     virtual IFinalRoxieInput *queryInput(unsigned idx) const
     {
         if (idx < numInputs)
@@ -2917,19 +3070,42 @@ protected:
 
 class CRoxieServerMultiInputActivity : public CRoxieServerMultiInputBaseActivity
 {
+    bool startInputsSequentially = false;
 public:
     CRoxieServerMultiInputActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numInputs)
         : CRoxieServerMultiInputBaseActivity(_ctx, _factory, _probeManager, _numInputs)
     {
+        startInputsSequentially = factory->startInputsSequentially() || _ctx->queryOptions().startInputsSequentially;
     }
 
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerMultiInputBaseActivity::doStart(parentExtractSize, parentExtract, paused);
+        // start all the non-simple ones in parallel first, followed by all the simple ones sequentially
+        std::vector<IFinalRoxieInput *> urgentInputs;
+        std::vector<IFinalRoxieInput *> parallelInputs;
+        std::vector<IFinalRoxieInput *> simpleInputs;
         for (unsigned i = 0; i < numInputs; i++)
         {
-            inputArray[i]->start(parentExtractSize, parentExtract, paused);
+            IFinalRoxieInput *in = inputArray[i];
+            RoxieSourceCharacteristics inputCharacteristics = in->getSourceCharacteristics();
+            if (startInputsSequentially || !hasMask(inputCharacteristics, RSC::urgentStart | RSC::slowDependencies))
+                simpleInputs.push_back(in);
+            else if (hasMask(inputCharacteristics, RSC::urgentStart) && !hasMask(inputCharacteristics, RSC::slowDependencies))
+                urgentInputs.push_back(in);
+            else
+                parallelInputs.push_back(in);
         }
+        for (auto in : urgentInputs)
+            in->start(parentExtractSize, parentExtract, paused);
+        if (parallelInputs.size() > 0)
+        {
+            asyncFor(parallelInputs.size(), parallelInputs.size(), [&parallelInputs, parentExtractSize, parentExtract, paused](unsigned i)
+            {
+                parallelInputs[i]->start(parentExtractSize, parentExtract, paused);
+            });
+        }
+        for (auto in : simpleInputs)
+            in->start(parentExtractSize, parentExtract, paused);
         for (unsigned iS = 0; iS < numStreams; iS++)
         {
             startJunction(junctionArray[iS]);
@@ -4021,6 +4197,7 @@ public:
     const byte * parentExtract;
     bool flowControlled;
     bool deferredStart;
+    bool isSimple = false;
     MemoryBuffer logInfo;
     MemoryBuffer cachedContext;
     const RemoteActivityId &remoteId;
@@ -4134,8 +4311,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled)
-        : preserveOrder(_preserveOrder), helper(_helper), merger(*this), meta(_meta), activity(_activity), flowControlled(_flowControlled), remoteId(_remoteId)
+    CRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _isSimple)
+        : preserveOrder(_preserveOrder), helper(_helper), merger(*this), meta(_meta), activity(_activity), flowControlled(_flowControlled), isSimple(_isSimple), remoteId(_remoteId)
     {
         ctx = _ctx;
         errorHandler = _errorHandler;
@@ -4382,7 +4559,11 @@ public:
         parentExtractSize = _parentExtractSize;
         parentExtract = _parentExtract;
     }
-
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const
+    {
+        // Some activities that use a remote adaptor inject results and can therefore be simple...
+        return activity.getSourceCharacteristics() | (isSimple ? RSC::none : RSC::hasRowLatency);
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
 #ifdef TRACE_STARTSTOP
@@ -5077,8 +5258,8 @@ class CSkippableRemoteResultAdaptor : public CRemoteResultAdaptor
     }
 
 public:
-    CSkippableRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _skipping) :
-        CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, _meta, _helper, _activity, _preserveOrder, _flowControlled)
+    CSkippableRemoteResultAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IOutputMetaData *_meta, IHThorArg &_helper, IRoxieServerActivity &_activity, bool _preserveOrder, bool _flowControlled, bool _skipping, bool _isSimple) :
+        CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, _meta, _helper, _activity, _preserveOrder, _flowControlled, _isSimple)
     {
         skipping = _skipping;
         index = 0;
@@ -6284,6 +6465,10 @@ public:
     {
         return input->queryIndexReadActivity();
     }
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const
+    {
+        return input->getSourceCharacteristics();
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock procedure(cs);
@@ -6362,6 +6547,7 @@ public:
     }
 
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const { return RSC::none; }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
     virtual void stop() { }
     virtual void reset() { }
@@ -8945,7 +9131,10 @@ public:
         {
             return parent->queryOutputMeta();
         }
-
+        virtual RoxieSourceCharacteristics getSourceCharacteristics() const override
+        {
+            return parent->getSourceCharacteristics();
+        }
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             // NOTE: it is tempting to move the init() of all output adaptors here. However that is not a good idea, 
@@ -9482,6 +9671,11 @@ protected:
             pipe.clear();
         }
     }
+
+    virtual RoxieSourceCharacteristics getActivityCharacteristics() const override
+    {
+        return RSC::hasRowLatency;
+    }
 };
 
 class CRoxieServerPipeThroughActivity : public CRoxieServerActivity, implements IRecordPullerCallback
@@ -9714,6 +9908,11 @@ private:
             pipe.clear();
             pipeVerified.signal();
         }
+    }
+
+    virtual RoxieSourceCharacteristics getActivityCharacteristics() const override
+    {
+        return RSC::hasRowLatency;
     }
 };
 
@@ -13469,6 +13668,14 @@ public:
         ForEachItemIn(idx, pullers)
             pullers.item(idx).stop();
         CRoxieServerActivity::stop();
+    }
+
+    virtual RoxieSourceCharacteristics getAllInputsCharacteristics() const override
+    {
+        RoxieSourceCharacteristics ret = RSC::none;
+        ForEachItemIn(idx, pullers)
+            ret |= pullers.item(idx).queryInput()->getSourceCharacteristics();
+        return ret;
     }
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -17601,7 +17808,7 @@ public:
     CRoxieServerRemoteActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteID)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           helper((IHThorRemoteArg &)basehelper),
-          remote(_ctx, this, _remoteID, meta.queryOriginal(), helper, *this, false, false) // MORE - if they need it stable we'll have to think!
+          remote(_ctx, this, _remoteID, meta.queryOriginal(), helper, *this, false, false, false) // MORE - if they need it stable we'll have to think!
     {
     }
 
@@ -20707,12 +20914,11 @@ public:
         cond = false;
     }
 
-    virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void startInputs(unsigned parentExtractSize, const byte *parentExtract, bool paused) override
     {
-        CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         cond = helper.getCondition();
         if (traceStartStop)
-            DBGLOG("IfActivity::doStart %d - cond = %d", activityId, (int) cond);
+            DBGLOG("IfActivity::startInputs %d - cond = %d", activityId, (int) cond);
         if (cond)
         {
             if (inputTrue)
@@ -20734,7 +20940,6 @@ public:
                 streamTrue->stop();
         }
         unusedStopped = true;
-
     }
 
     virtual void stop()
@@ -22004,7 +22209,7 @@ public:
     {
         forceRemote = factory->queryQueryFactory().queryOptions().disableLocalOptimizations;
         if ((forceRemote || numParts != 1) && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
-            remote.setown(new CSkippableRemoteResultAdaptor(_ctx, this, remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
+            remote.setown(new CSkippableRemoteResultAdaptor(_ctx, this, remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip, false));
         compoundHelper = NULL;
         eof = false;
         rowLimit = (unsigned __int64) -1;
@@ -23176,12 +23381,12 @@ protected:
 
 public:
     CRoxieServerIndexActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        bool _sorted, bool _isLocal, bool _maySkip)
+        bool _sorted, bool _isLocal, bool _maySkip, bool _isSimple)
         : CRoxieServerActivity(_ctx, _factory, _probeManager),
           indexHelper((IHThorIndexReadBaseArg &)basehelper),
           keySet(_factory->keySet),
           translators(_factory->translators),
-          remote(_ctx, this, _remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip),
+          remote(_ctx, this, _remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip, _isSimple),
           sorted(_sorted),
           isLocal(_isLocal) ,
           remoteId(_remoteId)
@@ -23402,8 +23607,8 @@ protected:
     IHThorSourceLimitTransformExtra * limitTransformExtra = nullptr;
 public:
     CRoxieServerIndexReadBaseActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip)
+        bool _sorted, bool _isLocal, bool _maySkip, bool _isSimple)
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip, _isSimple)
     {
     }
 
@@ -23456,8 +23661,8 @@ protected:
 
 public:
     CRoxieServerIndexReadActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
-        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip),
+        bool _sorted, bool _isLocal, bool _maySkip, bool _isSimple, unsigned _maxSeekLookahead)
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip, _isSimple),
           readHelper((IHThorIndexReadArg &)basehelper)
     {
         limitTransformExtra = &readHelper;
@@ -24211,7 +24416,7 @@ public:
         else if (isSimple && !maySkip)
             return new CRoxieServerSimpleIndexReadActivity(_ctx, this, _probeManager, remoteId, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(_ctx, this, _probeManager, remoteId, sorted, isLocal, maySkip, maxSeekLookahead);
+            return new CRoxieServerIndexReadActivity(_ctx, this, _probeManager, remoteId, sorted, isLocal, maySkip, isSimple, maxSeekLookahead);
     }
 };
 
@@ -24265,7 +24470,7 @@ class CRoxieServerIndexCountActivity : public CRoxieServerIndexActivity
 
 public:
     CRoxieServerIndexCountActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, bool _isLocal)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false, false),
           countHelper((IHThorIndexCountArg &)basehelper),
           done(false)
     {
@@ -24521,7 +24726,7 @@ class CRoxieServerIndexAggregateActivity : public CRoxieServerIndexActivity
 public:
     CRoxieServerIndexAggregateActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager,
                                       const RemoteActivityId &_remoteId, bool _isLocal)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false, false),
           aggregateHelper((IHThorIndexAggregateArg &)basehelper),
           done(false)
     {
@@ -24657,7 +24862,7 @@ class CRoxieServerIndexGroupAggregateActivity : public CRoxieServerIndexActivity
 public:
     CRoxieServerIndexGroupAggregateActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager,
                                             const RemoteActivityId &_remoteId, bool _isLocal)
-        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false),
+        : CRoxieServerIndexActivity(_ctx, _factory, _probeManager, _remoteId, false, _isLocal, false, false),
           aggregateHelper((IHThorIndexGroupAggregateArg &)basehelper),
           singleAggregator(aggregateHelper, aggregateHelper),
           resultAggregator(aggregateHelper, aggregateHelper),
@@ -24826,7 +25031,7 @@ class CRoxieServerIndexNormalizeActivity : public CRoxieServerIndexReadBaseActiv
 public:
     CRoxieServerIndexNormalizeActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
                                        bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip),
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip, false),
           readHelper((IHThorIndexNormalizeArg &)basehelper)
     {
         limitTransformExtra = &readHelper;
@@ -24963,7 +25168,7 @@ class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecor
 
 public:
     CRoxieServerFetchActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IFilePartMap *_map)
-        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true), puller(false)
+        : CRoxieServerActivity(_ctx, _factory, _probeManager), helper((IHThorFetchBaseArg &)basehelper), map(_map), remote(_ctx, this, _remoteId, meta.queryOriginal(), helper, *this, true, true, false), puller(false)
     {
         needsRHS = helper.transformNeedsRhs();
         if (needsRHS)
@@ -25494,7 +25699,7 @@ public:
     KeyedJoinRemoteAdaptor(IRoxieAgentContext *_ctx, IRoxieServerErrorHandler *_errorHandler, const RemoteActivityId &_remoteId, IHThorKeyedJoinArg &_helper,
                            IRoxieServerActivity &_activity, bool _isFullKey, bool _isSimple,
                            RecordPullerThread &_puller, IJoinProcessor &_processor)
-        : CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, 0, _helper, _activity, true, true),
+        : CRemoteResultAdaptor(_ctx, _errorHandler, _remoteId, 0, _helper, _activity, true, true, _isSimple),
           helper(_helper),
           isFullKey(_isFullKey),
           isSimple(_isSimple),
@@ -25655,7 +25860,7 @@ public:
           tlk(createLocalKeyManager(helper.queryIndexRecordSize()->queryRecordAccessor(true), NULL, this, helper.hasNewSegmentMonitors(), !isBlind())),
           keySet(_keySet),
           translators(_translators),
-          remote(_ctx, this, _remoteId, 0, helper, *this, true, true),
+          remote(_ctx, this, _remoteId, 0, helper, *this, true, true, false),
           puller(false),
           indexReadMeta(_indexReadMeta),
           joinHandler(_joinHandler),
@@ -26956,6 +27161,13 @@ public:
         CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         authToken.append(ctx->queryAuthToken());
     }
+
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const override
+    {
+        return RSC::hasRowLatency;
+    }
+
+
     virtual void reset()
     {
         // MORE - Shouldn't we make sure thread is stopped etc???
@@ -27360,6 +27572,76 @@ public:
     }
 };
 
+class CSequentialSinkSet : public CRoxieServerActivity
+{
+    IRoxieServerActivityCopyArray subsinks;
+public:
+    CSequentialSinkSet(IRoxieAgentContext *_ctx) : CRoxieServerActivity(_ctx, *new CPseudoArg) {}
+    
+    virtual const void *nextRow() override
+    {
+        throwUnexpected(); // I am nobody's input
+    }
+    
+    void addSink(IRoxieServerActivity &activity)
+    {
+        subsinks.append(activity);
+    }
+    virtual void execute(unsigned parentExtractSize, const byte *parentExtract) override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.execute(parentExtractSize, parentExtract);
+        }
+    }
+    virtual void connectInputStreams(bool consumerOrdered) override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.connectInputStreams(consumerOrdered);
+        }
+    }
+
+    virtual void stop() override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.stop();
+        }
+    }
+
+    virtual void abort() override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.abort();
+        }
+    }
+
+    virtual void reset() override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IRoxieServerActivity &sink = subsinks.item(idx);
+            sink.reset();
+        }    
+    }
+
+    virtual IFinalRoxieInput * querySelectOutput(unsigned id) override
+    {
+        ForEachItemIn(idx, subsinks)
+        {
+            IFinalRoxieInput * ret = subsinks.item(idx).querySelectOutput(id);
+            if (ret)
+                return ret;
+        }
+        return NULL;
+    }
+};
 
 class CActivityGraph : implements IActivityGraph, implements IThorChildGraph, implements ILocalGraphEx, implements IRoxieServerChildGraph, public CInterface
 {
@@ -27521,6 +27803,7 @@ protected:
     IArrayOf<IRoxieServerActivity> activities;
     IArrayOf<IRoxieProbe> probes;
     CIArrayOf<SinkThread> threads;
+    Owned<CSequentialSinkSet> simpleSinks;
     IRoxieServerActivityCopyArray sinks;
     StringAttr graphName;
     Owned<CGraphResults> results;
@@ -27532,7 +27815,7 @@ protected:
     IRoxieServerActivity *parentActivity;
     unsigned id;
     unsigned loopCounter;
-    SinkMode sinkMode = SinkMode::Parallel;
+    SinkMode sinkMode = SinkMode::Automatic;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -27581,12 +27864,6 @@ public:
             IRoxieServerActivityFactory &donor = graphDefinition.serverItem(idx);
             IRoxieServerActivity &activity = *donor.createActivity(_ctx, probeManager);
             activities.append(activity);
-            if (donor.isSink())
-            {
-                sinks.append(activity);
-                if (probeManager)
-                    probeManager->noteSink(&activity);
-            }
         }
         ForEachItemIn(idx1, graphDefinition)
         {
@@ -27617,9 +27894,30 @@ public:
                     probeManager->noteDependency( &dependencySourceActivity, dependencySourceIndex, dependencyControlId, dependencyEdgeIds.item(idx2), &activity);
             }
         }
-        ForEachItemIn(idx2, sinks)
+        ForEachItemIn(idx2, graphDefinition)
         {
-            IRoxieServerActivity &sink = sinks.item(idx2);
+            IRoxieServerActivityFactory &donor = graphDefinition.serverItem(idx2);
+            if (donor.isSink())
+            {
+                IRoxieServerActivity &activity = activities.item(idx2);
+                if (sinkMode >= SinkMode::Automatic && !hasMask(activity.getSourceCharacteristics(), RSC::hasRowLatency|RSC::slowDependencies|RSC::urgentStart))
+                {
+                    if (!simpleSinks)
+                    {
+                        simpleSinks.setown(new CSequentialSinkSet(_ctx));
+                        sinks.append(*simpleSinks);
+                    }
+                    simpleSinks->addSink(activity);
+                }
+                else
+                    sinks.append(activity);
+                if (probeManager)
+                    probeManager->noteSink(&activity);
+            }
+        }
+        ForEachItemIn(idx3, sinks)
+        {
+            IRoxieServerActivity &sink = sinks.item(idx3);
             sink.connectInputStreams(true);
         }
     }
@@ -27731,7 +28029,7 @@ public:
 #ifdef PARALLEL_EXECUTE
         else if (!probeManager && !graphDefinition.isSequential() && sinkMode != SinkMode::Sequential)
         {
-            if (sinkMode == SinkMode::ParallelPersistent)
+            if (sinkMode == SinkMode::ParallelPersistent || sinkMode == SinkMode::AutomaticPersistent)
             {
                 if (!threads.ordinality())
                 {
@@ -27765,7 +28063,7 @@ public:
                 }
                 checkAbort();
             }
-            else if (sinkMode == SinkMode::Parallel)
+            else if (sinkMode == SinkMode::Parallel || sinkMode == SinkMode::Automatic  || sinkMode == SinkMode::AutomaticParallel)
             {
                 class casyncfor: public CAsyncFor
                 {
@@ -28388,6 +28686,10 @@ public:
     virtual IIndexReadActivityInfo *queryIndexReadActivity()
     {
         throwUnexpected();
+    }
+    virtual RoxieSourceCharacteristics getSourceCharacteristics() const override
+    {
+        return RSC::none;
     }
     virtual void stop()
     {

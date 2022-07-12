@@ -67,7 +67,6 @@ public:
     CInfoCacheReaderThread(CInfoCacheReader* _reader, const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
         : infoCacheReader(_reader), name(_name), autoRebuildSeconds(_autoRebuildSeconds), forceRebuildSeconds(_forceRebuildSeconds), threaded(_name)
     {
-        threaded.init(this);
     };
 
     ~CInfoCacheReaderThread()
@@ -76,6 +75,11 @@ public:
         sem.signal();
         firstSem.signal(); // in case
         threaded.join();
+    }
+
+    void init()
+    {
+        threaded.init(this);
     }
 
     virtual void threadmain() override;
@@ -138,6 +142,11 @@ public:
     CInfoCacheReader(const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
     {
         infoCacheReaderThread.setown(new CInfoCacheReaderThread(this, _name, _autoRebuildSeconds, _forceRebuildSeconds));
+    }
+
+    void init()
+    {
+        infoCacheReaderThread->init();
     }
 
     virtual CInfoCache* getCachedInfo() const override { return infoCacheReaderThread->getCachedInfo(); }

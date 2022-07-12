@@ -253,6 +253,7 @@ enum StatisticKind
     StCycleDependenciesCycles,
     StTimeStart,
     StCycleStartCycles,
+    StEnumActivityCharacteristics,
     StMax,
 
     //For any quantity there is potentially the following variants.
