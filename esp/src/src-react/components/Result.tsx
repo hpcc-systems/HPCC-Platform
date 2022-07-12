@@ -7,6 +7,7 @@ import { WUResult } from "@hpcc-js/eclwatch";
 import nlsHPCC from "src/nlsHPCC";
 import { ESPBase } from "src/ESPBase";
 import { csvEncode } from "src/Utility";
+import { useWorkunit, useMyAccount, useConfirm } from "../hooks/index";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { pushParams } from "../util/history";
@@ -220,6 +221,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
+    const [renderHTML, setRenderHTML] = React.useState(false);
 
     const resultTable: ResultWidget = useConst(new ResultWidget()
         .baseUrl("")
@@ -233,9 +235,12 @@ export const Result: React.FunctionComponent<ResultProps> = ({
 
     resultTable
         .filter(filter)
+        .renderHtml(renderHTML)
         .lazyRender()
         ;
 
+    const { currentUser } = useMyAccount();
+    const [wu] = useWorkunit(wuid);
     const [result] = React.useState<CommsResult>(resultTable.calcResult());
     const [FilterFields, setFilterFields] = React.useState<Fields>({});
     const [showFilter, setShowFilter] = React.useState(false);
@@ -254,6 +259,31 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         });
     }, [result]);
 
+    //  Filter  ---
+    const [filterFields, hasHtml] = React.useMemo(() => {
+        const filterFields: Fields = {};
+        let hasHtml = false;
+        for (const fieldID in FilterFields) {
+            filterFields[fieldID] = { ...FilterFields[fieldID], value: filter[fieldID] };
+            if (fieldID.indexOf("__html") >= 0) {
+                hasHtml = true;
+            }
+        }
+        return [filterFields, hasHtml];
+    }, [FilterFields, filter]);
+
+    const securityMessageHTML = React.useMemo(() => nlsHPCC.SecurityMessageHTML.split("{__placeholder__}").join(wu?.Owner ? wu?.Owner : nlsHPCC.Unknown).split("\n"), [wu?.Owner]);
+    const [ViewHTMLConfirm, showViewHTMLConfirm] = useConfirm({
+        title: nlsHPCC.SecurityWarning,
+        message: securityMessageHTML[0],
+        items: securityMessageHTML.slice(1),
+        onSubmit: React.useCallback(() => {
+            setRenderHTML(true);
+            showViewHTMLConfirm(false);
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -270,13 +300,22 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                 setShowFilter(true);
             }
         },
-    ], [hasFilter, resultTable]);
-
-    //  Filter  ---
-    const filterFields: Fields = {};
-    for (const fieldID in FilterFields) {
-        filterFields[fieldID] = { ...FilterFields[fieldID], value: filter[fieldID] };
-    }
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "html", text: nlsHPCC.HTML, iconProps: { iconName: "FileHTML" }, canCheck: true, checked: renderHTML, disabled: !hasHtml,
+            onClick: (ev, item) => {
+                if (!renderHTML) {
+                    if (!currentUser?.username || (currentUser?.username !== wu?.Owner)) {
+                        showViewHTMLConfirm(true);
+                    } else {
+                        setRenderHTML(true);
+                    }
+                } else {
+                    setRenderHTML(false);
+                }
+            }
+        }
+    ], [currentUser?.username, hasFilter, hasHtml, renderHTML, resultTable, showViewHTMLConfirm, wu?.Owner]);
 
     const rightButtons: ICommandBarItemProps[] = [
         {
@@ -307,6 +346,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             <>
                 <AutosizeHpccJSComponent widget={resultTable} />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <ViewHTMLConfirm />
             </>
         }
     />;
