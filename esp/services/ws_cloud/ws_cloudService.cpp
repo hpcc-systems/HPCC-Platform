@@ -34,6 +34,7 @@ void CWsCloudEx::init(IPropertyTree* cfg, const char* process, const char* servi
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/PODInfoCacheAutoRebuildSeconds", process, service);
     unsigned podInfoCacheAutoRebuildSeconds = cfg->getPropInt(xpath.str(), defaultPODInfoCacheAutoRebuildSecond);
     podInfoCacheReader.setown(new CPODInfoCacheReader("POD Reader", podInfoCacheAutoRebuildSeconds, podInfoCacheSeconds));
+    podInfoCacheReader->init();
 }
 
 bool CWsCloudEx::onGetPODs(IEspContext& context, IEspGetPODsRequest& req, IEspGetPODsResponse& resp)
