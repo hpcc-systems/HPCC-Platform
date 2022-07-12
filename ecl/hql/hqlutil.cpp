@@ -4612,18 +4612,14 @@ static bool traceFindFirstDifference(IHqlExpression * left, IHqlExpression * rig
             DBGLOG("--- same after skipping ---");
         return true;
     }
-    bool differ = false;
     ForEachChild(i, left)
     {
         if (traceFindFirstDifference(left->queryChild(i), right->queryChild(i), indent+1, i))
         {
-            differ = true;
             //Return otherwise a difference in a selector sequence can cause very large numbers of differences
             return true;
         }
     }
-    if (differ)
-        return true;
     if (left->queryName() != right->queryName())
         return foundDifference("Different same argument");
     if (left->getOperator() != no_record)

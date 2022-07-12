@@ -5215,6 +5215,7 @@ void EspMessageInfo::write_cpp_interfaces()
         outf("enum C%s { %s_Undefined=-1,", name_, name_);
 
         const char* base = getParentName();
+        assert(base);
         bool isIntBase = strieq(base,"int") || strieq(base,"long") || strieq(base,"uint") || strieq(base,"short");
         for (ParamInfo* pi=getParams();pi!=NULL;pi=pi->next)
         {
