@@ -277,9 +277,13 @@ interface IQueryDll;
 
 enum class SinkMode : byte
 {
-    Parallel = 0,           // Execute sinks in parallel - this is the default
+    Parallel = 0,           // Execute sinks in parallel
     ParallelPersistent = 1, // Execute sinks in parallel using persistent threads. May be faster for a heavily-reused child query, but lead to higher thread usage
-    Sequential = 2          // Execute sinks sequentially - sometimes faster if sinks not doing much work
+    Sequential = 2,         // Execute sinks sequentially - sometimes faster if sinks not doing much work
+    // NOTE - all values from here on are considered "automatic"
+    Automatic = 3,          // Combine simple sinks into a single sequential sink, execute remaining sinks in parallel using default threading (default)
+    AutomaticPersistent = 4,// Combine simple sinks into a single sequential sink, execute remaining sinks in parallel using persistent threads
+    AutomaticParallel = 5,  // Combine simple sinks into a single parallel sink, execute remaining sinks in parallel using standard threads
 };
 
 
@@ -340,6 +344,7 @@ extern bool prestartAgentThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
+extern bool traceActivityCharacteristics;
 extern unsigned actResetLogPeriod;
 extern bool traceRoxiePackets;
 extern bool delaySubchannelPackets;
@@ -389,6 +394,8 @@ extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
 extern bool selfTestMode;
 extern bool defaultCollectFactoryStatistics;
+extern bool defaultExecuteDependenciesSequentially;
+extern bool defaultStartInputsSequentially;
 extern bool oneShotRoxie;
 extern bool traceStrands;
 
