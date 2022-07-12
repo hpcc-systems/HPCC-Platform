@@ -23,7 +23,9 @@
 #####################################################
 
 project( s3file )
-set(AWS_SDK_CPP_SOURCE_DIR ${HPCC_SOURCE_DIR}/system/aws/aws-sdk-cpp)
+
+find_package(aws-cpp-sdk-core REQUIRED)
+find_package(aws-cpp-sdk-s3 REQUIRED)
 
 set (    SRCS
          s3file.cpp
@@ -33,8 +35,8 @@ set (    SRCS
 include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
-         ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-core/include
-         ${AWS_SDK_CPP_SOURCE_DIR}/aws-cpp-sdk-s3/include
+         aws-cpp-sdk-core
+         aws-cpp-sdk-s3
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DS3FILE_EXPORTS )

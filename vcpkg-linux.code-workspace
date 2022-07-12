@@ -9,12 +9,13 @@
 		"cmake.configureArgs": [
 			"-DRUNTIME_USER=${env:USER}",
 			"-DDESTDIR=${userHome}/hpcc-${buildType}",
+			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
 			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
-			"-DSUPPRESS_REMBED=ON",
-			"-DSUPPRESS_COUCHBASEEMBED=ON"
+			"-DSUPPRESS_REMBED=ON"
 		],
+		"editor.formatOnSave": false
 	},
 	"extensions": {
 		"recommendations": [

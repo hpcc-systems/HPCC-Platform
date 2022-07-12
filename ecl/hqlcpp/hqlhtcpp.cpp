@@ -15456,12 +15456,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
 
     StringBuffer flags;
     if (prefetch && prefetch->hasAttribute(parallelAtom)) flags.append("|PPFparallel");
+    if (prefetch && prefetch->hasAttribute(sequentialAtom)) flags.append("|PPFsequential");
+    if (recordTypesMatch(expr, dataset) && isSimpleProject(expr)) flags.append("|PPFnulltransform");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
     if (transformContainsSkip(transform))
         doBuildBoolFunction(instance->classctx, "canFilter", true);
-    if (lookahead)
+    if (lookahead && !lookahead->isAttribute())
         doBuildUnsignedFunction(instance->startctx, "getLookahead", lookahead);
 
     //Similar code to project below.  First generate the post processing function (which all aliases etc. will get generated into)

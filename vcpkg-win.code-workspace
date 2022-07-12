@@ -6,12 +6,12 @@
 	],
 	"settings": {
 		"cmake.configureArgs": [
+			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
 			"-DUSE_NATIVE_LIBRARIES=ON",
 			"-DINCLUDE_PLUGINS=OFF",
 			"-DUSE_OPENLDAP=OFF",
 			"-DUSE_AZURE=OFF",
-			"-DUSE_AWS=OFF",
 			"-DWSSQL_SERVICE=OFF",
 			"-DUSE_CASSANDRA=OFF"
 		],

@@ -1,14 +1,31 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
     "name": "hpcc-platform",
-    "version": "8.6.0",
+    "version": "8.8.0",
     "dependencies": [
         "apr",
         "apr-util",
+        {
+            "name": "aws-sdk-cpp",
+            "default-features": false,
+            "features": [
+                "s3",
+                "sqs"
+            ]
+        },
         "boost-property-tree",
         "boost-regex",
+        "cpr",
         "curl",
+        {
+            "name": "elasticlient",
+            "platform": "!windows"
+        },
+        "h3",
+        "hiredis",
         "icu",
+        "jwt-cpp",
+        "jsoncpp",
         {
             "name": "libarchive",
             "default-features": false,
@@ -20,20 +37,30 @@
             "name": "libiconv",
             "platform": "osx"
         },
-        "librdkafka",
+        "libgit2",
         {
             "name": "libmysql",
             "platform": "!(windows & x86)"
         },
+        "librdkafka",
+        "libuv",
         "libxml2",
         {
             "name": "libxslt",
             "default-features": false,
             "features": []
         },
+        "libyaml",
+        "lz4",
+        "nlohmann-json",
         "openblas",
         "openssl",
-        "python3",
+        {
+            "name": "python3",
+            "platform": "windows"
+        },
+        "rapidjson",
+        "tbb",
         {
             "name": "winflexbison",
             "platform": "windows"

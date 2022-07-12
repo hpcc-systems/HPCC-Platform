@@ -20,7 +20,7 @@
 ARG CR_USER=hpccsystems
 ARG CR_REPO=docker.io
 ARG PLATFORM_PRBASE_VER
-FROM ${CR_REPO}/${CR_USER}/smoketest-platform-build:${PLATFORM_PRBASE_VER}
+FROM ${CR_REPO}/${CR_USER}/smoketest-platform-build-vcpkg:${PLATFORM_PRBASE_VER} as stage
 
 USER hpcc
 
@@ -48,3 +48,7 @@ RUN make -j$(cat ~/build_threads)
 USER root
 
 RUN make -j$(cat ~hpcc/build_threads) install
+
+# Speed up GH Action
+FROM ${CR_REPO}/${CR_USER}/smoketest-platform-build-vcpkg:${PLATFORM_PRBASE_VER}
+COPY --from=stage /opt /opt

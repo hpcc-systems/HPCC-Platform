@@ -68,8 +68,8 @@ target_link_libraries(
     eclrtl
     roxiemem
     jlib
-    Python3::Python
-    )
+    ${Python3_LIBRARIES}
+)
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(

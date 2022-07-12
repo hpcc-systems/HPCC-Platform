@@ -510,13 +510,13 @@ extern void releaseRoxieHeap()
     {
         if (memTraceLevel)
             DBGLOG("RoxieMemMgr: releasing heap");
+        if (heapLocked)
+            lockRoxieMem(false);
         delete [] heapBitmap;
         heapBitmap = NULL;
 #ifdef _WIN32
         VirtualFree(heapBase, 0, MEM_RELEASE);
 #else
-        if (heapLocked)
-            lockRoxieMem(false);
         if (heapUseHugePages)
         {
             memsize_t memsize = memsize_t(heapTotalPages) * HEAP_ALIGNMENT_SIZE;

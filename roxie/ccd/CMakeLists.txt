@@ -26,6 +26,8 @@
 
 project( ccd ) 
 
+find_package(TBB CONFIG REQUIRED)
+
 set (   SRCS 
         ccdactivities.cpp
         ../ccdcache/ccdcache.cpp
@@ -143,6 +145,5 @@ IF (USE_OPENSSL)
 ENDIF()
 
 IF (USE_TBBMALLOC AND USE_TBBMALLOC_ROXIE)
-   add_dependencies ( ccd tbb )
-   target_link_libraries ( ccd libtbbmalloc_proxy libtbbmalloc)
+   target_link_libraries ( ccd TBB::tbb )
 ENDIF()

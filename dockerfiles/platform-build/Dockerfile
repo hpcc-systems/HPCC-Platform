@@ -23,11 +23,20 @@ ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
 FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
 
+RUN apt-get update
+RUN apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+RUN apt-add-repository 'deb https://download.mono-project.com/repo/ubuntu stable-focal main'
+RUN apt install -y mono-complete 
+
 RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
 RUN passwd -l hpcc 
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.18/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
+
+ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,read"
+ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
 
 WORKDIR /hpcc-dev
 RUN chown hpcc:hpcc /hpcc-dev
@@ -36,16 +45,25 @@ RUN chown hpcc:hpcc /hpcc-dev
 USER hpcc
 
 ARG BUILD_USER=hpcc-systems
+ARG BUILD_TAG=none
 RUN echo BUILD_USER is ${BUILD_USER}
-RUN git clone https://github.com/${BUILD_USER}/HPCC-Platform.git && \
-    cd HPCC-Platform && \
-    git submodule update --init --recursive
+RUN git clone --no-checkout https://github.com/${BUILD_USER}/HPCC-Platform.git
 
 WORKDIR /hpcc-dev/HPCC-Platform
-ARG BUILD_TAG=none
-RUN git fetch origin && \
-    git checkout ${BUILD_TAG} && \
+RUN git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
+
+WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
+RUN ./bootstrap-vcpkg.sh
+ARG GITHUB_ACTOR=hpcc-systems
+ARG GITHUB_TOKEN=none
+RUN mono `./vcpkg fetch nuget | tail -n 1` \
+    sources add \
+    -name "GitHub" \
+    -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+    -storepasswordincleartext \
+    -username "${GITHUB_ACTOR}" \
+    -password "${GITHUB_TOKEN}"
 
 WORKDIR /hpcc-dev
 RUN mkdir build

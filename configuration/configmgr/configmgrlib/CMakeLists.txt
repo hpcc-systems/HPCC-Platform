@@ -17,6 +17,8 @@
 
 project ( configmgr )
 
+find_package(RapidJSON CONFIG REQUIRED)
+
 SET(  SRCS
 
         EnvironmentMgr.cpp
@@ -60,7 +62,6 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_PREFIX_PATH}/mkspecs/linux-g++
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../hpcc_support
-    ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/oss
     ${Boost_INCLUDE_DIRS}
