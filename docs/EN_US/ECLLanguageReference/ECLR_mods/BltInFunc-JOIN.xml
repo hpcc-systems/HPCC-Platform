@@ -491,9 +491,9 @@
           <row>
             <entry><emphasis role="bold">SKIP</emphasis></entry>
 
-            <entry>Optional. Specifies eliminating the matching records that
-            exceed the maximum value of the LIMIT result instead of failing
-            the job.</entry>
+            <entry>Optional. Specifies eliminating all the matching records
+            whose total number exceeds the maximum value of the LIMIT result
+            instead of failing the job.</entry>
           </row>
 
           <row>
