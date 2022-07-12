@@ -767,6 +767,56 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue </entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait </entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite </entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk. </entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold">eclcc
                   Options</emphasis></entry>
 
@@ -2006,6 +2056,56 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2180,6 +2280,56 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2587,6 +2737,56 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2776,6 +2976,56 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3054,6 +3304,56 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3759,6 +4059,56 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4367,6 +4717,56 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-copy</entry>
+
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-queue</entry>
+
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-wait</entry>
+
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
+                </row>
+
+                <row>
+                  <entry>--dfu-overwrite</entry>
+
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
+                </row>
+
+                <row>
+                  <entry>--only-copy-files</entry>
+
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
+                </row>
+
+                <row>
+                  <entry>--stop-if-files-copied</entry>
+
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
                 </row>
               </tbody>
             </tgroup>
