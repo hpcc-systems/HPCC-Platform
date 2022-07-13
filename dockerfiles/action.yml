@@ -28,6 +28,9 @@ inputs:
   latest:
     description: 'Set to 1 to also tag as latest when maturity is release'
     required: false
+  github_actor:
+    description: 'The actor of the github action'
+    required: false
   github_token:
     description: 'The github token associated with the current build'
     required: false

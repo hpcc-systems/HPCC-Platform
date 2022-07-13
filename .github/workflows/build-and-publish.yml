@@ -26,7 +26,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           latest: 1   # this should only be set on the current minor branch
-          build_user: ${{ github.actor }}
+          github_actor: ${{ github.actor }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   ml-builds:
@@ -46,7 +46,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         latest: 1   # this should only be set on the current minor branch
         build_ml: ${{ matrix.engine }}
-        build_user: ${{ github.actor }}
+        github_actor: ${{ github.actor }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
   ln-builds:
@@ -68,5 +68,5 @@ jobs:
         lnb_token: ${{ secrets.LNB_TOKEN }}
         latest: 1   # this should only be set on the current minor branch
         build_ln: 1
-        build_user: ${{ github.actor }}
+        github_actor: ${{ github.actor }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
