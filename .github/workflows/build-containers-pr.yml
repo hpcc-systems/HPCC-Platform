@@ -133,7 +133,7 @@ jobs:
             GITHUB_ACTOR=${{ github.actor }}
             BUILD_TAG=${{ steps.vars.outputs.build_prbase_sha }}
             BUILD_TYPE=${{ steps.vars.outputs.build_type }}
-            BUILD_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
             USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
 

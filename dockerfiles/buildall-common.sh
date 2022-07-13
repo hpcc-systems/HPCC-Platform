@@ -24,6 +24,7 @@ BASE_VER=8.6                                    # The docker hub label for the p
 BUILD_TAG=$(git describe --exact-match --tags || true)  # The git tag for the images we are building
 BUILD_LABEL=${BUILD_TAG}                        # The docker hub label for all other components
 BUILD_USER=hpcc-systems                         # The github repo owner
+GITHUB_TOKEN=none                               # The personal access token for github packages
 BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
 DOCKER_REPO=hpccsystems
 DEST_DOCKER_REGISTRY=docker.io
@@ -32,6 +33,7 @@ USE_CPPUNIT=1
 # These values are set in a GitHub workflow build
 
 [[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
+[[ -n ${INPUT_GITHUB_TOKEN} ]] && GITHUB_TOKEN=${INPUT_GITHUB_TOKEN}
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
 
@@ -93,6 +95,7 @@ build_image() {
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
+       --build-arg GITHUB_ACTOR=${BUILD_USER} \
        --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
        ${rest} ${name}/
     push_image $name $label
