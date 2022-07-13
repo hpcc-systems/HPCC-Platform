@@ -268,8 +268,8 @@ jobs:
           -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
           -storepasswordincleartext \
           -name "GitHub" \
-          -username "${{ github.actor }}" \
-          -password "${{ secrets.GITHUB_TOKEN }}"
+          -username "${{ secrets.LNB_ACTOR }}" \
+          -password "${{ secrets.LNB_TOKEN }}"
 
     # Subsequent cache hit builds use cache-timestamp to ensure all sources are marked 'old',
     # except those changed between the cache SHA and the SHA being built.

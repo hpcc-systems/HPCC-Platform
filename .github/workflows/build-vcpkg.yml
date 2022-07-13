@@ -81,6 +81,10 @@ jobs:
           echo ${{ matrix.os }} ${{ matrix.triplet }}
           echo "Checkout to $Env:GITHUB_WORKSPACE"
           echo "Platform Changed:  ${{ needs.check-skip.outputs.platform }}"
+          echo "GITHUB_ACTOR=${{ github.actor }}"
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"
+          echo "NUGET_ACTOR=${{ secrets.LNB_ACTOR }}"
+          echo "NUGET_TOKEN=${{ secrets.LNB_TOKEN }}"
 
       - name: Ubuntu Dependencies
         if: ${{ needs.check-skip.outputs.platform && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04') }}
@@ -138,8 +142,8 @@ jobs:
             -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
             -storepasswordincleartext \
             -name "GitHub" \
-            -username "${{ github.actor }}" \
-            -password "${{ secrets.GITHUB_TOKEN }}"
+            -username "${{ secrets.LNB_ACTOR }}" \
+            -password "${{ secrets.LNB_TOKEN }}"
 
       - name: "Generate HPCC-Platform Build Files"
         if: ${{ needs.check-skip.outputs.platform }}
@@ -201,5 +205,7 @@ jobs:
             BUILD_USER=${{ github.actor }}
             GITHUB_ACTOR=${{ github.actor }}
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            NUGET_ACTOR=${{ secrets.LNB_ACTOR }}
+            NUGET_TOKEN=${{ secrets.LNB_TOKEN }}
             BUILD_TYPE=Release
             USE_CPPUNIT=0

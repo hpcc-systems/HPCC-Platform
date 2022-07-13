@@ -38,6 +38,8 @@ USE_CPPUNIT=1
 [[ -n ${INPUT_GITHUB_TOKEN} ]] && GITHUB_TOKEN=${INPUT_GITHUB_TOKEN}
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
+[[ -n ${INPUT_NUGET_ACTOR} ]] && NUGET_ACTOR=${INPUT_NUGET_ACTOR}
+[[ -n ${INPUT_NUGET_TOKEN} ]] && NUGET_TOKEN=${INPUT_NUGET_TOKEN}
 
 DEST_DOCKER_REPO=${DOCKER_REPO}
 [[ -n ${INPUT_LN_DOCKER_REPO} ]] && DEST_DOCKER_REPO=${INPUT_LN_DOCKER_REPO}
@@ -97,8 +99,8 @@ build_image() {
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
-       --build-arg GITHUB_ACTOR=${GITHUB_ACTOR} \
-       --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
+       --build-arg NUGET_ACTOR=${NUGET_ACTOR} \
+       --build-arg NUGET_TOKEN=${NUGET_TOKEN} \
        ${rest} ${name}/
     push_image $name $label
   fi

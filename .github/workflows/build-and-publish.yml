@@ -28,6 +28,8 @@ jobs:
           latest: 1   # this should only be set on the current minor branch
           github_actor: ${{ github.actor }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          nuget_actor: ${{ secrets.LNB_ACTOR }}
+          nuget_token: ${{ secrets.LNB_TOKEN }}
 
   ml-builds:
     needs: build
@@ -48,6 +50,8 @@ jobs:
         build_ml: ${{ matrix.engine }}
         github_actor: ${{ github.actor }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        nuget_actor: ${{ secrets.LNB_ACTOR }}
+        nuget_token: ${{ secrets.LNB_TOKEN }}
 
   ln-builds:
     needs: build
@@ -70,3 +74,5 @@ jobs:
         build_ln: 1
         github_actor: ${{ github.actor }}
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        nuget_actor: ${{ secrets.LNB_ACTOR }}
+        nuget_token: ${{ secrets.LNB_TOKEN }}

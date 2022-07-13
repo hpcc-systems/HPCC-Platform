@@ -122,6 +122,9 @@ jobs:
             BUILD_USER=${{ github.repository_owner }}
             BUILD_TAG=${{ steps.vars.outputs.build_base_sha }}
             BUILD_TYPE=${{ steps.vars.outputs.build_type }}
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            GITHUB_ACTOR=${{ github.actor }}
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN}}
+            NUGET_ACTOR=${{ secrets.LNB_ACTOR }}
+            NUGET_TOKEN=${{ secrets.LNB_TOKEN }}
             USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}

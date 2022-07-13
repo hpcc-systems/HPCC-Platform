@@ -80,14 +80,16 @@ RUN git checkout ${BUILD_TAG} && \
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
 RUN ./bootstrap-vcpkg.sh
-ARG GITHUB_TOKEN=none
+ARG NUGET_ACTOR=hpcc-systems
+RUN echo NUGET_ACTOR is ${NUGET_ACTOR}
+ARG NUGET_TOKEN=none
 RUN mono `./vcpkg fetch nuget | tail -n 1` \
     sources add \
     -name "GitHub" \
     -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
     -storepasswordincleartext \
-    -username "${GITHUB_ACTOR}" \
-    -password "${GITHUB_TOKEN}"
+    -username "${NUGET_ACTOR}" \
+    -password "${NUGET_TOKEN}"
 
 WORKDIR /hpcc-dev
 RUN mkdir build

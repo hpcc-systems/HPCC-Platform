@@ -28,4 +28,5 @@ jobs:
           build_type: Debug
           github_actor: ${{ github.actor }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          
+          nuget_actor: ${{ secrets.LNB_ACTOR }}
+          nuget_token: ${{ secrets.LNB_TOKEN }}
