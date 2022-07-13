@@ -37,6 +37,7 @@ while getopts “d:fhlpt:n:u:b:r:” opt; do
     t) INPUT_BUILD_THREADS=$OPTARG ;;
     d) INPUT_DOCKER_REPO=$OPTARG ;;
     u) INPUT_BUILD_USER=$OPTARG ;;
+    a) INPUT_GITHUB_TOKEN=$OPTARG ;;
     b) INPUT_BUILD_TYPE=$OPTARG ;;
     r) UPSTREAM=$OPTARG ;;
     f) FORCE=1 ;;
@@ -51,6 +52,7 @@ while getopts “d:fhlpt:n:u:b:r:” opt; do
        echo "    -r                 Override git upstream repo name (default is 'upstream')"
        echo "    -t <num-threads>   Override the number of build threads"
        echo "    -u <user>          Specify the build user"
+       echo "    -a <pat>           Personal access token for github packages"
        exit
        ;;
   esac
@@ -72,6 +74,10 @@ BUILD_THREADS=$INPUT_BUILD_THREADS # If not set, picks up default based on nproc
 # BUILD_USER used when building from scatch with force option (-f)
 BUILD_USER=hpccsystems
 [[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
+
+# GITHUB_TOKEN used when building from scatch with force option (-f)
+GITHUB_TOKEN=none
+[[ -n ${INPUT_GITHUB_TOKEN} ]] && GITHUB_TOKEN=${INPUT_GITHUB_TOKEN}
 
 HEAD=$(git rev-parse --short HEAD)
 BUILD_LABEL="${HEAD}-${BUILD_TYPE}"
@@ -193,7 +199,7 @@ build_image() {
 
 if [[ -n "$FORCE" ]] ; then
   echo Building local forced build images [ BUILD_LABEL=${BUILD_LABEL} ]
-  build_image platform-build platform-build --build-arg BUILD_USER=${BUILD_USER} --build-arg BUILD_TAG=${HEAD} --build-arg BUILD_THREADS=${BUILD_THREADS}
+  build_image platform-build platform-build --build-arg BUILD_USER=${BUILD_USER} --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} --build-arg BUILD_TAG=${HEAD} --build-arg BUILD_THREADS=${BUILD_THREADS}
 else
   echo Building local incremental images [ BUILD_LABEL=${BUILD_LABEL} ] based on ${PREV}
   build_image platform-build platform-build-incremental --build-arg DOCKER_REPO=${INCR_DOCKER_REPO} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} --build-arg BUILD_THREADS=${BUILD_THREADS}
