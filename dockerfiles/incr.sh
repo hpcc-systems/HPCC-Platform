@@ -199,7 +199,7 @@ build_image() {
 
 if [[ -n "$FORCE" ]] ; then
   echo Building local forced build images [ BUILD_LABEL=${BUILD_LABEL} ]
-  build_image platform-build platform-build --build-arg BUILD_USER=${BUILD_USER} --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} --build-arg BUILD_TAG=${HEAD} --build-arg BUILD_THREADS=${BUILD_THREADS}
+  build_image platform-build platform-build --build-arg BUILD_USER=${BUILD_USER} --build-arg GITHUB_ACTOR=${BUILD_USER} --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} --build-arg BUILD_TAG=${HEAD} --build-arg BUILD_THREADS=${BUILD_THREADS}
 else
   echo Building local incremental images [ BUILD_LABEL=${BUILD_LABEL} ] based on ${PREV}
   build_image platform-build platform-build-incremental --build-arg DOCKER_REPO=${INCR_DOCKER_REPO} --build-arg PREV_LABEL=${PREV} --build-arg PATCH_MD5=${PATCH_MD5} --build-arg BUILD_THREADS=${BUILD_THREADS}
