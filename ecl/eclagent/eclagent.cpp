@@ -1958,7 +1958,7 @@ void EclAgent::doProcess()
 
 #ifdef _CONTAINERIZED
     // signal to any lingering Thor's that job is complete and they can quit before timeout.
-    executeGraphOnLingeringThor(*wuRead, nullptr, nullptr);
+    executeGraphOnLingeringThor(*wuRead, nullptr);
 #endif
 
     DBGLOG("Process complete");
