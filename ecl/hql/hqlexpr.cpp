@@ -8331,6 +8331,24 @@ bool CHqlScope::hasBaseClass(IHqlExpression * searchBase)
     return false;
 }
 
+IHqlExpression * findCommonBaseModule(IHqlExpression * left, IHqlExpression * right)
+{
+    if (left->queryType()->assignableFrom(right->queryType()))
+        return left;
+
+    ForEachChild(i, left)
+    {
+        IHqlExpression * cur = left->queryChild(i);
+        if (cur->queryScope())
+        {
+            IHqlExpression * common = findCommonBaseModule(cur, right);
+            if (common)
+                return common;
+        }
+    }
+    return nullptr;
+}
+
 void CHqlScope::sethash()
 {
     switch (op)

@@ -1708,6 +1708,7 @@ extern HQL_API IHqlExpression * closeAndLink(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createAbstractRecord(IHqlExpression * record);
 extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements);
 extern HQL_API IHqlExpression * queryFunctionAttribute(IHqlExpression * funcdef, IAtom * name);
+extern HQL_API IHqlExpression * findCommonBaseModule(IHqlExpression * left, IHqlExpression * right);
 
 // Same as expr->queryChild() except it doesn't return attributes.
 inline IHqlExpression * queryRealChild(IHqlExpression * expr, unsigned i)
