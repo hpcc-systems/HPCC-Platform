@@ -225,7 +225,7 @@ static CriticalSection heapBitCrit;
 
 static void notifyAllUnusedRoxieMem();
 
-extern void lockRoxieMem(bool lock)
+extern int lockRoxieMem(bool lock)
 {
 #ifndef _WIN32
     CriticalBlock b(heapBitCrit);
@@ -233,7 +233,7 @@ extern void lockRoxieMem(bool lock)
     if (!heapBase || !heapEnd)
     {
         DBGLOG("Attempt to lock/unlock heap memory failed, invalid heapBase or heapEnd");
-        return;
+        return 999;
     }
 
     memsize_t memsize = heapEnd - heapBase;
@@ -248,9 +248,16 @@ extern void lockRoxieMem(bool lock)
             DBGLOG("MEMORY LOCKED");
             heapNotifyUnusedEachFree = false;
             heapNotifyUnusedEachBlock = false;
+            return 0;
         }
         else
-            DBGLOG("Attempt to lock heap memory failed, errno = %d", errno);
+        {
+            int errnum = errno;
+            if (!errnum)
+                errnum = 999;
+            DBGLOG("Attempt to lock heap memory failed, errno = %d", errnum);
+            return errnum;
+        }
     }
     else if (!lock && heapLocked)
     {
@@ -278,11 +285,24 @@ extern void lockRoxieMem(bool lock)
                 }
                 notifyAllUnusedRoxieMem();
             }
+            return 0;
         }
         else
-            DBGLOG("Attempt to unlock heap memory failed, errno = %d", errno);
+        {
+            int errnum = errno;
+            if (!errnum)
+                errnum = 999;
+            DBGLOG("Attempt to unlock heap memory failed, errno = %d", errnum);
+            return errnum;
+        }
     }
 #endif
+    return 0;
+}
+
+extern bool getRoxieMemLocked()
+{
+    return heapLocked;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
