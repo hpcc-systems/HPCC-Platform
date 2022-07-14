@@ -28,45 +28,9 @@ project(cassandraembed)
 # When there is (and the distros catch up) we may want to add them as dependencies here
 # until then, we build the required libraries from source
 if(USE_CASSANDRA)
+  find_path(CPP_DRIVER_INCLUDE_DIRS "include/cassandra.h" HINTS "${VCPKG_INSTALLED_DIR}")
+  find_library(CPP_DRIVER_LIBRARY "lib/libcassandra_static.a" HINTS "${VCPKG_INSTALLED_DIR}")
   find_package(unofficial-libuv CONFIG REQUIRED)
-
-  # Build the Cassandra cpp driver, only presently available as source
-  if(NOT EXISTS "${PROJECT_SOURCE_DIR}/cpp-driver/CMakeLists.txt")
-    message(FATAL_ERROR
-      "   The cpp-driver submodule is not available.
-      This normally indicates that the git submodule has not been fetched.
-      Please run git submodule update --init --recursive")
-  endif()
-  option(CASS_INSTALL_HEADER "Install header file" OFF)
-  option(CASS_BUILD_STATIC "Build static library" OFF)
-  option(CASS_BUILD_EXAMPLES "Build examples" OFF)
-  option(CASS_INSTALL_PKG_CONFIG "Install pkg-config files" OFF)
-  set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS FALSE)
-  set(_SAVE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  if (CMAKE_COMPILER_IS_GNUCXX)
-  # From time to time need to add flags in here to disable warnings, if a new compiler picks up something new.
-  # e.g.
-    if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.2.0)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy -Wno-deprecated-declarations")
-    endif ()
-  endif()
-  if (CMAKE_COMPILER_IS_CLANG)
-  # From time to time need to add flags in here to disable warnings, if a new compiler picks up something new.
-  # e.g.
-    if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0.0)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy")
-    endif ()
-  endif()
-  if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    remove_definitions (-fsanitize=undefined -fno-sanitize=alignment -fsanitize-trap=undefined)
-  endif()
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cpp-driver/cmake/modules/")
-  set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
-  set(CASS_ROOT_DIR "${PROJECT_SOURCE_DIR}/cpp-driver")
-  add_subdirectory(cpp-driver ${PROJECT_BINARY_DIR}/cassandra)
-  set(CMAKE_CXX_FLAGS "${_SAVE_CMAKE_CXX_FLAGS}")
-
-  install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/.libs:${PROJECT_BINARY_DIR}/cassandra\")")
 
   ADD_PLUGIN(cassandraembed)
 
@@ -86,8 +50,9 @@ if(USE_CASSANDRA)
     ./../../system/jlib
     ./../../system/security/shared 
     ./../../system/mp
-    ./../../dali/base 
-    ./cpp-driver/include)
+    ./../../dali/base
+    ${CPP_DRIVER_INCLUDE_DIRS}
+    )
 
   add_definitions(-D_USRDLL -DCASSANDRAEMBED_EXPORTS)
 
@@ -105,12 +70,12 @@ if(USE_CASSANDRA)
 
   target_link_libraries(
     cassandraembed
-    cassandra
     eclrtl
     roxiemem
     dalibase
     workunit
     jlib
+    ${CPP_DRIVER_LIBRARY}
     unofficial::libuv::libuv)
 
   if(PLATFORM OR CLIENTTOOLS_ONLY)
