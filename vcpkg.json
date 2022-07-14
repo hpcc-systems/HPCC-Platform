@@ -15,6 +15,7 @@
         },
         "boost-property-tree",
         "boost-regex",
+        "cpp-driver",
         "cpr",
         "curl",
         {
