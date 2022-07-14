@@ -1,0 +1,28 @@
+authNZ:
+   test:
+      name: test
+      type: test
+      LibName: libtestauthSecurity.so
+      # Define which authorization resources to be tested.
+      # As default, the authorization resources defined in
+      # ldap_authorization_map.yaml are tested.
+      useResourceMapsFrom: ldap
+      userAccess:
+      -  userName: testadmin
+         #password: MW6vRCpKS7AhO/1YBazKOg== # optional. If missing, use the userName as the password.
+         #secretKey: testauthusercreds1     # optional
+         defaults:
+            resource: full
+         resources:  # what kinds of resource permissions should be given to testuser?
+            ws_ecl:
+               features:
+                  WsEclAccess: full
+      -  userName: testuser
+         #password: qrjTr7raH8lOaO8//i+n7Q== # optional. If missing, use the userName as the password.
+         #secretKey: testauthusercreds2     # optional
+         defaults:
+            resource: none
+         resources:  # what kinds of resource permissions should be given to testuser?
+            ws_ecl:
+               features:
+                  WsEclAccess: full

@@ -2521,6 +2521,20 @@ int CWsEclBinding::getWsEclExample(CHttpRequest* request, CHttpResponse* respons
 
 int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 {
+    sub_service ss;
+    request->getEspPathInfo(ss);
+    //This method processes WsECLs REST URL formats, it's a bit more modern than some of the core ESP url formats
+    //  But don't allow caller to use core ESP access modifiers that don't match the expected types for REST URLs
+    //  all of the URL processing below is based on the following three types of core ESP access
+    //  NOTE that a few other types of core ESP access don't need to be authenticated
+    //
+    //So we have to only allow the three proper types here
+    //  [sub_serv_method, sub_serv_query, sub_serv_instant_query]
+    //
+    if (ss!=sub_serv_method && ss!=sub_serv_query && ss!=sub_serv_instant_query)
+        throw makeStringException(-1, "Unexpected URL modifier!");
+
+    //We are in WsECL REST URL mode from here
     Owned<IMultiException> me = MakeMultiException("WsEcl");
 
     try
