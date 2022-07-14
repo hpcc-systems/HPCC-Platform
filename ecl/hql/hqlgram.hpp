@@ -461,6 +461,7 @@ public:
     unsigned checkCompatible(ITypeInfo * a1, ITypeInfo * t2, const attribute &ea, bool complain=true);
     void checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * values, attribute & errpos);
     void checkCompatibleTransforms(HqlExprArray & values, IHqlExpression * record, attribute & errpos);
+    ITypeInfo * checkCompatibleScopes(const attribute& left, const attribute& right);
     void checkBoolean(attribute &atr);
     void checkBooleanOrNumeric(attribute &atr);
     void checkDatarow(attribute &atr);

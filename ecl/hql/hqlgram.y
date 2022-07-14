@@ -7453,8 +7453,8 @@ abstractModule
     | IF '(' booleanExpr ',' abstractModule ',' abstractModule ')'
                         {
                             parser->checkConstant($3, true);
+                            OwnedITypeInfo scopeType = parser->checkCompatibleScopes($5, $7);
                             OwnedHqlExpr trueExpr = $5.getExpr();
-                            OwnedITypeInfo scopeType = trueExpr->getType();  // actually needs to be the common base class.
                             OwnedHqlExpr module = createValue(no_if, scopeType.getClear(), $3.getExpr(), LINK(trueExpr), $7.getExpr());
                             $$.setExpr(createDelayedScope(module.getClear()), $1);
                         }

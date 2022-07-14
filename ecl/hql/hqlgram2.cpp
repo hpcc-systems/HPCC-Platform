@@ -4069,6 +4069,74 @@ void HqlGram::checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * va
     }
 }
 
+
+static void extractExtraImports(HqlExprCopyArray & extra, HqlLookupContext & lookupCtx, IHqlScope * scope, IHqlScope * baseScope)
+{
+    HqlExprArray symbols;
+    scope->getSymbols(symbols);
+
+    ForEachItemIn(i, symbols)
+    {
+        IHqlExpression & cur = symbols.item(i);
+        if (cur.isExported())
+        {
+            OwnedHqlExpr resolved = baseScope->lookupSymbol(cur.queryId(), LSFpublic, lookupCtx);
+            if (!resolved)
+                extra.append(cur);
+        }
+    }
+}
+
+static StringBuffer & expandSymbolList(StringBuffer & out, HqlExprCopyArray & symbols)
+{
+    ForEachItemIn(i, symbols)
+    {
+        if (i)
+            out.append(',');
+        out.append(str(symbols.item(i).queryId()));
+    }
+    return out;
+}
+
+ITypeInfo * HqlGram::checkCompatibleScopes(const attribute& left, const attribute& right)
+{
+    ITypeInfo * leftType = left.queryExprType();
+    ITypeInfo * rightType = right.queryExprType();
+    if (leftType->assignableFrom(rightType))
+        return LINK(leftType);
+    if (rightType->assignableFrom(leftType))
+        return LINK(rightType);
+
+    //Is there a shared base module - if so symbols in that module can be accessed.
+    IHqlExpression * common = findCommonBaseModule(left.queryExpr(), right.queryExpr());
+    if (common)
+        return common->getType();
+
+    //For the moment allow them to be compatible if one module's exports are a subset of the others
+    HqlExprCopyArray leftExtraSymbols, rightExtraSymbols;
+    extractExtraImports(leftExtraSymbols, lookupCtx, left.queryExpr()->queryScope(), right.queryExpr()->queryScope());
+    extractExtraImports(rightExtraSymbols, lookupCtx, right.queryExpr()->queryScope(), left.queryExpr()->queryScope());
+
+    if (leftExtraSymbols.length() && rightExtraSymbols.length())
+    {
+        StringBuffer leftSymbols, rightSymbols;
+        reportError(ERR_TYPE_INCOMPATIBLE, left.pos, "Modules are not compatible. Extra exports: left(%s) right(%s)",
+                    expandSymbolList(leftSymbols, leftExtraSymbols).str(), expandSymbolList(rightSymbols, rightExtraSymbols).str());
+        return LINK(leftType);
+    }
+    else
+    {
+        if (leftExtraSymbols.length() || rightExtraSymbols.length())
+            reportWarning(CategoryInformation, ERR_TYPE_INCOMPATIBLE, left.pos, "Modules do not share a common base MODULE");
+    }
+
+    if (leftExtraSymbols.length())
+        return LINK(rightType);
+    else if (rightExtraSymbols.length())
+        return LINK(leftType);
+    return LINK(leftType);
+}
+
 void HqlGram::checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos)
 {
     if (attr->numChildren()>0)
