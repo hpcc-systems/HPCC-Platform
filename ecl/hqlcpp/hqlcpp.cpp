@@ -1872,6 +1872,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.generateIR, "generateIR", false),
         DebugOption(options.generateIRAfterTransform, "generateIRAfterTransform", false),
         DebugOption(options.irOptions, "irOptions", EclIR::TIRexpandSimpleTypes),
+        DebugOption(options.allowStaticRegex, "allowStaticRegex", true),
+        DebugOption(options.defaultStaticRegex, "defaultStaticRegex", targetRoxie()),   // Roxie queries are loaded once, and shared.  It makes sense to only compile once.
     };
 
     //get options values from workunit
@@ -12137,12 +12139,14 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx & ctx, IHqlExpression
                 "#endif\n");
     }
 
-    MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
-    if (location)
-        userFunc.ctx.addLine(locationFilename, startLine);
-    userFunc.ctx.addQuoted(body);
-    if (location)
-        userFunc.ctx.addLine();
+    {
+        MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
+        if (location)
+            userFunc.ctx.addLine(locationFilename, startLine);
+        userFunc.ctx.addQuoted(body);
+        if (location)
+            userFunc.ctx.addLine();
+    }
 
     if (addPragmas)
     {

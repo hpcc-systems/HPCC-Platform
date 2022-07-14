@@ -262,6 +262,7 @@ MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classc
 MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classctx, const char * text, unsigned _flags) : translator(_translator), ctx(classctx), flags(_flags)
 {
     stmt = ctx.addQuotedFunction(text, (flags & MFdynamicproto) != 0);
+    stmt->setIncomplete(true);
     if (flags & MFoptimize)
         stmt->setForceOptimize(true);
     else if (flags & MFnooptimize)
@@ -300,6 +301,8 @@ void MemberFunction::finish()
 
     if ((flags & MFopt) && (stmt->numChildren() == 0))
         stmt->setIncluded(false);
+    else
+        stmt->setIncomplete(false);
 
     stmt = nullptr;
 }
@@ -2299,6 +2302,7 @@ void ActivityInstance::buildPrefix()
     {
         s.clear().append("struct ").append(className).append(" : public CThor").append(activityArgName).append("Arg").append(baseClassExtra);
         classStmt = classctx.addQuotedCompound(s, ";");
+        classStmt->setIncomplete(true);
 
         if (subgraph)
             classctx.associate(*subgraph);
@@ -2397,6 +2401,9 @@ void ActivityInstance::buildSuffix()
 
         classctx.addQuoted(s);
     }
+
+    if (classStmt)
+        classStmt->setIncomplete(false);
 
     if (numChildQueries)
         addAttributeInt(WaNumChildQueries, numChildQueries);
@@ -18359,21 +18366,70 @@ IHqlExpression * HqlCppTranslator::doBuildRegexCompileInstance(BuildCtx & ctx, I
 
     BuildCtx * initCtx = &ctx;
     BuildCtx * declareCtx = &ctx;
+    BuildCtx tempCtx(ctx);
+    bool declareExternal = false;
     if (pattern->isConstant())
-        getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false);
+    {
+        //defaultStaticRegex means regexes are generated globally rather than within an activity.  allowStaticRegex allows the feature to be disabled.
+        if ((options.defaultStaticRegex && options.allowStaticRegex) || !getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false))
+        {
+            if (options.allowStaticRegex)
+            {
+                //Declare the regular expression globally - and include it in the header if spanning multiple cpp files
+                tempCtx.set(declareAtom);
+                tempCtx.setNextPriority(RegexPatternPrio);
+                declareExternal = options.spanMultipleCpp;
+
+                declareCtx = &tempCtx;
+                initCtx = nullptr;
+
+                match = declareCtx->queryMatchExpr(searchKey);
+                if (match)
+                    return match->queryExpr();
+            }
+        }
+        else
+            initCtx = nullptr;
+    }
 
     StringBuffer tempName;
     getUniqueId(tempName.append("regex"));
     ITypeInfo * type = makeClassType(isUnicode ? "rtlCompiledUStrRegex" : "rtlCompiledStrRegex");
     OwnedHqlExpr regexInstance = createVariable(tempName.str(), type);
-    declareCtx->addDeclare(regexInstance);
+    if (!initCtx)
+    {
+        OwnedITypeInfo patternType;
+        if (isUnicode)
+            patternType.setown(makeVarUnicodeType(UNKNOWN_LENGTH, nullptr));
+        else
+            patternType.set(unknownVarStringType);
 
-    HqlExprArray args;
-    args.append(*LINK(regexInstance));
-    args.append(*LINK(pattern));
-    args.append(*createConstant(isCaseSensitive));
-    IIdAtom * func = isUnicode ? regexNewSetUStrPatternId : regexNewSetStrPatternId;
-    buildFunctionCall(*initCtx, func, args);
+        OwnedHqlExpr castPattern = ensureExprType(pattern, patternType);
+        CHqlBoundExpr boundPattern;
+        buildExpr(ctx, castPattern, boundPattern);
+
+        IHqlStmt * declare = declareCtx->addDeclare(regexInstance);
+        declare->addExpr(LINK(boundPattern.expr));
+        declare->addExpr(createConstant(isCaseSensitive));
+        declare->addOption(classAtom);
+
+        if (declareExternal)
+        {
+            BuildCtx protoctx(*code, mainprototypesAtom);
+            protoctx.addDeclareExternal(regexInstance);
+        }
+    }
+    else
+    {
+        declareCtx->addDeclare(regexInstance);
+
+        HqlExprArray args;
+        args.append(*LINK(regexInstance));
+        args.append(*LINK(pattern));
+        args.append(*createConstant(isCaseSensitive));
+        IIdAtom * func = isUnicode ? regexNewSetUStrPatternId : regexNewSetStrPatternId;
+        buildFunctionCall(*initCtx, func, args);
+    }
     declareCtx->associateExpr(searchKey, regexInstance);
 
     return regexInstance;
@@ -18691,7 +18747,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 
 
     BuildCtx classctx(*code, goAtom);
-    classctx.addQuotedCompoundLiteral("struct MyEclProcess : public EclProcess", ";");
+    IHqlStmt * mainClass = classctx.addQuotedCompoundLiteral("struct MyEclProcess : public EclProcess", ";");
+    mainClass->setIncomplete(true);
 
     classctx.addQuotedLiteral("virtual unsigned getActivityVersion() const override { return ACTIVITY_INTERFACE_VERSION; }");
 
@@ -18750,6 +18807,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 
     OwnedHqlExpr returnExpr = getSizetConstant(maxSequence);
     performFunc.ctx.addReturn(returnExpr);
+
+    mainClass->setIncomplete(false);
 }
 
 //---------------------------------------------------------------------------
