@@ -26,6 +26,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           build_type: Debug
-          github_actor: ${{ github.actor }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_actor: ${{ secrets.LNB_ACTOR }}
+          github_token: ${{ secrets.LNB_TOKEN }}
           
