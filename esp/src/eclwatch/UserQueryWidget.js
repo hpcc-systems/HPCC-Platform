@@ -848,7 +848,6 @@ define([
                 retVal = new ShowIndividualPermissionsWidget({
                     id: id,
                     title: params.TabName ? params.TabName : params.Name,
-                    iconClass: "iconPeople",
                     closable: true,
                     params: params
                 });

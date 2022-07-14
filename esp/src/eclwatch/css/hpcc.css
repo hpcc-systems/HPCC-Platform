@@ -617,6 +617,12 @@ hr.dashedLine {
     height: 16px;
 }
 
+.iconKey{
+    background-image: url("../img/key.png");
+    width: 16px;
+    height: 16px;
+}
+
 .None{
     background: url("../img/nodata.png") no-repeat; 
     width: 16px;
