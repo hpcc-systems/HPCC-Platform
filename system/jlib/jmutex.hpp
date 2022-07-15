@@ -1002,7 +1002,18 @@ template <typename X>
 class Singleton
 {
 public:
-    template <typename FUNC> X * query(FUNC factory) { return querySingleton(singleton, cs, factory); }
+    template <typename FUNC> X * query(FUNC factory)
+    {
+        if (initialized.load(std::memory_order_acquire))
+            return singleton.load(std::memory_order_acquire); // avoid crit
+        CriticalBlock block(cs);
+        if (initialized.load(std::memory_order_acquire))
+            return singleton.load(std::memory_order_acquire);
+        X * value = factory();
+        singleton.store(value, std::memory_order_release);
+        initialized.store(true, std::memory_order_release);
+        return value;
+    }
 
     //destroy() is designed to be called from a static destructor, not thread safe with calls to query() ...
     void destroy(std::function<void (X*)> destructor)
@@ -1010,14 +1021,17 @@ public:
         X * value = singleton.exchange(nullptr, std::memory_order_acq_rel);
         if (value)
             destructor(value);
+        initialized = false;
     }
     void destroy()
     {
         X * value = singleton.exchange(nullptr, std::memory_order_acq_rel);
         delete value;
+        initialized = false;
     }
 private:
     std::atomic<X *> singleton = {nullptr};
+    std::atomic<bool> initialized = {false};
     CriticalSection cs;
 };
 
