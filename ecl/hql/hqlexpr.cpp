@@ -4702,6 +4702,7 @@ switch (op)
         break;
     case no_getresult:
         {
+            assertex(!isDataset() || queryDataset());
             assertex(!isAction());
             break;
         }
