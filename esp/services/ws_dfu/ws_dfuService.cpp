@@ -6754,7 +6754,6 @@ void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
     async.For(fileDesc->numParts(), 100);
 }
 
-
 struct _ownerInfo {
     std::string name;
     long long int totalFiles;
@@ -6767,7 +6766,6 @@ struct _groupInfo {
     long long int totalFiles;
     std::map<std::string, std::shared_ptr<_ownerInfo>> owners;
 };
-
 
 bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & req, IEspDFUGroupSpaceResponse & resp)
 {
@@ -6792,9 +6790,9 @@ bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & 
     bool addAllOwners = filterByOwner && !filterOwner.compareTo("*");
 
     PROGLOG("DFUGroupSpace: Getting files");
-    Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator("*", userdesc.get(), true, true, NULL);
-    if(!fi)
-        throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"DFUGroupSpace: Cannot get information from file system.");
+    Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator("*", userdesc.get(), true, true, nullptr);
+    if (!fi)
+        throw makeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR, "DFUGroupSpace: Cannot get information from file system.");
 
     long long int totalFiles = 0, totalFileSize = 0;
     std::map<std::string, std::shared_ptr<_groupInfo>> groups;
