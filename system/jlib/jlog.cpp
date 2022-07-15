@@ -3239,15 +3239,20 @@ bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & retur
 //logAccessPluginConfig expected to contain connectivity and log mapping information
 typedef IRemoteLogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
 
-IRemoteLogAccess &queryRemoteLogAccessor()
+IRemoteLogAccess *queryRemoteLogAccessor()
 {
-    return *logAccessor.query([]
+    return logAccessor.query([]
         {
-            Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
-#ifdef LOGACCESSDEBUG
-            if (!logAccessPluginConfig)
+            PROGLOG("Loading remote log access plug-in.");
+
+            IRemoteLogAccess *remoteLogAccessor = nullptr;
+            try
             {
-                const char * simulatedGlobalYaml = R"!!(global:
+                Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
+#ifdef LOGACCESSDEBUG
+                if (!logAccessPluginConfig)
+                {
+                    const char * simulatedGlobalYaml = R"!!(global:
   logAccess:
     name: "Azure LogAnalytics LogAccess"
     type: "AzureLogAnalyticsCurl"
@@ -3275,36 +3280,42 @@ IRemoteLogAccess &queryRemoteLogAccessor()
       searchColumn: "Name"
     - type: "host"
       searchColumn: "Computer"
-                )!!";
-                Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-                logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
-            }
+                    )!!";
+                    Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+                    logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
+                }
 #endif
 
-            if (!logAccessPluginConfig)
-                throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
+                if (!logAccessPluginConfig)
+                    throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
 
-            constexpr const char * methodName = "queryRemoteLogAccessor";
-            constexpr const char * instFactoryName = "createInstance";
+                constexpr const char * methodName = "queryRemoteLogAccessor";
+                constexpr const char * instFactoryName = "createInstance";
 
-            StringBuffer libName; //lib<type>logaccess.so
-            StringBuffer type;
-            logAccessPluginConfig->getProp("@type", type);
-            if (type.isEmpty())
-                throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
-            libName.append("lib").append(type.str()).append("logaccess");
+                StringBuffer libName; //lib<type>logaccess.so
+                StringBuffer type;
+                logAccessPluginConfig->getProp("@type", type);
+                if (type.isEmpty())
+                    throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
+                libName.append("lib").append(type.str()).append("logaccess");
 
-            //Load the DLL/SO
-            HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
+                //Load the DLL/SO
+                HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
 
-            newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
-            if (xproc == nullptr)
-                throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+                newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+                if (xproc == nullptr)
+                    throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
 
-            //Call logaccessplugin instance factory and return the new instance
-            DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
-
-            return xproc(*logAccessPluginConfig);
+                //Call logaccessplugin instance factory and return the new instance
+                DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+                remoteLogAccessor = xproc(*logAccessPluginConfig);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Could not load remote log access plug-in: ");
+                e->Release();
+            }
+            return remoteLogAccessor;
         }
     );
 }

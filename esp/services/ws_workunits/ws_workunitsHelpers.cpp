@@ -209,7 +209,7 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
 void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
                                          const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs)
 {
-    if (!m_remoteLogAccessor)
+    if (!queryRemoteLogAccessor())
         throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
 
     if (isEmptyString(outFile))
@@ -228,7 +228,7 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
     if (!outIOS)
         throw makeStringException(ECLWATCH_CANNOT_OPEN_FILE, "WsWuInfo: Could not create target log file!");
 
-    Owned<IRemoteLogAccessStream> logReader = m_remoteLogAccessor->getLogReader(logFetchOptions, logFormat);
+    Owned<IRemoteLogAccessStream> logReader = queryRemoteLogAccessor()->getLogReader(logFetchOptions, logFormat);
 
     StringBuffer logcontent;
     unsigned totalRecsRead = 0;
@@ -317,7 +317,7 @@ void WsWuInfo::setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wu
 #ifdef _CONTAINERIZED
 void WsWuInfo::sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options)
 {
-    if (!m_remoteLogAccessor)
+    if (!queryRemoteLogAccessor())
         throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
 
     setLogTimeRange(options.logFetchOptions, options.wuLogSearchTimeBuffSecs);
@@ -327,7 +327,7 @@ void WsWuInfo::sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* re
     response->startSend();
 
     Owned<CFlushingHttpResponseBuffer> flusher = new CFlushingHttpResponseBuffer(response, defaultResponseFlushThresholdBytes); //No need to use a different ResponseFlushThreshold.
-    Owned<IRemoteLogAccessStream> logReader = m_remoteLogAccessor->getLogReader(options.logFetchOptions, options.logFormat);
+    Owned<IRemoteLogAccessStream> logReader = queryRemoteLogAccessor()->getLogReader(options.logFetchOptions, options.logFormat);
     if (options.logFormat == LOGACCESS_LOGFORMAT_csv)
         sendComponentLogCSV(context, logReader, flusher, options);
     else if (options.logFormat == LOGACCESS_LOGFORMAT_json)
@@ -2122,20 +2122,6 @@ unsigned WsWuInfo::getResourceURLCount()
     }
 
     return 0;
-}
-
-void WsWuInfo::initWULogReader()
-{
-    LOG(MCdebugProgress,"WsWuInfo loading remote log access plug-in...");
-    try
-    {
-        m_remoteLogAccessor.set(&queryRemoteLogAccessor());
-    }
-    catch (IException * e)
-    {
-        OWARNLOG(e, "WsWuInfo could not load remote log access plug-in");
-        e->Release();
-    }
 }
 
 void WsWuInfo::copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
