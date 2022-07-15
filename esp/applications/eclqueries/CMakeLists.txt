@@ -19,6 +19,7 @@ set ( ESP_APPLICATION_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/application.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/eclqueries.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/ldap_authorization_map.yaml
+    ${CMAKE_CURRENT_SOURCE_DIR}/testauth_authorization_map.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/plugins.yaml
 )
 

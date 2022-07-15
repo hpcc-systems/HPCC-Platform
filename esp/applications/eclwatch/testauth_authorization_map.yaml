@@ -9,14 +9,16 @@ authNZ:
       useResourceMapsFrom: ldap
       userAccess:
       -  userName: testadmin
-         #password: MW6vRCpKS7AhO/1YBazKOg== # optional. If missing, use the userName as the password.
+         # if neither password or secretKey is provided, the username is used as the password
+         #password: base64_of_password_can_go_here   # optional
          #secretKey: testauthusercreds1     # optional
          defaults:
             fileScope: full
             eclWUScope: full
             resource: full
       -  userName: testuser
-         #password: qrjTr7raH8lOaO8//i+n7Q== # optional. If missing, use the userName as the password.
+         # if neither password or secretKey is provided, the username is used as the password
+         #password: base64_of_password_can_go_here   # optional
          #secretKey: testauthusercreds2     # optional
          defaults:
             fileScope: none
