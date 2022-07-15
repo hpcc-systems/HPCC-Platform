@@ -2484,6 +2484,10 @@ private:
             {
                 reply.appendf("<version id='%s'/>", hpccBuildInfo.buildTag);
             }
+            else if (strieq(queryName, "control:getMemLocked"))
+            {
+                reply.appendf(" <heapLockMemory locked='%d'/>\n", roxiemem::getRoxieMemLocked());
+            }
             else
                 unknown = true;
             break;
@@ -2591,12 +2595,26 @@ private:
             }
             else if (strieq(queryName, "control:memlock"))
             {
-                roxiemem::lockRoxieMem(true);
+                int srtn = roxiemem::lockRoxieMem(true);
+                if (!srtn)
+                {
+                    topology->setPropBool("@heapLockMemory", true);
+                    reply.append(" <heapLockMemory locked='1'/>\n");
+                }
+                else
+                    reply.appendf(" <heapLockMemory locked='%d' error='%d' descr='unable to lock roxie memory'/>\n", roxiemem::getRoxieMemLocked(), srtn);
             }
             else if (strieq(queryName, "control:memunlock"))
             {
                 // ought to have some acl restriction / key for this ...
-                roxiemem::lockRoxieMem(false);
+                int srtn = roxiemem::lockRoxieMem(false);
+                if (!srtn)
+                {
+                    topology->setPropBool("@heapLockMemory", false);
+                    reply.append(" <heapLockMemory locked='0'/>\n");
+                }
+                else
+                    reply.appendf(" <heapLockMemory locked='%d' error='%d' descr='unable to unlock roxie memory'/>\n", roxiemem::getRoxieMemLocked(), srtn);
             }
             else
                 unknown = true;

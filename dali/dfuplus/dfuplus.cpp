@@ -646,10 +646,10 @@ int CDfuPlusHelper::spray()
     else if (stricmp(format, "delimited") == 0)
         format="csv";
 
+    StringBuffer localeps;
     if (!usingSrcPlane)
     {
         SocketEndpoint localep;
-        StringBuffer localeps;
         if (checkLocalDaFileSvr(srcip,localep))
             srcip = localep.getUrlStr(localeps).str();
     }

@@ -1,19 +1,17 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
+import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/store/Memory";
-import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 import { useConfirm } from "../hooks/confirm";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { DojoGrid, selector } from "./DojoGrid";
 import { UserAddGroupForm } from "./forms/UserAddGroup";
 
 const logger = scopedLogger("src-react/components/UserGroups.tsx");
+const wsAccess = new AccessService({ baseUrl: "" });
 
 const defaultUIState = {
     hasSelection: false,
@@ -27,25 +25,33 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
     username,
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [showAdd, setShowAdd] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("name")));
-    const gridSort = useConst([{ attribute: "name", descending: false }]);
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        check: selector({ width: 27, label: " " }, "checkbox"),
-        name: {
-            label: nlsHPCC.GroupName,
-            formatter: function (_name, idx) {
-                _name = _name.replace(/[^-_a-zA-Z0-9\s]+/g, "");
-                return <Link href={`#/security/groups/${_name}`}>{_name}</Link>;
+    const { Grid, selection } = useFluentGrid({
+        data,
+        primaryID: "username",
+        sort: { attribute: "name", descending: false },
+        filename: "userGroups",
+        columns: {
+            check: { width: 27, label: " ", selectorType: "checkbox" },
+            name: {
+                label: nlsHPCC.GroupName,
+                formatter: function (_name, idx) {
+                    _name = _name.replace(/[^-_a-zA-Z0-9\s]+/g, "");
+                    return <Link href={`#/security/groups/${_name}`}>{_name}</Link>;
+                }
             }
         }
     });
+
+    const refreshData = React.useCallback(() => {
+        wsAccess.UserEdit({ username: username })
+            .then(({ Groups }) => setData(Groups?.Group ?? []))
+            .catch(err => logger.error(err));
+    }, [username]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -58,30 +64,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
         setUIState(state);
     }, [selection]);
 
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        WsAccess.UserEdit({
-            request: { username: username }
-        })
-            .then(({ UserEditResponse }) => {
-                if (UserEditResponse?.Groups) {
-                    const groups = UserEditResponse?.Groups?.Group;
-                    gridStore.setData(groups.map(group => {
-                        return {
-                            name: group.name
-                        };
-                    }));
-                } else {
-                    gridStore.setData([]);
-                }
-
-                grid?.set("query", gridQuery);
-                if (clearSelection) {
-                    grid?.clearSelection();
-                }
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [grid, gridQuery, gridStore, username]);
+    React.useEffect(() => refreshData(), [refreshData]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -94,18 +77,18 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
                     action: "Delete"
                 };
                 request["groupnames_i" + idx] = group.name;
-                requests.push(WsAccess.UserGroupEdit({ request: request }));
+                requests.push(wsAccess.UserGroupEdit(request));
             });
             Promise.all(requests)
-                .then(responses => refreshTable())
+                .then(responses => refreshData())
                 .catch(err => logger.error(err));
-        }, [refreshTable, selection, username])
+        }, [refreshData, selection, username])
     });
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -129,24 +112,14 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true)
         },
-    ], [refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
-
-    React.useEffect(() => {
-        if (!grid || !gridStore) return;
-        refreshTable();
-    }, [grid, gridStore, refreshTable]);
+    ], [refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} />}
-            main={
-                <DojoGrid
-                    store={gridStore} query={gridQuery} sort={gridSort}
-                    columns={gridColumns} setGrid={setGrid} setSelection={setSelection}
-                />
-            }
+            main={<Grid />}
         />
-        <UserAddGroupForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshTable} username={username} />
+        <UserAddGroupForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshData} username={username} />
         <DeleteConfirm />
     </>;
 

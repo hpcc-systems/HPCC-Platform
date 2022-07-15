@@ -62,6 +62,7 @@ class ResourcesStore extends Memory {
     parentRow: any;
     basedn: string;
     name: string;
+    scopeScansEnabled: boolean;
 
     constructor() {
         super("__hpcc_id");
@@ -127,11 +128,16 @@ class ResourcesStore extends Memory {
                 name: this.parentRow.name
             }
         }).then(lang.hitch(this, function (response) {
+            this.checkScopesEnabled(response);
             if (lang.exists("ResourcesResponse.Resources.Resource", response)) {
                 return response.ResourcesResponse.Resources.Resource;
             }
             return [];
         }));
+    }
+
+    checkScopesEnabled(response) {
+        this.scopeScansEnabled = response.ResourcesResponse?.scopeScansStatus?.isEnabled ?? false;
     }
 
     refreshAccountPermissions() {

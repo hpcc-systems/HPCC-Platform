@@ -1,12 +1,11 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
-import { selector } from "./DojoGrid";
 import { AddUserForm } from "./forms/AddUser";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
@@ -14,27 +13,18 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams, pushUrl } from "../util/history";
 
 const logger = scopedLogger("src-react/components/Users.tsx");
+const wsAccess = new AccessService({ baseUrl: "" });
 
 const FilterFields: Fields = {
     "username": { type: "string", label: nlsHPCC.User }
 };
-
-function formatQuery(_filter) {
-    const filter = { ..._filter };
-
-    filter.Name = filter.username;
-    delete filter.username;
-
-    logger.debug(filter);
-    return filter;
-}
 
 const defaultUIState = {
     hasSelection: false,
 };
 
 interface UsersProps {
-    filter?: object;
+    filter?: { [key: string]: any };
 }
 
 const emptyFilter = {};
@@ -46,15 +36,16 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     const [showAddUser, setShowAddUser] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const { Grid, selection, refreshTable, copyButtons } = useGrid({
-        store: WsAccess.CreateUsersStore(null, true),
-        query: formatQuery(filter),
+    const { Grid, selection, copyButtons } = useFluentGrid({
+        data,
+        primaryID: "username",
         sort: { attribute: "username", descending: false },
         filename: "users",
         columns: {
-            check: selector({ width: 27 }, "checkbox"),
+            check: { width: 27, selectorType: "checkbox" },
             username: {
                 width: 180,
                 label: nlsHPCC.Username,
@@ -69,6 +60,24 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         }
     });
 
+    const refreshData = React.useCallback(() => {
+        wsAccess.UserQuery({ Name: filter?.username ?? "" })
+            .then(({ Users }) => {
+                if (Users) {
+                    setData(Users?.User.map((user, idx) => {
+                        return {
+                            username: user.username,
+                            employeeID: user.employeeID,
+                            employeeNumber: user.employeeNumber,
+                            fullname: user.fullname,
+                            passwordexpiration: user.passwordexpiration
+                        };
+                    }));
+                }
+            })
+            .catch(err => logger.error(err));
+    }, [filter]);
+
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedUsers,
@@ -80,13 +89,10 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             selection.forEach((item, idx) => {
                 request["usernames_i" + idx] = item.username;
             });
-            WsAccess.UserAction({ request: request })
-                .then(response => {
-                    refreshTable(true);
-                })
-                .catch(err => logger.error(err))
-                ;
-        }, [refreshTable, selection])
+            wsAccess.UserAction(request)
+                .then(response => refreshData())
+                .catch(err => logger.error(err));
+        }, [refreshData, selection])
     });
 
     //  Selection  ---
@@ -99,6 +105,8 @@ export const Users: React.FunctionComponent<UsersProps> = ({
 
         setUIState(state);
     }, [selection]);
+
+    React.useEffect(() => refreshData(), [refreshData]);
 
     const exportUsers = React.useCallback(() => {
         let usernames = "";
@@ -115,7 +123,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -148,7 +156,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportUsers()
         },
-    ], [exportUsers, refreshTable, selection, setShowDeleteConfirm, uiState]);
+    ], [exportUsers, refreshData, selection, setShowDeleteConfirm, uiState]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -160,13 +168,11 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         <HolyGrail
             header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
-                <>
-                    <Grid />
-                    <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-                </>
+                <Grid />
             }
         />
-        <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable} />
+        <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+        <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshData} />
         <DeleteConfirm />
     </>;
 

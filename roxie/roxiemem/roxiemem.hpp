@@ -552,7 +552,8 @@ extern roxiemem_decl unsigned getDataBuffersActive();
 extern roxiemem_decl void setMemTraceLevel(unsigned value);
 extern roxiemem_decl void setMemTraceSizeLimit(memsize_t value);
 
-extern roxiemem_decl void lockRoxieMem(bool lock);
+extern roxiemem_decl int lockRoxieMem(bool lock);
+extern roxiemem_decl bool getRoxieMemLocked();
 
 #define ALLOCATE(a) allocate(a, activityId)
 #define CLONE(a,b) clone(a, b, activityId)
