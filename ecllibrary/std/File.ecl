@@ -424,10 +424,11 @@ EXPORT DfuPlusExec(varstring cmdline) :=
  * @param noSplit       Don't split a file part to multiple target parts. Default is FALSE.
  * @param sourcePlane   The name of the landing zone containing the file.
  * @param destinationNumParts Override the number of parts to be created when spraying.
+ * @param noCommon      Set to FALSE to enable commoning up of puller or pusher processes on same host. Default is TRUE. 
  * @return              The DFU workunit id for the job.
  */
-EXPORT varstring fSprayFixed(varstring sourceIP='', varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, varstring sourcePlane='', unsigned4 destinationNumParts=0) :=
-    lib_fileservices.FileServices.fSprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, sourcePlane, destinationNumParts);
+EXPORT varstring fSprayFixed(varstring sourceIP='', varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, varstring sourcePlane='', unsigned4 destinationNumParts=0, boolean noCommon=TRUE) :=
+    lib_fileservices.FileServices.fSprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile, expireDays, dfuServerQueue, noSplit, sourcePlane, destinationNumParts, noCommon);
 
 /**
  * Same as fSprayFixed, but does not return the DFU Workunit ID.
