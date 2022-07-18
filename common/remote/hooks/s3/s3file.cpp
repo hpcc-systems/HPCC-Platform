@@ -69,15 +69,31 @@ constexpr offset_t awsReadRequestSize = 50;
 constexpr offset_t awsReadRequestSize = 0x400000;  // Default to requesting 4Mb each time
 #endif
 
+static std::atomic_bool initializedAws;
+static CriticalSection awsCS;
 static Aws::SDKOptions options;
 MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
 {
-    Aws::InitAPI(options);
     return true;
 }
 MODULE_EXIT()
 {
-    Aws::ShutdownAPI(options);
+    if (initializedAws)
+    {
+        Aws::ShutdownAPI(options);
+        initializedAws = false;
+    }
+}
+
+static void ensureAWSInitialized()
+{
+    if (initializedAws)
+        return;
+    CriticalBlock block(awsCS);
+    if (initializedAws)
+        return;
+    Aws::InitAPI(options);
+    initializedAws = true;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -650,6 +666,7 @@ bool S3File::remove()
 
 static IFile *createS3File(const char *s3FileName)
 {
+    ensureAWSInitialized();
     return new S3File(s3FileName);
 }
 
@@ -678,13 +695,14 @@ protected:
             return false;
         return true;
     }
-} *s3FileHook;
+};
+static S3FileHook * s3FileHook = nullptr;
 
-static CriticalSection *cs;
+static CriticalSection hookCS;
 
 extern S3FILE_API void installFileHook()
 {
-    CriticalBlock b(*cs); // Probably overkill!
+    CriticalBlock b(hookCS); // Probably overkill!
     if (!s3FileHook)
     {
         s3FileHook = new S3FileHook;
@@ -694,22 +712,17 @@ extern S3FILE_API void installFileHook()
 
 extern S3FILE_API void removeFileHook()
 {
-    if (cs)
+    CriticalBlock b(hookCS); // Probably overkill!
+    if (s3FileHook)
     {
-        CriticalBlock b(*cs); // Probably overkill!
-        if (s3FileHook)
-        {
-            removeContainedFileHook(s3FileHook);
-            delete s3FileHook;
-            s3FileHook = NULL;
-        }
+        removeContainedFileHook(s3FileHook);
+        delete s3FileHook;
+        s3FileHook = NULL;
     }
 }
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    cs = new CriticalSection;
-    s3FileHook = NULL;  // Not really needed, but you have to have a modinit to match a modexit
     return true;
 }
 
@@ -718,9 +731,7 @@ MODULE_EXIT()
     if (s3FileHook)
     {
         removeContainedFileHook(s3FileHook);
+        delete s3FileHook;
         s3FileHook = NULL;
     }
-    ::Release(s3FileHook);
-    delete cs;
-    cs = NULL;
 }
