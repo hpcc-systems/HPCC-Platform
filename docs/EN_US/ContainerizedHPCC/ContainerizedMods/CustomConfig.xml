@@ -314,8 +314,8 @@ helm upgrade mycluster hpcc/hpcc -f tworoxies.yaml -f twothors.yaml
       </orderedlist>
     </sect2>
 <xi:include href="RemoteAccess.xml"
-	            xpointer="xpointer(//*[@id='CustTutorial3'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+	        xpointer="xpointer(//*[@id='CustTutorial3'])"
+            xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   </sect1>
 </chapter>

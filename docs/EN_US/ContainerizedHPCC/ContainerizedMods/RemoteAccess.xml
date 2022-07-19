@@ -162,9 +162,27 @@ helm install cert-manager jetstack/cert-manager --version v1.7.1 --set installCR
           <para>Extract the certificate and key pairs and save to files with
           these commands:</para>
 
-          <para><programlisting>kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."tls.crt"'| base64 -d &gt; env2tls.crt 
-kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."tls.key"'| base64 -d &gt; env2tls.key 
-kubectl get secret client-remote-dfs-dfs-env2-tls -o json | jq -r '.data."ca.crt"' | base64 -d &gt; env2ca.crt </programlisting></para>
+          <para><variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>The following example commands should each be entered
+                  on one line without the "\" connectors. The connectors are
+                  only included here so the code will fit within page
+                  margins.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+
+          <para><programlisting><code>kubectl get secret client-remote-dfs-dfs-env2-tls -o \
+            json | jq -r '.data."tls.crt"'| base64 -d &gt; env2tls.crt 
+
+kubectl get secret client-remote-dfs-dfs-env2-tls -o \
+            json | jq -r '.data."tls.key"'| base64 -d &gt; env2tls.key 
+
+kubectl get secret client-remote-dfs-dfs-env2-tls -o \
+            json | jq -r '.data."ca.crt"' | base64 -d &gt; env2ca.crt </code></programlisting></para>
 
           <para><emphasis role="bold">Keep a record of the files created here,
           they are needed when configuring the client
@@ -324,7 +342,7 @@ dfs                  LoadBalancer  10.0.108.249  <emphasis role="red">192.168.0.
     <para>You can use the ECL IDE, VS-Code, the ECL Playground in ECL Watch,
     or the ecl command line tool to run the ECL code on the deployed platform
     instances. The first step creates a test file on env1. The second step
-    access that file from env2. </para>
+    access that file from env2.</para>
 
     <para><orderedlist>
         <listitem>
