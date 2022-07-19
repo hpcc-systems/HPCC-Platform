@@ -1568,15 +1568,6 @@ char *EclAgent::getPlatform()
         return strdup("standalone");
 }
 
-char *EclAgent::getDeploymentName()
-{
-    StringBuffer deploymentName;
-    getGlobalConfigSP()->getProp("@deployment", deploymentName);
-    if (0 == deploymentName.length()) // for backward compatibility return something (dali)
-        return getDaliServers();
-    return deploymentName.detach();
-}
-
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 {
     const char *val = cmdLineArgs->queryProp(name);
