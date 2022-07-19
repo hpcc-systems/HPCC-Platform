@@ -574,10 +574,6 @@ public:
     {
         return ctx->getPlatform();
     }
-    virtual char *getDeploymentName()
-    {
-        return ctx->getDeploymentName();
-    }
     virtual char *getOS()
     {
         return ctx->getOS();

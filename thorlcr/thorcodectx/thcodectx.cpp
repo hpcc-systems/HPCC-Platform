@@ -61,15 +61,6 @@ char *CThorCodeContextBase::getClusterName()
     return NULL;
 }
 
-char *CThorCodeContextBase::getDeploymentName()
-{
-    StringBuffer deploymentName;
-    getGlobalConfigSP()->getProp("@deployment", deploymentName);
-    if (0 == deploymentName.length()) // for backward compatibility return something (dali)
-        return getDaliServers();
-    return deploymentName.detach();
-}
-
 char *CThorCodeContextBase::getGroupName()
 {
     throwUnexpected();

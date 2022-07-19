@@ -2072,7 +2072,6 @@ protected:
             virtual unsigned getNodes() { throwUnexpected(); }
             virtual char *getOS() { throwUnexpected(); } // caller frees return string
             virtual char *getPlatform() { throwUnexpected(); } // caller frees return string.
-            virtual char *getDeploymentName() { throwUnexpected(); } // caller frees return string.
             virtual unsigned getPriority() const { throwUnexpected(); }
             virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
 

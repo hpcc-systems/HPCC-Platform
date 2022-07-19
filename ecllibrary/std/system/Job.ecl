@@ -17,7 +17,6 @@ varstring jobname() : once, ctxmethod, entrypoint='getJobName';
 varstring jobowner() : once, ctxmethod, entrypoint='getJobOwner';
 varstring cluster() : once, ctxmethod, entrypoint='getClusterName';
 varstring platform() : once, ctxmethod, entrypoint='getPlatform';
-varstring deployment() : once, ctxmethod, entrypoint='getDeploymentName';
 varstring os() : once, ctxmethod, entrypoint='getOS';
 unsigned integer4 logString(const varstring text) : ctxmethod, entrypoint='logString';
     END;
@@ -63,12 +62,6 @@ export target() := externals.cluster();
  */
  
 export platform() := externals.platform();
-
-/*
- * Returns the name of the installed deployment
- */
- 
-export deployment() := externals.deployment();
 
 /*
  * Returns a string representing the target operating system.
