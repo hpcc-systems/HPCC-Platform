@@ -1267,8 +1267,7 @@ public:
                     if (options->getSubfileCopy())
                         opttree->setPropBool("@compress",srcFile->isCompressed());
 
-                    if (options->getNoCommon())
-                        opttree->setPropBool("@noCommon", true);
+                    opttree->setPropBool("@noCommon", options->getNoCommon());
 
                     if (foreigncopy)
                     {
@@ -1357,6 +1356,8 @@ public:
                         opttree->setPropBool("@quotedTerminator", options->getQuotedTerminator());
 
                         opttree->setPropBool("@nosplit", options->getNoSplit());
+
+                        opttree->setPropBool("@noCommon", options->getNoCommon());
 
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc)
