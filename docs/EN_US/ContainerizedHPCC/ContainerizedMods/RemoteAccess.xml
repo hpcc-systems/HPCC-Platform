@@ -103,18 +103,7 @@ helm install cert-manager jetstack/cert-manager --version v1.7.1 --set installCR
           <para>Create a root certificate and private key for the <emphasis
           role="bold">remote</emphasis> certificates issuer authority</para>
 
-          <para><variablelist>
-              <varlistentry>
-                <term>Note:</term>
-
-                <listitem>
-                  <para>The following example command should be entered on one
-                  line without the "\" connectors. The connectors are only
-                  included here so the code will fit within page
-                  margins.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist></para>
+          <para></para>
 
           <para><programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key \
        -sha256 -days 1825 -out ca.crt \
@@ -162,18 +151,7 @@ helm install cert-manager jetstack/cert-manager --version v1.7.1 --set installCR
           <para>Extract the certificate and key pairs and save to files with
           these commands:</para>
 
-          <para><variablelist>
-              <varlistentry>
-                <term>Note:</term>
-
-                <listitem>
-                  <para>The following example commands should each be entered
-                  on one line without the "\" connectors. The connectors are
-                  only included here so the code will fit within page
-                  margins.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist></para>
+          <para></para>
 
           <para><programlisting><code>kubectl get secret client-remote-dfs-dfs-env2-tls -o \
             json | jq -r '.data."tls.crt"'| base64 -d &gt; env2tls.crt 
@@ -230,18 +208,7 @@ dfs                  LoadBalancer  10.0.108.249  <emphasis role="red">192.168.0.
           <para>Create a K8s secret with the remote client certificate and key
           pair that you saved when setting up env1:</para>
 
-          <para><variablelist>
-              <varlistentry>
-                <term>Note:</term>
-
-                <listitem>
-                  <para>The following example command should be entered on one
-                  line without the "\" connectors. The connectors are only
-                  included here so the code will fit within page
-                  margins.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist>For example:</para>
+          <para>For example:</para>
 
           <para><programlisting>kubectl create secret generic env1-access --from-file=env2tls.crt \
                                           --from-file=env2tls.key \
