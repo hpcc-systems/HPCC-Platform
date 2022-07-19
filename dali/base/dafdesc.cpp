@@ -591,6 +591,14 @@ public:
         return getGroupName(ret, NULL);
     }
 
+    void applyPlane(IStoragePlane *plane)
+    {
+        mspec.numStripedDevices = plane ? plane->numDevices() : 1;
+        if (mspec.numStripedDevices>1)
+            mspec.flags |= CPDMSF_striped;
+        else
+            mspec.flags &= ~CPDMSF_striped;
+    }
 };
 
 IClusterInfo *createClusterInfo(const char *name,
@@ -1015,6 +1023,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
 {
 
     SocketEndpointArray *pending;   // for constructing cluster group
+    Owned<IStoragePlane> remoteStoragePlane;
     bool setupdone;
     byte version;
 
@@ -1255,13 +1264,14 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 cluster->getReplicateDir(repDir, os);
                 setReplicateFilename(fullpath,queryDrive(idx,copy),baseDir.str(),repDir.str());
 
-// NB: could be compiled in bare-metal,
-// but bare-metal components without a config would complain as this calls getGlobalConfig()
-#ifdef _CONTAINERIZED
                 const char *planeName = cluster->queryGroupName();
                 if (!isEmptyString(planeName))
                 {
+#ifdef _CONTAINERIZED
                     Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+#else
+                    Owned<IStoragePlane> plane = remoteStoragePlane.getLink();
+#endif
                     if (plane)
                     {
                         StringBuffer planePrefix(plane->queryPrefix());
@@ -1282,7 +1292,6 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                             fullpath.swapWith(stripeDir);
                     }
                 }
-#endif
             }
 
             if ((fullpath.length()>3)&&isPathSepChar(fullpath.charAt(fullpath.length()-1)))
@@ -1449,7 +1458,16 @@ public:
         }
         attr.setown(createPTree(mb));
         if (attr)
+        {
             lfnHash = attr->getPropInt("@lfnHash");
+            // NB: for remote useDafilesrv use case
+            IPropertyTree *remoteStoragePlaneMeta = attr->queryPropTree("_remoteStoragePlane");
+            if (remoteStoragePlaneMeta)
+            {
+                assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
+                remoteStoragePlane.setown(createStoragePlane(remoteStoragePlaneMeta));
+            }
+        }
         else
             attr.setown(createPTree("Attr")); // doubt can happen
         fileFlags = static_cast<FileDescriptorFlags>(attr->getPropInt("@flags"));
@@ -1571,6 +1589,15 @@ public:
         }
         if (totalsize!=(offset_t)-1)
             attr->setPropInt64("@size",totalsize);
+
+        // NB: for remote useDafilesrv use case
+        IPropertyTree *remoteStoragePlaneMeta = at->queryPropTree("_remoteStoragePlane");
+        if (remoteStoragePlaneMeta)
+        {
+            assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
+            remoteStoragePlane.setown(createStoragePlane(remoteStoragePlaneMeta));
+            clusters.item(0).applyPlane(remoteStoragePlane);
+        }
     }
 
     void serializePart(MemoryBuffer &mb,unsigned partidx)
@@ -3722,6 +3749,11 @@ IStoragePlane * getRemoteStoragePlane(const char * name, bool required)
     StringBuffer group;
     group.append(name).toLowerCase();
     return getStoragePlane(group, { "remote" }, required);
+}
+
+IStoragePlane * createStoragePlane(IPropertyTree *meta)
+{
+    return new CStoragePlaneInfo(meta);
 }
 
 

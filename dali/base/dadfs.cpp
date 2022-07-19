@@ -7046,13 +7046,21 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
 
 // NB: could be compiled in bare-metal,
 // but bare-metal components without a config would complain as this calls getGlobalConfig()
-#ifdef _CONTAINERIZED
         unsigned cn = copyClusterNum(copy, nullptr);
         IClusterInfo &cluster = parent.clusters.item(cn);
         const char *planeName = cluster.queryGroupName();
         if (!isEmptyString(planeName))
         {
-            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
+            Owned<IStoragePlane> plane;
+#ifdef _CONTAINERIZED
+            plane.setown(getDataStoragePlane(planeName, false));
+#else
+            // this is for the remote useDafilesrv case,
+            // where the remote storage plane may be needed to remap/stripe, see below.
+            IPropertyTree *remoteStoragePlane = parent.queryAttributes().queryPropTree("_remoteStoragePlane");
+            if (remoteStoragePlane)
+                plane.setown(createStoragePlane(remoteStoragePlane));
+#endif
             if (plane)
             {
                 StringBuffer planePrefix(plane->queryPrefix());
@@ -7075,7 +7083,6 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
                     dir.swapWith(stripeDir);
             }
         }
-#endif
         if (parent.hasDirPerPart())
             addPathSepChar(dir).append(partIndex+1); // part subdir 1 based
         ret.append(dir);
