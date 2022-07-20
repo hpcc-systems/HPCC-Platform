@@ -6754,22 +6754,23 @@ void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
     async.For(fileDesc->numParts(), 100);
 }
 
-struct _ownerInfo {
+struct ownerInfo
+{
     std::string name;
     long long int totalFiles;
     long long int totalSize;
 };
 
-struct _groupInfo {
+struct groupInfo
+{
     std::string name;
     long long int totalSize;
     long long int totalFiles;
-    std::map<std::string, std::shared_ptr<_ownerInfo>> owners;
+    std::unordered_map<std::string, std::unique_ptr<ownerInfo>> owners;
 };
 
 bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & req, IEspDFUGroupSpaceResponse & resp)
 {
-    //bool filterByOwner = false, filterByGroup = false;
     StringBuffer username;
     context.getUserID(username);
 
@@ -6782,12 +6783,11 @@ bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & 
         userdesc->set(username.str(), context.queryPassword(), context.querySignature());
     }
 
-    String filterGroup(req.getGroup());
-    bool filterByGroup = !isEmptyString(filterGroup.str()) && filterGroup.compareTo("*");
-
-    String filterOwner(req.getOwner());
-    bool filterByOwner = !isEmptyString(filterOwner.str());
-    bool addAllOwners = filterByOwner && !filterOwner.compareTo("*");
+    const char * filterGroup = req.getGroup();
+    bool filterByGroup = strlen(filterGroup) && strcmp(filterGroup, "*");
+    const char *filterOwner = req.getOwner();
+    bool filterByOwner =  strlen(filterOwner);
+    bool addAllOwners = filterByOwner && !strcmp(filterOwner, "*");
 
     PROGLOG("DFUGroupSpace: Getting files");
     Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator("*", userdesc.get(), true, true, nullptr);
@@ -6795,33 +6795,24 @@ bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & 
         throw makeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR, "DFUGroupSpace: Cannot get information from file system.");
 
     long long int totalFiles = 0, totalFileSize = 0;
-    std::map<std::string, std::shared_ptr<_groupInfo>> groups;
+    std::unordered_map<std::string, std::unique_ptr<groupInfo>> groups;
 
     ForEach (*fi)
     {
         IPropertyTree &attr = fi->query();
-        String fileGroupName(attr.queryProp("@group"));
+        const char *fileGroupName = attr.queryProp("@group");
 
-        if (!isEmptyString(fileGroupName.str()))
+        if (strlen(fileGroupName))
         {
             StringArray fileGroupNames;
-            fileGroupNames.appendListUniq(fileGroupName.str(), ",");
+            fileGroupNames.appendListUniq(fileGroupName, ",");
             ForEachItemIn(index, fileGroupNames)
             {
-                String groupName(fileGroupNames.item(index));
-                bool addGroup = true;
-                if (filterByGroup)
-                {
-                    if (!filterGroup.equalsIgnoreCase(groupName))
-                    {
-                        addGroup = false;
-                    }
-                }
-
-                if (addGroup)
+                const char * groupName = fileGroupNames.item(index);
+                if (!filterByGroup || !stricmp(filterGroup, groupName))
                 {
                     long long int fileSize = attr.getPropInt64("@size", 0);
-                    auto groupIt = groups.find(std::string(groupName.str()));
+                    auto groupIt = groups.find(std::string(groupName));
                     if (groupIt != groups.end())
                     {
                         groupIt->second->totalFiles++;
@@ -6829,10 +6820,10 @@ bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & 
                     }
                     else
                     {
-                        std::shared_ptr<_groupInfo> pGi = std::make_shared<_groupInfo>();
+                        std::unique_ptr<groupInfo> pGi{new groupInfo()};
                         pGi->totalFiles = 1;
                         pGi->totalSize = fileSize;
-                        groupIt = groups.insert({std::string(groupName.str()), pGi}).first;
+                        groupIt = groups.insert({std::string(groupName), std::move(pGi)}).first;
                     }
 
                     totalFiles++;
@@ -6840,12 +6831,13 @@ bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & 
 
                     if (filterByOwner)
                     {
-                        String owner(attr.queryProp("@owner"));
+                        const char *owner = attr.queryProp("@owner");
 
-                        if (addAllOwners || filterOwner.equalsIgnoreCase(owner))
+                        if (addAllOwners || !stricmp(filterOwner, owner))
                         {
-                            std::string ownerStr(owner.str());
-                            auto ownerIt = groupIt->second->owners.find(std::string(ownerStr));
+                            //std::string ownerStr(owner.str());
+                            std::string ownerStr(owner);
+                            auto ownerIt = groupIt->second->owners.find(ownerStr);
                             if (ownerIt != groupIt->second->owners.end())
                             {
                                 ownerIt->second->totalFiles++;
@@ -6853,11 +6845,11 @@ bool CWsDfuEx::onDFUGroupSpace(IEspContext &context, IEspDFUGroupSpaceRequest & 
                             }
                             else
                             {
-                                std::shared_ptr<_ownerInfo> pOwner = std::make_shared<_ownerInfo>();
+                                std::unique_ptr<ownerInfo> pOwner{new ownerInfo()};
                                 pOwner->name = ownerStr;
                                 pOwner->totalFiles = 1;
                                 pOwner->totalSize = fileSize;
-                                groupIt->second->owners.insert({ownerStr, pOwner});
+                                groupIt->second->owners.insert({ownerStr, std::move(pOwner)});
                             }
                         }
                     }
