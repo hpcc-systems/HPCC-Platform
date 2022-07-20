@@ -49,6 +49,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "sasha" "name" "sasha" "instance" $serviceName) | indent 8 }}
         run: {{ $serviceName | quote }}
         server: {{ $serviceName | quote }}
         accessDali: {{ (has "dali" $sasha.access) | ternary "yes" "no" | quote }}
