@@ -32,7 +32,6 @@ if(USE_CASSANDRA)
      ${HPCC_SOURCE_DIR}/roxie/roxiemem
      ${HPCC_SOURCE_DIR}/common/deftype
      ${HPCC_SOURCE_DIR}/common/environment
-     ${HPCC_SOURCE_DIR}/plugins/cassandra/cpp-driver/include
      ${HPCC_SOURCE_DIR}/plugins/cassandra
      ${HPCC_SOURCE_DIR}/esp/platform
      ${HPCC_SOURCE_DIR}/esp/bindings

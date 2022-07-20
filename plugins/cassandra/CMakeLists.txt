@@ -28,8 +28,8 @@ project(cassandraembed)
 # When there is (and the distros catch up) we may want to add them as dependencies here
 # until then, we build the required libraries from source
 if(USE_CASSANDRA)
-  find_path(CPP_DRIVER_INCLUDE_DIRS "include/cassandra.h" HINTS "${VCPKG_INSTALLED_DIR}")
-  find_library(CPP_DRIVER_LIBRARY "lib/libcassandra_static.a" HINTS "${VCPKG_INSTALLED_DIR}")
+  find_path(CPP_DRIVER_INCLUDE_DIRS "include/cassandra.h" HINTS "${VCPKG_INSTALLED_DIR}" REQUIRED)
+  find_library(CPP_DRIVER_LIBRARY "lib/libcassandra_static.a" HINTS "${VCPKG_INSTALLED_DIR}" REQUIRED )
   find_package(unofficial-libuv CONFIG REQUIRED)
 
   ADD_PLUGIN(cassandraembed)
