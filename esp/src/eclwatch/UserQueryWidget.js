@@ -10,7 +10,6 @@ define([
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/MenuSeparator",
-    "dijit/form/Select",
 
     "dgrid/tree",
     "dgrid/selector",
@@ -46,7 +45,7 @@ define([
     "hpcc/TableContainer"
 
 ], function (declare, lang, nlsHPCCMod, arrayUtil, domForm, all,
-    registry, Menu, MenuItem, MenuSeparator, Select,
+    registry, Menu, MenuItem, MenuSeparator,
     tree, selector,
     _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, UserDetailsWidget, GroupDetailsWidget, ShowIndividualPermissionsWidget,
     template) {
@@ -59,6 +58,8 @@ define([
 
         usersTab: null,
         usersGrid: null,
+
+        scopesTabIdSuffix: 0,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -106,7 +107,7 @@ define([
         _onFileScopeDefaultPermissions: function () {
             var row = this.getRow("FileScope");
             if (row) {
-                var fileScopeDefaultPermissionsTab = this.ensurePermissionsPane(row.Basedn + "FileScope", {
+                var fileScopeDefaultPermissionsTab = this.ensurePermissionsPane(`${row.Basedn}_FileScope_${++this.scopesTabIdSuffix}`, {
                     Basedn: row.Basedn,
                     TabName: this.i18n.title_FileScopeDefaultPermissions,
                     DefaultPermissions: true
@@ -118,7 +119,7 @@ define([
         _onWorkunitScopeDefaultPermissions: function () {
             var row = this.getRow("WorkunitScope");
             if (row) {
-                var workunitScopeDefaultPermissionsTab = this.ensurePermissionsPane(row.Basedn + "WUScope", {
+                var workunitScopeDefaultPermissionsTab = this.ensurePermissionsPane(`${row.Basedn}_WUScope_${++this.scopesTabIdSuffix}`, {
                     Basedn: row.Basedn,
                     TabName: this.i18n.title_WorkunitScopeDefaultPermissions,
                     DefaultPermissions: true
