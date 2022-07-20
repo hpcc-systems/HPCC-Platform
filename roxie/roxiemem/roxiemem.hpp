@@ -273,7 +273,6 @@ private:
     DataBufferBottom *nextBottom = nullptr; // Used when chaining them together in CDataBufferManager
     DataBufferBottom *prevBottom = nullptr; // Used when chaining them together in CDataBufferManager
     std::atomic<memsize_t> freeHeadId{0};               // a chain of freed DataBuffers, implemented as a lock free list bottom bits are a sequence number
-    CriticalSection crit;
 
     virtual void noteReleased(const void *ptr) override;
     virtual void noteReleased(unsigned count, const byte * * rowset) override;
