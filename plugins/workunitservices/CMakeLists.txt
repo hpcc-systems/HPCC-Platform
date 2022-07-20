@@ -65,3 +65,10 @@ if (NOT CONTAINERIZED)
     target_link_libraries ( workunitservices environment )
 endif()
 
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_WORKUNITSERVICES.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()
+

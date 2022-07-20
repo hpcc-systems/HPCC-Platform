@@ -41,3 +41,9 @@ target_link_libraries ( auditlib
          jlib 
     )
 
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_auditlib.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

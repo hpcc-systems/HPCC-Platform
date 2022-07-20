@@ -40,59 +40,6 @@ static const char * compatibleVersions[] = {
 
 #define STRINGLIB_VERSION "STRINGLIB 1.1.14"
 
-static const char * EclDefinition =
-"export StringLib := SERVICE:fold\n"
-"  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint='slStringFilterOut'; \n"
-"  string StringFilter(const string src, const string _within) : c, pure,entrypoint='slStringFilter'; \n"
-"  string StringSubstituteOut(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubsOut'; \n"
-"  string StringSubstitute(const string src, const string _within, const string _newchar) : c, pure,entrypoint='slStringSubs'; \n"
-"  string StringRepad(const string src, unsigned4 size) : c, pure,entrypoint='slStringRepad'; \n"
-"  string StringTranslate(const string src, const string _within, const string _mapping) : c, pure,entrypoint='slStringTranslate'; \n"
-"  unsigned integer4 StringFind(const string src, const string tofind, unsigned4 instance ) : c, pure,entrypoint='slStringFind'; \n"
-"  unsigned integer4 StringUnboundedUnsafeFind(const string src, const string tofind ) : c,pure,nofold,entrypoint='slStringFind2'; \n"
-"  unsigned integer4 StringFindCount(const string src, const string tofind) : c, pure,entrypoint='slStringFindCount'; \n"
-"  unsigned integer4 EbcdicStringFind(const ebcdic string src, const ebcdic string tofind , unsigned4 instance ) : c,pure,entrypoint='slStringFind'; \n"
-"  unsigned integer4 EbcdicStringUnboundedUnsafeFind(const ebcdic string src, const ebcdic string tofind ) : c,pure,nofold,entrypoint='slStringFind2'; \n"
-"  string StringExtract(const string src, unsigned4 instance) : c,pure,entrypoint='slStringExtract'; \n"
-// NOTE - the next 2 are foldable but not pure, meaning it will only be folded if found in a #IF or similar
-// This is because you usually want them to be executed at runtime
-"  string8 GetDateYYYYMMDD() : c,once,entrypoint='slGetDateYYYYMMDD2';\n"
-"  varstring GetBuildInfo() : c,once,entrypoint='slGetBuildInfo';\n"
-"  string Data2String(const data src) : c,pure,entrypoint='slData2String';\n"
-"  data String2Data(const string src) : c,pure,entrypoint='slString2Data';\n"
-"  string StringToLowerCase(const string src) : c,pure,entrypoint='slStringToLowerCase';\n"
-"  string StringToUpperCase(const string src) : c,pure,entrypoint='slStringToUpperCase';\n"
-"  string StringToProperCase(const string src) : c,pure,entrypoint='slStringToProperCase';\n"
-"  string StringToCapitalCase(const string src) : c,pure,entrypoint='slStringToCapitalCase';\n"
-"  string StringToTitleCase(const string src) : c,pure,entrypoint='slStringToTitleCase';\n"
-"  integer4 StringCompareIgnoreCase(const string src1, const string src2) : c,pure,entrypoint='slStringCompareIgnoreCase';\n"
-"  string StringReverse(const string src) : c,pure,entrypoint='slStringReverse';\n"
-"  string StringFindReplace(const string src, const string stok, const string rtok) : c,pure,entrypoint='slStringFindReplace';\n"
-"  string StringCleanSpaces(const string src) : c,pure,entrypoint='slStringCleanSpaces'; \n"
-"  boolean StringWildMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringWildMatch'; \n"
-"  boolean StringWildExactMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringWildExactMatch'; \n"
-"  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringContains'; \n"
-"  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint='slStringExtractMultiple'; \n"
-"  unsigned integer4 EditDistance(const string l, const string r) : c, time, pure,entrypoint='slEditDistanceV2'; \n"
-"  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,time,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
-"  unsigned integer4 EditDistanceV2(const string l, const string r) : c,time,pure,entrypoint='slEditDistanceV2'; \n"
-"  unsigned integer4 EditDistanceV3(const string l, const string r, unsigned4 radius) : c,time,pure,entrypoint='slEditDistanceV3'; \n"
-"  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,time,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
-"  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord'; \n"
-"  string StringExcludeLastWord(const string src) : c, pure,entrypoint='slStringExcludeLastWord'; \n"
-"  string StringExcludeNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringExcludeNthWord'; \n"
-"  unsigned4 StringWordCount(const string src) : c, pure,entrypoint='slStringWordCount'; \n"
-"  unsigned4 CountWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slCountWords'; \n"
-"  SET OF STRING SplitWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slSplitWords'; \n"
-"  STRING CombineWords(set of string src, const string _separator) : c, pure,entrypoint='slCombineWords'; \n"
-"  UNSIGNED4 StringToDate(const string src, const varstring format) : c, pure,entrypoint='slStringToDate'; \n"
-"  UNSIGNED4 StringToTimeOfDay(const string src, const varstring format) : c, pure,entrypoint='slStringToTimeOfDay'; \n"
-"  UNSIGNED4 MatchDate(const string src, set of varstring formats) : c, pure,entrypoint='slMatchDate'; \n"
-"  UNSIGNED4 MatchTimeOfDay(const string src, set of varstring formats) : c, pure,entrypoint='slMatchTimeOfDay'; \n"
-"  STRING FormatDate(UNSIGNED4 date, const varstring format) : c, pure,entrypoint='slFormatDate'; \n"
-"  STRING StringRepeat(const string src, unsigned4 n) : c, pure,entrypoint='slStringRepeat'; \n"
-"END;";
-
 STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
@@ -105,7 +52,7 @@ STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = STRINGLIB_VERSION;
     pb->moduleName = "lib_stringlib";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE | PLUGIN_MULTIPLE_VERSIONS;
     pb->description = "StringLib string manipulation library";
     return true;

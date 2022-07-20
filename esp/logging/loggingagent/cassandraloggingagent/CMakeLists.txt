@@ -16,7 +16,7 @@
 
 # Component: cassandralogagent
 
-if(USE_CASSANDRA)
+if(CASSANDRAEMBED)
   project( cassandralogagent )
 
   include_directories (
@@ -57,4 +57,4 @@ if(USE_CASSANDRA)
     jlib
     logginglib
   )
-endif(USE_CASSANDRA)
+endif(CASSANDRAEMBED)

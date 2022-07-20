@@ -37,7 +37,7 @@ ECL_EXAMPLE_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = EXAMPLE_PLUGIN_VERSION;
-    pb->moduleName = "lib_redis";
+    pb->moduleName = "lib_exampleplugin";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "ECL plugin library for BLAH BLAH BLAH";

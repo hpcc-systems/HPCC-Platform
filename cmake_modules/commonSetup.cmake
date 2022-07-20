@@ -43,7 +43,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(DEVEL "Enable the building/inclusion of a Development component." OFF)
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
   option(INCLUDE_PLUGINS "Enable the building of platform and all plugins for testing purposes" OFF)
-  option(USE_CASSANDRA "Include the Cassandra plugin in the base package" ON)
   option(PLUGIN "Enable building of a plugin" OFF)
   option(USE_SHLIBDEPS "Enable the use of dpkg-shlibdeps on ubuntu packaging" OFF)
 
@@ -61,8 +60,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_OPENSSLV3 "Configure use of OpenSSL Version 3 or newer" OFF)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_AZURE "Configure use of azure" ON)
-  option(USE_H3 "Configure use of Uber H3 geospatial indexing" ON)
-  option(USE_NLP "Configure use of NLP++ engine" ON)
   option(USE_GIT "Configure use of GIT (Hooks)" ON)
   if (WIN32)
     option(USE_AERON "Include the Aeron message protocol" OFF)
@@ -166,6 +163,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     COUCHBASEEMBED
     SPARK
     ECLBLAS
+    CASSANDRAEMBED
+    H3
+    NLP
     EXAMPLEPLUGIN)
     foreach(plugin ${PLUGINS_LIST})
         option(${plugin} "Create a package with ONLY the ${plugin} plugin" OFF)

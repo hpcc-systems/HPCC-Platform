@@ -24,13 +24,6 @@ static const char * compatibleVersions[] = {
     AUDITLIB_VERSION,
     NULL };
 
-static const char * EclDefinition =
-"export AuditLib := SERVICE\n"
-"  boolean Audit(const string atype, const string msg) : c, action, volatile, entrypoint='alAudit', hole; \n"
-"  boolean AuditData(const string atype, const string msg, const data datablock) : c, action, volatile, entrypoint='alAuditData', hole; \n"
-"END;";
-
-
 AUDITLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
@@ -43,7 +36,7 @@ AUDITLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = AUDITLIB_VERSION;
     pb->moduleName = "lib_auditlib";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "AuditLib event log audit functions";
     return true;

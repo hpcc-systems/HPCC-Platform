@@ -42,4 +42,9 @@ target_link_libraries ( logging
          jlib 
     )
 
-
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_logging.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

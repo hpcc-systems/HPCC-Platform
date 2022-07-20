@@ -34,47 +34,6 @@ static const char * compatibleVersions[] = {
 
 #define TIMELIB_VERSION "TIMELIB 1.0.0"
 
-static const char * EclDefinition =
-"EXPORT TMPartsRec := RECORD \n"
-"  INTEGER4 sec; \n"
-"  INTEGER4 min; \n"
-"  INTEGER4 hour; \n"
-"  INTEGER4 mday; \n"
-"  INTEGER4 mon; \n"
-"  INTEGER4 year; \n"
-"  INTEGER4 wday; \n"
-"END;"
-"EXPORT TMDateRangeRec := RECORD \n"
-"  UNSIGNED4 startDate; \n"
-"  UNSIGNED4 endDate; \n"
-"END;"
-"EXPORT TimeLib := SERVICE : fold\n"
-"  INTEGER8 SecondsFromParts(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day, UNSIGNED1 hour, UNSIGNED1 minute, UNSIGNED1 second, BOOLEAN is_local_time) : c,pure,entrypoint='tlSecondsFromParts'; \n"
-"  TRANSFORM(TMPartsRec) SecondsToParts(INTEGER8 seconds, BOOLEAN is_local_time = FALSE) : c,pure,entrypoint='tlSecondsToParts'; \n"
-"  UNSIGNED2 GetDayOfYear(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfYear'; \n"
-"  UNSIGNED1 GetDayOfWeek(INTEGER2 year, UNSIGNED1 month, UNSIGNED1 day) : c,pure,entrypoint='tlGetDayOfWeek'; \n"
-"  STRING DateToString(UNSIGNED4 date, CONST VARSTRING format) : c,pure,entrypoint='tlDateToString'; \n"
-"  STRING TimeToString(UNSIGNED3 time, CONST VARSTRING format) : c,pure,entrypoint='tlTimeToString'; \n"
-"  STRING SecondsToString(INTEGER8 seconds, CONST VARSTRING format) : c,pure,entrypoint='tlSecondsToString'; \n"
-"  INTEGER8 StringToSeconds(CONST STRING src, CONST VARSTRING format, BOOLEAN is_local_time) : c,pure,entrypoint='tlStringToSeconds'; \n"
-"  UNSIGNED4 AdjustDate(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustDate'; \n"
-"  UNSIGNED4 AdjustDateBySeconds(UNSIGNED4 date, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustDateBySeconds'; \n"
-"  UNSIGNED4 AdjustTime(UNSIGNED3 time, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustTime'; \n"
-"  UNSIGNED4 AdjustTimeBySeconds(UNSIGNED3 time, INTEGER4 seconds_delta) : c,pure,entrypoint='tlAdjustTimeBySeconds'; \n"
-"  INTEGER4 AdjustSeconds(INTEGER8 seconds, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta, INTEGER2 hour_delta, INTEGER4 minute_delta, INTEGER4 second_delta) : c,pure,entrypoint='tlAdjustSeconds'; \n"
-"  UNSIGNED4 AdjustCalendar(UNSIGNED4 date, INTEGER2 year_delta, INTEGER4 month_delta, INTEGER4 day_delta) : c,pure,entrypoint='tlAdjustCalendar'; \n"
-"  BOOLEAN IsLocalDaylightSavingsInEffect() : c,pure,entrypoint='tlIsLocalDaylightSavingsInEffect'; \n"
-"  UNSIGNED4 GetLastDayOfMonth(UNSIGNED4 date) : c,pure,entrypoint='tlGetLastDayOfMonth'; \n"
-"  TRANSFORM(TMDateRangeRec) DatesForWeek(UNSIGNED4 date) : c,pure,entrypoint='tlDatesForWeek'; \n"
-// NOTE - the next 5 are foldable but not pure, meaning it will only be folded if found in a #IF or similar
-// This is because you usually want them to be executed at runtime
- "  INTEGER4 LocalTimeZoneOffset() : c,once,entrypoint='tlLocalTimeZoneOffset'; \n"
-"  UNSIGNED4 CurrentDate(BOOLEAN in_local_time) : c,once,entrypoint='tlCurrentDate'; \n"
-"  UNSIGNED4 CurrentTime(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTime'; \n"
-"  INTEGER8 CurrentSeconds(BOOLEAN in_local_time) : c,entrypoint='tlCurrentSeconds'; \n"
-"  INTEGER8 CurrentTimestamp(BOOLEAN in_local_time) : c,entrypoint='tlCurrentTimestamp'; \n"
-"END;";
-
 TIMELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
@@ -87,7 +46,7 @@ TIMELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = TIMELIB_VERSION;
     pb->moduleName = "lib_timelib";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE | PLUGIN_MULTIPLE_VERSIONS;
     pb->description = "TimeLib time manipulation library";
     return true;

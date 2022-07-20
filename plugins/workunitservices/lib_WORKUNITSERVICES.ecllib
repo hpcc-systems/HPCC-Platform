@@ -1,0 +1,88 @@
+export WsWorkunitRecord := record 
+    string24 wuid;
+    string owner{maxlength(64)};
+    string cluster{maxlength(64)};
+    string roxiecluster{maxlength(64)};
+    string job{maxlength(256)};
+    string10 state;
+    string7 priority;
+    integer2 priorityvalue;
+    string20 created;
+    string20 modified;
+    boolean online;
+    boolean protected;
+end;
+export WsTimeStamp := record 
+    string32 application;
+    string16 id;
+    string20 time;
+    string16 instance;
+end;
+export WsMessage := record 
+    unsigned4 severity;
+    integer4  code;
+    string32  location;
+    unsigned4 row;
+    unsigned4 col;
+    string16  source;
+    string20  time;
+    string    message{maxlength(1024)};
+end;
+export WsFileRead := record 
+    string name{maxlength(256)};
+    string cluster{maxlength(64)};
+    boolean isSuper;
+    unsigned4 usage;
+end;
+export WsFileWritten := record 
+    string name{maxlength(256)};
+    string10 graph;
+    string cluster{maxlength(64)};
+    unsigned4 kind;
+end;
+export WsTiming := record 
+    unsigned4 count;
+    unsigned4 duration;
+    unsigned4 max;
+    string name{maxlength(64)};
+end;
+export WsStatistic := record 
+    unsigned8 value;
+    unsigned8 count;
+    unsigned8 maxValue;
+    string creatorType;
+    string creator;
+    string scopeType;
+    string scope;
+    string name;
+    string description;
+    string unit;
+end;
+export WorkunitServices := SERVICE : plugin('workunitservices'), time, cpp
+   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : context,entrypoint='wsWorkunitExists';
+   dataset(WsWorkunitRecord) WorkunitList(
+                                         const varstring lowwuid='',
+                                         const varstring highwuid='', 
+                                         const varstring username='', 
+                                         const varstring cluster='', 
+                                         const varstring jobname='',
+                                         const varstring state='', 
+                                         const varstring priority='',
+                                         const varstring fileread='',
+                                         const varstring filewritten='',
+                                         const varstring roxiecluster='',
+                                         const varstring eclcontains='',
+                                         boolean online=true,
+                                         boolean archived=false,
+                                         const varstring appvalues=''
+                                        ) : context,entrypoint='wsWorkunitList';
+  varstring WUIDonDate(unsigned4 year,unsigned4 month,unsigned4 day,unsigned4 hour, unsigned4 minute) : entrypoint='wsWUIDonDate';
+  varstring WUIDdaysAgo(unsigned4  daysago) : entrypoint='wsWUIDdaysAgo';
+  dataset(WsTimeStamp) WorkunitTimeStamps(const varstring wuid) : context,entrypoint='wsWorkunitTimeStamps';
+  dataset(WsMessage) WorkunitMessages(const varstring wuid) : context,entrypoint='wsWorkunitMessages';
+  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : context,entrypoint='wsWorkunitFilesRead';
+  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : context,entrypoint='wsWorkunitFilesWritten';
+  dataset(WsTiming) WorkunitTimings(const varstring wuid) : context,entrypoint='wsWorkunitTimings';
+  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false, const varstring _filter = '') : context,entrypoint='wsWorkunitStatistics';
+  boolean setWorkunitAppValue(const varstring app, const varstring key, const varstring value, boolean overwrite=true) : context,entrypoint='wsSetWorkunitAppValue';
+END;

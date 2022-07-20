@@ -38,3 +38,9 @@ HPCC_ADD_LIBRARY( debugservices SHARED ${SRCS} )
 install ( TARGETS debugservices DESTINATION plugins )
 
 
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_debugservices.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

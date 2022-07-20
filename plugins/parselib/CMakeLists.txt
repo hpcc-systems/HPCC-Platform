@@ -44,4 +44,10 @@ target_link_libraries ( parselib
          jlib
     )
 
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_parselib.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()
 

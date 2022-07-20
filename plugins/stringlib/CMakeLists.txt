@@ -46,3 +46,10 @@ install ( TARGETS stringlib DESTINATION plugins )
 target_link_libraries ( stringlib
          eclrtl
     )
+
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_stringlib.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

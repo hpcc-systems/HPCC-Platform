@@ -20,12 +20,6 @@
 
 #define DEBUGSERVICES_VERSION "DEBUGSERVICES 1.0.1"
 
-static const char * EclDefinition =
-"export DebugServices := SERVICE\n"
-"  Sleep(integer millis) : c,time,pure,entrypoint='dsSleep',initFunction='dsInitDebugServices'; \n"
-"  varstring GetBuildInfo() : c,pure,entrypoint='dsGetBuildInfo',initFunction='dsInitDebugServices';\n"
-"END;";
-
 static const char * compatibleVersions[] = {
     "DEBUGSERVICES 1.0  [7294888b4271178e0cfda307826d4823]", 
     "DEBUGSERVICES 1.0.1",
@@ -39,7 +33,7 @@ DEBUGSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = DEBUGSERVICES_VERSION;
     pb->moduleName = "lib_debugservices";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "DEBUGSERVICES library";
     return true;

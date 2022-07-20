@@ -47,3 +47,9 @@ if (USE_ICU)
 
 endif (USE_ICU)
 
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_unicodelib.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

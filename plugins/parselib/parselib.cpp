@@ -35,12 +35,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
-static const char * EclDefinition =
-"export ParseLib := SERVICE : time\n"
-"   string getParseTree() : c,volatile,entrypoint='plGetDefaultParseTree',userMatchFunction; \n"
-"   string getXmlParseTree() : c,volatile,entrypoint='plGetXmlParseTree',userMatchFunction; \n"
-"END;";
-
 static const char * compatibleVersions[] = {
     "PARSELIB 1.0.0 [fa9b3ab8fad8e46d8c926015cbd39f06]", 
     PARSELIB_VERSION,
@@ -58,7 +52,7 @@ PARSELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = PARSELIB_VERSION;
     pb->moduleName = "lib_parselib";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "ParseLib PARSE helper library";
     return true;

@@ -1,0 +1,4 @@
+export AuditLib := SERVICE : plugin('auditlib')
+  boolean Audit(const string atype, const string msg) : c, action, volatile, entrypoint='alAudit', hole;
+  boolean AuditData(const string atype, const string msg, const data datablock) : c, action, volatile, entrypoint='alAuditData', hole;
+END;

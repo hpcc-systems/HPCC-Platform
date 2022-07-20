@@ -46,3 +46,10 @@ install ( TARGETS timelib DESTINATION plugins )
 target_link_libraries ( timelib
          eclrtl
     )
+
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_timelib.ecllib
+        DESTINATION plugins
+        COMPONENT Runtime)
+endif()

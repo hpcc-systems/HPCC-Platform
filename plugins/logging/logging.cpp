@@ -28,21 +28,6 @@ static const char * compatibleVersions[] = {
     LOGGING_VERSION,
     NULL };
 
-static const char * EclDefinition =
-"export Logging := SERVICE : time\n"
-"  dbglog(const string src) : c,action,entrypoint='logDbgLog'; \n"
-"  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
-"  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
-"  addWorkunitError(const varstring txt, unsigned code=0, unsigned severity=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
-"  addWorkunitInformationEx(const varstring txt, unsigned code=0, unsigned severity=0, unsigned audience=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuExceptionEx'; \n"
-"  addWorkunitWarningEx(const varstring txt, unsigned code=0, unsigned severity=1, unsigned audience=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuExceptionEx'; \n"
-"  addWorkunitErrorEx(const varstring txt, unsigned code=0, unsigned severity=2, unsigned audience=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuExceptionEx'; \n"
-"  varstring getGlobalId() : c,context,entrypoint='logGetGlobalId'; \n"
-"  varstring getLocalId() : c,context,entrypoint='logGetLocalId'; \n"
-"  varstring getCallerId() : c,context,entrypoint='logGetCallerId'; \n"
-"  varstring generateGloballyUniqueId() : c,entrypoint='logGenerateGloballyUniqueId'; \n"
-"END;";
-
 LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
 {
     if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
@@ -55,7 +40,7 @@ LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = LOGGING_VERSION;
     pb->moduleName = "lib_logging";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "Logging library";
     return true;

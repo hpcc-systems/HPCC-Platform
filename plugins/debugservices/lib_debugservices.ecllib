@@ -1,0 +1,4 @@
+export DebugServices := SERVICE : plugin('debugservices')
+  Sleep(integer millis) : c,time,pure,entrypoint='dsSleep',initFunction='dsInitDebugServices';
+  varstring GetBuildInfo() : c,pure,entrypoint='dsGetBuildInfo',initFunction='dsInitDebugServices';
+END;

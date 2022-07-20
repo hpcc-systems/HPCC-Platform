@@ -1,0 +1,13 @@
+export Logging := SERVICE : plugin('logging'), time
+  dbglog(const string src) : c,action,entrypoint='logDbgLog';
+  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0, const varstring source='user') : ctxmethod,action,entrypoint='addWuException';
+  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1, const varstring source='user') : ctxmethod,action,entrypoint='addWuException';
+  addWorkunitError(const varstring txt, unsigned code=0, unsigned severity=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuException';
+  addWorkunitInformationEx(const varstring txt, unsigned code=0, unsigned severity=0, unsigned audience=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuExceptionEx';
+  addWorkunitWarningEx(const varstring txt, unsigned code=0, unsigned severity=1, unsigned audience=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuExceptionEx';
+  addWorkunitErrorEx(const varstring txt, unsigned code=0, unsigned severity=2, unsigned audience=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuExceptionEx';
+  varstring getGlobalId() : c,context,entrypoint='logGetGlobalId';
+  varstring getLocalId() : c,context,entrypoint='logGetLocalId';
+  varstring getCallerId() : c,context,entrypoint='logGetCallerId';
+  varstring generateGloballyUniqueId() : c,entrypoint='logGenerateGloballyUniqueId';
+END;

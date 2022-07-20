@@ -55,65 +55,6 @@ static UChar const u16asterisk = '*';
 static UChar const u16query = '?';
 static UChar const u16space = ' ';
 
-static const char * EclDefinition =
-"export UnicodeLib := SERVICE:fold\n"
-"  unicode UnicodeFilterOut(const unicode src, const unicode _within) : c, pure,entrypoint='ulUnicodeFilterOut'; \n"
-"  unicode UnicodeFilter(const unicode src, const unicode _within) : c, pure,entrypoint='ulUnicodeFilter'; \n"
-"  unicode UnicodeSubstituteOut(const unicode src, const unicode _within, const unicode _newchar) : c, pure,entrypoint='ulUnicodeSubsOut'; \n"
-"  unicode UnicodeSubstitute(const unicode src, const unicode _within, const unicode _newchar) : c, pure,entrypoint='ulUnicodeSubs'; \n"
-"  unicode UnicodeRepad(const unicode src, unsigned4 size) : c, pure,entrypoint='ulUnicodeRepad'; \n"
-"  unsigned integer4 UnicodeFind(const unicode src, const unicode tofind, unsigned4 instance) : c, pure,entrypoint='ulUnicodeFind', hole; \n"
-"  unsigned integer4 UnicodeLocaleFind(const unicode src, const unicode tofind, unsigned4 instance, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleFind', hole; \n"
-"  unsigned integer4 UnicodeLocaleFindAtStrength(const unicode src, const unicode tofind, unsigned4 instance, const varstring localename, integer1 strength) : c, pure,entrypoint='ulUnicodeLocaleFindAtStrength', hole; \n"
-"  unicode UnicodeExtract(const unicode src, unsigned4 instance) : c,pure,entrypoint='ulUnicodeExtract'; \n"
-"  unicode50 UnicodeExtract50(const unicode src, unsigned4 instance) : c,pure,entrypoint='ulUnicodeExtract50', hole; \n"
-"  unicode UnicodeToLowerCase(const unicode src) : c,pure,entrypoint='ulUnicodeToLowerCase';\n"
-"  unicode UnicodeToUpperCase(const unicode src) : c,pure,entrypoint='ulUnicodeToUpperCase';\n"
-"  unicode UnicodeToProperCase(const unicode src) : c,pure,entrypoint='ulUnicodeToProperCase';\n"
-"  unicode80 UnicodeToLowerCase80(const unicode src) : c,pure,entrypoint='ulUnicodeToLowerCase80', hole;\n"
-"  unicode80 UnicodeToUpperCase80(const unicode src) : c,pure,entrypoint='ulUnicodeToUpperCase80', hole;\n"
-"  unicode80 UnicodeToProperCase80(const unicode src) : c,pure,entrypoint='ulUnicodeToProperCase80', hole;\n"
-"  unicode UnicodeLocaleToLowerCase(const unicode src, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleToLowerCase';\n"
-"  unicode UnicodeLocaleToUpperCase(const unicode src, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleToUpperCase';\n"
-"  unicode UnicodeLocaleToProperCase(const unicode src, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleToProperCase';\n"
-"  unicode80 UnicodeLocaleToLowerCase80(const unicode src, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleToLowerCase80', hole;\n"
-"  unicode80 UnicodeLocaleToUpperCase80(const unicode src, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleToUpperCase80', hole;\n"
-"  unicode80 UnicodeLocaleToProperCase80(const unicode src, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleToProperCase80', hole;\n"
-"  integer4 UnicodeCompareIgnoreCase(const unicode src1, const unicode src2) : c,pure,entrypoint='ulUnicodeCompareIgnoreCase', hole;\n"
-"  integer4 UnicodeCompareAtStrength(const unicode src1, const unicode src2, integer1 strength) : c,pure,entrypoint='ulUnicodeCompareAtStrength', hole;\n"
-"  integer4 UnicodeLocaleCompareIgnoreCase(const unicode src1, const unicode src2, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleCompareIgnoreCase', hole;\n"
-"  integer4 UnicodeLocaleCompareAtStrength(const unicode src1, const unicode src2, const varstring localename, integer1 strength) : c,pure,entrypoint='ulUnicodeLocaleCompareAtStrength', hole;\n"
-"  unicode UnicodeReverse(const unicode src) : c,pure,entrypoint='ulUnicodeReverse';\n"
-"  unicode UnicodeFindReplace(const unicode src, const unicode stok, const unicode rtok) : c,pure,entrypoint='ulUnicodeFindReplace';\n"
-"  unicode UnicodeLocaleFindReplace(const unicode src, const unicode stok, const unicode rtok, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleFindReplace';\n"
-"  unicode UnicodeLocaleFindAtStrengthReplace(const unicode src, const unicode stok, const unicode rtok, const varstring localename, integer1 strength) : c,pure,entrypoint='ulUnicodeLocaleFindAtStrengthReplace';\n"
-"  unicode80 UnicodeFindReplace80(const unicode src, const unicode stok, const unicode rtok) : c,pure,entrypoint='ulUnicodeFindReplace80', hole;\n"
-"  unicode80 UnicodeLocaleFindReplace80(const unicode src, const unicode stok, const unicode rtok, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleFindReplace80',hole;\n"
-"  unicode80 UnicodeLocaleFindAtStrengthReplace80(const unicode src, const unicode stok, const unicode rtok, const varstring localename, integer1 strength) : c,pure,entrypoint='ulUnicodeLocaleFindAtStrengthReplace80',hole;\n"
-"  unicode UnicodeCleanAccents(const unicode src) : c,pure,entrypoint='ulUnicodeCleanAccents'; \n"
-"  unicode UnicodeCleanSpaces(const unicode src) : c,pure,entrypoint='ulUnicodeCleanSpaces'; \n"
-"  unicode25 UnicodeCleanSpaces25(const unicode src) : c,pure,entrypoint='ulUnicodeCleanSpaces25', hole; \n"
-"  unicode80 UnicodeCleanSpaces80(const unicode src) : c,pure,entrypoint='ulUnicodeCleanSpaces80', hole; \n"
-"  boolean UnicodeWildMatch(const unicode src, const unicode _pattern, boolean _noCase) : c, pure,entrypoint='ulUnicodeWildMatch', hole; \n"
-"  boolean UnicodeContains(const unicode src, const unicode _pattern, boolean _noCase) : c, pure,entrypoint='ulUnicodeContains', hole; \n"
-"  unsigned4 UnicodeLocaleEditDistance(const unicode left, const unicode right, const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistance', hole; \n"
-"  unsigned4 UnicodeLocaleEditDistanceV2(const unicode left, const unicode right, const varstring localename, unsigned4 radius) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceV2', hole; \n"
-"  boolean UnicodeLocaleEditDistanceWithinRadius(const unicode left, const unicode right, unsigned4 radius,  const varstring localename) : c,time,pure,entrypoint='ulUnicodeLocaleEditDistanceWithinRadius', hole; \n"
-"  unsigned4 UnicodeLocaleWordCount(const unicode text, const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWordCount', hole; \n"
-"  unicode UnicodeLocaleGetNthWord(const unicode text, unsigned4 n, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetNthWord';\n"
-"  unicode UnicodeLocaleExcludeNthWord(const unicode text, unsigned4 n, const varstring localename) :c,pure,entrypoint='ulUnicodeLocaleExcludeNthWord';\n"
-"  unicode UnicodeLocaleExcludeLastWord(const unicode text, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleExcludeLastWord';\n"
-"  unicode UnicodeLocaleTranslate(const unicode text, unicode sear, unicode repl) :c,pure,entrypoint='ulUnicodeLocaleTranslate';\n"
-"  boolean UnicodeLocaleStartsWith(const unicode src, unicode pref, string form) :c,pure,entrypoint='ulUnicodeLocaleStartsWith';\n"
-"  boolean UnicodeLocaleEndsWith(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleEndsWith';\n"
-"  string UnicodeVersion():c,pure,entrypoint='ulUnicodeVersion';\n"
-"  unicode UnicodeLocaleRemoveSuffix(const unicode src, const unicode suff, const string form) :c,pure,entrypoint='ulUnicodeLocaleRemoveSuffix';\n"
-"  unicode UnicodeLocaleRepeat(const unicode src, unsigned4 n) : c, pure,entrypoint='ulUnicodeLocaleRepeat'; \n"
-"  unsigned4 UnicodeLocaleFindCount(const unicode src, const unicode hit, const string form) :c,pure,entrypoint='ulUnicodeLocaleFindCount';\n"
-"  unsigned4 UnicodeLocaleCountWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleCountWords';\n"
-"  SET OF UNICODE UnicodeLocaleSplitWords(const unicode src, const unicode delim, boolean allowBlankItems) : c,pure,entrypoint='ulUnicodeLocaleSplitWords';\n"
-"END;\n";
-
 static const char * compatibleVersions[] = {
     "UNICODELIB 1.1.01 [64d78857c1cecae15bd238cd7767b3c1]", 
     "UNICODELIB 1.1.01 [e8790fe30d9627997749c3c4839b5957]", 
@@ -135,7 +76,7 @@ UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = UNICODELIB_VERSION;
     pb->moduleName = "lib_unicodelib";
-    pb->ECL = EclDefinition;
+    pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE | PLUGIN_MULTIPLE_VERSIONS;
     pb->description = "UnicodeLib unicode string manipulation library";
     return true;

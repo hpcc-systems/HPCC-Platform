@@ -8,15 +8,16 @@
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
-			"-DUSE_NATIVE_LIBRARIES=ON",
+			"-DUSE_OPENLDAP=OFF",
 			"-DUSE_AZURE=OFF",
 			"-DWSSQL_SERVICE=OFF",
-			"-DUSE_CASSANDRA=OFF",
 			"-DINCLUDE_PLUGINS=OFF"
 		],
 		"cmake.buildToolArgs": [
 			"-m"
 		],
+		"ecl.launchConfiguration": "not found",
+		"ecl.targetCluster": {},
 	},
 	"extensions": {
 		"recommendations": [

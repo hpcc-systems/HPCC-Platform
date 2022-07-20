@@ -1,0 +1,4 @@
+export ParseLib := SERVICE : plugin('parselib'), time
+   string getParseTree() : c,volatile,entrypoint='plGetDefaultParseTree',userMatchFunction;
+   string getXmlParseTree() : c,volatile,entrypoint='plGetXmlParseTree',userMatchFunction;
+END;
