@@ -231,7 +231,7 @@ public:
     {
         return count.load(std::memory_order_acquire);
     }
-    void noteReleased(const void *ptr);
+    inline void noteReleased(const void *ptr) { Release(); }
     void noteLinked(const void *ptr);
     bool attachToRowMgr(IRowManager *rowMgr);
 

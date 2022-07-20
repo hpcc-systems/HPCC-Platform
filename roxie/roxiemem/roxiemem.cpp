@@ -6481,17 +6481,33 @@ void DataBuffer::Release()
             DBGLOG("ERROR: DataBuffer::Release() called on freed buffer");
             printStackReport();
         }
+        return;
     }
 #endif
     unsigned prevCount = count.fetch_sub(1, std::memory_order_release);
+    //After this line the DataBuffer may be deleted (e.g. by another thread) if neither of the following conditions are met
     if (prevCount == 1)
     {
-        //No acquire fence - released() is assumed not to access the data in this buffer
-        //If it does it should contain an acquire fence
+        //The contents of this buffer should only be modified by the thread that created it - so
+        //the following acquire fence shouldn't actually be needed...
+        std::atomic_thread_fence(std::memory_order_acquire);
         released();
     }
-    else if (manager && prevCount == 2)
-        manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
+    else if (prevCount == 2)
+    {
+        if (manager)
+            manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
+    }
+    else if (prevCount == 0)
+    {
+        //Report an error, but don't fail because this will not actually cause problems
+        //It will only cause a memory corruption if the row has been allocated again
+        if (memTraceReleaseWhenFree)
+        {
+            DBGLOG("ERROR: DataBuffer::Release() called on zero count buffer");
+            printStackReport();
+        }
+    }
 }
 
 void DataBuffer::released()
@@ -6532,21 +6548,6 @@ void DataBuffer::changeState(DBState oldState, DBState newState, const char * fu
     state = newState;
 }
 #endif
-
-void DataBuffer::noteReleased(const void *ptr)
-{
-    IRowManager * manager = mgr;
-    unsigned prevCount = count.fetch_sub(1, std::memory_order_release);
-    //After this line the DataBuffer may be deleted (e.g. by another thread) if neither of the following conditions are met
-    if (prevCount == 1)
-    {
-        //No acquire fence - released() is assumed not to access the data in this buffer
-        //If it does it should contain an acquire fence
-        released();
-    }
-    else if (manager && prevCount == 2)
-        manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
-}
 
 void DataBuffer::noteLinked(const void *ptr)
 {
