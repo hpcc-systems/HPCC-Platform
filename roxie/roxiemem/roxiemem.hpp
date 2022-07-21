@@ -65,6 +65,8 @@
 
 #define MAX_FRAC_ALLOCATOR              20
 
+#define TRACK_DATABUFF_STATE
+
 //================================================================================
 // Roxie heap
 
@@ -206,6 +208,7 @@ class DataBuffer;
 interface IDataBufferManager;
 interface IRowManager;
 
+enum class DBState : unsigned { zero, unowned, queued, attached, freed, max };
 class roxiemem_decl DataBuffer
 {
     friend class CDataBufferManager;
@@ -228,13 +231,25 @@ public:
     {
         return count.load(std::memory_order_acquire);
     }
-    void noteReleased(const void *ptr);
+    inline void noteReleased(const void *ptr) { Release(); }
     void noteLinked(const void *ptr);
     bool attachToRowMgr(IRowManager *rowMgr);
 
+#ifdef TRACK_DATABUFF_STATE
+    void initState(DBState newState) { state = newState; }
+    void changeState(DBState oldState, DBState newState, const char * func);
+#else
+    void initState(DBState newState) { }
+    void changeState(DBState oldState, DBState newState, const char * func) {}
+#endif
+
 public:
     std::atomic_uint count;
+#ifdef TRACK_DATABUFF_STATE
+    DBState state = DBState::unowned;
+#else
     unsigned filler = 0; // keeps valgrind happy
+#endif
     IRowManager *mgr = nullptr;
     union
     {
@@ -552,7 +567,8 @@ extern roxiemem_decl unsigned getDataBuffersActive();
 extern roxiemem_decl void setMemTraceLevel(unsigned value);
 extern roxiemem_decl void setMemTraceSizeLimit(memsize_t value);
 
-extern roxiemem_decl void lockRoxieMem(bool lock);
+extern roxiemem_decl int lockRoxieMem(bool lock);
+extern roxiemem_decl bool getRoxieMemLocked();
 
 #define ALLOCATE(a) allocate(a, activityId)
 #define CLONE(a,b) clone(a, b, activityId)

@@ -4111,6 +4111,39 @@ void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, cons
 }
 
 #ifdef _CONTAINERIZED
+template <class T>
+void readWUComponentLogOptionsReq(T* logReq, WUComponentLogOptions& options)
+{
+    //If MaxLogRecords is in logReq, use it; otherwise, default to 100 in LogAccessConditions.
+    if (!logReq->getMaxLogRecords_isNull())
+        options.logFetchOptions.setLimit(logReq->getMaxLogRecords());
+    //If LogSearchTimeBuffSecs is in logReq, use it; otherwise, default to defaultWULogSearchTimeBufferSecs.
+    if (!logReq->getLogSearchTimeBuffSecs_isNull())
+        options.wuLogSearchTimeBuffSecs = logReq->getLogSearchTimeBuffSecs();
+    CLogAccessLogFormat logFormatSetting = logReq->getLogFormat();
+    if (logFormatSetting != LogAccessLogFormat_Undefined)
+        options.logFormat = (LogAccessLogFormat) logFormatSetting;
+    else
+        options.logFormat = LOGACCESS_LOGFORMAT_csv;
+
+    switch (logReq->getLogSelectColumnMode())
+    {
+    case CLogSelectColumnMode_MIN:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_min);
+        break;
+    case CLogSelectColumnMode_ALL:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_all);
+        break;
+    case CLogSelectColumnMode_CUSTOM:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_custom);
+        options.logFetchOptions.copyLogFieldNames(logReq->getLogColumns());
+        break;
+    default:
+        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
+        break;
+    }
+}
+
 void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpResponse* response)
 {
     StringBuffer wuid, fileName;
@@ -4122,10 +4155,14 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
         throw makeStringException(ECLWATCH_INVALID_INPUT, "Empty Name detected");
 
     IEspContext* ctx = request->queryContext();
+    double version = ctx->getClientVersion();
     Owned<CWULogFileRequest> espRequest = new CWULogFileRequest(ctx, "WsWorkunits", request->queryParameters(), request->queryAttachments());
 
     WUComponentLogOptions options;
-    readWUComponentLogOptionsReq(espRequest->getFileOptions(), options);
+    if (version < 1.92)
+        readWUComponentLogOptionsReq(&espRequest->getFileOptions(), options);
+    else
+        readWUComponentLogOptionsReq(espRequest.get(), options);
 
     WsWuInfo winfo(*ctx, wuid.str());
     int option = request->getParameterInt("Option", CWUFileDownloadOption_OriginalText); //0: original content; 1: content as attachment; 2: zip; 3: gzip.
@@ -4199,37 +4236,6 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
             response->setContentType("application/zip");
         response->send();
         recursiveRemoveDirectory(workingFolder);
-    }
-}
-
-void CWsWuFileHelper::readWUComponentLogOptionsReq(IConstWUFileOption& logOptionReq, WUComponentLogOptions& options)
-{
-    //If MaxLogRecords is in logOptionReq, use it; otherwise, default to 100 in LogAccessConditions.
-    if (!logOptionReq.getMaxLogRecords_isNull())
-        options.logFetchOptions.setLimit(logOptionReq.getMaxLogRecords());
-    //If LogSearchTimeBuffSecs is in logOptionReq, use it; otherwise, default to defaultWULogSearchTimeBufferSecs.
-    if (!logOptionReq.getLogSearchTimeBuffSecs_isNull())
-        options.wuLogSearchTimeBuffSecs = logOptionReq.getLogSearchTimeBuffSecs();
-    CLogAccessLogFormat logFormatSetting = logOptionReq.getLogFormat();
-    if (logFormatSetting != LogAccessLogFormat_Undefined)
-        options.logFormat = (LogAccessLogFormat) logFormatSetting;
-    else
-        options.logFormat = LOGACCESS_LOGFORMAT_csv;
-    switch (logOptionReq.getLogSelectColumnMode())
-    {
-    case CLogSelectColumnMode_MIN:
-        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_min);
-        break;
-    case CLogSelectColumnMode_ALL:
-        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_all);
-        break;
-    case CLogSelectColumnMode_CUSTOM:
-        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_custom);
-        options.logFetchOptions.copyLogFieldNames(logOptionReq.getLogColumns());
-        break;
-    default:
-        options.logFetchOptions.setReturnColsMode(RETURNCOLS_MODE_default);
-        break;
     }
 }
 #endif
@@ -4672,7 +4678,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     case CWUFileType_ComponentLog:
     {
         WUComponentLogOptions options;
-        readWUComponentLogOptionsReq(item, options);
+        readWUComponentLogOptionsReq(&item, options); //The item comes from ESPrequest WUDownloadFilesRequest.
 
         fileName.set(File_ComponentLog);
         if (options.logFormat == LOGACCESS_LOGFORMAT_csv)

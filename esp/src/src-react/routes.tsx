@@ -182,6 +182,21 @@ export const routes: RoutesEx = [
             { path: "/pods", action: (ctx, params) => import("./components/Pods").then(_ => <_.Pods />) },
             { path: "/pods-json", action: (ctx, params) => import("./components/Pods").then(_ => <_.PodsJSON />) },
             { path: "/logs", action: (ctx) => import("./components/Logs").then(_ => <_.Logs filter={parseSearch(ctx.search) as any} />) },
+            {
+                path: "/daliadmin",
+                children: [
+                    { path: "", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin />) },
+                    { path: "/:Tab", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin tab={params.Tab as string} />) },
+                ]
+            },
+        ]
+    },
+    {
+        mainNav: ["topology"],
+        path: "/daliadmin",
+        children: [
+            { path: "", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin />) },
+            { path: "/:Tab", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin tab={params.Tab as string} />) },
         ]
     },
     {

@@ -639,7 +639,6 @@ public:
     virtual IDistributedFileTransaction *querySuperFileTransaction();
     virtual unsigned getPriority() const { return 0; }
     virtual char *getPlatform();
-    virtual char *getDeploymentName();
     virtual char *getEnv(const char *name, const char *defaultValue) const;
     virtual char *getOS()
     {

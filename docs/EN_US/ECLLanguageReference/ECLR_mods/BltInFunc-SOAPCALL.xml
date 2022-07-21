@@ -296,7 +296,7 @@
 
             <entry>Specifies the number of concurrent threads per node to
             process queries, to a maximum of 50 (the default is 2). This is
-            intended to limit the number of concurrent sessions. </entry>
+            intended to limit the number of concurrent sessions.</entry>
           </row>
 
           <row>
@@ -385,6 +385,16 @@
 
             <entry>Specifies to add the expression to the log when performing
             a SOAPCALL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG
+            </emphasis>(<emphasis>start_expression,
+            end_expression</emphasis>)</entry>
+
+            <entry>Specifies to add the start_expression to the log when a
+            SOAPCALL begins and add the end_expression to the log when a
+            SOAPCALL ends.</entry>
           </row>
 
           <row>

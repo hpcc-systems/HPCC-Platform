@@ -190,7 +190,6 @@ Pass in root as .
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
 {{- $security := .Values.security | default dict -}}
-deployment: {{ (include "hpcc.fullname" (dict "root" $)) }}
 mtls: {{ (include "hpcc.isMtlsEnabled" (dict "root" $)) }}
 imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
 singleNode: {{ .Values.global.singleNode | default false }}

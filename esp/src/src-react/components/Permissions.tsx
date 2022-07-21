@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
@@ -55,7 +55,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
                 if (idx.__hpcc_parent) {
-                    return <Link href={`#/security/permissions/${_name}/${idx.__hpcc_parent.name}`}>{_name}</Link>;
+                    return `<a href="#/security/permissions/${_name}/${idx.__hpcc_parent.name}">${_name}</a>`;
                 } else {
                     return _name;
                 }

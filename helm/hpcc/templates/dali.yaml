@@ -51,7 +51,7 @@ true
 {{- $tmpDaliScope := dict "aggregateSashaSecretsCategories" list "aggregatePlaneCategories" $daliPlaneIncludeCategories "aggregateSashaNamedPlanes" list -}}
 {{- if not ($sashaServices.disabled) -}}
  {{- range $sashaName, $_sasha := $dali.services -}}
-  {{- $sasha := ($_sasha | default dict) -}}
+  {{- $sasha := deepCopy ($_sasha | default dict) -}}
   {{- if not $sasha.disabled -}}
    {{- $_ := set $sasha "name" $sashaName -}}
    {{- $sashaAccess := splitList " " (include "hpcc.getSashaServiceAccess" $sasha) -}}
@@ -127,7 +127,7 @@ spec:
 {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dali" "external" false) | nindent 8 }}
 {{- if not $sashaServices.disabled -}}
  {{- range $sashaName, $_sasha := $dali.services -}}
-  {{- $sasha := ($_sasha | default dict) -}}
+  {{- $sasha := deepCopy ($_sasha | default dict) -}}
   {{- if not $sasha.disabled -}}
    {{- $_ := set $sasha "name" $sashaName -}}
    {{- $thisServiceCtx := dict -}}
@@ -188,7 +188,7 @@ data:
 ---
 {{- if not $sashaServices.disabled -}}
 {{- range $sashaName, $_sasha := $sashaServices -}}
-{{- $sasha := ($_sasha | default dict) -}}
+{{- $sasha := deepCopy ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName }}
 kind: ConfigMap

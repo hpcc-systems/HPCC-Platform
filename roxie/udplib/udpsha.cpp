@@ -191,6 +191,7 @@ void queue_t::pushOwn(DataBuffer *buf)
     // potential priority-inversion issues. Or we might consider using PI-aware futexes here?
     assert(!buf->msgNext);
     {
+        buf->changeState(roxiemem::DBState::unowned, roxiemem::DBState::queued, __func__);
         CriticalBlock b(c_region);
         doEnqueue(buf);
     }

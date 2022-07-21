@@ -2199,6 +2199,12 @@ inline const char *controlCmdMessage(int cmd)
         return "<control:reload forceRetry='1' />";
     case CRoxieControlCmdType_STATE:
         return "<control:state/>";
+    case CRoxieControlCmdType_MEMLOCK:
+        return "<control:memlock/>";
+    case CRoxieControlCmdType_MEMUNLOCK:
+        return "<control:memunlock/>";
+    case CRoxieControlCmdType_GETMEMLOCKED:
+        return "<control:getmemlocked/>";
     default:
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");
     }
@@ -2327,6 +2333,8 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
             respEndpoint->setAttached(roxieEndpoint.getPropBool("Dali/@connected"));
         if (roxieEndpoint.hasProp("State/@hash"))
             respEndpoint->setStateHash(roxieEndpoint.queryProp("State/@hash"));
+        if (roxieEndpoint.hasProp("heapLockMemory/@locked"))
+            respEndpoint->setMemLocked(roxieEndpoint.getPropBool("heapLockMemory/@locked"));
         respEndpoints.append(*respEndpoint.getClear());
     }
     resp.setEndpoints(respEndpoints);

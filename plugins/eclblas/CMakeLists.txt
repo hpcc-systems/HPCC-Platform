@@ -26,38 +26,45 @@
 
 project(eclblas)
 
-if(USE_CBLAS)
-    set(SRCS
-        dasum.cpp
-        daxpy.cpp
-        dgemm.cpp
-        dgetf2.cpp
-        dpotf2.cpp
-        dscal.cpp
-        dsyrk.cpp
-        dtrsm.cpp
-        eclblas.cpp
-        extract_tri.cpp
-        make_diag.cpp)
+if(ECLBLAS)
+    ADD_PLUGIN(eclblas)
+    if(MAKE_ECLBLAS)
+        find_package(OpenBLAS REQUIRED)
 
-    include_directories(
-        ./../../system/include
-        ./../../rtl/eclrtl
-        ./../../rtl/include
-        ./../../common/deftype
-        ./../../system/jlib
-        ${CBLAS_INCLUDE_DIR})
+        add_definitions(-D_USE_CBLAS)
+   
+        set(SRCS
+            dasum.cpp
+            daxpy.cpp
+            dgemm.cpp
+            dgetf2.cpp
+            dpotf2.cpp
+            dscal.cpp
+            dsyrk.cpp
+            dtrsm.cpp
+            eclblas.cpp
+            extract_tri.cpp
+            make_diag.cpp)
 
-    ADD_DEFINITIONS(-D_USRDLL -DECLBLAS_EXPORTS)
+        include_directories(
+            ./../../system/include
+            ./../../rtl/eclrtl
+            ./../../rtl/include
+            ./../../common/deftype
+            ./../../system/jlib
+            ${OpenBLAS_DIR})
 
-    HPCC_ADD_LIBRARY(eclblas SHARED ${SRCS})
-    install ( TARGETS eclblas RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )  # No need to put in plugins dir
-    target_link_libraries(eclblas
-        eclrtl
-        ${CBLAS_LIBRARIES})
-else()
-    message(AUTHOR_WARNING "Not building eclblas library for standard library due to lacking libcblas")
-endif(USE_CBLAS)
+        ADD_DEFINITIONS(-D_USRDLL -DECLBLAS_EXPORTS)
+
+        HPCC_ADD_LIBRARY(eclblas SHARED ${SRCS})
+        install ( TARGETS eclblas RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )  # No need to put in plugins dir
+        target_link_libraries(eclblas
+            eclrtl
+            OpenBLAS::OpenBLAS)
+    else()
+        message(AUTHOR_WARNING "Not building eclblas library for standard library due to lacking libcblas")
+    endif()
+endif()
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(

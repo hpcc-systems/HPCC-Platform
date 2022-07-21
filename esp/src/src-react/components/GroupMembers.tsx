@@ -33,7 +33,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         data,
         primaryID: "username",
         sort: { attribute: "name", descending: false },
-        filename: "fileParts",
+        filename: "groupMembers",
         columns: {
             username: {
                 label: nlsHPCC.UserName,
@@ -51,15 +51,9 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     const refreshData = React.useCallback(() => {
         WsAccess.GroupMemberQuery({
             request: { GroupName: groupname }
-        }).then(({ GroupMemberQueryResponse }) => {
-            if (GroupMemberQueryResponse?.Users) {
-                const users = GroupMemberQueryResponse?.Users?.User;
-                setData(users);
-            } else {
-                setData([]);
-            }
-        }).catch(err => logger.error(err))
-            ;
+        })
+            .then(({ Users }) => setData(Users?.User ?? []))
+            .catch(err => logger.error(err));
     }, [groupname]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
@@ -128,9 +122,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} farItems={copyButtons} />}
-            main={
-                <Grid />
-            }
+            main={<Grid />}
         />
         <GroupAddUserForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshData} groupname={groupname} />
         <DeleteConfirm />

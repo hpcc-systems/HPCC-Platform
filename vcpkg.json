@@ -15,6 +15,7 @@
         },
         "boost-property-tree",
         "boost-regex",
+        "cpp-driver",
         "cpr",
         "curl",
         {
@@ -53,7 +54,14 @@
         "libyaml",
         "lz4",
         "nlohmann-json",
-        "openblas",
+        {
+            "name": "openblas",
+            "features":[
+                "dynamic-arch",
+                "threads"
+            ],
+            "platform": "!windows"
+        },
         "openssl",
         {
             "name": "python3",

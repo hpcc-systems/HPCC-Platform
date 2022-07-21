@@ -195,7 +195,7 @@ EXPORT SetFileDescription(varstring lfn, varstring val) :=
  * Returns a dataset containing a list of files from the specified machineIP and directory.
  *
  * @param machineIP     The IP address of the remote machine.
- * @param directory     The path to the directory to read. This must be in the appropriate format for the operating
+ * @param dir           The path to the directory to read. This must be in the appropriate format for the operating
  *                      system running on the remote machine.
  * @param mask          The filemask specifying which files to include in the result. Defaults to '*' (all files).
  * @param recurse       Whether to include files from subdirectories under the directory. Defaults to FALSE.

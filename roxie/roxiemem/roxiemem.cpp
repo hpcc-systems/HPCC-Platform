@@ -72,7 +72,8 @@ namespace roxiemem {
 static unsigned memTraceLevel = 1;
 static memsize_t memTraceSizeLimit = 0;
 static const unsigned ScanReportThreshold = 10; // If average more than 10 scans per allocate then notify us.  More than 10 starts slowing the query down.
-static bool memTraceInconsistencies = false;
+static bool memTraceInconsistencies = true;
+static bool memTraceReleaseWhenFree = true;
 
 void setMemTraceLevel(unsigned value)
 {
@@ -225,7 +226,7 @@ static CriticalSection heapBitCrit;
 
 static void notifyAllUnusedRoxieMem();
 
-extern void lockRoxieMem(bool lock)
+extern int lockRoxieMem(bool lock)
 {
 #ifndef _WIN32
     CriticalBlock b(heapBitCrit);
@@ -233,7 +234,7 @@ extern void lockRoxieMem(bool lock)
     if (!heapBase || !heapEnd)
     {
         DBGLOG("Attempt to lock/unlock heap memory failed, invalid heapBase or heapEnd");
-        return;
+        return 999;
     }
 
     memsize_t memsize = heapEnd - heapBase;
@@ -248,9 +249,16 @@ extern void lockRoxieMem(bool lock)
             DBGLOG("MEMORY LOCKED");
             heapNotifyUnusedEachFree = false;
             heapNotifyUnusedEachBlock = false;
+            return 0;
         }
         else
-            DBGLOG("Attempt to lock heap memory failed, errno = %d", errno);
+        {
+            int errnum = errno;
+            if (!errnum)
+                errnum = 999;
+            DBGLOG("Attempt to lock heap memory failed, errno = %d", errnum);
+            return errnum;
+        }
     }
     else if (!lock && heapLocked)
     {
@@ -278,11 +286,24 @@ extern void lockRoxieMem(bool lock)
                 }
                 notifyAllUnusedRoxieMem();
             }
+            return 0;
         }
         else
-            DBGLOG("Attempt to unlock heap memory failed, errno = %d", errno);
+        {
+            int errnum = errno;
+            if (!errnum)
+                errnum = 999;
+            DBGLOG("Attempt to unlock heap memory failed, errno = %d", errnum);
+            return errnum;
+        }
     }
 #endif
+    return 0;
+}
+
+extern bool getRoxieMemLocked()
+{
+    return heapLocked;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -4634,6 +4655,7 @@ public:
                 logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
                         dfinger->queryCount()-1, dfinger, this);
             dfinger->nextActive = nullptr;
+            dfinger->changeState(DBState::attached, DBState::unowned, __func__);
             dfinger->mgr = nullptr; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
             dfinger->count.store(0, std::memory_order_relaxed);
             dfinger->released();
@@ -5024,6 +5046,7 @@ public:
                                     finger, this);
                         finger->mgr = nullptr;
                         finger->nextActive = nullptr;
+                        finger->changeState(DBState::attached, DBState::unowned, __func__);
                         finger->Release();
                         if (last)
                             last->nextActive = next;
@@ -5051,10 +5074,7 @@ public:
             }
 
             assert(dataBuff->nextActive == nullptr);
-#ifdef _DEBUG
-            //Optionally assign a sequence number to the attached databuffer to make it easier to investigate issues
-            dataBuff->filler = ++attachSeq;
-#endif
+            dataBuff->changeState(DBState::unowned, DBState::attached, __func__);
             dataBuff->nextActive = activeBuffs;
             activeBuffs = dataBuff;
             dataBuffs++;
@@ -6451,21 +6471,50 @@ void CPackedChunkingHeap::reportScanProblem(unsigned, unsigned __int64 numScans,
 void DataBuffer::Release()
 {
     IRowManager * manager = mgr;
+#ifdef TRACK_DATABUFF_STATE
+    if (state == DBState::freed)
+    {
+        //Report an error, but don't fail because this will not actually cause problems
+        //It will only cause a memory corruption if the row has been allocated again
+        if (memTraceReleaseWhenFree)
+        {
+            DBGLOG("ERROR: DataBuffer::Release() called on freed buffer");
+            printStackReport();
+        }
+        return;
+    }
+#endif
     unsigned prevCount = count.fetch_sub(1, std::memory_order_release);
+    //After this line the DataBuffer may be deleted (e.g. by another thread) if neither of the following conditions are met
     if (prevCount == 1)
     {
-        //No acquire fence - released() is assumed not to access the data in this buffer
-        //If it does it should contain an acquire fence
+        //The contents of this buffer should only be modified by the thread that created it - so
+        //the following acquire fence shouldn't actually be needed...
+        std::atomic_thread_fence(std::memory_order_acquire);
         released();
     }
-    else if (manager && prevCount == 2)
-        manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
+    else if (prevCount == 2)
+    {
+        if (manager)
+            manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
+    }
+    else if (prevCount == 0)
+    {
+        //Report an error, but don't fail because this will not actually cause problems
+        //It will only cause a memory corruption if the row has been allocated again
+        if (memTraceReleaseWhenFree)
+        {
+            DBGLOG("ERROR: DataBuffer::Release() called on zero count buffer");
+            printStackReport();
+        }
+    }
 }
 
 void DataBuffer::released()
 {
     assert(nextDataId == 0);
     DataBufferBottom *bottom = (DataBufferBottom *)findBase(this);
+    changeState(DBState::unowned, DBState::freed, __func__);
     assert((char *)bottom != (char *)this);
     if (memTraceLevel >= 4)
         DBGLOG("RoxieMemMgr: DataBuffer::released() releasing DataBuffer - addr=%p", this);
@@ -6490,20 +6539,15 @@ bool DataBuffer::attachToRowMgr(IRowManager *rowMgr)
     }
 }
 
-void DataBuffer::noteReleased(const void *ptr)
+#ifdef TRACK_DATABUFF_STATE
+static constexpr const char * stateNames[(unsigned)DBState::max] = { "zero", "unowned", "queued", "attached", "freed" };
+void DataBuffer::changeState(DBState oldState, DBState newState, const char * func)
 {
-    IRowManager * manager = mgr;
-    unsigned prevCount = count.fetch_sub(1, std::memory_order_release);
-    //After this line the DataBuffer may be deleted (e.g. by another thread) if neither of the following conditions are met
-    if (prevCount == 1)
-    {
-        //No acquire fence - released() is assumed not to access the data in this buffer
-        //If it does it should contain an acquire fence
-        released();
-    }
-    else if (manager && prevCount == 2)
-        manager->noteDataBuffReleased(this); // NB: 'this' is not accessed in noteDataBuffReleased(), only pointer value is traced
+    if ((state != oldState) && memTraceInconsistencies)
+        DBGLOG("ERROR: Unexpected state in %s() was %s, expected %s", func, stateNames[(unsigned)state], stateNames[(unsigned)oldState]);
+    state = newState;
 }
+#endif
 
 void DataBuffer::noteLinked(const void *ptr)
 {
@@ -6628,6 +6672,7 @@ public:
                             dataBuffersActive.fetch_add(1);
                             bottom->Link();
                             curFree->nextDataId = 0;
+                            curFree->changeState(DBState::freed, DBState::unowned, __func__); // sanity check - will be overriden by the following new
                             if (memTraceLevel >= 4)
                                 DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", curFree);
                             return ::new(curFree) DataBuffer();
@@ -6695,6 +6740,7 @@ public:
                                     dataBuffersActive.fetch_add(1);
                                     finger->Link();
                                     curFree->nextDataId = 0;
+                                    curFree->changeState(DBState::freed, DBState::unowned, __func__); // sanity check - will be overriden by the following new
                                     if (memTraceLevel >= 4)
                                         DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() reallocated DataBuffer - addr=%p", curFree);
                                     return ::new(curFree) DataBuffer();
@@ -6848,6 +6894,7 @@ void setMemoryOptions(IPropertyTree * options)
     if (!options)
         return;
     memTraceInconsistencies = options->getPropBool("@roxiememTraceInconsistencies", true);
+    memTraceReleaseWhenFree = options->getPropBool("@roxiememTraceReleaseWhenFree", true);
     //MORE: Other options should probably be processed here - so they can be read consistently
 }
 

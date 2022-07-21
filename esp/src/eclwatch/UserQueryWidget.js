@@ -774,6 +774,20 @@ define([
                 }
             }, this.id + "PermissionsGrid");
             var context = this;
+            this.permissionsGrid.on("click", function (evt) {
+                var t = window.setTimeout(function () {
+                    var permissionSelection = context.permissionsGrid.getSelected();
+                    if (permissionSelection.length > 1 || permissionSelection[0].Basedn !== "File Scopes") {
+                        registry.byId(context.id + "EnableScopeScans").set("disabled", true);
+                        registry.byId(context.id + "DisableScopeScans").set("disabled", true);
+                    } else {
+                        var scopeScansEnabled = permissionSelection[0]?.children.scopeScansEnabled ?? false;
+                        registry.byId(context.id + "EnableScopeScans").set("disabled", scopeScansEnabled);
+                        registry.byId(context.id + "DisableScopeScans").set("disabled", !scopeScansEnabled);
+                    }
+                    window.clearTimeout(t);
+                }, 100);
+            });
             this.permissionsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onPermissionsRowDblClick) {
                     var item = context.permissionsGrid.row(evt).data;
@@ -834,7 +848,6 @@ define([
                 retVal = new ShowIndividualPermissionsWidget({
                     id: id,
                     title: params.TabName ? params.TabName : params.Name,
-                    iconClass: "iconPeople",
                     closable: true,
                     params: params
                 });
@@ -874,22 +887,6 @@ define([
 
             var permissionSelection = this.permissionsGrid.getSelected();
             var hasPermissionSelection = permissionSelection.length;
-
-            if (hasPermissionSelection && permissionSelection[0].name === "File Scopes") {
-                var context = this;
-                WsAccess.Resources({
-                    request: {
-                        name: event.rows[0].data.Basedn
-                    }
-                }).then(function (response) {
-                    if (lang.exists("ResourcesResponse.scopeScansStatus", response)) {
-                        var scopeScansEnabled;
-                        scopeScansEnabled = response.ResourcesResponse.scopeScansStatus.isEnabled;
-                        registry.byId(context.id + "EnableScopeScans").set("disabled", scopeScansEnabled);
-                        registry.byId(context.id + "DisableScopeScans").set("disabled", !scopeScansEnabled);
-                    }
-                });
-            }
 
             registry.byId(this.id + "FileScopeDefaultPermissions").set("disabled", true);
             registry.byId(this.id + "WorkUnitScopeDefaultPermissions").set("disabled", true);

@@ -6,10 +6,12 @@ interface useConfirmProps {
     title: string;
     message: string;
     items?: string[];
+    submitLabel?: string;
+    cancelLabel?: string;
     onSubmit: () => void;
 }
 
-export function useConfirm({ title, message, items = [], onSubmit }: useConfirmProps): [React.FunctionComponent, (_: boolean) => void] {
+export function useConfirm({ title, message, items = [], onSubmit, submitLabel = nlsHPCC.OK, cancelLabel = nlsHPCC.Cancel }: useConfirmProps): [React.FunctionComponent, (_: boolean) => void] {
 
     const [show, setShow] = React.useState(false);
 
@@ -29,7 +31,7 @@ export function useConfirm({ title, message, items = [], onSubmit }: useConfirmP
                 })}
             </div>
             <DialogFooter>
-                <PrimaryButton text={nlsHPCC.OK}
+                <PrimaryButton text={submitLabel}
                     onClick={() => {
                         if (typeof onSubmit === "function") {
                             onSubmit();
@@ -37,11 +39,10 @@ export function useConfirm({ title, message, items = [], onSubmit }: useConfirmP
                         setShow(false);
                     }}
                 />
-                <DefaultButton text={nlsHPCC.Cancel} onClick={() => setShow(false)} />
+                <DefaultButton text={cancelLabel} onClick={() => setShow(false)} />
             </DialogFooter>
         </Dialog>;
-    }, [items, message, onSubmit, setShow, show, title]);
+    }, [cancelLabel, items, message, onSubmit, show, submitLabel, title]);
 
     return [Confirm, setShow];
-
 }

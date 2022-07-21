@@ -801,7 +801,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKstreamediterator:       return "Streamed Dataset";
     case TAKexternalsource:         return "User Source";
     case TAKexternalsink:           return "User Output";
-    case TAKexternalprocess:        return "User Proceess";
+    case TAKexternalprocess:        return "User Process";
     case TAKwhen_action:            return "When";
     case TAKsubsort:                return "Sub Sort";
     case TAKdictionaryworkunitwrite:return "Dictionary Write";

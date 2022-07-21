@@ -2257,6 +2257,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             options->setPull(true);
         if (req.getPush())
             options->setPush(true);
+        if (!req.getNoCommon_isNull())
+            options->setNoCommon(req.getNoCommon());
 
         if (req.getFailIfNoSourceFile())
             options->setFailIfNoSourceFile(true);
