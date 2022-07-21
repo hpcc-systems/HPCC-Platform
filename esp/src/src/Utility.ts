@@ -1092,6 +1092,17 @@ export function format(labelTpl, obj) {
         ;
 }
 
+export function wrapStringWithTag(string, tag = "span") {
+    let retVal = string;
+    const unallowedTags = ["script", "style", "link", "a", "input", "form", "img", "video", "iframe", "frameset"];
+    if (!unallowedTags.includes(tag)) {
+        const elm = document.createElement(tag);
+        elm.innerText = string;
+        retVal = elm.outerHTML;
+    }
+    return retVal;
+}
+
 export function isSpill(sourceKind: string, targetKind: string): boolean {
     return sourceKind === "2" || targetKind === "71";
 }

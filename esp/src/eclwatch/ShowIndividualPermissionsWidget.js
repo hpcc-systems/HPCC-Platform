@@ -1,27 +1,57 @@
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/query",
     "src/nlsHPCC",
+    "dojo/dom-form",
 
     "dijit/registry",
     "dijit/form/CheckBox",
 
     "dgrid/editor",
+    "dgrid/selector",
 
-    "hpcc/GridDetailsWidget",
+    "hpcc/_TabContainerWidget",
     "src/ws_access",
-    "src/ESPUtil"
+    "src/ESPUtil",
+    "src/Utility",
 
-], function (declare, nlsHPCCMod,
+    "dojo/text!../templates/ShowIndividualPermissionsWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane",
+    "dijit/Toolbar",
+    "dijit/form/Form",
+    "dijit/form/Button",
+    "dijit/form/ToggleButton",
+    "dijit/form/DropDownButton",
+    "dijit/form/ValidationTextBox",
+    "dijit/ToolbarSeparator",
+    "dijit/form/TextBox",
+    "dijit/Dialog",
+    "dijit/TooltipDialog",
+
+    "hpcc/TableContainer"
+
+], function (declare, lang, query, nlsHPCCMod, domForm,
     registry, CheckBox,
-    editor,
-    GridDetailsWidget, WsAccess, ESPUtil) {
+    editor, selector,
+    _TabContainerWidget, WsAccess, ESPUtil, Utility, template) {
 
     var nlsHPCC = nlsHPCCMod.default;
-    return declare("ShowIndividualPermissionsWidget", [GridDetailsWidget], {
+    return declare("ShowIndividualPermissionsWidget", [_TabContainerWidget], {
+        templateString: template,
+        baseClass: "ShowIndividualPermissionsWidget",
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_Permissions,
         idProperty: "__hpcc_id",
+
+        postCreate: function (args) {
+            this.inherited(arguments);
+            this.addGroupForm = registry.byId(this.id + "AddGroupForm");
+        },
 
         //  Hitched Actions  ---
         _onRefresh: function (args) {
@@ -33,8 +63,7 @@ define([
             if (this.inherited(arguments))
                 return;
             this.store = WsAccess.CreateIndividualPermissionsStore(params.Basedn, params.Name);
-            this.grid.setStore(this.store);
-            this._refreshActionState();
+            this.grid = this.createGrid(this.id + "Grid");
         },
 
         createGrid: function (domID) {
@@ -43,6 +72,10 @@ define([
                 store: this.store,
                 sort: [{ attribute: "account_name" }],
                 columns: {
+                    check: selector({
+                        width: 27,
+                        label: " "
+                    }, "radio"),
                     account_name: {
                         label: this.i18n.Account,
                         formatter: function (_name, row) {
@@ -57,7 +90,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.AllowAccess;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowAccess, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     allow_read: editor({
@@ -68,7 +101,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.AllowRead;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowRead, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     allow_write: editor({
@@ -79,7 +112,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.AllowWrite;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowWrite, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     allow_full: editor({
@@ -90,7 +123,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.AllowFull;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.AllowFull, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     padding: {
@@ -105,7 +138,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyAccess;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.DenyAccess, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     deny_read: editor({
@@ -116,7 +149,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyRead;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.DenyRead, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     deny_write: editor({
@@ -127,7 +160,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyWrite;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.DenyWrite, "center").split(" ").join("<br />");
                         }
                     }, CheckBox),
                     deny_full: editor({
@@ -138,7 +171,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyFull;
+                            node.innerHTML = Utility.wrapStringWithTag(context.i18n.DenyFull, "center").split(" ").join("<br />");
                         }
                     }, CheckBox)
                 }
@@ -202,8 +235,43 @@ define([
             row[field] = value;
         },
 
-        refreshActionState: function (selection) {
-            registry.byId(this.id + "Open").set("disabled", true);
+        _onSubmitAddGroupDialog: function (event) {
+            if (this.addGroupForm.validate()) {
+                var context = this;
+                var request = domForm.toObject(this.addGroupForm.id);
+                lang.mixin(request, {
+                    action: "update",
+                    account_type: "1",
+                    BasednName: this.params.Basedn
+                });
+                WsAccess.PermissionAction({
+                    request: request
+                }).then(function (response) {
+                    if (lang.exists("PermissionActionResponse.retcode", response) && response.PermissionActionResponse.retcode === 0) {
+                        context.grid.refresh();
+                    }
+                    return response;
+                });
+                registry.byId(this.id + "AddGroupsDropDown").closeDropDown();
+            }
+        },
+
+        _onDelete: function (event) {
+            var context = this;
+            var selection = this.grid.getSelected();
+            var list = this.arrayToList(selection, "account_name");
+            if (confirm(this.i18n.DeleteSelectedGroups + "\n" + list)) {
+                var request = {
+                    ActionType: "delete",
+                    BasednName: this.params.Basedn,
+                    "account_name": selection[0].account_name
+                };
+                WsAccess.PermissionAction({
+                    request: request
+                }).then(function (response) {
+                    context.grid.refresh();
+                });
+            }
         }
     });
 });

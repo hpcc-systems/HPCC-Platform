@@ -1,7 +1,7 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
-            <div id="${id}_Users" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Users}", iconClass:"iconUser"' data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Users" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Users}", iconClass:"iconPerson"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}UsersRefresh" data-dojo-attach-event="onClick:_onRefreshUsers" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
@@ -66,7 +66,7 @@
                     <div id="${id}UsersGrid"></div>
                 </div>
             </div>
-            <div id="${id}_Groups" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Groups}", iconClass:"iconGroup"' data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Groups" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Groups}", iconClass:"iconPeople"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}GroupsToolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}GroupsRefresh" data-dojo-attach-event="onClick:_onRefreshGroups" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
@@ -97,7 +97,7 @@
                     <div id="${id}GroupsGrid"></div>
                 </div>
             </div>
-            <div id="${id}_Permissions" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Permissions}", iconClass:"iconPermission"' data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Permissions" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Permissions}", iconClass:"iconKey"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}PermissionsToolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}PermissionsRefresh" data-dojo-attach-event="onClick:_onRefreshPermissions" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
