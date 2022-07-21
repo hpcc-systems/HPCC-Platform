@@ -15030,12 +15030,13 @@ IRoxieServerActivityFactory *createRoxieServerProjectActivityFactory(unsigned _i
 
 class CRoxieServerPrefetchProjectActivity : public CRoxieServerActivity, implements IRecordPullerCallback
 {
-    unsigned numProcessedLastGroup;
-    bool eof;
-    bool allPulled;
-    bool isThreaded;
-    unsigned preload;
-    unsigned __int64 recordCount;
+    unsigned numProcessedLastGroup = 0;
+    bool eof = false;
+    bool allPulled = false;
+    bool isThreaded = false;
+    bool returnRowsUnchanged = false;
+    unsigned preload = 0;
+    unsigned __int64 recordCount = 0;
     IHThorPrefetchProjectArg &helper;
     RecordPullerThread puller;
     InterruptableSemaphore ready;
@@ -15070,12 +15071,9 @@ public:
         helper((IHThorPrefetchProjectArg &) basehelper),
         puller(false)
     {
-        numProcessedLastGroup = 0;
-        recordCount = 0;
-        eof = false;
-        allPulled = false;
         isThreaded = (helper.getFlags() & PPFsequential) == 0;
-        preload = 0;
+        if (helper.getFlags() & PPFnulltransform)
+            returnRowsUnchanged = true;
     }
 
     ~CRoxieServerPrefetchProjectActivity()
@@ -15179,6 +15177,12 @@ public:
             {
                 if (in->in)
                 {
+                    if (returnRowsUnchanged)
+                    {
+                        processed++;
+                        return in->in.getClear();
+                    }
+
                     RtlDynamicRowBuilder rowBuilder(rowAllocator);
                     size32_t outSize;
                     IThorChildGraph *child = helper.queryChild();
