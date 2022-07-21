@@ -24,7 +24,7 @@
 {{- $sashaServices := $.Values.sasha | default dict -}}
 {{- if not $sashaServices.disabled -}}
 {{ range $sashaName, $_sasha := $sashaServices -}}
-{{ $sasha := ($_sasha | default dict) -}}
+{{ $sasha := deepCopy ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
