@@ -925,7 +925,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             if (type != newType)
             {
                 transformChildren(expr, children);
-                return createValue(op, newType.getClear(), children);
+                return createWrapper(op, newType, children);
             }
             break;
         }
