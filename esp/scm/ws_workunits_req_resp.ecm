@@ -403,7 +403,12 @@ ESPrequest WULogFileRequest
     [min_ver("1.55")] int64 SizeLimit(0);
     [min_ver("1.77")] ESPenum ErrorMessageFormat ErrorMessageFormat;
     string PlainText;
-    [min_ver("1.90")] ESPStruct WUFileOption FileOptions;
+    [min_ver("1.90"), depr_ver("1.92")] ESPStruct WUFileOption FileOptions;
+    [min_ver("1.92"), nil_remove] unsigned MaxLogRecords;
+    [min_ver("1.92"), nil_remove] ESPenum LogSelectColumnMode LogSelectColumnMode(1);
+    [min_ver("1.92"), nil_remove] ESPenum LogAccessLogFormat LogFormat(0);
+    [min_ver("1.92"), nil_remove] unsigned LogSearchTimeBuffSecs;
+    [min_ver("1.92"), nil_remove] ESParray<string> LogColumns;
 };
 
 ESPresponse [exceptions_inline] WULogFileResponse

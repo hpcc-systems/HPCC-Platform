@@ -686,7 +686,6 @@ class CWsWuFileHelper
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
 #else
-    void readWUComponentLogOptionsReq(IConstWUFileOption &logOptionReq, WUComponentLogOptions &options);
     void findPostMortemFolder(const char *wuid, StringBuffer &postMortemFolder);
 #endif
     void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
