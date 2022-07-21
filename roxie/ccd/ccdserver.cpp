@@ -1468,6 +1468,28 @@ public:
         }
     }
 
+    void safeStop(IRowStream *in)
+    {
+        try
+        {
+            in->stop();
+        }
+        catch (IException *E)
+        {
+            if (ctx->queryServerContext()->okToLogStartStopError()) 
+            {
+                StringBuffer msg;
+                CTXLOG("Unexpected exception %s caught from stop in activity %d", E->errorMessage(msg).str(), activityId);
+            }
+            E->Release();
+        }
+        catch (...)
+        {
+            if (ctx->queryServerContext()->okToLogStartStopError()) 
+                CTXLOG("Unexpected unknown exception caught from stop in activity %d", activityId);
+        }
+    }
+
     virtual void stop()
     {
         // NOTE - don't be tempted to skip the stop for activities that are reset - splitters need to see the stops
@@ -1491,10 +1513,29 @@ public:
                 ForEachItemIn(idx, dependencies)
                 {
                     if (dependencyControlIds.item(idx) == 0)
-                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
+                    {
+                        try
+                        {
+                            dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
+                        }
+                        catch (IException *E)
+                        {
+                            if (ctx->queryServerContext()->okToLogStartStopError())
+                            {
+                                StringBuffer msg;
+                                CTXLOG("Unexpected exception %s caught from stopSink(%d) in activity %d", E->errorMessage(msg).str(), idx, activityId);
+                            }
+                            E->Release();
+                        }
+                        catch (...)
+                        {
+                            if (ctx->queryServerContext()->okToLogStartStopError()) 
+                                CTXLOG("Unexpected unknown exception caught from stopSink(%d) in activity %d", idx, activityId);
+                        }
+                    }
                 }
                 if (inputStream)
-                    inputStream->stop();
+                    safeStop(inputStream);
             }
         }
     }
@@ -1806,7 +1847,7 @@ protected:
         {
             if (traceStartStop)
                 CTXLOG("lateStart activity stopping input early as prefiltered");
-            inputStream->stop();
+            safeStop(inputStream);
         }
     }
 
@@ -1837,11 +1878,11 @@ public:
         input = saveInput;
         junction.setown(saveJunction.getClear());
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (!prefiltered && inputStream)
         {
-            inputStream->stop();
+            safeStop(inputStream);
         }
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
@@ -2002,7 +2043,7 @@ public:
         resetJunction(sourceJunction);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         // Called from the strands... which should ensure that stop is not called more than once per strand
         //The first strand to call
@@ -2735,7 +2776,7 @@ public:
 
     virtual void stop()
     {
-        inputStream1->stop();
+        safeStop(inputStream1);
         CRoxieServerActivity::stop();
     }
 
@@ -2879,7 +2920,7 @@ public:
     {
         for (unsigned idx = 0; idx < numStreams; idx++)
         {
-            streamArray[idx]->stop();
+            safeStop(streamArray[idx]);
         }
         CRoxieServerActivity::stop();
     }
@@ -2949,7 +2990,7 @@ public:
     {
         for (unsigned i = 0; i < numStreams; i++)
         {
-            streamArray[i]->stop();
+            safeStop(streamArray[i]);
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -5664,7 +5705,7 @@ public:
         ok = false;
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         CRoxieServerChildBaseActivity::stop();
         ReleaseRoxieRow(lastInput);
@@ -6970,10 +7011,10 @@ public:
         startJunction(iterJunction);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         if (iterStream)
-            iterStream->stop();
+            safeStop(iterStream);
         CRoxieServerActivity::stop();
     }
 
@@ -9411,7 +9452,7 @@ public:
         openPipe(pipeProgram);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         pipe.clear();
         readTransformer->setStream(NULL);
@@ -9562,7 +9603,7 @@ public:
             return NULL;
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         pipeVerified.interrupt(NULL);
         pipeOpened.interrupt(NULL);
@@ -9926,7 +9967,7 @@ public:
         rows.setown(helper.createInput());
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         if (rows)
         {
@@ -11782,7 +11823,7 @@ public:
         outSeq.setown(createRowWriter(diskout, rowIf, rwFlags));
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         try
         {
@@ -12377,7 +12418,7 @@ public:
         }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         try
         {
@@ -13458,7 +13499,7 @@ public:
         }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         ready.interrupt();
         ForEachItemIn(idx, pullers)
@@ -13694,13 +13735,13 @@ public:
         if (unusedStopped)
         {
             if (selectedStream)
-                selectedStream->stop();
+                safeStop(selectedStream);
         }
         else
         {
             //May possibly call stop too many times if input->start() throws an exception (e.g. due to a dependency)
             for (unsigned i = 0; i < numStreams; i++)
-                streamArray[i]->stop();
+                safeStop(streamArray[i]);
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -13736,12 +13777,12 @@ public:
                 {
                     //Found a row so stop remaining
                     for (unsigned j=i+1; j < numInputs; j++)
-                        streamArray[j]->stop();
+                        safeStop(streamArray[j]);
                     unusedStopped = true;
                     processed++;
                     return next;
                 }
-                selectedStream->stop();
+                safeStop(selectedStream);
             }
             unusedStopped = true;
             selectedStream = NULL;
@@ -13832,7 +13873,7 @@ public:
     {
         if (rows)
         {
-            rows->stop();
+            safeStop(rows);
             rows.clear();
         }
         CRoxieServerMultiInputActivity::stop();
@@ -14908,7 +14949,7 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, preload, !isThreaded, ctx);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         space.interrupt();
         ready.interrupt();
@@ -15129,7 +15170,7 @@ public:
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         loopExtractBuilder.clear();
         CRoxieServerActivity::stop();
@@ -15890,7 +15931,7 @@ public:
         }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         GraphExtractBuilder.clear();
         CRoxieServerActivity::stop();
@@ -16173,7 +16214,7 @@ public:
     virtual void stop()
     {
         if (resultStream)
-            resultStream->stop();
+            safeStop(resultStream);
         CRoxieServerGraphLoopActivity::stop();
     }
 
@@ -17095,7 +17136,7 @@ public:
     virtual void stop()
     {
         ForEachItemIn(i, expandedStreams)
-            expandedStreams.item(i)->stop();
+            safeStop(expandedStreams.item(i));
         CRoxieServerMultiInputBaseActivity::stop();
     }
 
@@ -18603,7 +18644,7 @@ public:
     CRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, joinStatistics)
     {
-        forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
+        forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieAgentContext *_ctx, IProbeManager *_probeManager) const
@@ -20286,7 +20327,7 @@ public:
 protected:
     void onException(IException *E)
     {
-        inputStream->stop();
+        safeStop(inputStream);
         ReleaseRoxieRows(buff);
         if (createRow)
         {
@@ -20484,7 +20525,7 @@ public:
         else
             keepLimit = 0;
     }
-    virtual void stop()
+    virtual void stop() override
     {
         name.clear();
         CRoxieServerActivity::stop();
@@ -20611,7 +20652,7 @@ public:
         for (unsigned idx = 0; idx < numStreams; idx++)
         {
             if (idx!=cond)
-                streamArray[idx]->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                safeStop(streamArray[idx]); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         active = streamArray[cond];
         unusedStopped = true;
@@ -20622,7 +20663,7 @@ public:
         for (unsigned idx = 0; idx < numStreams; idx++)
         {
             if (idx==cond || !unusedStopped)
-                streamArray[idx]->stop();
+                safeStop(streamArray[idx]);
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -20716,7 +20757,7 @@ public:
                 startJunction(junctionTrue);
             }
             if (streamFalse)
-                streamFalse->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                safeStop(streamFalse); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         else 
         {
@@ -20726,18 +20767,18 @@ public:
                 startJunction(junctionFalse);
             }
             if (streamTrue)
-                streamTrue->stop();
+                safeStop(streamTrue);
         }
         unusedStopped = true;
 
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         if (streamTrue && (!unusedStopped || cond))
-            streamTrue->stop();
+            safeStop(streamTrue);
         if (streamFalse && (!unusedStopped || !cond))
-            streamFalse->stop();
+            safeStop(streamFalse);
         CRoxieServerActivity::stop();
     }
 
@@ -26100,7 +26141,7 @@ public:
     {
         puller.stop();
         if (indexReadStream)
-            indexReadStream->stop();   // Could probably do this as soon as re have fetched rootIndex?
+            safeStop(indexReadStream);   // Could probably do this as soon as re have fetched rootIndex?
         CRoxieServerActivity::stop();
     }
 
