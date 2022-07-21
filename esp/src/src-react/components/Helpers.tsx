@@ -20,14 +20,14 @@ function getURL(item: HelperRow, option) {
     let params = "";
 
     const uriEncodedParams: { [key: string]: any } = {
-        "Description": encodeURIComponent(item.Orig.Description),
-        "IPAddress": encodeURIComponent(item.Orig.IPAddress),
-        "LogDate": encodeURIComponent(item.Orig.LogDate),
-        "Name": encodeURIComponent(item.Orig.Name),
-        "PID": encodeURIComponent(item.Orig.PID),
-        "ProcessName": encodeURIComponent(item.Orig.ProcessName),
-        "SlaveNumber": encodeURIComponent(item.Orig.SlaveNumber),
-        "Type": encodeURIComponent(item.Orig.Type),
+        "Description": encodeURIComponent(item.Orig?.Description ?? ""),
+        "IPAddress": encodeURIComponent(item.Orig?.IPAddress ?? ""),
+        "LogDate": encodeURIComponent(item.Orig?.LogDate ?? ""),
+        "Name": encodeURIComponent(item.Orig?.Name ?? ""),
+        "PID": encodeURIComponent(item.Orig?.PID ?? ""),
+        "ProcessName": encodeURIComponent(item.Orig?.ProcessName ?? ""),
+        "SlaveNumber": encodeURIComponent(item.Orig?.SlaveNumber ?? ""),
+        "Type": encodeURIComponent(item.Orig?.Type ?? ""),
         "Wuid": encodeURIComponent(item.workunit.Wuid),
     };
 
