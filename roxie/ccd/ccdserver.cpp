@@ -1993,12 +1993,12 @@ public:
     virtual void reset()
     {
         assertex(active==0);
+        CRoxieServerActivity::reset();
 
         //Stats have already been merged into the stranded activity when the strands were stopped.
         ForEachItemIn(idx, strands)
             strands.item(idx).reset();
         resetJunction(splitter);
-        CRoxieServerActivity::reset();
         resetJunction(sourceJunction);
     }
 
@@ -2768,7 +2768,7 @@ public:
 
     virtual void reset()    
     {
-        CRoxieServerActivity::reset(); 
+        CRoxieServerActivity::reset();
         if (input1)
             input1->reset();
         resetJunction(junction1);
@@ -2886,13 +2886,13 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         for (unsigned i = 0; i < numInputs; i++)
             inputArray[i]->reset();
         for (unsigned iS = 0; iS < numStreams; iS++)
         {
             resetJunction(junctionArray[iS]);
         }
-        CRoxieServerActivity::reset(); 
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -2984,11 +2984,11 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         for (unsigned s = 0; s < numOutputs; s++)
             stopped[s] = false;
         executed = false;
         exception.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -6192,11 +6192,11 @@ public:
 
     virtual void reset() 
     {
+        CRoxieServerActivity::reset();
         {
             CriticalBlock b(readerCrit);
             wuReader.clear();
         }
-        CRoxieServerActivity::reset(); 
     };
 
     virtual bool needsAllocator() const { return true; }
@@ -6644,11 +6644,11 @@ public:
 
     virtual void reset() 
     {
+        CRoxieServerActivity::reset();
         {
             CriticalBlock b(iterCrit);
             iter.clear();
         }
-        CRoxieServerActivity::reset(); 
     };
 
     virtual const void *nextRow()
@@ -6979,6 +6979,7 @@ public:
 
     virtual void reset() 
     {
+        CRoxieServerActivity::reset();
         {
             CriticalBlock b(iterCrit);
             if (iterInput)
@@ -6988,7 +6989,6 @@ public:
             iterStream.clear();
             iterJunction.clear();
         }
-        CRoxieServerActivity::reset(); 
     };
 
     virtual const void *nextRow()
@@ -7389,8 +7389,8 @@ public:
 
     virtual void reset()
     {
-        ReleaseClearRoxieRow(kept);
         CRoxieServerActivity::reset();
+        ReleaseClearRoxieRow(kept);
     }
 
     virtual const void * nextRow()
@@ -7453,6 +7453,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         while (survivors.isItem(survivorIndex))
         {
             ReleaseRoxieRow(survivors.item(survivorIndex++));
@@ -7460,7 +7461,6 @@ public:
         survivors.kill();
         eof = false;
         first = true;
-        CRoxieServerActivity::reset();
     }
 
     void dedupRange(unsigned first, unsigned last, ConstPointerArray & group)
@@ -7793,9 +7793,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         table.reset();
         eof = false;
-        CRoxieServerActivity::reset();
         hashTableFilled = false;
     }
 
@@ -7912,10 +7912,10 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerActivity::reset();
         left.clear();
         prev.clear();
         right.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8011,8 +8011,8 @@ public:
 
     virtual void reset()
     {
-        ReleaseClearRoxieRow(buffer);
         CRoxieServerActivity::reset();
+        ReleaseClearRoxieRow(buffer);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8135,16 +8135,11 @@ public:
         cursor = helper.queryIterator();
     }
 
-    virtual void stop()
-    {
-        CRoxieServerActivity::stop();
-    }
-
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         cursor = NULL;
         ReleaseClearRoxieRow(buffer);
-        CRoxieServerActivity::reset(); 
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8245,9 +8240,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         curParent.clear();
         curChild.clear();
-        CRoxieServerActivity::reset(); 
     }
 
     const void *nextRow()
@@ -8336,10 +8331,10 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (sorter)
             sorter->reset();
         readInput = false;
-        CRoxieServerActivity::reset();
     }
 
     static RoxieSortAlgorithm useAlgorithm(const char *algorithmName, unsigned sortFlags)
@@ -8519,12 +8514,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         sorter->reset();
         calculated = false;
         processedAny = false;
         anyThisGroup = false;
         ReleaseRoxieRows(sorted);
-        CRoxieServerActivity::reset();
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8748,8 +8743,8 @@ public:
 
     virtual void reset()
     {
-        ReleaseClearRoxieRow(prev);
         CRoxieServerActivity::reset();
+        ReleaseClearRoxieRow(prev);
     }
 
     virtual const void * nextRow()
@@ -9223,6 +9218,8 @@ public:
 
     void reset(unsigned oid)
     {
+        if (state != STATEreset) // make sure input is only reset once
+            CRoxieServerActivity::reset();
         if (traceStartStop)
             CTXLOG("SPLIT %p: reset %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
         activeOutputs = numOutputs;
@@ -9230,8 +9227,6 @@ public:
             ReleaseRoxieRow(buffer.dequeue());
         startError.clear();
         readError.clear();
-        if (state != STATEreset) // make sure input is only reset once
-            CRoxieServerActivity::reset();
     };
 
     void connectInputStreams(bool consumerOrdered)
@@ -9418,9 +9413,9 @@ public:
 
     virtual void stop()
     {
-        CRoxieServerActivity::stop();
         pipe.clear();
         readTransformer->setStream(NULL);
+        CRoxieServerActivity::stop();
     }
 
     virtual const void *nextRow()
@@ -9572,16 +9567,16 @@ public:
         pipeVerified.interrupt(NULL);
         pipeOpened.interrupt(NULL);
         puller.stop();
-        CRoxieServerActivity::stop();
         pipe.clear();
         if (readTransformer)
             readTransformer->setStream(NULL);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
     {
-        puller.reset();
         CRoxieServerActivity::reset();
+        puller.reset();
     }
 
     virtual const void *nextRow()
@@ -9783,8 +9778,8 @@ public:
             ctx->notifyException(e);
             e->Release();
         }
-        CRoxieServerActivity::stop();
         pipe.clear();
+        CRoxieServerActivity::stop();
     }
 
     virtual void onExecute()
@@ -10375,9 +10370,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         executed = false;
         exception.clear();
-        CRoxieServerActivity::reset();
     }
 };
 
@@ -10565,9 +10560,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         delete [] setCounts;
         setCounts = NULL;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -10659,6 +10654,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         delete [] setCounts;
         setCounts = NULL;
         free(limits);
@@ -10666,7 +10662,6 @@ public:
         roxiemem::ReleaseRoxieRowRange(gathered.getArray(), curIndex, gathered.ordinality());
         gathered.kill();
         curIndex = 0;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -11305,8 +11300,8 @@ public:
 
     virtual void reset()
     { 
+        CRoxieServerActivity::reset();
         aggregated.reset();
-        CRoxieServerActivity::reset(); 
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -12404,8 +12399,8 @@ public:
 
     virtual void reset()
     {
-        noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         CRoxieServerActivity::reset();
+        noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         writer.clear();
     }
 
@@ -12712,6 +12707,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerTwoInputActivity::reset();
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         right.clear();
@@ -12721,7 +12717,6 @@ public:
         defaultLeft.clear();
         sortedLeft.clear();
         groupedSortedRight.clear();
-        CRoxieServerTwoInputActivity::reset();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -13712,7 +13707,7 @@ public:
 
     virtual void reset()    
     {
-        CRoxieServerMultiInputBaseActivity::reset(); 
+        CRoxieServerMultiInputBaseActivity::reset();
         foundInput = false;
         unusedStopped = false;
         selectedStream = NULL;
@@ -14917,8 +14912,8 @@ public:
     {
         space.interrupt();
         ready.interrupt();
-        CRoxieServerActivity::stop();
         puller.stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -15136,8 +15131,8 @@ public:
 
     virtual void stop()
     {
-        CRoxieServerActivity::stop();
         loopExtractBuilder.clear();
+        CRoxieServerActivity::stop();
     }
 
     void createCounterResult(IRoxieServerChildGraph * graph, unsigned counter)
@@ -15526,10 +15521,10 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         while (ready.ordinality())
             ReleaseRoxieRow(ready.dequeue());
         executor.reset();
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -15897,8 +15892,8 @@ public:
 
     virtual void stop()
     {
-        CRoxieServerActivity::stop();
         GraphExtractBuilder.clear();
+        CRoxieServerActivity::stop();
     }
 
     void createCounterResult(IRoxieServerChildGraph * graph, unsigned counter)
@@ -16745,12 +16740,12 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerMultiInputBaseActivity::reset();
         ForEachItemIn(i, selectedInputs)
             selectedInputs.item(i)->reset();
         selectedInputs.kill();
         selectedStreams.kill();
         selectedJunctions.kill();
-        CRoxieServerMultiInputBaseActivity::reset(); 
     }
 
 
@@ -17224,8 +17219,8 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerNaryActivity::reset();
         merger.cleanup();
-        CRoxieServerNaryActivity::reset(); 
         initializedMeta = false;
     }
 
@@ -17643,9 +17638,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         processed = remote.processed;
         remote.processed = 0;
-        CRoxieServerActivity::reset();
     }
 
     virtual void onLimitExceeded(bool isKeyed)
@@ -17736,10 +17731,10 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerActivity::reset();
         defaultRecord.clear();
         right.clear();
         left.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -17940,10 +17935,10 @@ public:
 
     virtual void reset()    
     { 
+        CRoxieServerActivity::reset();
         noteStatistic(StNumGroups, numGroups);
         noteStatistic(StNumGroupMax, numGroupMax);
         ReleaseClearRoxieRow(next);
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -18448,11 +18443,11 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         group.clear();
         groupedInput.clear();
-        CRoxieServerActivity::reset();
         defaultLeft.clear();
         defaultRight.clear();
     }
@@ -20266,11 +20261,11 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         roxiemem::ReleaseRoxieRowRange(buff.getArray(), index, buff.ordinality());
         buff.kill();
         index = 0;
         started = false;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void *nextRow()
@@ -20389,12 +20384,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         while (buff.isItem(index))
             ReleaseRoxieRow(buff.item(index++));
         buff.kill();
         started = false;
         index = 0;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void *nextRow()
@@ -20936,9 +20931,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         executed = false;
         exception.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual const void *nextRow()
@@ -21861,12 +21856,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (helper.searchTextNeedsFree())
             rtlFree(srchStr);
         srchStr = NULL;
         ReleaseClearRoxieRow(in);
         xmlParser.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
@@ -22111,6 +22106,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (useRemote())
         {
             processed = remote->processed;
@@ -22120,7 +22116,6 @@ public:
         varFileInfo.clear();
         eof = false;
         reader.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -23363,12 +23358,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (accepted)
             noteStatistic(StNumIndexAccepted, accepted);
         if (rejected)
             noteStatistic(StNumIndexRejected, rejected);
         remote.onReset();
-        CRoxieServerActivity::reset();
         if (varFileInfo)
         {
             keySet.clear();
@@ -24159,6 +24154,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         onEOF();
         if (accepted)
             noteStatistic(StNumIndexAccepted, accepted);
@@ -24170,7 +24166,6 @@ public:
             translators.clear();
         }
         variableInfoPending = false;
-        CRoxieServerActivity::reset();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -25035,6 +25030,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         processed = remote.processed;
         remote.processed = 0;
         puller.reset();
@@ -25043,7 +25039,6 @@ public:
             varFileInfo.clear();
             map.clear();
         }
-        CRoxieServerActivity::reset();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -26141,12 +26136,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
-        CRoxieServerActivity::reset(); 
         puller.reset();
         while (groups.ordinality())
         {
@@ -26956,11 +26951,21 @@ public:
         CRoxieServerActivity::doStart(parentExtractSize, parentExtract, paused);
         authToken.append(ctx->queryAuthToken());
     }
+    virtual void stop() override
+    {
+        //Ensure that there will be no more reads from inputStream before stopping the inputStream.
+        if (soaphelper)
+        {
+            soaphelper->abort();
+            soaphelper.clear();
+        }
+        CRoxieServerActivity::stop();
+    }
     virtual void reset()
     {
-        // MORE - Shouldn't we make sure thread is stopped etc???
-        soaphelper.clear();
+        // CRoxieServerActivity::reset() will ensure activity is stopped
         CRoxieServerActivity::reset();
+        soaphelper.clear();
     }
 
     // IRoxieAbortMonitor
@@ -27162,7 +27167,8 @@ public:
 
     virtual const void *getNextRow()
     {
-        CriticalBlock b(crit); // MORE - why ?
+        //Protect with a critical section in case multiple threads request input rows at the same time.
+        CriticalBlock b(crit);
         return inputStream->ungroupedNextRow();
     }
 
@@ -27228,7 +27234,8 @@ public:
 
     virtual const void *getNextRow()
     {
-        CriticalBlock b(crit); // MORE - Why?
+        //Protect with a critical section in case multiple threads request input rows at the same time.
+        CriticalBlock b(crit);
         const void *nextrec = inputStream->ungroupedNextRow();
         if (nextrec)
             processed++;
