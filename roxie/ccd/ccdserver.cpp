@@ -1585,6 +1585,28 @@ public:
         }
     }
 
+    void safeStop(IRowStream *in)
+    {
+        try
+        {
+            in->stop();
+        }
+        catch (IException *E)
+        {
+            if (ctx->queryServerContext()->okToLogStartStopError()) 
+            {
+                StringBuffer msg;
+                CTXLOG("Unexpected exception %s caught from stop in activity %d", E->errorMessage(msg).str(), activityId);
+            }
+            E->Release();
+        }
+        catch (...)
+        {
+            if (ctx->queryServerContext()->okToLogStartStopError()) 
+                CTXLOG("Unexpected unknown exception caught from stop in activity %d", activityId);
+        }
+    }
+
     virtual void stop()
     {
         // NOTE - don't be tempted to skip the stop for activities that are reset - splitters need to see the stops
@@ -1608,10 +1630,29 @@ public:
                 ForEachItemIn(idx, dependencies)
                 {
                     if (dependencyControlIds.item(idx) == 0)
-                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
+                    {
+                        try
+                        {
+                            dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
+                        }
+                        catch (IException *E)
+                        {
+                            if (ctx->queryServerContext()->okToLogStartStopError())
+                            {
+                                StringBuffer msg;
+                                CTXLOG("Unexpected exception %s caught from stopSink(%d) in activity %d", E->errorMessage(msg).str(), idx, activityId);
+                            }
+                            E->Release();
+                        }
+                        catch (...)
+                        {
+                            if (ctx->queryServerContext()->okToLogStartStopError()) 
+                                CTXLOG("Unexpected unknown exception caught from stopSink(%d) in activity %d", idx, activityId);
+                        }
+                    }
                 }
                 if (inputStream)
-                    inputStream->stop();
+                    safeStop(inputStream);
             }
         }
     }
@@ -1923,7 +1964,7 @@ protected:
         {
             if (traceStartStop)
                 CTXLOG("lateStart activity stopping input early as prefiltered");
-            inputStream->stop();
+            safeStop(inputStream);
         }
     }
 
@@ -1939,11 +1980,11 @@ public:
     {
         // Don't start yet
     }
-    virtual void stop()
+    virtual void stop() override
     {
         if (!prefiltered && inputStream)
         {
-            inputStream->stop();
+            safeStop(inputStream);
         }
         else if (traceStartStop)
             CTXLOG("lateStart activity NOT stopping input late as prefiltered");
@@ -2095,16 +2136,16 @@ public:
     virtual void reset()
     {
         assertex(active==0);
+        CRoxieServerActivity::reset();
 
         //Stats have already been merged into the stranded activity when the strands were stopped.
         ForEachItemIn(idx, strands)
             strands.item(idx).reset();
         resetJunction(splitter);
-        CRoxieServerActivity::reset();
         resetJunction(sourceJunction);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         // Called from the strands... which should ensure that stop is not called more than once per strand
         //The first strand to call
@@ -2864,7 +2905,7 @@ public:
 
     virtual void stop() override
     {
-        inputStream1->stop();
+        safeStop(inputStream1);
         CRoxieServerActivity::stop();
     }
 
@@ -2897,7 +2938,7 @@ public:
 
     virtual void reset()    
     {
-        CRoxieServerActivity::reset(); 
+        CRoxieServerActivity::reset();
         if (input1)
             input1->reset();
         resetJunction(junction1);
@@ -3023,20 +3064,20 @@ public:
     {
         for (unsigned idx = 0; idx < numStreams; idx++)
         {
-            streamArray[idx]->stop();
+            safeStop(streamArray[idx]);
         }
         CRoxieServerActivity::stop();
     }
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         for (unsigned i = 0; i < numInputs; i++)
             inputArray[i]->reset();
         for (unsigned iS = 0; iS < numStreams; iS++)
         {
             resetJunction(junctionArray[iS]);
         }
-        CRoxieServerActivity::reset(); 
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -3116,7 +3157,7 @@ public:
     {
         for (unsigned i = 0; i < numStreams; i++)
         {
-            streamArray[i]->stop();
+            safeStop(streamArray[i]);
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -3151,11 +3192,11 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         for (unsigned s = 0; s < numOutputs; s++)
             stopped[s] = false;
         executed = false;
         exception.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -5836,7 +5877,7 @@ public:
         ok = false;
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         CRoxieServerChildBaseActivity::stop();
         ReleaseRoxieRow(lastInput);
@@ -6364,11 +6405,11 @@ public:
 
     virtual void reset() 
     {
+        CRoxieServerActivity::reset();
         {
             CriticalBlock b(readerCrit);
             wuReader.clear();
         }
-        CRoxieServerActivity::reset(); 
     };
 
     virtual bool needsAllocator() const { return true; }
@@ -6821,11 +6862,11 @@ public:
 
     virtual void reset() 
     {
+        CRoxieServerActivity::reset();
         {
             CriticalBlock b(iterCrit);
             iter.clear();
         }
-        CRoxieServerActivity::reset(); 
     };
 
     virtual const void *nextRow()
@@ -7147,15 +7188,16 @@ public:
         startJunction(iterJunction);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         if (iterStream)
-            iterStream->stop();
+            safeStop(iterStream);
         CRoxieServerActivity::stop();
     }
 
     virtual void reset() 
     {
+        CRoxieServerActivity::reset();
         {
             CriticalBlock b(iterCrit);
             if (iterInput)
@@ -7165,7 +7207,6 @@ public:
             iterStream.clear();
             iterJunction.clear();
         }
-        CRoxieServerActivity::reset(); 
     };
 
     virtual const void *nextRow()
@@ -7566,8 +7607,8 @@ public:
 
     virtual void reset()
     {
-        ReleaseClearRoxieRow(kept);
         CRoxieServerActivity::reset();
+        ReleaseClearRoxieRow(kept);
     }
 
     virtual const void * nextRow()
@@ -7630,6 +7671,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         while (survivors.isItem(survivorIndex))
         {
             ReleaseRoxieRow(survivors.item(survivorIndex++));
@@ -7637,7 +7679,6 @@ public:
         survivors.kill();
         eof = false;
         first = true;
-        CRoxieServerActivity::reset();
     }
 
     void dedupRange(unsigned first, unsigned last, ConstPointerArray & group)
@@ -7970,9 +8011,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         table.reset();
         eof = false;
-        CRoxieServerActivity::reset();
         hashTableFilled = false;
     }
 
@@ -8089,10 +8130,10 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerActivity::reset();
         left.clear();
         prev.clear();
         right.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8188,8 +8229,8 @@ public:
 
     virtual void reset()
     {
-        ReleaseClearRoxieRow(buffer);
         CRoxieServerActivity::reset();
+        ReleaseClearRoxieRow(buffer);
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8312,16 +8353,11 @@ public:
         cursor = helper.queryIterator();
     }
 
-    virtual void stop()
-    {
-        CRoxieServerActivity::stop();
-    }
-
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         cursor = NULL;
         ReleaseClearRoxieRow(buffer);
-        CRoxieServerActivity::reset(); 
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -8422,9 +8458,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         curParent.clear();
         curChild.clear();
-        CRoxieServerActivity::reset(); 
     }
 
     const void *nextRow()
@@ -8513,10 +8549,10 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (sorter)
             sorter->reset();
         readInput = false;
-        CRoxieServerActivity::reset();
     }
 
     static RoxieSortAlgorithm useAlgorithm(const char *algorithmName, unsigned sortFlags)
@@ -8705,12 +8741,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         sorter->reset();
         calculated = false;
         processedAny = false;
         anyThisGroup = false;
         ReleaseRoxieRows(sorted);
-        CRoxieServerActivity::reset();
     }
 
     virtual void doStart(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8934,8 +8970,8 @@ public:
 
     virtual void reset()
     {
-        ReleaseClearRoxieRow(prev);
         CRoxieServerActivity::reset();
+        ReleaseClearRoxieRow(prev);
     }
 
     virtual const void * nextRow()
@@ -9412,6 +9448,8 @@ public:
 
     void reset(unsigned oid)
     {
+        if (state != STATEreset) // make sure input is only reset once
+            CRoxieServerActivity::reset();
         if (traceStartStop)
             CTXLOG("SPLIT %p: reset %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
         activeOutputs = numOutputs;
@@ -9419,8 +9457,6 @@ public:
             ReleaseRoxieRow(buffer.dequeue());
         startError.clear();
         readError.clear();
-        if (state != STATEreset) // make sure input is only reset once
-            CRoxieServerActivity::reset();
     };
 
     void connectInputStreams(bool consumerOrdered)
@@ -9605,11 +9641,11 @@ public:
         openPipe(pipeProgram);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
-        CRoxieServerActivity::stop();
         pipe.clear();
         readTransformer->setStream(NULL);
+        CRoxieServerActivity::stop();
     }
 
     virtual const void *nextRow()
@@ -9761,21 +9797,21 @@ public:
             return NULL;
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         pipeVerified.interrupt(NULL);
         pipeOpened.interrupt(NULL);
         puller.stop();
-        CRoxieServerActivity::stop();
         pipe.clear();
         if (readTransformer)
             readTransformer->setStream(NULL);
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
     {
-        puller.reset();
         CRoxieServerActivity::reset();
+        puller.reset();
     }
 
     virtual const void *nextRow()
@@ -9982,8 +10018,8 @@ public:
             ctx->notifyException(e);
             e->Release();
         }
-        CRoxieServerActivity::stop();
         pipe.clear();
+        CRoxieServerActivity::stop();
     }
 
     virtual void onExecute()
@@ -10130,7 +10166,7 @@ public:
         rows.setown(helper.createInput());
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         if (rows)
         {
@@ -10574,9 +10610,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         executed = false;
         exception.clear();
-        CRoxieServerActivity::reset();
     }
 };
 
@@ -10764,9 +10800,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         delete [] setCounts;
         setCounts = NULL;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -10858,6 +10894,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         delete [] setCounts;
         setCounts = NULL;
         free(limits);
@@ -10865,7 +10902,6 @@ public:
         roxiemem::ReleaseRoxieRowRange(gathered.getArray(), curIndex, gathered.ordinality());
         gathered.kill();
         curIndex = 0;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -11504,8 +11540,8 @@ public:
 
     virtual void reset()
     { 
+        CRoxieServerActivity::reset();
         aggregated.reset();
-        CRoxieServerActivity::reset(); 
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -11986,7 +12022,7 @@ public:
         outSeq.setown(createRowWriter(diskout, rowIf, rwFlags));
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         try
         {
@@ -12581,7 +12617,7 @@ public:
         }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         try
         {
@@ -12603,8 +12639,8 @@ public:
 
     virtual void reset()
     {
-        noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         CRoxieServerActivity::reset();
+        noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         writer.clear();
     }
 
@@ -12911,6 +12947,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerTwoInputActivity::reset();
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         right.clear();
@@ -12920,7 +12957,6 @@ public:
         defaultLeft.clear();
         sortedLeft.clear();
         groupedSortedRight.clear();
-        CRoxieServerTwoInputActivity::reset();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -13662,7 +13698,7 @@ public:
         }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         ready.interrupt();
         ForEachItemIn(idx, pullers)
@@ -13906,20 +13942,20 @@ public:
         if (unusedStopped)
         {
             if (selectedStream)
-                selectedStream->stop();
+                safeStop(selectedStream);
         }
         else
         {
             //May possibly call stop too many times if input->start() throws an exception (e.g. due to a dependency)
             for (unsigned i = 0; i < numStreams; i++)
-                streamArray[i]->stop();
+                safeStop(streamArray[i]);
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
 
     virtual void reset()    
     {
-        CRoxieServerMultiInputBaseActivity::reset(); 
+        CRoxieServerMultiInputBaseActivity::reset();
         foundInput = false;
         unusedStopped = false;
         selectedStream = NULL;
@@ -13948,12 +13984,12 @@ public:
                 {
                     //Found a row so stop remaining
                     for (unsigned j=i+1; j < numInputs; j++)
-                        streamArray[j]->stop();
+                        safeStop(streamArray[j]);
                     unusedStopped = true;
                     processed++;
                     return next;
                 }
-                selectedStream->stop();
+                safeStop(selectedStream);
             }
             unusedStopped = true;
             selectedStream = NULL;
@@ -14044,7 +14080,7 @@ public:
     {
         if (rows)
         {
-            rows->stop();
+            safeStop(rows);
             rows.clear();
         }
         CRoxieServerMultiInputActivity::stop();
@@ -15118,12 +15154,12 @@ public:
         puller.start(parentExtractSize, parentExtract, paused, preload, !isThreaded, ctx);
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         space.interrupt();
         ready.interrupt();
-        CRoxieServerActivity::stop();
         puller.stop();
+        CRoxieServerActivity::stop();
     }
 
     virtual void reset()
@@ -15345,10 +15381,10 @@ public:
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
-        CRoxieServerActivity::stop();
         loopExtractBuilder.clear();
+        CRoxieServerActivity::stop();
     }
 
     void createCounterResult(IRoxieServerChildGraph * graph, unsigned counter)
@@ -15737,10 +15773,10 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         while (ready.ordinality())
             ReleaseRoxieRow(ready.dequeue());
         executor.reset();
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -16106,10 +16142,10 @@ public:
         }
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
-        CRoxieServerActivity::stop();
         GraphExtractBuilder.clear();
+        CRoxieServerActivity::stop();
     }
 
     void createCounterResult(IRoxieServerChildGraph * graph, unsigned counter)
@@ -16389,7 +16425,7 @@ public:
     virtual void stop()
     {
         if (resultStream)
-            resultStream->stop();
+            safeStop(resultStream);
         CRoxieServerGraphLoopActivity::stop();
     }
 
@@ -16956,12 +16992,12 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerMultiInputBaseActivity::reset();
         ForEachItemIn(i, selectedInputs)
             selectedInputs.item(i)->reset();
         selectedInputs.kill();
         selectedStreams.kill();
         selectedJunctions.kill();
-        CRoxieServerMultiInputBaseActivity::reset(); 
     }
 
 
@@ -17311,7 +17347,7 @@ public:
     virtual void stop()
     {
         ForEachItemIn(i, expandedStreams)
-            expandedStreams.item(i)->stop();
+            safeStop(expandedStreams.item(i));
         CRoxieServerMultiInputBaseActivity::stop();
     }
 
@@ -17435,8 +17471,8 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerNaryActivity::reset();
         merger.cleanup();
-        CRoxieServerNaryActivity::reset(); 
         initializedMeta = false;
     }
 
@@ -17854,9 +17890,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         processed = remote.processed;
         remote.processed = 0;
-        CRoxieServerActivity::reset();
     }
 
     virtual void onLimitExceeded(bool isKeyed)
@@ -17947,10 +17983,10 @@ public:
 
     virtual void reset()    
     {
+        CRoxieServerActivity::reset();
         defaultRecord.clear();
         right.clear();
         left.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -18151,10 +18187,10 @@ public:
 
     virtual void reset()    
     { 
+        CRoxieServerActivity::reset();
         noteStatistic(StNumGroups, numGroups);
         noteStatistic(StNumGroupMax, numGroupMax);
         ReleaseClearRoxieRow(next);
-        CRoxieServerActivity::reset();
     }
 
     virtual const void * nextRow()
@@ -18659,11 +18695,11 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
         group.clear();
         groupedInput.clear();
-        CRoxieServerActivity::reset();
         defaultLeft.clear();
         defaultRight.clear();
     }
@@ -18819,7 +18855,7 @@ public:
     CRoxieServerSelfJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, joinStatistics)
     {
-        forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);;
+        forceSpill = queryFactory.queryOptions().allSortsMaySpill || _graphNode.getPropBool("hint[@name='spill']/@value", false);
     }
 
     virtual IRoxieServerActivity *createActivity(IRoxieAgentContext *_ctx, IProbeManager *_probeManager) const
@@ -20477,11 +20513,11 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         roxiemem::ReleaseRoxieRowRange(buff.getArray(), index, buff.ordinality());
         buff.kill();
         index = 0;
         started = false;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void *nextRow()
@@ -20502,7 +20538,7 @@ public:
 protected:
     void onException(IException *E)
     {
-        inputStream->stop();
+        safeStop(inputStream);
         ReleaseRoxieRows(buff);
         if (createRow)
         {
@@ -20600,12 +20636,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         while (buff.isItem(index))
             ReleaseRoxieRow(buff.item(index++));
         buff.kill();
         started = false;
         index = 0;
-        CRoxieServerActivity::reset();
     }
 
     virtual const void *nextRow()
@@ -20700,7 +20736,7 @@ public:
         else
             keepLimit = 0;
     }
-    virtual void stop()
+    virtual void stop() override
     {
         name.clear();
         CRoxieServerActivity::stop();
@@ -20827,7 +20863,7 @@ public:
         for (unsigned idx = 0; idx < numStreams; idx++)
         {
             if (idx!=cond)
-                streamArray[idx]->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                safeStop(streamArray[idx]); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         active = streamArray[cond];
         unusedStopped = true;
@@ -20838,7 +20874,7 @@ public:
         for (unsigned idx = 0; idx < numStreams; idx++)
         {
             if (idx==cond || !unusedStopped)
-                streamArray[idx]->stop();
+                safeStop(streamArray[idx]);
         }
         CRoxieServerMultiInputBaseActivity::stop();
     }
@@ -20931,7 +20967,7 @@ public:
                 startJunction(junctionTrue);
             }
             if (streamFalse)
-                streamFalse->stop(); // Note: stopping unused branches early helps us avoid buffering splits too long.
+                safeStop(streamFalse); // Note: stopping unused branches early helps us avoid buffering splits too long.
         }
         else 
         {
@@ -20941,17 +20977,17 @@ public:
                 startJunction(junctionFalse);
             }
             if (streamTrue)
-                streamTrue->stop();
+                safeStop(streamTrue);
         }
         unusedStopped = true;
     }
 
-    virtual void stop()
+    virtual void stop() override
     {
         if (streamTrue && (!unusedStopped || cond))
-            streamTrue->stop();
+            safeStop(streamTrue);
         if (streamFalse && (!unusedStopped || !cond))
-            streamFalse->stop();
+            safeStop(streamFalse);
         CRoxieServerActivity::stop();
     }
 
@@ -21145,9 +21181,9 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         executed = false;
         exception.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual const void *nextRow()
@@ -22070,12 +22106,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (helper.searchTextNeedsFree())
             rtlFree(srchStr);
         srchStr = NULL;
         ReleaseClearRoxieRow(in);
         xmlParser.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
@@ -22320,6 +22356,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (useRemote())
         {
             processed = remote->processed;
@@ -22329,7 +22366,6 @@ public:
         varFileInfo.clear();
         eof = false;
         reader.clear();
-        CRoxieServerActivity::reset();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -23572,12 +23608,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         if (accepted)
             noteStatistic(StNumIndexAccepted, accepted);
         if (rejected)
             noteStatistic(StNumIndexRejected, rejected);
         remote.onReset();
-        CRoxieServerActivity::reset();
         if (varFileInfo)
         {
             keySet.clear();
@@ -24368,6 +24404,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         onEOF();
         if (accepted)
             noteStatistic(StNumIndexAccepted, accepted);
@@ -24379,7 +24416,6 @@ public:
             translators.clear();
         }
         variableInfoPending = false;
-        CRoxieServerActivity::reset();
     }
 
     virtual void setInput(unsigned idx, unsigned _sourceIdx, IFinalRoxieInput *_in)
@@ -25244,6 +25280,7 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         processed = remote.processed;
         remote.processed = 0;
         puller.reset();
@@ -25252,7 +25289,6 @@ public:
             varFileInfo.clear();
             map.clear();
         }
-        CRoxieServerActivity::reset();
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
@@ -26314,7 +26350,7 @@ public:
     {
         puller.stop();
         if (indexReadStream)
-            indexReadStream->stop();   // Could probably do this as soon as re have fetched rootIndex?
+            safeStop(indexReadStream);   // Could probably do this as soon as re have fetched rootIndex?
         CRoxieServerActivity::stop();
     }
 
@@ -26350,12 +26386,12 @@ public:
 
     virtual void reset()
     {
+        CRoxieServerActivity::reset();
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
         if (atmostsTriggered)
             noteStatistic(StNumAtmostTriggered, atmostsTriggered);
-        CRoxieServerActivity::reset(); 
         puller.reset();
         while (groups.ordinality())
         {
@@ -27172,11 +27208,21 @@ public:
     }
 
 
+    virtual void stop() override
+    {
+        //Ensure that there will be no more reads from inputStream before stopping the inputStream.
+        if (soaphelper)
+        {
+            soaphelper->abort();
+            soaphelper.clear();
+        }
+        CRoxieServerActivity::stop();
+    }
     virtual void reset()
     {
-        // MORE - Shouldn't we make sure thread is stopped etc???
-        soaphelper.clear();
+        // CRoxieServerActivity::reset() will ensure activity is stopped
         CRoxieServerActivity::reset();
+        soaphelper.clear();
     }
 
     // IRoxieAbortMonitor
@@ -27378,7 +27424,8 @@ public:
 
     virtual const void *getNextRow()
     {
-        CriticalBlock b(crit); // MORE - why ?
+        //Protect with a critical section in case multiple threads request input rows at the same time.
+        CriticalBlock b(crit);
         return inputStream->ungroupedNextRow();
     }
 
@@ -27444,7 +27491,8 @@ public:
 
     virtual const void *getNextRow()
     {
-        CriticalBlock b(crit); // MORE - Why?
+        //Protect with a critical section in case multiple threads request input rows at the same time.
+        CriticalBlock b(crit);
         const void *nextrec = inputStream->ungroupedNextRow();
         if (nextrec)
             processed++;

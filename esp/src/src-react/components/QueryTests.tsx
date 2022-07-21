@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
-import { scopedLogger } from "@hpcc-js/util";
+import { join, scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as ESPQuery from "src/ESPQuery";
+import * as WsTopology from "src/WsTopology";
 import { useWorkunitResults } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
 import { IFrame } from "./IFrame";
@@ -32,29 +33,34 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
 
     const [soapUrl, setSoapUrl] = React.useState("");
     const [jsonUrl, setJsonUrl] = React.useState("");
-    const [wsdl, setWsdl] = React.useState("");
-    const [requestSchema, setRequestSchema] = React.useState("");
+    const [wsdlUrl, setWsdlUrl] = React.useState("");
+    const [requestSchemaUrl, setRequestSchemaUrl] = React.useState("");
     const [responseSchemas, setResponseSchemas] = React.useState([]);
-    const [exampleRequest, setExampleRequest] = React.useState("");
-    const [exampleResponse, setExampleResponse] = React.useState("");
-    const [parameterXml, setParameterXml] = React.useState("");
+    const [exampleRequestUrl, setExampleRequestUrl] = React.useState("");
+    const [exampleResponseUrl, setExampleResponseUrl] = React.useState("");
+    const [parameterXmlUrl, setParameterXmlUrl] = React.useState("");
     const [formUrl, setFormUrl] = React.useState("");
     const [linksUrl, setLinksUrl] = React.useState("");
 
     React.useEffect(() => {
         setQuery(ESPQuery.Get(querySet, queryId));
-        setSoapUrl(`/WsEcl/forms/soap/query/${querySet}/${queryId}`);
-        setJsonUrl(`/WsEcl/forms/json/query/${querySet}/${queryId}`);
-        fetch(`/WsEcl/definitions/query/${querySet}/${queryId}/main/${queryId}.wsdl`)
-            .then(response => response.text())
-            .then(content => setWsdl(content))
-            .catch(err => logger.error(err));
-
-        fetch(`/WsEcl/definitions/query/${querySet}/${queryId}/main/${queryId}.xsd`)
-            .then(response => response.text())
-            .then(content => setRequestSchema(content))
-            .catch(err => logger.error(err));
-
+        WsTopology.GetWsEclIFrameURL("forms/soap").then(response => {
+            setSoapUrl(join(response, encodeURIComponent(`WsEcl/forms/soap/${querySet}/${queryId}`)));
+        });
+        WsTopology.GetWsEclIFrameURL("forms/ecl").then(response => {
+            setFormUrl(join(response, encodeURIComponent(`WsEcl/forms/ecl/${querySet}/${queryId}`)));
+        });
+        WsTopology.GetWsEclIFrameURL("forms/json").then(response => {
+            setJsonUrl(join(response, encodeURIComponent(`WsEcl/forms/json${querySet}/${queryId}`)));
+        });
+        WsTopology.GetWsEclIFrameURL("links").then(response => {
+            setLinksUrl(join(response, encodeURIComponent(`WsEcl/links/query/${querySet}/${queryId}`)));
+        });
+        WsTopology.GetWsEclIFrameURL("definitions").then(response => {
+            setWsdlUrl(join(response, encodeURIComponent(`/WsEcl/definitions/query/${querySet}/${queryId}/main/${queryId}.wsdl`)));
+            setRequestSchemaUrl(join(response, encodeURIComponent(`/WsEcl/definitions/query/${querySet}/${queryId}/main/${queryId}.xsd`)));
+            setParameterXmlUrl(join(response, encodeURIComponent(`/WsEcl/definitions/query/${querySet}/${queryId}/resource/soap/${queryId}.xml`)));
+        });
         const requests = resultNames.map(name => {
             const url = `/WsEcl/definitions/query/${querySet}/${queryId}/result/${name}.xsd`;
             return fetch(url)
@@ -67,24 +73,12 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
                 setResponseSchemas(schemas);
             })
             .catch(err => logger.error(err));
-
-        fetch(`/WsEcl/example/request/query/${querySet}/${queryId}`)
-            .then(response => response.text())
-            .then(content => setExampleRequest(content))
-            .catch(err => logger.error(err));
-
-        fetch(`/WsEcl/example/response/query/${querySet}/${queryId}`)
-            .then(response => response.text())
-            .then(content => setExampleResponse(content))
-            .catch(err => logger.error(err));
-
-        fetch(`/WsEcl/definitions/query/${querySet}/${queryId}/resource/soap/${queryId}.xml`)
-            .then(response => response.text())
-            .then(content => setParameterXml(content))
-            .catch(err => logger.error(err));
-
-        setFormUrl(`/WsEcl/forms/ecl/query/${querySet}/${queryId}`);
-        setLinksUrl(`/WsEcl/links/query/${querySet}/${queryId}`);
+        WsTopology.GetWsEclIFrameURL("example/request").then(response => {
+            setExampleRequestUrl(join(response, encodeURIComponent(`/WsEcl/example/request/query/${querySet}/${queryId}`)));
+        });
+        WsTopology.GetWsEclIFrameURL("example/response").then(response => {
+            setExampleResponseUrl(join(response, encodeURIComponent(`/WsEcl/example/response/query/${querySet}/${queryId}`)));
+        });
     }, [setQuery, queryId, querySet, resultNames]);
 
     React.useEffect(() => {
@@ -120,22 +114,22 @@ export const QueryTests: React.FunctionComponent<QueryTestsProps> = ({
                 <IFrame src={jsonUrl} height="99%" />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.WSDL} itemKey="wsdl" style={pivotItemStyle(size, 0)}>
-                <XMLSourceEditor text={wsdl} readonly={true} />
+                <IFrame src={wsdlUrl} height="99%" />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.RequestSchema} itemKey="requestSchema" style={pivotItemStyle(size, 0)}>
-                <XMLSourceEditor text={requestSchema} readonly={true} />
+                <IFrame src={requestSchemaUrl} height="99%" />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ResponseSchema} itemKey="responseSchema" style={pivotItemStyle(size, 0)}>
                 {responseSchemas.map((schema, idx) => <XMLSourceEditor key={`responseSchema_${idx}`} text={schema} readonly={true} />)}
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SampleRequest} itemKey="sampleRequest" style={pivotItemStyle(size, 0)}>
-                <XMLSourceEditor text={exampleRequest} readonly={true} />
+                <IFrame src={exampleRequestUrl} height="99%" />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SampleResponse} itemKey="sampleResponse" style={pivotItemStyle(size, 0)}>
-                <XMLSourceEditor text={exampleResponse} readonly={true} />
+                <IFrame src={exampleResponseUrl} height="99%" />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ParameterXML} itemKey="parameterXml" style={pivotItemStyle(size, 0)}>
-                <XMLSourceEditor text={parameterXml} readonly={true} />
+                <IFrame src={parameterXmlUrl} height="99%" />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Links} itemKey="links" style={pivotItemStyle(size, 0)}>
                 <IFrame src={linksUrl} height="99%" />

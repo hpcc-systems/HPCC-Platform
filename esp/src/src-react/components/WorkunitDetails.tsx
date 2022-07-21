@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { service } from "src/ESPLog";
@@ -19,6 +20,8 @@ import { Metrics } from "./Metrics";
 import { WorkunitSummary } from "./WorkunitSummary";
 import { Result } from "./Result";
 import { Logs } from "./Logs";
+
+const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 interface WorkunitDetailsProps {
     wuid: string;
@@ -42,7 +45,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     React.useEffect(() => {
         service.GetLogsEx({ ...queryParams, jobId: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
             setLogCount(response.total);
-        });
+        }).catch(err => logger.error(err));
     }, [queryParams, wuid]);
 
     return <SizeMe monitorHeight>{({ size }) =>
