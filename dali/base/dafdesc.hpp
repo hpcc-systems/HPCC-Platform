@@ -302,7 +302,7 @@ interface ISuperFileDescriptor: extends IFileDescriptor
 
 // == CLUSTER INFO (currently not exposed outside dali base) =================================================================================
 
-
+interface IStoragePlane;
 interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDistributedFile
 {
     virtual StringBuffer &getGroupName(StringBuffer &name,IGroupResolver *resolver=NULL)=0;
@@ -319,6 +319,7 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
     virtual void getBaseDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual void getReplicateDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // node group name
+    virtual void applyPlane(IStoragePlane *plane) = 0;
 };
 
 interface IStoragePlaneAlias: extends IInterface
@@ -397,6 +398,7 @@ extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
 extern da_decl bool getDefaultSpillPlane(StringBuffer &ret);
 extern da_decl IStoragePlane * getDataStoragePlane(const char * name, bool required);
 extern da_decl IStoragePlane * getRemoteStoragePlane(const char * name, bool required);
+extern da_decl IStoragePlane * createStoragePlane(IPropertyTree *meta);
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken

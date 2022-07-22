@@ -321,12 +321,19 @@ public:
         IPropertyTree *file = dfsFile->queryFileMeta()->queryPropTree("File");
 
         const char *remoteName = dfsFile->queryRemoteName(); // NB: null if local
+        IPropertyTree *dafileSrvRemoteFilePlane = nullptr;
         if (!isEmptyString(remoteName))
         {
             Owned<IPropertyTree> remoteStorage = getRemoteStorage(remoteName);
             if (!remoteStorage)
                 throw makeStringExceptionV(0, "Remote storage '%s' not found", remoteName);
-            if (!remoteStorage->getPropBool("@useDafilesrv"))
+            const char *remotePlaneName = file->queryProp("@group");
+            VStringBuffer planeXPath("planes[@name=\"%s\"]", remotePlaneName);
+            IPropertyTree *filePlane = dfsFile->queryCommonMeta()->queryPropTree(planeXPath);
+            assertex(filePlane);
+            if (remoteStorage->getPropBool("@useDafilesrv"))
+                dafileSrvRemoteFilePlane = filePlane;
+            else
             {
                 // Path translation is necessary, because the local plane will not necessarily have the same
                 // prefix. In particular, both a local and remote plane may want to use the same prefix/mount.
@@ -334,10 +341,6 @@ public:
                 // Files backed by URL's or hostGroups will be access directly, are not mounted, and do not require
                 // this translation.
 
-                const char *remotePlaneName = file->queryProp("@group");
-                VStringBuffer planeXPath("planes[@name=\"%s\"]", remotePlaneName);
-                IPropertyTree *filePlane = dfsFile->queryCommonMeta()->queryPropTree(planeXPath);
-                assertex(filePlane);
                 const char *filePlanePrefix = filePlane->queryProp("@prefix");
                 if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("@hosts")) // otherwise assume url
                 {
@@ -393,6 +396,8 @@ public:
             }
         }
         AccessMode accessMode = static_cast<AccessMode>(dfsFile->queryCommonMeta()->getPropInt("@accessMode"));
+        if (dafileSrvRemoteFilePlane)
+            file->setPropTree("Attr/_remoteStoragePlane", createPTreeFromIPT(dafileSrvRemoteFilePlane));
         fileDesc.setown(deserializeFileDescriptorTree(file));
         fileDesc->setTraceName(logicalName);
         // NB: the accessMode is being defined by the client call, and has been stored in the IDFSFile common meta
