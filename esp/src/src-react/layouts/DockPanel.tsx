@@ -1,15 +1,18 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { PartialTheme, ThemeProvider, useTheme } from "@fluentui/react";
+import { Theme, ThemeProvider } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
+import { FluentProvider, Theme as ThemeV9 } from "@fluentui/react-components";
 import { HTMLWidget, Widget } from "@hpcc-js/common";
 import { DockPanel as HPCCDockPanel, IClosable } from "@hpcc-js/phosphor";
-import { lightTheme } from "../themes";
+import { lightTheme, lightThemeV9 } from "../themes";
+import { useUserTheme } from "../hooks/theme";
 import { AutosizeHpccJSComponent } from "./HpccJSAdapter";
 
 export class ReactWidget extends HTMLWidget {
 
-    protected _theme: PartialTheme = lightTheme;
+    protected _theme: Theme = lightTheme;
+    protected _themeV9: ThemeV9 = lightThemeV9;
     protected _children = <div></div>;
 
     protected _div;
@@ -18,11 +21,19 @@ export class ReactWidget extends HTMLWidget {
         super();
     }
 
-    theme(): PartialTheme;
-    theme(_: PartialTheme): this;
-    theme(_?: PartialTheme): this | PartialTheme {
+    theme(): Theme;
+    theme(_: Theme): this;
+    theme(_?: Theme): this | Theme {
         if (arguments.length === 0) return this._theme;
         this._theme = _;
+        return this;
+    }
+
+    themeV9(): ThemeV9;
+    themeV9(_: ThemeV9): this;
+    themeV9(_?: ThemeV9): this | ThemeV9 {
+        if (arguments.length === 0) return this._themeV9;
+        this._themeV9 = _;
         return this;
     }
 
@@ -49,7 +60,9 @@ export class ReactWidget extends HTMLWidget {
             ;
 
         ReactDOM.render(
-            <ThemeProvider theme={this._theme} style={{ height: "100%" }}>{this._children}</ThemeProvider>,
+            <FluentProvider theme={this._themeV9} style={{ height: "100%" }}>
+                <ThemeProvider theme={this._theme} style={{ height: "100%" }}>{this._children}</ThemeProvider>
+            </FluentProvider>,
             this._div.node()
         );
 
@@ -140,7 +153,7 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
     onDockPanelCreate
 }) => {
 
-    const theme = useTheme();
+    const { theme, themeV9 } = useUserTheme();
     const [idx, setIdx] = React.useState<{ [key: string]: Widget }>({});
 
     const dockPanel = useConst(() => {
@@ -178,6 +191,7 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
         items.filter(isDockPanelComponent).forEach(item => {
             (idx[item.key] as ReactWidget)
                 .theme(theme)
+                .themeV9(themeV9)
                 .children(item.component)
                 .render()
                 ;

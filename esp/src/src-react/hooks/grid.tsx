@@ -305,7 +305,7 @@ export function useFluentPagedGrid({
     const [page, setPage] = React.useState(0);
     const [pageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, 25);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
-    const [theme] = useUserTheme();
+    const { theme } = useUserTheme();
 
     const paginationStyles = React.useMemo(() => mergeStyleSets({
         root: {

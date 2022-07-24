@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ThemeProvider } from "@fluentui/react";
+import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
 import { useUserTheme } from "../hooks/theme";
@@ -22,7 +23,7 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     const [showCookieConsent, setShowCookieConsent] = React.useState(false);
     const [locationPathname, setLocationPathname] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
-    const [theme, , isDark] = useUserTheme();
+    const { theme, themeV9, isDark } = useUserTheme();
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", "", true);
 
@@ -55,17 +56,19 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
             ;
     }, [isDark]);
 
-    return <ThemeProvider theme={theme} style={{ height: "100%" }}>
-        <HolyGrail
-            header={<DevTitle />}
-            left={<MainNavigation hashPath={locationPathname} />}
-            main={<HolyGrail
-                header={<SubNavigation hashPath={locationPathname} />}
-                main={body}
-            />}
-        />
-        <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
-            userKeyValStore().set("user_cookie_consent", n ? "1" : "0");
-        }} />
-    </ThemeProvider >;
+    return <FluentProvider theme={themeV9} style={{ height: "100%" }}>
+        <ThemeProvider theme={theme} style={{ height: "100%" }}>
+            <HolyGrail
+                header={<DevTitle />}
+                left={<MainNavigation hashPath={locationPathname} />}
+                main={<HolyGrail
+                    header={<SubNavigation hashPath={locationPathname} />}
+                    main={body}
+                />}
+            />
+            <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
+                userKeyValStore().set("user_cookie_consent", n ? "1" : "0");
+            }} />
+        </ThemeProvider >
+    </FluentProvider >;
 };

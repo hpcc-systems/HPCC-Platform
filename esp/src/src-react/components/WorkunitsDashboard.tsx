@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Dropdown, IStackItemStyles, IStackStyles, IStackTokens, Overlay, Spinner, SpinnerSize, Stack, Text } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { Card } from "@fluentui/react-cards";
+import { Card, CardHeader, CardPreview } from "@fluentui/react-components/unstable";
 import { WorkunitsService, WUQuery } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
@@ -201,21 +201,21 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                 <Stack.Item styles={stackItemStyles}>
                     <Stack horizontal tokens={{ childrenGap: 16 }}  >
                         <Stack.Item align="start" styles={{ root: { width: "25%", height: "100%" } }}>
-                            <Card tokens={{ childrenMargin: 12, minWidth: "100%", minHeight: "100%" }}>
-                                <Card.Item>
+                            <Card>
+                                <CardHeader header={
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.State}</Text>
                                         {filterProps.state !== undefined && <Chip label={filterProps.state} onDelete={() => pushParamExact("state", undefined)} />}
                                     </Stack>
-                                </Card.Item>
-                                <Card.Item>
+                                } />
+                                <CardPreview>
                                     <AutosizeHpccJSComponent widget={stateChart} fixedHeight="240px" />
-                                </Card.Item>
+                                </CardPreview>
                             </Card>
                         </Stack.Item>
                         <Stack.Item align="center" styles={{ root: { width: "50%" } }}>
-                            <Card tokens={{ childrenMargin: 12, minWidth: "100%" }} >
-                                <Card.Item>
+                            <Card  >
+                                <CardHeader header={
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Day}</Text>
                                         {filterProps.day !== undefined && <Chip label={filterProps.day} color="primary" onDelete={() => pushParamExact("day", undefined)} />}
@@ -231,23 +231,23 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                                             ]}
                                         />
                                     </Stack>
-                                </Card.Item>
-                                <Card.Item>
+                                } />
+                                <CardPreview>
                                     <AutosizeHpccJSComponent widget={dayChart} fixedHeight="240px" />
-                                </Card.Item>
+                                </CardPreview>
                             </Card>
                         </Stack.Item>
                         <Stack.Item align="end" styles={{ root: { width: "25%" } }}>
-                            <Card tokens={{ childrenMargin: 12, minWidth: "100%" }}>
-                                <Card.Item>
+                            <Card >
+                                <CardHeader header={
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Protected}</Text>
                                         {filterProps.protected !== undefined && <Chip label={"" + filterProps.protected} color="primary" onDelete={() => pushParamExact("protected", undefined)} />}
                                     </Stack>
-                                </Card.Item>
-                                <Card.Item>
+                                } />
+                                <CardPreview>
                                     <AutosizeHpccJSComponent widget={protectedChart} fixedHeight="240px" />
-                                </Card.Item>
+                                </CardPreview>
                             </Card>
                         </Stack.Item>
                     </Stack>
@@ -255,38 +255,38 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                 <Stack.Item styles={stackItemStyles}>
                     <Stack horizontal tokens={{ childrenGap: 16 }} >
                         <Stack.Item align="start" styles={{ root: { width: "66%" } }}>
-                            <Card tokens={{ childrenMargin: 12, minWidth: "100%" }}>
-                                <Card.Item>
+                            <Card >
+                                <CardHeader header={
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Owner}</Text>
                                         {filterProps.owner !== undefined && <Chip label={filterProps.owner} color="primary" onDelete={() => pushParamExact("owner", undefined)} />}
                                     </Stack>
-                                </Card.Item>
-                                <Card.Item>
+                                } />
+                                <CardPreview>
                                     <AutosizeHpccJSComponent widget={ownerChart} fixedHeight="240px" />
-                                </Card.Item>
+                                </CardPreview>
                             </Card>
                         </Stack.Item>
                         <Stack.Item align="center" styles={{ root: { width: "34%" } }}>
-                            <Card tokens={{ childrenMargin: 12, minWidth: "100%" }} >
-                                <Card.Item>
+                            <Card>
+                                <CardHeader header={
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Cluster}</Text>
                                         {filterProps.cluster !== undefined && <Chip label={filterProps.cluster} color="primary" onDelete={() => pushParamExact("cluster", undefined)} />}
                                     </Stack>
-                                </Card.Item>
-                                <Card.Item>
+                                } />
+                                <CardPreview>
                                     <AutosizeHpccJSComponent widget={clusterChart} fixedHeight="240px" />
-                                </Card.Item>
+                                </CardPreview>
                             </Card>
                         </Stack.Item>
                     </Stack>
                 </Stack.Item>
                 <Stack.Item grow={5} styles={stackItemStyles}>
-                    <Card tokens={{ childrenMargin: 4, minWidth: "100%", height: "100%" }}>
-                        <Card.Section tokens={{}} styles={{ root: { height: "100%" } }}>
+                    <Card style={{ height: "100%" }}>
+                        <CardPreview style={{ height: "100%" }}>
                             <Workunits store={workunitsStore} />
-                        </Card.Section>
+                        </CardPreview>
                     </Card>
                 </Stack.Item>
             </Stack>
