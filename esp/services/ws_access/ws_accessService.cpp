@@ -245,7 +245,7 @@ void Cws_accessEx::setBasedns(IEspContext &context)
     if(secmgr == NULL)
         throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-    set<string> alreadythere;
+    std::set<std::string> alreadythere;
     ForEachItemInRev(x, m_rawbasedns)
     {
         IEspDnStruct* basedn = &(m_rawbasedns.popGet());
@@ -672,7 +672,7 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
         CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         resp.setUsername(req.getUsername());
 
-        set<string> ogrps;
+        std::set<std::string> ogrps;
         ogrps.insert("Authenticated Users");
         StringArray grps;
         ldapsecmgr->getGroups(req.getUsername(), grps);
@@ -1492,7 +1492,7 @@ bool Cws_accessEx::onGroupMemberEditInput(IEspContext &context, IEspGroupMemberE
         CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         resp.setGroupname(req.getGroupname());
 
-        set<string> ousrs;
+        std::set<std::string> ousrs;
         StringArray ousernames;
         ldapsecmgr->getGroupMembers(req.getGroupname(), ousernames);
         unsigned i = 0;

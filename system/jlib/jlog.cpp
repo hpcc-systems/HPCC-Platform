@@ -2908,7 +2908,7 @@ extern jlib_decl IContextLogger &updateDummyContextLogger()
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s)
 {
-    string uid = createUniqueIdString();
+    std::string uid = createUniqueIdString();
     return s.append(uid.c_str());
 }
 

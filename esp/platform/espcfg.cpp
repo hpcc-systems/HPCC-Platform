@@ -47,6 +47,10 @@
 
 //#define ESP_BUILTIN
 
+using std::string;
+using std::map;
+using std::list;
+
 extern "C" {
     ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process);
     ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process);
@@ -75,7 +79,7 @@ void CEspConfig::loadBuiltIns()
 #endif
 }
 
-builtin *CEspConfig::getBuiltIn(string name)
+builtin *CEspConfig::getBuiltIn(std::string name)
 {
 #ifdef ESP_BUILTIN
     //if (name.compare("pixall.dll")==0 || name.compare("pixall.so")==0)

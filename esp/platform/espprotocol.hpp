@@ -34,8 +34,6 @@
 #include <map>
 #include <atomic>
 
-using namespace std;
-
 //A helper class for tracking the number of active requests
 class ActiveRequests
 {
@@ -148,7 +146,7 @@ public:
 #endif
 };
 
-typedef map<int, CEspApplicationPort*> CApplicationPortMap;
+typedef std::map<int, CEspApplicationPort*> CApplicationPortMap;
 
 #define DEFAULT_MAX_REQUEST_ENTITY_LENGTH 8000000
 
@@ -179,7 +177,7 @@ public:
     void clear()
     {
         WriteLockBlock wblock(rwLock);
-        map<int, CEspApplicationPort*>::iterator bndi = m_portmap.begin();
+        std::map<int, CEspApplicationPort*>::iterator bndi = m_portmap.begin();
         for(;bndi!=m_portmap.end();bndi++)
             if(bndi->second)
                 delete bndi->second;

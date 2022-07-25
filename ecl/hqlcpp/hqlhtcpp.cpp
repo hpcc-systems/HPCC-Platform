@@ -285,7 +285,11 @@ MemberFunction::~MemberFunction() noexcept(false)
     }
 
     //Do not process the aliases if we are aborting from an error
+#if __cplusplus >= 201703
+    if (!std::uncaught_exceptions())
+#else
     if (!std::uncaught_exception())
+#endif
         finish();
 }
 

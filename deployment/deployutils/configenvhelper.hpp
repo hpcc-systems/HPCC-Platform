@@ -26,8 +26,7 @@
 interface IPropertyTree;
 #include <vector>
 
-using namespace std;
-typedef vector<IPropertyTree*> IPropertyTreePtrArray;
+typedef std::vector<IPropertyTree*> IPropertyTreePtrArray;
 
 #include "Constants.h"
 

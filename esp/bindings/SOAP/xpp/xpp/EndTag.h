@@ -23,8 +23,6 @@
 
 #include <sxt/XmlTokenizer.h>
 
-using namespace std;
-
 /**
  * Encapsulate XML ETag
  * 
@@ -60,7 +58,7 @@ namespace xpp {
     const SXT_CHAR* getQName() const { return qName; }
 
     const SXT_STRING toString() const {
-      string buf = SXT_STRING("EndTag={");    
+      std::string buf = SXT_STRING("EndTag={");
       buf = buf + " '" + qName + "'";
       if(SXT_STRING(_MYT("")) != uri) {
         buf = buf + "('" + uri +"','" + localName + "') ";
@@ -76,7 +74,7 @@ namespace xpp {
       qName = NULL;
     }
 
-    friend ostream& operator<<(ostream& output, 
+    friend std::ostream& operator<<(std::ostream& output,
       const EndTag& startTag);
           
                
@@ -88,11 +86,11 @@ namespace xpp {
     SXT_STRING nameBuf;
   };
   
-inline ostream& operator<<(ostream& output, 
+inline std::ostream& operator<<(std::ostream& output,
   const EndTag& endTag) 
 {
     const SXT_STRING s = endTag.toString();
-    output << s << endl;
+    output << s << std::endl;
     return output;
 }
 

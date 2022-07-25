@@ -35,7 +35,7 @@ typedef wchar_t SXT_CHAR;
 #define _MYT(str) (L##str)
 #else
 typedef char SXT_CHAR;
-#define SXT_STRING string
+#define SXT_STRING std::string
 #ifdef _MYT
 #undef _MYT
 #endif
@@ -770,7 +770,7 @@ namespace sxt {
       //sprintf(msg, " at line %d and column %d ", posRow, (posCol-1));
       //return string(msg); //FIXME
       //ostringstream os;
-      ostringstream os;
+      std::ostringstream os;
       os << " at line " << posRow << " and column " << (posCol-1) << " ";
       return os.str();
     }
@@ -844,7 +844,7 @@ namespace sxt {
       //char msg[100];
       //sprintf(msg, "%d", i); //FIXME UNICODE
       //return SXT_STRING(msg);
-      ostringstream os;
+      std::ostringstream os;
       os << i;
       return os.str();
     }
@@ -1073,7 +1073,7 @@ inline ostream& operator<<(ostream& output,
 {
     SXT_STRING ss = tokenizer.to_string(tokenizer.state);
     SXT_STRING s = "XmlTokenizer: current state: "+ss;
-    output << s << endl;
+    output << s << std::endl;
     return output;
 }
 

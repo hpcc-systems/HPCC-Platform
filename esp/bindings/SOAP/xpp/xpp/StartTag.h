@@ -221,7 +221,7 @@ namespace xpp {
                
   protected:
     
-    friend ostream& operator<<(ostream& output, 
+    friend std::ostream& operator<<(std::ostream& output,
       const StartTag& startTag);
           
 
@@ -282,11 +282,11 @@ namespace xpp {
     Attribute* attArr;
   };
 
-inline ostream& operator<<(ostream& output, 
+inline std::ostream& operator<<(std::ostream& output,
   const StartTag& startTag) 
 {
   const SXT_STRING s = startTag.toString();
-  output << s << endl;
+  output << s << std::endl;
   return output;
 }
 

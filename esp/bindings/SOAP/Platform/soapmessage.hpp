@@ -51,7 +51,6 @@
 class CSoapValue;
 typedef CIArrayOf<CSoapValue> SoapValueArray;
 
-using namespace std;
 using namespace xpp;
 
 

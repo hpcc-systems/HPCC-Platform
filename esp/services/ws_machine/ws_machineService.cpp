@@ -27,6 +27,12 @@
 #include "TpWrapper.hpp"
 #include <math.h>
 
+
+using std::string;
+using std::set;
+using std::map;
+using std::pair;
+
 static const int THREAD_POOL_SIZE = 40;
 static const int THREAD_POOL_STACK_SIZE = 64000;
 static const char* FEATURE_URL = "MachineInfoAccess";
