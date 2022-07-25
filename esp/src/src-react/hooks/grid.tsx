@@ -12,7 +12,7 @@ import { useUserTheme } from "./theme";
 
 /*  ---  Debugging dependency changes  ---
  *
- *  import { useWhatChanged } from "@simbathesailor/use-what-changed"; 
+ *  import { useWhatChanged } from "@simbathesailor/use-what-changed";
  *
  *  useWhatChanged([count, selectionHandler, sorted, start, store, query], "count, selectionHandler, sorted, start, store, query");
  *
@@ -190,7 +190,7 @@ function useFluentStoreGrid({
 
     useDeepEffect(() => {
         refreshTable();
-    }, [], [query]);
+    }, [], [query, sorted]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, sorted);
