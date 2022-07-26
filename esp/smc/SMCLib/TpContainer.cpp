@@ -109,14 +109,7 @@ static void gatherDropZoneMachines(IArrayOf<IEspTpMachine> & tpMachines, IProper
 {
     const char * prefix = plane.queryProp("@prefix");
     if (plane.hasProp("hosts"))
-    {
         gatherDropZoneMachinesFromHosts(tpMachines, plane, prefix);
-    }
-    else if (plane.hasProp("@hostGroup"))
-    {
-        Owned<IPropertyTree> hostGroup = getHostGroup(plane.queryProp("@hostGroup"), true);
-        gatherDropZoneMachinesFromHosts(tpMachines, *hostGroup, prefix);
-    }
     else
         tpMachines.append(*createHostTpMachine("localhost", prefix));
 }

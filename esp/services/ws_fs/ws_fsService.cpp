@@ -1829,6 +1829,35 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
     return true;
 }
 
+static StringBuffer &getDropZoneHost(const char *planeName, IPropertyTree *plane, StringBuffer &host)
+{
+    if (plane->hasProp("hosts"))
+    {
+        if (!host.isEmpty())
+        {
+            // Already have host. Just need to check that the ip is valid for storage plane.
+            bool ipAddressMatches = false;
+            Owned<IPropertyTreeIterator> hostIter = plane->getElements("hosts");
+            ForEach (*hostIter)
+            {
+                const char *knownIP = hostIter->query().queryProp(nullptr);
+                if (streq(knownIP, host))
+                {
+                    ipAddressMatches=true;
+                    break;
+                }
+            }
+            if (!ipAddressMatches)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "host %s is not valid storage plane %s", host.str(), planeName);
+        }
+        else
+            host.set(plane->queryProp("hosts[1]"));
+    }
+    else
+        host.set("localhost"); // storage plane will be mounted when not using hosts
+    return host;
+}
+
 void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcPlane,
     StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
 {
@@ -1854,35 +1883,7 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
                 addNonEmptyPathSepChar(sourcePath);
                 sourcePath.append(srcPath).trim();
             }
-            const char * hostGroup = dropZone->queryProp("@hostGroup");
-            if (hostGroup)
-            {
-                Owned<IPropertyTree> match = getHostGroup(hostGroup,true);
-                if (!isEmptyString(srcIP))
-                {
-                    // Already have srcIP. Just need to check that the ip is valid for storage plane.
-                    bool ipAddressMatches = false;
-                    Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
-                    ForEach (*hostIter)
-                    {
-                        const char *knownIP = hostIter->query().queryProp(nullptr);
-                        if (strcmp(knownIP, srcIP)==0)
-                        {
-                            ipAddressMatches=true;
-                            break;
-                        }
-                    }
-                    if (!ipAddressMatches)
-                        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "srcip %s is not valid storage plane %s", srcIP, srcPlane);
-                    sourceIPReq.set(srcIP);
-                }
-                else
-                    sourceIPReq.set(match->queryProp("hosts[1]"));
-            }
-            else
-            {
-                sourceIPReq.set("localhost"); // storage plane will be mounted when not using hostgroup
-            }
+            getDropZoneHost(srcPlane, dropZone, sourceIPReq);
         }
         else
         {
@@ -2348,34 +2349,8 @@ void CFileSprayEx::getDropZoneInfoByDestPlane(double clientVersion, const char* 
     }
     destFileOut.append(destFileIn).trim();
     dropZone->getProp("@umask", umask);
-    const char * hostGroup = dropZone->queryProp("@hostGroup");
-    if (hostGroup)
-    {
-        Owned<IPropertyTree> match = getHostGroup(hostGroup,true);
-        if (!hostip.isEmpty())
-        {
-            // Already have hostip. Just need to check that the ip is valid for storage plane.
-            bool ipAddressMatches = false;
-            Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
-            ForEach (*hostIter)
-            {
-                const char *knownIP = hostIter->query().queryProp(nullptr);
-                if (strcmp(knownIP, hostip)==0)
-                {
-                    ipAddressMatches=true;
-                    break;
-                }
-            }
-            if (!ipAddressMatches)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "destip %s is not valid storage plane %s", hostip.str(), destPlane);
-        }
-        else
-            hostip.set(match->queryProp("hosts[1]"));
-    }
-    else
-    {
-        hostip.set("localhost"); // storage plane will be mounted when not using hostgroup
-    }
+
+    getDropZoneHost(destPlane, dropZone, hostip);
 }
 
 void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask)
