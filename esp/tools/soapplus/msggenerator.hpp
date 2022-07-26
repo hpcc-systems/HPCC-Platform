@@ -37,7 +37,7 @@ private:
     StringArray  m_methods;
     Owned<IPropertyTree> m_roxieSchemaRoot;
     Owned<IPropertyTree> m_schemaTree;
-    IProperties* m_globals;
+    Owned<IProperties> m_globals;
 
     typedef std::map<std::string, std::string>  DefValMap;
     DefValMap m_defaultvalues;
