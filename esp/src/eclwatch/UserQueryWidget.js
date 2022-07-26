@@ -504,6 +504,7 @@ define([
         //  Groups  ---
         initGroupsGrid: function () {
             this.initGroupsContextMenu();
+            var context = this;
             var store = WsAccess.CreateGroupsStore(null, true);
             this.groupsGrid = declare([ESPUtil.Grid(true, true)])({
                 sort: [{ attribute: "name" }],
@@ -527,7 +528,11 @@ define([
                     }
                 }
             }, this.id + "GroupsGrid");
-            var context = this;
+
+            ESPUtil.goToPageUserPreference(this.groupsGrid, "UsersQueryWidget_GroupsGrid_GridRowsPerPage").then(function () {
+                context.refreshGroupsGrid();
+            });
+
             this.groupsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onGroupsRowDblClick) {
                     var item = context.groupsGrid.row(evt).data;
@@ -542,9 +547,6 @@ define([
             });
             this.groupsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
-            });
-            ESPUtil.goToPageUserPreference(this.groupsGrid, "UsersQueryWidget_GroupsGrid_GridRowsPerPage").then(function () {
-                context.groupsGrid.startup();
             });
         },
 
@@ -601,6 +603,7 @@ define([
 
         //  Users  ---
         initUsersGrid: function () {
+            var context = this;
             this.initUsersContextMenu();
             this.usersStore = WsAccess.CreateUsersStore(null, true);
             this.usersGrid = declare([ESPUtil.Grid(true, true)])({
@@ -641,7 +644,10 @@ define([
                     }
                 }
             }, this.id + "UsersGrid");
-            var context = this;
+
+            ESPUtil.goToPageUserPreference(this.usersGrid, "UsersQueryWidget_UsersGrid_GridRowsPerPage").then(function () {
+                context.refreshUsersGrid();
+            });
 
             this.usersGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onUsersRowDblClick) {
@@ -657,9 +663,6 @@ define([
             });
             this.usersGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
-            });
-            ESPUtil.goToPageUserPreference(this.usersGrid, "UsersQueryWidget_UsersGrid_GridRowsPerPage").then(function () {
-                context.usersGrid.startup();
             });
         },
 
