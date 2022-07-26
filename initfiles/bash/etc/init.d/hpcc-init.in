@@ -474,7 +474,7 @@ then
     else
       log  "Service dafilesrv, ${compDafilesrv} is still running."
       echo "Service dafilesrv, ${compDafilesrv} is still running."
-      echo "To stop it, run \"service dafilesrv stop\"."
+      echo "To stop it, run \"/etc/init.d/dafilesrv stop\"."
     fi
 
 fi
