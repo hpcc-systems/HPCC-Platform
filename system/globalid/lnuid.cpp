@@ -42,7 +42,10 @@
 #include "lnuid.h"
 #include "jlog.hpp"
 
-using namespace std;
+using std::string;
+using std::vector;
+using std::cout;
+using std::endl;
 
 namespace ln_uid {
 

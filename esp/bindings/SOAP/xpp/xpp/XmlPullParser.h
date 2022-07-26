@@ -93,8 +93,8 @@ namespace xpp {
     virtual const SXT_CHAR* getQNameLocal(const SXT_CHAR* qName) const = 0;
     virtual const SXT_CHAR* getQNameUri(const SXT_CHAR* qName) const = 0;
     virtual int getNsCount() const = 0;
-    virtual map<string, const SXT_CHAR*>::const_iterator getNsBegin() const = 0;
-    virtual map<string, const SXT_CHAR*>::const_iterator getNsEnd() const = 0;
+    virtual std::map<string, const SXT_CHAR*>::const_iterator getNsBegin() const = 0;
+    virtual std::map<string, const SXT_CHAR*>::const_iterator getNsEnd() const = 0;
     virtual void setSupportNamespaces(bool enable) = 0;
     virtual bool skipSubTreeEx() = 0;
     virtual int skipSubTree() = 0;
@@ -180,7 +180,7 @@ namespace xpp {
       if(qName[i] == _MYT('\0'))   //current default namespace 
         return elStack[elStackDepth-1].defaultNs; 
       string prefix = string(qName, i);
-      map<string, const SXT_CHAR*>::const_iterator match = prefix2Ns.find(prefix);
+      std::map<string, const SXT_CHAR*>::const_iterator match = prefix2Ns.find(prefix);
       if(match != prefix2Ns.end())
         return match->second;
       else
@@ -188,8 +188,8 @@ namespace xpp {
     }
 
     virtual int getNsCount() const override {return prefix2Ns.size();}
-    virtual map< string, const SXT_CHAR* >::const_iterator getNsBegin() const override {return prefix2Ns.begin();}
-    virtual map< string, const SXT_CHAR* >::const_iterator getNsEnd() const override {return prefix2Ns.end();}
+    virtual std::map< string, const SXT_CHAR* >::const_iterator getNsBegin() const override {return prefix2Ns.begin();}
+    virtual std::map< string, const SXT_CHAR* >::const_iterator getNsEnd() const override {return prefix2Ns.end();}
 
     /** 
      * Set support of namespaces. Enabled by default.
@@ -336,8 +336,8 @@ namespace xpp {
                int prefixLen = tokenizer.posNsColon - tokenizer.posStart;
                el.prefix = nsBufAdd(
                  tokenizer.buf + tokenizer.posStart, prefixLen);               
-               if(XPP_DEBUG) cerr << "adding el.prefix=" << el.prefix
-                  << " el.qName=" << el.qName << endl;
+               if(XPP_DEBUG) std::cerr << "adding el.prefix=" << el.prefix
+                  << " el.qName=" << el.qName << std::endl;
                el.localName = tokenizer.buf + tokenizer.posNsColon + 1;
              } else {
                el.localName = s;
@@ -434,7 +434,7 @@ namespace xpp {
       stag.localName = el.localName;
       //cout << "stag.qName=" << stag.qName << endl;
       if(XPP_DEBUG && el.prefix != NULL)
-        cerr << "readStartTag  el.prefix=" << el.prefix << endl;
+        std::cerr << "readStartTag  el.prefix=" << el.prefix << std::endl;
       stag.attEnd = 0;
       try {      
         while(token != XmlTokenizer::STAG_END) {
@@ -506,9 +506,9 @@ namespace xpp {
                 ++el.prefixesEnd;
                 //prefix2Ns[ att.localName ] = new string(att.value);
                 prefix2Ns[ att.localName ] = nsBufAdd(att.value);
-                if(XPP_DEBUG) cerr << "NS adding prefix="+att.localName 
+                if(XPP_DEBUG) std::cerr << "NS adding prefix="+att.localName
                   << " = " << prefix2Ns[ att.localName ]  
-                  << " el.prefixesEnd=" << el.prefixesEnd << endl;
+                  << " el.prefixesEnd=" << el.prefixesEnd << std::endl;
 
               } else if(att.qName == "xmlns") {
                 if(el.defaultNs != NULL)
@@ -715,9 +715,9 @@ namespace xpp {
            // clean prefixes
            ElementContent& el = elStack[elStackDepth];
            if(XPP_DEBUG)
-                 cerr << "NS current el=" << el.qName 
+                 std::cerr << "NS current el=" << el.qName
                  << " el.prefixesEnd =" << el.prefixesEnd
-                 << endl; 
+                 << std::endl;
            if(supportNs && el.prefixesEnd > 0) { //el.prefixes != NULL) {
              for(int i = el.prefixesEnd - 1; i >= 0; --i) {
                //TODO check if memory leak
@@ -725,8 +725,8 @@ namespace xpp {
                //  ; //delete prefix2Ns[ el.prefixes[i] ]; 
                prefix2Ns[ el.prefixes[i] ] = el.prefixPrevNs[i];
                if(XPP_DEBUG && el.prefixPrevNs[i] != NULL)
-                 cerr << "NS restoring prefix=" << el.prefixes[i] 
-                 << " = " << el.prefixPrevNs[i] << endl;
+                 std::cerr << "NS restoring prefix=" << el.prefixes[i]
+                 << " = " << el.prefixPrevNs[i] << std::endl;
                assert(el.prefixPrevNs[i] <= nsBuf + el.prevNsBufPos);
                el.prefixPrevNs[i] = NULL;
              }
@@ -778,9 +778,9 @@ namespace xpp {
     }
 
     SXT_CHAR* nsBufAdd(const SXT_CHAR* s, int sLen) {
-      if(XPP_DEBUG) cerr << "nsBufAdd nsBufPos=" << nsBufPos 
+      if(XPP_DEBUG) std::cerr << "nsBufAdd nsBufPos=" << nsBufPos
           << " nsBufSize="<< nsBufSize 
-          << " s=" << s << " sLen=" << sLen << endl;
+          << " s=" << s << " sLen=" << sLen << std::endl;
       //ensureNsBufSpace(sLen);
       SXT_CHAR* result = nsBuf + nsBufPos;
       memcpy(result, s, sLen * sizeof(SXT_CHAR));
@@ -794,7 +794,7 @@ namespace xpp {
     }
       
     const SXT_STRING to_string(int i) const {
-      ostringstream os;
+      std::ostringstream os;
       os << i;
       return os.str();
     }
@@ -829,7 +829,7 @@ namespace xpp {
       SXT_CHAR* nsBuf;
       int nsBufPos;
       int nsBufSize;
-      map< string, const SXT_CHAR* > prefix2Ns;
+      std::map< string, const SXT_CHAR* > prefix2Ns;
 
       class ElementContent { 
         friend class XmlPullParser;
@@ -908,7 +908,7 @@ namespace xpp {
 
   };
 
-inline ostream& operator<<(ostream& output, 
+inline std::ostream& operator<<(std::ostream& output,
   const XmlPullParser& xpp) 
 {
     SXT_STRING ss = xpp.to_string(xpp.eventType);
@@ -922,7 +922,7 @@ inline ostream& operator<<(ostream& output,
       ss = "CONTENT";
     }   
     SXT_STRING s = "XmlPullParser: current evenType: "+ss;
-    output << s << endl;
+    output << s << std::endl;
     return output;
 }
 

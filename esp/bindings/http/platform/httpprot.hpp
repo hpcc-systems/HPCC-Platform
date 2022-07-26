@@ -36,7 +36,6 @@
 #include <algorithm>
 #include <string>
 #include <map>
-using namespace std;
 
 class CPooledHttpThread : public CInterface, implements IPooledThread, implements ISocketReturner
 {

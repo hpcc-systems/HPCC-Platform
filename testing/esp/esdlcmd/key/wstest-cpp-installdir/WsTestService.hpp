@@ -4,9 +4,6 @@
 #include "jlib.hpp"
 #include "WsTestServiceBase.hpp"
 
-using namespace std;
-
-
 class WsTestService : public WsTestServiceBase
 {
 public:

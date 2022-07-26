@@ -589,7 +589,7 @@ int CHttpMessage::readContentTillSocketClosed()
 
             while (chunkSize > 0)
             {
-                const int len = min(chunkSize, buflen);
+                const int len = std::min(chunkSize, buflen);
                 readlen = m_bufferedsocket->read(buf, len);
                 if(readlen <= 0)
                     break;

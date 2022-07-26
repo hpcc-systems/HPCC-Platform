@@ -20,8 +20,6 @@
 #include <ctime>
 #include <string>
 
-using namespace std;
-
 /**
 * This is an implementation of Globally Unique Transaction ID’s.
 * Note: This class currently generates unique id on OS's that supports device /dev/urandom.
@@ -37,7 +35,7 @@ namespace ln_uid {
     typedef unsigned char ln_uid_t[uid_size];
 
     ln_uid_t &createUniqueId(ln_uid_t &out);
-    string createUniqueIdString();
+    std::string createUniqueIdString();
 
     std::string uniqueIdToString(const ln_uid_t &uid);
     ln_uid_t &uniqueIdFromString(const char* uid, ln_uid_t &out);

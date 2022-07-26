@@ -3250,7 +3250,6 @@ template <typename CTX, typename Init, typename Update, typename Final>
 inline std::string message_digest(const std::string &s, Init init,
                                   Update update, Final final,
                                   size_t digest_length) {
-  using namespace std;
 
   std::vector<unsigned char> md(digest_length, 0);
   CTX ctx;
@@ -3258,9 +3257,9 @@ inline std::string message_digest(const std::string &s, Init init,
   update(&ctx, s.data(), s.size());
   final(md.data(), &ctx);
 
-  stringstream ss;
+  std::stringstream ss;
   for (auto c : md) {
-    ss << setfill('0') << setw(2) << hex << (unsigned int)c;
+    ss << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)c;
   }
   return ss.str();
 }
@@ -3360,12 +3359,11 @@ inline std::pair<std::string, std::string> make_digest_authentication_header(
     const Request &req, const std::map<std::string, std::string> &auth,
     size_t cnonce_count, const std::string &cnonce, const std::string &username,
     const std::string &password, bool is_proxy = false) {
-  using namespace std;
 
-  string nc;
+  std::string nc;
   {
-    stringstream ss;
-    ss << setfill('0') << setw(8) << hex << cnonce_count;
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(8) << std::hex << cnonce_count;
     nc = ss.str();
   }
 
@@ -3379,7 +3377,7 @@ inline std::pair<std::string, std::string> make_digest_authentication_header(
   std::string algo = "MD5";
   if (auth.find("algorithm") != auth.end()) { algo = auth.at("algorithm"); }
 
-  string response;
+  std::string response;
   {
     auto H = algo == "SHA-256"
                  ? detail::SHA_256

@@ -80,7 +80,7 @@ struct CField
     }
 };
 
-struct CFieldMap : public map<string, CField*>
+struct CFieldMap : public std::map<std::string, CField*>
 {
     virtual ~CFieldMap()
     {
@@ -156,7 +156,7 @@ struct CFieldInfo
     }
 };
 
-struct CFieldInfoMap : public map<string, CFieldInfo*>
+struct CFieldInfoMap : public std::map<std::string, CFieldInfo*>
 {
    Mutex    m_mutex;
 
@@ -845,7 +845,7 @@ private:
     void setMachineInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char *response, int error);
     void setProcessInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char* response, int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo);
     void setProcessComponent(IEspContext& context, CMachineInfoThreadParam* pParam, CProcessData& process, bool firstProcess, IArrayOf<IEspSWRunInfo>& processArray, IEspComponentInfo* pComponentInfo);
-    void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, CProcessData& process, map<string, Linked<IEspSWRunInfo> >* processMap, bool firstProcess);
+    void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, CProcessData& process, std::map<std::string, Linked<IEspSWRunInfo> >* processMap, bool firstProcess);
 
     //Used in StartStop/Rexec
     void ConvertAddress( const char* originalAddress, StringBuffer& newAddress);

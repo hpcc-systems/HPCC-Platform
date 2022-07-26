@@ -38,7 +38,9 @@ interface IPropertyTree;
 interface IXslProcessor;
 interface IXslTransform;
 
-using namespace std;
+using std::string;
+using std::set;
+using std::vector;
 
 struct CInstallFile : public CInterface 
 {
