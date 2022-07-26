@@ -119,6 +119,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_INACTIVE "--inactive"
 #define ECLOPT_NO_ACTIVATE "--no-activate"
 #define ECLOPT_ACTIVATE "--activate"
+#define ECLOPT_ACTIVATED "--activated"
 #define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
@@ -204,6 +205,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_QUERYID "--queryid"
 #define ECLOPT_QUERIES "--queries"
 #define ECLOPT_QUERYIDS "--queryids"
+#define ECLOPT_SUSPENDEDBYUSER "--suspended-by-user"
+#define ECLOPT_DELETE_WORKUNIT "--delete-workunit"
 
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
@@ -437,6 +440,9 @@ public:
 public:
     StringAttr optQuerySet;
     StringAttr optQuery;
+    StringAttr optActivated;
+    bool optSuspendedByUser = false;
+    bool optDeleteWorkunit = false;
 };
 
 class EclCmdOptionsDFU
