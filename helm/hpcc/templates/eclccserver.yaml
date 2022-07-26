@@ -54,6 +54,7 @@ data:
       template:
         metadata:
           labels:
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclccserver" "name" "eclccserver" "instance" $compileJobName ) | indent 12 }}
             accessDali: "yes"
             accessEsp: "yes"
             helmVersion: 8.8.0-closedown0
@@ -137,6 +138,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclccserver" "name" "eclccserver" "instance" .name) | indent 8 }}
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}

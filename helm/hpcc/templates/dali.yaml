@@ -80,6 +80,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "dali" "name" "dali" "instance" $dali.name) | indent 8 }}
         run: {{ $dali.name | quote }}
         server: {{ $dali.name | quote }}
         app: dali
