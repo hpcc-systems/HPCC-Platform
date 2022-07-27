@@ -177,7 +177,6 @@ class WsWuInfo
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);
     void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, const char *outFileName);
-    void initWULogReader();
     void setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs);
     void getPostMortemFiles(IFile* file, unsigned& helpersCount, StringArray& postMortemFiles);
     void addPostMortemFiles(StringArray& postMortemFiles, IArrayOf<IEspECLHelpFile>& helpers);
@@ -201,9 +200,6 @@ public:
     {
         version = context.getClientVersion();
         wuid.set(cw->queryWuid());
-#ifdef _CONTAINERIZED
-        initWULogReader();
-#endif
     }
 
     WsWuInfo(IEspContext &ctx, const char *wuid_) :
@@ -215,10 +211,6 @@ public:
         cw.setown(factory->openWorkUnit(wuid_));
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
-
-#ifdef _CONTAINERIZED
-        initWULogReader();
-#endif
     }
 
     bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned long flags);
@@ -290,7 +282,6 @@ public:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
 protected:
     bool hasSubGraphTimings();
-    Owned<IRemoteLogAccess> m_remoteLogAccessor;
 
 public:
     IEspContext &context;

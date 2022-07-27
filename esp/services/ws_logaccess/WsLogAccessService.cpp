@@ -11,35 +11,15 @@ Cws_logaccessEx::~Cws_logaccessEx()
 bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessInfoRequest &req, IEspGetLogAccessInfoResponse &resp)
 {
     bool success = true;
-    if (m_remoteLogAccessor)
+    if (queryRemoteLogAccessor())
     {
-        resp.setRemoteLogManagerType(m_remoteLogAccessor->getRemoteLogAccessType());
-        resp.setRemoteLogManagerConnectionString(m_remoteLogAccessor->fetchConnectionStr());
+        resp.setRemoteLogManagerType(queryRemoteLogAccessor()->getRemoteLogAccessType());
+        resp.setRemoteLogManagerConnectionString(queryRemoteLogAccessor()->fetchConnectionStr());
     }
     else
         success = false;
 
     return success;
-}
-
-void Cws_logaccessEx::init(const IPropertyTree *cfg, const char *process, const char *service)
-{
-    LOG(MCdebugProgress,"WsLogAccessService loading remote log access plug-in...");
-
-    try
-    {
-        m_remoteLogAccessor.set(&queryRemoteLogAccessor());
-
-        if (m_remoteLogAccessor == nullptr)
-            LOG(MCerror,"WsLogAccessService could not load remote log access plugin!");
-    }
-    catch (IException * e)
-    {
-        StringBuffer msg;
-        e->errorMessage(msg);
-        LOG(MCoperatorWarning,"WsLogAccessService could not load remote log access plug-in: %s", msg.str());
-        e->Release();
-    }
 }
 
 LogAccessTimeRange requestedRangeToLARange(IConstTimeRange & reqrange)
@@ -195,7 +175,7 @@ ILogAccessFilter * buildBinaryLogFilter(IConstBinaryLogFilter * binaryfilter)
 
 bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, IEspGetLogsResponse & resp)
 {
-    if (!m_remoteLogAccessor)
+    if (!queryRemoteLogAccessor())
         throw makeStringException(-1, "WsLogAccess: Remote Log Access plug-in not available!");
 
     double version = context.getClientVersion();
@@ -296,7 +276,7 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
     }
     StringBuffer logcontent;
     LogQueryResultDetails LogQueryResultDetails;
-    m_remoteLogAccessor->fetchLog(LogQueryResultDetails, logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));
+    queryRemoteLogAccessor()->fetchLog(LogQueryResultDetails, logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));
 
     if (version >= 1.02)
     {
