@@ -4,9 +4,12 @@
  *  Keep in sync with themes.css
  */
 
-import { PartialTheme } from "@fluentui/react";
+import { createTheme, PartialTheme } from "@fluentui/react";
+import { BrandVariants, createDarkTheme, createLightTheme } from "@fluentui/react-components";
+import { createv8Theme } from "./theme-shims/v8ThemeShim";
+import { createv9Theme } from "./theme-shims/v9ThemeShim";
 
-export const lightTheme: PartialTheme = {
+const lightThemeOld: PartialTheme = {
     palette: {
         themePrimary: "#259ad6",
         themeLighterAlt: "#f5fbfd",
@@ -33,7 +36,7 @@ export const lightTheme: PartialTheme = {
     }
 };
 
-export const darkTheme: PartialTheme = {
+const darkThemeOld: PartialTheme = {
     palette: {
         themePrimary: "#ff8600",
         themeLighterAlt: "#0a0500",
@@ -59,3 +62,83 @@ export const darkTheme: PartialTheme = {
         white: "#000000",
     }
 };
+
+const brandWeb: BrandVariants = {
+    10: "#061724",
+    20: "#082338",
+    30: "#0a2e4a",
+    40: "#0c3b5e",
+    50: "#0e4775",
+    60: "#0f548c",
+    70: "#115ea3",
+    80: "#0f6cbd",
+    90: "#2886de",
+    100: "#479ef5",
+    110: "#62abf5",
+    120: "#77b7f7",
+    130: "#96c6fa",
+    140: "#b4d6fa",
+    150: "#cfe4fa",
+    160: "#ebf3fc",
+};
+
+const brandTeams: BrandVariants = {
+    10: "#2b2b40",
+    20: "#2f2f4a",
+    30: "#333357",
+    40: "#383966",
+    50: "#3d3e78",
+    60: "#444791",
+    70: "#4f52b2",
+    80: "#5b5fc7",
+    90: "#7579eb",
+    100: "#7f85f5",
+    110: "#9299f7",
+    120: "#aab1fa",
+    130: "#b6bcfa",
+    140: "#c5cbfa",
+    150: "#dce0fa",
+    160: "#e8ebfa",
+};
+
+const brandOffice: BrandVariants = {
+    10: "#29130b",
+    20: "#4d2415",
+    30: "#792000",
+    40: "#99482b",
+    50: "#a52c00",
+    60: "#c33400",
+    70: "#e06a3f",
+    80: "#d83b01",
+    90: "#dd4f1b",
+    100: "#fe7948",
+    110: "#ff865a",
+    120: "#ff9973",
+    130: "#e8825d",
+    140: "#ffb498",
+    150: "#f4beaa",
+    160: "#f9dcd1",
+};
+
+const brandMode: "web" | "teams" | "office" = "web";
+const brand = brandMode === "web" ? brandWeb : brandMode === "teams" ? brandTeams : brandOffice;
+
+namespace current {
+    export const lightTheme = createTheme(lightThemeOld, true);
+    export const darkTheme = createTheme(darkThemeOld, true);
+    export const lightThemeV9 = createv9Theme(lightTheme, createLightTheme(brand));
+    export const darkThemeV9 = createv9Theme(darkTheme, createDarkTheme(brand));
+}
+
+namespace next {
+    export const lightThemeV9 = createLightTheme(brand);
+    export const darkThemeV9 = createDarkTheme(brand);
+    export const lightTheme = createv8Theme(brand, lightThemeV9, current.lightTheme);
+    export const darkTheme = createv8Theme(brand, darkThemeV9, current.darkTheme);
+}
+
+const useNext = false;
+export const lightTheme = useNext ? next.lightTheme : current.lightTheme;
+export const darkTheme = useNext ? next.darkTheme : current.darkTheme;
+export const lightThemeV9 = useNext ? next.lightThemeV9 : current.lightThemeV9;
+export const darkThemeV9 = useNext ? next.darkThemeV9 : current.darkThemeV9;
