@@ -3,7 +3,7 @@
 {
 	"name": "C++",
 	"build": {
-		"dockerfile": "Dockerfile",
+		"dockerfile": "centos-7.dockerfile",
 		"args": {
 			"BASE_VER": "8.6"
 		}

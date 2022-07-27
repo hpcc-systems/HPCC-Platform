@@ -55,6 +55,7 @@ RUN yum install -y \
     java-11-openjdk-devel \
     sqlite-devel \
     libevent-devel \
+    libdb-devel \
     v8-devel 
 
 ARG GITHUB_ACTOR=hpcc-systems
