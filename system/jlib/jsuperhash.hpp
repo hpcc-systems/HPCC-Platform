@@ -73,7 +73,7 @@ protected:
     inline unsigned  doFind(const void * findParam) const
       { return doFind(getHashFromFindParam(findParam), findParam); }
 
-    unsigned firstIdx() const { return validIdx(0); }
+    unsigned firstIdx() const { return tablecount == 0 ? tablesize : validIdx(0); }
     unsigned validIdx(unsigned i) const;
 
 private:
