@@ -64,6 +64,10 @@
         },
         "openssl",
         {
+            "name": "openldap",
+            "platform": "!windows"
+        },
+        {
             "name": "python3",
             "platform": "windows"
         },

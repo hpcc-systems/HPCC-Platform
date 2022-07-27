@@ -34,7 +34,6 @@ RUN yum install -y \
     python3-devel \
     ncurses-devel \
     libmemcached-devel \
-    openldap-devel \
     numactl-devel \
     heimdal-devel \
     java-11-openjdk-devel \
