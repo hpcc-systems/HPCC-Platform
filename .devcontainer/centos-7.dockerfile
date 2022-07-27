@@ -56,6 +56,7 @@ RUN yum install -y \
     sqlite-devel \
     libevent-devel \
     libdb-devel \
+    libuuid-devel \
     v8-devel 
 
 ARG GITHUB_ACTOR=hpcc-systems

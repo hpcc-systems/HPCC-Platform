@@ -40,6 +40,7 @@ RUN yum install -y \
     sqlite-devel \
     libevent-devel \
     libdb-devel \
+    libuuid-devel \
     v8-devel
 
 RUN yum group install -y "Development Tools"

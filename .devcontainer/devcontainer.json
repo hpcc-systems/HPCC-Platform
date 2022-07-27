@@ -5,7 +5,8 @@
 	"build": {
 		"dockerfile": "centos-7.dockerfile",
 		"args": {
-			"BASE_VER": "8.6"
+			"GITHUB_ACTOR": "hpcc-systems",
+			"GITHUB_TOKEN": "none"
 		}
 	},
 	"runArgs": [
@@ -30,7 +31,7 @@
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "gcc -v",
-	"initializeCommand": "git submodule update --init --recursive"
+	// "initializeCommand": "git submodule update --init --recursive"
 	// Comment out this line to run as root instead.
 	// "remoteUser": "vscode"
 }
