@@ -339,7 +339,7 @@ public:
                 IPropertyTree *filePlane = dfsFile->queryCommonMeta()->queryPropTree(planeXPath);
                 assertex(filePlane);
                 const char *filePlanePrefix = filePlane->queryProp("@prefix");
-                if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("@hosts")) // otherwise assume url
+                if (isAbsolutePath(filePlanePrefix) && !filePlane->hasProp("hosts")) // otherwise assume url
                 {
 #ifndef _CONTAINERIZED
                     throw makeStringException(0, "Bare metal does not support remote file access to planes without hosts");
