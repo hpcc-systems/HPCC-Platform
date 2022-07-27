@@ -361,7 +361,7 @@ bundles: []
 # for example
 # - name: DataPatterns
 
-# A dafilsrv 'stream' service is required to expose HPCC file access to 3rd parties (e.g. Spark / Java)
+# A dafilesrv 'stream' service is required to expose HPCC file access to 3rd parties (e.g. Spark / Java)
 # Access will only be granted to requests that have been signed by the DFUFileAccess service
 dafilesrv:
 - name: rowservice
