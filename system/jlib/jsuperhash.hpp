@@ -30,6 +30,8 @@
 
 extern jlib_decl unsigned hashc( const unsigned char *k, unsigned length, unsigned initval);
 extern jlib_decl unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval);
+extern jlib_decl unsigned hashcz( const unsigned char *k, unsigned initval);
+extern jlib_decl unsigned hashncz( const unsigned char *k, unsigned initval);
 
 class jlib_decl SuperHashTable : public CInterface
 {
@@ -293,11 +295,11 @@ public:
     virtual unsigned getHashFromElement(const void *et) const
     {
         const char *str = ((const ET *) et)->queryFindString();
-        return hashc((const unsigned char *) str, (size32_t)strlen(str), 0);
+        return hashcz((const unsigned char *) str, 0);
     }
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
-        return hashc((const unsigned char *) fp, (size32_t)strlen((const char *)fp), 0);
+        return hashcz((const unsigned char *) fp, 0);
     }
     virtual const void *getFindParam(const void *et) const
     {
@@ -605,9 +607,9 @@ protected:
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
         if (nocase)
-            return hashnc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
+            return hashncz((const unsigned char *)fp, 0);
         else
-            return hashc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
+            return hashcz((const unsigned char *)fp, 0);
     }
 
     virtual const void *getFindParam(const void *e) const

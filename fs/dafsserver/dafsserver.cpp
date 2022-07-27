@@ -457,7 +457,7 @@ class CAsyncCommandManager
         }
         static unsigned getHash(const char *key)
         {
-            return hashc((const byte *)key,strlen(key),~0U);
+            return hashcz((const byte *)key,~0U);
         }
         static CAsyncJob* create(const char *key) { assertex(!"CAsyncJob::create not implemented"); return NULL; }
         unsigned hash;

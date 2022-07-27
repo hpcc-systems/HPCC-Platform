@@ -81,7 +81,7 @@ public:
 
     inline unsigned getHashFromFindParam(const void *fp) const
     {
-        return hashnc((const unsigned char *)fp, strlen((const char *)fp), 0);
+        return hashncz((const unsigned char *)fp, 0);
     }
 
     inline const void * getFindParam(const void *e) const

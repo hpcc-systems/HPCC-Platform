@@ -5155,7 +5155,7 @@ unsigned CHqlRealExpression::getCachedEclCRC()
             {
                 const char * nameText = str(name);
                 if ((nameText[0] != '_') || (nameText[1] != '_'))
-                    crc = hashnc((const byte *)nameText, strlen(nameText), crc);
+                    crc = hashncz((const byte *)nameText, crc);
             }
             IHqlExpression * record = queryRecord();
             if (record)
@@ -5174,7 +5174,7 @@ unsigned CHqlRealExpression::getCachedEclCRC()
             if (name == _uid_Atom || name == _volatileId_Atom)
                 return 0;
             const char * nameText = str(name);
-            crc = hashnc((const byte *)nameText, strlen(nameText), crc);
+            crc = hashncz((const byte *)nameText, crc);
             break;
         }
     case no_libraryscopeinstance:

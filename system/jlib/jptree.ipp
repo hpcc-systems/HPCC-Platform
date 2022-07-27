@@ -58,7 +58,7 @@ protected:
     virtual unsigned getHashFromElement(const void *e) const override;
     virtual unsigned getHashFromFindParam(const void *fp) const override
     {
-        return hashc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
+        return hashcz((const unsigned char *)fp, 0);
     }
     virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const override
     {
@@ -108,7 +108,7 @@ public:
 // SuperHashTable definitions
     virtual unsigned getHashFromFindParam(const void *fp) const override
     {
-        return hashnc((const unsigned char *)fp, (size32_t)strlen((const char *)fp), 0);
+        return hashncz((const unsigned char *)fp, 0);
     }
     virtual bool matchesFindParam(const void *e, const void *fp, unsigned fphash) const override
     {
@@ -347,7 +347,7 @@ struct AttrStrC : public AttrStrAtom
 {
     static inline unsigned getHash(const char *k)
     {
-        return hashc((const byte *)k, strlen(k), 17);
+        return hashcz((const byte *)k, 17);
     }
     inline bool eq(const char *k)
     {
@@ -364,7 +364,7 @@ struct AttrStrNC : public AttrStrAtom
 {
     static inline unsigned getHash(const char *k)
     {
-        return hashnc((const byte *)k, strlen(k), 17);
+        return hashncz((const byte *)k, 17);
     }
     inline bool eq(const char *k)
     {
