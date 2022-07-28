@@ -2995,7 +2995,7 @@ private:
         maxDetail = DefaultDetail;
         name.set(component); //logfile defaults to component name. Change via setName(), setPrefix() and setPostfix()
         extension.set(".log");
-        local = false;
+        local = true;
         createAlias = true;
     }
 
