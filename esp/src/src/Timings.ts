@@ -38,7 +38,7 @@ export class WUTimelinePatched extends WUTimeline {
         this._gantt["_series_idx"] = -1;
         this.strokeWidth(0);
         this.tooltipHTML(d => {
-            return d[d.length - 1].calcTooltip(); 
+            return d[d.length - 1].calcTooltip();
         });
     }
 
@@ -273,6 +273,9 @@ export class Timings {
                                     break;
                                 case "cnt":
                                     props[scopeProperty.Name] = +scopeProperty.RawValue;
+                                    break;
+                                case "cost":
+                                    props[scopeProperty.Name] = +scopeProperty.RawValue / 1000000;
                                     break;
                                 case "cpu":
                                 case "skw":
