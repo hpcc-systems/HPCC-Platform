@@ -196,7 +196,7 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
                 .render()
                 ;
         });
-    }, [idx, items, theme]);
+    }, [idx, items, theme, themeV9]);
 
     return <AutosizeHpccJSComponent widget={dockPanel} padding={4} debounce={false} />;
 };
