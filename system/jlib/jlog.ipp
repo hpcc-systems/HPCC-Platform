@@ -444,6 +444,7 @@ protected:
     FILE *                    handle;
     unsigned                  messageFields;
     mutable CriticalSection   crit;
+    StringBuffer              curMsgText;
 };
 
 class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
@@ -451,7 +452,7 @@ class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
 public:
     HandleLogMsgHandlerXML(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintXML(handle, messageFields); }
+    void                      handleMessage(const LogMsg & msg);
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
@@ -462,7 +463,7 @@ class HandleLogMsgHandlerTable : implements HandleLogMsgHandler, public CInterfa
 public:
     HandleLogMsgHandlerTable(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields), prepped(false) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintTable(handle, messageFields); }
+    void                      handleMessage(const LogMsg & msg);
     bool                      needsPrep() const { return !prepped; }
     void                      prep() { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
     void                      addToPTree(IPropertyTree * tree) const;
@@ -493,6 +494,7 @@ protected:
     bool                      append;
     bool                      flushes;
     mutable CriticalSection   crit;
+    StringBuffer              curMsgText;
 };
 
 class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface
@@ -500,7 +502,7 @@ class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerXML(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintXML(handle, messageFields); if(flushes) fflush(handle); }
+    void                      handleMessage(const LogMsg & msg);
     bool                      needsPrep() const { return false; }
     void                      prep() {}
     void                      addToPTree(IPropertyTree * tree) const;
@@ -511,7 +513,7 @@ class FileLogMsgHandlerTable : implements FileLogMsgHandler, public CInterface
 public:
     FileLogMsgHandlerTable(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes), prepped(false) {}
     IMPLEMENT_IINTERFACE;
-    void                      handleMessage(const LogMsg & msg) { CriticalBlock block(crit); msg.fprintTable(handle, messageFields); if(flushes) fflush(handle); }
+    void                      handleMessage(const LogMsg & msg);
     bool                      needsPrep() const { return !prepped; }
     void                      prep() { CriticalBlock block(crit); LogMsg::fprintTableHead(handle, messageFields); prepped = true; }
     void                      addToPTree(IPropertyTree * tree) const;
@@ -542,6 +544,7 @@ protected:
     StringAttr filebase;
     mutable StringBuffer filename;
     mutable CriticalSection crit;
+    StringBuffer curMsgText;
     const unsigned maxLinesToKeep = 0;
     unsigned messageFields = MSGFIELD_all;
     unsigned linesInCurrent = 0;
@@ -566,9 +569,10 @@ public:
             printHeader = false;
         }
         if (currentLogFields)  // If appending to existing log file, use same format as existing
-            msg.fprintTable(handle, currentLogFields);
+            msg.toStringTable(curMsgText.clear(), currentLogFields);
         else
-            msg.fprintTable(handle, messageFields);
+            msg.toStringTable(curMsgText.clear(), messageFields);
+        fputs(curMsgText.str(), handle);
 
         if(flushes) fflush(handle);
     }
@@ -591,6 +595,7 @@ protected:
     StringAttr                filebase;
     StringAttr                fileextn;
     mutable StringBuffer      filename;
+    StringBuffer              curMsgText;
     bool                      append;
     bool                      flushes;
     mutable CriticalSection   crit;
