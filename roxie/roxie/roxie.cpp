@@ -51,6 +51,9 @@ roxie:
   localSlave: true
   numChannels: 1
   queueNames: roxie.roxie
+  logging:
+    detail: 50
+    queueDrop: 32
 )!!";
 
 int main(int argc, const char *argv[])
