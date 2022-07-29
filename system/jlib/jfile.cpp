@@ -1996,11 +1996,20 @@ void CFileIO::flush()
 
 offset_t CFileIO::size()
 {
+#ifndef _WIN32
+    //MORE: The current implementation of openHandle() calls fstat() to check the file is not a directory
+    //If the file hasn't been modified since open() the size could be cached and returned.
+    struct stat info;
+    if (fstat(file, &info) >= 0)
+        return info.st_size;
+    return 0;
+#else
     CriticalBlock procedure(cs);
     offset_t savedPos = lseek(file,0,SEEK_CUR);
     offset_t length = lseek(file,0,SEEK_END);
     setPos(savedPos);
     return length;
+#endif
 }
 
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
