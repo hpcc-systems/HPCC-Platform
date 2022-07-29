@@ -14331,21 +14331,28 @@ bool isActiveK8sService(const char *serviceName)
     return (output.length() && output.charAt(0) != '\n');
 }
 
-void deleteK8sResource(const char *componentName, const char *job, const char *resource)
+void deleteK8sResource(const char *componentName, const char *resourceType, const char *job)
 {
-    VStringBuffer jobname("%s-%s", componentName, job);
-    jobname.toLowerCase();
-    VStringBuffer deleteResource("kubectl delete %s/%s", resource, jobname.str());
+    VStringBuffer resourceName("%s-%s-%s", componentName, resourceType, job);
+    resourceName.toLowerCase();
+    VStringBuffer deleteResource("kubectl delete %s/%s", resourceType, resourceName.str());
     runKubectlCommand(componentName, deleteResource, nullptr, nullptr);
+
+    // have to assume command succeeded (if didn't throw exception)
+    // NB: file will only exist if autoCleanup used (it's okay not to exist)
+    StringBuffer jobName(job);
+    jobName.toLowerCase();
+    VStringBuffer k8sResourcesFilename("%s,%s,%s.k8s", componentName, resourceType, jobName.str());
+    remove(k8sResourcesFilename);
 }
 
-void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob)
+void waitK8sJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob)
 {
-    VStringBuffer jobname("%s-%s", componentName, job);
-    jobname.toLowerCase();
-    VStringBuffer waitJob("kubectl get jobs %s -o jsonpath={.status.active}", jobname.str());
-    VStringBuffer getScheduleStatus("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.conditions[?(@.type=='PodScheduled')].status}", jobname.str());
-    VStringBuffer checkJobExitCode("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.containerStatuses[?(@.name==\"%s\")].state.terminated.exitCode}", jobname.str(), jobname.str());
+    VStringBuffer jobName("%s-%s-%s", componentName, resourceType, job);
+    jobName.toLowerCase();
+    VStringBuffer waitJob("kubectl get jobs %s -o jsonpath={.status.active}", jobName.str());
+    VStringBuffer getScheduleStatus("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.conditions[?(@.type=='PodScheduled')].status}", jobName.str());
+    VStringBuffer checkJobExitCode("kubectl get pods --selector=job-name=%s --output=jsonpath={.items[*].status.containerStatuses[?(@.name==\"%s\")].state.terminated.exitCode}", jobName.str(), jobName.str());
 
     unsigned delay = 100;
     unsigned start = msTick();
@@ -14364,7 +14371,7 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
                 DBGLOG("kubectl jobs output: %s", output.str());
                 runKubectlCommand(componentName, checkJobExitCode, nullptr, &output.clear());
                 if (output.length() && !streq(output, "0"))  // state.terminated.exitCode
-                    throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobname.str(), output.str());
+                    throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobName.str(), output.str());
                 break;
             }
             runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
@@ -14375,9 +14382,9 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
             if (pendingTimeoutSecs && pending && msTick()-start > pendingTimeoutSecs*1000)
             {
                 schedulingTimeout = true;
-                VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobname.str());
+                VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobName.str());
                 runKubectlCommand(componentName, getReason, nullptr, &output.clear());
-                throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobname.str(), pendingTimeoutSecs, output.str());
+                throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobName.str(), pendingTimeoutSecs, output.str());
             }
             MilliSleep(delay);
             if (delay < 10000)
@@ -14393,17 +14400,17 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
     {
         // Delete jobs unless the pod failed and keepJob==podfailures
         if ((nullptr == exception) || (KeepK8sJobs::podfailures != keepJob) || schedulingTimeout)
-            deleteK8sResource(componentName, job, "job");
+            deleteK8sResource(componentName, "job", job);
     }
     if (exception)
         throw exception.getClear();
 }
 
-bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *suffix, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional)
+bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup)
 {
-    StringBuffer jobname(job);
-    jobname.toLowerCase();
-    VStringBuffer jobSpecFilename("/etc/config/%s-%s.yaml", componentName, suffix);
+    StringBuffer jobName(job);
+    jobName.toLowerCase();
+    VStringBuffer jobSpecFilename("/etc/config/%s-%s.yaml", componentName, resourceType);
     StringBuffer jobYaml;
     try
     {
@@ -14416,12 +14423,12 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
         E->Release();
         return false;
     }
-    jobYaml.replaceString("_HPCC_JOBNAME_", jobname.str());
+    jobYaml.replaceString("_HPCC_JOBNAME_", jobName.str());
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     for (const auto &p: extraParams)
     {
-        if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // jobspec substituion
+        if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // job yaml substitution
             jobYaml.replaceString(p.first.c_str(), p.second.c_str());
         else
             args.append(" \"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
@@ -14447,22 +14454,32 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
 #endif
 
     runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr);
+
+    if (autoCleanup)
+    {
+        // touch a file, with naming convention { componentName },{ resourceType },{ jobName }.k8s
+        // it will be used if the job fails ungracefully, to tidy up leaked resources
+        // normally (during graceful cleanup) these resources and files will be deleted by deleteK8sResource
+        VStringBuffer k8sResourcesFilename("%s,%s,%s.k8s", componentName, resourceType, jobName.str());
+        touchFile(k8sResourcesFilename);
+    }
+
     return true;
 }
 
 static constexpr unsigned defaultPendingTimeSecs = 600;
-void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)
+void runK8sJob(const char *componentName, const char *wuid, const char *jobName, const std::list<std::pair<std::string, std::string>> &extraParams)
 {
     Owned<IPropertyTree> compConfig = getComponentConfig();
     KeepK8sJobs keepJob = translateKeepJobs(compConfig->queryProp("@keepJobs"));
     unsigned pendingTimeoutSecs = compConfig->getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
 
-    bool removeNetwork = applyK8sYaml(componentName, wuid, job, "networkspec", extraParams, true);
-    applyK8sYaml(componentName, wuid, job, "jobspec", extraParams, false);
+    bool removeNetwork = applyK8sYaml(componentName, wuid, jobName, "networkpolicy", extraParams, true, true);
+    applyK8sYaml(componentName, wuid, jobName, "job", extraParams, false, KeepK8sJobs::none == keepJob);
     Owned<IException> exception;
     try
     {
-        waitK8sJob(componentName, job, pendingTimeoutSecs, keepJob);
+        waitK8sJob(componentName, "job", jobName, pendingTimeoutSecs, keepJob);
     }
     catch (IException *e)
     {
@@ -14470,10 +14487,7 @@ void runK8sJob(const char *componentName, const char *wuid, const char *job, con
         exception.setown(e);        
     }
     if (removeNetwork)
-    {
-        VStringBuffer npname("%s-networkpolicy", componentName);
-        deleteK8sResource(npname, job, "networkpolicy");
-    }
+        deleteK8sResource(componentName, "networkpolicy", jobName);
     if (exception)
         throw exception.getClear();
 }

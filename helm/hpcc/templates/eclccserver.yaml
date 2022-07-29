@@ -26,7 +26,7 @@ EclccServer configmap
 Pass in dict with root and me
 */}}
 {{- define "hpcc.eclccServerConfigMap" -}}
-{{- $compileJobName := printf "compile-_HPCC_JOBNAME_" }}
+{{- $compileJobName := printf "compile-job-_HPCC_JOBNAME_" }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
@@ -44,7 +44,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}
 {{- $misc := .root.Values.global.misc | default dict }}
-  compile-jobspec.yaml:
+  compile-job.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:

@@ -4310,6 +4310,13 @@ IFile * createIFile(const char * filename)
 #endif
 }
 
+void touchFile(const char *filename)
+{
+    Owned<IFile> iFile = createIFile(filename);
+    Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+    if (!iFileIO)
+        throw makeStringExceptionV(0, "touchFile: failed to create file %s", filename);
+}
 
 IFileIOStream * createIOStream(IFileIO * file)
 {

@@ -221,7 +221,8 @@ public:
         stop();
         if (watchdog)
             watchdog->stop();
-        shutdown();
+        if (clusterInitialized())
+            shutdown();
         status->Release();
     }
     static CRegistryServer *getRegistryServer()
@@ -918,8 +919,9 @@ int main( int argc, const char *argv[]  )
 
     StringBuffer queueName;
 #ifdef _CONTAINERIZED
-    bool removeK8sNetwork = false;
     StringBuffer cloudJobName;
+    bool workerNSInstalled = false;
+    bool workerJobInstalled = false;
 #else
     SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
@@ -947,6 +949,7 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numWorkers = 0;
+        bool doWorkerRegistration = false;
 #ifdef _CONTAINERIZED
         LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
         thorJob.setJobID(thorJobId);
@@ -986,8 +989,14 @@ int main( int argc, const char *argv[]  )
         StringBuffer myEp;
         queryMyNode()->endpoint().getUrlStr(myEp);
 
-        removeK8sNetwork = applyK8sYaml("thorworker", workunit, cloudJobName, "networkspec", { }, true);
-        applyK8sYaml("thorworker", workunit, cloudJobName, "jobspec", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false);
+        workerNSInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "networkpolicy", { }, false, true);
+        if (workerNSInstalled)
+        {
+            KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+            workerJobInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "job", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false, KeepK8sJobs::none == keepJob);
+            if (workerJobInstalled)
+                doWorkerRegistration = true;
+        }
 #else
         StringBuffer thorEpStr;
         LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
@@ -997,9 +1006,10 @@ int main( int argc, const char *argv[]  )
         Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
         setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
         numWorkers = queryNodeClusterWidth();
+        doWorkerRegistration = true;
 #endif
 
-        if (registry->connect(numWorkers))
+        if (doWorkerRegistration && registry->connect(numWorkers))
         {
             if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
             {
@@ -1086,30 +1096,42 @@ int main( int argc, const char *argv[]  )
 #ifdef _CONTAINERIZED
     if (!cloudJobName.isEmpty())
     {
-        try
+        if (workerJobInstalled)
         {
-            KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
-            if (keepJob != KeepK8sJobs::all)
+            try
             {
-                // Delete jobs unless the pod failed and keepJob==podfailures
-                if ((nullptr == exception) || (KeepK8sJobs::podfailures != keepJob))
-                    deleteK8sResource("thorworker", cloudJobName, "job");
+                KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+                switch (keepJob)
+                {
+                    case KeepK8sJobs::all:
+                        // do nothing
+                        break;
+                    case KeepK8sJobs::podfailures:
+                        if (nullptr == exception)
+                            deleteK8sResource("thorworker", "job", cloudJobName);
+                        break;
+                    case KeepK8sJobs::none:
+                        deleteK8sResource("thorworker", "job", cloudJobName);
+                        break;
+                }
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e);
+                e->Release();
             }
         }
-        catch (IException *e)
+        if (workerNSInstalled)
         {
-            EXCLOG(e);
-            e->Release();
-        }
-        try
-        {
-            if (removeK8sNetwork)
-                deleteK8sResource("thorworker-networkpolicy", cloudJobName, "networkpolicy");
-        }
-        catch (IException *e)
-        {
-            EXCLOG(e);
-            e->Release();
+            try
+            {
+                deleteK8sResource("thorworker", cloudJobName, "networkpolicy");
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e);
+                e->Release();
+            }
         }
     }
     setExitCode(0);
