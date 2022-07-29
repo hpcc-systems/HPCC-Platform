@@ -149,6 +149,7 @@ public:
         hdr->version = KEYBUILD_VERSION;
         hdr->blobHead = 0;
         hdr->metadataHead = 0;
+        hdr->firstLeaf = 0;
 
         keyHdr->write(out, &headCRC);  // Reserve space for the header - we may seek back and write it properly later
 
@@ -454,6 +455,7 @@ protected:
         records++;
         if (NULL == activeNode)
         {
+            keyHdr->getHdrStruct()->firstLeaf = nextPos;
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
         }
