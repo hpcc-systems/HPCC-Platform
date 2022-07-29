@@ -491,6 +491,7 @@ int main(int argc, const char* argv[])
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
             lf->setLogDirSubdir("server");//add to tail of config log dir
             lf->setName("DaServer");//override default filename
+            lf->setLocal(true); //only messages from this process should be sent to the server log file
             fileMsgHandler = lf->beginLogging();
         }
 #else
@@ -713,6 +714,7 @@ int main(int argc, const char* argv[])
             lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_code | MSGFIELD_job);
             lf->setMsgAudiences(MSGAUD_audit);
             lf->setMaxDetail(TopDetail);
+            lf->setLocal(false); // include messages from all connected components
             lf->beginLogging();
             auditDir.set(lf->queryLogDir());
         }
