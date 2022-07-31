@@ -32,16 +32,3 @@ VARSTRING k8sKey := (VARSTRING) getSecret('k8s-example', 'crypt.key');
 k8sEncModule := Std.Crypto.PKEncryptionFromBuffer('RSA', pubKey, k8sKey);
 
 output( (STRING)k8sEncModule.Decrypt(k8sData), named('k8s_message'));
-
-
-
-//--------------
-//Vault Example
-//--------------
-
-DATA vaultData := x'227ACC7749A442CFBA6404AD59304DD608E3D1544B293221FA0A9E44AAAD272A3EEFF15387ABB54F1F375D35C034BB03623A5100942764356046DDDBA9963F7DDF1B7FED431769815F02BA2FDB4D1ECE7E5835FA392AB7FE5292979F80B469A062750F79039633CA60EDE01D292ED4B364C1BA7E8F1301F5DB33883872945A70';
-VARSTRING vaultKey := (VARSTRING) getSecret('vault-example', 'crypt.key');
-
-vaultEncModule := Std.Crypto.PKEncryptionFromBuffer('RSA', pubKey, vaultKey);
-
-output( (STRING)vaultEncModule.Decrypt(vaultData), named('vault_message'));
