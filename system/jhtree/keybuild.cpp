@@ -414,15 +414,21 @@ protected:
             toXML(metadata, metaXML);
             writeMetadata(metaXML.str(), metaXML.length());
         }
-        ForEachItemIn(idx, bloomBuilders)
+
+        //Avoid creating any bloom filters if we only have single leaf node of search entries...
+        if (levels > 0)
         {
-            IBloomBuilder &bloomBuilder = bloomBuilders.item(idx);
-            if (bloomBuilder.valid())
+            ForEachItemIn(idx, bloomBuilders)
             {
-                Owned<const BloomFilter> filter = bloomBuilder.build();
-                writeBloomFilter(*filter, rowHashers.item(idx).queryFields());
+                IBloomBuilder &bloomBuilder = bloomBuilders.item(idx);
+                if (bloomBuilder.valid())
+                {
+                    Owned<const BloomFilter> filter = bloomBuilder.build();
+                    writeBloomFilter(*filter, rowHashers.item(idx).queryFields());
+                }
             }
         }
+
         keyHdr->getHdrStruct()->partitionFieldMask = partitionFieldMask;
         CRC32 headerCrc;
         writeFileHeader(false, &headerCrc);
