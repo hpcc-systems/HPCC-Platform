@@ -316,44 +316,34 @@ protected:
     std::mutex metricVectorMutex;
 };
 
+jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
+                                                                         const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
+                                                                         const MetricMetaData &metaData = MetricMetaData());
 
 //
 // Convenience function templates to create metrics and add to the manager
 template <typename T>
 std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
 {
-    std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc, units, metaData);
+    //
+    // std::make_shared is not used so that there are separate memory allocations for the object (metric) and the shared pointer control structure. This ensures
+    // the vmt for the control structure does not live in memory allocated by a shared object (dll) that could be unloaded. If make_shared is used and a shared
+    // object is unloaded, the vmt is also deleted which causes unpredictable results during weak pointer access.
+    std::shared_ptr<T> pMetric = std::shared_ptr<T>(new T(name, desc, units, metaData));
     queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
-
-
-inline std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
-{
-    return createMetricAndAddToManager<CounterMetric>(name, desc, units, metaData);
-}
-
-
-inline std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
-{
-    return createMetricAndAddToManager<GaugeMetric>(name, desc, units, metaData);
-}
-
-
-inline std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
-                                                                                const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
-                                                                                const MetricMetaData &metaData = MetricMetaData())
-{
-    std::shared_ptr<GaugeMetricFromCounters> pMetric = std::make_shared<GaugeMetricFromCounters>(name, desc, units, pBeginCounter, pEndCounter, metaData);
-    queryMetricsManager().addMetric(pMetric);
-    return pMetric;
-}
-
 
 template <typename T>
 std::shared_ptr<CustomMetric<T>> registerCustomMetric(const char *name, const char *desc, MetricType metricType, T &value, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
 {
-    std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value, units, metaData);
+    //
+    // std::make_shared is not used so that there are separate memory allocations for the object (metric) and the shared pointer control structure. This ensures
+    // the vmt for the control structure does not live in memory allocated by a shared object (dll) that could be unloaded. If make_shared is used and a shared
+    // object is unloaded, the vmt is also deleted which causes unpredictable results during weak pointer access.
+    std::shared_ptr<CustomMetric<T>> pMetric = std::shared_ptr<CustomMetric<T>>(new CustomMetric<T>(name, desc, metricType, value, units, metaData));
     queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }

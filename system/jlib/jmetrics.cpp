@@ -304,3 +304,29 @@ void PeriodicMetricSink::doStopCollecting()
     collectThread.join();
     collectingHasStopped();
 }
+
+
+std::shared_ptr<CounterMetric> hpccMetrics::registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData)
+{
+    return createMetricAndAddToManager<CounterMetric>(name, desc, units, metaData);
+}
+
+
+std::shared_ptr<GaugeMetric> hpccMetrics::registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData)
+{
+    return createMetricAndAddToManager<GaugeMetric>(name, desc, units, metaData);
+}
+
+
+std::shared_ptr<GaugeMetricFromCounters> hpccMetrics::registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
+                                                                         const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
+                                                                         const MetricMetaData &metaData)
+{
+    //
+    // std::make_shared is not used so that there are separate memory allocations for the object (metric) and the shared pointer control structure. This ensures
+    // the vmt for the control structure does not live in memory allocated by a shared object (dll) that could be unloaded. If make_shared is used and a shared
+    // object is unloaded, the vmt is also deleted which causes unpredictable results during weak pointer access.
+    std::shared_ptr<GaugeMetricFromCounters> pMetric = std::shared_ptr<GaugeMetricFromCounters>(new GaugeMetricFromCounters(name, desc, units, pBeginCounter, pEndCounter, metaData));
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
