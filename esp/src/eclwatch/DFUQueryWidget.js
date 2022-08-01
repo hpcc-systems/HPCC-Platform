@@ -384,6 +384,8 @@ define([
                     retVal.ContentType = "key";
                     retVal.InvertContent = true;
                 }
+            } else if (retVal.Indexes) {
+                retVal.ContentType = "key";
             }
             delete retVal.LogicalFiles;
             delete retVal.SuperFiles;
