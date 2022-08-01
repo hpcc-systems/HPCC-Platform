@@ -1094,7 +1094,13 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     KeyHdr hdr;
     if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
         throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
+
+#ifdef _DEBUG
+    //In debug mode always use the trailing header if it is available to ensure that code path is tested
     if (hdr.ktype & USE_TRAILING_HEADER)
+#else
+    if (hdr.ktype & TRAILING_HEADER_ONLY)
+#endif
     {
         _WINREV(hdr.nodeSize);
         if (!io->read(io->size() - hdr.nodeSize, sizeof(hdr), &hdr))
