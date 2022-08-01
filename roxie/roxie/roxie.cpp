@@ -52,7 +52,6 @@ roxie:
   numChannels: 1
   queueNames: roxie.roxie
   logging:
-    detail: 50
     queueDrop: 32
 )!!";
 
