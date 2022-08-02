@@ -1,8 +1,9 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, Dropdown, IDropdownOption, PrimaryButton, Stack, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsPackageMaps from "src/WsPackageMaps";
+import { TypedDropdownOption } from "../PackageMaps";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../layouts/MessageBox";
 
@@ -32,8 +33,8 @@ interface AddPackageMapProps {
     showForm: boolean;
     setShowForm: (_: boolean) => void;
     refreshData: (_: boolean) => void;
-    processes: IDropdownOption[];
-    targets: IDropdownOption[];
+    processes: TypedDropdownOption[];
+    targets: TypedDropdownOption[];
 }
 
 export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
@@ -76,8 +77,12 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
     }, [closeForm, handleSubmit, refreshData, reset]);
 
     React.useEffect(() => {
-        reset({ ...defaultValues, Target: "*", Process: "*" });
-    }, [reset]);
+        reset({
+            ...defaultValues,
+            Target: targets?.filter(target => target.type === "roxie")[0]?.key as string ?? "*",
+            Process: processes?.filter(target => target.type === "roxie")[0]?.key as string ?? "*"
+        });
+    }, [processes, reset, targets]);
 
     return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm} minWidth={500}
         footer={<>

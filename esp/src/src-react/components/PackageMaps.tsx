@@ -79,6 +79,8 @@ const validateResponseToText = (response): string => {
     return text;
 };
 
+export type TypedDropdownOption = IDropdownOption & { type?: string };
+
 export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     filter = emptyFilter,
     store,
@@ -87,8 +89,8 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
-    const [targets, setTargets] = React.useState<IDropdownOption[]>();
-    const [processes, setProcesses] = React.useState<IDropdownOption[]>();
+    const [targets, setTargets] = React.useState<TypedDropdownOption[]>();
+    const [processes, setProcesses] = React.useState<TypedDropdownOption[]>();
     const [activeMapTarget, setActiveMapTarget] = React.useState("");
     const [activeMapProcess, setActiveMapProcess] = React.useState("");
     const [contentsTarget, setContentsTarget] = React.useState("");
@@ -360,15 +362,15 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 setProcessFilters(ProcessFilters?.Item.map(item => {
                     return { key: item, text: item };
                 }));
-                const _targets = [{ key: "*", text: "ANY" }];
-                const _processes = [{ key: "*", text: "ANY" }];
+                const _targets: TypedDropdownOption[] = [{ key: "*", text: "ANY" }];
+                const _processes: TypedDropdownOption[] = [{ key: "*", text: "ANY" }];
                 Targets?.TargetData.map(target => {
                     if (_targets.filter(t => t.key === target.Type).length === 0) {
-                        _targets.push({ key: target.Type, text: target.Type });
+                        _targets.push({ key: target.Type, text: target.Type, type: target.Type });
                     }
                     target?.Processes?.Item.map(item => {
                         if (_processes.filter(p => p.key === item).length === 0) {
-                            _processes.push({ key: item, text: item });
+                            _processes.push({ key: item, text: item, type: target.Type });
                         }
                     });
                 });
