@@ -769,12 +769,12 @@ unsigned CStringTypeInfo::getCrc()
     {
         const char * name = str(charset->queryName());
         //MORE: This and following should really be case insensitive, but we get away with it at the moment because the atoms are created very early
-        crc = hashc((const byte *)name, (size32_t)strlen(name), crc);
+        crc = hashcz((const byte *)name, crc);
     }
     if (collation)
     {
         const char * name = str(collation->queryName());
-        crc = hashc((const byte *)name, (size32_t)strlen(name), crc);
+        crc = hashcz((const byte *)name, crc);
     }
     return crc;
 }

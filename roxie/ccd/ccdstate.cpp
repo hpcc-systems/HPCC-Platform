@@ -458,7 +458,7 @@ protected:
     // Use dali to resolve subfile into physical file info
     static IResolvedFile *resolveLFNusingDaliOrLocal(const char *fileName, bool useCache, bool cacheResult, AccessMode accessMode, bool alwaysCreate, bool resolveLocal, bool isPrivilegedUser)
     {
-        unsigned hash = hashc((const unsigned char *) fileName, strlen(fileName), 0x811C9DC5);
+        unsigned hash = hashcz((const unsigned char *) fileName, 0x811C9DC5);
         CriticalBlock b(daliLookupCrits[hash % NUM_DALI_CRITS]);
         // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
         if (traceLevel > 9)

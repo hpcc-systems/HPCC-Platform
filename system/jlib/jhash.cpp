@@ -66,9 +66,12 @@ MODULE_EXIT()
 
 #define HASHONE(hash, c)        { hash *= 0x01000193; hash ^= c; }      // Fowler/Noll/Vo Hash... seems to work pretty well, and fast
 
+//Following is potentially quicker, but not tested
+//#define HASHONE(hash, c)        { hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24); hash ^= c; }
+
 unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
 {
-    unsigned hash = initval;        // ^_rotl(length,2)??
+    unsigned hash = initval;
     unsigned char c;
     while (length >= 8)
     {
@@ -87,6 +90,19 @@ unsigned hashc( const unsigned char *k, unsigned length, unsigned initval)
     case 3: c = (*k++); HASHONE(hash, c); // fallthrough
     case 2: c = (*k++); HASHONE(hash, c); // fallthrough
     case 1: c = (*k++); HASHONE(hash, c);
+    }
+    return hash;
+}
+
+unsigned hashcz( const unsigned char *k, unsigned initval)
+{
+    unsigned hash = initval;
+    for (;;)
+    {
+        unsigned char c = (*k++);
+        if (c == 0)
+            break;
+        HASHONE(hash, c);
     }
     return hash;
 }
@@ -149,6 +165,20 @@ unsigned hashnc( const unsigned char *k, unsigned length, unsigned initval)
     return hash;
 }
 
+
+unsigned hashncz( const unsigned char *k, unsigned initval)
+{
+    unsigned hash = initval;
+    for (;;)
+    {
+        unsigned char c = (*k++);
+        if (c == 0)
+            break;
+        c = c & 0xdf;
+        HASHONE(hash, c);
+    }
+    return hash;
+}
 
 MappingKey::MappingKey(const void * inKey, int keysize)
 {
@@ -288,11 +318,10 @@ unsigned HashTable::hash(const void *key, int ksize) const
         bp -= ksize;
       }
       unsigned char* ks = bp;
-      while (*bp) bp++;
       if (ignorecase)
-        h = hashnc(ks,(size32_t)(bp-ks),h);
+        h = hashncz(ks,h);
       else
-        h = hashc(ks,(size32_t)(bp-ks),h);
+        h = hashcz(ks,h);
    }
    else
    {
