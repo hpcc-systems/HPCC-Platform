@@ -796,7 +796,7 @@ private:
 class DropLogMsg : public LogMsg
 {
 public:
-    DropLogMsg(CLogMsgManager * owner, LogMsgId id, unsigned _count) : LogMsg(dropWarningCategory, id, unknownJob, NoLogMsgCode, "MISSING LOG MESSAGES: ", 0, owner->port, owner->session), count(_count)
+    DropLogMsg(CLogMsgManager * owner, LogMsgId id, unsigned _count) : LogMsg(dropWarningCategory, id, unknownJob, NoLogMsgCode, "MISSING LOG MESSAGES: ", owner->port, owner->session), count(_count)
     {
         text.append("message queue length exceeded, dropped ").append(count).append(" messages");
     }
