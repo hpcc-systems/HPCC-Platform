@@ -71,6 +71,7 @@ protected:
     bool getNextRow(MemoryBuffer & out, bool extractRow);
     void resetCursor();
     void translateKeyedValues(byte * row);
+    IKeyIndex * queryTLK();
 
 protected:
     StringAttr logicalName;
@@ -87,7 +88,7 @@ protected:
     unsigned keyedSize = 0;
     UnsignedArray keyedOffsets;
     TypeInfoArray keyedTypes;
-    Owned<IKeyIndex> tlk;
+    Owned<IKeyIndex> cachedTLK;
     Owned<IKeyManager> manager;
     Owned<IKeyIndex> curPart;
     int curPartIndex = 0;
