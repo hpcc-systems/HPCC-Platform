@@ -27,9 +27,11 @@
 IF (NOT OPENLDAP_FOUND)
   IF (WIN32)
     SET (ldap_dll "wldap32")
+    SET (lber_dll "netapi32")
     SET (ldap_inc "Winldap.h")
   ELSE()
-    SET (ldap_dll "ldap_r")
+    SET (ldap_dll "ldap")
+    SET (lber_dll "lber")
     SET (ldap_inc "ldap.h")
   ENDIF()
 
@@ -59,24 +61,12 @@ IF (NOT OPENLDAP_FOUND)
   ENDIF()
 
   # if we didn't find in externals, look in system include path
-  if (USE_NATIVE_LIBRARIES)
-    FIND_PATH (OPENLDAP_INCLUDE_DIR NAMES ${ldap_inc})
-    FIND_LIBRARY (OPENLDAP_LIBRARIES NAMES ${ldap_dll})
-  endif()
+  FIND_PATH (OPENLDAP_INCLUDE_DIR NAMES ${ldap_inc})
+  FIND_LIBRARY (LDAP_LIBRARY ${ldap_dll})
+  FIND_LIBRARY (LBER_LIBRARY ${lber_dll})
 
   include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(OpenLDAP DEFAULT_MSG
-    OPENLDAP_LIBRARIES
-    OPENLDAP_INCLUDE_DIR
-  )
-  IF (OPENLDAP_FOUND)
-    IF (UNIX)
-      STRING(REPLACE "ldap_r" "lber" OPENLDAP_EXTRA "${OPENLDAP_LIBRARIES}")
-      set (OPENLDAP_LIBRARIES ${OPENLDAP_LIBRARIES} ${OPENLDAP_EXTRA} )
-    ELSE()
-      set (OPENLDAP_LIBRARIES ${OPENLDAP_LIBRARIES} netapi32 )
-    ENDIF()
-  ENDIF()
-
-  MARK_AS_ADVANCED(OPENLDAP_INCLUDE_DIR OPENLDAP_LIBRARIES)
+  find_package_handle_standard_args(OPENLDAP DEFAULT_MSG OPENLDAP_INCLUDE_DIR LDAP_LIBRARY LBER_LIBRARY)
+  set(OPENLDAP_LIBRARIES ${LDAP_LIBRARY} ${LBER_LIBRARY})
+  mark_as_advanced(OPENLDAP_INCLUDE_DIR OPENLDAP_LIBRARIES LDAP_LIBRARY LBER_LIBRARY)
 ENDIF()
