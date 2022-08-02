@@ -617,21 +617,29 @@ void CMessageCollator::collate(DataBuffer *dataBuff)
     PUID puid = GETPUID(dataBuff);
     // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
     PackageSequencer *pkSqncr = mapping.getValue(puid);
+    bool isNew = false;
     if (!pkSqncr)
     {
         pkSqncr = new PackageSequencer(encrypted);
-        mapping.setValue(puid, pkSqncr);
-        pkSqncr->Release();
+        isNew = true;
     }
     bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
     if (isComplete)
     {
-        pkSqncr->Link();
-        mapping.remove(puid);
+        if (!isNew)
+        {
+            pkSqncr->Link();
+            mapping.remove(puid);
+        }
         queueCrit.enter();
         queue.push(pkSqncr);
         queueCrit.leave();
         sem.signal();
+    }
+    else if (isNew)
+    {
+        mapping.setValue(puid, pkSqncr);
+        pkSqncr->Release();
     }
 }
 
