@@ -56,7 +56,7 @@
     "@hpcc-js/tree": "2.39.7",
     "@hpcc-js/util": "2.48.0",
     "@kubernetes/client-node": "0.17.0",
-    "clipboard": "2.0.10",
+    "clipboard": "2.0.11",
     "d3-dsv": "3.0.1",
     "detect-browser": "5.3.0",
     "dijit": "1.17.2",
