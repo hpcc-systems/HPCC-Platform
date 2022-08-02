@@ -544,7 +544,8 @@ int init_main(int argc, const char* argv[])
             config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
 
-            initializeMetrics(config);
+            initializeMetrics(config);        
+            initializeStorageGroups(daliClientActive());
         }
         catch(IException* e)
         {
