@@ -322,6 +322,8 @@ static constexpr const char * defaultYaml = R"!!(
     port: 9004
     stdlog: true
     traceLevel: 1
+    logging:
+      queueDrop: 32
 )!!";
 
 int main(int argc, const char *argv[])

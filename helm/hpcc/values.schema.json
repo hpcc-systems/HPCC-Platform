@@ -928,6 +928,16 @@
         "detail": {
           "type": "integer",
           "description": "Log output verbosity"
+        },
+        "queueLength": {
+          "type": "integer",
+          "description": "Maximum number of log entries to buffer in the log queue. Set to 0 for synchronous logging",
+          "default": 512
+        },
+        "queueDrop": {
+          "type": "integer",
+          "description": "Number of log entries to drop from the log queue when it is full. Disabled if 0, or if queueLength is 0",
+          "default": 0
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }

@@ -2209,21 +2209,14 @@ static constexpr const char * logFieldsAtt = "@fields";
 static constexpr const char * logMsgDetailAtt = "@detail";
 static constexpr const char * logMsgAudiencesAtt = "@audiences";
 static constexpr const char * logMsgClassesAtt = "@classes";
-static constexpr const char * useLogQueueAtt = "@useLogQueue";
 static constexpr const char * logQueueLenAtt = "@queueLen";
 static constexpr const char * logQueueDropAtt = "@queueDrop";
 static constexpr const char * logDisabledAtt = "@disabled";
 static constexpr const char * useSysLogpAtt ="@enableSysLog";
 static constexpr const char * capturePostMortemAtt ="@postMortem";
 
-#ifdef _DEBUG
-static constexpr bool useQueueDefault = false;
-#else
-static constexpr bool useQueueDefault = true;
-#endif
-
 static constexpr unsigned queueLenDefault = 512;
-static constexpr unsigned queueDropDefault = 32;
+static constexpr unsigned queueDropDefault = 0; // disabled by default
 static constexpr bool useSysLogDefault = false;
 
 void setupContainerizedLogMsgHandler()
@@ -2264,14 +2257,21 @@ void setupContainerizedLogMsgHandler()
             theManager->changeMonitorFilter(theStderrHandler, filter);
         }
 
-        bool useLogQueue = logConfig->getPropBool(useLogQueueAtt, useQueueDefault);
-        if (useLogQueue)
+        unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
+        if (queueLen)
         {
-            unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
-            unsigned queueDrop = logConfig->getPropInt(logQueueDropAtt, queueDropDefault);
-
             queryLogMsgManager()->enterQueueingMode();
-            queryLogMsgManager()->setQueueDroppingLimit(queueLen, queueDrop);
+            unsigned queueDrop = logConfig->getPropInt(logQueueDropAtt, queueDropDefault);
+            if (queueDrop)
+            {
+                queryLogMsgManager()->setQueueDroppingLimit(queueLen, queueDrop);
+                PROGLOG("JLog: queuing enabled with dropping: queueLen=%u, queueDrop=%u", queueLen, queueDrop);
+            }
+            else
+            {
+                queryLogMsgManager()->setQueueBlockingLimit(queueLen);
+                PROGLOG("JLog: queuing enabled: queueLen=%u", queueLen);
+            }
         }
 
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
