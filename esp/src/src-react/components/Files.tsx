@@ -58,6 +58,8 @@ function formatQuery(_filter, mine, currentUser) {
             filter.ContentType = "key";
             filter.InvertContent = true;
         }
+    } else if (filter.Indexes) {
+        filter.ContentType = "key";
     }
     delete filter.LogicalFiles;
     delete filter.SuperFiles;
