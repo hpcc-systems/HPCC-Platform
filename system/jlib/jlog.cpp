@@ -833,25 +833,6 @@ FileLogMsgHandler::~FileLogMsgHandler()
     closeAndDeleteEmpty(filename,handle);
 }
 
-char const * FileLogMsgHandler::disable()
-{
-    crit.enter();
-    fclose(handle);
-    handle = NULL;
-    return filename;
-}
-
-void FileLogMsgHandler::enable()
-{
-    recursiveCreateDirectoryForFile(filename);
-    handle = fopen(filename, "a");
-    if(!handle) {
-        handle = getNullHandle();
-        assertex(!"FileLogMsgHandler::enable : could not open file for output");
-    }
-    crit.leave();
-}
-
 void FileLogMsgHandlerTable::handleMessage(const LogMsg & msg)
 {
     CriticalBlock block(crit);

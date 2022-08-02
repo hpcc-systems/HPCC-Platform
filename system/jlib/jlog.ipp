@@ -436,8 +436,6 @@ public:
     unsigned                  queryMessageFields() const { return messageFields; }
     void                      setMessageFields(unsigned _fields) { messageFields = _fields; }
     int                       flush() { CriticalBlock block(crit); return fflush(handle); }
-    char const *              disable() { crit.enter(); return "HANDLER"; }
-    void                      enable() { crit.leave(); }
     bool                      getLogName(StringBuffer &name) const { return false; }
     offset_t                  getLogPosition(StringBuffer &name) const { return 0; }
 protected:
@@ -481,8 +479,6 @@ public:
     unsigned                  queryMessageFields() const { return messageFields; }
     void                      setMessageFields(unsigned _fields) { messageFields = _fields; }
     int                       flush() { CriticalBlock block(crit); return fflush(handle); }
-    char const *              disable();
-    void                      enable();
     bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
     offset_t                  getLogPosition(StringBuffer &name) const { CriticalBlock block(crit); fflush(handle); name.append(filename); return ftell(handle); }
                 
