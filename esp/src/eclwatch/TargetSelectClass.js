@@ -91,12 +91,8 @@ define([
             } else if (params.DFUSprayQueues === true) {
                 this.loadSprayQueues();
             } else if (params.GetPackageMapTargets === true) {
-                this.defaultValue = "*";
-                this.set("value", "*");
                 this.loadGetPackageMapTargets();
             } else if (params.GetPackageMapProcesses === true) {
-                this.defaultValue = "*";
-                this.set("value", "*");
                 this.loadGetPackageMapProcesses();
             } else if (params.GetPackageMapProcessFilter === true) {
                 this.defaultValue = "*";
@@ -168,6 +164,9 @@ define([
                         value: "*"
                     });
                     for (var i = 0; i < targetData.length; ++i) {
+                        if (targetData[i].Type === "roxie" && !context.defaultValue) {
+                            context.defaultValue = targetData[i].Name;
+                        }
                         context.options.push({
                             label: targetData[i].Name,
                             value: targetData[i].Name,
@@ -196,6 +195,9 @@ define([
                     for (var i = 0; i < targetData.length; ++i) {
                         if (lang.exists("Processes.Item.length", targetData[i])) {
                             for (var j = 0; j < targetData[i].Processes.Item.length; ++j) {
+                                if (targetData[i].Type === "roxie" && !context.defaultValue) {
+                                    context.defaultValue = targetData[i].Processes.Item[j];
+                                }
                                 context.options.push({
                                     label: targetData[i].Processes.Item[j],
                                     value: targetData[i].Processes.Item[j]

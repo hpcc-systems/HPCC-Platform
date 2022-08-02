@@ -384,6 +384,8 @@ define([
                     retVal.ContentType = "key";
                     retVal.InvertContent = true;
                 }
+            } else if (retVal.Indexes) {
+                retVal.ContentType = "key";
             }
             delete retVal.LogicalFiles;
             delete retVal.SuperFiles;
@@ -758,6 +760,11 @@ define([
                     }
                 }
             }, this.id + "WorkunitsGrid");
+
+            ESPUtil.goToPageUserPreference(this.workunitsGrid, "DFUQueryWidget_GridRowsPerPage").then(function () {
+                context.refreshGrid();
+            });
+
             this.workunitsGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
@@ -787,9 +794,6 @@ define([
                 } else {
                     context.downloadToList.set("disabled", true);
                 }
-            });
-            ESPUtil.goToPageUserPreference(this.workunitsGrid, "DFUQueryWidget_GridRowsPerPage").then(function () {
-                context.workunitsGrid.startup();
             });
 
             this.copyGrid.createGrid({

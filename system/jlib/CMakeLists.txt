@@ -250,17 +250,17 @@ if (NOT PLUGIN)
         FILE(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}" WINDOWS_CMAKE_CURRENT_BINARY_DIR)
         FILE(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}\\jelog.mc" WINDOWS_CMAKE_CURRENT_SOURCE_DIR)
         add_custom_command ( DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/jelog.mc
-                         OUTPUT ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.h
+                         OUTPUT ${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.h
                          COMMAND echo mc -r ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} -h ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} ${WINDOWS_CMAKE_CURRENT_SOURCE_DIR}
                          COMMAND echo rc -r -fo ${CMAKE_CURRENT_BINARY_DIR}/jelog.res ${CMAKE_CURRENT_BINARY_DIR}/jelog.rc
-                         COMMAND echo link -dll -noentry -machine:IX86 -out:${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.res
+                         COMMAND echo link -dll -noentry -machine:IX86 -out:${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.res
                          COMMAND mc -r ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} -h ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} ${WINDOWS_CMAKE_CURRENT_SOURCE_DIR}
                          COMMAND rc -r -fo ${CMAKE_CURRENT_BINARY_DIR}/jelog.res ${CMAKE_CURRENT_BINARY_DIR}/jelog.rc
-                         COMMAND link -dll -noentry -machine:IX86 -out:${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.res
+                         COMMAND link -dll -noentry -machine:IX86 -out:${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.res
                         )
-        add_custom_target ( jelog ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll )
+        add_custom_target ( jelog ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll )
         add_dependencies( jlib jelog )
-        install ( PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_BUILD_TYPE}/jelog.dll DESTINATION ${EXEC_DIR} )
+        install ( PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll DESTINATION ${EXEC_DIR} )
     endif ()
     install ( TARGETS jlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
     install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/jscm.hpp DESTINATION componentfiles/cl/include COMPONENT Runtime )

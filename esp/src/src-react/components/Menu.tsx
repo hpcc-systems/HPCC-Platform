@@ -92,7 +92,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
 }) => {
 
     const menu = useConst([...navLinkGroups]);
-    const [theme, setTheme, isDark] = useUserTheme();
+    const { theme, setTheme, isDark } = useUserTheme();
 
     const selKey = React.useMemo(() => {
         return navSelectedKey(hashPath);

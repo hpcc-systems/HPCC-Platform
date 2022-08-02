@@ -24,6 +24,9 @@
 #define da_decl DECL_IMPORT
 #endif
 
+#include <vector>
+#include <string>
+
 #include "jiface.hpp"
 #include "mpbase.hpp"
 class RemoteFilename;
@@ -333,8 +336,7 @@ interface IStoragePlane: extends IInterface
 {
     virtual const char * queryPrefix() const = 0;
     virtual unsigned numDevices() const = 0;
-    virtual const char * queryHosts() const = 0;
-    virtual const char * querySingleHost() const = 0;
+    virtual const std::vector<std::string> &queryHosts() const = 0;
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;

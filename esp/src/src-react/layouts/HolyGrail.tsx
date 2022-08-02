@@ -20,7 +20,7 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
     footerStyles = { flex: "0 0", minWidth: 0 }
 }) => {
 
-    const [, , isDark] = useUserTheme();
+    const { isDark } = useUserTheme();
     const [btnHoverBgColor, setBtnHoverBgColor] = React.useState("rgb(175, 217, 255)");
     const [btnDisabledColor, setBtnDisabledColor] = React.useState("rgb(180, 180, 180)");
     const [btnDisabledBgColor, setBtnDisabledBgColor] = React.useState("rgb(238, 240, 242)");

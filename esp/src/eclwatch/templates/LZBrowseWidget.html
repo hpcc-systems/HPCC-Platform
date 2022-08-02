@@ -54,7 +54,7 @@
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}FixedSprayReplicate" title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.NoCommon}:" name="nocommon" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox"/>
+                                        <input title="${i18n.NoCommon}:" name="nocommon" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
@@ -104,11 +104,11 @@
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}DelimitedSprayReplicate" title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.NoCommon}:" name="noCommon" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox"/>
+                                        <input title="${i18n.NoCommon}:" name="noCommon" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.QuotedTerminator}:" name="quotedTerminator" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.QuotedTerminator}:" name="quotedTerminator" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.ExpireDays}:" type="number" name="expireDays" data-dojo-type="dijit.form.TextBox" />
                                         <input title="${i18n.DelayedReplication}:" name="delayedReplication" data-dojo-props="disabled: true, checked: true" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
@@ -295,7 +295,7 @@
                 <input id="${id}DropZoneFolderSelect" title="${i18n.Folder}:" style="width: 95%;" data-dojo-type="TargetComboBoxWidget" />
             </div>
             <p>
-                <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-props="uploaderId: '${id}Upload'" data-dojo-type="dojox.form.uploader.FileList"></div>
+            <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-props="uploaderId: '${id}Upload'" data-dojo-type="dojox.form.uploader.FileList"></div>
             </p>
             <span id="BrowserSizeMessage" class="hidden">${i18n.YourBrowserMayNotSupport}</span>
         </div>
