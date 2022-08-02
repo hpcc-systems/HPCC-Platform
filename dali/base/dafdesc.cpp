@@ -3651,12 +3651,17 @@ public:
         Owned<IPropertyTreeIterator> srcAliases = xml->getElements("aliases");
         ForEach(*srcAliases)
             aliases.push_back(new CStoragePlaneAlias(&srcAliases->query()));
+        Owned<IPropertyTreeIterator> srcHosts = xml->getElements("hosts");
+        ForEach(*srcHosts)
+            hosts.emplace_back(srcHosts->query().queryProp(nullptr));
     }
 
     virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
     virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
-    virtual const char * queryHosts() const override { return xml->queryProp("@hosts"); }
-    virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
+    virtual const std::vector<std::string> &queryHosts() const override
+    {
+        return hosts;
+    }
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
     virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
@@ -3687,6 +3692,7 @@ public:
 private:
     Linked<IPropertyTree> xml;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
+    std::vector<std::string> hosts;
 };
 
 
