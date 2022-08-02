@@ -143,6 +143,10 @@ define([
                 }
             }, this.id + "EventGrid");
 
+            ESPUtil.goToPageUserPreference(this.eventGrid, "EventScheduleWorkunitWidget_GridRowsPerPage").then(function () {
+                context.refreshGrid();
+            });
+
             this.eventGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.eventGrid.row(evt).data;
@@ -166,9 +170,6 @@ define([
             });
             this.eventGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
-            });
-            ESPUtil.goToPageUserPreference(this.eventGrid, "EventScheduleWorkunitWidget_GridRowsPerPage").then(function () {
-                context.eventGrid.startup();
             });
             this.refreshActionState();
         },

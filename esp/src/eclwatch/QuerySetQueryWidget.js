@@ -435,6 +435,11 @@ define([
                     }
                 }
             }, this.id + "QuerySetGrid");
+
+            ESPUtil.goToPageUserPreference(this.querySetGrid, "QuerySetQueryWidget_GridRowsPerPage").then(function () {
+                context.refreshGrid();
+            });
+
             this.querySetGrid.on(".dgrid-row-url:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
@@ -470,9 +475,6 @@ define([
                 } else {
                     context.downloadToList.set("disabled", true);
                 }
-            });
-            ESPUtil.goToPageUserPreference(this.querySetGrid, "QuerySetQueryWidget_GridRowsPerPage").then(function () {
-                context.querySetGrid.startup();
             });
 
             this.recreateQueriesGrid.createGrid({

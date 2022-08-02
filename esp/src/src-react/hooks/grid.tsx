@@ -188,9 +188,9 @@ function useFluentStoreGrid({
         });
     }, [count, selectionHandler, sorted, start, store], [query]);
 
-    useDeepEffect(() => {
+    React.useEffect(() => {
         refreshTable();
-    }, [], [query, sorted]);
+    }, [refreshTable]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, sorted);
