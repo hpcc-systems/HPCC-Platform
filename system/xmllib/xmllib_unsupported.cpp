@@ -34,7 +34,7 @@ extern ICompiledXpath* compileXpath(const char * xpath)
     UNIMPLEMENTED;
 }
 
-IEsdlScriptContext *createEsdlScriptContext(void * espCtx)
+ISectionalXmlDocModel *createSectionalXmlDocModel(void * userData)
 {
     UNIMPLEMENTED;
 }

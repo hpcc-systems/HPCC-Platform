@@ -63,7 +63,7 @@ void addFeaturesToAccessMap(MapStringTo<SecAccessFlags> &accessmap, const char *
     }
 }
 
-inline IEsdlScriptContext *getEsdlScriptContext(xmlXPathParserContextPtr ctxt)
+inline IEsdlScriptContext *queryEsdlScriptContext(xmlXPathParserContextPtr ctxt)
 {
     if (!ctxt || !ctxt->context || !ctxt->context->userData)
         return nullptr;
@@ -71,12 +71,12 @@ inline IEsdlScriptContext *getEsdlScriptContext(xmlXPathParserContextPtr ctxt)
     return reinterpret_cast<IEsdlScriptContext *>(ctxt->context->userData);
 }
 
-inline IEspContext *getEspContext(xmlXPathParserContextPtr ctxt)
+inline IEspContext *queryEspContext(xmlXPathParserContextPtr ctxt)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
-    if (!scriptContext || !scriptContext->queryEspContext())
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
         return nullptr;
-    return reinterpret_cast<IEspContext *>(scriptContext->queryEspContext());
+    return scriptContext->queryEspContext();
 }
 
 /**
@@ -88,7 +88,7 @@ inline IEspContext *getEspContext(xmlXPathParserContextPtr ctxt)
  */
 static void validateFeaturesAccessFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEspContext *espContext = getEspContext(ctxt);
+    IEspContext *espContext = queryEspContext(ctxt);
     if (!espContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -126,7 +126,7 @@ static void validateFeaturesAccessFunction (xmlXPathParserContextPtr ctxt, int n
  */
 static void secureAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEspContext *espContext = getEspContext(ctxt);
+    IEspContext *espContext = queryEspContext(ctxt);
     if (!espContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -165,7 +165,7 @@ static void secureAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int nargs)
  */
 static void getFeatureSecAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEspContext *espContext = getEspContext(ctxt);
+    IEspContext *espContext = queryEspContext(ctxt);
     if (!espContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -197,7 +197,7 @@ static void getFeatureSecAccessFlagsFunction (xmlXPathParserContextPtr ctxt, int
  */
 static void getStoredStringValueFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -230,7 +230,7 @@ static void getStoredStringValueFunction (xmlXPathParserContextPtr ctxt, int nar
  */
 static void scriptGetDataSectionFunctionImpl (xmlXPathParserContextPtr ctxt, int nargs, bool ensure)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -294,7 +294,7 @@ static void scriptGetDataSectionFunction (xmlXPathParserContextPtr ctxt, int nar
  */
 static void getLogOptionFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -327,7 +327,7 @@ static void getLogOptionFunction (xmlXPathParserContextPtr ctxt, int nargs)
  */
 static void getLogProfileFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -355,7 +355,7 @@ static void getLogProfileFunction (xmlXPathParserContextPtr ctxt, int nargs)
  */
 static void logOptionExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -386,7 +386,7 @@ static void logOptionExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
  */
 static void storedValueExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
@@ -416,7 +416,7 @@ static void storedValueExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
 //
 static void strTokenizeFunction(xmlXPathParserContextPtr ctxt, int nargs)
 {
-    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
     if (!scriptContext)
     {
         xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);

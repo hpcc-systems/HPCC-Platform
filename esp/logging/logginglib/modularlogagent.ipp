@@ -20,6 +20,7 @@
 
 #include "modularlogagent.hpp"
 #include "tokenserialization.hpp"
+#include "esdl_script.hpp"
 #include "xpathprocessor.hpp"
 
 namespace ModularLogAgent
