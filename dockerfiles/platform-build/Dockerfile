@@ -27,7 +27,7 @@ RUN apt-get update
 RUN apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 RUN apt-add-repository 'deb https://download.mono-project.com/repo/ubuntu stable-focal main'
-RUN apt install -y mono-complete 
+RUN apt install -y mono-complete groff-base
 
 RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
