@@ -14,3 +14,4 @@ eclcc.log
 *.pyc
 ./helm/examples/azure/sa/env-sa
 ./dockerfiles/platform-build-incremental/hpcc.gitpatch
+.env
