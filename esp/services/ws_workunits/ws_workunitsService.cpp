@@ -2568,6 +2568,8 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 {
     try
     {
+        CWsWuValidateHelper::validateWUQueryRequest(req);
+
         StringBuffer wuidStr(req.getWuid());
         const char* wuid = wuidStr.trim().str();
 
@@ -2638,6 +2640,8 @@ bool CWsWorkunitsEx::onWULightWeightQuery(IEspContext &context, IEspWULightWeigh
 {
     try
     {
+        CWsWuValidateHelper::validateWULightWeightQueryRequest(req);
+
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWULightWeightQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
         else

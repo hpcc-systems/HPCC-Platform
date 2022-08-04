@@ -717,6 +717,34 @@ public:
     void send(const char *body, const void *attachment, size32_t lenAttachment, StringArray &warnings);
 };
 
+class CWsWuValidateHelper
+{
+    static void validateApplicationValuesRequest(const char* method, IArrayOf<IConstApplicationValue>& applicationValues);
+    template <class T> static inline void validateWUQueryRequestCommon(const char* method, T& req)
+    {
+        if (!isEmptyString(req.getWuid()) && !looksLikeAWuid(req.getWuid(), 'W'))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid Workunit ID: %s", method, req.getWuid());
+        if (!isEmptyString(req.getCluster()) && !isValidXPathValue(req.getCluster()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid Cluster %s.", method, req.getCluster());
+        if (!isEmptyString(req.getOwner()) && !isValidXPathValue(req.getOwner()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid Owner %s.", method, req.getOwner());
+        if (!isEmptyString(req.getState()) && !isValidXPathValue(req.getState()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid State %s.", method, req.getState());
+        validateApplicationValuesRequest(method, req.getApplicationValues());
+    };
+public:
+    static void validateWUQueryRequest(IEspWUQueryRequest& req);
+    static void validateWULightWeightQueryRequest(IEspWULightWeightQueryRequest& req);
+    static void validateWUListQueriesRequest(IEspWUListQueriesRequest& req);
+    template <class T> static inline void validateWUQueryDetailsRequest(const char* method, T& req)
+    {
+        if (!isEmptyString(req.getQuerySet()) && !isValidXPathValue(req.getQuerySet()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid QuerySet %s.", method, req.getQuerySet());
+        if (!isEmptyString(req.getQueryId()) && !isValidXPathValue(req.getQueryId()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid QueryId %s.", method, req.getQueryId());
+    };
+};
+
 #ifndef _CONTAINERIZED
 class CGetThorSlaveLogToFileThreadParam : public CInterface
 {
