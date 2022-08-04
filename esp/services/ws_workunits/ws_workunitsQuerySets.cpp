@@ -1631,6 +1631,8 @@ void CWsWorkunitsEx::checkAndSetClusterQueryState(IEspContext &context, const ch
 
 bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)
 {
+    CWsWuValidateHelper::validateWUListQueriesRequest(req);
+
     bool descending = req.getDescending();
     const char *sortBy =  req.getSortby();
     WUQuerySortField sortOrder[2] = {WUQSFId, WUQSFterm};
@@ -2232,6 +2234,8 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
 {
     try
     {
+        CWsWuValidateHelper::validateWUQueryDetailsRequest("WUQueryDetails", req);
+
         CWUQueryDetailsReq request(req);
         getWUQueryDetails(context, request, resp);
     }
@@ -2440,6 +2444,8 @@ bool CWsWorkunitsEx::onWUQueryDetailsLightWeight(IEspContext &context, IEspWUQue
 {
     try
     {
+        CWsWuValidateHelper::validateWUQueryDetailsRequest("WUQueryDetailsLightWeight", req);
+
         CWUQueryDetailsReq request(req);
         getWUQueryDetails(context, request, resp);
     }

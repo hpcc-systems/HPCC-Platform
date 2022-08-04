@@ -313,6 +313,22 @@ inline static bool isValidXPathChr(char c)
     return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
 }
 
+static const char *validXPathValueChrs = "!#$%^&()+,-.:;?@_{|}~"; //Do I miss any?
+inline static bool isValidXPathValueChr(char c)
+{
+    return ('\0' != c && (isalnum(c) || strchr(validXPathValueChrs, c)));
+}
+inline static bool isValidXPathValue(const char *v)
+{
+    const char *p = v;
+    do
+    {
+         if (!isValidXPathValueChr(*p++)) return false;
+    }
+    while (*p != '\0');
+    return true;
+}
+
 //export for unit test
 jlib_decl void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, const char *altNameAttribute=nullptr, bool overwriteAttr=true);
 

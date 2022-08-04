@@ -939,6 +939,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
     try
     {
         context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
+        CFileSprayValidateHelper::validateGetDFUWorkunitsRequest(req);
 
         StringBuffer wuidStr(req.getWuid());
         const char* wuid = wuidStr.trim().str();
@@ -1392,6 +1393,8 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
         const char* wuid = req.getWuid();
         if (!wuid || !*wuid)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Dfu workunit ID not specified.");
+        if (!looksLikeAWuid(wuid, 'D'))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunit: Invalid Workunit ID: %s", wuid);
 
         bool found = false;
         double version = context.getClientVersion();
@@ -3676,4 +3679,20 @@ bool CFileSprayEx::onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQu
     }
 
     return true;
+}
+
+void CFileSprayValidateHelper::validateGetDFUWorkunitsRequest(IEspGetDFUWorkunits& req)
+{
+    if (!isEmptyString(req.getWuid()) && !looksLikeAWuid(req.getWuid(), 'D'))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid Workunit ID: %s", req.getWuid());
+    if (!isEmptyString(req.getOwner()) && !isValidXPathValue(req.getOwner()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid Owner %s.", req.getOwner());
+    if (!isEmptyString(req.getCluster()) && !isValidXPathValue(req.getCluster()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid Cluster %s.", req.getCluster());
+    if (!isEmptyString(req.getStateReq()) && !isValidXPathValue(req.getStateReq()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid StateReq %s.", req.getStateReq());
+    if (!isEmptyString(req.getJobname()) && !isValidXPathValue(req.getJobname()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid Jobname %s.", req.getJobname());
+    if (!isEmptyString(req.getPublisherWuid()) && !isValidXPathValue(req.getPublisherWuid()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid PublisherWuid %s.", req.getPublisherWuid());
 }

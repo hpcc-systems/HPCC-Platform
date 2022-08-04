@@ -64,6 +64,12 @@ public:
 
 };
 
+class CFileSprayValidateHelper
+{
+public:
+    static void validateGetDFUWorkunitsRequest(IEspGetDFUWorkunits& req);
+};
+
 class CFileSprayEx : public CFileSpray
 {
     void readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcplane,

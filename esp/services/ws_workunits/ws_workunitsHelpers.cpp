@@ -4908,4 +4908,56 @@ void CWsWuEmailHelper::send(const char* body, const void* attachment, size32_t l
             attachmentName.get(), mailServer.get(), port, sender.get(), &warnings);
 }
 
+void CWsWuValidateHelper::validateWUQueryRequest(IEspWUQueryRequest& req)
+{
+    validateWUQueryRequestCommon("WUQuery", req);
+    if (!isEmptyString(req.getJobname()) && !isValidXPathValue(req.getJobname()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUQuery: Invalid Jobname %s.", req.getJobname());
+    if (!isEmptyString(req.getECL()) && !isValidXPathValue(req.getECL()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUQuery: Invalid ECL search request %s.", req.getECL());
+    if (!isEmptyString(req.getLogicalFile()) && !isValidXPathValue(req.getLogicalFile()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUQuery: Invalid LogicalFile %s.", req.getLogicalFile());
+}
+
+void CWsWuValidateHelper::validateWULightWeightQueryRequest(IEspWULightWeightQueryRequest& req)
+{
+    validateWUQueryRequestCommon("WULightWeightQuery", req);
+    if (!isEmptyString(req.getJobName()) && !isValidXPathValue(req.getJobName()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WULightWeightQuery: Invalid JobName %s.", req.getJobName());
+}
+
+void CWsWuValidateHelper::validateApplicationValuesRequest(const char* method, IArrayOf<IConstApplicationValue>& applicationValues)
+{
+    ForEachItemIn(i, applicationValues)
+    {
+        IConstApplicationValue& item = applicationValues.item(i);
+        if (isEmpty(item.getApplication()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application must be specified.", method);
+        if (!isValidXPathValue(item.getApplication()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid Application %s.", method, item.getApplication());
+        if (isEmpty(item.getName()) && isEmpty(item.getValue()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application %s: Application Name or Value must be specified.", method, item.getApplication());
+        if (!isEmptyString(item.getName()) && !isValidXPathValue(item.getName()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application %s: Invalid Application Name %s.", method, item.getApplication(), item.getName());
+        if (!isEmptyString(item.getValue()) && !isValidXPathValue(item.getValue()))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application %s: Invalid Application Value %s.", method, item.getApplication(), item.getValue());
+    }
+}
+
+void CWsWuValidateHelper::validateWUListQueriesRequest(IEspWUListQueriesRequest& req)
+{
+    if (!isEmptyString(req.getQuerySetName()) && !isValidXPathValue(req.getQuerySetName()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUListQueries: Invalid QuerySetName %s.", req.getQuerySetName());
+    if (!isEmptyString(req.getLibraryName()) && !isValidXPathValue(req.getLibraryName()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUListQueries: Invalid LibraryName %s.",req.getLibraryName());
+    if (!isEmptyString(req.getWUID()) && !looksLikeAWuid(req.getWUID(), 'W'))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUListQueries: Invalid WUID %s.", req.getWUID());
+    if (!isEmptyString(req.getQueryID()) && !isValidXPathValue(req.getQueryID()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUListQueries: Invalid QueryID %s.", req.getQueryID());
+    if (!isEmptyString(req.getQueryName()) && !isValidXPathValue(req.getQueryName()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUListQueries: Invalid QueryName %s.", req.getQueryName());
+    if (!isEmptyString(req.getPublishedBy()) && !isValidXPathValue(req.getPublishedBy()))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WUListQueries: Invalid PublishedBy %s.", req.getPublishedBy());
+}
+
 }
