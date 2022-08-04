@@ -112,7 +112,8 @@ SegMonitorList::SegMonitorList(const SegMonitorList &from, const char *fixedVals
 
 void SegMonitorList::describe(StringBuffer &out) const
 {
-    for (unsigned idx=0; idx <= lastRealSeg() && idx < segMonitors.length(); idx++)
+    unsigned maxSeg = lastRealSeg()+1; // lastSeg is -1 when unfiltered
+    for (unsigned idx=0; idx < maxSeg && idx < segMonitors.length(); idx++)
     {
         auto &filter = segMonitors.item(idx);
         if (idx)
@@ -126,7 +127,8 @@ bool SegMonitorList::matchesBuffer(const void *buffer, unsigned lastSeg, unsigne
 {
     if (segMonitors.length())
     {
-        for (; matchSeg <= lastSeg; matchSeg++)
+        unsigned maxSeg = lastSeg+1; // lastSeg is -1 when unfiltered
+        for (; matchSeg < maxSeg; matchSeg++)
         {
             if (!segMonitors.item(matchSeg).matchesBuffer(buffer))
                 return false;
@@ -207,7 +209,9 @@ unsigned SegMonitorList::setLowAfter(size32_t offset, void *keyBuffer) const
 void SegMonitorList::endRange(unsigned segno, void *keyBuffer) const
 {
     unsigned lim = segMonitors.length();
-    if (segno < lim)
+    if (segno==(unsigned)-1)
+        segno = 0;
+    else if (segno < lim)
         segMonitors.item(segno++).endRange(keyBuffer);
     while (segno < lim)
         segMonitors.item(segno++).setHigh(keyBuffer);
@@ -216,6 +220,8 @@ void SegMonitorList::endRange(unsigned segno, void *keyBuffer) const
 bool SegMonitorList::incrementKey(unsigned segno, void *keyBuffer) const
 {
     // Increment the key buffer to next acceptable value
+    if (segno==(unsigned)-1)
+        segno = 0;
     for(;;)
     {
         if (segMonitors.item(segno).increment(keyBuffer))
@@ -235,7 +241,7 @@ unsigned SegMonitorList::_lastRealSeg() const
     for (;;)
     {
         if (!seg)
-            return 0;
+            return (unsigned) -1;
         seg--;
         if (!segMonitors.item(seg).isWild()) // MORE - why not just remove them? Stepping/overrides?
             return seg;
@@ -1820,7 +1826,7 @@ bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
 
 bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
 {
-    if ((lastSeg == 0) && !matched)
+    if ((lastSeg == (unsigned) -1) && !matched)
     {
         //Special case reading a file with no filter - fall into the next processing.
         node.clear();
@@ -1869,7 +1875,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
             eof = true;
     }
     if (logExcessiveSeeks && lwildseeks > 1000 && ret)
-        reportExcessiveSeeks(lwildseeks, lastSeg, getSize(), stats);
+        reportExcessiveSeeks(lwildseeks, getSize(), stats);
     stats.noteSeeks(lseeks, lscans, lwildseeks);
     return ret;
 }
@@ -1980,7 +1986,7 @@ bool CKeyCursor::nextRange(unsigned groupSegCount)
     return true;
 }
 
-void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size32_t recSize, KeyStatsCollector &stats)
+void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, size32_t recSize, KeyStatsCollector &stats)
 {
     StringBuffer recstr;
     unsigned i;
@@ -2067,7 +2073,7 @@ CPartialKeyCursor::~CPartialKeyCursor()
 IndexRowFilter::IndexRowFilter(const RtlRecord &_recInfo) : recInfo(_recInfo)
 {
     keySegCount = recInfo.getNumKeyedFields();
-    lastReal = 0;
+    lastReal = -1;
     lastFull = -1;
     keyedSize = 0;
 }
@@ -2075,7 +2081,7 @@ IndexRowFilter::IndexRowFilter(const RtlRecord &_recInfo) : recInfo(_recInfo)
 IndexRowFilter::IndexRowFilter(const IndexRowFilter &from, const char *fixedVals, unsigned sortFieldOffset)
 : recInfo(from.recInfo), keySegCount(from.keySegCount)
 {
-    lastReal = 0;
+    lastReal = -1;
     lastFull = -1;
     keyedSize = 0;
     ForEachItemIn(idx, from.filters)
@@ -2214,7 +2220,7 @@ IIndexFilterList *IndexRowFilter::fixSortSegs(const char *fixedVals, unsigned so
 void IndexRowFilter::reset()
 {
     RowFilter::clear();
-    lastReal = 0;
+    lastReal = -1;
     lastFull = -1;
     keyedSize = 0;
 }
@@ -2245,7 +2251,8 @@ void IndexRowFilter::finish(size32_t _keyedSize)
 
 void IndexRowFilter::describe(StringBuffer &out) const
 {
-    for (unsigned idx=0; idx <= lastRealSeg() && idx < numFilterFields(); idx++)
+    unsigned maxSeg = lastRealSeg()+1; // lastSeg is -1 when unfiltered
+    for (unsigned idx=0; idx < maxSeg && idx < numFilterFields(); idx++)
     {
         auto &filter = queryFilter(idx);
         if (idx)
@@ -2259,7 +2266,7 @@ bool IndexRowFilter::matchesBuffer(const void *buffer, unsigned lastSeg, unsigne
 {
     if (numFilterFields())
     {
-        unsigned maxSeg = lastSeg+1; // avoid unlikely problems with -1
+        unsigned maxSeg = lastSeg+1; // lastSeg is -1 when unfiltered
         RtlFixedRow rowInfo(recInfo, buffer, numFilterFields());
         for (; matchSeg < maxSeg; matchSeg++)
         {
