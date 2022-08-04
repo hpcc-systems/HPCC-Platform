@@ -1651,14 +1651,12 @@ int CWsWorkunitsSoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpRequ
     {
         StringBuffer type;
         request->getParameter("Type", type);
-#ifdef _CONTAINERIZED
         if (strieq(type.str(), File_ComponentLog))
         {
             CWsWuFileHelper helper(nullptr);
             helper.sendWUComponentLogStreaming(request, response);
             return 0;
         }
-#endif
         if (strieq(type.str(), getEnumText(FileTypePostMortem, queryFileTypes)))
         {
             CWsWuFileHelper helper(nullptr);

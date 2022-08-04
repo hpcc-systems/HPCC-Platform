@@ -314,7 +314,15 @@ void WsWuInfo::setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wu
     logFetchOptions.setTimeRange(range);
 }
 
-#ifdef _CONTAINERIZED
+void WsWuInfo::sendImportedWorkunitComponentLog(const char* logFile, CHttpResponse* response)
+{
+    IFileIOStream* stream = createIOStreamFromFile(logFile, IFOread);
+    if (stream == nullptr)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Cannot open stream for file %s", logFile);
+    response->setContent(stream);
+    response->send();
+}
+
 void WsWuInfo::sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options)
 {
     if (!queryRemoteLogAccessor())
@@ -411,7 +419,6 @@ unsigned WsWuInfo::sendComponentLogContent(IEspContext* context, IRemoteLogAcces
     }
     return totalRecsRead;
 }
-#endif
 
 void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
 {
@@ -763,7 +770,17 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
         if ((flags & WUINFO_IncludeHelpers))
         {
             Owned<IEspECLHelpFile> h = createECLHelpFile();
-            h->setName(File_ComponentLog);
+            StringBuffer componentLog;
+            getImportedComponentLog(componentLog);
+            if (componentLog.length() > 0) //from imported WU
+            {
+                h->setName(componentLog.str());
+                offset_t fileSize;
+                if (getFileSize(componentLog.str(), nullptr, fileSize))
+                    h->setFileSize(fileSize);
+            }
+            else
+                h->setName(File_ComponentLog);
             h->setType(File_ComponentLog);
             helpers.append(*h.getLink());
         }
@@ -843,6 +860,27 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
         info.setHelpersDesc(eMsg.str());
         e->Release();
     }
+}
+
+const char *WsWuInfo::getImportedComponentLog(StringBuffer &log)
+{
+    SCMStringBuffer s;
+    cw->getDebugValue("imported", s);
+    if (s.length() == 0)
+        return log.str();
+
+    StringArray list;
+    list.appendList(s.str(), ",");
+    ForEachItemIn(i, list)
+    {
+        const char *item = list.item(i);
+        if (hasPrefix(item, "ComponentLog=", false))
+        {
+            log.append(item + strlen("ComponentLog="));
+            break;
+        }
+    }
+    return log.str();
 }
 
 void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned long flags)
@@ -4096,7 +4134,6 @@ void CWsWuFileHelper::createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, cons
     }
 }
 
-#ifdef _CONTAINERIZED
 template <class T>
 void readWUComponentLogOptionsReq(T* logReq, WUComponentLogOptions& options)
 {
@@ -4155,9 +4192,14 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
     if ((option < CWUFileDownloadOption_OriginalText) || (option > CWUFileDownloadOption_GZIP))
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid WU File Download option detected: '%d'", option);
 
+    StringBuffer importedComponentLog;
+    winfo.getImportedComponentLog(importedComponentLog);
+
     CWUFileDownloadOption opt = (CWUFileDownloadOption) option;
     if ((opt == CWUFileDownloadOption_OriginalText) || (opt == CWUFileDownloadOption_Attachment))
     {
+        if (importedComponentLog.length() > 0)
+            options.logFormat = getComponentLogFormatFromLogName(importedComponentLog);
         if (opt == CWUFileDownloadOption_OriginalText)
         {
             if (options.logFormat == LOGACCESS_LOGFORMAT_csv)
@@ -4179,18 +4221,26 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
             ctx->addCustomerHeader("Content-disposition", headerStr.str());
         }
 
-        winfo.sendWorkunitComponentLogs(ctx, response, options);
+        if (importedComponentLog.length() > 0)
+            winfo.sendImportedWorkunitComponentLog(importedComponentLog, response);
+        else
+            winfo.sendWorkunitComponentLogs(ctx, response, options);
     }
     else
     {   //zip or gzip the WUComponentLog
-        StringBuffer workingFolder, resultFileNameWithPath;
+        StringBuffer resultFileNameWithPath;
+        Owned<IFile> tempDir;
 
-        unsigned currentTime = msTick();
-        workingFolder.setf("%s%sT%xAT%x", TEMPZIPDIR, PATHSEPSTR, (unsigned)(memsize_t)GetCurrentThreadId(), currentTime);
-        resultFileNameWithPath.setf("%s%s%s", workingFolder.str(), PATHSEPSTR, fileName.str());
-        recursiveCreateDirectoryForFile(resultFileNameWithPath);
-        //Read the WUComponentLog into a file
-        winfo.readWorkunitComponentLogs(resultFileNameWithPath, options.logFetchOptions.getLimit(), options.logFetchOptions.getReturnColsMode(), options.logFormat, options.wuLogSearchTimeBuffSecs);
+        if (importedComponentLog.length())
+            resultFileNameWithPath.set(importedComponentLog.str());
+        else
+        {
+            tempDir.setown(createUniqueTempDirectory());
+            resultFileNameWithPath.setf("%s%s%s", tempDir->queryFilename(), PATHSEPSTR, fileName.str());
+
+            //Read the WUComponentLog into a file
+            winfo.readWorkunitComponentLogs(resultFileNameWithPath, options.logFetchOptions.getLimit(), options.logFetchOptions.getReturnColsMode(), options.logFormat, options.wuLogSearchTimeBuffSecs);
+        }
 
         VStringBuffer headerStr("attachment;filename=%s", fileName.str());
         if (opt == CWUFileDownloadOption_GZIP)
@@ -4204,7 +4254,7 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
         zipFileNameWithPath.append((opt == CWUFileDownloadOption_GZIP) ? ".gz" : ".zip");
         StringBuffer zipCommand;
         if (opt == CWUFileDownloadOption_GZIP)
-            zipCommand.setf("tar -czf %s -C %s %s", zipFileNameWithPath.str(), workingFolder.str(), fileName.str());
+            zipCommand.setf("tar -czf %s %s", zipFileNameWithPath.str(), resultFileNameWithPath.str());
         else
             zipCommand.setf("zip -j %s %s", zipFileNameWithPath.str(), resultFileNameWithPath.str());
         if (system(zipCommand) != 0)
@@ -4221,10 +4271,21 @@ void CWsWuFileHelper::sendWUComponentLogStreaming(CHttpRequest* request, CHttpRe
         else
             response->setContentType("application/zip");
         response->send();
-        recursiveRemoveDirectory(workingFolder);
+        if (tempDir)
+            recursiveRemoveDirectory(tempDir->queryFilename());
     }
 }
-#endif
+
+LogAccessLogFormat CWsWuFileHelper::getComponentLogFormatFromLogName(const char* log)
+{
+    StringBuffer ext;
+    splitFilename(log, nullptr, nullptr, nullptr, &ext);
+    if (strieq(".xml", ext.str()))
+        return LOGACCESS_LOGFORMAT_xml;
+    if (strieq(".json", ext.str()))
+        return LOGACCESS_LOGFORMAT_json;
+    return LOGACCESS_LOGFORMAT_csv;
+}
 
 void CWsWuFileHelper::createZAPWUGraphProgressFile(const char* wuid, const char* tempDirName)
 {
@@ -4660,7 +4721,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         winfo.getWorkunitEclAgentLog(nullptr, file, item.getProcess(), mb, fileNameWithPath.str());
         break;
     }
-#else
+#endif
     case CWUFileType_ComponentLog:
     {
         WUComponentLogOptions options;
@@ -4688,7 +4749,6 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
             options.logFormat, options.wuLogSearchTimeBuffSecs);
         break;
     }
-#endif
     case CWUFileType_XML:
     {
         StringBuffer name(item.getName());

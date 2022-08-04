@@ -5496,10 +5496,28 @@ void CWorkUnitFactory::importWorkUnit(const char *zapReportFileName, const char 
             dt.setNow();
             dt.getString(importDateTime);
 
+            getComponentLog(attr);
             attr.append("FromWUID=").append(fromWUID).append(",");
             attr.append("ImportDT=").append(importDateTime).append(",");
             attr.append("ZAPReport=").append(pathTail(zapReportFileName));
             workunit->setDebugValue("imported", attr, true);
+        }
+        StringBuffer &getComponentLog(StringBuffer &out)
+        {
+            VStringBuffer componentLogPrefix("%s-log.", fromWUID.get());
+
+            Owned<IFile> dir = createIFile(unzipDir.str());
+            Owned<IDirectoryIterator> iter = dir->directoryFiles(nullptr, false, false);
+            ForEach(*iter)
+            {
+                const char *fileName = iter->query().queryFilename();
+                if (hasPrefix(pathTail(fileName), componentLogPrefix, false))
+                {
+                    out.append("ComponentLog=").append(fileName).append(",");
+                    break;
+                }
+            }
+            return out;
         }
     public:
         CImportWorkUnitHelper(const char *_zapReportFileName, const char *_zapReportPassword, const char *_importDir, const char *_user)
