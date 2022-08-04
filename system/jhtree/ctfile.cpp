@@ -82,6 +82,7 @@ void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.metadataHead);
     _WINREV(hdr.bloomHead);
     _WINREV(hdr.partitionFieldMask);
+    _WINREV(hdr.firstLeaf);
 }
 
 inline void SwapBigEndian(NodeHdr &hdr)

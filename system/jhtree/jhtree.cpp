@@ -1409,6 +1409,18 @@ CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     keySeeks++;
     stats.seeks++;
 
+    offset_t leafOffset = keyHdr->getFirstLeafPos();
+    if (leafOffset != (offset_t)-1)
+    {
+        if (leafOffset == 0)
+            return nullptr;
+        return getNode(leafOffset, NodeLeaf, stats.ctx);
+    }
+
+    //Unusual - an index with no elements
+    if (keyHdr->getNumRecords() == 0)
+        return nullptr;
+
     CJHTreeNode * cur = LINK(rootNode);
     unsigned depth = 0;
     while (!cur->isLeaf())
@@ -1417,9 +1429,7 @@ CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
         cur = getNode(cur->getFPosAt(0), type, stats.ctx);
-        //Unusual - an index with no elements
-        if (!cur)
-            return prev;
+        assertex(cur);
         prev->Release();
     }
     return cur;
@@ -1810,6 +1820,12 @@ bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
 
 bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
 {
+    if ((lastSeg == 0) && !matched)
+    {
+        //Special case reading a file with no filter - fall into the next processing.
+        node.clear();
+        matched = true;
+    }
     bool ret = false;
     unsigned lwildseeks = 0;
     unsigned lseeks = 0;

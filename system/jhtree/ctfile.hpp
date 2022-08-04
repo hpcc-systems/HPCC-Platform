@@ -96,7 +96,8 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 blobHead; /* fpos of first blob node f0x */
     __int64 metadataHead; /* fpos of first metadata node f8x */
     __int64 bloomHead; /* fpos of bloom table data, if present 100x */
-    __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields */
+    __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields 108x */
+    __int64 firstLeaf; /* fpos of first leaf node 110x */
 };
 
 enum NodeType : char
@@ -166,7 +167,9 @@ public:
     inline unsigned short getMaxNodeBytes() { return hdr.maxkbl; }
     inline KeyHdr *getHdrStruct() { return &hdr; }
     inline static size32_t getSize() { return sizeof(KeyHdr); }
+    inline __int64 getNumRecords() { return hdr.nument; }
     inline unsigned getNodeSize() { return hdr.nodeSize; }
+    inline offset_t getFirstLeafPos() const { return (offset_t)hdr.firstLeaf; }
     inline bool hasSpecialFileposition() const { return true; }
     inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
     __uint64 getPartitionFieldMask()
