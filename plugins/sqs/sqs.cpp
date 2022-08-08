@@ -54,22 +54,21 @@ static const char *version = "SQS Version depends on AWS";
 
 extern "C" DECL_EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
-  if (pb->size == sizeof(ECLPluginDefinitionBlock))
+    if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
     {
-      ECLPluginDefinitionBlockEx * pbx = (ECLPluginDefinitionBlockEx *) pb;
-      pbx->compatibleVersions = compatibleVersions;
-      pb->magicVersion = PLUGIN_VERSION;
-      pb->version = version;
-      pb->moduleName = "SQS";
-      pb->ECL = NULL;
-      pb->flags = PLUGIN_MULTIPLE_VERSIONS;
-      pb->description = "SQS based on AWS SDK";
-      return true;
+        ECLPluginDefinitionBlockEx * pbx = (ECLPluginDefinitionBlockEx *) pb;
+        pbx->compatibleVersions = compatibleVersions;
     }
-  else
-    {
-      return false;
-    }	
+    else if (pb->size != sizeof(ECLPluginDefinitionBlock))
+        return false;
+
+    pb->magicVersion = PLUGIN_VERSION;
+    pb->version = version;
+    pb->moduleName = "SQS";
+    pb->ECL = NULL;
+    pb->flags = PLUGIN_MULTIPLE_VERSIONS;
+    pb->description = "SQS based on AWS SDK";
+    return true;
 }
 
 
