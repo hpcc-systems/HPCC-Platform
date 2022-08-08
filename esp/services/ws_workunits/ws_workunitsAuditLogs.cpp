@@ -1403,8 +1403,24 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
     ensureWsWorkunitAccess(context, *cwu, SecAccess_Read);
 
     request->getParameter("URL", zapInfoReq.url);
-    request->getParameter("ESPIPAddress", zapInfoReq.espIP);
-    request->getParameter("ThorIPAddress", zapInfoReq.thorIP);
+    double version = context.getClientVersion();
+    if (version >= 1.95)
+    {
+        request->getParameter("ESPApplication", zapInfoReq.esp);
+        if (zapInfoReq.esp.isEmpty())
+            zapInfoReq.esp.set(espApplicationName.get());
+        request->getParameter("ThorProcesses", zapInfoReq.thor);
+    }
+    else
+    {
+        request->getParameter("ESPIPAddress", zapInfoReq.esp);
+        if (zapInfoReq.esp.isEmpty())
+        {
+            IpAddress ipaddr = queryHostIP();
+            ipaddr.getIpText(zapInfoReq.esp);
+        }
+        request->getParameter("ThorIPAddress", zapInfoReq.thor);
+    }
     request->getParameter("ProblemDescription", zapInfoReq.problemDesc);
     request->getParameter("WhatChanged", zapInfoReq.whatChanged);
     request->getParameter("WhereSlow", zapInfoReq.whereSlow);
@@ -1434,7 +1450,6 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
             zapInfoReq.emailFrom.set(wswService->zapEmailFrom.str());
     }
 
-    double version = context.getClientVersion();
     if (version >= 1.70)
         request->getParameter("ZAPPassword", zapInfoReq.password);
     else
@@ -1507,6 +1522,9 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
     IEspContext *ctx = request->queryContext();
     IProperties *params = request->queryParameters();
 
+    double defaultClientVersion = 0.0;
+    if ((ctx->getClientVersion() <= 0) && getDefaultClientVersion(defaultClientVersion))
+        ctx->setClientVersion(defaultClientVersion);
 
     try
     {
@@ -1547,9 +1565,6 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             SecAccessFlags accessOwn;
             SecAccessFlags accessOthers;
             getUserWuAccessFlags(*ctx, accessOwn, accessOthers, true);
-
-            if (ctx->getClientVersion()<=0)
-                ctx->setClientVersion(1.51);
 
             const char *cluster = params->queryProp("Cluster");
             const char *startDate = params->queryProp("StartDate");
@@ -1664,7 +1679,6 @@ int CWsWorkunitsSoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpRequ
             return 0;
         }
     }
-
     return CWsWorkunitsSoapBinding::onGetInstantQuery(context, request, response, service, method);
 }
 

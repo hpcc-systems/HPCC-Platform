@@ -896,8 +896,10 @@ ESPrequest [nil_remove] WUGetZAPInfoRequest
 ESPresponse [exceptions_inline] WUGetZAPInfoResponse
 {
     string WUID;
-    string ESPIPAddress;
-    string ThorIPAddress;
+    [depr_ver("1.95")] string ESPIPAddress;
+    [min_ver("1.95")] string ESPApplication;
+    [depr_ver("1.95")] string ThorIPAddress;
+    [min_ver("1.95")] string ThorProcesses;
     string BuildVersion;
     string Archive;
     [min_ver("1.73")] string EmailTo;
@@ -907,8 +909,10 @@ ESPresponse [exceptions_inline] WUGetZAPInfoResponse
 ESPrequest [nil_remove] WUCreateZAPInfoRequest
 {
     string Wuid;
-    string ESPIPAddress;
-    string ThorIPAddress;
+    [depr_ver("1.95")] string ESPIPAddress;
+    [min_ver("1.95")] string ESPApplication;
+    [depr_ver("1.95")] string ThorIPAddress;
+    [min_ver("1.95")] string ThorProcesses;
     string BuildVersion;
     string ProblemDescription;
     string WhatChanged;

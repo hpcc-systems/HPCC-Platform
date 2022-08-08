@@ -5595,6 +5595,9 @@ void EspServInfo::write_esp_binding_ipp()
     //Method ==> onGetInstantQuery
     outs("\tvirtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);\n");
 
+    //Method ==> getDefaultClientVersion
+    outs("\tbool getDefaultClientVersion(double &ver);\n");
+
     //Method ==> xslTransform
     if (needsXslt)
     {
@@ -6151,18 +6154,24 @@ void EspServInfo::write_esp_binding()
     outs(1, "return NULL;\n");
     outs("}\n");
 
-    //Method ==> onGetInstantQuery
-    outf("\nint C%sSoapBinding::onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)\n", name_);
+    //Method ==> getDefaultClientVersion
+    outf("\nbool C%sSoapBinding::getDefaultClientVersion(double &ver)\n", name_);
     outs("{\n");
     StrBuffer defVer;
     bool hasDefVer = getMetaVerInfo(tags,"default_client_version",defVer);
     if (!hasDefVer)
         hasDefVer = getMetaVerInfo(tags,"version",defVer);
     if (hasDefVer)
-    {
-        outf("\tif (context.getClientVersion()<=0)\n");
-        outf("\t\tcontext.setClientVersion(%s);\n\n", defVer.str());
-    }
+        outf("\tver = %s;\n", defVer.str());
+    outf("\treturn %s;\n", hasDefVer ? "true" : "false");
+    outs("}\n");
+
+    //Method ==> onGetInstantQuery
+    outf("\nint C%sSoapBinding::onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)\n", name_);
+    outs("{\n");
+    outf("\tdouble defaultClientVersion = 0.0;\n");
+    outf("\tif ((context.getClientVersion()<=0) && getDefaultClientVersion(defaultClientVersion))\n");
+    outf("\t\tcontext.setClientVersion(defaultClientVersion);\n\n");
     outs("\tif(request == NULL || response == NULL)\n");
     outs("\t\treturn -1;\n");
     
