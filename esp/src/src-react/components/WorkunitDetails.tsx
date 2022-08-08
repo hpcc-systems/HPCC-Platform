@@ -1,10 +1,10 @@
 import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
-import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
-import { service } from "src/ESPLog";
+import { service, hasLogAccess } from "src/ESPLog";
 import { useWorkunit } from "../hooks/workunit";
+import { useUserTheme } from "../hooks/theme";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
@@ -21,8 +21,6 @@ import { WorkunitSummary } from "./WorkunitSummary";
 import { Result } from "./Result";
 import { Logs } from "./Logs";
 
-const logger = scopedLogger("src-react/components/Workunits.tsx");
-
 interface WorkunitDetailsProps {
     wuid: string;
     tab?: string;
@@ -37,15 +35,26 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     queryParams = {}
 }) => {
 
+    const { themeV9 } = useUserTheme();
     const [workunit] = useWorkunit(wuid, true);
 
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;
 
     const [logCount, setLogCount] = React.useState<number | string>("*");
+    const [logsDisabled, setLogsDisabled] = React.useState(true);
     React.useEffect(() => {
-        service.GetLogsEx({ ...queryParams, jobId: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
-            setLogCount(response.total);
-        }).catch(err => logger.error(err));
+        hasLogAccess().then(response => {
+            setLogsDisabled(!response);
+            return response;
+        }).then(hasLogAccess => {
+            if (hasLogAccess) {
+                service.GetLogsEx({ ...queryParams, jobId: wuid, LogLineStartFrom: 0, LogLineLimit: 10 }).then(response => {    // HPCC-27711 - Requesting LogLineLimit=1 causes issues
+                    setLogCount(response.total);
+                });
+            }
+        }).catch(() => {
+            setLogsDisabled(true);
+        });
     }, [queryParams, wuid]);
 
     return <SizeMe monitorHeight>{({ size }) =>
@@ -83,7 +92,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     <Helpers wuid={wuid} />
                 }
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Logs} itemKey="logs" itemCount={logCount} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Logs} itemKey="logs" itemCount={logCount} headerButtonProps={logsDisabled ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} style={pivotItemStyle(size, 0)}>
                 <Logs wuid={wuid} filter={queryParams} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="eclsummary" style={pivotItemStyle(size, 0)}>
