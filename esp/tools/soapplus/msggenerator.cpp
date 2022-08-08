@@ -43,25 +43,24 @@ static bool loadFile(StringBuffer& s, const char* file)
 MessageGenerator::MessageGenerator(const char* path, bool keepfile, SchemaType st, IProperties* globals)
     :  m_keepfile(keepfile), m_schemaType(st)
 {
-    if(globals)
-        m_globals = globals;
+    m_globals.setown(globals ? LINK(globals) : createProperties(true));
 
-    m_items = globals->queryProp("items")?atoi(globals->queryProp("items")):1;
-    m_isRoxie = globals->queryProp("roxie") ? true : false;
-    m_genAllDatasets = globals->queryProp("alldataset") ? true : false;
-    m_gx = globals->queryProp("gx") ? true : false;
-    m_soapWrap = globals->queryProp("gs") ? false: true;
-    m_ecl2esp = globals->getPropBool("ECL2ESP", false);
+    m_items = m_globals->getPropInt("items", 1);
+    m_isRoxie = m_globals->queryProp("roxie") ? true : false;
+    m_genAllDatasets = m_globals->queryProp("alldataset") ? true : false;
+    m_gx = m_globals->queryProp("gx") ? true : false;
+    m_soapWrap = m_globals->queryProp("gs") ? false : true;
+    m_ecl2esp = m_globals->getPropBool("ECL2ESP");
     if (m_ecl2esp)
         m_items = 1;
 
-    if (globals->queryProp("gf"))
-        m_gfile.set(globals->queryProp("gf"));
+    if (m_globals->queryProp("gf"))
+        m_gfile.set(m_globals->queryProp("gf"));
 
-    if (globals->queryProp("cfg"))
+    if (m_globals->queryProp("cfg"))
     {
         StringBuffer cfg;
-        if (loadFile(cfg, globals->queryProp("cfg")))
+        if (loadFile(cfg, m_globals->queryProp("cfg")))
             m_cfg.setown(createPTreeFromXMLString(cfg));
         else
             UERRLOG("Can not load cfg file; ignored");
@@ -510,8 +509,8 @@ StringBuffer& MessageGenerator::generateMessage(const char* method, const char* 
         if(http_tracelevel >= 5)
             fprintf(stderr, "%s\n", message.str());
 
-        char c = 'n';
-        if(!(m_globals && m_globals->getPropBool("useDefault")))
+        int c = 'n';
+        if (!m_globals->getPropBool("useDefault"))
         {
             fprintf(stderr, "Do you want to modify it?[n/y]");
             c = getchar();

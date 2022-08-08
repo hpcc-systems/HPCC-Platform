@@ -142,7 +142,13 @@ __int64 Http::receiveData(ISocket* socket, IByteOutputStream* ostream, bool isCl
         content_stream.setown(createBufferedIOStream(content_output));
 
     char oneline[2049];
-    bsocket->read(oneline, 4);
+    unsigned readlen = bsocket->read(oneline, 4);
+    if (readlen < 4)
+    {
+        printf("Failed to read HTTP Method.\n");
+        return -1;
+    }
+
     if(alwayshttp)
         isRoxie = false;
     else if(strncmp(oneline, "GET", 3) == 0 || strncmp(oneline, "POST", 4) == 0 || strncmp(oneline, "HTTP", 4) == 0)
@@ -460,7 +466,7 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
                        const char* outdir, const char* outfilename, bool writeToFiles,
                        int doValidation, const char* xsdpath, bool isEspLogFile) : m_stopstress(false)
 {
-    m_globals = globals;
+    m_globals.setown(globals ? LINK(globals) : createProperties(true));
     if(url && *url)
         m_url.append(url);
     if(inname)
@@ -493,9 +499,9 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
             if(m_ssctx.get() == NULL)
             {
                 Owned<IPropertyTree> cfgtree = nullptr;
-                if (globals->hasProp("cfg"))
+                if (m_globals->hasProp("cfg"))
                 {
-                    const char* cfg = globals->queryProp("cfg");
+                    const char* cfg = m_globals->queryProp("cfg");
                     if (cfg && *cfg)
                         cfgtree.setown(createPTreeFromXMLFile(cfg));
                 }
@@ -527,10 +533,10 @@ HttpClient::HttpClient(IProperties* globals, const char* url, const char* inname
     if(xsdpath !=  NULL)
         m_xsdpath.append(xsdpath);
 
-    if(globals && globals->hasProp("stressduration"))
+    if (m_globals->hasProp("stressduration"))
     {
-        m_stressthreads = globals->getPropInt("stressthreads", 0);
-        m_stressduration = globals->getPropInt("stressduration", 0);
+        m_stressthreads = m_globals->getPropInt("stressthreads", 0);
+        m_stressduration = m_globals->getPropInt("stressduration", 0);
     }
     else
     {
@@ -628,7 +634,7 @@ void HttpClient::start()
         }
     }
 
-    bool autogen = m_globals ? m_globals->getPropBool("autogen", false) : false;
+    bool autogen = m_globals->getPropBool("autogen");
 
     if(autogen && !m_isEspLogFile)
     {
@@ -678,7 +684,7 @@ void HttpClient::start()
             }
             int ind = 0;
             char seqbuf[20];
-            if(!(m_globals && m_globals->getPropBool("useDefault")))
+            if (!m_globals->getPropBool("useDefault"))
             {
                 fprintf(stderr, "Pick one method, or just press enter to generate a request for each method:\n");
                 if (fgets(seqbuf, 19, stdin)) {
@@ -1114,6 +1120,11 @@ public:
             return -1;
 
         m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (m_sockfd == INVALID_SOCKET)
+        {
+            fprintf(m_logfile, "Error: invalid socket");
+            return -1;
+        }
         int ret = ::connect(m_sockfd, (struct sockaddr *)(address->m_addr), sizeof(*(address->m_addr)));
         if(ret < 0)
         {
@@ -1902,9 +1913,7 @@ int SimpleServer::start()
 {
     const char* fname = NULL;
 
-    bool abortEarly = false;
-    if(m_globals)
-        abortEarly = m_globals->getPropBool("abortEarly", false);
+    bool abortEarly = m_globals->getPropBool("abortEarly");
 
     Owned<IFile> server_infile = NULL;
 

@@ -325,7 +325,7 @@ static bool expandConciseRequest(const char* concise, StringBuffer& service, Str
 
             p = ++q;
             bValue = true;
-            if (q==NULL) 
+            if (isEmptyString(q) || (*q=='\n') || (*q=='\r')) 
             { 
                 msg.appendf("Invalid input: no ending '(' for <").append(tag).append('>'); 
                 errP = q;

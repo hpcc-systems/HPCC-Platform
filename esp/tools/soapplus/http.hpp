@@ -127,7 +127,11 @@ public:
         m_fqdn.set(host);
 
     #ifndef _WIN32
-        inet_pton(AF_INET, m_ip.str(), &(m_addr->sin_addr));
+        int ret = inet_pton(AF_INET, m_ip.str(), &(m_addr->sin_addr));
+        if (ret == 0)
+            printf("CAddress: invalid network address %s.\n", m_ip.str());
+        else if (ret == -1)
+            printf("CAddress: invalid address family: AF_INET.\n");
     #else
         m_addr->sin_addr.s_addr = inet_addr(m_ip.str());
     #endif
@@ -177,7 +181,7 @@ private:
     IArrayOf<CRequest> m_stressrequests;
     bool         m_stopstress;
 
-    IProperties* m_globals;
+    Owned<IProperties> m_globals;
 
     StringBuffer& insertSoapHeaders(StringBuffer &request);
     int validate(StringBuffer& xml);
