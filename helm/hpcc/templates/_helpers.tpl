@@ -1167,7 +1167,7 @@ kind: Service
 metadata:
   name: {{ $lvars.serviceName | quote }}
   labels:
-    helmVersion: 8.8.2-rc2
+    helmVersion: 8.8.2
     {{- include "hpcc.addStandardLabels" (dict "root" $.root "instance" $lvars.serviceName ) | indent 4 }}
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
