@@ -780,7 +780,14 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
                     h->setFileSize(fileSize);
             }
             else
+            {
                 h->setName(File_ComponentLog);
+                if (!queryRemoteLogAccessor())
+                {
+                    h->setIsAvailable(false);
+                    h->setDescription("No logging stack available");
+                }
+            }
             h->setType(File_ComponentLog);
             helpers.append(*h.getLink());
         }

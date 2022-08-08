@@ -244,6 +244,7 @@ ESPStruct [nil_remove] ECLHelpFile
     [min_ver("1.44")] unsigned PID(0);
     [min_ver("1.58")] unsigned minActivityId(0);
     [min_ver("1.58")] unsigned maxActivityId(0);
+    [min_ver("1.94")] bool IsAvailable(true);
 };
 
 //  ===========================================================================
