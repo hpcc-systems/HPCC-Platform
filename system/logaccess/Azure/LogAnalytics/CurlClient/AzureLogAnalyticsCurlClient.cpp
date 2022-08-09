@@ -726,13 +726,13 @@ unsigned AzureLogAnalyticsCurlClient::processHitsJsonResp(IPropertyTreeIterator 
                     if (!firstField)
                         hitchildjson.append(", ");
 
-                    hitchildjson.appendf("{\"%s\":\"%s\"}", header.item(idx++), fields->query().queryProp("."));
+                    hitchildjson.appendf("\"%s\":\"%s\"", header.item(idx++), fields->query().queryProp("."));
 
                     firstField = false;
                 }
 
                 firstLine = false;
-                returnbuf.appendf("{\"fields\": [ %s ]}", hitchildjson.str());
+                returnbuf.appendf("{\"fields\": [ { %s } ]}", hitchildjson.str());
                 hitchildjson.clear();
                 recsProcessed++;
             }
