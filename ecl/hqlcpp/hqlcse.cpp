@@ -60,6 +60,7 @@ bool canCreateTemporary(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_range:
+    case no_rowsetrange:
     case no_rangefrom:
     case no_rangeto:
     case no_rangecommon:
@@ -263,6 +264,9 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
     case no_newtransform:
     case no_range:
     case no_rangefrom:
+    case no_createrow:
+    case no_list:
+    case no_createdictionary:
         if (expr->isConstant())
             return;
         break;
@@ -292,26 +296,40 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
         extra->canAlias = true;
 
     bool savedCanAlias = canAlias;
-    if (expr->isDataset() && (op != no_select) && (!spotCseInIfDatasetConditions || (op != no_if)))
+    bool processed = false;
+    if (canAlias)
     {
-        //There is little point looking for CSEs within dataset expressions, because only a very small
-        //minority which would correctly cse, and it can cause lots of problems - e.g., join conditions.
-        unsigned first = getFirstActivityArgument(expr);
-        unsigned num = getNumActivityArguments(expr);
-        HqlExprArray children;
-        bool defaultCanAlias = canAlias;
-        ForEachChild(i, expr)
+        if (expr->isDataset())
         {
-            IHqlExpression * cur = expr->queryChild(i);
-            if (i >= first && i < first+num)
-                canAlias = defaultCanAlias;
-            else
-                canAlias = false;
+            if ((op != no_select) && (!spotCseInIfDatasetConditions || (op != no_if)))
+            {
+                //There is little point looking for CSEs within dataset expressions, because only a very small
+                //minority which would correctly cse, and it can cause lots of problems - e.g., join conditions.
+                unsigned first = getFirstActivityArgument(expr);
+                unsigned num = getNumActivityArguments(expr);
+                HqlExprArray children;
+                bool defaultCanAlias = canAlias;
+                ForEachChild(i, expr)
+                {
+                    IHqlExpression * cur = expr->queryChild(i);
+                    if (i >= first && i < first+num)
+                        canAlias = defaultCanAlias;
+                    else
+                        canAlias = false;
 
-            analyseExpr(cur);
+                    analyseExpr(cur);
+                }
+                processed = true;
+            }
+        }
+        else if (op == no_createset)
+        {
+            analyseExpr(expr->queryChild(0));
+            processed = true;
         }
     }
-    else
+
+    if (!processed)
         PARENT::analyseExpr(expr);
     canAlias = savedCanAlias;
 }

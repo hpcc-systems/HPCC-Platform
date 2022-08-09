@@ -4662,6 +4662,9 @@ void debugTrackDifference(IHqlExpression * expr)
 
 static IHqlExpression * expandConditions(IHqlExpression * expr, DependenciesUsed & dependencies, HqlExprArray & conds, HqlExprArray & values)
 {
+    while (expr->getOperator() == no_alias_scope)
+        expr = expr->queryChild(0);
+
     if (expr->getOperator() != no_if)
         return expr;
 

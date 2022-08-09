@@ -3721,7 +3721,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         buildDatasetAssign(subctx, target, expr->queryChild(0));
         return;
     case no_alias_scope:
-//      expandAliasScope(subctx, expr);
+        expandAliasScope(subctx, expr);
         buildDatasetAssign(subctx, target, expr->queryChild(0));
         return;
     case no_filter:
