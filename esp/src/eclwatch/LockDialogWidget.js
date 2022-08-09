@@ -57,7 +57,7 @@ define([
 
         show: function (event) {
             var context = this;
-            if (!cookie("User")) {
+            if (!dojoConfig.username) {
                 cookie("Status", "Unlocked");
                 context.storage.setItem("Status", "Unlocked");
                 topic.publish("hpcc/session_management_status", {
@@ -146,7 +146,7 @@ define([
                 context.idleFired = true;
                 context.unlockDialog.show();
                 domClass.add("SessionLock", "overlay");
-                context.unlockUserName.set("value", cookie("User"));
+                context.unlockUserName.set("value", dojoConfig.username);
                 topic.publish("hpcc/session_management_status", {
                     status: "Locked"
                 });

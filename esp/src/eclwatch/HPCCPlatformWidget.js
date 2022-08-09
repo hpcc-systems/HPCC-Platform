@@ -197,9 +197,6 @@ define([
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
                     dojoConfig.username = response.MyAccountResponse.username;
-                    if (response.MyAccountResponse.username) {
-                        cookie("User", response.MyAccountResponse.username);
-                    }
                     context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
@@ -525,7 +522,6 @@ define([
                         window.location.reload();
                         context.storage.setItem("Status", "logged_out");
                         cookie("Status", "", { expires: -1 });
-                        cookie("User", "", { expires: -1 });
                     }
                 });
             });
