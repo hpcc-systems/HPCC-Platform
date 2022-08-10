@@ -214,6 +214,9 @@
             "type": "object",
             "additionalProperties": { "type": "string" }
           },
+          "resources": {
+            "$ref": "#/definitions/resources"
+          },
           "labels": {
             "type": "object",
             "additionalProperties": { "type": "string" }

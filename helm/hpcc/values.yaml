@@ -456,6 +456,9 @@ sasha:
 dfuserver:
 - name: dfuserver
   maxJobs: 1
+  #resources:
+  #  cpu: "1"
+  #  memory: "2G"
 
 eclagent:
 - name: hthor
