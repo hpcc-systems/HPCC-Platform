@@ -1,8 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
+import { WorkunitsServiceEx } from "@hpcc-js/comms";
 import { Table } from "@hpcc-js/dgrid";
-import { compare } from "@hpcc-js/util";
+import { compare, scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import { useDeepEffect } from "../hooks/deepHooks";
@@ -12,8 +13,11 @@ import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItems, ReactWidget, ResetableDockPanel } from "../layouts/DockPanel";
 import { IScope, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
 import { pushUrl } from "../util/history";
+import { debounce } from "../util/throttle";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
+
+const logger = scopedLogger("src-react/components/Metrics.tsx");
 
 const filterIcon: IIconProps = { iconName: "Filter" };
 
@@ -32,18 +36,46 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
-    const [selectedSource, setSelectedSource] = React.useState<"" | "scopes" | "graph">("");
     const [selectedMetrics, setSelectedMetrics] = React.useState([]);
+    const [selectedMetricsPtr, setSelectedMetricsPtr] = React.useState<number>(-1);
     const [metrics, _columns, _activities, _properties, _measures, _scopeTypes, refresh] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options, setOptions, saveOptions] = useMetricsOptions();
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
+
+    const onHotspot = React.useCallback(() => {
+        const service = new WorkunitsServiceEx({ baseUrl: "" });
+        service.WUAnalyseHotspot({
+            Wuid: wuid,
+            RootScope: "",
+            OptOnlyActive: false,
+            OnlyCriticalPath: false,
+            IncludeProperties: true,
+            IncludeStatistics: true,
+            ThresholdPercent: 1.0,
+            PropertyOptions: {
+                IncludeName: true,
+                IncludeRawValue: false,
+                IncludeFormatted: true,
+                IncludeMeasure: true,
+                IncludeCreator: false,
+                IncludeCreatorType: false
+            }
+        }).then(response => {
+            const selection: string = response.Activities.Activity.map(activity => activity.Id).join(",");
+            pushUrl(`/workunits/${wuid}/metrics/${selection}`);
+        }).catch(err => logger.error(err));
+    }, [wuid]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refresh()
+        },
+        {
+            key: "hotspot", text: nlsHPCC.Hotspots, iconProps: { iconName: "SpeedHigh" },
+            onClick: () => onHotspot()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -53,7 +85,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, options, refresh, setOptions]);
+    ], [dockpanel, onHotspot, options, refresh, setOptions]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
     ], []);
@@ -131,11 +163,10 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .multiSelect(true)
         .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
         .sortable(true)
-        .on("click", (row, col, sel) => {
-            setSelectedSource("scopes");
+        .on("click", debounce((row, col, sel) => {
             const selection = scopesTable.selection();
             pushUrl(`/workunits/${wuid}/metrics/${selection.map(row => row.__lparam.id).join(",")}`);
-        })
+        }, 100))
     );
 
     const [tableLoaded, setTableLoaded] = React.useState(false);
@@ -173,10 +204,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
         .zoomToFitLimit(1)
         .on("selectionChanged", () => {
-            setSelectedSource("graph");
-            const selection = metricGraphWidget.selection().map(id => {
-                return metricGraph.item(id).id;
-            });
+            const selection = metricGraphWidget.selection().map(id => metricGraph.item(id).id);
             pushUrl(`/workunits/${wuid}/metrics/${selection.join(",")}`);
         })
     );
@@ -186,9 +214,9 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [metrics, metricGraph]);
 
     const updateMetricGraph = React.useCallback((selection: IScope[]) => {
-        if (selection.length) {
+        if (metricGraphWidget.renderCount() > 0) {
             //  Check if selection is already visible  ---
-            if (selection.every(row => metricGraphWidget.exists(row.name))) {
+            if (!selection.length || selection.every(row => metricGraphWidget.exists(row.name))) {
                 metricGraphWidget
                     .selection(selection.map(s => s.name))
                     .render(() => {
@@ -209,19 +237,43 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const graphButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
+            key: "selPrev", title: nlsHPCC.PreviousSelection, iconProps: { iconName: "NavigateBack" },
+            disabled: selectedMetricsPtr < 1 || selectedMetricsPtr >= selectedMetrics.length,
+            onClick: () => {
+                metricGraphWidget.centerOnItem(selectedMetrics[selectedMetricsPtr - 1].name);
+                setSelectedMetricsPtr(selectedMetricsPtr - 1);
+            }
+        },
+        {
+            key: "selNext", title: nlsHPCC.NextSelection, iconProps: { iconName: "NavigateBackMirrored" },
+            disabled: selectedMetricsPtr < 0 || selectedMetricsPtr >= selectedMetrics.length - 1,
+            onClick: () => {
+                metricGraphWidget.centerOnItem(selectedMetrics[selectedMetricsPtr + 1].name);
+                setSelectedMetricsPtr(selectedMetricsPtr + 1);
+            }
+        },
+        {
             key: "reset", text: nlsHPCC.Reset, iconProps: { iconName: "Undo" },
             onClick: () => {
                 metricGraphWidget.reset();
-                updateMetricGraph(selectedMetrics);
+                setSelectedMetrics([]);
+                setSelectedMetricsPtr(0);
+                pushUrl(`/workunits/${wuid}/metrics`);
             }
         }
-    ], [metricGraphWidget, selectedMetrics, updateMetricGraph]);
+    ], [metricGraphWidget, selectedMetrics, selectedMetricsPtr, wuid]);
 
     const graphRightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
-            key: "toSel", title: nlsHPCC.ZoomSelection, iconProps: { iconName: "FitPage" },
-            onClick: () => metricGraphWidget.zoomToSelection()
-        }, {
+            key: "toSel", title: nlsHPCC.ZoomSelection,
+            disabled: selectedMetrics.length <= 0,
+            iconProps: { iconName: "FitPage" },
+            onClick: () => {
+                metricGraphWidget.zoomToSelection();
+            }
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
             key: "tofit", title: nlsHPCC.ZoomAll, iconProps: { iconName: "ScaleVolume" },
             onClick: () => metricGraphWidget.zoomToFit()
         }, {
@@ -239,7 +291,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
 
         // { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ], [metricGraphWidget]);
+    ], [metricGraphWidget, selectedMetrics]);
 
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
@@ -306,16 +358,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     useDeepEffect(() => {
         if (selectedMetrics) {
-            if (selectedSource !== "scopes") updateScopesTable(selectedMetrics);
-            if (selectedSource !== "graph") updateMetricGraph(selectedMetrics);
+            updateScopesTable(selectedMetrics);
+            updateMetricGraph(selectedMetrics);
             updatePropsTable(selectedMetrics);
             updatePropsTable2(selectedMetrics);
         }
-    }, [selectedSource], [selectedMetrics]);
+    }, [], [selectedMetrics]);
 
     React.useEffect(() => {
         const selectedIDs = selection.split(",");
         setSelectedMetrics(metrics.filter(m => selectedIDs.indexOf(m.id) >= 0));
+        setSelectedMetricsPtr(0);
     }, [metrics, selection]);
 
     const items: DockPanelItems = React.useMemo<DockPanelItems>((): DockPanelItems => [
