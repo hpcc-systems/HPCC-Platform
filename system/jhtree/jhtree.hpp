@@ -204,12 +204,13 @@ class jhtree_decl SegMonitorList : public CInterfaceOf<IIndexFilterList>
 {
     unsigned cachedLRS = 0;
     bool modified = true;
+    bool unfiltered = true;
     const RtlRecord &recInfo;
     unsigned keySegCount;
     IArrayOf<IKeySegmentMonitor> segMonitors;
 
     size32_t getSize() const;
-    unsigned _lastRealSeg() const;
+    unsigned _lastRealSeg();
     SegMonitorList(const SegMonitorList &_from, const char *fixedVals, unsigned sortFieldOffset);
 public:
     SegMonitorList(const RtlRecord &_recInfo);
@@ -226,6 +227,7 @@ public:
     virtual bool incrementKey(unsigned segno, void *keyBuffer) const override;
     virtual void endRange(unsigned segno, void *keyBuffer) const override;
     virtual unsigned lastRealSeg() const override { assertex(!modified); return cachedLRS; }
+    virtual bool isUnfiltered() const override { assertex(!modified); return unfiltered; }
     unsigned lastFullSeg() const override;
     virtual unsigned numFilterFields() const override { return segMonitors.length(); }
     virtual IIndexFilterList *fixSortSegs(const char *fixedVals, unsigned sortFieldOffset) const override

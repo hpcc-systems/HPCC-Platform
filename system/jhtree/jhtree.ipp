@@ -236,7 +236,7 @@ protected:
     bool last(char *dst, KeyStatsCollector &stats);
     bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats);
     bool ltEqual(const char *src, KeyStatsCollector &stats);
-    bool _lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats);
+    bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStatsCollector &stats);
     void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size32_t recSize, KeyStatsCollector &stats);
 
     inline void setLow(unsigned segNo)
@@ -294,6 +294,8 @@ public:
     virtual bool matchesBuffer(const void *buffer, unsigned lastSeg, unsigned &matchSeg) const override;
     virtual unsigned getFieldOffset(unsigned idx) const override { return recInfo.getFixedOffset(idx); }
     virtual bool canMatch() const override;
+    virtual bool isUnfiltered() const override;
+
 
 protected:
     IndexRowFilter(const IndexRowFilter &_from, const char *fixedVals, unsigned sortFieldOffset);
@@ -303,7 +305,7 @@ protected:
     unsigned lastFull = -1;
     unsigned keyedSize = 0;
     unsigned keySegCount = 0;
-
+    bool unfiltered = true;
 };
 
 #endif
