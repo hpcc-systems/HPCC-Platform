@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import toast from "react-hot-toast";
-import { ESPExceptions, isExceptions } from "@hpcc-js/comms";
+import { isExceptions } from "@hpcc-js/comms";
 import { Dispatch, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction, Message } from "@hpcc-js/util";
 import { CustomToaster } from "../components/controls/CustomToaster";
 
@@ -67,11 +67,9 @@ export class ECLWatchLogger implements Writer {
     }
 
     rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
-        if (_msg instanceof ESPExceptions) {
-            this.doWrite(dateTime, level, id, _msg.message);
-        } else if (isExceptions(_msg)) {
+        if (isExceptions(_msg)) {
             _msg.Exception?.forEach(ex => {
-                this.doWrite(dateTime, level, "" + ex.Code, ex.Message);
+                this.doWrite(dateTime, level, id, `${ex.Code}: ${ex.Message}`);
             });
         } else if (_msg instanceof Error) {
             this.doWrite(dateTime, level, id, _msg.message);
