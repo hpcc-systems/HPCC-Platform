@@ -320,12 +320,11 @@ inline static bool isValidXPathValueChr(char c)
 }
 inline static bool isValidXPathValue(const char *v)
 {
-    const char *p = v;
     do
     {
-         if (!isValidXPathValueChr(*p++)) return false;
+         if (!isValidXPathValueChr(*v++)) return false;
     }
-    while (*p != '\0');
+    while (*v);
     return true;
 }
 

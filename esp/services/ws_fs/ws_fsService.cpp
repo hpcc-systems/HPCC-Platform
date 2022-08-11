@@ -3693,6 +3693,6 @@ void CFileSprayValidateHelper::validateGetDFUWorkunitsRequest(IEspGetDFUWorkunit
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid StateReq %s.", req.getStateReq());
     if (!isEmptyString(req.getJobname()) && !isValidXPathValue(req.getJobname()))
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid Jobname %s.", req.getJobname());
-    if (!isEmptyString(req.getPublisherWuid()) && !isValidXPathValue(req.getPublisherWuid()))
+    if (!isEmptyString(req.getPublisherWuid()) && !looksLikeAWuid(req.getPublisherWuid(), 'P'))
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "GetDFUWorkunits: Invalid PublisherWuid %s.", req.getPublisherWuid());
 }
