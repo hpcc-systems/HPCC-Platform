@@ -313,6 +313,33 @@ inline static bool isValidXPathChr(char c)
     return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
 }
 
+inline static bool isValidXMLElementName(const char *s)
+{
+    if (!isValidXPathStartChr(*s)) return false;
+
+    while (*++s)
+    {
+        if (!isValidXPathChr(*s)) return false;
+    }
+
+    return true;
+}
+
+static const char *validNameChrs = "-."; //Do I miss any?
+inline static bool isValidNameChr(char c, const char *extraAllowedCharacters)
+{
+    return ('\0' != c && (isalnum(c) || strchr(validNameChrs, c) || (extraAllowedCharacters && strchr(extraAllowedCharacters, c))));
+}
+inline static bool isValidName(const char *s, const char *extraAllowedCharacters)
+{
+    do
+    {
+         if (!isValidNameChr(*s++, extraAllowedCharacters)) return false;
+    }
+    while (*s);
+    return true;
+}
+
 static const char *validXPathValueChrs = "!#$%^&()+,-.:;?@_{|}~"; //Do I miss any?
 inline static bool isValidXPathValueChr(char c)
 {

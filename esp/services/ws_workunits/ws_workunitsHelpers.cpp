@@ -4933,11 +4933,11 @@ void CWsWuValidateHelper::validateApplicationValuesRequest(const char* method, I
         IConstApplicationValue& item = applicationValues.item(i);
         if (isEmpty(item.getApplication()))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application must be specified.", method);
-        if (!isValidXPathValue(item.getApplication()))
+        if (!isValidXMLElementName(item.getApplication()))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Invalid Application %s.", method, item.getApplication());
         if (isEmpty(item.getName()) && isEmpty(item.getValue()))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application %s: Application Name or Value must be specified.", method, item.getApplication());
-        if (!isEmptyString(item.getName()) && !isValidXPathValue(item.getName()))
+        if (!isEmptyString(item.getName()) && !isValidName(item.getName(), nullptr))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application %s: Invalid Application Name %s.", method, item.getApplication(), item.getName());
         if (!isEmptyString(item.getValue()) && !isValidXPathValue(item.getValue()))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "%s: Application %s: Invalid Application Value %s.", method, item.getApplication(), item.getValue());
