@@ -166,6 +166,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     COUCHBASEEMBED
     SPARK
     ECLBLAS
+    MONGODBEMBED
     EXAMPLEPLUGIN)
     foreach(plugin ${PLUGINS_LIST})
         option(${plugin} "Create a package with ONLY the ${plugin} plugin" OFF)
