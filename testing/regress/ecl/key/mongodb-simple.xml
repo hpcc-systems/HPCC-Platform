@@ -1,0 +1,30 @@
+<Dataset name = 'FindTransactionByID'>
+<Row><account_id>716662</account_id><transaction_count>48</transaction_count></Row>
+</Dataset>
+<Dataset name = 'FindTransactionByCount'>
+<Row><account_id>278866</account_id><transaction_count>100</transaction_count></Row>
+</Dataset>
+<Dataset name = 'FindTransactionBelowCount'>
+<Row><account_id>852986</account_id><transaction_count>3</transaction_count></Row>
+</Dataset>
+<Dataset name = 'FindAirBnBByID'>
+<Row><name>Apt Linda Vista Lagoa - Rio</name><space></space><description>Quarto com vista para a Lagoa Rodrigo de Freitas, cartão postal do Rio de Janeiro. Linda Vista.  1 Quarto e 1 banheiro  Amplo, arejado, vaga na garagem. Prédio com piscina, sauna e playground.  Fácil acesso, próximo da praia e shoppings.</description><beds>1</beds><accommodates>2</accommodates></Row>
+</Dataset>
+<Dataset name = 'FindAirBnBByBeds'>
+<Row><name>Ribeira Charming Duplex</name><space>Privileged views of the Douro River and Ribeira square, our apartment offers the perfect conditions to discover the history and the charm of Porto. Apartment comfortable, charming, romantic and cozy in the heart of Ribeira. Within walking distance of all the most emblematic places of the city of Porto. The apartment is fully equipped to host 8 people, with cooker, oven, washing machine, dishwasher, microwave, coffee machine (Nespresso) and kettle. The apartment is located in a very typical area of the city that allows to cross with the most picturesque population of the city, welcoming, genuine and happy people that fills the streets with his outspoken speech and contagious with your sincere generosity, wrapped in a only parochial spirit.</space><description>Fantastic duplex apartment with three bedrooms, located in the historic area of Porto, Ribeira (Cube) - UNESCO World Heritage Site. Centenary building fully rehabilitated, without losing their original character. Privileged views of the Douro River and Ribeira square, our apartment offers the perfect conditions to discover the history and the charm of Porto. Apartment comfortable, charming, romantic and cozy in the heart of Ribeira. Within walking distance of all the most emblematic places of the city of Porto. The apartment is fully equipped to host 8 people, with cooker, oven, washing machine, dishwasher, microwave, coffee machine (Nespresso) and kettle. The apartment is located in a very typical area of the city that allows to cross with the most picturesque population of the city, welcoming, genuine and happy people that fills the streets with his outspoken speech and contagious with your sincere generosity, wrapped in a only parochial spirit. We are always available to help guests</description><beds>5</beds><accommodates>8</accommodates></Row>
+</Dataset>
+<Dataset name = 'FindAirBnBByListing'>
+<Row><name>	Ligne verte - à 15 min de métro du centre ville.</name><space></space><description>À 30 secondes du métro Joliette. Belle grande cuisine, chambre et salon bien ensoleillé. Wifi et chrome cast inclus. Vous avez accès à tout l'appartement. Une amie sera disponible en cas de besoin. L'appartement se trouve à 4 minutes de marche de la promenade Ontario, où on y trouve une multitude de boutiques locales, marchés bio, boucherie, restaurant et parcs. Stationnement dans la rue, à 30 secondes du métro Joliette et 30 secondes des lignes d'autobus.</description><beds>1</beds><accommodates>2</accommodates></Row>
+</Dataset>
+<Dataset name = 'FindFeesByID'>
+<Row><price>701</price><security_deposit>1000</security_deposit><cleaning_fee>250</cleaning_fee><extra_people>0</extra_people><guests_included>1</guests_included></Row>
+</Dataset>
+<Dataset name = 'FindFeesByBeds'>
+<Row><price>80</price><security_deposit>200</security_deposit><cleaning_fee>35</cleaning_fee><extra_people>15</extra_people><guests_included>6</guests_included></Row>
+</Dataset>
+<Dataset name = 'FindFeesByListing'>
+<Row><price>43</price><security_deposit>0</security_deposit><cleaning_fee>0</cleaning_fee><extra_people>12</extra_people><guests_included>1</guests_included></Row>
+</Dataset>
+<Dataset name='Status'>
+ <Row><Status>Done</Status></Row>
+</Dataset>
