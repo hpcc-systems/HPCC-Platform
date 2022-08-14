@@ -1036,15 +1036,18 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         Owned<IFile> local = createIFile(localLocation);
         if (traceRemoteFiles)
             DBGLOG("openFile adding file %s (localLocation %s)", lfn, localLocation);
-        IFileDescriptor &fdesc = pdesc->queryOwner();
-        bool isCompressed = selfTestMode ? false : fdesc.isCompressed();
         unsigned crc = 0;
-        if (!selfTestMode)
-            pdesc->getCrc(crc);
+        bool isCompressed = false;
         bool isKey = false;
-        const char *kind = fdesc.queryKind();
-        if (kind && streq(kind, "key"))
-            isKey = true;
+        if (!selfTestMode)
+        {
+            pdesc->getCrc(crc);
+            IFileDescriptor &fdesc = pdesc->queryOwner();
+            isCompressed = fdesc.isCompressed();
+            const char *kind = fdesc.queryKind();
+            if (kind && streq(kind, "key"))
+                isKey = true;
+        }
 
         Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
