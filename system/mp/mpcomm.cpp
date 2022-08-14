@@ -2237,6 +2237,37 @@ int CMPConnectThread::run()
                 connectHdr.id[0].get(_remoteep);
                 connectHdr.id[1].get(hostep);
 
+                // HPCC-28125 - if remoteep IP != peerEp IP then log warning - do we change remoteep ?
+                //              if hostep != listen ep then log warning - do we change hostep ?
+                // **VERY CONCERNED** about pods and local IPs and Network Address Translation
+
+                if (!_remoteep.ipequals(peerEp))
+                {
+                    StringBuffer rIp, pIp;
+                    _remoteep.getIpText(rIp);
+                    peerEp.getIpText(pIp);
+                    PROGLOG("MP: WARNING: remote client address (%s:%u) != peer address (%s:%u)", rIp.str(), _remoteep.port, pIp.str(), peerEp.port);
+                    _remoteep.set(peerEp);
+                    connectHdr.id[0].set(_remoteep);
+                    // should we sock->close() and continue ?
+                }
+
+                SocketEndpoint listenEp;
+                listensock->getEndpoint(listenEp);
+                unsigned short lPort = listenEp.port;
+                IpAddress myLocalIp;
+                GetHostIp(myLocalIp);
+                if (!hostep.ipequals(myLocalIp))
+                {
+                    StringBuffer hIp, lIp;
+                    hostep.getIpText(hIp);
+                    myLocalIp.getIpText(lIp);
+                    PROGLOG("MP: WARNING: remote client trying to reach (%s:%u) != listen address (%s:%u)", hIp.str(), hostep.port, lIp.str(), lPort);
+                    hostep.set(lPort, myLocalIp);
+                    connectHdr.id[1].set(hostep);
+                    // should we sock->close() and continue ?
+                }
+
                 unsigned __int64 addrval = DIGIT1*connectHdr.id[0].ip[0] + DIGIT2*connectHdr.id[0].ip[1] + DIGIT3*connectHdr.id[0].ip[2] + DIGIT4*connectHdr.id[0].ip[3] + connectHdr.id[0].port;
 #ifdef _TRACE
                 PROGLOG("MP: Connect Thread: addrval = %" I64F "u", addrval);
