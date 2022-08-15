@@ -42,7 +42,8 @@ MetricsManager jlib_decl &queryMetricsManager();
 enum MetricType
 {
     METRICS_COUNTER,
-    METRICS_GAUGE
+    METRICS_GAUGE,
+    METRICS_HISTOGRAM
 };
 
 
@@ -86,7 +87,6 @@ interface IMetric
      */
     virtual __uint64 queryValue() const = 0;
 
-
     /*
      * Query the meta data for the metric
      */
@@ -96,6 +96,16 @@ interface IMetric
      * Get the units for the metric
      */
     virtual StatisticMeasure queryUnits() const = 0;
+
+    /*
+     * Query histogram values (for histogram metrics)
+     */
+    virtual std::vector<__uint64> queryHistogramValues() const = 0;
+
+    /*
+     * Query histogram labels
+     */
+    virtual std::vector<std::string> queryHistogramLabels() const = 0;
 };
 
 
@@ -110,8 +120,10 @@ public:
     virtual const std::string &queryName() const override { return name; }
     virtual const std::string &queryDescription() const override { return description; }
     virtual MetricType queryMetricType() const override { return metricType; }
-    const MetricMetaData &queryMetaData() const { return metaData; }
+    const MetricMetaData &queryMetaData() const override { return metaData; }
     StatisticMeasure queryUnits() const override { return units; }
+    virtual std::vector<__uint64> queryHistogramValues() const override { return {}; }
+    virtual std::vector<std::string> queryHistogramLabels() const override { return {}; }
 
 
 protected:
@@ -234,6 +246,48 @@ public:
 
 protected:
     T &value;
+};
+
+
+struct BucketDef
+{
+    std::string label;
+    __uint64 limit;
+};
+
+
+struct Bucket
+{
+    Bucket(const std::string &_label, __uint64 _limit) :
+        label{_label}, limit{_limit}, count{0} {}
+    std::string label;
+    __uint64 limit;
+    __uint64 count;
+};
+
+
+class jlib_decl HistogramMetric : public MetricBase
+{
+public:
+    HistogramMetric(const char *name, const char *desc, StatisticMeasure _units, const std::vector<BucketDef> &bucketDefs, const MetricMetaData &_metaData = MetricMetaData());
+
+    virtual __uint64 queryValue() const override
+    {
+        return sum;
+    }
+
+    void recordMeasurement(__uint64 measurement);
+    virtual std::vector<__uint64> queryHistogramValues() const override;
+    virtual std::vector<std::string> queryHistogramLabels() const override;
+
+protected:
+    Bucket &findBucket(__uint64 measurement);
+
+protected:
+    std::vector<Bucket> buckets;
+    mutable CriticalSection cs;
+    Bucket inf{"inf", 0};
+    __uint64 sum{0};
 };
 
 

@@ -74,6 +74,7 @@ public:
         CPPUNIT_TEST(Test_scoped_updater_classes);
         CPPUNIT_TEST(Test_metric_meta_data);
         CPPUNIT_TEST(Test_gauge_by_counters_metric);
+        CPPUNIT_TEST(Test_histogram_metric);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -306,6 +307,59 @@ protected:
 
         pCounterStarted->inc(2);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounterGauge->queryValue()));
+    }
+
+
+    void Test_histogram_metric()
+    {
+        std::vector<BucketDef> bucketDefs = {{"le 2", 2}, {"le 4", 4}, {"le 8", 8} };
+        std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("requests.dist", "description", SMeasureCount, bucketDefs);
+
+        std::vector<__uint64> values;
+
+        //
+        // Verify that the correct number of buckets is returned
+        values = pHistogram->queryHistogramValues();
+        CPPUNIT_ASSERT_EQUAL(bucketDefs.size()+1, values.size());
+
+        //
+        // Add a measurement and make sure it goes into the correct bucket
+        int sumMeasurements = 0;
+
+        pHistogram->recordMeasurement(4);
+        sumMeasurements += 4;
+        checkHistogramBucketResult(pHistogram, sumMeasurements, {0,1,0,0});
+
+        //
+        // Add same measurement and make sure the bucket increments
+        pHistogram->recordMeasurement(4);
+        sumMeasurements += 4;
+        checkHistogramBucketResult(pHistogram, sumMeasurements, {0,2,0,0});
+
+        //
+        // Add a measurement that is beyond the highest bucket and make sure it goes in the
+        // last "inf" bucket
+        pHistogram->recordMeasurement(20);
+        sumMeasurements += 20;
+        checkHistogramBucketResult(pHistogram, sumMeasurements, {0,2,0,1});
+
+        //
+        // Just to make sure, increment another bucket
+        pHistogram->recordMeasurement(8);
+        sumMeasurements += 8;
+        checkHistogramBucketResult(pHistogram, sumMeasurements, {0,2,1,1});
+    }
+
+
+    void checkHistogramBucketResult(std::shared_ptr<IMetric> pHistogram, int expectedSum, const std::vector<int> &expectedValues)
+    {
+        std::vector<__uint64> values = pHistogram->queryHistogramValues();
+        CPPUNIT_ASSERT_EQUAL(static_cast<int>(pHistogram->queryValue()), expectedSum);
+        auto size = expectedValues.size();
+        for (unsigned i=0; i<size; ++i)
+        {
+            CPPUNIT_ASSERT_EQUAL(static_cast<int>(values[i]), expectedValues[i]);
+        }
     }
 
 protected:

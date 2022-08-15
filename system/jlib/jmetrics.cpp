@@ -28,6 +28,66 @@ MODULE_EXIT()
 }
 
 
+HistogramMetric::HistogramMetric(const char *name, const char *desc, StatisticMeasure _units, const std::vector<BucketDef> &bucketDefs, const MetricMetaData &_metaData) :
+        MetricBase(name, desc, MetricType::METRICS_HISTOGRAM, _units, _metaData)
+{
+    buckets.reserve(bucketDefs.size());
+    for (auto &b: bucketDefs)
+    {
+        buckets.emplace_back(Bucket{b.label, b.limit});
+    }
+}
+
+
+void HistogramMetric::recordMeasurement(__uint64 measurement)
+{
+    CriticalBlock block(cs);
+    sum += measurement;                // sum of all measurements
+    findBucket(measurement).count++;   // count by buckets
+}
+
+
+std::vector<__uint64> HistogramMetric::queryHistogramValues() const
+{
+    std::vector<__uint64> histogramValues;
+    histogramValues.reserve(buckets.size()+1);
+    CriticalBlock block(cs);
+    for (auto const &bucket: buckets)
+    {
+        histogramValues.push_back(bucket.count);
+    }
+    histogramValues.push_back(inf.count);
+    return histogramValues;
+}
+
+
+std::vector<std::string> HistogramMetric::queryHistogramLabels() const
+{
+    std::vector<std::string> labels;
+    labels.reserve(buckets.size()+1);
+    for (auto const &bucket: buckets)
+    {
+        labels.emplace_back(bucket.label);
+    }
+    labels.emplace_back(inf.label);
+    return labels;
+}
+
+
+
+Bucket &HistogramMetric::findBucket(__uint64 measurement)
+{
+    for (auto &b: buckets)
+    {
+        if (measurement <= b.limit)
+        {
+            return b;
+        }
+    }
+    return inf;
+}
+
+
 MetricsManager &hpccMetrics::queryMetricsManager()
 {
     return *metricsManager.query([] { return new MetricsManager; });

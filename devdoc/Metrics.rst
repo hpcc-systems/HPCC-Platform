@@ -290,6 +290,19 @@ metric value as the custom metric class provides no update methods. The componen
 for ensuring atomic access to the value if necessary.
 
 
+Histogram Metric
+-----------------
+Records counts of measurements according to defined bucket limits. When created, the caller defines
+as set of bucket limits. During event recording, the component records measurements. The metric
+separates each recorded measurement into its bucket by testing the measurement value against each
+bucket limit using a less than or equal test. Each bucket contains a count of measurements meeting
+that criteria. Additionally, the metric maintains a default bucket for measurements outside of the
+maximum bucket limit. This is sometimes known as the "inf" bucket.
+
+Some storage systems, such as Prometheus, require each bucket to accumulate its measurements with
+the previous bucket(s). It is the responsibility of the sink to accumulate values as needed.
+
+
 *************
 Configuration
 *************
