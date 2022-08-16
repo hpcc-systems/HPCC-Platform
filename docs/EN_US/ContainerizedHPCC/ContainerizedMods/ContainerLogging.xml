@@ -35,10 +35,10 @@
 
     <para>It is important to understand that these logs are ephemeral in
     nature, and may be lost if the pod is evicted, the container crashes, the
-    node dies, etc. Also, due to the nature of containerized solutions,
-    related logs are likely to originate from various locations and might need
-    to be collected and processed. It is highly recommended to develop a
-    retention and processing strategy based on your needs.</para>
+    node dies, etc. Due to the nature of containerized systems, related logs
+    are likely to originate from various locations and need to be collected
+    and processed. It is highly recommended to develop a retention and
+    processing strategy based on your needs.</para>
 
     <para>Many tools are available to help create an appropriate solution
     based on either a do-it-yourself approach, or managed features available
@@ -53,7 +53,7 @@
     <para>Cluster-level logging for the containerized HPCC Systems cluster can
     be accomplished by including a logging agent on each node. The task of
     each of agent is to expose the logs or push them to a log processing
-    backend. Logging agents are generally not provided out of the box, but
+    back-end. Logging agents are generally not provided out of the box, but
     there are several available such as Elasticsearch and Stackdriver Logging.
     Various cloud providers offer built-in solutions which automatically
     harvest all stdout/err streams and provide dynamic storage and powerful
@@ -67,37 +67,35 @@
   <sect1 id="HPCC_LogProcessing_Solution">
     <title>Log Processing Solutions</title>
 
-    <para>There are multiple available log processing solutions. You could
-    choose to integrate HPCC Systems logging data with any of your existing
-    logging solutions, or to implement another one specifically for HPCC
-    Systems data. Starting with HPCC Systems version 8.4, we provide a
-    lightweight, yet complete log-processing solution for your convenience. As
-    stated there are several possible solutions, you should choose the option
-    that best meets your requirements. The following sections will look at two
-    possible solutions.</para>
+    <para>There are multiple log processing solutions available. You could
+    choose to integrate HPCC Systems logging data with any existing logging
+    solutions, or to implement another one specifically for HPCC Systems data.
+    Starting with HPCC Systems version 8.4, we provide a lightweight, yet
+    complete log-processing solution for your convenience. The following
+    sections will look at a couple of the possible solutions.</para>
+  </sect1>
 
-    <sect2 id="elastic4HPCC_HelmChart">
-      <title>The Elastic4hpcclogs chart</title>
+  <sect1 id="elastic4HPCC_HelmChart">
+    <title>Managed Elastic Stack Solution</title>
 
-      <para>HPCC Systems provides a managed Helm chart,
-      <emphasis>elastic4hpcclogs</emphasis> which utilizes the Elastic Stack
-      Helm charts for Elastic Search, Filebeats, and Kibana. This chart
-      describes a local, minimal Elastic Stack instance for HPCC Systems
-      component log processing. Once successfully deployed, HPCC component
-      logs produced within the same namespace should be automatically indexed
-      on the Elastic Search end-point. Users can query those logs by issuing
-      Elastic Search RESTful API queries, or via the Kibana UI (after creating
-      a simple index pattern).</para>
+    <para>HPCC Systems provides a managed Helm chart,
+    <emphasis>elastic4hpcclogs</emphasis> which utilizes the Elastic Stack
+    Helm charts for Elastic Search, Filebeats, and Kibana. This chart
+    describes a local, minimal Elastic Stack instance for HPCC Systems
+    component log processing. Once successfully deployed, HPCC component logs
+    produced within the same namespace should be automatically indexed on the
+    Elastic Search end-point. Users can query those logs by issuing Elastic
+    Search RESTful API queries, or via the Kibana UI (after creating a simple
+    index pattern).</para>
 
-      <para>Out of the box, the Filebeat forwards the HPCC component log
-      entries to a generically named index: 'hpcc-logs'- &lt;DATE_STAMP&gt;
-      and writes the log data into 'hpcc.log.*' prefixed fields. It also
-      aggregates k8s, Docker, and system metadata to help the user query the
-      log entries of their interest.</para>
+    <para>Out of the box, the Filebeat forwards the HPCC component log entries
+    to a generically named index: 'hpcc-logs'- &lt;DATE_STAMP&gt; and writes
+    the log data into 'hpcc.log.*' prefixed fields. It also aggregates k8s,
+    Docker, and system metadata to help the user query the log entries of
+    their interest.</para>
 
-      <para>A Kibana index pattern is created automatically based on the
-      default filebeat index layout.</para>
-    </sect2>
+    <para>A Kibana index pattern is created automatically based on the default
+    filebeat index layout.</para>
   </sect1>
 
   <sect1 id="Installing_helm_logging_charts">
@@ -257,13 +255,10 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
       <title>Use of HPCC Systems Component Logs in Kibana</title>
 
       <para>Once enabled and running, you can explore and query HPCC Systems
-      component logs from the Kibana user interface. Using the Kibana
-      interface is well supported and documented. Kibana index patterns are
+      component logs from the Kibana user interface. Kibana index patterns are
       required to explore Elastic Search data from the Kibana user interface.
-      Elastic provides detailed explanations of the information required to
-      understand and effectively utilize the Elastic-Kibana interface.
-      Kibana's robust documentation, should be referred to for more
-      information about using the Kibana interface. Please see:</para>
+      For more information about using the Elastic-Kibana interface please
+      refer to the corresponding documentation:</para>
 
       <para><ulink url="???">https://www.elastic.co/</ulink></para>
 
@@ -271,34 +266,171 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
 
       <para><ulink
       url="???">https://www.elastic.co/elastic-stack/</ulink></para>
+    </sect2>
 
-      <para>Included among the complete documentation are also quick start
-      videos and other helpful resources.</para>
+    <sect2>
+      <title>Configuring logAccess for Elasticstack</title>
+
+      <para>The <emphasis>logAccess</emphasis> feature allows HPCC Systems to
+      query and package relevant logs for various features such as the ZAP
+      report, WorkUnit helper logs, ECLWatch log viewer, etc.</para>
+
+      <para>Once the logs are migrated or routed to the elastic stack
+      instance. The HPCC Systems platform needs to be able to access those
+      logs. The way you direct HPCC Systems to do so is by providing a values
+      file that includes the log mappings. We have provided a default values
+      file and we provide an example command line that inserts that values
+      file into your deployment.</para>
+
+      <para>These are the Elastic4HPCCLogs values:</para>
+
+      <programlisting># Configures HPCC logAccess to target elastic4hpcclogs deployment
+global:
+  logAccess:
+    name: "Elastic4HPCCLogs"
+    type: "elasticstack"
+    connection:
+        protocol: "http"
+        host: "elasticsearch-master.default.svc.cluster.local"
+        port: 9200
+    logMaps:
+      - type: "global"                             #These settings apply to all log mappings
+        storeName: "hpcc-logs*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
+        searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
+        timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+      - type: "workunits"                          #Search by workunits specific log mapping
+        storeName: "hpcc-logs*"                    # Only needed if differs from global.storeName
+        searchColumn: "hpcc.log.jobid"             # Field containing WU information
+      - type: "components"                         #Search by components specific log mapping
+        searchColumn: "kubernetes.container.name"  # Field containing container information
+      - type: "audience"                           #Search by audience specific log mapping
+        searchColumn: "hpcc.log.audience"          # Field containing audience information
+      - type: "class"                              #Search by log class specific log mapping
+        searchColumn: "hpcc.log.class"             # Field containing log class information
+      - type: "instance"                           #Search by log source instance specific mapping
+        searchColumn: "kubernetes.pod.name"        # Field containing source instance information
+      - type: "host"                               #Search by log source host specific mapping
+        searchColumn: "kubernetes.node.hostname"   # Field containing source host information</programlisting>
+
+      <para>You can use the delivered Elastic4HPCCLogs chart, provided on
+      https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/managed/logging/elastic
+      or you can add the values there to your customized configuration values
+      yaml file. You can then install it using a command such as:</para>
+
+      <programlisting>helm install mycluster hpcc/hpcc -f elastic4hpcclogs-hpcc-logaccess.yaml</programlisting>
+
+      <para></para>
     </sect2>
   </sect1>
 
   <sect1 id="Azure_AKS_LogAnalytics">
-    <title>Azure Log Analytics</title>
+    <title>Azure Log Analytics Solution</title>
 
-    <para>Azure Kubernetes Services (AKS) Log Analytics is an optional feature
-    designed to help monitor performance and health of Kubernetes based
-    clusters. Once enabled and associated a given AKS with an active HPCC
-    System cluster, the HPCC component logs are automatically captured by Log
-    Analytics. All STDERR/STDOUT data is captured and made available for
-    monitoring and/or querying purposes. As is usually the case with cloud
-    provider features, cost is a significant consideration and should be well
-    understood before implementation. Log content is written to the logs store
-    associated with your Log Analytics workspace.</para>
+    <para>Azure Kubernetes Services (AKS) Azure Log Analytics (ALA) is an
+    optional feature designed to help monitor performance and health of
+    Kubernetes based clusters. Once enabled and associated a given AKS with an
+    active HPCC System cluster, the HPCC component logs are automatically
+    captured by Log Analytics. All STDERR/STDOUT data is captured and made
+    available for monitoring and/or querying purposes. As is usually the case
+    with cloud provider features, cost is a significant consideration and
+    should be well understood before implementation. Log content is written to
+    the logs store associated with your Log Analytics workspace.</para>
 
     <sect2>
       <title>Enabling Azure Log Analytics</title>
 
-      <para>Enabling Azure's Log Analytics on the target AKS cluster can be
-      done from the Azure portal or via CLI. For detailed Azure documentation:
-      Enable Container Log Analytics:</para>
+      <para>Enabling Azure's Log Analytics (ALA) on the target AKS cluster can
+      be done using one of the following options: Direct command line,
+      Scripted command line, or from the Azure portal.</para>
+
+      <para>For more detailed information refer to the Azure
+      documentation:</para>
 
       <para><ulink
       url="https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard">https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard</ulink></para>
+
+      <sect3 id="Direct_CLI">
+        <title>Direct Command Line</title>
+
+        <para>To enable the Azure Log Analytics insights from the command
+        line:</para>
+
+        <para>You can create a dedicated log analytics workspace manually, or
+        you can skip this step and utilise the default workspace
+        instead.</para>
+
+        <para>To create a dedicated workspace enter this command:</para>
+
+        <programlisting>az monitor log-analytics workspace create -g myresourcegroup -n myworkspace --query-access Enabled </programlisting>
+
+        <para>To enable Log Analytics feature on a target AKS cluster,
+        reference the <emphasis>workspace resource id </emphasis>created in
+        the previous step:</para>
+
+        <programlisting>az aks enable-addons -g myresourcegroup -n myaks -a monitoring --workspace-resource-id  \
+ "/subscriptions/xyz/resourcegroups/myresourcegroup/providers/ \
+  microsoft.operationalinsights/workspaces/myworkspace" </programlisting>
+      </sect3>
+
+      <sect3 id="Scripted_ALA_CLI">
+        <title>Scripted Command Line</title>
+
+        <para>As a convenience, HPCC Systems provides a script to enable ALA
+        (with a dedicated log analytics workspace) on the target AKS
+        cluster.</para>
+
+        <para>The <emphasis>enable-loganalytics.sh</emphasis> script located
+        at <ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics">
+        https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics</ulink>
+        requires populating the following values in the env-loganalytics
+        environment file.</para>
+
+        <para>Provide these values in the
+        <emphasis>env-loganalytics</emphasis> environment file order to create
+        a new Azure Log Analytics workspace, associate it with a target AKS
+        cluster, and enable the processing of logs:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">LOGANALYTICS_WORKSPACE_NAME</emphasis>
+            The desired name for the Azure LogAnalytics workspace to be
+            associated with target AKS cluster. A new workspace will be
+            created if this value does not exist</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">LOGANALYTICS_RESOURCE_GROUP</emphasis>
+            The Azure resource group associated with the target AKS cluste. A
+            new workspace will be associated with this resource group.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">AKS_CLUSTER_NAME</emphasis> The name
+            of the target AKS cluster to associate the log analytics
+            workspace.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">TAGS</emphasis> The tags associated
+            with the new workspace.</para>
+
+            <para>For example: "admin=MyName email=my.email@mycompany.com
+            environment=myenv justification=testing"</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">AZURE_SUBSCRIPTION</emphasis>
+            [Optional] Ensures this subscription is set before creating the
+            new workspace</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Once these values are populated, the
+        <emphasis>enable-loganalyics.sh</emphasis> script can be executed and
+        it will create the log analytics workspace and associate it with the
+        target AKS cluster.</para>
+      </sect3>
 
       <sect3 id="el4HPCC_EnableInsights_AzurePortal">
         <title>Azure Portal</title>
@@ -323,25 +455,96 @@ myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m
             </listitem>
           </orderedlist></para>
       </sect3>
+    </sect2>
 
-      <sect3 id="EnableInsights_CLI">
-        <title>Command Line</title>
+    <sect2>
+      <title>Configure HPCC logAccess for Azure</title>
 
-        <para>To enable the Azure insights from the command line:</para>
+      <para>The <emphasis>logAccess</emphasis> feature allows HPCC Systems to
+      query and package relevant logs for various features such as the ZAP
+      report, WorkUnit helper logs, ECLWatch log viewer, etc.</para>
 
-        <para>Optionally, create log-analytics workspace [default workspace
-        otherwise]</para>
+      <sect3 id="ProcureServicePrincipal">
+        <title>Procure Service Principal</title>
 
-        <para>Enter:</para>
+        <para>Azure requires an Azure Active Directory (AAD) registered
+        application in order to grant Log Analytics API access. Procure an AAD
+        registered application.</para>
 
-        <programlisting>az monitor log-analytics workspace create -g myresourcegroup -n myworkspace --query-access Enabled </programlisting>
+        <para>For more information about registering an Azure Active
+        Difrectory see the Azure official documentation:</para>
 
-        <para>Enable on target AKS cluster (reference the workspace resource
-        id from the previous step)</para>
+        <para><ulink
+        url="https://docs.microsoft.com/en-us/power-apps/developer/data-platform/walkthrough-register-app-azure-active-directory">https://docs.microsoft.com/en-us/power-apps/developer/data-platform/walkthrough-register-app-azure-active-directory</ulink></para>
 
-        <programlisting>az aks enable-addons -g myresourcegroup -n myaks -a monitoring --workspace-resource-id  \
- "/subscriptions/xyz/resourcegroups/myresourcegroup/providers/ \
-  microsoft.operationalinsights/workspaces/myworkspace" </programlisting>
+        <para>Depending on your Azure subscription structure, it might be
+        necessary to request this from a subscription administrator.</para>
+      </sect3>
+
+      <sect3 id="ProvideAADRegisteredApplicationInformation">
+        <title>Provide AAD registered application information</title>
+
+        <para>HPCC Systems logAccess requires access to the AAD tenant,
+        client, token, and target workspace ID via secure secret object. The
+        secret is expected to be in the 'esp' category, and named
+        <emphasis>'azure-logaccess</emphasis>'.</para>
+
+        <para>The following key value pairs are supported</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>aad-tenant-id</para>
+          </listitem>
+
+          <listitem>
+            <para>aad-client-id</para>
+          </listitem>
+
+          <listitem>
+            <para>aad-client-secret</para>
+          </listitem>
+
+          <listitem>
+            <para>ala-workspace-id</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The 'create-azure-logaccess-secret.sh' script provided at <ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics">https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics</ulink>
+        can be used to create the necessary secret.</para>
+
+        <para>Example manual secret creation command (assuming
+        ./secrets-templates contains a file named exactly as the above
+        keys):</para>
+
+        <programlisting>create-azure-logaccess-secret.sh .HPCC-Platform/helm/examples/azure/log-analytics/secrets-templates/</programlisting>
+
+        <para>Otherwise, create the secret manually.</para>
+
+        <para>Example manual secret creation command (assuming
+        ./secrets-templates contains a file named exactly as the above
+        keys):</para>
+
+        <programlisting>kubectl create secret generic azure-logaccess \
+  --from-file=HPCC-Platform/helm/examples/azure/log-analytics/secrets-templates/ </programlisting>
+      </sect3>
+
+      <sect3>
+        <title>Configure HPCC logAccess</title>
+
+        <para>The target HPCC Systems deployment should be configured to
+        target the above Azure Log Analytics workspace by providing
+        appropriate logAccess values (such as
+        ./loganalytics-hpcc-logaccess.yaml). The previously created
+        azure-logaccess secret must be declared and associated with the esp
+        category, this can be accomplished via secrets value yaml (such as
+        ./loganalytics-logaccess-secrets.yaml).</para>
+
+        <para>Example use:</para>
+
+        <programlisting>helm install myhpcc hpcc/hpcc \
+  -f HPCC-Platform/helm/examples/azure/log-analytics/loganalytics-hpcc-logaccess.yaml \
+  -f HPCC-Platform/helm/examples/az</programlisting>
       </sect3>
     </sect2>
 
