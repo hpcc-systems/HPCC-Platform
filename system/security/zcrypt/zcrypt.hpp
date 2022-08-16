@@ -31,8 +31,6 @@
 
 #include <string>
 
-using namespace std;
-
 class ZCRYPT_API IZInterface
 {
 public:

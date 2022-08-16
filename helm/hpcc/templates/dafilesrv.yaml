@@ -48,10 +48,12 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "dafilesrv" "name" "dafilesrv" "instance" .name) | indent 8 }}
         server: {{ .name | quote }}
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "type" "dafilesrv") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
       {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}

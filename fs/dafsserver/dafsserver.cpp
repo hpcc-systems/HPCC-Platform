@@ -457,7 +457,7 @@ class CAsyncCommandManager
         }
         static unsigned getHash(const char *key)
         {
-            return hashc((const byte *)key,strlen(key),~0U);
+            return hashcz((const byte *)key,~0U);
         }
         static CAsyncJob* create(const char *key) { assertex(!"CAsyncJob::create not implemented"); return NULL; }
         unsigned hash;
@@ -4811,7 +4811,7 @@ public:
             }
 
 #ifdef _CONTAINERIZED
-            bool authorizedOnly = hasMask(featureSupport, FeatureSupport::stream);
+            bool authorizedOnly = hasMask(featureSupport, FeatureSupport::stream) && !hasMask(featureSupport, FeatureSupport::directIO);
 #else
             /* NB: In bare-metal, unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
              * In a locked down secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
@@ -5301,8 +5301,8 @@ public:
                 featureSupport = FeatureSupport::stream;
             else if (strsame("spray", appType))
                 featureSupport = FeatureSupport::spray;
-            else if (strsame("directIO", appType))
-                featureSupport = FeatureSupport::directIO;
+            else if (strsame("directio", appType))
+                featureSupport = FeatureSupport::directIO|FeatureSupport::stream;
         }
 #endif
         if (_connectMethod != SSLOnly)

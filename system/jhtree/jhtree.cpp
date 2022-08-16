@@ -229,13 +229,17 @@ bool SegMonitorList::incrementKey(unsigned segno, void *keyBuffer) const
     }
 }
 
-unsigned SegMonitorList::_lastRealSeg() const
+unsigned SegMonitorList::_lastRealSeg()
 {
+    unfiltered = false;
     unsigned seg = segMonitors.length();
     for (;;)
     {
         if (!seg)
+        {
+            unfiltered = true;
             return 0;
+        }
         seg--;
         if (!segMonitors.item(seg).isWild()) // MORE - why not just remove them? Stepping/overrides?
             return seg;
@@ -1094,7 +1098,13 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     KeyHdr hdr;
     if (io->read(0, sizeof(hdr), &hdr) != sizeof(hdr))
         throw MakeStringException(0, "Failed to read key header: file too small, could not read %u bytes", (unsigned) sizeof(hdr));
+
+#ifdef _DEBUG
+    //In debug mode always use the trailing header if it is available to ensure that code path is tested
     if (hdr.ktype & USE_TRAILING_HEADER)
+#else
+    if (hdr.ktype & TRAILING_HEADER_ONLY)
+#endif
     {
         _WINREV(hdr.nodeSize);
         if (!io->read(io->size() - hdr.nodeSize, sizeof(hdr), &hdr))
@@ -1403,6 +1413,18 @@ CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     keySeeks++;
     stats.seeks++;
 
+    offset_t leafOffset = keyHdr->getFirstLeafPos();
+    if (leafOffset != (offset_t)-1)
+    {
+        if (leafOffset == 0)
+            return nullptr;
+        return getNode(leafOffset, NodeLeaf, stats.ctx);
+    }
+
+    //Unusual - an index with no elements
+    if (keyHdr->getNumRecords() == 0)
+        return nullptr;
+
     CJHTreeNode * cur = LINK(rootNode);
     unsigned depth = 0;
     while (!cur->isLeaf())
@@ -1411,9 +1433,7 @@ CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
         cur = getNode(cur->getFPosAt(0), type, stats.ctx);
-        //Unusual - an index with no elements
-        if (!cur)
-            return prev;
+        assertex(cur);
         prev->Release();
     }
     return cur;
@@ -1799,11 +1819,16 @@ const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize)
 
 bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
 {
-    return _lookup(exact, filter->lastRealSeg(), stats);
+    return _lookup(exact, filter->lastRealSeg(), filter->isUnfiltered(), stats);
 }
 
-bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, KeyStatsCollector &stats)
+bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStatsCollector &stats)
 {
+    if (unfiltered && !matched)
+    {
+        //Special case reading a file with no filter - fall into the next processing.
+        matched = true;
+    }
     bool ret = false;
     unsigned lwildseeks = 0;
     unsigned lseeks = 0;
@@ -1887,9 +1912,10 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
     unsigned __int64 result = 0;
     unsigned lseeks = 0;
     unsigned lastRealSeg = filter->lastRealSeg();
+    bool unfiltered = filter->isUnfiltered();
     for (;;)
     {
-        if (_lookup(true, lastRealSeg, stats))
+        if (_lookup(true, lastRealSeg, unfiltered, stats))
         {
             unsigned __int64 locount = getSequence();
             endRange(lastRealSeg);
@@ -1912,6 +1938,7 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
     unsigned __int64 result = 0;
     unsigned lseeks = 0;
     unsigned lastFullSeg = filter->lastFullSeg();
+    bool unfiltered = filter->isUnfiltered();
     if (lastFullSeg == (unsigned) -1)
     {
         stats.noteSeeks(1, 0, 0);
@@ -1922,7 +1949,7 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
     }
     for (;;)
     {
-        if (_lookup(true, lastFullSeg, stats))
+        if (_lookup(true, lastFullSeg, unfiltered, stats))
         {
             unsigned __int64 locount = getSequence();
             endRange(lastFullSeg);
@@ -2093,6 +2120,7 @@ void IndexRowFilter::append(FFoption option, const IFieldFilter * filter)
         lastReal = idx;
         if (option != FFopt || lastFull == idx-1)
             lastFull = idx;
+        unfiltered = false;
     }
     keyedSize += filter->queryType().getMinSize();
     addFilter(*filter);
@@ -2169,6 +2197,11 @@ void IndexRowFilter::endRange(unsigned field, void *keyBuffer) const
     }
 }
 
+bool IndexRowFilter::isUnfiltered() const
+{
+    return unfiltered;
+}
+
 unsigned IndexRowFilter::lastRealSeg() const
 {
     return lastReal;
@@ -2195,6 +2228,7 @@ void IndexRowFilter::reset()
     lastReal = 0;
     lastFull = -1;
     keyedSize = 0;
+    unfiltered = true;
 }
 
 void IndexRowFilter::checkSize(size32_t _keyedSize, char const * keyname) const

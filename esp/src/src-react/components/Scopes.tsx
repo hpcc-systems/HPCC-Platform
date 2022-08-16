@@ -359,7 +359,7 @@ export const ScopesBreadcrumb: React.FunctionComponent<ScopesBreadcrumbProps> = 
     scope
 }) => {
 
-    const [theme] = useUserTheme();
+    const { theme } = useUserTheme();
     const breadcrumbStyles = React.useMemo(() => mergeStyleSets({
         wrapper: {
             padding: "1em 2.5em",

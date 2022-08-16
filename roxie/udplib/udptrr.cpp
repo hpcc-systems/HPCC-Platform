@@ -1486,7 +1486,8 @@ public:
     virtual void detachCollator(const IMessageCollator *msgColl) 
     {
         ruid_t ruid = msgColl->queryRUID();
-        if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
+        if (udpTraceLevel >= 2)
+            DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
         {
             CriticalBlock b(collatorsLock);
             collators.erase(ruid);
@@ -1534,7 +1535,9 @@ public:
                 msgColl.set(collators[pktHdr->ruid]);
                 if (!msgColl)
                 {
-                    msgColl.set(collators[RUID_DISCARD]);
+                    // We only send single-packet messages to the default collator
+                    if ((pktHdr->pktSeq & UDP_PACKET_COMPLETE) != 0 && (pktHdr->pktSeq & UDP_PACKET_SEQUENCE_MASK) == 0)
+                        msgColl.set(collators[RUID_DISCARD]);
                     isDefault = true;
                     unwantedDiscarded++;
                 }

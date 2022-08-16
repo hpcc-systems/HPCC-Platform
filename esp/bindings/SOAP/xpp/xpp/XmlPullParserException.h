@@ -23,17 +23,15 @@
 #include <exception>
 //#include <stdexcept>
 
-using namespace std;
-
 namespace xpp {
 
-  class XmlPullParserException : public exception {
+  class XmlPullParserException : public std::exception {
   public:
     //XmlPullParserException() throw() : message(string("XmlPullParserException")) {}
-    XmlPullParserException(string exMessage) 
+    XmlPullParserException(std::string exMessage)
       throw() : message(exMessage) {}
 
-    XmlPullParserException(string exMessage, int exRow, int exColumn) throw() 
+    XmlPullParserException(std::string exMessage, int exRow, int exColumn) throw()
       : message(exMessage), row(exRow), column(exColumn) {}
 
 
@@ -58,8 +56,8 @@ namespace xpp {
     int getLineNumber() const { return row; }
     int getColumnNumber() const { return column; }
 
-    string getMessage() const throw() {return message;}
-    void setMessage(string exMessage) throw() { message = exMessage;}
+    std::string getMessage() const throw() {return message;}
+    void setMessage(std::string exMessage) throw() { message = exMessage;}
     
     virtual const char* what() const throw() {
       return message.c_str();
@@ -67,20 +65,20 @@ namespace xpp {
 
   protected:
 
-    friend ostream& operator<<(ostream& output, 
+    friend std::ostream& operator<<(std::ostream& output,
        const XmlPullParserException& xppe);
           
 
-    string message;
+    std::string message;
     int row;
     int column;    
   };
 
-inline ostream& operator<<(ostream& output, 
+inline std::ostream& operator<<(std::ostream& output,
   const XmlPullParserException& xppe) 
 {
     output << "XmlPullParserException: ";
-    output << xppe.message << endl;
+    output << xppe.message << std::endl;
     return output;
 }
 

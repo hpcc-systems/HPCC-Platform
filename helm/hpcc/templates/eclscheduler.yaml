@@ -61,6 +61,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclscheduler" "name" "eclscheduler" "instance" .name) | indent 8 }}
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: "no"

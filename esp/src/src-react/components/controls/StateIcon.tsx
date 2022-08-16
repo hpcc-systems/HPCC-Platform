@@ -1,8 +1,10 @@
 import * as React from "react";
-import { FontIcon, mergeStyleSets, Text, ThemeProvider, useTheme } from "@fluentui/react";
+import { FontIcon, mergeStyleSets, Text, ThemeProvider } from "@fluentui/react";
+import { FluentProvider } from "@fluentui/react-components";
 import { Palette } from "@hpcc-js/common";
 import { WUStateID } from "@hpcc-js/comms";
 import { useWorkunit } from "../../hooks/workunit";
+import { useUserTheme } from "../../hooks/theme";
 
 const GOLDEN_RATIO = 1.618033988749894;
 
@@ -123,20 +125,22 @@ export const StateIcon: React.FunctionComponent<StateIconProps> = ({
 }) => {
     const ss = classSet[size];
 
-    const theme = useTheme();
+    const { theme, themeV9 } = useUserTheme();
 
     const overlayIconColor = Palette.textColor(overlayColor);
 
-    return <ThemeProvider className={ss.placeholder} title={title}>
-        <div className={ss.iconPlaceholder}>
-            <FontIcon iconName={iconName} className={ss.icon} />
-        </div>
-        {overlayName &&
-            <div className={ss.overlayPlaceholder} style={{ backgroundColor: overlayColor, borderColor: theme.palette.white }}>
-                <FontIcon iconName={overlayName} className={ss.overlay} style={{ color: overlayIconColor }} />
+    return <FluentProvider theme={themeV9} className={ss.placeholder} >
+        <ThemeProvider theme={theme} className={ss.placeholder} title={title}>
+            <div className={ss.iconPlaceholder}>
+                <FontIcon iconName={iconName} className={ss.icon} />
             </div>
-        }
-    </ThemeProvider>;
+            {overlayName &&
+                <div className={ss.overlayPlaceholder} style={{ backgroundColor: overlayColor, borderColor: theme.palette.white }}>
+                    <FontIcon iconName={overlayName} className={ss.overlay} style={{ color: overlayIconColor }} />
+                </div>
+            }
+        </ThemeProvider>
+    </FluentProvider>;
 };
 
 interface WorkunitPersonaProps {
@@ -153,7 +157,7 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
     const [workunit] = useWorkunit(wuid);
     const [overlayName, setOverlayName] = React.useState("");
     const [overlayColor, setOverlayColor] = React.useState("");
-    const theme = useTheme();
+    const { theme, themeV9 } = useUserTheme();
 
     React.useEffect(() => {
         switch (workunit?.StateID) {
@@ -213,9 +217,11 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
         }
     }, [workunit, workunit?.StateID, theme.semanticColors.errorIcon, theme.semanticColors.successIcon, theme.semanticColors.warningIcon]);
 
-    return <ThemeProvider title={workunit?.State} style={{ paddingLeft: 4, paddingRight: 4 }}>
-        <StateIcon iconName={workunit?.Protected ? "LockSolid" : "Unlock"} size={size} />
-        <StateIcon iconName="Settings" overlayName={overlayName} overlayColor={overlayColor} size={size} />
-        <Text variant="xLarge" style={{ fontWeight: "bold", paddingLeft: "4px" }}>{wuid}</Text>
-    </ThemeProvider>;
+    return <FluentProvider theme={themeV9} style={{ paddingLeft: 4, paddingRight: 4 }}>
+        <ThemeProvider theme={theme} title={workunit?.State} style={{ paddingLeft: 4, paddingRight: 4 }}>
+            <StateIcon iconName={workunit?.Protected ? "LockSolid" : "Unlock"} size={size} />
+            <StateIcon iconName="Settings" overlayName={overlayName} overlayColor={overlayColor} size={size} />
+            <Text variant="xLarge" style={{ fontWeight: "bold", paddingLeft: "4px" }}>{wuid}</Text>
+        </ThemeProvider>
+    </FluentProvider>;
 };

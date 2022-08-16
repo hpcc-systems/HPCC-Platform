@@ -1,11 +1,17 @@
-import { PartialTheme, Theme } from "@fluentui/react";
-import { darkTheme, lightTheme } from "../themes";
+import { Theme } from "@fluentui/react";
+import { Theme as ThemeV9 } from "@fluentui/react-components";
+import { darkTheme, lightTheme, darkThemeV9, lightThemeV9 } from "../themes";
 import { useUserStore } from "./store";
 
-export function useUserTheme(): [theme: PartialTheme | Theme, setTheme: (value: "light" | "dark") => void, isDark: boolean] {
+export function useUserTheme(): { theme: Theme, themeV9: ThemeV9, setTheme: (value: "light" | "dark") => void, isDark: boolean } {
 
     const [theme, setTheme] = useUserStore("theme", "light", true);
 
-    return [theme === "dark" ? darkTheme : lightTheme, (value: "light" | "dark") => setTheme(value), theme === "dark"];
+    return {
+        theme: theme === "dark" ? darkTheme : lightTheme,
+        themeV9: theme === "dark" ? darkThemeV9 : lightThemeV9,
+        setTheme: (value: "light" | "dark") => setTheme(value),
+        isDark: theme === "dark"
+    };
 }
 

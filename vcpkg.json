@@ -56,10 +56,14 @@
         "nlohmann-json",
         {
             "name": "openblas",
-            "features":[
+            "features": [
                 "dynamic-arch",
                 "threads"
             ],
+            "platform": "!windows"
+        },
+        {
+            "name": "openldap",
             "platform": "!windows"
         },
         "openssl",

@@ -44,9 +44,8 @@ namespace ws_workunits {
 #define    File_ThorLog "ThorLog"
 #define    File_ThorSlaveLog "ThorSlaveLog"
 #define    File_EclAgentLog "EclAgentLog"
-#else
-#define    File_ComponentLog "ComponentLog"
 #endif
+#define    File_ComponentLog "ComponentLog"
 
 #define    File_XML "XML"
 #define    File_Res "res"
@@ -167,17 +166,15 @@ class WsWuInfo
     bool parseLogLine(const char* line, const char* endWUID, unsigned& processID, const unsigned columnNumPID);
     void readWorkunitThorLog(const char* processName, const char* logSpec, const char* slaveIPAddress, unsigned slaveNum, MemoryBuffer& buf, const char* outFile);
     void readWorkunitThorLogOneDay(IFile* ios, unsigned& processID, MemoryBuffer& buf, IFileIOStream* outIOS);
-#else
+#endif
     unsigned sendComponentLogContent(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
     void sendComponentLogCSV(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
     void sendComponentLogJSON(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
     void sendComponentLogXML(IEspContext* context, IRemoteLogAccessStream* logreader, IXmlStreamFlusher* flusher, const WUComponentLogOptions& options);
-#endif
     void readFileContent(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);
     void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, const char *outFileName);
-    void initWULogReader();
     void setLogTimeRange(LogAccessConditions& logFetchOptions, unsigned wuLogSearchTimeBuffSecs);
     void getPostMortemFiles(IFile* file, unsigned& helpersCount, StringArray& postMortemFiles);
     void addPostMortemFiles(StringArray& postMortemFiles, IArrayOf<IEspECLHelpFile>& helpers);
@@ -195,15 +192,13 @@ public:
     void readWorkunitComponentLogs(const char* outFile, unsigned maxLogRecords, const LogAccessReturnColsMode retColsMode,
                                    const LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
     void sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options);
+    void sendImportedWorkunitComponentLog(const char* logFile, CHttpResponse* response);
 
     WsWuInfo(IEspContext &ctx, IConstWorkUnit *cw_) :
       context(ctx), cw(cw_)
     {
         version = context.getClientVersion();
         wuid.set(cw->queryWuid());
-#ifdef _CONTAINERIZED
-        initWULogReader();
-#endif
     }
 
     WsWuInfo(IEspContext &ctx, const char *wuid_) :
@@ -215,10 +210,6 @@ public:
         cw.setown(factory->openWorkUnit(wuid_));
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
-
-#ifdef _CONTAINERIZED
-        initWULogReader();
-#endif
     }
 
     bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned long flags);
@@ -265,6 +256,7 @@ public:
         const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
         MemoryBuffer& buf, const char* outFile, bool forDownload);
 #endif
+    const char* getImportedComponentLog(StringBuffer& log);
     bool validateWUProcessLog(const char* file, bool eclAgent);
     bool validateWUAssociatedFile(const char* file, WUFileType type);
     void getWorkunitResTxt(MemoryBuffer& buf);
@@ -290,7 +282,6 @@ public:
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
 protected:
     bool hasSubGraphTimings();
-    Owned<IRemoteLogAccess> m_remoteLogAccessor;
 
 public:
     IEspContext &context;
@@ -685,9 +676,8 @@ class CWsWuFileHelper
 #ifndef _CONTAINERIZED
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
-#else
-    void findPostMortemFolder(const char *wuid, StringBuffer &postMortemFolder);
 #endif
+    LogAccessLogFormat getComponentLogFormatFromLogName(const char *log);
     void createWULogFile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path, unsigned maxLogRecords, LogAccessReturnColsMode retColsMode, LogAccessLogFormat logFormat, unsigned wuLogSearchTimeBuffSecs);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
@@ -708,9 +698,7 @@ public:
     bool validateWUFile(const char *file, WsWuInfo &winfo, CWUFileType wuFileType);
     void readLocalFileToBuffer(const char *file, offset_t sizeLimit, MemoryBuffer &mb);
     void sendLocalFileStreaming(CHttpRequest *request, CHttpResponse *response);
-#ifdef _CONTAINERIZED
     void sendWUComponentLogStreaming(CHttpRequest *request, CHttpResponse *response);
-#endif
 };
 
 class CWsWuEmailHelper

@@ -1299,11 +1299,14 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
             if (!plane)
                 return false;
 
-            const char * host = plane->querySingleHost();
-            if (host)
-                ep.set(host);
-            else
-                ep.setLocalHost(0);
+            const std::vector<std::string> &hosts = plane->queryHosts();
+            if (hosts.size())
+            {
+                // assume first host ? Or should this throw an error? Or should there be a syntax to choosen Nth host in plane??
+                ep.set(hosts[0].c_str());
+            }
+            else // mounted plane
+                ep.set("localhost");
             return true;
         }
         ns = skipScope(lfn,EXTERNAL_SCOPE); // evaluates to null for a storage plane
@@ -3513,7 +3516,7 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
         IPropertyTree &cluster = iter->query();
         const char *planeName = cluster.queryProp("@name");
         Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
-        if (!plane->queryHosts() && isAbsolutePath(plane->queryPrefix())) // if host group, or url, don't touch
+        if ((0 == plane->queryHosts().size()) && isAbsolutePath(plane->queryPrefix())) // if hosts group, or url, don't touch
         {
             {
                 CriticalBlock b(dafileSrvNodeCS);

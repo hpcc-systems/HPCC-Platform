@@ -110,7 +110,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                                 cookie("ECLWatchUser", "", { expires: -1 });
                                 cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
                                 cookie("Status", "", { expires: -1 });
-                                cookie("User", "", { expires: -1 });
                                 window.location.reload();
                             }
                         });

@@ -29,6 +29,7 @@ typedef MapXToMyClass<PUID, PUID, PackageSequencer> msg_map;
 class CMessageCollator : public CInterfaceOf<IMessageCollator>
 {
 private:
+    Linked<roxiemem::IRowManager> rowMgr;  // Must be placed first to ensure it is destroyed last
     std::queue<PackageSequencer*> queue;
     msg_map             mapping;  // Note - only accessed from collator thread
     RelaxedAtomic<bool> activity;
@@ -36,7 +37,6 @@ private:
     bool                encrypted;
     CriticalSection     queueCrit;
     InterruptableSemaphore sem;
-    Linked<roxiemem::IRowManager> rowMgr;
     ruid_t ruid;
     std::atomic<unsigned> totalBytesReceived = {0};
     std::atomic<unsigned> totalDuplicates = {0};

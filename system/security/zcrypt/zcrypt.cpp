@@ -246,7 +246,7 @@ void RSAZCryptor::throw_error()
     if(m_trace_level > 0)
         printf("Error: %s\n", errbuf);
 
-    throw string(errbuf);
+    throw std::string(errbuf);
 }
 
 void RSAZCryptor::setTraceLevel(unsigned trace_level)

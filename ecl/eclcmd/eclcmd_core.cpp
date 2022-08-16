@@ -1341,6 +1341,30 @@ public:
 
 class EclCmdUnPublish : public EclCmdWithQueryTarget
 {
+    void outputResults(const IArrayOf<IConstQuerySetQueryActionResult> &results, const char *qs)
+    {
+        ForEachItemIn(i, results)
+        {
+            IConstQuerySetQueryActionResult &item = results.item(i);
+            const char *id = item.getQueryId();
+            const char *wuid = item.getWUID();
+            if (item.getSuccess())
+            {
+                if (isEmptyString(wuid))
+                    fprintf(stdout, "\nUnpublished %s/%s\n", qs, id ? id : "");
+                else
+                    fprintf(stdout, "\nDeleted %s\n", wuid);
+            }
+            else if (item.getCode()|| item.getMessage())
+            {
+                const char *msg = item.getMessage();
+                if (isEmptyString(wuid))
+                    fprintf(stderr, "Query %s Error (%d) %s\n", id ? id : "", item.getCode(), msg ? msg : "");
+                else
+                    fprintf(stderr, "Workunit %s Error (%d) %s\n", wuid, item.getCode(), msg ? msg : "");
+            }
+        }
+    }
 public:
     EclCmdUnPublish()
     {
@@ -1353,11 +1377,17 @@ public:
         setRpcOptions(req->rpc());
 
         req->setQuerySetName(optQuerySet.get());
-        req->setAction("Delete");
+        if (optDeleteWorkunit)
+            req->setAction("DeleteQueriesAndWUs");
+        else
+            req->setAction("Delete");
 
         IArrayOf<IEspQuerySetQueryActionItem> queries;
         Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
         item->setQueryId(optQuery.get());
+        if (!optActivated.isEmpty())
+            item->setActivated(strToBool(optActivated));
+        item->setSuspendedByUser(optSuspendedByUser);
         queries.append(*item.getClear());
         req->setQueries(queries);
 
@@ -1370,7 +1400,7 @@ public:
         if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-            outputQueryActionResults(results, "Unpublished", optQuerySet.str());
+            outputResults(results, optQuerySet.str());
         return 0;
     }
     virtual void usage()
@@ -1382,7 +1412,11 @@ public:
             "ecl unpublish <target> <query_id>\n"
             " Options:\n"
             "   <target>               name of target queryset containing the query to remove\n"
-            "   <query_id>             query to remove from the queryset\n",
+            "   <query_id>             query to remove from the queryset\n"
+            "   --activated=yes|no     specify yes (unpublish activated queries) or no (unpublish deactivated\n"
+            "                          queries) when <query_id> is '*'. Default to all queries.\n"
+            "   --suspended-by-user    unpublish the queries suspended by user when <query_id> is '*'.\n"
+            "   --delete-workunit      delete the workunit for the <query_id>. Default to No.\n",
             stdout);
         EclCmdWithQueryTarget::usage();
     }

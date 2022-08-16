@@ -388,7 +388,7 @@ bool Connection::isSameConnection(ICodeContext * ctx, const char * _options, con
 }
 unsigned Connection::hashServerIpPortPassword(ICodeContext * ctx, const char * _options, const char * password)
 {
-    return hashc((const unsigned char*)_options, strlen(_options), hashc((const unsigned char*)password, strlen(password), 0));
+    return hashcz((const unsigned char*)_options, hashcz((const unsigned char*)password, 0));
 }
 void Connection::reset(ICodeContext * ctx, unsigned _database, const char * password, unsigned _timeout, bool selectDB)
 {

@@ -12,7 +12,7 @@ import { useUserTheme } from "./theme";
 
 /*  ---  Debugging dependency changes  ---
  *
- *  import { useWhatChanged } from "@simbathesailor/use-what-changed"; 
+ *  import { useWhatChanged } from "@simbathesailor/use-what-changed";
  *
  *  useWhatChanged([count, selectionHandler, sorted, start, store, query], "count, selectionHandler, sorted, start, store, query");
  *
@@ -188,9 +188,9 @@ function useFluentStoreGrid({
         });
     }, [count, selectionHandler, sorted, start, store], [query]);
 
-    useDeepEffect(() => {
+    React.useEffect(() => {
         refreshTable();
-    }, [], [query]);
+    }, [refreshTable]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, sorted);
@@ -305,7 +305,7 @@ export function useFluentPagedGrid({
     const [page, setPage] = React.useState(0);
     const [pageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, 25);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
-    const [theme] = useUserTheme();
+    const { theme } = useUserTheme();
 
     const paginationStyles = React.useMemo(() => mergeStyleSets({
         root: {

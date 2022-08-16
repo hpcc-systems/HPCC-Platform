@@ -6,7 +6,6 @@
 #include "jarray.hpp"
 #include "primitivetypes.hpp"
 
-using namespace std;
 using namespace cppplugin;
 
 class EsdlContext : public CInterface, implements IInterface

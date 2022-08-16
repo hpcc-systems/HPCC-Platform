@@ -40,7 +40,7 @@ public:
     virtual bool matchesElement(const void *et, const void *searchET) const;
 };
 
-inline unsigned hashScope(const char * name) { return hashc((const byte *)name, strlen(name), 0); }
+inline unsigned hashScope(const char * name) { return hashcz((const byte *)name, 0); }
 
 class WuScope : public CInterface, implements IWuEdge, implements IWuActivity
 {

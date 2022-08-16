@@ -1,5 +1,5 @@
 import * as React from "react";
-import { mergeStyleSets, IDragOptions, IIconProps, ContextualMenu, IconButton, Modal, Stack, useTheme, IStackTokens } from "@fluentui/react";
+import { mergeStyleSets, IDragOptions, IIconProps, ContextualMenu, IconButton, Modal, Stack, useTheme, IStackTokens, IModalStyles } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 
 const headerTokens: IStackTokens = {
@@ -27,6 +27,19 @@ const iconButtonStyles = {
         marginTop: "4px",
         marginRight: "2px",
     },
+};
+
+//  Workaround for:  https://github.com/microsoft/fluentui/issues/22878, https://github.com/microsoft/fluentui/issues/23363, https://github.com/microsoft/fluentui/issues/22878
+const modalStyles: Partial<IModalStyles> = {
+    root: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        pointerEvents: "none"
+    },
+    main: {
+        pointerEvents: "auto"
+    }
 };
 
 interface MessageBoxProps {
@@ -57,7 +70,7 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     const close = React.useCallback(() => setShow(false), [setShow]);
 
     return <Modal isOpen={show} onDismiss={close} isModeless={true} dragOptions={dragOptions}
-        isBlocking={true} containerClassName={contentStyles.container}>
+        isBlocking={true} containerClassName={contentStyles.container} styles={modalStyles}>
         <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }} className="draggable">
             <h2>{title}</h2>
             <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} />

@@ -61,7 +61,6 @@ extern "C++"
 {
   namespace SQSHPCCPlugin
   {
-    using namespace std;
     typedef struct 
     {
       int code;
@@ -122,7 +121,7 @@ extern "C++"
       const char *const getRegion(const std::string& region);
       void upstr(char* s);
       std::string convertAwsStringToCharPtr(Aws::String str);
-      char*  convertStringToChar(const string& str);
+      char*  convertStringToChar(const std::string& str);
     };
 
 

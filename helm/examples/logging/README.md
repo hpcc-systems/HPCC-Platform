@@ -103,3 +103,16 @@ Adjustment of per-component logging values can require assertion of multiple com
 
     For example, the ESP component instance 'eclwatch' should output minimal log:
     helm install myhpcc ./hpcc --set -f ./examples/logging/esp-eclwatch-low-logging-values.yaml
+
+### Asychronous logging configuration
+
+By default log entries will be created and logged asynchronously, so as not to block the client that is logging.
+Log entries will be held in a queue and output on a background thread.
+This queue has a maximum depth, once hit, the client will block waiting for capacity.
+Alternatively, the behaviour can be be configured such that when this limit is hit, logging entries are dropped and lost to avoid any potential blocking.
+
+NB: normally it is expected that the logging stack will keep up and the default queue limit will be sufficient to avoid any blocking.
+
+The defaults can be configured by setting `<section>`.logging.queueLen and/or `<section>`.logging.queueDrop.
+Setting `<section>`.logging.queueLen to 0, will disabled asynchronous logging, i.e. each log will block until completed.
+Setting `<section>`.logging.queueDrop to a non-zero (N) value will cause N logging entries from the queue to be discarded if the queueLen is reached.

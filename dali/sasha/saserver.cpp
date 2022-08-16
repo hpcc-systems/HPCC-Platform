@@ -19,6 +19,7 @@
 #include "thirdparty.h"
 #include "portlist.h"
 #include "jlib.hpp"
+#include "jfile.hpp"
 #include "jlog.hpp"
 #include "jptree.hpp"
 #include "jmisc.hpp"
@@ -29,6 +30,7 @@
 #include "mplog.hpp"
 #include "dasess.hpp"
 #include "dasds.hpp"
+#include "dafdesc.hpp"
 #include "daclient.hpp"
 #include "environment.hpp"
 #include "dllserver.hpp"
@@ -407,6 +409,7 @@ int main(int argc, const char* argv[])
             else
             {
                 addAbortHandler(actionOnAbort);
+                initializeStorageGroups(true);
 #ifdef _CONTAINERIZED
                 service = serverConfig->queryProp("@service");
                 if (isEmptyString(service))

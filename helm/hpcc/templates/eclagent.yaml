@@ -27,7 +27,7 @@ Pass in dict with root and me
 */}}
 {{- define "hpcc.agentConfigMap" }}
 {{- $apptype := .me.type | default "hthor" -}}
-{{- $appJobName := printf "%s-_HPCC_JOBNAME_" $apptype }}
+{{- $appJobName := printf "%s-job-_HPCC_JOBNAME_" $apptype }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
@@ -45,7 +45,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}
 {{- $misc := .root.Values.global.misc | default dict }}
-  {{ $apptype }}-jobspec.yaml:
+  {{ $apptype }}-job.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -55,6 +55,7 @@ data:
       template:
         metadata:
           labels:
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" $apptype "name" "eclagent" "instance" $appJobName) | indent 12 }}
             accessDali: "yes"
             accessEsp: "yes"
             helmVersion: 8.9.0-trunk0
@@ -128,6 +129,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" $apptype "name" "eclagent" "instance" .name) | indent 8 }}
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}

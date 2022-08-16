@@ -22,7 +22,8 @@
 #include "IConfigEnv.hpp"
 #include "ConfigEnvFactory.hpp"
 
-using namespace std;
+using std::string;
+using std::map;
 using namespace ech;
 
 #define ATTR_SEP  "^"

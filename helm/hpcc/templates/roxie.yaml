@@ -113,6 +113,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 8 }}
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
         helmVersion: 8.9.0-trunk0
@@ -176,6 +177,7 @@ metadata:
   name: {{ $commonCtx.toponame | quote }}
   labels:
     helmVersion: 8.9.0-trunk0
+    {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 4 }}
 spec:
   ports:
   - port: {{ $commonCtx.topoport  }}
@@ -235,6 +237,7 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
         helmVersion: 8.9.0-trunk0
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $servername) | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
 {{- end }}
@@ -328,6 +331,7 @@ spec:
   template:
     metadata:
       labels:
+        {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-agent" "name" "roxie" "instance" $name) | indent 8 }}
         run: {{ $name | quote}}
 {{- if not $roxie.serverReplicas }}        
         server: {{ $servername | quote }}

@@ -334,12 +334,12 @@ public:
         return parserRef().getNsCount();
     }
     
-    virtual map<string, const SXT_CHAR*>::const_iterator getNsBegin() const override
+    virtual std::map<std::string, const SXT_CHAR*>::const_iterator getNsBegin() const override
     {
         return parserRef().getNsBegin();
     }
     
-    virtual map<string, const SXT_CHAR*>::const_iterator getNsEnd() const override
+    virtual std::map<std::string, const SXT_CHAR*>::const_iterator getNsEnd() const override
     {
         return parserRef().getNsEnd();
     }

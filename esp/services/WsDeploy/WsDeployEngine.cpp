@@ -111,7 +111,7 @@ m_pDeploy(createPTreeFromXMLString(selComps))
       key += ':';
       IPropertyTree* pInstance = &itInstances->query();
       key += pInstance->queryProp("@name");
-      m_comp2TasksMap.insert( pair<string, IPropertyTree*>(key, pTasks) );
+      m_comp2TasksMap.insert( std::pair<string, IPropertyTree*>(key, pTasks) );
     }
   }
 }
@@ -159,7 +159,7 @@ m_version(1)
     key += pComp->queryProp("Name");
     key += ':';
     key += pComp->queryProp("Instance");
-    m_comp2TasksMap.insert( pair<string, IPropertyTree*>(key, pTasks) );
+    m_comp2TasksMap.insert( std::pair<std::string, IPropertyTree*>(key, pTasks) );
   }
 
   //prepare xml needed for actual deployment

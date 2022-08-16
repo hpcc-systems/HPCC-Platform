@@ -920,6 +920,27 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { ENUMSTAT(ActivityCharacteristics) },
 };
 
+
+static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    //Insert the names into a hash table to allow fast string->kind mapping
+    statisticNameMap.setValue("*", StKindAll);
+
+    for (unsigned variant=0; variant < StNextModifier; variant += StVariantScale)
+    {
+        for (unsigned i=0; i < StMax; i++)
+        {
+            StatisticKind kind = (StatisticKind)(i+variant);
+            const char * shortName = queryStatisticName(kind);
+            if (shortName)
+                statisticNameMap.setValue(shortName, kind);
+        }
+    }
+    return true;
+}
+
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?
 bool includeStatisticIfZero(StatisticKind kind)
 {
@@ -1103,20 +1124,9 @@ StatisticKind queryStatisticKind(const char * search, StatisticKind dft)
 {
     if (!search)
         return dft;
-    if (streq(search, "*"))
-        return StKindAll;
-
-    //Slow - should use a hash table....
-    for (unsigned variant=0; variant < StNextModifier; variant += StVariantScale)
-    {
-        for (unsigned i=0; i < StMax; i++)
-        {
-            StatisticKind kind = (StatisticKind)(i+variant);
-            const char * shortName = queryStatisticName(kind);
-            if (shortName && strieq(shortName, search))
-                return kind;
-        }
-    }
+    StatisticKind * match = statisticNameMap.getValue(search);
+    if (match)
+        return *match;
     return dft;
 }
 
@@ -1388,7 +1398,7 @@ unsigned StatsScopeId::getHash() const
     {
     case SSTfunction:
     case SSTunknown:
-        return hashc((const byte *)name.get(), strlen(name), (unsigned)scopeType);
+        return hashcz((const byte *)name.get(), (unsigned)scopeType);
     default:
         return hashc((const byte *)&id, sizeof(id), (unsigned)scopeType);
     }

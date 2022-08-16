@@ -16,6 +16,8 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
+  schedule:
+    - cron:  "0 0 * * *"
 
 jobs:
   check-skip:
@@ -31,44 +33,66 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ["ubuntu-20.04", "ubuntu-22.04", "windows-2019", "windows-2022", "macos-11", "macos-12"]
+        os:
+          [
+            "ubuntu-18.04",
+            "ubuntu-20.04",
+            "ubuntu-22.04",
+            "windows-2019",
+            "windows-2022",
+            "macos-11",
+            "macos-12",
+          ]
         include:
+          - os: "ubuntu-18.04"
+            triplet: "x64-linux"
+            mono: "mono"
+            sudo: "sudo"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
+            cmake_build_options: "-- -j$(nproc) -k"
+            event_name: "schedule"
           - os: "ubuntu-20.04"
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON'
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
             cmake_build_options: "-- -j$(nproc) -k"
+            event_name: "pull_request"
           - os: "ubuntu-22.04"
             triplet: "x64-linux"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: '-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON'
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
             cmake_build_options: "-- -j$(nproc) -k"
+            event_name: "schedule"
           - os: "windows-2019"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF'
             cmake_build_options: "--config Release -j2 -- -m"
+            event_name: "pull_request"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DUSE_NATIVE_LIBRARIES=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF'
             cmake_build_options: "--config Release -j2 -- -m"
+            event_name: "schedule"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
+            event_name: "schedule"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DINCLUDE_PLUGINS=OFF -DUSE_OPENLDAP=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DUSE_CASSANDRA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
+            event_name: "pull_request"
       fail-fast: false
 
     name: "Build with vcpkg"
@@ -83,7 +107,7 @@ jobs:
           echo "Platform Changed:  ${{ needs.check-skip.outputs.platform }}"
 
       - name: Ubuntu Dependencies
-        if: ${{ needs.check-skip.outputs.platform && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04') }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform && contains(matrix.os, 'ubuntu') }}
         shell: "bash"
         run: |
           sudo apt-get update -y
@@ -94,7 +118,7 @@ jobs:
             libssl-dev xmlstarlet libncurses-dev
 
       - name: Ubuntu-22.04 Mono Dependencies
-        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        if: ${{ github.event_name == matrix.event_name && matrix.os == 'ubuntu-22.04' }}
         shell: "bash"
         run: |
           sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
@@ -103,33 +127,33 @@ jobs:
           sudo apt-get -yq install mono-complete
 
       - name: OSX Dependencies
-        if: ${{ needs.check-skip.outputs.platform && (matrix.os == 'macos-11' || matrix.os == 'macos-12') }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform && contains(matrix.os, 'macos') }}
         shell: "bash"
         run: |
           brew install bison flex pkg-config automake libtool cmake openjdk@11
 
       - name: "Remove builtin vcpkg"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Check out source code
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: "vcpkg Bootstrap"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
 
       - name: "Setup NuGet credentials"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         working-directory: ./vcpkg
         shell: "bash"
         run: |
@@ -142,16 +166,16 @@ jobs:
             -password "${{ secrets.GITHUB_TOKEN }}"
 
       - name: "Generate HPCC-Platform Build Files"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           mkdir build
           cd build
-          cmake .. -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DSKIP_ECLWATCH=ON -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. -DSKIP_ECLWATCH=ON -DCONTAINERIZED=OFF -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
 
       - name: "Remove vcpkg build files"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         working-directory: ./vcpkg
         shell: "bash"
         run: |
@@ -159,7 +183,7 @@ jobs:
           rm -rf ./downloads
 
       - name: "Build HPCC-Platform"
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         working-directory: ./build
         shell: "bash"
         run: |
@@ -168,10 +192,14 @@ jobs:
   build-docker:
     strategy:
       matrix:
-        os: ["centos-7"]
+        os: ["centos-7", "centos-8"]
         include:
           - os: "centos-7"
             docker-folder: "dockerfiles/platform-build-centos-7"
+            event_name: "pull_request"
+          - os: "centos-8"
+            docker-folder: "dockerfiles/platform-build-centos-8"
+            event_name: "schedule"
       fail-fast: false
 
     name: "Build with docker+vcpkg"
@@ -179,18 +207,18 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout PR
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         id: buildx
         uses: docker/setup-buildx-action@v1
         with:
           driver: docker
 
       - name: Build ${{ matrix.os }} image
-        if: ${{ needs.check-skip.outputs.platform }}
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         uses: docker/build-push-action@v2
         with:
           context: ${{ matrix.docker-folder }}

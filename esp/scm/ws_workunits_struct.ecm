@@ -126,6 +126,7 @@ ESPenum QuerySetQueryActionTypes : string
     ToggleSuspend("ToggleSuspend"),
     Activate("Activate"),
     Delete("Delete"),
+    DeleteQueriesAndWUs("DeleteQueriesAndWUs"),
     RemoveAllAliases("RemoveAllAliases"),
     ResetQueryStats("ResetQueryStats")
 };
@@ -243,6 +244,7 @@ ESPStruct [nil_remove] ECLHelpFile
     [min_ver("1.44")] unsigned PID(0);
     [min_ver("1.58")] unsigned minActivityId(0);
     [min_ver("1.58")] unsigned maxActivityId(0);
+    [min_ver("1.94")] bool IsAvailable(true);
 };
 
 //  ===========================================================================
@@ -655,12 +657,15 @@ ESPStruct QuerySetQueryClientState
 ESPStruct QuerySetQueryActionItem
 {
     string QueryId;
+    [min_ver("1.93"), nil_remove] bool Activated;
+    [min_ver("1.93")] bool SuspendedByUser(false);
     ESPstruct QuerySetQueryClientState ClientState;
 };
 
 ESPStruct QuerySetQueryActionResult
 {
     string QueryId;
+    [min_ver("1.93")] string WUID;
     bool Suspended;
     bool Success;
     int Code;

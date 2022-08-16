@@ -3,6 +3,8 @@ define([
     "dojo/_base/lang",
     "src/nlsHPCC",
     "dojo/_base/array",
+    "dojo/dom",
+    "dojo/query",
     "dojo/dom-form",
     "dojo/dom-class",
     "dojo/request/iframe",
@@ -53,7 +55,7 @@ define([
     "dojox/form/uploader/FileList",
 
     "hpcc/TableContainer"
-], function (declare, lang, nlsHPCCMod, arrayUtil, domForm, domClass, iframe, topic,
+], function (declare, lang, nlsHPCCMod, arrayUtil, dom, query, domForm, domClass, iframe, topic,
     registry, MenuItem, TextBox, ValidationTextBox,
     tree, editor, selector,
     _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, Utility,
@@ -367,12 +369,18 @@ define([
             if (registry.byId(this.id + formID).validate()) {
                 var selections = this.landingZonesGrid.getSelected();
                 var context = this;
+                var fields = query("input", dom.byId(this.id + formID));
                 arrayUtil.forEach(selections, function (item, idx) {
                     var request = domForm.toObject(context.id + formID);
                     lang.mixin(request, {
                         sourceIP: item.NetAddress,
                         sourcePath: item.fullPath,
                         destLogicalName: request.namePrefix + (request.namePrefix && !context.endsWith(request.namePrefix, "::") && item.targetName && !context.startsWith(item.targetName, "::") ? "::" : "") + item.targetName
+                    });
+                    fields.filter(input => input.type === "checkbox").forEach(input => {
+                        if (input.name && !request[input.name]) {
+                            request[input.name] = input.checked;
+                        }
                     });
                     doSpray(request, item);
                 });
@@ -386,6 +394,7 @@ define([
                 if (selections.length) {
                     var request = domForm.toObject(this.id + formID);
                     var item = selections[0];
+                    var fields = query("input", dom.byId(this.id + formID));
                     lang.mixin(request, {
                         sourceIP: item.NetAddress,
                         nosplit: true
@@ -398,6 +407,11 @@ define([
                     });
                     lang.mixin(request, {
                         sourcePath: sourcePath
+                    });
+                    fields.filter(input => input.type === "checkbox").forEach(input => {
+                        if (input.name && !request[input.name]) {
+                            request[input.name] = input.checked;
+                        }
                     });
                     doSpray(request, item);
                     registry.byId(this.id + dropDownID).closeDropDown();

@@ -15,8 +15,12 @@
 #    limitations under the License.
 ##############################################################################
 
-FROM centos:centos7 as stage
+FROM centos:centos7 AS stage
 
+ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,readwrite"
+ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
+
+# Build Tools - Mono  ---
 RUN yum update -y
 RUN yum install -y yum-utils
 RUN yum-config-manager --add-repo http://download.mono-project.com/repo/centos/
@@ -27,27 +31,13 @@ RUN rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E03
 RUN yum -y install https://packages.endpointdev.com/rhel/7/os/x86_64/endpoint-repo.x86_64.rpm
 RUN yum install -y epel-release
 RUN yum repolist
+RUN yum install -y mono-complete
 
-RUN yum install -y mono-complete git zip unzip wget python3 libtool autoconf automake
-RUN yum install -y \
-    curl-devel \
-    python3-devel \
-    ncurses-devel \
-    libmemcached-devel \
-    openldap-devel \
-    numactl-devel \
-    heimdal-devel \
-    java-11-openjdk-devel \
-    sqlite-devel \
-    libevent-devel \
-    v8-devel
-
+# Build Tools  ---
+RUN yum install -y git wget curl zip unzip tar python3 libtool autoconf automake
 RUN yum group install -y "Development Tools"
 RUN yum install -y centos-release-scl
 RUN yum install -y devtoolset-9
-
-RUN echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
-SHELL ["/bin/bash", "--login", "-c"]
 
 RUN wget https://pkg-config.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
 RUN tar xvfz pkg-config-0.29.2.tar.gz
@@ -62,15 +52,33 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ENV ACLOCAL_PATH=/usr/local/share/aclocal:$ACLOCAL_PATH
 
-RUN curl -L https://npmjs.org/install.sh | bash
+RUN echo "source /opt/rh/devtoolset-9/enable" >> /etc/bashrc
+SHELL ["/bin/bash", "--login", "-c"]
 
-ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,read"
-ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
+RUN . <(curl https://aka.ms/vcpkg-init.sh -L)
+RUN . ~/.vcpkg/vcpkg-init fetch cmake
+RUN ln -s `. ~/.vcpkg/vcpkg-init fetch cmake | tail -n 1` /usr/local/bin/
+RUN ln -s `. ~/.vcpkg/vcpkg-init fetch node | tail -n 1` /usr/local/bin/
+RUN ln -s `. ~/.vcpkg/vcpkg-init fetch node | tail -n 1 | sed -e 's!bin/node!bin/npm!g'` /usr/local/bin/
+
+# Libraries  ---
+RUN yum install -y \
+    curl-devel \
+    python3-devel \
+    ncurses-devel \
+    libmemcached-devel \
+    openldap-devel \
+    numactl-devel \
+    heimdal-devel \
+    java-11-openjdk-devel \
+    sqlite-devel \
+    libevent-devel \
+    v8-devel
 
 WORKDIR /hpcc-dev
 
 ARG GITHUB_ACTOR=hpcc-systems
-ARG BUILD_TAG=none
+ARG BUILD_TAG=candidate-8.8.0
 RUN echo GITHUB_ACTOR is ${GITHUB_ACTOR}
 RUN git clone --no-checkout https://github.com/${GITHUB_ACTOR}/HPCC-Platform.git
 
@@ -81,7 +89,7 @@ RUN git checkout ${BUILD_TAG} && \
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
 RUN ./bootstrap-vcpkg.sh
 ARG GITHUB_TOKEN=none
-RUN mono `./vcpkg fetch nuget | tail -n 1` \
+RUN mono `. ~/.vcpkg/vcpkg-init fetch nuget | tail -n 1` \
     sources add \
     -name "GitHub" \
     -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
@@ -95,16 +103,11 @@ WORKDIR /hpcc-dev/build
 
 ARG BUILD_TYPE=RelWithDebInfo
 ARG USE_CPPUNIT=0
-RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc-dev/HPCC-Platform -Wno-dev \
+RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev \
     -DCONTAINERIZED=OFF \
-    -DINCLUDE_PLUGINS=ON \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-    -DUSE_PYTHON2=OFF \
-    -DSUPPRESS_SPARK=ON \
-    -DUSE_GIT=OFF \
+    -DUSE_OPTIONAL=OFF \
     -DUSE_AZURE=OFF \
-    -DUSE_ELASTICSTACK_CLIENT=OFF \
-    -DUSE_CASSANDRA=OFF \
+    -DINCLUDE_PLUGINS=ON \
     -DSUPPRESS_V8EMBED=ON \
     -DSUPPRESS_REMBED=ON \
     -DUSE_CPPUNIT=${USE_CPPUNIT}
@@ -112,12 +115,13 @@ RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` /hpcc-dev/HPCC
 ARG BUILD_THREADS
 RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(nproc) > ~/build_threads ; fi
 RUN echo Building with $(cat ~/build_threads) threads
-RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) jlib
-RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) esp
-RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) roxie
-RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads) ws_workunits ecl
-RUN `/hpcc-dev/HPCC-Platform/vcpkg/vcpkg fetch cmake | tail -n 1` --build . -- -j$(cat ~/build_threads)
+RUN cmake --build . -- -j$(cat ~/build_threads) jlib
+RUN cmake --build . -- -j$(cat ~/build_threads) esp
+RUN cmake --build . -- -j$(cat ~/build_threads) roxie
+RUN cmake --build . -- -j$(cat ~/build_threads) ws_workunits ecl
+RUN cmake --build . -- -j$(cat ~/build_threads)
 
 # Speed up GH Action
 FROM centos:centos7
 COPY --from=stage /hpcc-dev/build /hpcc-dev/build
+

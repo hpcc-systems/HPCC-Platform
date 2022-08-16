@@ -29,7 +29,7 @@
 #The name of your "upstream" git remote
 UPSTREAM=upstream
 
-while getopts “d:fhlpt:n:u:b:r:” opt; do
+while getopts “d:fhlpt:n:u:b:r:a:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
     n) CUSTOM_TAG_NAME=$OPTARG ;;

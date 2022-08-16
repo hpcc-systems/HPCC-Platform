@@ -475,7 +475,7 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 {
     if(fields & MSGFIELD_msgID)
-        out.appendf("%8X ", sysInfo.queryMsgID());
+        out.appendf("%08X ", sysInfo.queryMsgID());
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
     if(fields & MSGFIELD_audience)
         out.appendf("%s ", LogMsgAudienceToFixString(category.queryAudience()));
@@ -554,228 +554,6 @@ StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
 {
     loggingFieldColumns.generateHeaderRow(out, fields, false).append("\n\n");
     return out;
-}
-
-void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
-{
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "id=%X ", sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        fprintf(handle, "aud=%s", LogMsgAudienceToVarString(category.queryAudience()));
-    if(fields & MSGFIELD_class)
-        fprintf(handle, "cls=%s ", LogMsgClassToFixString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "det=%d ", category.queryDetail());
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[12];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
-            fputs(timeString, handle);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
-            fputs(timeString, handle);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "pid=%d ",sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "tid=%d ",sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            fprintf(handle, "sid=unknown ");
-        else
-            fprintf(handle, "sid=%" I64F "u ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        StringBuffer buff;
-        sysInfo.queryNode()->getUrlStr(buff);
-        fprintf(handle, "%s ", buff.str());
-    }
-    if(fields & MSGFIELD_job)
-    {
-        fprintf(handle, "job=%s ", jobInfo.queryJobIDStr());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            fprintf(handle, "usr=unknown ");
-        else
-            fprintf(handle, "usr=%" I64F "u ", jobInfo.queryUserID());
-    }
-    
-    const char * quote = (fields & MSGFIELD_quote) ? "\"" : "";
-    const char * prefix = (fields & MSGFIELD_prefix) ? msgPrefix(category.queryClass()) : "";
-    if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
-        fprintf(handle, "%s%s%d: %s%s", quote, prefix, msgCode, text.str(), quote);
-    else
-        fprintf(handle, "%s%s%s%s", quote, prefix, text.str(), quote);
-}
-
-void LogMsg::fprintXML(FILE * handle, unsigned fields) const
-{
-    fprintf(handle, "<msg ");
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "MessageID=\"%d\" ",sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        fprintf(handle, "Audience=\"%s\" ", LogMsgAudienceToVarString(category.queryAudience()));
-    if(fields & MSGFIELD_class)
-        fprintf(handle, "Class=\"%s\" ", LogMsgClassToVarString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "Detail=\"%d\" ", category.queryDetail());
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allCategory) fprintf(handle, "\n     ");
-#endif
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[20];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 20, "date=\"%Y-%m-%d\" ", &timeStruct);
-            fputs(timeString, handle);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            fprintf(handle, "time=\"%02d:%02d:%02d.%06d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            fprintf(handle, "time=\"%02d:%02d:%02d.%03d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 20, "time=\"%H:%M:%S\" ", &timeStruct);
-            fputs(timeString, handle);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "PID=\"%d\" ", sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "TID=\"%d\" ", sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            fprintf(handle, "SessionID=\"unknown\" ");
-        else
-            fprintf(handle, "SessionID=\"%" I64F "u\" ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        StringBuffer buff;
-        sysInfo.queryNode()->getUrlStr(buff);
-        fprintf(handle, "Node=\"%s\" ", buff.str());
-    }
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allSysInfo) fprintf(handle, "\n     ");
-#endif
-    if(fields & MSGFIELD_job)
-    {
-        fprintf(handle, "JobID=\"%s\" ", jobInfo.queryJobIDStr());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            fprintf(handle, "UserID=\"unknown\" ");
-        else
-            fprintf(handle, "UserID=\"%" I64F "u\" ", jobInfo.queryUserID());
-    }
-#ifdef LOG_MSG_NEWLINE
-    if(fields & MSGFIELD_allJobInfo) fprintf(handle, "\n     ");
-#endif
-    if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
-        fprintf(handle, "code=\"%d\" ", msgCode);
-    fprintf(handle, "text=\"%s\" />\n", text.str());
-}
-
-void LogMsg::fprintTable(FILE * handle, unsigned fields) const
-{
-    if(fields & MSGFIELD_msgID)
-        fprintf(handle, "%08X ", sysInfo.queryMsgID());
-    if(fields & MSGFIELD_audience)
-        fprintf(handle, "%s ", LogMsgAudienceToFixString(category.queryAudience()));
-    if(fields & MSGFIELD_class)
-        fprintf(handle, "%s ", LogMsgClassToFixString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        fprintf(handle, "%10d ", category.queryDetail());
-    if(fields & MSGFIELD_timeDate)
-    {
-        time_t timeNum = sysInfo.queryTime();
-        char timeString[12];
-        struct tm timeStruct;
-        localtime_r(&timeNum, &timeStruct);
-        if(fields & MSGFIELD_date)
-        {
-            strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
-            fputs(timeString, handle);
-        }
-        if(fields & MSGFIELD_microTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
-        }
-        else if(fields & MSGFIELD_milliTime)
-        {
-            fprintf(handle, "%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
-        }
-        else if(fields & MSGFIELD_time)
-        {
-            strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
-            fputs(timeString, handle);
-        }
-    }
-    if(fields & MSGFIELD_process)
-        fprintf(handle, "%5d ",sysInfo.queryProcessID());
-    if(fields & MSGFIELD_thread)
-        fprintf(handle, "%5d ",sysInfo.queryThreadID());
-    if(fields & MSGFIELD_session)
-    {
-        if(sysInfo.querySessionID() == UnknownSession)
-            fprintf(handle, "       unknown       ");
-        else
-            fprintf(handle, "%20" I64F "u ", sysInfo.querySessionID());
-    }
-    if(fields & MSGFIELD_node)
-    {
-        StringBuffer buff;
-        static const char * twenty_spaces = "                    ";
-        sysInfo.queryNode()->getUrlStr(buff);
-        fprintf(handle, "%s%s", buff.str(), (buff.length()<=20) ? twenty_spaces+buff.length() : "");
-    }
-    if(fields & MSGFIELD_job)
-    {
-        fprintf(handle, "%-7s ", jobInfo.queryJobIDStr());
-    }
-    if(fields & MSGFIELD_user)
-    {
-        if(jobInfo.queryUserID() == UnknownUser)
-            fprintf(handle, "unknown ");
-        else
-            fprintf(handle, "%7" I64F "u ", jobInfo.queryUserID());
-    }
-    const char * quote = (fields & MSGFIELD_quote) ? "\"" : "";
-    const char * prefix = (fields & MSGFIELD_prefix) ? msgPrefix(category.queryClass()) : "";
-    if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
-        fprintf(handle, "%s%s%d: %s%s\n", quote, prefix, msgCode, text.str(), quote);
-    else
-        fprintf(handle, "%s%s%s%s\n", quote, prefix, text.str(), quote);
 }
 
 void LogMsg::fprintTableHead(FILE * handle, unsigned fields)
@@ -977,6 +755,13 @@ void CategoryLogMsgFilter::reset()
 
 // HandleLogMsgHandler
 
+void HandleLogMsgHandlerTable::handleMessage(const LogMsg & msg)
+{
+    CriticalBlock block(crit);
+    msg.toStringTable(curMsgText.clear(), messageFields);
+    fputs(curMsgText.str(), handle);
+}
+
 void HandleLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
 {
     IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
@@ -986,6 +771,13 @@ void HandleLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
         handlerTree->setProp("@type", "mischandle");
     handlerTree->setPropInt("@fields", messageFields);
     tree->addPropTree("handler", handlerTree);
+}
+
+void HandleLogMsgHandlerXML::handleMessage(const LogMsg & msg)
+{
+    CriticalBlock block(crit);
+    msg.toStringXML(curMsgText.clear(), messageFields);
+    fputs(curMsgText.str(), handle);
 }
 
 void HandleLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
@@ -1041,23 +833,13 @@ FileLogMsgHandler::~FileLogMsgHandler()
     closeAndDeleteEmpty(filename,handle);
 }
 
-char const * FileLogMsgHandler::disable()
+void FileLogMsgHandlerTable::handleMessage(const LogMsg & msg)
 {
-    crit.enter();
-    fclose(handle);
-    handle = NULL;
-    return filename;
-}
-
-void FileLogMsgHandler::enable()
-{
-    recursiveCreateDirectoryForFile(filename);
-    handle = fopen(filename, "a");
-    if(!handle) {
-        handle = getNullHandle();
-        assertex(!"FileLogMsgHandler::enable : could not open file for output");
-    }
-    crit.leave();
+    CriticalBlock block(crit);
+    msg.toStringTable(curMsgText.clear(), messageFields);
+    fputs(curMsgText.str(), handle);
+    if(flushes)
+        fflush(handle);
 }
 
 void FileLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
@@ -1071,6 +853,15 @@ void FileLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
     if(append) handlerTree->setProp("@append", "true");
     if(flushes) handlerTree->setProp("@flushes", "true");
     tree->addPropTree("handler", handlerTree);
+}
+
+void FileLogMsgHandlerXML::handleMessage(const LogMsg & msg)
+{
+    CriticalBlock block(crit);
+    msg.toStringXML(curMsgText.clear(), messageFields);
+    fputs(curMsgText.str(), handle);
+    if(flushes)
+        fflush(handle);
 }
 
 void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
@@ -1104,7 +895,8 @@ void PostMortemLogMsgHandler::handleMessage(const LogMsg & msg)
     if (handle)
     {
         checkRollover();
-        msg.fprintTable(handle, messageFields);
+        msg.toStringTable(curMsgText.clear(), messageFields);
+        fputs(curMsgText.str(), handle);
         if(flushes)
             fflush(handle);
         linesInCurrent++;
@@ -2398,21 +2190,14 @@ static constexpr const char * logFieldsAtt = "@fields";
 static constexpr const char * logMsgDetailAtt = "@detail";
 static constexpr const char * logMsgAudiencesAtt = "@audiences";
 static constexpr const char * logMsgClassesAtt = "@classes";
-static constexpr const char * useLogQueueAtt = "@useLogQueue";
 static constexpr const char * logQueueLenAtt = "@queueLen";
 static constexpr const char * logQueueDropAtt = "@queueDrop";
 static constexpr const char * logDisabledAtt = "@disabled";
 static constexpr const char * useSysLogpAtt ="@enableSysLog";
 static constexpr const char * capturePostMortemAtt ="@postMortem";
 
-#ifdef _DEBUG
-static constexpr bool useQueueDefault = false;
-#else
-static constexpr bool useQueueDefault = true;
-#endif
-
 static constexpr unsigned queueLenDefault = 512;
-static constexpr unsigned queueDropDefault = 32;
+static constexpr unsigned queueDropDefault = 0; // disabled by default
 static constexpr bool useSysLogDefault = false;
 
 void setupContainerizedLogMsgHandler()
@@ -2453,14 +2238,21 @@ void setupContainerizedLogMsgHandler()
             theManager->changeMonitorFilter(theStderrHandler, filter);
         }
 
-        bool useLogQueue = logConfig->getPropBool(useLogQueueAtt, useQueueDefault);
-        if (useLogQueue)
+        unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
+        if (queueLen)
         {
-            unsigned queueLen = logConfig->getPropInt(logQueueLenAtt, queueLenDefault);
-            unsigned queueDrop = logConfig->getPropInt(logQueueDropAtt, queueDropDefault);
-
             queryLogMsgManager()->enterQueueingMode();
-            queryLogMsgManager()->setQueueDroppingLimit(queueLen, queueDrop);
+            unsigned queueDrop = logConfig->getPropInt(logQueueDropAtt, queueDropDefault);
+            if (queueDrop)
+            {
+                queryLogMsgManager()->setQueueDroppingLimit(queueLen, queueDrop);
+                PROGLOG("JLog: queuing enabled with dropping: queueLen=%u, queueDrop=%u", queueLen, queueDrop);
+            }
+            else
+            {
+                queryLogMsgManager()->setQueueBlockingLimit(queueLen);
+                PROGLOG("JLog: queuing enabled: queueLen=%u", queueLen);
+            }
         }
 
         if (logConfig->getPropBool(useSysLogpAtt, useSysLogDefault))
@@ -2908,7 +2700,7 @@ extern jlib_decl IContextLogger &updateDummyContextLogger()
 
 extern jlib_decl StringBuffer &appendGloballyUniqueId(StringBuffer &s)
 {
-    string uid = createUniqueIdString();
+    std::string uid = createUniqueIdString();
     return s.append(uid.c_str());
 }
 
@@ -2995,7 +2787,7 @@ private:
         maxDetail = DefaultDetail;
         name.set(component); //logfile defaults to component name. Change via setName(), setPrefix() and setPostfix()
         extension.set(".log");
-        local = false;
+        local = true;
         createAlias = true;
     }
 
@@ -3239,15 +3031,20 @@ bool fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & retur
 //logAccessPluginConfig expected to contain connectivity and log mapping information
 typedef IRemoteLogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
 
-IRemoteLogAccess &queryRemoteLogAccessor()
+IRemoteLogAccess *queryRemoteLogAccessor()
 {
-    return *logAccessor.query([]
+    return logAccessor.query([]
         {
-            Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
-#ifdef LOGACCESSDEBUG
-            if (!logAccessPluginConfig)
+            PROGLOG("Loading remote log access plug-in.");
+
+            IRemoteLogAccess *remoteLogAccessor = nullptr;
+            try
             {
-                const char * simulatedGlobalYaml = R"!!(global:
+                Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
+#ifdef LOGACCESSDEBUG
+                if (!logAccessPluginConfig)
+                {
+                    const char * simulatedGlobalYaml = R"!!(global:
   logAccess:
     name: "Azure LogAnalytics LogAccess"
     type: "AzureLogAnalyticsCurl"
@@ -3275,36 +3072,42 @@ IRemoteLogAccess &queryRemoteLogAccessor()
       searchColumn: "Name"
     - type: "host"
       searchColumn: "Computer"
-                )!!";
-                Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-                logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
-            }
+                    )!!";
+                    Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+                    logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
+                }
 #endif
 
-            if (!logAccessPluginConfig)
-                throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
+                if (!logAccessPluginConfig)
+                    throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
 
-            constexpr const char * methodName = "queryRemoteLogAccessor";
-            constexpr const char * instFactoryName = "createInstance";
+                constexpr const char * methodName = "queryRemoteLogAccessor";
+                constexpr const char * instFactoryName = "createInstance";
 
-            StringBuffer libName; //lib<type>logaccess.so
-            StringBuffer type;
-            logAccessPluginConfig->getProp("@type", type);
-            if (type.isEmpty())
-                throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
-            libName.append("lib").append(type.str()).append("logaccess");
+                StringBuffer libName; //lib<type>logaccess.so
+                StringBuffer type;
+                logAccessPluginConfig->getProp("@type", type);
+                if (type.isEmpty())
+                    throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
+                libName.append("lib").append(type.str()).append("logaccess");
 
-            //Load the DLL/SO
-            HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
+                //Load the DLL/SO
+                HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), false, true);
 
-            newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
-            if (xproc == nullptr)
-                throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+                newLogAccessPluginMethod_t_ xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+                if (xproc == nullptr)
+                    throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
 
-            //Call logaccessplugin instance factory and return the new instance
-            DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
-
-            return xproc(*logAccessPluginConfig);
+                //Call logaccessplugin instance factory and return the new instance
+                DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+                remoteLogAccessor = xproc(*logAccessPluginConfig);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Could not load remote log access plug-in: ");
+                e->Release();
+            }
+            return remoteLogAccessor;
         }
     );
 }

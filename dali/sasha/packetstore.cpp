@@ -152,7 +152,7 @@ protected:
 
     virtual unsigned getHashFromFindParam(const void *fp) const
     {
-        return hashc((const unsigned char *)fp, strlen((const char *)fp), 0);
+        return hashcz((const unsigned char *)fp, 0);
     }
 
     virtual const void *getFindParam(const void *e) const

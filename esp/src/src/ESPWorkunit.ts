@@ -1051,6 +1051,9 @@ export function CreateWUQueryStore(): BaseStore<WUQuery.Request, typeof Workunit
         sortBy: "Sortby",
         descending: "Descending"
     }, "Wuid", request => {
+        if (request.Sortby && request.Sortby === "TotalClusterTime") {
+            request.Sortby = "ClusterTime";
+        }
         return service.WUQuery(request).then(response => {
             return {
                 data: response.Workunits.ECLWorkunit.map(wu => Get(wu.Wuid, wu)),

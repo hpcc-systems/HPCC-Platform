@@ -2413,7 +2413,7 @@ public:
 
         DBGLOG("Compiling ESDL Transform: '%s'", m_name.str());
 
-        map< string, const SXT_CHAR* >::const_iterator it = xpp.getNsBegin();
+        std::map< std::string, const SXT_CHAR* >::const_iterator it = xpp.getNsBegin();
         while (it != xpp.getNsEnd())
         {
             if (it->first.compare("xml")!=0)

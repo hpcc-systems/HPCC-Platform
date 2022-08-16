@@ -45,6 +45,7 @@ interface IIndexFilterList : public IInterface, public IIndexReadContext
     virtual bool matchesBuffer(const void *keyBuffer, unsigned lastSeg, unsigned &matchSeg) const = 0;
     virtual unsigned getFieldOffset(unsigned idx) const = 0;
     virtual bool canMatch() const = 0;
+    virtual bool isUnfiltered() const = 0;
 };
 
 BITMASK_ENUM(TransitionMask);

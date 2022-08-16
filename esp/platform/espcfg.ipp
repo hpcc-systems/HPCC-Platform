@@ -36,7 +36,6 @@
 #include <list>
 #include <map>
 #include <string>
-using namespace std;
 
 //ESP
 #include "esp.hpp"
@@ -148,9 +147,9 @@ private:
 
     SocketEndpoint m_address;
 
-    map<string, protocol_cfg*> m_protocols; 
-    list<binding_cfg*> m_bindings; 
-    map<string, srv_cfg*> m_services;
+    std::map<std::string, protocol_cfg*> m_protocols;
+    std::list<binding_cfg*> m_bindings;
+    std::map<std::string, srv_cfg*> m_services;
 
     IArrayOf<IEspPlugin> m_plugins;
 
@@ -281,7 +280,7 @@ public:
     IEspPlugin* getPlugin(const char* name);
 
     void loadBuiltIns();
-    builtin *getBuiltIn(string name);
+    builtin *getBuiltIn(std::string name);
 
     void loadProtocol(protocol_cfg &cfg);
     void loadBinding(binding_cfg &cfg);
@@ -330,7 +329,7 @@ public:
 
     IEspProtocol* queryProtocol(const char* name)
     {
-        map<string, protocol_cfg*>::iterator pit = m_protocols.find(name);
+        std::map<std::string, protocol_cfg*>::iterator pit = m_protocols.find(name);
         if (pit != m_protocols.end())
             return (*pit).second->prot;
         return nullptr;

@@ -1,0 +1,37 @@
+authNZ:
+   test:
+      name: test
+      type: test
+      LibName: libtestauthSecurity.so
+      useResourceMapsFrom: ldap
+      userAccess:
+      -  userName: testadmin
+         # if neither password or secretKey is provided, the username is used as the password
+         #password: base64_of_password_can_go_here   # optional
+         #secretKey: testauthusercreds1     # optional
+         defaults:
+            resource: full
+         resources:
+            ws_ecl:
+               features:
+                  WsEclAccess: full
+      -  userName: testuser
+         # if neither password or secretKey is provided, the username is used as the password
+         #password: base64_of_password_can_go_here   # optional
+         #secretKey: testauthusercreds2     # optional
+         defaults:
+            resource: none
+         resources:
+            ws_ecl:
+               features:
+                  WsEclAccess: full
+      -  userName: testnoaccess
+         # if neither password or secretKey is provided, the username is used as the password
+         #password: base64_of_password_can_go_here   # optional
+         #secretKey: testauthusercreds3     # optional
+         defaults:
+            resource: none
+         resources:
+            ws_ecl:
+               features:
+                  WsEclAccess: none

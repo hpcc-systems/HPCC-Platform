@@ -3332,7 +3332,7 @@ extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, b
 class PacketDiscarder : public Thread, implements IPacketDiscarder
 {
     bool aborted;
-    Owned<IRowManager> rowManager; // not completely sure I need one... maybe I do
+    Owned<IRowManager> rowManager;
     Owned<IMessageCollator> mc;
 
 public:
@@ -3393,12 +3393,6 @@ public:
                     }
                     else
                         DBGLOG("Unwanted message had no header?!");
-                }
-                else if (!anyActivity)
-                {
-                    // to avoid leaking partial unwanted packets, we clear out mc periodically...
-                    ROQ->queryReceiveManager()->detachCollator(mc);
-                    mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_DISCARD));
                 }
             }
         }

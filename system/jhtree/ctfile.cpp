@@ -82,6 +82,7 @@ void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.metadataHead);
     _WINREV(hdr.bloomHead);
     _WINREV(hdr.partitionFieldMask);
+    _WINREV(hdr.firstLeaf);
 }
 
 inline void SwapBigEndian(NodeHdr &hdr)
@@ -108,7 +109,12 @@ extern bool isCompressedIndex(const char *filename)
             SwapBigEndian(hdr);
             if (hdr.nodeSize && size % hdr.nodeSize == 0 && hdr.ktype & (HTREE_COMPRESSED_KEY|HTREE_QUICK_COMPRESSED_KEY))
             {
+#ifdef _DEBUG
+                //In debug mode always use the trailing header if it is available to ensure that code path is tested
                 if (hdr.ktype & USE_TRAILING_HEADER)
+#else
+                if (hdr.ktype & TRAILING_HEADER_ONLY)
+#endif
                 {
                     if (io->read(size-hdr.nodeSize, sizeof(hdr), &hdr) != sizeof(hdr))
                         return false;
@@ -145,7 +151,12 @@ extern jhtree_decl bool isIndexFile(IFile *file)
         SwapBigEndian(hdr);
         if (hdr.nodeSize && (size % hdr.nodeSize == 0))
         {
+#ifdef _DEBUG
+            //In debug mode always use the trailing header if it is available to ensure that code path is tested
             if (hdr.ktype & USE_TRAILING_HEADER)
+#else
+            if (hdr.ktype & TRAILING_HEADER_ONLY)
+#endif
             {
                 if (io->read(size-hdr.nodeSize, sizeof(hdr), &hdr) != sizeof(hdr))
                     return false;

@@ -30,3 +30,11 @@ export function CreateLogsQueryStore<T extends GetLogsExRequest>(): LogsQuerySto
     });
     return new Observable(store);
 }
+
+export function hasLogAccess(): Promise<boolean> {
+    return service.GetLogAccessInfo({}).then(response => {
+        return response.RemoteLogManagerConnectionString !== null || response.RemoteLogManagerType !== null;
+    }).catch(e => {
+        return false;
+    });
+}

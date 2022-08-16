@@ -24,38 +24,60 @@ ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 USER root
 
-
-# nvidia/cuda base
-RUN apt-get update && apt-get install -y --no-install-recommends  wget gnupg2 ca-certificates && \
-    apt-key del 7fa2af80 && \
-    apt-key del 3bf863cc && \
-    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub && \
-    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub && \
-    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
-    echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list && \
-    rm -rf /var/lib/apt/lists/*
-
-ENV CUDA_VERSION 11.3.1
-ENV CUDA_PKG_VERSION 11-3=${CUDA_VERSION}09-1
+ENV NVARCH=x86_64
+ENV NVIDIA_REQUIRE_CUDA=cuda>=11.4 brand=tesla,driver>=418,driver<419 brand=tesla,driver>=450,driver<451
+ENV NV_CUDA_CUDART_VERSION=11.4.108-1
+ENV NV_CUDA_COMPAT_PACKAGE=cuda-compat-11-4
+ARG TARGETARCH=amd64
 
 # For libraries in the cuda-compat-* package: https://docs.nvidia.com/cuda/eula/index.html#attachment-a
+# Reference https://hub.docker.com/layers/cuda/nvidia/cuda/11.4.3-cudnn8-runtime-ubuntu20.04/images/sha256-3c53124b4cdd6d6b8f4f7cef889b939ee776709a2249a0eb394d228af7623da6?context=explore
+RUN  apt-get update && apt-get install -y --no-install-recommends gnupg2 wget curl ca-certificates && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/${NVARCH}/3bf863cc.pub | apt-key add - && \
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/${NVARCH} /" > /etc/apt/sources.list.d/cuda.list && \
+    apt-get purge --autoremove -y curl  && rm -rf /var/lib/apt/lists/* # buildkit
+
+ENV CUDA_VERSION=11.4.2
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        cuda-cudart-$CUDA_PKG_VERSION \
-        cuda-compat-11-3 && \
-    ln -s cuda-11.3 /usr/local/cuda && \
-    rm -rf /var/lib/apt/lists/*
+   cuda-cudart-11-4=${NV_CUDA_CUDART_VERSION}     ${NV_CUDA_COMPAT_PACKAGE}  \
+   && ln -s cuda-11.4 /usr/local/cuda &&     rm -rf /var/lib/apt/lists/* # buildkit
 
-# Required for nvidia-docker v1
-RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
-    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf \
+    && echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf # buildkit
 
-ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}
-ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
+ENV PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 RUN wget https://gitlab.com/nvidia/container-images/cuda/-/raw/master/LICENSE?inline=false -O /NGC-DL-CONTAINER_LICENSE  #buildkit
+
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-ENV NVIDIA_REQUIRE_CUDA=cuda>=11.3 brand=tesla,driver>=418,driver<419 brand=tesla,driver>=440,driver<441 driver>=450
+ENV NV_CUDA_LIB_VERSION=11.4.2-1
+ENV NV_NVTX_VERSION=11.4.120-1
+ENV NV_LIBNPP_VERSION=11.4.0.110-1
+ENV NV_LIBNPP_PACKAGE=libnpp-11-4=11.4.0.110-1
+ENV NV_LIBCUSPARSE_VERSION=11.6.0.120-1
+ENV NV_LIBCUBLAS_PACKAGE_NAME=libcublas-11-4
+ENV NV_LIBCUBLAS_VERSION=11.6.1.51-1
+ENV NV_LIBCUBLAS_PACKAGE=libcublas-11-4=11.6.1.51-1
+ENV NV_LIBNCCL_PACKAGE_NAME=libnccl2
+ENV NV_LIBNCCL_PACKAGE_VERSION=2.11.4-1
+ENV NCCL_VERSION=2.11.4-1
+ENV NV_LIBNCCL_PACKAGE=libnccl2=2.11.4-1+cuda11.4
+ARG TARGETARCH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-libraries-11-4=${NV_CUDA_LIB_VERSION}     ${NV_LIBNPP_PACKAGE}     cuda-nvtx-11-4=${NV_NVTX_VERSION} \
+    libcusparse-11-4=${NV_LIBCUSPARSE_VERSION}     ${NV_LIBCUBLAS_PACKAGE}     ${NV_LIBNCCL_PACKAGE} \
+    && rm -rf /var/lib/apt/lists/* # buildkit
+
+RUN apt-mark hold ${NV_LIBCUBLAS_PACKAGE_NAME} ${NV_LIBNCCL_PACKAGE_NAME} # buildkit
+
+
+# TensorFlow with GPU support
+# Reference https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/dockerfiles/dockerfiles/gpu.Dockerfile
+# But above is for CUDA 11.2. We replace 11.2 with 11.4
+# For CUDNN and LIBNVINFER versions reference https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/
 
 RUN apt clean && \
     apt autoclean && \
@@ -74,21 +96,20 @@ RUN pip3 install       \
     statsmodels        \
     networkx
 
-# TensorFlow with GPU support
 # Reference: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/dockerfiles/dockerfiles/gpu.Dockerfile
 
 ARG ARCH
-ARG CUDA=11.3
-ARG CUDNN=8.2.1.32-1
+ARG CUDA=11.4
+ARG CUDNN=8.2.4.15-1
 ARG CUDNN_MAJOR_VERSION=8
 ARG LIB_DIR_PREFIX=x86_64
-ARG LIBNVINFER=8.0.0-1
+ARG LIBNVINFER=8.2.3-1
 ARG LIBNVINFER_MAJOR_VERSION=8
 
 # Needed for string substitution
 SHELL ["/bin/bash", "-c"]
 # Pick up some TF dependencies
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
+RUN apt-get update -y && apt-get install -y --no-install-recommends --allow-change-held-packages \
         build-essential \
         cuda-command-line-tools-${CUDA/./-} \
         libcublas-${CUDA/./-} \
@@ -106,11 +127,12 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
         software-properties-common \
         unzip
 
+
 # Install TensorRT if not building for PowerPC
 # NOTE: libnvinfer uses cuda11.1 versions
 RUN [[ "${ARCH}" = "ppc64le" ]] || { apt-get update && \
-        apt-get install -y --no-install-recommends libnvinfer${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda11.3 \
-        libnvinfer-plugin${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda11.3 \
+        apt-get install -y --no-install-recommends libnvinfer${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda11.4 \
+        libnvinfer-plugin${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda11.4 \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*; }
 
@@ -135,7 +157,8 @@ ENV LANG C.UTF-8
 # Set --build-arg TF_PACKAGE_VERSION=1.11.0rc0 to install a specific version.
 # Installs the latest version by default.
 ARG TF_PACKAGE=tensorflow
-ARG TF_PACKAGE_VERSION=2.6.0
-RUN python3 -m pip install --no-cache-dir ${TF_PACKAGE}${TF_PACKAGE_VERSION:+==${TF_PACKAGE_VERSION}}
+#ARG TF_PACKAGE_VERSION=2.6.0
+#RUN python3 -m pip install --no-cache-dir ${TF_PACKAGE}${TF_PACKAGE_VERSION:+==${TF_PACKAGE_VERSION}}
+RUN python3 -m pip install --no-cache-dir ${TF_PACKAGE}
 
 USER hpcc

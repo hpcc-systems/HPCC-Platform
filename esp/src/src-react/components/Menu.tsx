@@ -1,7 +1,8 @@
 import * as React from "react";
-import { IconButton, IContextualMenuItem, INavLinkGroup, Nav, Pivot, PivotItem, Stack, useTheme } from "@fluentui/react";
+import { IconButton, IContextualMenuItem, INavLinkGroup, Nav, Pivot, PivotItem, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
+import { hasLogAccess } from "src/ESPLog";
 import { MainNav, routes } from "../routes";
 import { pushUrl } from "../util/history";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
@@ -92,7 +93,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
 }) => {
 
     const menu = useConst([...navLinkGroups]);
-    const [theme, setTheme, isDark] = useUserTheme();
+    const { theme, setTheme, isDark } = useUserTheme();
 
     const selKey = React.useMemo(() => {
         return navSelectedKey(hashPath);
@@ -141,7 +142,7 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.Configuration, itemKey: "/topology/configuration" },
         { headerText: nlsHPCC.Pods, itemKey: "/topology/pods" },
         { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
-        { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin"},
+        { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin" },
     ],
     "topology-old": [
         { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology-old" },
@@ -185,7 +186,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     hashPath,
 }) => {
 
-    const theme = useTheme();
+    const { theme, themeV9 } = useUserTheme();
 
     const [favorites] = useFavorites();
     const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
@@ -205,6 +206,15 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
         return parts.shift();
     }, [hashPath]);
 
+    const [logsDisabled, setLogsDisabled] = React.useState(true);
+    React.useEffect(() => {
+        hasLogAccess().then(response => {
+            setLogsDisabled(!response);
+        }).catch(() => {
+            setLogsDisabled(true);
+        });
+    }, []);
+
     const favoriteMenu: IContextualMenuItem[] = React.useMemo(() => {
         const retVal: IContextualMenuItem[] = [];
         for (const key in favorites) {
@@ -223,7 +233,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal >
                     <Stack.Item grow={0} >
                         <Pivot selectedKey={subNav || altSubNav} onLinkClick={handleLinkClick} headersOnly={true} linkFormat="tabs" styles={{ root: { marginLeft: 4 }, text: { lineHeight: 20 }, link: { maxHeight: 20, marginRight: 4 }, linkContent: { maxHeight: 20 } }} >
-                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} key={row.itemKey} />)}
+                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} key={row.itemKey} headerButtonProps={row.itemKey === "/topology/logs" && logsDisabled ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} />)}
                         </Pivot>
                     </Stack.Item>
                     {!subNav &&

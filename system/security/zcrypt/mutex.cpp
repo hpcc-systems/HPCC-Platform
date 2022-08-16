@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string>
-using namespace std;
 
 #ifndef _WIN32
 #include <pthread.h>
@@ -150,7 +149,7 @@ void zsynchronized::throwLockException(unsigned timeout)
 {
     char exbuf[256];
     sprintf(exbuf, "Can not lock - %d",timeout);
-    throw string(exbuf);
+    throw std::string(exbuf);
 }
 
 

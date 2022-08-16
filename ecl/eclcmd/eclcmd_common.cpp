@@ -841,6 +841,12 @@ eclCmdOptionMatchIndicator EclCmdWithQueryTarget::matchCommandLineOption(ArgvIte
         }
         return EclCmdOptionMatch;
     }
+    if (iter.matchOption(optActivated, ECLOPT_ACTIVATED))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optSuspendedByUser, ECLOPT_SUSPENDEDBYUSER))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optDeleteWorkunit, ECLOPT_DELETE_WORKUNIT))
+        return EclCmdOptionMatch;
     StringAttr optTemp; //backward compatible with --queryset option
     if (iter.matchOption(optTemp, ECLOPT_QUERYSET)||iter.matchOption(optTemp, ECLOPT_QUERYSET_S))
     {

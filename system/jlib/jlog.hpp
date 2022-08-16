@@ -583,14 +583,11 @@ public:
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned port, LogMsgSessionId session);
     LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
            unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
-    StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
-    StringBuffer &            toStringXML(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
-    StringBuffer &            toStringTable(StringBuffer & out, unsigned fields = MSGFIELD_all) const;
-    static StringBuffer &     toStringTableHead(StringBuffer & out, unsigned fields = MSGFIELD_all);
-    void                      fprintPlain(FILE * handle, unsigned fields = MSGFIELD_all) const;
-    void                      fprintXML(FILE * handle, unsigned fields = MSGFIELD_all) const;
-    void                      fprintTable(FILE * handle, unsigned fields = MSGFIELD_all) const;
-    static void               fprintTableHead(FILE * handle, unsigned fields = MSGFIELD_all);
+    StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields) const;
+    StringBuffer &            toStringXML(StringBuffer & out, unsigned fields) const;
+    StringBuffer &            toStringTable(StringBuffer & out, unsigned fields) const;
+    static StringBuffer &     toStringTableHead(StringBuffer & out, unsigned fields);
+    static void               fprintTableHead(FILE * handle, unsigned fields);
     inline const LogMsgCategory  queryCategory() const { return category; }
     inline const LogMsgSysInfo & querySysInfo() const { return sysInfo; }
     inline const LogMsgJobInfo & queryJobInfo() const { return jobInfo; }
@@ -1653,6 +1650,6 @@ extern jlib_decl bool fetchJobIDLog(LogQueryResultDetails & resultDetails, Strin
 extern jlib_decl bool fetchComponentLog(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool fetchLogByAudience(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
 extern jlib_decl bool  fetchLogByClass(LogQueryResultDetails & resultDetails, StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format);
-extern jlib_decl IRemoteLogAccess & queryRemoteLogAccessor();
+extern jlib_decl IRemoteLogAccess * queryRemoteLogAccessor();
 
 #endif

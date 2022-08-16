@@ -241,18 +241,6 @@ bool checkDirExists(const char * filename)
 #endif
 }
 
-static void set_inherit(HANDLE handle, bool inherit)
-{
-#ifndef _WIN32
-    long flag = fcntl(handle, F_GETFD);
-    if(inherit)
-        flag &= ~FD_CLOEXEC;
-    else
-        flag |= FD_CLOEXEC;
-    fcntl(handle, F_SETFD, flag);
-#endif
-}
-
 static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilename & filename)
 {
     if (filename.isLocal()&&!filename.isNull()) {
@@ -669,6 +657,8 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
     default:
         return NULLFILE;
     }
+    //Prevent the file from being inherited by a child process;
+    openflags |= O_CLOEXEC;
     handle = _lopen(filename.get(), openflags, fileflags);
     if (handle == -1)
     {
@@ -709,9 +699,6 @@ IFileIO * CFile::open(IFOmode mode,IFEflags extraFlags)
 IFileAsyncIO * CFile::openAsync(IFOmode mode)
 {
     HANDLE handle = openHandle(mode,IFSHread,true);     // I don't think we want shared write to an async file
-#ifndef _WIN32
-    set_inherit(handle, false);
-#endif
     return new CFileAsyncIO(handle,IFSHread);
 }
 
@@ -1750,9 +1737,6 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
     HANDLE handle = openHandle(mode,share,false, stdh);
     if (handle==NULLFILE)
         return NULL;
-#ifndef _WIN32
-    set_inherit(handle, false);
-#endif
     if (stdh>=0)
         return new CSequentialFileIO(handle,mode,share,extraFlags);
 
@@ -1996,11 +1980,20 @@ void CFileIO::flush()
 
 offset_t CFileIO::size()
 {
+#ifndef _WIN32
+    //MORE: The current implementation of openHandle() calls fstat() to check the file is not a directory
+    //If the file hasn't been modified since open() the size could be cached and returned.
+    struct stat info;
+    if (fstat(file, &info) >= 0)
+        return info.st_size;
+    return 0;
+#else
     CriticalBlock procedure(cs);
     offset_t savedPos = lseek(file,0,SEEK_CUR);
     offset_t length = lseek(file,0,SEEK_END);
     setPos(savedPos);
     return length;
+#endif
 }
 
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
@@ -4301,6 +4294,13 @@ IFile * createIFile(const char * filename)
 #endif
 }
 
+void touchFile(const char *filename)
+{
+    Owned<IFile> iFile = createIFile(filename);
+    Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+    if (!iFileIO)
+        throw makeStringExceptionV(0, "touchFile: failed to create file %s", filename);
+}
 
 IFileIOStream * createIOStream(IFileIO * file)
 {

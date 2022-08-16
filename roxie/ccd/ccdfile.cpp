@@ -98,6 +98,7 @@ protected:
     bool copying = false;
     bool isCompressed = false;
     bool remote = false;
+    bool isKey = false;
     IRoxieFileCache *cached = nullptr;
     unsigned fileIdx = 0;
     unsigned crc = 0;
@@ -110,8 +111,8 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, unsigned _crc)
-        : logical(_logical), fileSize(size), isCompressed(_isCompressed), crc(_crc), fileStats(diskLocalStatistics)
+    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, bool _isKey, unsigned _crc)
+        : logical(_logical), fileSize(size), isCompressed(_isCompressed), isKey(_isKey), crc(_crc), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
         currentIdx = 0;
@@ -281,7 +282,7 @@ public:
                     fileStatus = queryFileCache().fileUpToDate(f, fileSize, fileDate, isCompressed, false);
                     if (fileStatus == FileIsValid)
                     {
-                        if (isCompressed)
+                        if (isCompressed && !isKey)
                             current.setown(createCompressedFileReader(f));
                         else
                             current.setown(f->open(IFOread));
@@ -1035,11 +1036,20 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         Owned<IFile> local = createIFile(localLocation);
         if (traceRemoteFiles)
             DBGLOG("openFile adding file %s (localLocation %s)", lfn, localLocation);
-        bool isCompressed = selfTestMode ? false : pdesc->queryOwner().isCompressed();
         unsigned crc = 0;
+        bool isCompressed = false;
+        bool isKey = false;
         if (!selfTestMode)
+        {
             pdesc->getCrc(crc);
-        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, crc);
+            IFileDescriptor &fdesc = pdesc->queryOwner();
+            isCompressed = fdesc.isCompressed();
+            const char *kind = fdesc.queryKind();
+            if (kind && streq(kind, "key"))
+                isKey = true;
+        }
+
+        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, isKey, crc);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
         if (fileStatus == FileIsValid)
         {
