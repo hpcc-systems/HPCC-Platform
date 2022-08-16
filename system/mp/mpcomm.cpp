@@ -705,6 +705,8 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
     {
         try
         {
+            // TODO: not 100% reliable all data arrives atomically ...
+            // if minSize <= sizeRead < maxSize then should read() one more time to get any still pending data
             sock->readtms(dst, minSize, maxSize, sizeRead, intervalTimeoutMs);
             break;
         }
@@ -1978,6 +1980,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _list
     listen = _listen;
     mpSoMaxConn = 0;
 #ifndef _CONTAINERIZED
+    // NB: these values are read from env.xml, NOT env.conf
     Owned<IPropertyTree> env = getHPCCEnvironment();
     if (env)
     {
@@ -2237,11 +2240,6 @@ int CMPConnectThread::run()
                 connectHdr.id[0].get(_remoteep);
                 connectHdr.id[1].get(hostep);
 
-                unsigned __int64 addrval = DIGIT1*connectHdr.id[0].ip[0] + DIGIT2*connectHdr.id[0].ip[1] + DIGIT3*connectHdr.id[0].ip[2] + DIGIT4*connectHdr.id[0].ip[3] + connectHdr.id[0].port;
-#ifdef _TRACE
-                PROGLOG("MP: Connect Thread: addrval = %" I64F "u", addrval);
-#endif
-
                 if (_remoteep.isNull() || hostep.isNull())
                 {
                     StringBuffer errMsg;
@@ -2272,6 +2270,34 @@ int CMPConnectThread::run()
                 PROGLOG("MP: Connect Thread: after read %s",tmp1.str());
 #endif
                 checkSelfDestruct(&connectHdr.id[0],sizeof(connectHdr.id));
+
+                // HPCC-28125 - if remoteep IP != peerEp IP then NAT happening, or rogue client (ssh etc.)
+                // assume we are in single client -> this server mode and not in peer <--> peer mode,
+                // change remoteep to prevent clash with any existing MP connections, log warning
+                // Perhaps better would be for client to send its MAC address or something immutable/unique
+                // But how to handle sending different data to older servers expecting IP:port ?
+                // NB: hostep portion of the handshake payload is not really useful
+                // hostep is used in outbound packet hdrs (localep), perhaps don't rely on what client thinks we are, could reset hostep here ...
+                // hostep.setLocalHost(parent->getPort()); // (but make sure its an external facing NIC/IP)
+
+                if (!_remoteep.ipequals(peerEp))
+                {
+                    if (parent->mpTraceLevel >= ExtraneousMsgThreshold)
+                    {
+                        StringBuffer rIp, pIp;
+                        _remoteep.getIpText(rIp);
+                        peerEp.getIpText(pIp);
+                        PROGLOG("MP: WARNING: client ip sent in (%s:%u) != peer ip (%s:%u)", rIp.str(), _remoteep.port, pIp.str(), peerEp.port);
+                    }
+                    _remoteep.set(peerEp);
+                    connectHdr.id[0].set(_remoteep);
+                }
+
+                unsigned __int64 addrval = DIGIT1*connectHdr.id[0].ip[0] + DIGIT2*connectHdr.id[0].ip[1] + DIGIT3*connectHdr.id[0].ip[2] + DIGIT4*connectHdr.id[0].ip[3] + connectHdr.id[0].port;
+#ifdef _TRACE
+                PROGLOG("MP: Connect Thread: addrval = %" I64F "u", addrval);
+#endif
+
                 Owned<CMPChannel> channel = parent->lookup(_remoteep);
                 if (!channel->attachSocket(sock.getClear(),_remoteep,hostep,false,&rd,addrval))
                 {
