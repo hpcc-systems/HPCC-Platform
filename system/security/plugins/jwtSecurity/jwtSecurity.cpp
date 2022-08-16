@@ -308,7 +308,8 @@ private:
             // Create the JWT token verifier with known claims
             auto jwtVerifier = jwt::verify()
                                 .with_subject(subject)
-                                .with_audience(clientID);
+                                .with_audience(clientID)
+                                .leeway(2);
 
             // Add an issuer claim only if an endpoint value was provided
             if (!endpointURL.empty())
