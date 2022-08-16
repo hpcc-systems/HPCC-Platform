@@ -92,6 +92,7 @@ class Cws_accessEx : public Cws_access
     const char* getPasswordExpiration(ISecUser *usr, StringBuffer &passwordExpiration);
     void checkUser(IEspContext &context, CLdapSecManager *ldapSecMgr, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
     CLdapSecManager* queryLDAPSecurityManagerAndCheckUser(IEspContext &context, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
+    void createResourceArrayForResources(const char *baseDN, SecResourceType rType, IArrayOf<ISecResource> &resources, IArrayOf<IEspResource> &resourceArray);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -144,6 +145,7 @@ public:
     virtual bool onUserSudoersInput(IEspContext &context, IEspUserSudoersInputRequest &req, IEspUserSudoersInputResponse &resp);
     virtual bool onUserSudoers(IEspContext &context, IEspUserSudoersRequest &req, IEspUserSudoersResponse &resp);
     virtual bool onAccountPermissions(IEspContext &context, IEspAccountPermissionsRequest &req, IEspAccountPermissionsResponse &resp);
+    virtual bool onAccountPermissionsV2(IEspContext &context, IEspAccountPermissionsV2Request &req, IEspAccountPermissionsV2Response &resp);
     virtual bool onFilePermission(IEspContext &context, IEspFilePermissionRequest &req, IEspFilePermissionResponse &resp);
     virtual bool onPermissionsResetInput(IEspContext &context, IEspPermissionsResetInputRequest &req, IEspPermissionsResetInputResponse &resp);
     virtual bool onPermissionsReset(IEspContext &context, IEspPermissionsResetRequest &req, IEspPermissionsResetResponse &resp);
