@@ -17,4 +17,5 @@
 
 EXPORT nlp := SERVICE : plugin('nlp'), namespace('nlp'), library('nlp'), CPP, PURE
   string AnalyzeText(const string analyzer, const string txt) : cpp,pure,entrypoint='AnalyzeText';
+  unicode UnicodeAnalyzeText(const string analyzer, const unicode txt) : cpp,pure,entrypoint='AnalyzeTextU';
 END;

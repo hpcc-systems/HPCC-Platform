@@ -25,6 +25,9 @@
 #include "eclrtl.hpp"
 #include "nlp.hpp"
 
+#include "unicode/usearch.h"
+using namespace icu;
+
 #define NLP_VERSION "nlp plugin 1.0.0"
 
 ECL_NLP_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
@@ -67,6 +70,26 @@ namespace nlp {
         tgtLen = nlpEng->nlpEngAnalyze(anaBuff,txtBuff,sso);
         tgt = (char *) CTXMALLOC(parentCtx, tgtLen);
         memcpy_iflen(tgt, sso.str().c_str(), tgtLen);
+    }
+
+    ECL_NLP_API void ECL_NLP_CALL AnalyzeTextU(unsigned & tgtLen, UChar * & tgt, size32_t anaLen, const char * ana, unsigned txtLen, UChar const * txt)
+    {
+        {
+            CriticalBlock block(cs);
+            if (nlpEng == NULL) {
+                nlpEng = new NLPEng();
+            }
+        }
+        UnicodeString const in(false, txt, txtLen);
+        std::string str;
+        in.toUTF8String(str);
+        StringBuffer anaBuff(anaLen,ana);
+        ostringstream sso;
+        nlpEng->nlpEngAnalyze(anaBuff,str.c_str(),sso);
+        UnicodeString unicode = UnicodeString::fromUTF8(StringPiece(sso.str()));
+        tgtLen = unicode.length();
+        tgt = (UChar *) CTXMALLOC(parentCtx, tgtLen*2);
+        unicode.extract(0, tgtLen, tgt);
     }
 } // namespace nlp
 

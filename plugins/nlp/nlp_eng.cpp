@@ -40,6 +40,7 @@ int NLPEng::nlpEngAnalyze(const char *analyzerName, const char *inputText, ostri
 #ifdef NLP_DEBUG
     ofstream handle;
     handle.open(NLP_DEBUG_FILE, std::ofstream::out | std::ofstream::app);
+    handle << "=====================================================================================" << endl;
     handle << "[queryCurrentProcessPath: " << w << "]" << endl;
 #endif
 
@@ -64,14 +65,16 @@ int NLPEng::nlpEngAnalyze(const char *analyzerName, const char *inputText, ostri
         }
     }
 
-    istrstream ssi(inputText);
+    istringstream ssi(inputText);
 
 #ifdef NLP_DEBUG
     clock_t s_time, e_time;
     s_time = clock();
 #endif
 
-    nlpEngine->analyze((char *)analyzerName,&ssi,&sso);
+    nlpEngine->analyze((char *)analyzerName,&ssi,&sso,true);
+    sso.seekp(0, ios_base::end);
+    int len = sso.tellp();
 
 #ifdef NLP_DEBUG
     e_time = clock();
@@ -83,8 +86,9 @@ int NLPEng::nlpEngAnalyze(const char *analyzerName, const char *inputText, ostri
            << (double) (e_time - s_time)/CLOCKS_PER_SEC
            << " sec]" << endl;
     handle << sso.str() << endl;
+    handle << "[len: " << len << "]" << endl;
     handle.close();
 #endif
-    sso.seekp(0, ios_base::end);
-    return sso.tellp();
+
+    return len;
 }
