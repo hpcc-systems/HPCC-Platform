@@ -3037,7 +3037,7 @@ public:
 
     void publish()
     {
-        Owned<IPropertyTreeIterator> entries = toBePublished->getElements("publish");
+        Owned<IPropertyTreeIterator> entries = toBePublished->getElements("Publish");
         ForEach(*entries)
         {
             IPropertyTree &entry = entries->query();
@@ -3268,7 +3268,7 @@ private:
     Linked<IWorkUnitFactory> factory;
     Owned<IPropertyTree> destQuerySet;
     Owned<IPropertyTree> srcQuerySet;
-    Owned<IPropertyTree> toBePublished;
+    Owned<IPropertyTree> toBePublished = createPTree();
     Owned<IReferencedFileList> wufiles;
     Owned<const IHpccPackageMap> pm;
     StringBuffer dfsIP;
