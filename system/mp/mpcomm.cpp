@@ -2118,9 +2118,16 @@ void CMPConnectThread::startPort(unsigned short port)
 
 int CMPConnectThread::run()
 {
+    SocketEndpoint listenEp;
+    listensock->getEndpoint(listenEp);
+    unsigned short lPort = listenEp.port;
+    IpAddress myLocalIp;
+    GetHostIp(myLocalIp);
+
 #ifdef _TRACE
     LOG(MCdebugInfo, unknownJob, "MP: Connect Thread Starting - accept loop");
 #endif
+
     while (running)
     {
         Owned<ISocket> sock;
@@ -2249,14 +2256,9 @@ int CMPConnectThread::run()
                     PROGLOG("MP: WARNING: remote client address (%s:%u) != peer address (%s:%u)", rIp.str(), _remoteep.port, pIp.str(), peerEp.port);
                     _remoteep.set(peerEp);
                     connectHdr.id[0].set(_remoteep);
-                    // should we sock->close() and continue ?
                 }
 
-                SocketEndpoint listenEp;
-                listensock->getEndpoint(listenEp);
-                unsigned short lPort = listenEp.port;
-                IpAddress myLocalIp;
-                GetHostIp(myLocalIp);
+                // NB: perhaps checking/changing what remote client thinks my local IP is not correct ?
                 if (!hostep.ipequals(myLocalIp))
                 {
                     StringBuffer hIp, lIp;
@@ -2265,7 +2267,6 @@ int CMPConnectThread::run()
                     PROGLOG("MP: WARNING: remote client trying to reach (%s:%u) != listen address (%s:%u)", hIp.str(), hostep.port, lIp.str(), lPort);
                     hostep.set(lPort, myLocalIp);
                     connectHdr.id[1].set(hostep);
-                    // should we sock->close() and continue ?
                 }
 
                 unsigned __int64 addrval = DIGIT1*connectHdr.id[0].ip[0] + DIGIT2*connectHdr.id[0].ip[1] + DIGIT3*connectHdr.id[0].ip[2] + DIGIT4*connectHdr.id[0].ip[3] + connectHdr.id[0].port;
