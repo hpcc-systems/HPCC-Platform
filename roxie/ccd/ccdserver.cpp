@@ -419,7 +419,7 @@ static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRo
 static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
-static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys }, actStatistics);
+static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys, StNumLeafCacheAdds, StNumNodeCacheAdds, StNumBlobCacheAdds }, actStatistics);
 
 // These ones get accumulated and reported in COMPLETE: line (and workunit).
 // Excludes ones that are not sensible to sum across activities, other than StTimeTotalExecute which must be explicitly overwritten at global level before we report it
@@ -12613,6 +12613,9 @@ public:
             duplicateKeyCount = builder->getDuplicateCount();
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc);
+            noteStatistic(StNumLeafCacheAdds, builder->getNumLeafNodes());
+            noteStatistic(StNumNodeCacheAdds, builder->getNumBranchNodes());
+            noteStatistic(StNumBlobCacheAdds, builder->getNumBlobNodes());
             clearKeyStoreCache(false);
         }
     }

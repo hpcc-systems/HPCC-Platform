@@ -94,6 +94,9 @@ protected:
 
 private:
     unsigned __int64 duplicateCount;
+    unsigned __int64 numLeaves = 0;
+    unsigned __int64 numBranches = 0;
+    unsigned __int64 numBlobs = 0;
     __uint64 partitionFieldMask = 0;
     CWriteNode *activeNode = nullptr;
     CBlobWriteNode *activeBlobNode = nullptr;
@@ -189,6 +192,7 @@ public:
         CWriteNode *node = NULL;
         node = new CWriteNode(nextPos, keyHdr, levels==0);
         nextPos += keyHdr->getNodeSize();
+        numBranches++;
         while (leaf<thisLevel.ordinality())
         {
             CNodeInfo &info = thisLevel.item(leaf);
@@ -198,6 +202,7 @@ public:
                 node->Release();
                 node = new CWriteNode(nextPos, keyHdr, levels==0);
                 nextPos += keyHdr->getNodeSize();
+                numBranches++;
                 verifyex(node->add(info.pos, info.value, info.size, info.sequence));
             }
             leaf++;
@@ -464,6 +469,7 @@ protected:
             keyHdr->getHdrStruct()->firstLeaf = nextPos;
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
+            numLeaves++;
         }
         else if (enforceOrder) // NB: order is indeterminate when build a TLK for a LOCAL index. duplicateCount is not calculated in this case.
         {
@@ -494,6 +500,7 @@ protected:
             activeNode->Release();
             activeNode = new CWriteNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
+            numLeaves++;
             if (!activeNode->add(pos, keyData, recsize, sequence))
                 throw MakeStringException(0, "Key row too large to fit within a key node (uncompressed size=%d, variable=%s, pos=%" I64F "d)", recsize, keyHdr->isVariable()?"true":"false", pos);
         }
@@ -502,6 +509,7 @@ protected:
 
     void newBlobNode()
     {
+        numBlobs++;
         if (keyHdr->getHdrStruct()->blobHead == 0)
             keyHdr->getHdrStruct()->blobHead = nextPos;         
         CBlobWriteNode *prevBlobNode = activeBlobNode;
@@ -543,7 +551,10 @@ protected:
         return head;
     }
 
-    unsigned __int64 getDuplicateCount() { return duplicateCount; };
+    virtual unsigned __int64 getDuplicateCount() const override { return duplicateCount; };
+    virtual unsigned __int64 getNumLeafNodes() const override { return numLeaves; };
+    virtual unsigned __int64 getNumBranchNodes() const override { return numBranches; }
+    virtual unsigned __int64 getNumBlobNodes() const override { return numBlobs; }
 
 protected:
     void writeMetadata(char const * data, size32_t size)
