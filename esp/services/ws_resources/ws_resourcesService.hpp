@@ -29,6 +29,10 @@ class CWsResourcesEx : public CWsResources
 {
     CTpWrapper tpWrapper;
 
+    void getServiceConnection(IPropertyTree& rawDataTree, IEspServiceConnection& connection);
+    void getServiceExternalIP(IPropertyTree& rawDataTree, IEspServiceConnection& connection);
+    void getServiceConnectionPorts(IPropertyTree* specTree, IEspServiceConnection& connection);
+
 public:
     virtual ~CWsResourcesEx() {};
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override {};
