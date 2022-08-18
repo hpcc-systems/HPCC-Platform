@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link, Image } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
 import * as domClass from "dojo/dom-class";
 import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
@@ -158,7 +158,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     }
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
                     return <>
-                        <Image src={row.getStateImage ? row.getStateImage() : ""} />
+                        <Icon iconName={row.getStateIcon ? row.getStateIcon() : ""} />
                         &nbsp;
                         <Link href={url}>{name}</Link>
                     </>;

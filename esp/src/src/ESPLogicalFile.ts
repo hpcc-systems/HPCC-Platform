@@ -40,6 +40,22 @@ export function getStateImageName(file: IFile) {
     }
 }
 
+export function getStateIconName(file: IFile) {
+    if (file?.isSuperfile) {
+        switch (file?.StateID) {
+            case 999:
+                return "RemoveFromShoppingList";
+        }
+        return "PageList";
+    } else {
+        switch (file?.StateID) {
+            case 999:
+                return "PageRemove";
+        }
+        return file?.ContentType === "key" ? "Info2" : "Page";
+    }
+}
+
 const create = function (id) {
     if (!lang.exists(id, _logicalFiles)) {
         const idParts = id.split("--");
@@ -413,6 +429,12 @@ const LogicalFile = declare([ESPUtil.Singleton], {
             }
             return "iconLogicalFile";
         }
+    },
+    getStateImage() {
+        return Utility.getImageURL(getStateImageName(this));
+    },
+    getStateIcon() {
+        return getStateIconName(this);
     },
     getStateImageHTML() {
         return Utility.getImageHTML(getStateImageName(this));
