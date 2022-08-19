@@ -55,7 +55,7 @@
    
     <xsl:template match="RoxieCluster">
         <xsl:element name="RoxieTopology">
-        <xsl:copy-of select="@*[string(.)!='' and name()!='thorHost' and name()!='buildSet' and name()!='queryDir' and name()!='logDir' and name()!='siteCertificate' and name()!='pluginsPath']"/>     
+            <xsl:copy-of select="@*[string(.)!='' and name()!='thorHost' and name()!='buildSet' and name()!='queryDir' and name()!='logDir' and name()!='siteCertificate' and name()!='pluginsPath']"/>
             <xsl:if test="string(@siteCertificate) != ''">
                 <xsl:if test="not(function-available('seisint:siteCertificate'))">
                     <xsl:message terminate="yes">This XSL transformation can only be run by the Seisint Deployment Tool!</xsl:message>               
@@ -121,6 +121,7 @@
                 </xsl:variable>
                 <xsl:value-of select="translate($path3, $oldPathSeparator, $newPathSeparator)"/>
             </xsl:attribute>
+            <xsl:copy-of select="/Environment/Software/vaults"/>
             <xsl:copy-of select="/Environment/Software/Directories"/>
             <!--
             # Generated for configuration info. accessed by getGlobalConfig()

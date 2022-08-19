@@ -112,6 +112,7 @@
         </xsl:attribute>
       </xsl:if>
       <xsl:copy-of select="analyzerOptions"/>
+      <xsl:copy-of select="/Environment/Software/vaults"/>
       <xsl:copy-of select="/Environment/Software/Directories"/>  
       <!--
       # Generated for configuration info. accessed by getGlobalConfig()

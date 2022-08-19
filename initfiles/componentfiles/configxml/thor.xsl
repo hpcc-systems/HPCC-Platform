@@ -189,7 +189,8 @@
       </xsl:attribute>
 
       <xsl:apply-templates select="@*[string(.) != '']"/>
-      
+
+      <xsl:copy-of select="/Environment/Software/vaults"/>
       <xsl:copy-of select="/Environment/Software/Directories"/> 
       <!--
       # Generated for configuration info. accessed by getGlobalConfig()
