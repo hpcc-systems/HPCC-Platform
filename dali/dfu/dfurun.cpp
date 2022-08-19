@@ -1351,6 +1351,8 @@ public:
 
                         opttree->setPropBool("@nosplit", options->getNoSplit());
 
+                        opttree->setPropBool("@noCommon", options->getNoCommon());
+
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc)
                         {

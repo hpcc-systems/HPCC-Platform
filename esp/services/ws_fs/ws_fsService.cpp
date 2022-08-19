@@ -2088,6 +2088,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (!req.getExpireDays_isNull())
             options->setExpireDays(req.getExpireDays());
 
+        options->setNoCommon(req.getNoCommon());
+
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
@@ -2267,6 +2269,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         if (!req.getExpireDays_isNull())
             options->setExpireDays(req.getExpireDays());
+
+        options->setNoCommon(req.getNoCommon());
 
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
