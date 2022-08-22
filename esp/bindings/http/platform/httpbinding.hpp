@@ -116,6 +116,20 @@ interface IEspWsdlSections
     virtual int getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
 };
 
+interface IEspCorsAllowedOrigin : extends IInterface
+{
+    virtual bool match(const char *origin, const char *method) const = 0;
+    virtual const char *queryAllowedMethodsCSV() const = 0;
+    virtual bool isAllowedHeader(const char *header) const = 0;
+    virtual const char *getAllowedHeadersCSV(const char *requestedHeaders, StringBuffer &allowedHeadersCSV) const = 0;
+    virtual const char *queryMaxAge() const = 0;
+};
+
+interface IEspCorsHelper : extends IInterface
+{
+    virtual const IEspCorsAllowedOrigin *find(const char *origin, const char *method) const = 0;
+};
+
 class esp_http_decl EspHttpBinding :
     implements IEspHttpBinding,
     implements IEspWsdlSections
@@ -174,6 +188,8 @@ private:
     BoolHash                domainAuthResources;
     StringArray             domainAuthResourcesWildMatch;
     std::set<sub_service>   unrestrictedSSTypes;
+
+    Owned<IEspCorsHelper> corsHelper;
 
     void getXMLMessageTag(IEspContext& ctx, bool isRequest, const char *method, StringBuffer& tag);
 
@@ -401,6 +417,12 @@ public:
     bool isUnrestrictedSSType(sub_service ss) const;
     void setABoolHash(const char* csv, BoolHash& hash) const;
     bool isCORSRequest(const char* originHeader);
+    const IEspCorsAllowedOrigin *findCorsAllowedOrigin(const char *origin, const char *method) const
+    {
+        if (!corsHelper)
+            return nullptr;
+        return corsHelper->find(origin, method);
+    }
     bool canRedirectAfterAuth(const char* url) const;
 
     static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);

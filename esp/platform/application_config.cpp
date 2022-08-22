@@ -245,6 +245,14 @@ void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *servi
             bindAuthResources(authenticate, app, service, auth);
     }
 
+    Owned<IPropertyTreeIterator> corsAllowed = app->getElements("corsAllowed");
+    if (corsAllowed->first())
+    {
+        IPropertyTree *cors = bindingEntry->addPropTree("cors");
+        ForEach(*corsAllowed)
+            cors->addPropTree("allowed", createPTreeFromIPT(&corsAllowed->query()));
+    }
+
     // bindingInfo has sub-elements named for services like 'esdl' or 'eclwatch'.
     // The elements under each service section are merged into the bindingEntry
     // for matching services.
