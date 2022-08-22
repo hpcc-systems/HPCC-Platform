@@ -438,14 +438,14 @@ sasha:
     #duration: 0 # (maxDuration) maximum duration to run DFU WorkUnit archiving session (hours, 0 unlimited)
     #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
 
-  dfurecovery-archiver:
+  dfurecovery-archiver: {} # NB: no properties defined, use defaults
     #disabled: true
     #limit: 20 # threshold number of DFU recovery items before archiving starts (0 disables)
     #cutoff: 4 # minimum DFU recovery item age to archive (days)
     #interval: 12 # minimum interval between running DFU recovery archiver(in hours, 0 disables)
     #at: "* * * * *" # schedule to run DFU recovery archiver (cron format)
 
-  file-expiry:
+  file-expiry: {} # NB: no properties defined, use defaults
     #disabled: true
     #interval: 1
     #at: "* 3 * * *"
