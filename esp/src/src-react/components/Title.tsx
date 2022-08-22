@@ -12,6 +12,8 @@ import * as Utility from "src/Utility";
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore } from "../hooks/store";
+import { useUserSession } from "../hooks/user";
+import { replaceUrl } from "../util/history";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
 import { ComingSoon } from "./controls/ComingSoon";
@@ -38,6 +40,7 @@ interface DevTitleProps {
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
     const theme = useTheme();
+    const { userSession, setUserSession, deleteUserSession } = useUserSession();
     const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
     const [logIconColor, setLogIconColor] = React.useState(theme.semanticColors.link);
 
@@ -98,7 +101,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     key: "lock", text: nlsHPCC.Lock, disabled: !currentUser?.username, onClick: () => {
                         fetch("esp/lock", {
                             method: "post"
-                        }).then(() => { window.location.href = "/esp/files/Login.html"; });
+                        }).then(() => {
+                            setUserSession({ ...userSession, Status: "Locked" });
+                            replaceUrl("/login", null, true);
+                        });
                     }
                 },
                 {
@@ -110,7 +116,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                                 cookie("ECLWatchUser", "", { expires: -1 });
                                 cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
                                 cookie("Status", "", { expires: -1 });
-                                window.location.reload();
+                                cookie("User", "", { expires: -1 });
+                                deleteUserSession().then(() => window.location.reload());
                             }
                         });
                     }
@@ -121,7 +128,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             ],
             directionalHintFixed: true
         };
-    }, [currentUser?.username]);
+    }, [currentUser?.username, deleteUserSession, setUserSession, userSession]);
 
     const btnStyles = React.useMemo(() => mergeStyleSets({
         errorsWarnings: {
@@ -165,6 +172,11 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             })
             ;
     }, [setCurrentUser]);
+
+    React.useEffect(() => {
+        if (!environmentTitle) return;
+        document.title = environmentTitle;
+    }, [environmentTitle]);
 
     return <div style={{ backgroundColor: showEnvironmentTitle && titlebarColor ? titlebarColor : theme.palette.themeLight }}>
         <BannerMessageBar />
