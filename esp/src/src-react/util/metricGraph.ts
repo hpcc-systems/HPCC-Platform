@@ -360,6 +360,20 @@ export class MetricGraphWidget extends SVGZoomWidget {
         return this;
     }
 
+    itemBBox(scopeID: string) {
+        const rect = new Rect();
+        const elem = this._renderElement.select(`#${encodeID(scopeID)}`);
+        const node = elem.node() as SVGGraphicsElement;
+        if (node) {
+            rect.extend(node.getBBox());
+        }
+
+        const bbox = rect.toStruct();
+        const renderBBox = this._renderElement.node().getBBox();
+        bbox.y += renderBBox.height;
+        return bbox;
+    }
+
     selectionBBox() {
         const rect = new Rect();
         this.selection().forEach(sel => {
@@ -397,6 +411,16 @@ export class MetricGraphWidget extends SVGZoomWidget {
 
     dot(_: string): this {
         this._dot = _;
+        return this;
+    }
+
+    centerOnItem(scopeID: string) {
+        this.centerOnBBox(this.itemBBox(scopeID));
+        return this;
+    }
+
+    zoomToItem(scopeID: string) {
+        this.zoomToBBox(this.itemBBox(scopeID));
         return this;
     }
 

@@ -92,18 +92,26 @@ class History<S extends object = object> {
         });
     }
 
+    trimRightSlash(str: string): string {
+        return str.replace(/\/+$/, "");
+    }
+
     push(to: { pathname?: string, search?: string }, state?: S) {
-        const newHash = `#${to.pathname || this.location.pathname}${to.search || ""}`;
-        globalHistory.pushState(state, "", newHash);
-        this.location = parseHash(newHash);
-        this.broadcast("PUSH");
+        const newHash = `#${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`;
+        if (window.location.hash !== newHash) {
+            globalHistory.pushState(state, "", newHash);
+            this.location = parseHash(newHash);
+            this.broadcast("PUSH");
+        }
     }
 
     replace(to: { pathname?: string, search?: string }, state?: S) {
-        const newHash = `#${to.pathname || this.location.pathname}${to.search || ""}`;
-        globalHistory.replaceState(state, "", newHash);
-        this.location = parseHash(newHash);
-        this.broadcast("REPLACE");
+        const newHash = `#${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`;
+        if (window.location.hash !== newHash) {
+            globalHistory.replaceState(state, "", newHash);
+            this.location = parseHash(newHash);
+            this.broadcast("REPLACE");
+        }
     }
 
     _listenerID = 0;
