@@ -18,8 +18,11 @@
 #ifndef JWTCACHE_HPP_
 #define JWTCACHE_HPP_
 
+#include <time.h>
+
 #include <map>
 #include <string>
+#include <tuple>
 
 #include "basesecurity.hpp"
 
@@ -404,8 +407,9 @@ class JWTUserInfo
 
     private:
 
-        std::string _globToExample(const std::string& pattern) const;
-        std::string _convertPathname(const std::string& logicalPath) const;
+        std::string _convertPathname(std::string logicalPath) const;
+        unsigned int _countDelimitersInPath(const std::string& path) const;
+        void _clampPathByDelimCount(const std::string& path, unsigned int delimCount, std::string& clampedPath) const;
         JWTUserInfo& _addScopePerm(PermissionMap& scopePermMap, const std::string& scope, SecAccessFlags accessFlag, SecAccessFlags defaultFlag, bool asDeny);
         JWTUserInfo& _addScopePerm(PermissionMap& scopePermMap, const std::string& scope, const std::string& accessFlagName, SecAccessFlags defaultFlag, bool asDeny);
         SecAccessFlags _matchScopePerm(const PermissionMap& scopePermMap, const std::string& scope, SecAccessFlags defaultFlag) const;
@@ -430,15 +434,16 @@ class JWTUserCache
 {
     private:
 
-        typedef std::map<std::string, std::shared_ptr<JWTUserInfo> > UserPermissionMap;
+        typedef std::tuple<time_t, std::shared_ptr<JWTUserInfo> > UserInfoTuple;
+        typedef std::map<std::string, UserInfoTuple> UserPermissionMap;
 
     public:
 
-        bool has(const std::string& userName) const;
+        bool has(const std::string& userName, time_t expireTime = 0) const;
 
         JWTUserCache& set(const std::string& userName, std::shared_ptr<JWTUserInfo>& userInfo);
 
-        const std::shared_ptr<JWTUserInfo> get(const std::string& userName) const;
+        const std::shared_ptr<JWTUserInfo> get(const std::string& userName, time_t expireTime = 0) const;
 
         JWTUserCache& erase(const std::string& userName);
 
