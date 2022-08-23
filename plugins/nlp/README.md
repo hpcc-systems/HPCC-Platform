@@ -36,6 +36,10 @@ output(parsedtext03);
 text04 := 'TAI\'s stock is up 4% from $58.33 a share to $60.66.';
 parsedtext04 := nlp.AnalyzeText('corporate',text04);
 output(parsedtext04);
+
+text05 := U'यो नेपालीको परिक्षा हो, 這是中文考試 😀🙁👍';
+parsedtext05 := nlp.UnicodeAnalyzeText('parse-en-us',text05);
+output(parsedtext05);
 ```
 
 ### Analyzer Functions
