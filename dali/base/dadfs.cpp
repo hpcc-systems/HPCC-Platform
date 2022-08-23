@@ -2354,7 +2354,7 @@ class CDistributedFilePart: public CInterface, implements IDistributedFilePart
     CriticalSection sect;
     StringAttr overridename;    // may or not be relative to directory
     bool            dirty;      // whether needs updating in tree
-
+    std::vector<unsigned> stripeNumber;
     offset_t getSize(bool checkCompressed);
 
 public:
@@ -2437,6 +2437,7 @@ public:
         return ret;
     }
     virtual StringBuffer &getStorageFilePath(StringBuffer & path, unsigned copy) override;
+    virtual unsigned getStripeNum(unsigned copy) override;
 };
 
 // --------------------------------------------------------
@@ -4908,8 +4909,6 @@ StringBuffer &CDistributedFilePart::getStorageFilePath(StringBuffer & path, unsi
     if (!storagePlane)
         throw new CDFS_Exception(DFSERR_MissingStoragePlane, planeName);
 
-    // Note: striping to be implemented as a separate jira as additional information
-    // will be needed in the configuration
     path.append(parent.directory);
     if (parent.hasDirPerPart())
         addPathSepChar(path).append(partIndex+1); // part subdir 1 based
@@ -4919,6 +4918,29 @@ StringBuffer &CDistributedFilePart::getStorageFilePath(StringBuffer & path, unsi
     unsigned prefixLength = strlen(storagePlane->queryPrefix());
     path.remove(0, prefixLength);
     return path;
+}
+
+unsigned CDistributedFilePart::getStripeNum(unsigned copy)
+{
+    if (copy >= stripeNumber.size() || stripeNumber[copy]==UINT_MAX)
+    {
+        unsigned nc = copyClusterNum(copy, nullptr);
+        IClusterInfo &cluster = parent.clusters.item(nc);
+        const char *planeName = cluster.queryGroupName();
+        if (isEmptyString(planeName))
+        {
+            StringBuffer lname;
+            parent.getLogicalName(lname);
+            throw new CDFS_Exception(DFSERR_EmptyStoragePlane, lname.str());
+        }
+        Owned<IStoragePlane> storagePlane = getDataStoragePlane(planeName, false);
+        if (!storagePlane)
+            throw new CDFS_Exception(DFSERR_MissingStoragePlane, planeName);
+        if (copy >= stripeNumber.size())
+            stripeNumber.insert(stripeNumber.end(), copy - stripeNumber.size() + 1 , UINT_MAX); // create empty place holders
+        stripeNumber[copy] = calcStripeNumber(partIndex, parent.lfnHash, storagePlane->numDevices());
+    }
+    return stripeNumber[copy];
 }
 
 static unsigned findSubFileOrd(const char *name)

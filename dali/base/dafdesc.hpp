@@ -349,7 +349,7 @@ interface IStoragePlane: extends IInterface
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
     virtual StorageType getStorageType() const = 0;
     virtual const char * queryStorageApiAccount() const = 0;
-    virtual const char * queryStorageContainer() const = 0;
+    virtual const char * queryStorageContainer(unsigned stripeNumber) const = 0;
     virtual StringBuffer & getSASToken(StringBuffer & token) const = 0;
 };
 

@@ -165,6 +165,7 @@ interface IDistributedFilePart: implements IInterface
 
     virtual unsigned copyClusterNum(unsigned copy,unsigned *replicate=NULL)=0;      // map copy number to cluster (and optionally replicate number)
     virtual StringBuffer &getStorageFilePath(StringBuffer & path, unsigned copy)=0;
+    virtual unsigned getStripeNum(unsigned copy)=0;
 };
 
 

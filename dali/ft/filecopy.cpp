@@ -1534,8 +1534,6 @@ bool FileSprayer::useAPICopy()
             return false;
         if (isEmptyString(targetStoragePlane->queryStorageApiAccount()))
             return false;
-        if (isEmptyString(targetStoragePlane->queryStorageContainer()))
-            return false;
 
         StringBuffer sourceClusterName;
         distributedSource->getClusterName(0, sourceClusterName);
@@ -1543,8 +1541,6 @@ bool FileSprayer::useAPICopy()
         if (sourceStoragePlane==nullptr)
             return false;
         if (isEmptyString(sourceStoragePlane->queryStorageApiAccount()))
-            return false;
-        if (isEmptyString(sourceStoragePlane->queryStorageContainer()))
             return false;
 
         StorageType stTarget = targetStoragePlane->getStorageType();
@@ -2687,29 +2683,32 @@ public:
             dbgassertex(storagePlane->getStorageType()==StorageType::StorageTypeAzureBlob);
             uri.append(".blob");
         }
-        const char *container = storagePlane->queryStorageContainer();
-        uri.appendf(".core.windows.net/%s", container);
+        uri.append(".core.windows.net/");
     }
-    static void buildAzureStorageURI(IDistributedFile *distFile, unsigned partNum, const char * baseURI, const char *sasToken, StringBuffer & uri)
+    static void buildAzureStorageURI(IDistributedFile *distFile, IStoragePlane * storagePlane, unsigned partNum, unsigned copyNum, const char * baseURI, const char *sasToken, StringBuffer & uri)
     {
+        IDistributedFilePart & distFilePart = distFile->queryPart(partNum);
         StringBuffer path;
-        distFile->queryPart(partNum).getStorageFilePath(path, 0);
+        distFilePart.getStorageFilePath(path, copyNum);
+
+        unsigned stripeNum = distFilePart.getStripeNum(copyNum);
+        const char * container = storagePlane->queryStorageContainer(stripeNum);
         StringBuffer tmp;
-        uri.appendf("%s%s%s", baseURI, encodeURL(tmp, path.str()).str(), sasToken);
+        uri.appendf("%s%s%s%s", baseURI, container, encodeURL(tmp, path.str()).str(), sasToken);
     }
 };
 
 class AzureFileClient : public CApiCopyClient
 {
     std::unique_ptr<Shares::ShareFileClient> fileClient;
-    std::unique_ptr<Shares::StartFileCopyOperation> fileCopyOp;
+    Shares::StartFileCopyOperation fileCopyOp;
 public:
     virtual void startCopy(const char *target, const char * source) override
     {
         try
         {
             fileClient.reset(new Shares::ShareFileClient(target));
-            fileCopyOp = std::make_unique<Shares::StartFileCopyOperation>(std::move(fileClient->StartCopy(source)));
+            fileCopyOp = std::move(fileClient->StartCopy(source));
             status = ApiCopyStatus::Pending;
         }
         catch (const Azure::Core::RequestFailedException& e)
@@ -2728,8 +2727,8 @@ public:
             return status;
         try
         {
-            fileCopyOp->Poll();
-            Shares::Models::FileProperties props = fileCopyOp->Value();
+            fileCopyOp.Poll();
+            Shares::Models::FileProperties props = fileCopyOp.Value();
             dateTime.setString(props.LastModified.ToString().c_str());
             outputLength = props.FileSize;
             Shares::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Shares::Models::CopyStatus::Pending);
@@ -2761,8 +2760,8 @@ public:
             case ApiCopyStatus::Pending:
                 try
                 {
-                    if (fileCopyOp->HasValue() && fileCopyOp->Value().CopyId.HasValue())
-                        fileClient->AbortCopy(fileCopyOp->Value().CopyId.Value().c_str());
+                    if (fileCopyOp.HasValue() && fileCopyOp.Value().CopyId.HasValue())
+                        fileClient->AbortCopy(fileCopyOp.Value().CopyId.Value().c_str());
                     else // not sure that this can ever happen
                         IERRLOG("AzureFileClient::AbortCopy() failed: CopyId is empty");
                     status = ApiCopyStatus::Aborted;
@@ -2794,14 +2793,14 @@ public:
 class AzureBlobClient : public CApiCopyClient
 {
     std::unique_ptr<BlobClient> blobClient;
-    std::unique_ptr<StartBlobCopyOperation> blobCopyOp;
+    StartBlobCopyOperation blobCopyOp;
 public:
     virtual void startCopy(const char *target, const char * source) override
     {
         try
         {
             blobClient.reset(new BlobClient(target));
-            blobCopyOp = std::make_unique<StartBlobCopyOperation>(std::move(blobClient->StartCopyFromUri(source)));
+            blobCopyOp = std::move(blobClient->StartCopyFromUri(source));
             status = ApiCopyStatus::Pending;
         }
         catch (const Azure::Core::RequestFailedException& e)
@@ -2820,8 +2819,8 @@ public:
             return status;
         try
         {
-            blobCopyOp->Poll();
-            Models::BlobProperties props = blobCopyOp->Value();
+            blobCopyOp.Poll();
+            Models::BlobProperties props = blobCopyOp.Value();
             dateTime.setString(props.LastModified.ToString().c_str());
             outputLength = props.BlobSize;
             Blobs::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Blobs::Models::CopyStatus::Pending);
@@ -2853,8 +2852,8 @@ public:
             case ApiCopyStatus::Pending:
                 try
                 {
-                    if (blobCopyOp->HasValue() && blobCopyOp->Value().CopyId.HasValue())
-                        blobClient->AbortCopyFromUri(blobCopyOp->Value().CopyId.Value().c_str());
+                    if (blobCopyOp.HasValue() && blobCopyOp.Value().CopyId.HasValue())
+                        blobClient->AbortCopyFromUri(blobCopyOp.Value().CopyId.Value().c_str());
                     else // not sure that this can ever happen
                         IERRLOG("AzureBlobClient::AbortCopy() failed: CopyId is empty");
                     status = ApiCopyStatus::Aborted;
@@ -2918,11 +2917,11 @@ void FileSprayer::transferUsingAPI()
 
             StringBuffer sourceURI;
             unsigned inputPartNum = sources.item(cur.whichInput).partNum;
-            CApiCopyClient::buildAzureStorageURI(distributedSource, inputPartNum, sourceBaseURI.str(), sourceSAStoken.str(), sourceURI);
+            CApiCopyClient::buildAzureStorageURI(distributedSource, sourcePlane, inputPartNum, 0, sourceBaseURI.str(), sourceSAStoken.str(), sourceURI);
 
             StringBuffer targetURI;
             unsigned outputPartNum = targets.item(cur.whichOutput).partNum;
-            CApiCopyClient::buildAzureStorageURI(distributedTarget, outputPartNum, targetBaseURI.str(), targetSAStoken.str(), targetURI);
+            CApiCopyClient::buildAzureStorageURI(distributedTarget, targetPlane, outputPartNum, 0, targetBaseURI.str(), targetSAStoken.str(), targetURI);
 
             Owned<IAPICopyClient> apiClient;
             if (targetType==StorageTypeAzureFile)
