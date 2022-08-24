@@ -325,8 +325,14 @@
 	</xsd:element>
     </xsl:template>
     <xsl:template match="EsdlRequest">
+        <xsl:variable name="useMethodName" select="/esxdl/EsdlService/@use_method_name='1'"/>
         <xsd:element>
-            <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
+            <xsl:attribute name="name">
+                <xsl:choose>
+                    <xsl:when test="$useMethodName"><xsl:value-of select="substring-before(@name, 'Request')"/></xsl:when>
+                    <xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+                </xsl:choose>
+            </xsl:attribute>
             <xsd:complexType>
                 <xsd:all>
                     <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlList|EsdlEnum"/>
@@ -348,6 +354,7 @@
         </xsd:element>
     </xsl:template>
     <xsl:template match="EsdlService">
+        <xsl:variable name="useMethodName" select="@use_method_name='1'"/>
         <wsdl:message name="EspSoapFault">
             <wsdl:part name="parameters" element="tns:Exceptions"/>
         </wsdl:message>
@@ -355,7 +362,7 @@
             <wsdl:message>
                 <xsl:attribute name="name"><xsl:value-of select="@name"/>SoapIn</xsl:attribute>
                 <wsdl:part name="parameters">
-                    <xsl:attribute name="element">tns:<xsl:value-of select="@request_type"/></xsl:attribute>
+                    <xsl:attribute name="element">tns:<xsl:value-of select="@name"/><xsl:if test="not($useMethodName)">Request</xsl:if></xsl:attribute>
                 </wsdl:part>
             </wsdl:message>
             <wsdl:message>
