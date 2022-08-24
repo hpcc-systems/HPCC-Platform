@@ -1770,6 +1770,8 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, IPropertyTree* esdlArchive,
 
 IPropertyTree* EsdlBindingImpl::fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName)
 {
+    if (!m_pCentralStore)
+        return nullptr;
     if(isAttached())
     {
         Owned<IPropertyTree> esdlBinding = m_pCentralStore->fetchBinding(process, bindingName);
@@ -1845,9 +1847,9 @@ bool EsdlBindingImpl::loadLocalDefinitions(IPropertyTree *esdlArchive, const cha
 /* if the target ESDL binding contains an ESDL service definition matching this espServiceName, load it.
  * Otherwise, load the first definition available, and report it via the loadedServiceName
  */
-bool EsdlBindingImpl::loadDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName)
+bool EsdlBindingImpl::loadStoredDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName)
 {
-    if (!esdl || !config)
+    if (!esdl || !config || !m_pCentralStore)
         return false;
 
     //Loading first ESDL definition encountered, informed that espServiceName is to be treated as arbitrary
@@ -1965,13 +1967,15 @@ void EsdlBindingImpl::saveDESDLState()
 
 bool EsdlBindingImpl::reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndCng, StringBuffer & loadedname)
 {
+    if (!m_pCentralStore)
+        return false;
     if (esdlBndCng == nullptr)
         esdlBndCng = m_esdlBndCfg.get();
     if ( m_pESDLService )
     {
         Owned<IEsdlDefinition> tempESDLDef = createNewEsdlDefinition();
 
-        if (!loadDefinitions(m_espServiceName.get(), tempESDLDef, esdlBndCng, loadedname, m_esdlStateFilesLocation.str()))
+        if (!loadStoredDefinitions(m_espServiceName.get(), tempESDLDef, esdlBndCng, loadedname, m_esdlStateFilesLocation.str()))
         {
             OERRLOG("Failed to reload ESDL definitions");
             return false;
@@ -1992,6 +1996,8 @@ bool EsdlBindingImpl::reloadDefinitionsFromCentralStore(IPropertyTree * esdlBndC
 
 bool EsdlBindingImpl::reloadBindingFromCentralStore(const char* bindingId)
 {
+    if (!m_pCentralStore)
+        return false;
     if(!bindingId || !*bindingId)
         return false;
     if(m_bindingId.length() == 0 || strcmp(m_bindingId.str(), bindingId) != 0)
@@ -2104,7 +2110,7 @@ void EsdlBindingImpl::addService(IPropertyTree *esdlArchive, const char * name,
                 if (esdlArchive)
                     loaded = loadLocalDefinitions(esdlArchive, name, m_esdl, m_esdlBndCfg, loadedservicename);
                 else
-                    loaded = loadDefinitions(name, m_esdl, m_esdlBndCfg, loadedservicename, m_esdlStateFilesLocation.str());
+                    loaded = loadStoredDefinitions(name, m_esdl, m_esdlBndCfg, loadedservicename, m_esdlStateFilesLocation.str());
 
                 if (!loaded)
                 {

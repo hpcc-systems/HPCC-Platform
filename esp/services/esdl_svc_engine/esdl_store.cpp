@@ -1460,6 +1460,10 @@ Owned<IEsdlStore> gEsdlCentralStore;
 
 esdl_engine_decl IEsdlStore* createEsdlCentralStore()
 {
+    if (!getComponentConfigSP()->getPropBool("@loadDaliBindings", true))
+        return nullptr;
+    if (!daliClientActive())
+        return nullptr;
     if (gEsdlCentralStore.get() == nullptr)
         gEsdlCentralStore.setown(new CEsdlSDSStore);
     return gEsdlCentralStore.getLink();
@@ -1467,5 +1471,9 @@ esdl_engine_decl IEsdlStore* createEsdlCentralStore()
 
 esdl_engine_decl IEsdlSubscription* createEsdlSubscription(IEsdlListener* listener)
 {
+    if (!getComponentConfigSP()->getPropBool("@loadDaliBindings", true))
+        return nullptr;
+    if (!daliClientActive())
+        return nullptr;
     return new CEsdlSDSSubscription(listener);
 }

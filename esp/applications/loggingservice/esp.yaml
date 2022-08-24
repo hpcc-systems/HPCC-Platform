@@ -1,7 +1,6 @@
 esp:
    instance: logging
    description: logging service
-   daliServers: mydali
    auth: ldap
    authDomain:
      domainName: "default"

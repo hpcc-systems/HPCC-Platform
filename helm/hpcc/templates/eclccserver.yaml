@@ -82,7 +82,7 @@ data:
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- $misc := .root.Values.global.misc | default dict -}}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
-{{- $eclccserverCmd := printf "eclccserver %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $eclccserverCmd := printf "eclccserver %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "ECLCC Server" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $eclccserverCmd)) | indent 12 }}
             env:
 {{ include "hpcc.mergeEnvironments" .env | indent 12 }}
@@ -165,7 +165,7 @@ spec:
         command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "eclccserver") }} ] 
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "eclccserver") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "ECLCC Server" "optional" false) }}
               ]
         env:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}

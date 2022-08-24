@@ -883,6 +883,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="bindings" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Path to esdl service bundles to load</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableSEHMapping" type="xs:boolean" use="optional" default="true">
                 <xs:annotation>
                     <xs:appinfo>

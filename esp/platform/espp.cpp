@@ -313,7 +313,6 @@ static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 esp:
   name: myesp
-  daliServers: dali
 )!!";
 
 static Owned<IPropertyTree> espConfig;

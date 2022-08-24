@@ -247,9 +247,6 @@
       "items": { "$ref": "#/definitions/dafilesrv" }
     }
   },
-  "required": [
-    "dali"
-  ],
   "title": "Values",
   "type": "object",
   "definitions": {

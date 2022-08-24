@@ -83,6 +83,8 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $application := .application | default "eclwatch" -}}
+
+
 {{- $authtype := .auth | default "none" -}}
 {{- $noAuthSecretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
 {{- $secretsCategories := ternary (append $noAuthSecretsCategories "authn") $noAuthSecretsCategories  (eq $authtype "ldap") -}}
@@ -141,7 +143,7 @@ spec:
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "esp") | nindent 16 }}
                 {{ printf "--application=%s" $application | quote }},
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
+                {{ include "hpcc.daliArg" (dict "root" $ "component" $application "optional" (has $application (list "esdl" "ldapenvironment" "loggingservice")) )}}
               ]
         env:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}

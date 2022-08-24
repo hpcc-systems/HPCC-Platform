@@ -333,6 +333,8 @@ public:
     virtual bool subscribeBindingToDali() override
     {
         CriticalBlock b(detachCritSec);
+        if (!m_pCentralStore)
+            return false;
         if(m_isAttached)
             return true;
         m_pCentralStore->attachToBackend();
@@ -349,6 +351,8 @@ public:
     virtual bool unsubscribeBindingFromDali() override
     {
         CriticalBlock b(detachCritSec);
+        if (!m_pCentralStore)
+            return true;
         if(!m_isAttached)
             return true;
         m_isAttached = false;
@@ -386,7 +390,7 @@ private:
 
     void saveDESDLState();
     IPropertyTree * fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName);
-    bool loadDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName);
+    bool loadStoredDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName);
     bool loadLocalDefinitions(IPropertyTree *esdlArchive, const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName);
 
 };
