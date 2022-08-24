@@ -531,6 +531,19 @@
             </row>
 
             <row>
+              <entry><emphasis>validateFileType</emphasis></entry>
+
+              <entry>Default true</entry>
+
+              <entry>If false, the engines use the definition in the ECL
+              workunit and ignore the file type from the logical file meta
+              data. If true, this check is always ignored if the ECL is
+              reading a CSV or a fixed record width flat file. Also when true,
+              if the ECL is reading XML or JSON, and there is a mismatch, it
+              issues a warning not an error.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>compressInternalSpills</emphasis></entry>
 
               <entry>Default true</entry>

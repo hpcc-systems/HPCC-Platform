@@ -183,6 +183,14 @@ extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user
     splitUrlAuthority(authority, authorityLen, user, password, schemeHostPort, nullptr);
 }
 
+extern jlib_decl void splitUrlIsolateScheme(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &scheme, StringBuffer &hostPort, StringBuffer &path)
+{
+    const char *authority = nullptr;
+    size_t authorityLen = 0;
+    splitUrlSections(url, authority, authorityLen, path, &scheme);
+    splitUrlAuthority(authority, authorityLen, user, password, hostPort, nullptr);
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 

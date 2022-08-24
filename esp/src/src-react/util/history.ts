@@ -92,18 +92,26 @@ class History<S extends object = object> {
         });
     }
 
+    trimRightSlash(str: string): string {
+        return str.replace(/\/+$/, "");
+    }
+
     push(to: { pathname?: string, search?: string }, state?: S) {
-        const newHash = `#${to.pathname || this.location.pathname}${to.search || ""}`;
-        globalHistory.pushState(state, "", newHash);
-        this.location = parseHash(newHash);
-        this.broadcast("PUSH");
+        const newHash = `#${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`;
+        if (window.location.hash !== newHash) {
+            globalHistory.pushState(state, "", newHash);
+            this.location = parseHash(newHash);
+            this.broadcast("PUSH");
+        }
     }
 
     replace(to: { pathname?: string, search?: string }, state?: S) {
-        const newHash = `#${to.pathname || this.location.pathname}${to.search || ""}`;
-        globalHistory.replaceState(state, "", newHash);
-        this.location = parseHash(newHash);
-        this.broadcast("REPLACE");
+        const newHash = `#${this.trimRightSlash(to.pathname || this.location.pathname)}${to.search || ""}`;
+        if (window.location.hash !== newHash) {
+            globalHistory.replaceState(state, "", newHash);
+            this.location = parseHash(newHash);
+            this.broadcast("REPLACE");
+        }
     }
 
     _listenerID = 0;
@@ -163,10 +171,11 @@ export function pushUrl(_: string, state?: any) {
     }, state);
 }
 
-export function replaceUrl(_: string, state?: any) {
+export function replaceUrl(_: string, state?: any, refresh: boolean = false) {
     hashHistory.replace({
         pathname: _
     }, state);
+    if (refresh) window.location.reload();
 }
 
 export function pushParam(key: string, val?: string | string[] | number | boolean, state?: any) {

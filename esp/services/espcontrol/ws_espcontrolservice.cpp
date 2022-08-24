@@ -112,18 +112,26 @@ bool CWSESPControlEx::handleDaliAttachmentRequest(bool attach, bool force, Strin
 
 bool CWSESPControlEx::onDetachFromDali(IEspContext& context, IEspDetachFromDaliRequest& req, IEspDetachFromDaliResponse& resp)
 {
+    bool status = false;
     StringBuffer message;
-    bool status = handleDaliAttachmentRequest(false, req.getForce_isNull() ? false : req.getForce(), message);
-    resp.setMessage(message.str());
+    if (isContainerized())
+        message.append("Detaching ESP from DALI at runtime is a baremetal only feature");
+    else
+        status = handleDaliAttachmentRequest(false, req.getForce_isNull() ? false : req.getForce(), message);
+    resp.setMessage(message);
     resp.setStatus(status ? 0 : -1);
     return status;
 }
 
 bool CWSESPControlEx::onAttachToDali(IEspContext& context, IEspAttachToDaliRequest& req, IEspAttachToDaliResponse& resp)
 {
+    bool status = false;
     StringBuffer message;
-    bool status = handleDaliAttachmentRequest(true, false, message);
-    resp.setMessage(message.str());
+    if (isContainerized())
+        message.append("Attaching ESP to DALI at runtime is a baremetal only feature");
+    else
+        status = handleDaliAttachmentRequest(true, false, message);
+    resp.setMessage(message);
     resp.setStatus(status ? 0 : -1);
     return status;
 }

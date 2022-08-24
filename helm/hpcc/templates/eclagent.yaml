@@ -81,7 +81,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
-{{- $appCmd := printf "%s %s %s _HPCC_ARGS_" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $appCmd := printf "%s %s %s _HPCC_ARGS_" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "ECL Agent" "optional" false )) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $appCmd)) | indent 12 }}
 {{- if .env }}
             env:
@@ -154,7 +154,7 @@ spec:
         command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "agentexec") }} ] 
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "agentexec") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "ECL Agent" "optional" false) }}
               ]
         env:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}

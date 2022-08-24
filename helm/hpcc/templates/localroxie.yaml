@@ -90,7 +90,7 @@ spec:
         command: [ {{ include "hpcc.componentCommand" (dict "me" $roxie "root" $ "process" "roxie") }} ] 
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" $roxie "root" $ "process" "roxie") | nindent 16 }}
                 {{ include "hpcc.configArg" $roxie }},
-                {{ include "hpcc.daliArg" $ }},
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "Local Roxie" "optional" false) }},
                 "--server=true", 
                 "--localAgent=true",
                 "--resolveLocally=false"

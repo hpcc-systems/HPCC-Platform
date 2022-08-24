@@ -42,7 +42,6 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
 
-
 {{ range $.Values.eclscheduler -}}
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
@@ -87,7 +86,7 @@ spec:
         command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "eclscheduler") }} ] 
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "eclscheduler") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "ECL Scheduler" "optional" false) }}
               ]
         env:
 {{ include "hpcc.mergeEnvironments" $env | indent 8 -}}

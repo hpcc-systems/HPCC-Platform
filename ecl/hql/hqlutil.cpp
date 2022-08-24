@@ -5012,14 +5012,14 @@ bool containsExpression(IHqlExpression * expr, IHqlExpression * search)
     return doContainsExpression(expr, search);
 }
 
-static bool doContainsSeqId(IHqlExpression * expr, unsigned __int64 search)
+static IHqlExpression * doContainedSeqId(IHqlExpression * expr, unsigned __int64 search)
 {
     for (;;)
     {
         if (expr->queryTransformExtra())
-            return false;
+            return nullptr;
         if (querySeqId(expr) == search)
-            return true;
+            return expr;
         expr->setTransformExtraUnlinked(expr);
         IHqlExpression * body = expr->queryBody(true);
         if (body == expr)
@@ -5028,16 +5028,17 @@ static bool doContainsSeqId(IHqlExpression * expr, unsigned __int64 search)
     }
     ForEachChild(i, expr)
     {
-        if (doContainsSeqId(expr->queryChild(i), search))
-            return true;
+        IHqlExpression * match = doContainedSeqId(expr->queryChild(i), search);
+        if (match)
+            return match;
     }
-    return false;
+    return nullptr;
 }
 
-bool containsSeqId(IHqlExpression * expr, unsigned __int64 search)
+IHqlExpression * containedSeqId(IHqlExpression * expr, unsigned __int64 search)
 {
     TransformMutexBlock lock;
-    return doContainsSeqId(expr, search);
+    return doContainedSeqId(expr, search);
 }
 
 static bool doContainsOperator(IHqlExpression * expr, node_operator search)

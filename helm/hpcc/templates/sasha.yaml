@@ -21,11 +21,10 @@
 ##############################################################################
 
 */}}
-{{- $sashaServices := $.Values.sasha | default dict -}}
-{{- if not $sashaServices.disabled -}}
-{{ range $sashaName, $_sasha := $sashaServices -}}
+{{- $sashaServicesCtx := dict "services" ($.Values.sasha | default dict) -}}
+{{- include "hpcc.getSashaServices" $sashaServicesCtx -}}
+{{ range $sashaName, $_sasha := $sashaServicesCtx.services -}}
 {{ $sasha := deepCopy ($_sasha | default dict) -}}
-{{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
 {{- $secretsCategories := append ((or (has "data" $sasha.access) (has "dalidata" $sasha.access)) | ternary (list "storage") list) "system" -}}
@@ -86,7 +85,7 @@ spec:
 {{- include "hpcc.addSecretVolumes"  $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 6 }}
 ---
-{{- if and (not $sasha.disabled) (hasKey $sasha "service") -}}
+{{- if (hasKey $sasha "service") -}}
 {{- if $sasha.service.servicePort -}}
 {{- include "hpcc.addService" ( dict "root" $ "name" $serviceName "service" $sasha.service "selector" $serviceName "defaultPort" 8877 ) | nindent 0 }}
 ---
@@ -97,5 +96,3 @@ kind: ConfigMap
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) }}
 {{- end }}
-{{- end }}
-{{- end -}}

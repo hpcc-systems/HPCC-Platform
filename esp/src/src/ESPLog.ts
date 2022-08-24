@@ -1,4 +1,4 @@
-import { LogaccessService, LogLine, GetLogsExRequest } from "@hpcc-js/comms";
+import { LogaccessService, LogLine, GetLogsExRequest, WsLogaccess } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
 import { Paged } from "./store/Paged";
@@ -8,6 +8,14 @@ const logger = scopedLogger("src/ESPLog.ts");
 
 export const service = new LogaccessService({ baseUrl: "" });
 
+let g_logAccessInfo: Promise<WsLogaccess.GetLogAccessInfoResponse>;
+export function GetLogAccessInfo(): Promise<WsLogaccess.GetLogAccessInfoResponse> {
+    if (!g_logAccessInfo) {
+        g_logAccessInfo = service.GetLogAccessInfo({});
+    }
+    return g_logAccessInfo;
+}
+
 export type LogsQueryStore<T extends GetLogsExRequest> = BaseStore<T, LogLine>;
 
 export function CreateLogsQueryStore<T extends GetLogsExRequest>(): LogsQueryStore<T> {
@@ -15,7 +23,7 @@ export function CreateLogsQueryStore<T extends GetLogsExRequest>(): LogsQuerySto
         start: "LogLineStartFrom",
         count: "LogLineLimit",
     }, "Wuid", request => {
-        return service.GetLogsEx(request as any).then(response => {
+        return Promise.all([GetLogAccessInfo(), service.GetLogsEx(request as any)]).then(([info, response]) => {
             return {
                 data: response.lines,
                 total: response.total
@@ -32,7 +40,7 @@ export function CreateLogsQueryStore<T extends GetLogsExRequest>(): LogsQuerySto
 }
 
 export function hasLogAccess(): Promise<boolean> {
-    return service.GetLogAccessInfo({}).then(response => {
+    return GetLogAccessInfo().then(response => {
         return response.RemoteLogManagerConnectionString !== null || response.RemoteLogManagerType !== null;
     }).catch(e => {
         return false;

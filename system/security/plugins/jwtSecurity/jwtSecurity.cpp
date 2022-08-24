@@ -49,6 +49,8 @@ static const char* DALI_KVSTORE_STORE_NAME = "JWTAuth";
 static const char* DALI_KVSTORE_NAMESPACE = "Tokens";
 static const char* DALI_KVSTORE_KEY = "Token";
 
+#define DALI_USER_CACHE_EXP_TIME_SECONDS 15
+
 // The number of milliseconds between checking the key file for updates; this
 // means changes to the file won't be noticed until at most
 // KEY_FILE_CHECK_INTERVAL_MS milliseconds elapse
@@ -162,6 +164,21 @@ public:
     inline virtual const char* querySecMgrTypeName() override
     {
         return "jwtsecmgr";
+    }
+
+    virtual bool clearPermissionsCache(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
+    {
+        gUserCache.erase(user.getName());
+        daliStore.deletekey(DALI_KVSTORE_STORE_NAME, DALI_KVSTORE_NAMESPACE, DALI_KVSTORE_KEY, &user, false);
+        return true;
+    }
+
+    virtual bool logoutUser(ISecUser& user, IEspSecureContext* secureContext = nullptr) override
+    {
+        clearPermissionsCache(user, secureContext);
+        user.setAuthenticateStatus(AS_UNKNOWN);
+        user.credentials().setSessionToken(0);
+        return true;
     }
 
     virtual IAuthMap* createAuthMap(IPropertyTree* authconfig, IEspSecureContext* secureContext = nullptr) override
@@ -291,7 +308,8 @@ private:
             // Create the JWT token verifier with known claims
             auto jwtVerifier = jwt::verify()
                                 .with_subject(subject)
-                                .with_audience(clientID);
+                                .with_audience(clientID)
+                                .leeway(2);
 
             // Add an issuer claim only if an endpoint value was provided
             if (!endpointURL.empty())
@@ -305,7 +323,7 @@ private:
             std::string included_algo = strToUpper(decodedToken.get_algorithm());
 
             {
-                CriticalBlock block(crit);
+                CriticalBlock block(jwtCrit);
 
                 ensureKeyLoaded();
 
@@ -697,12 +715,8 @@ private:
      * user will be logged out.
      *
      * @param   user        ISecUser object containing current user information
-     * @param   userInfo    Object populated with found cache information;
-     *                      valid only if this method returns true
      *
-     * @return  true if user information was found in cache or if the cache
-     *          was successfully repopulated after a token refresh,
-     *          false otherwise
+     * @return  Shared pointer to a JWTUserInfo object
      */
     std::shared_ptr<JWTUserInfo> populateUserInfoFromUser(ISecUser& user)
     {
@@ -932,7 +946,8 @@ public:
 
     virtual SecAccessFlags getPermissions(const char* key, const char* obj, IUserDescriptor* udesc, unsigned auditflags)
     {
-        SecAccessFlags  resultFlag = SecAccess_Unavailable;
+        SecAccessFlags                  resultFlag = SecAccess_Unavailable;
+        std::shared_ptr<JWTUserInfo>    userInfo;
 
         StringBuffer userName;
         udesc->getUserName(userName);
@@ -940,47 +955,61 @@ public:
         if (!userName.isEmpty())
         {
             Owned<ISecUser>                 user = createUser(userName);
-            std::shared_ptr<JWTUserInfo>    userInfo = gUserCache.get(userName.str());
 
-            if (userInfo.get() == nullptr || !userInfo->isValid())
             {
-                // This secmgr plugin running within a Dali client connection
-                // does not have accesss to user passwords so it cannot
-                // authenticate against the JWT endpoint; if the token
-                // is not in the cache or it is invalid then we have to
-                // try to load it from Dali's key/value store
-                StringBuffer        foundEncodedToken;
+                // Two different gUserCache objects are instantiated within Dali,
+                // apparently one for feature requests and one for scoping checks.
+                // Both gUserCache objects, however, will fetch, unpack, and verify
+                // identical data from Dali if possible, simultaneously.
+                // This CriticalSection is there to ensure that the later one uses
+                // the just-cached user data from the earlier fetch/unpack/validate.
+                CriticalBlock   block(daliFetchCrit);
 
-                if (daliStore.fetch(DALI_KVSTORE_STORE_NAME, DALI_KVSTORE_NAMESPACE, DALI_KVSTORE_KEY, foundEncodedToken, user, false))
+                userInfo = gUserCache.get(userName.str(), time(nullptr) - DALI_USER_CACHE_EXP_TIME_SECONDS);
+
+                if (userInfo.get() == nullptr || !userInfo->isValid())
                 {
-                    std::string         foundToken;
-                    std::string         foundRefreshToken;
+                    // This secmgr plugin running within a Dali client connection
+                    // does not have accesss to user passwords so it cannot
+                    // authenticate against the JWT endpoint; if the token
+                    // is not in the cache or it is invalid then we have to
+                    // try to load it from Dali's key/value store
+                    StringBuffer        foundEncodedToken;
 
-                    decodeTokenFromDali(foundEncodedToken.str(), foundToken, foundRefreshToken);
-
-                    // Validate the token, which also caches it if
-                    // validation passes
-                    if (verifyToken(foundToken, userName.str(), foundRefreshToken, "", ""))
+                    if (daliStore.fetch(DALI_KVSTORE_STORE_NAME, DALI_KVSTORE_NAMESPACE, DALI_KVSTORE_KEY, foundEncodedToken, user, false))
                     {
-                        // Load parsed token out of cache
-                        userInfo = gUserCache.get(userName.str());
+                        std::string         foundToken;
+                        std::string         foundRefreshToken;
+
+                        decodeTokenFromDali(foundEncodedToken.str(), foundToken, foundRefreshToken);
+
+                        // Validate the token, which also caches it if
+                        // validation passes
+                        if (verifyToken(foundToken, userName.str(), foundRefreshToken, "", ""))
+                        {
+                            // Load parsed token out of cache
+                            userInfo = gUserCache.get(userName.str());
+                        }
+                        else
+                        {
+                            return SecAccess_Unavailable;
+                        }
                     }
                     else
                     {
+                        // No token in the K/V store;
                         return SecAccess_Unavailable;
                     }
                 }
-                else
-                {
-                    // No token in the K/V store;
-                    return SecAccess_Unavailable;
-                }
             }
 
-            if (strisame(key, "Scope"))
-                resultFlag = _authorizeEx(RT_FILE_SCOPE, *user, obj, nullptr, *userInfo);
-            else if (strisame(key, "workunit"))
-                resultFlag = _authorizeEx(RT_WORKUNIT_SCOPE, *user, obj, nullptr, *userInfo);
+            if (userInfo.get())
+            {
+                if (strisame(key, "Scope"))
+                    resultFlag = _authorizeEx(RT_FILE_SCOPE, *user, obj, nullptr, *userInfo);
+                else if (strisame(key, "workunit"))
+                    resultFlag = _authorizeEx(RT_WORKUNIT_SCOPE, *user, obj, nullptr, *userInfo);
+            }
         }
 
         return resultFlag;
@@ -1003,6 +1032,9 @@ public:
 
     virtual bool clearPermissionsCache(IUserDescriptor *udesc)
     {
+        StringBuffer userName;
+        udesc->getUserName(userName);
+        gUserCache.erase(userName.str());
         return true;
     }
 
@@ -1013,7 +1045,8 @@ public:
 
 
 private:
-    mutable CriticalSection     crit;                       //!< Protects access to secretsName contents
+    mutable CriticalSection     jwtCrit;                    //!< Protects access to JWT secret file contents
+    mutable CriticalSection     daliFetchCrit;              //!< Protects access to Dali's key/value store
     std::string                 clientID;                   //!< URL or unique name of the current cluster; from configuration
     std::string                 loginEndpoint;              //!< Full URL to login endpoint; from configuration
     std::string                 refreshEndpoint;            //!< Full URL to refresh endpoint; from configuration
@@ -1039,7 +1072,8 @@ private:
                                                             | SMF_GetPasswordExpirationDays
                                                             | SMF_LogoutUser
                                                             | SMF_QuerySecMgrType
-                                                            | SMF_QuerySecMgrTypeName;              //!< Bitmask of features implemented in this plugin
+                                                            | SMF_QuerySecMgrTypeName
+                                                            | SMF_ClearPermissionsCache;              //!< Bitmask of features implemented in this plugin
     static const SecFeatureSet  safeFeaturesMask = implementedFeaturesMask | SMF_CreateSettingMap;  //!< Bitmask of safe features implemented in this plugin
 };
 

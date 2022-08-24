@@ -108,7 +108,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
-{{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
 {{- if .env }}
             env:
@@ -177,7 +177,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
-{{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" (dict "root" .root "component" "Thor" "optional" false)) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
 {{- if .env }}
             env:
@@ -247,7 +247,7 @@ data:
 {{- include "hpcc.addSecurityContext" $configCtx | indent 12 }}
 {{ include "hpcc.addImageAttrs" $configCtx | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
-{{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" $configCtx.root) $slavePort }}
+{{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_ --slaveport=%d" (include "hpcc.configArg" $configCtx.me) (include "hpcc.daliArg" (dict "root" $configCtx.root "component" "Thor" "optional" false)) $slavePort }}
 {{ include "hpcc.addCommandAndLifecycle" ($configCtx | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
 {{- if $configCtx.me.env }}
             env:
@@ -372,7 +372,7 @@ spec:
         command: [ {{ include "hpcc.componentCommand" (dict "me" . "root" $ "process" "agentexec") }} ] 
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "agentexec") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }},
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "Thor" "optional" false) }},
                 {{ printf "\"--name=%s\"" .name }}
               ]
         env:
@@ -435,7 +435,7 @@ spec:
         args: [ {{- include "hpcc.componentStartArgs" (dict "me" . "root" $ "process" "agentexec") | nindent 16 }}
                 {{ include "hpcc.configArg" . }},
                 {{ "\"--componentTag=thoragent\"" }},
-                {{ include "hpcc.daliArg" $ }},
+                {{ include "hpcc.daliArg" (dict "root" $ "component" "Thor" "optional" false) }},
                 {{ printf "\"--name=%s\"" .name }}
               ]
         env:

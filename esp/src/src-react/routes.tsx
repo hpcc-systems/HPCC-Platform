@@ -2,13 +2,6 @@ import * as React from "react";
 import { Route, RouterContext } from "universal-router";
 import { initialize, parseSearch, pushUrl, replaceUrl } from "./util/history";
 
-export interface ToDoProps {
-}
-
-const ToDo: React.FunctionComponent<ToDoProps> = () => {
-    return <h1>TODO</h1>;
-};
-
 export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-old";
 
 export interface RouteEx<R = any, C extends RouterContext = RouterContext> extends Route<R, C> {
@@ -22,9 +15,7 @@ export const routes: RoutesEx = [
         mainNav: [],
         name: "login",
         path: "/login",
-        children: [
-            { path: "", action: (context) => <ToDo /> }
-        ]
+        action: (ctx) => import("./components/forms/Login").then(_ => <_.Login />)
     },
     //  Main  ---
     {

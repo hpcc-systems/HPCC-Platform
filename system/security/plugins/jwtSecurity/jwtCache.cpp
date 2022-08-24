@@ -225,36 +225,58 @@ bool JWTUserInfo::hasFileScopePerms() const
 // Private methods
 //-----------------------------------------------------------------------------
 
-// regex patterns for converting a filename glob pattern
-// to an example string
-static const std::regex _globRegex1("\\[![0-9].+?\\]\\*?");                 // foo[!1] -> fooa, foo[!1]* -> fooa
-static const std::regex _globRegex2("\\[([0-9]|![A-Za-z]).+?\\]\\*?");      // foo[1] -> foo1, foo[1]* -> foo1, foo[!m] -> foo1, foo[!m]* -> foo1
-static const std::regex _globRegex3("\\[[A-Za-z].+?\\]\\*?");               // foo[m] -> fooa, foo[m]* -> fooa
-static const std::regex _globRegex4("[*?]");                                // foo* -> fooa, foo? -> fooa
-
-std::string JWTUserInfo::_globToExample(const std::string& pattern) const
+std::string JWTUserInfo::_convertPathname(std::string logicalPath) const
 {
-    std::string s1 = std::regex_replace(pattern, _globRegex1, "a");
-    std::string s2 = std::regex_replace(s1, _globRegex2, "1");
-    std::string s3 = std::regex_replace(s2, _globRegex3, "a");
-    std::string s4 = std::regex_replace(s3, _globRegex4, "a");
-
-    return s4;
-}
-
-std::string JWTUserInfo::_convertPathname(const std::string& logicalPath) const
-{
-    std::string newPath(std::regex_replace(logicalPath, std::regex("::"), "/"));
-
-    if (!newPath.empty())
+    if (!logicalPath.empty())
     {
-        if (newPath.back() == '/')
-            newPath += "*";
-        else if (newPath.back() != '*')
-            newPath += "/*";
+        char lastChar = logicalPath.back();
+
+        if (lastChar == ':')
+        {
+            logicalPath += "*";
+        }
+        else if (lastChar != '*' && lastChar != '?')
+        {
+            logicalPath += "::*";
+        }
     }
 
-    return newPath;
+    return std::regex_replace(logicalPath, std::regex("\\*"), "[^:]*");
+}
+
+unsigned int JWTUserInfo::_countDelimitersInPath(const std::string& path) const
+{
+    unsigned int    count = 0;
+    std::string     delim("::");
+
+    for (size_t offset = path.find(delim); offset != std::string::npos; offset = path.find(delim, offset + delim.length()))
+    {
+        ++count;
+    }
+
+    return count;
+}
+
+void JWTUserInfo::_clampPathByDelimCount(const std::string& path, unsigned int delimCount, std::string& clampedPath) const
+{
+    unsigned int    count = 0;
+    std::string     delim("::");
+
+    for (size_t offset = path.find(delim); offset != std::string::npos; offset = path.find(delim, offset + delim.length()))
+    {
+        if (count < delimCount)
+        {
+            ++count;
+        }
+        else
+        {
+            clampedPath = path.substr(0, offset);
+            return;
+        }
+    }
+
+    // If we got here then we never found delimCount number of delimiters
+    clampedPath = path;
 }
 
 JWTUserInfo& JWTUserInfo::_addScopePerm(PermissionMap& scopePermMap, const std::string& scope, SecAccessFlags accessFlag, SecAccessFlags defaultFlag, bool asDeny)
@@ -294,18 +316,26 @@ SecAccessFlags JWTUserInfo::_matchScopePerm(const PermissionMap& scopePermMap, c
     // Ideally, this function should be traversing a tree of scope permissions, with each
     // scope level a tree node; that would be much faster and would also avoid requiring
     // ordering multiple patterns prior to calling _addScopePerm()
-    std::string         scopeAsExample(_convertPathname(_globToExample(scope)));
-    SecAccessFlags      accessValue = defaultFlag;
-    size_t              longestScopeLen = 0;
+    SecAccessFlags              accessValue = defaultFlag;
+    size_t                      scopeDelimCount = _countDelimitersInPath(scope);
+    std::string                 clampedKey;
+    size_t                      longestScopePartCount = 0;
 
     for (PermissionMap::const_iterator x = scopePermMap.begin(); x != scopePermMap.end(); x++)
     {
-        if (::fnmatch(x->first.c_str(), scopeAsExample.c_str(), (FNM_CASEFOLD | FNM_LEADING_DIR)) == 0)
+        _clampPathByDelimCount(x->first, scopeDelimCount, clampedKey);
+
+        // Convert key to a regex pattern anchored at the beginning of the string
+        std::regex scopePattern(std::string("^") + clampedKey, std::regex_constants::icase);
+
+        if (std::regex_search(scope, scopePattern))
         {
-            // Use only the longest (most precise) scope
-            if (x->first.size() > longestScopeLen)
+            unsigned int partCount = _countDelimitersInPath(x->first) + 1;
+
+            // Use only the longest (most precise?) scope
+            if (partCount > longestScopePartCount)
             {
-                longestScopeLen = x->first.size();
+                longestScopePartCount = partCount;
                 accessValue = x->second;
             }
         }
@@ -337,24 +367,36 @@ unsigned int JWTUserInfo::_countScopePerms(const PermissionMap& scopePermMap) co
 
 //=============================================================================
 
-bool JWTUserCache::has(const std::string& userName) const
+bool JWTUserCache::has(const std::string& userName, time_t expireTime) const
 {
-    CriticalBlock block(crit);
-    return userPermMap.find(userName) != userPermMap.end();
+    CriticalBlock                       block(crit);
+    UserPermissionMap::const_iterator   foundIter = userPermMap.find(userName);
+
+    if (foundIter != userPermMap.end())
+    {
+        time_t  savedTime;
+
+        std::tie(savedTime, std::ignore) = foundIter->second;
+
+        return expireTime < savedTime;
+    }
+
+    return false;
 }
 
 JWTUserCache& JWTUserCache::set(const std::string& userName, std::shared_ptr<JWTUserInfo>& userInfo)
 {
     {
-        CriticalBlock block(crit);
+        CriticalBlock   block(crit);
+        UserInfoTuple   info = std::make_tuple(time(nullptr), userInfo);
 
-        userPermMap[userName] = userInfo;
+        userPermMap[userName] = info;
     }
 
     return *this;
 }
 
-const std::shared_ptr<JWTUserInfo> JWTUserCache::get(const std::string& userName) const
+const std::shared_ptr<JWTUserInfo> JWTUserCache::get(const std::string& userName, time_t expireTime) const
 {
     {
         CriticalBlock                       block(crit);
@@ -362,7 +404,13 @@ const std::shared_ptr<JWTUserInfo> JWTUserCache::get(const std::string& userName
 
         if (foundIter != userPermMap.end())
         {
-            return foundIter->second;
+            time_t                          savedTime;
+            std::shared_ptr<JWTUserInfo>    userInfo;
+
+            std::tie(savedTime, userInfo) = foundIter->second;
+
+            if (expireTime < savedTime)
+                return userInfo;
         }
     }
 

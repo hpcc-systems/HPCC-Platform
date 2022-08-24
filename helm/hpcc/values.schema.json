@@ -247,9 +247,6 @@
       "items": { "$ref": "#/definitions/dafilesrv" }
     }
   },
-  "required": [
-    "dali"
-  ],
   "title": "Values",
   "type": "object",
   "definitions": {
@@ -1266,6 +1263,9 @@
         },
         "remoteClients": {
           "$ref": "#/definitions/remoteClients"
+        },
+        "corsAllowed": {
+          "$ref": "#/definitions/corsAllowed"
         }
       }
     },
@@ -2266,177 +2266,14 @@
       }
     },
     "sasha-coalescer": {
-      "oneOf": [
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/definitions/sashacommon" },
         {
-          "type": "object",
-          "allOf": [
-            { "$ref": "#/definitions/sashacommon" },
-            {
-              "properties": {
-                "minDeltaSize": {
-                  "type": "integer",
-                  "description": "Coalescing will only begin, if the delta size is above this threshold (K)"
-                },
-                "disabled": {},
-                "interval": {},
-                "service": {},
-                "at" : {},
-                "throttle": {},
-                "image": {},
-                "plane": {},
-                "resources": {},
-                "env": {},
-                "annotations": {},
-                "labels": {}
-              },
-              "additionalProperties": false
-            }
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "sasha-wu-archiver": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [ "plane" ],
-          "allOf": [
-            { "$ref": "#/definitions/sashacommon" },
-            { "$ref": "#/definitions/sasha-limitcutoff" },
-            {
-              "properties": 
-              {
-                "backup": {
-                  "type": "integer",
-                  "description": "minimum workunit age to backup (days, 0 disables)",
-                  "default": "0"
-                },
-                "duration": {
-                  "type": "integer",
-                  "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
-                  "default": "0"
-                },
-                "keepResultFiles": {
-                  "type": "boolean",
-                  "description": "option to keep result files owned by workunits after workunit is archived",
-                  "default": "false"
-                },
-                "retryinterval": {
-                  "type": "integer",
-                  "description": "minimal time before retrying archive of failed WorkUnits (days)",
-                  "default": "7"
-                },
-                "disabled": {},
-                "interval": {},
-                "service": {},
-                "at" : {},
-                "throttle": {},
-                "image": {},
-                "plane": {},
-                "resources": {},
-                "env": {},
-                "annotations": {},
-                "labels": {},
-                "limit": {},
-                "cutoff": {}    
-              },
-              "additionalProperties": false
-            }
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "sasha-dfuwu-archiver": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [ "plane" ],
-          "allOf": [ 
-            { "$ref": "#/definitions/sashacommon" },
-            { "$ref": "#/definitions/sasha-limitcutoff" },
-            {
-              "properties": 
-              {
-                "disabled": {},
-                "interval": {},
-                "service": {},
-                "at" : {},
-                "throttle": {},
-                "image": {},
-                "plane": {},
-                "resources": {},
-                "env": {},
-                "annotations": {},
-                "labels": {},
-                "limit": {},
-                "cutoff": {}
-              },
-              "additionalProperties": false
-            }
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "sasha-dfurecovery-archiver": {
-      "oneOf": [
-        {
-          "type": "object",
-          "allOf": [
-            { "$ref": "#/definitions/sashacommon" },
-            { "$ref": "#/definitions/sasha-limitcutoff" },
-            {
-              "properties": {
-                "disabled": {},
-                "interval": {},
-                "service": {},
-                "at" : {},
-                "throttle": {},
-                "image": {},
-                "plane": {},
-                "resources": {},
-                "env": {},
-                "annotations": {},
-                "labels": {},
-                "limit": {},
-                "cutoff": {}    
-              },
-              "additionalProperties": false
-            }
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "sasha-file-expiry": {
-      "oneOf": [
-        {
-          "type": "object",
-          "allOf": [{ "$ref": "#/definitions/sashacommon" }],
           "properties": {
-            "persistExpiryDefault": {
+            "minDeltaSize": {
               "type": "integer",
-              "description": "Default number of days to delete unused persist files",
-              "default": "7"
-            },
-            "expiryDefault": {
-              "type": "integer",
-              "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
-              "default": "14"
-            },
-            "user": {
-              "type": "string",
-              "description": "A username authorized to access and remove expired files"
+              "description": "Coalescing will only begin, if the delta size is above this threshold (K)"
             },
             "disabled": {},
             "interval": {},
@@ -2446,15 +2283,143 @@
             "image": {},
             "plane": {},
             "resources": {},
+            "env": {},
             "annotations": {},
             "labels": {}
           },
           "additionalProperties": false
-        },
-        {
-          "type": "null"
         }
       ]
+    },
+    "sasha-wu-archiver": {
+      "type": "object",
+      "required": [ "plane" ],
+      "allOf": [
+        { "$ref": "#/definitions/sashacommon" },
+        { "$ref": "#/definitions/sasha-limitcutoff" },
+        {
+          "properties": 
+          {
+            "backup": {
+              "type": "integer",
+              "description": "minimum workunit age to backup (days, 0 disables)",
+              "default": "0"
+            },
+            "duration": {
+              "type": "integer",
+              "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
+              "default": "0"
+            },
+            "keepResultFiles": {
+              "type": "boolean",
+              "description": "option to keep result files owned by workunits after workunit is archived",
+              "default": "false"
+            },
+            "retryinterval": {
+              "type": "integer",
+              "description": "minimal time before retrying archive of failed WorkUnits (days)",
+              "default": "7"
+            },
+            "disabled": {},
+            "interval": {},
+            "service": {},
+            "at" : {},
+            "throttle": {},
+            "image": {},
+            "plane": {},
+            "resources": {},
+            "env": {},
+            "annotations": {},
+            "labels": {},
+            "limit": {},
+            "cutoff": {}    
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sasha-dfuwu-archiver": {
+      "type": "object",
+      "required": [ "plane" ],
+      "allOf": [ 
+        { "$ref": "#/definitions/sashacommon" },
+        { "$ref": "#/definitions/sasha-limitcutoff" },
+        {
+          "properties": 
+          {
+            "disabled": {},
+            "interval": {},
+            "service": {},
+            "at" : {},
+            "throttle": {},
+            "image": {},
+            "plane": {},
+            "resources": {},
+            "env": {},
+            "annotations": {},
+            "labels": {},
+            "limit": {},
+            "cutoff": {}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sasha-dfurecovery-archiver": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/definitions/sashacommon" },
+        { "$ref": "#/definitions/sasha-limitcutoff" },
+        {
+          "properties": {
+            "disabled": {},
+            "interval": {},
+            "service": {},
+            "at" : {},
+            "throttle": {},
+            "image": {},
+            "plane": {},
+            "resources": {},
+            "env": {},
+            "annotations": {},
+            "labels": {},
+            "limit": {},
+            "cutoff": {}    
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "sasha-file-expiry": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+      "properties": {
+        "persistExpiryDefault": {
+          "type": "integer",
+          "description": "Default number of days to delete unused persist files",
+          "default": "7"
+        },
+        "expiryDefault": {
+          "type": "integer",
+          "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
+          "default": "14"
+        },
+        "user": {
+          "type": "string",
+          "description": "A username authorized to access and remove expired files"
+        },
+        "disabled": {},
+        "interval": {},
+        "service": {},
+        "at" : {},
+        "throttle": {},
+        "image": {},
+        "plane": {},
+        "resources": {},
+        "annotations": {},
+        "labels": {}
+      },
+      "additionalProperties": false
     },
     "sashaservice": {
       "oneOf": [
@@ -2739,6 +2704,28 @@
           "name": {
             "type": "string",
             "description": "Remote client name"
+          }
+        }
+      }
+    },
+    "corsAllowed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "description": "CORS allowed origin",
+            "type": "string"
+          },
+          "headers": {
+            "description": "a list of CORS allowed headers",
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "methods": {
+            "description": "a list of CORS allowed HTTP methods (default is GET, POST, OPTIONS)",
+            "type": "array",
+            "items": { "type": "string" }
           }
         }
       }

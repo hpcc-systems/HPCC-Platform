@@ -267,8 +267,10 @@ public:
             throw(ie);
         }
         loadBindings();
-        if(useDali)
-            startEsdlMonitor();
+
+        //in spite of the "monitor" name, the ESDLMonitor currently loads both DALI and non-dali bindings and should always be run
+        //  in the future it would be nice to separate the two, and phase out DALI bindings in time, as we migrate to the cloud
+        startEsdlMonitor();
     }
 
     bool reSubscribeESPToDali();
@@ -299,8 +301,10 @@ public:
         unloadBindings();
         unloadServices();
         unloadProtocols();
-        if(useDali)
-           stopEsdlMonitor();
+
+        //in spite of the "monitor" name, the ESDLMonitor currently loads both DALI and non-dali bindings and should always be run
+        //  in the future it would be nice to separate the two, and phase out DALI bindings in time, as we migrate to the cloud
+        stopEsdlMonitor();
 
         serverstatus=NULL;
         

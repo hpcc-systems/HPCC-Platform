@@ -92,4 +92,4 @@ dali:
   labels:
     dl1: dlv1
   services: # internal house keeping services
-    coalescer:
+    coalescer: {}

@@ -438,14 +438,14 @@ sasha:
     #duration: 0 # (maxDuration) maximum duration to run DFU WorkUnit archiving session (hours, 0 unlimited)
     #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
 
-  dfurecovery-archiver:
+  dfurecovery-archiver: {} # NB: no properties defined, use defaults
     #disabled: true
     #limit: 20 # threshold number of DFU recovery items before archiving starts (0 disables)
     #cutoff: 4 # minimum DFU recovery item age to archive (days)
     #interval: 12 # minimum interval between running DFU recovery archiver(in hours, 0 disables)
     #at: "* * * * *" # schedule to run DFU recovery archiver (cron format)
 
-  file-expiry:
+  file-expiry: {} # NB: no properties defined, use defaults
     #disabled: true
     #interval: 1
     #at: "* 3 * * *"
@@ -519,6 +519,28 @@ esp:
   application: eclwatch
   auth: none
   replicas: 1
+  ## The following 'corsAllowed' section is used to configure CORS support
+  ##   origin - the origin to support CORS requests from
+  ##   headers - the headers to allow for the given origin via CORS
+  ##   methods - the HTTP methods to allow for the given origin via CORS
+  ##
+  #corsAllowed:
+  ## origin starting with https will only allow https CORS
+  #- origin: https://*.my.com
+  #  headers:
+  #  - "X-X"
+  #  methods:
+  #  - "GET"
+  #  - "OPTIONS"
+  ## origin starting with http will allow http or https CORS
+  #- origin: http://www.example.com
+  #  headers:
+  #  - "*"
+  #  methods:
+  #  - "GET"
+  #  - "POST"
+  #  - "OPTIONS"
+
 # Add remote clients to generated client certificates and make the ESP require that one of the generated certificates is provided by a client in order to connect
 #   When setting up remote clients make sure that certificates.issuers.remote.enabled is set to true.
 # remoteClients:

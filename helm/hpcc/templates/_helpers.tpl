@@ -659,12 +659,19 @@ Add config arg for a component
 
 {{/*
 Add dali arg for a component
+Pass in dict with root, component (in case of error), optional (true if daliArg is optional)
 */}}
 {{- define "hpcc.daliArg" -}}
-{{- $dali := (index .Values.dali 0) -}}
-{{- $daliService := $dali.service | default dict -}}
-{{- $daliServicePort := $daliService.servicePort | default 7070 -}}
-"--daliServers={{ (index .Values.dali 0).name }}:{{ $daliServicePort }}"
+  {{- if empty .root.Values.dali -}}
+    {{- if not .optional -}}
+      {{- $_ := fail (printf "%s requires a DALI to be defined" .component) -}}
+    {{- end -}}
+  {{- else -}}
+    {{- $dali := (index .root.Values.dali 0) -}}
+    {{- $daliService := $dali.service | default dict -}}
+    {{- $daliServicePort := $daliService.servicePort | default 7070 -}}
+"--daliServers={{ (index .root.Values.dali 0).name }}:{{ $daliServicePort }}"
+  {{- end -}}
 {{- end -}}
 
 {{/*
@@ -961,26 +968,11 @@ Generate list of available services
   {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $esp "component" $esp "visibility" $esp.service.visibility "remoteClients" $esp.remoteClients) }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
-{{- $sashaServices := $dali.services | default dict -}}
-{{- if not $sashaServices.disabled -}}
-{{- range $sashaName, $_sasha := $sashaServices -}}
+{{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
+{{- include "hpcc.getSashaServices" $daliSashaServicesCtx -}}
+{{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
 {{- $sasha := ($_sasha | default dict) -}}
-{{- if hasKey $sasha "service" -}}
-{{- if and (not $sasha.disabled) ($sasha.service.servicePort) -}}
-- name: {{ printf "sasha-%s" $sashaName }}
-  class: sasha
-  type: {{ $sashaName }}
-  port: {{ $sasha.service.servicePort }}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{- $sashaServices := $.Values.sasha | default dict -}}
-{{- if not $sashaServices.disabled -}}
-{{- range $sashaName, $_sasha := $sashaServices -}}
-{{- $sasha := ($_sasha | default dict) -}}
-{{- if and (not $sasha.disabled) (hasKey $sasha "service") -}}
+{{- if (hasKey $sasha "service") -}}
 {{- if $sasha.service.servicePort -}}
 - name: {{ printf "sasha-%s" $sashaName }}
   class: sasha
@@ -989,7 +981,20 @@ Generate list of available services
 {{ end -}}
 {{ end -}}
 {{ end -}}
-{{- end -}}
+{{ end -}}
+{{- $sashaServicesCtx := dict "services" ($.Values.sasha | default dict) -}}
+{{- include "hpcc.getSashaServices" $sashaServicesCtx -}}
+{{- range $sashaName, $_sasha :=  $sashaServicesCtx.services -}}
+{{- $sasha := ($_sasha | default dict) -}}
+{{- if (hasKey $sasha "service") -}}
+{{- if $sasha.service.servicePort -}}
+- name: {{ printf "sasha-%s" $sashaName }}
+  class: sasha
+  type: {{ $sashaName }}
+  port: {{ $sasha.service.servicePort }}
+{{ end -}}
+{{ end -}}
+{{ end -}}
 {{- range $.Values.dafilesrv -}}
  {{- if not .disabled }}
 - name: {{ .name }}
@@ -1079,7 +1084,7 @@ Pass in dict with root, me and dali if container in dali pod
           {{ include "hpcc.configArg" . }},
 {{- end }}
           "--service={{ .me.name }}",
-{{ include "hpcc.daliArg" .root | indent 10 }}
+{{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false) | indent 10 }}
         ]
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
@@ -1970,4 +1975,23 @@ Pass in value
 {{- else -}}
  {{- printf "%d" (int .) -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+A template to return the list of sasha services minus "disabled" if present
+Pass in a dictionary with "services"
+*/}}
+{{- define "hpcc.getSashaServices" -}}
+{{- $newServices := dict -}}
+{{- $root := . -}}
+{{- if not .services.disabled -}}
+ {{- range $sashaName, $sasha := $root.services -}}
+  {{- if (not (eq "disabled" $sashaName)) -}}
+   {{- if (not $sasha.disabled) -}}
+    {{- $_ := set $newServices $sashaName $sasha -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- $_ := set $root "services" $newServices -}}
 {{- end -}}

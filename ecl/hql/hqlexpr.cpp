@@ -72,6 +72,8 @@
 //#define PARANOID
 //#define SEARCH_NAME1   "v1"
 //#define SEARCH_NAME2   "v2"
+//#define SEARCH_NAME3   "v3"
+//#define SEARCH_NAME4   "v4"
 //#define CHECK_SELSEQ_CONSISTENCY
 #define VERIFY_EXPR_INTEGRITY
 #endif
@@ -79,7 +81,7 @@
 //#define TRACK_EXPRESSION          // define this and update isTrackingExpression() to monitor expressions through transforms
 //#define TRACK_MAX_ANNOTATIONS     // define this to investigate very heavily nested annotations
 
-#if defined(SEARCH_NAME1) || defined(SEARCH_NAME2)
+#if defined(SEARCH_NAME1) || defined(SEARCH_NAME2) || defined(SEARCH_NAME3) || defined(SEARCH_NAME4)
 static void debugMatchedName() {}
 #endif
 
@@ -10554,6 +10556,14 @@ CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _t
 #endif
 #ifdef SEARCH_NAME2
     if (strcmp(_name, SEARCH_NAME2) == 0)
+        debugMatchedName();
+#endif
+#ifdef SEARCH_NAME3
+    if (strcmp(_name, SEARCH_NAME3) == 0)
+        debugMatchedName();
+#endif
+#ifdef SEARCH_NAME4
+    if (strcmp(_name, SEARCH_NAME4) == 0)
         debugMatchedName();
 #endif
     name.set(_name);

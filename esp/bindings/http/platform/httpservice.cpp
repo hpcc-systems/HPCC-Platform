@@ -167,18 +167,18 @@ EspHttpBinding* CEspHttpServer::getBinding()
     return thebinding;
 }
 
-//CORS allow headers for interoperability, we do not rely on this for security since
-//that only means treating the browser as a trusted entity.  We need to be diligent and secure
-//for every request whether it comes from a cross domain browser or any other source
-
-void checkSetCORSAllowOrigin(CHttpRequest *req, CHttpResponse *resp)
+void checkSetCORSAllowOrigin(EspHttpBinding *binding, CHttpRequest *req, CHttpResponse *resp)
 {
     StringBuffer origin;
     req->getHeader("Origin", origin);
     if (origin.length())
     {
-        resp->setHeader("Access-Control-Allow-Origin", origin);
-        resp->setHeader("Access-Control-Allow-Credentials", "true");
+        const IEspCorsAllowedOrigin *corsAllowed = binding->findCorsAllowedOrigin(origin, req->queryMethod());
+        if (corsAllowed)
+        {
+            resp->setHeader("Access-Control-Allow-Origin", origin);
+            resp->setHeader("Access-Control-Allow-Credentials", "true");
+        }
     }
 }
 
@@ -375,7 +375,7 @@ int CEspHttpServer::processRequest()
             if (thebinding)
                 theBindingHolder.set(dynamic_cast<IInterface*>(thebinding));
 
-            checkSetCORSAllowOrigin(m_request, m_response);
+            checkSetCORSAllowOrigin(thebinding, m_request, m_response);
 
             if (thebinding!=NULL)
             {
@@ -845,21 +845,38 @@ int CEspHttpServer::onOptions()
     m_response->setVersion(HTTP_VERSION);
     m_response->setStatus(HTTP_STATUS_OK);
 
-    //CORS allow headers for interoperability, we do not rely on this for security since
-    //that only means treating the browser as a trusted entity.  We need to be diligent and secure
-    //for every request whether it comes from a cross domain browser or any other source
-    StringBuffer allowHeaders;
-    m_request->getHeader("Access-Control-Request-Headers", allowHeaders);
-    if (allowHeaders.length())
-        m_response->setHeader("Access-Control-Allow-Headers", allowHeaders);
-
     StringBuffer origin;
     m_request->getHeader("Origin", origin);
 
-    m_response->setHeader("Access-Control-Allow-Origin", origin.length() ? origin.str() : "*");
-    m_response->setHeader("Access-Control-Allow-Credentials", "true");
-    m_response->setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-    m_response->setHeader("Access-Control-Max-Age", "86400"); //arbitrary 24 hours
+    if (origin.length())
+    {
+        EspHttpBinding *binding = getBinding();
+        if (binding)
+        {
+            StringBuffer allowMethod;
+            m_request->getHeader("Access-Control-Request-Method", allowMethod);
+
+            const IEspCorsAllowedOrigin *corsAllowed = binding->findCorsAllowedOrigin(origin, allowMethod);
+            if (corsAllowed)
+            {
+                m_response->setHeader("Access-Control-Allow-Origin", origin);
+                m_response->setHeader("Access-Control-Allow-Credentials", "true");
+                m_response->setHeader("Access-Control-Allow-Methods", corsAllowed->queryAllowedMethodsCSV());
+                m_response->setHeader("Access-Control-Max-Age", corsAllowed->queryMaxAge());
+
+                StringBuffer requestedAllowHeaders;
+                m_request->getHeader("Access-Control-Request-Headers", requestedAllowHeaders);
+                if (requestedAllowHeaders.length())
+                {
+                    StringBuffer allowedHeaders;
+                    corsAllowed->getAllowedHeadersCSV(requestedAllowHeaders, allowedHeaders);
+                    if (allowedHeaders.length())
+                        m_response->setHeader("Access-Control-Allow-Headers", allowedHeaders);
+                }
+            }
+        }
+    }
+
     m_response->setContentType("text/plain");
     m_response->setContent("");
 

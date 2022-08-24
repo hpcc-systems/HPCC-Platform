@@ -1,7 +1,7 @@
 esp:
    instance: esdl-sandbox
    description: ESDL Sandbox
-   daliServers: mydali
+   daliServers: dali
    loadDaliBindings: true
    auth: ldap
    authDomain:
