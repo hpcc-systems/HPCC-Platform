@@ -126,7 +126,6 @@ using std::string;
 
 #define SDS_LOCK_TIMEOUT 30000
 
-
 class TPWRAPPER_API CTpWrapper : public CInterface  
 {
     
@@ -143,6 +142,9 @@ private:
         bool slaveNode, IArrayOf<IEspTpMachine>& machineList);
     void appendThorMachineList(double clientVersion, IConstEnvironment* constEnv, INode& node, const char* clusterName,
          const char* machineType, unsigned& processNumber, unsigned channels, const char* directory, IArrayOf<IEspTpMachine>& machineList);
+    void getRoxieServices(IPropertyTree* environmentRoot, const char* serviceName, IArrayOf<IConstHPCCService>& services);
+    void getRoxieService(IPropertyTree* clusterTree, IArrayOf<IConstHPCCService>& services);
+    void getESPServices(IPropertyTree* environmentRoot, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services);
 
 #ifndef _CONTAINERIZED
     IPropertyTree* getEnvironment(const char* xpath);

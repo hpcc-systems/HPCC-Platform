@@ -1824,31 +1824,80 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
 
 void CTpWrapper::getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services)
 {
-    Owned<IPropertyTreeIterator> itr = getGlobalConfigSP()->getElements("services");
-    ForEach(*itr)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    Owned<IPropertyTree> envRoot = &env->getPTree();
+
+    if (isEmptyString(serviceType) || strieq(serviceType, "roxie"))
+        getRoxieServices(envRoot, serviceName, services);
+    getESPServices(envRoot, serviceType, serviceName, services);
+}
+
+void CTpWrapper::getRoxieServices(IPropertyTree* environmentRoot, const char* serviceName, IArrayOf<IConstHPCCService>& services)
+{
+    if (!isEmptyString(serviceName))
     {
-        IPropertyTree& service = itr->query();
-        //Only show the public services for now
-        if (!service.getPropBool("@public"))
-            continue;
+        VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", serviceName);
+        IPropertyTree *cluster = environmentRoot->queryPropTree(xpath.str());
+        if (!cluster)
+            throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "RoxieCluster %s not found.", serviceName);
+        getRoxieService(cluster, services);
+        return;
+    }
+    Owned<IPropertyTreeIterator> clusters = environmentRoot->getElements("Software/RoxieCluster");
+    ForEach(*clusters)
+    {
+        IPropertyTree& cluster = clusters->query();
+        getRoxieService(&cluster, services);
+    }
+}
 
-        const char* type = service.queryProp("@type");
-        if (isEmptyString(type) || (!isEmptyString(serviceType) && !strieq(serviceType, type)))
-            continue;
+void CTpWrapper::getRoxieService(IPropertyTree* clusterTree, IArrayOf<IConstHPCCService>& services)
+{
+    Owned<IEspHPCCService> svc = createHPCCService();
+    svc->setName(clusterTree->queryProp("@name"));
+    svc->setType("roxie");
 
-        const char* name = service.queryProp("@name");
-        if (isEmptyString(name) || (!isEmptyString(serviceName) && !strieq(serviceName, name)))
+    Owned<IPropertyTreeIterator> roxieFarms = clusterTree->getElements("RoxieFarmProcess");
+    ForEach(*roxieFarms)
+    {
+        IPropertyTree& roxieFarm = roxieFarms->query();
+        unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+        if (port == 0)
+            continue;
+        svc->setPort(port);
+        const char* protocol = roxieFarm.queryProp("@protocol");
+        if (!isEmptyString(protocol) && strieq(protocol, "ssl"))
+            svc->setTLSSecure(true);
+        break;
+    }
+    services.append(*svc.getLink());
+}
+
+void CTpWrapper::getESPServices(IPropertyTree* environmentRoot, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services)
+{
+    Owned<IPropertyTreeIterator> espBindings = environmentRoot->getElements("Software/EspProcess/EspBinding");
+    ForEach(*espBindings)
+    {
+        IPropertyTree& espBinding = espBindings->query();
+        const char* type = espBinding.queryProp("@service");
+        if (!isEmptyString(serviceType) && !strieq(serviceType, type))
+            continue;
+        const char* name = espBinding.queryProp("@name");
+        if (!isEmptyString(serviceName) && !strieq(serviceName, name))
+            continue;
+        unsigned port = espBinding.getPropInt("@port");
+        if (port == 0)
             continue;
 
         Owned<IEspHPCCService> svc = createHPCCService();
         svc->setName(name);
         svc->setType(type);
-        svc->setPort(service.getPropInt("@port"));
-        if (service.getPropBool("@tls"))
+        svc->setPort(port);
+        const char* protocol = espBinding.queryProp("@protocol");
+        if (!isEmptyString(protocol) && strieq(protocol, "https"))
             svc->setTLSSecure(true);
         services.append(*svc.getLink());
-        if (!isEmptyString(serviceName))
-            break;
     }
 }
 
@@ -1862,6 +1911,7 @@ class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
     ClusterType platform;
     unsigned clusterWidth;
     StringArray thorProcesses;
+    RoxieTargetType roxieTargetType = RTTUnknown;
 
 public:
     CContainerWUClusterInfo(const char* _name, const char* type, unsigned _clusterWidth)
@@ -1878,6 +1928,7 @@ public:
         {
             agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
             platform = RoxieCluster;
+            roxieTargetType = readRoxieTargetType(_name);
         }
         else
         {
@@ -1945,10 +1996,17 @@ public:
         str.set(name.get());
         return str;
     }
-    virtual bool isQueriesOnly() const override
+    virtual RoxieTargetType getRoxieTargetType() const override
     {
-        //In bare metal environment, roxie is not QueriesOnly.
-        return false;
+        return roxieTargetType;
+    }
+    virtual bool canPublishQueries() const override
+    {
+        return roxieTargetType & RTTPublished;
+    }
+    virtual bool onlyPublishedQueries() const override
+    {
+        return roxieTargetType == RTTPublished;
     }
     virtual const StringArray & getThorProcesses() const override
     {

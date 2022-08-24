@@ -1072,7 +1072,6 @@ extern ENVIRONMENT_API unsigned __int64 readSizeSetting(const char * sizeStr, co
     return size;
 }
 
-
 class CConstInstanceInfo : public CConstEnvBase, implements IConstInstanceInfo
 {
 public:
@@ -2615,6 +2614,44 @@ void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
     getRoxieProcessServers(queryRoxieProcessTree(root, process), servers);
 }
 
+extern ENVIRONMENT_API RoxieTargetType readRoxieTargetType(const char *roxieName)
+{
+    RoxieTargetType roxieTargetType = RTTUnknown;
+    if (isEmptyString(roxieName))
+        return roxieTargetType;
+
+    bool hasPortZero = false, hasNonZeroPort = false;
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> environment = factory->openEnvironment();
+    Owned<IPropertyTree> envRoot = &environment->getPTree();
+
+    VStringBuffer xpath("Software/RoxieCluster[@name='%s'][1]", roxieName);
+    IPropertyTree *cluster = envRoot->queryPropTree(xpath.str());
+    if (!cluster)
+        return roxieTargetType;
+    Owned<IPropertyTreeIterator> farmers = cluster->getElements("RoxieFarmProcess");
+    ForEach(*farmers)
+    {
+        IPropertyTree &farmer = farmers->query();
+        const char *port = farmer.queryProp("@port");
+        if (!port)
+            continue;
+        if (streq(port, "0"))
+            hasPortZero = true;
+        else
+            hasNonZeroPort = true;
+        if (hasNonZeroPort && hasPortZero)
+            break;
+    }
+    if (hasPortZero && hasNonZeroPort)
+        roxieTargetType = RTTBoth;
+    else if (hasPortZero)
+        roxieTargetType = RTTQueued;
+    else if (hasNonZeroPort)
+        roxieTargetType = RTTPublished;
+    return roxieTargetType;
+}
+
 #define WUERR_MismatchClusterSize               5008
 
 class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
@@ -2641,6 +2678,7 @@ class CEnvironmentClusterInfo: implements IConstWUClusterInfo, public CInterface
     unsigned channelsPerNode;
     unsigned numberOfSlaveLogs;
     int roxieReplicateOffset;
+    RoxieTargetType roxieTargetType = RTTUnknown;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -2706,6 +2744,7 @@ public:
                     roxieReplicateOffset = roxie->getPropInt("@cyclicOffset", 1);
                 }
             }
+            roxieTargetType = readRoxieTargetType(roxieProcess);
         }
         else
         {
@@ -2839,10 +2878,17 @@ public:
     {
         return ldapPassword.str();
     }
-    bool isQueriesOnly() const
+    virtual RoxieTargetType getRoxieTargetType() const override
     {
-        //In bare metal environment, roxie is not QueriesOnly.
-        return false;
+        return roxieTargetType;
+    }
+    virtual bool canPublishQueries() const override
+    {
+        return roxieTargetType & RTTPublished;
+    }
+    virtual bool onlyPublishedQueries() const override
+    {
+        return roxieTargetType == RTTPublished;
     }
 };
 

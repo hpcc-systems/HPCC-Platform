@@ -53,6 +53,55 @@ bool CWsResourcesEx::onServiceQuery(IEspContext& context, IEspServiceQueryReques
     return false;
 }
 
+bool CWsResourcesEx::onTargetQuery(IEspContext& context, IEspTargetQueryRequest& req, IEspTargetQueryResponse& resp)
+{
+    try
+    {
+        CHPCCQueueType typeReq = req.getType();
+        if (typeReq == HPCCQueueType_Undefined)
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "HPCCQueueType not defined.");
+
+        CConstWUClusterInfoArray clusters;
+        getWUClusterInfo(clusters);
+
+        IArrayOf<IConstHPCCQueue>& queues = resp.getQueues();
+        StringArray& roxieTargetNames = resp.getRoxies();
+        ForEachItemIn(i, clusters)
+        {
+            CHPCCQueueType type;
+            IConstWUClusterInfo& cluster = clusters.item(i);
+            if (cluster.getPlatform() == ThorLCRCluster)
+                type = CHPCCQueueType_Thor;
+            else if (cluster.getPlatform() == RoxieCluster)
+                type = CHPCCQueueType_Roxie;
+            else
+                type = CHPCCQueueType_HThor;
+
+            SCMStringBuffer clusterName;
+            cluster.getName(clusterName);
+            if ((type == CHPCCQueueType_Roxie) && cluster.canPublishQueries())
+            {
+                roxieTargetNames.append(clusterName.str());
+                if (cluster.onlyPublishedQueries())
+                    continue;
+            }
+
+            if ((typeReq != CHPCCQueueType_All) && (typeReq != type))
+                continue;
+
+            Owned<IEspHPCCQueue> queue = createHPCCQueue();
+            queue->setName(clusterName.str());
+            queue->setType(type);
+            queues.append(*queue.getLink());
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
+}
+
 //1. Get Web links defined in ComponentConfig() service/links.
 //2. Get Web links using 'kubectl get svc -o json': 
 //  the links defined in metadata/annotations using 'hpcc.[application name].io/...' tag.
