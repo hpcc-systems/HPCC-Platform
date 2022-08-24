@@ -2958,9 +2958,8 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
             int os = atoi(osStr);
             const char pathSep = (os == OS_WINDOWS) ? '\\' : '/';
             sPath.replace(pathSep=='\\'?'/':'\\', pathSep);
-            if (*(sPath.str() + sPath.length() -1) != pathSep)
-                sPath.append( pathSep );
         }
+        addPathSepChar(sPath);
 
         if (!isEmptyString(fileNameMask))
         {
