@@ -961,26 +961,11 @@ Generate list of available services
   {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $esp "component" $esp "visibility" $esp.service.visibility "remoteClients" $esp.remoteClients) }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
-{{- $sashaServices := $dali.services | default dict -}}
-{{- if not $sashaServices.disabled -}}
-{{- range $sashaName, $_sasha := $sashaServices -}}
+{{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
+{{- include "hpcc.getSashaServices" $daliSashaServicesCtx -}}
+{{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
 {{- $sasha := ($_sasha | default dict) -}}
-{{- if hasKey $sasha "service" -}}
-{{- if and (not $sasha.disabled) ($sasha.service.servicePort) -}}
-- name: {{ printf "sasha-%s" $sashaName }}
-  class: sasha
-  type: {{ $sashaName }}
-  port: {{ $sasha.service.servicePort }}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{- $sashaServices := $.Values.sasha | default dict -}}
-{{- if not $sashaServices.disabled -}}
-{{- range $sashaName, $_sasha := $sashaServices -}}
-{{- $sasha := ($_sasha | default dict) -}}
-{{- if and (not $sasha.disabled) (hasKey $sasha "service") -}}
+{{- if (hasKey $sasha "service") -}}
 {{- if $sasha.service.servicePort -}}
 - name: {{ printf "sasha-%s" $sashaName }}
   class: sasha
@@ -989,7 +974,20 @@ Generate list of available services
 {{ end -}}
 {{ end -}}
 {{ end -}}
-{{- end -}}
+{{ end -}}
+{{- $sashaServicesCtx := dict "services" ($.Values.sasha | default dict) -}}
+{{- include "hpcc.getSashaServices" $sashaServicesCtx -}}
+{{- range $sashaName, $_sasha :=  $sashaServicesCtx.services -}}
+{{- $sasha := ($_sasha | default dict) -}}
+{{- if (hasKey $sasha "service") -}}
+{{- if $sasha.service.servicePort -}}
+- name: {{ printf "sasha-%s" $sashaName }}
+  class: sasha
+  type: {{ $sashaName }}
+  port: {{ $sasha.service.servicePort }}
+{{ end -}}
+{{ end -}}
+{{ end -}}
 {{- range $.Values.dafilesrv -}}
  {{- if not .disabled }}
 - name: {{ .name }}
@@ -1970,4 +1968,23 @@ Pass in value
 {{- else -}}
  {{- printf "%d" (int .) -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+A template to return the list of sasha services minus "disabled" if present
+Pass in a dictionary with "services"
+*/}}
+{{- define "hpcc.getSashaServices" -}}
+{{- $newServices := dict -}}
+{{- $root := . -}}
+{{- if not .services.disabled -}}
+ {{- range $sashaName, $sasha := $root.services -}}
+  {{- if (not (eq "disabled" $sashaName)) -}}
+   {{- if (not $sasha.disabled) -}}
+    {{- $_ := set $newServices $sashaName $sasha -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- $_ := set $root "services" $newServices -}}
 {{- end -}}

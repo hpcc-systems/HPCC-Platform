@@ -53,41 +53,35 @@ This chart has defined the following HPCC components:
 
 {{- range $dali := (.Values.dali | default dict) }}
  {{- if and (not $dali.disabled) (hasKey $dali "services") -}}
-  {{- $sashaServices := $dali.services | default dict -}}
-  {{- if not $sashaServices.disabled -}}
-   {{- range $serviceName, $_service := $sashaServices }}
-    {{- $service := ($_service | default dict) -}}
-    {{- if not $service.disabled -}}
-     {{- if hasKey $names $serviceName -}}
-      {{- required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
-     {{- else }}
-  dali.sasha.{{ $serviceName }}
-      {{- $_ := set $names $serviceName (printf "dali.%s" $dali.name) -}}
-      {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $dali ) | quote }}
-      {{- if not ( eq $defaultImage $localImage ) -}}
-       {{- printf " using overridden image %s" $localImage -}}
-      {{- end }}
-     {{- end -}}
-    {{- end -}}
-   {{- end -}}
-  {{- end -}}
- {{- end -}}
-{{- end -}}
-
-{{- $sashaServices := $.Values.sasha | default dict -}}
-{{- if not $sashaServices.disabled -}}
- {{- range $serviceName, $_service := $sashaServices }}
-  {{- $service := ($_service | default dict) -}}
-  {{- if not $service.disabled -}}
+  {{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
+  {{- include "hpcc.getSashaServices" $daliSashaServicesCtx -}}
+  {{- range $serviceName, $_service := $daliSashaServicesCtx.services }}
+   {{- $service := ($_service | default dict) -}}
    {{- if hasKey $names $serviceName -}}
-    {{- required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
+    {{- required ( printf "Component name %s in dali services was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
    {{- else }}
-  sasha.{{ $serviceName }}
-    {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $service ) | quote }}
+  dali.sasha.{{ $serviceName }}
+    {{- $_ := set $names $serviceName (printf "dali.%s" $dali.name) -}}
+    {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $dali ) | quote }}
     {{- if not ( eq $defaultImage $localImage ) -}}
      {{- printf " using overridden image %s" $localImage -}}
     {{- end }}
    {{- end -}}
   {{- end -}}
- {{- end }}
+ {{- end -}}
+{{- end -}}
+
+{{- $sashaServicesCtx := dict "services" ($.Values.sasha | default dict) -}}
+{{- include "hpcc.getSashaServices" $sashaServicesCtx -}}
+{{- range $serviceName, $_service := $sashaServicesCtx.services }}
+ {{- $service := ($_service | default dict) -}}
+ {{- if hasKey $names $serviceName -}}
+  {{- required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
+ {{- else }}
+  sasha.{{ $serviceName }}
+  {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $service ) | quote }}
+  {{- if not ( eq $defaultImage $localImage ) -}}
+   {{- printf " using overridden image %s" $localImage -}}
+  {{- end }}
+ {{- end -}}
 {{- end }}
