@@ -347,6 +347,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
     SocketEndpoint connectEP(ep);
 
     // in containerized mode, redirect to dafilesrv service or local (if useFtSlave=true)
+    Owned<IPropertyTree> serviceTree;
     if (isContainerized())
     {
         if (sprayer.useFtSlave)
@@ -356,25 +357,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
         }
         else
         {
-            Owned<IPropertyTree> serviceTree;
-            if (!isEmptyString(sprayer.sprayServiceName))
-            {
-                VStringBuffer serviceQualifier("services[@name='%s']", sprayer.sprayServiceName.get());
-                serviceTree.setown(getGlobalConfigSP()->getPropTree(serviceQualifier));
-                if (!serviceTree)
-                    throw makeStringExceptionV(0, "launchFtSlaveCmd: failed to find dafilesrv service named: '%s'", sprayer.sprayServiceName.get());
-                const char *serviceAppType = serviceTree->queryProp("@application");
-                if (!strsame("spray", serviceAppType))
-                    throw makeStringExceptionV(0, "launchFtSlaveCmd: configured service '%s' is of application type '%s' ('spray' type required)", sprayer.sprayServiceName.get(), nullIfEmptyString(serviceAppType));
-            }
-            else // find 1st of type 'spray'
-            {
-                Owned<IPropertyTreeIterator> directIOServices = getGlobalConfigSP()->getElements("services[@type='spray']");
-                if (directIOServices->first())
-                    serviceTree.set(&directIOServices->query());
-                else
-                    throw makeStringException(0, "launchFtSlaveCmd: no 'spray' dafilesrv services found");
-            }
+            serviceTree.setown(sprayer.getSprayService());
             connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
         }
     }
@@ -397,10 +380,31 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
     }
     else
     {
-        setDafsEndpointPort(connectEP);
-        if (connectEP.isNull())
-            return false;
-        socket.setown(connectDafs(connectEP, 5000));
+        if (!isContainerized())
+        {
+            setDafsEndpointPort(connectEP);
+            if (connectEP.isNull())
+                return false;
+        }
+        // allow a relatively long time in case service is overloaded (unable to cope with # parallel requests)
+        constexpr unsigned timeoutMs = 1000*60*30; // 30 mins
+        CTimeMon tm(timeoutMs);
+        unsigned remaining;
+        while (true)
+        {
+            try
+            {
+                socket.setown(connectDafs(connectEP, 60000, serviceTree));
+                if (socket)
+                    break;
+            }
+            catch (IException *e)
+            {
+                if (e->errorCode() != JSOCKERR_connection_failed || tm.timedout(&remaining))
+                    throw;
+                PROGLOG("Dafilesrv spray service not responding, retrying..");
+            }
+        }
         if (!socket)
             throwError1(DFTERR_FailedStartSlave, url.str());
         prepareCmd(msg, daFileSrvCommandVersion);
@@ -3605,6 +3609,30 @@ dfu_operation FileSprayer::getOperation() const
 const char * FileSprayer::getOperationTypeString() const
 {
     return DfuOperationStr[operation];
+}
+
+IPropertyTree *FileSprayer::getSprayService() const
+{
+    Owned<IPropertyTree> serviceTree;
+    if (!isEmptyString(sprayServiceName))
+    {
+        VStringBuffer serviceQualifier("services[@name='%s']", sprayServiceName.get());
+        serviceTree.setown(getGlobalConfigSP()->getPropTree(serviceQualifier));
+        if (!serviceTree)
+            throw makeStringExceptionV(0, "launchFtSlaveCmd: failed to find dafilesrv service named: '%s'", sprayServiceName.get());
+        const char *serviceAppType = serviceTree->queryProp("@application");
+        if (!strsame("spray", serviceAppType))
+            throw makeStringExceptionV(0, "launchFtSlaveCmd: configured service '%s' is of application type '%s' ('spray' type required)", sprayServiceName.get(), nullIfEmptyString(serviceAppType));
+    }
+    else // find 1st of type 'spray'
+    {
+        Owned<IPropertyTreeIterator> sprayServices = getGlobalConfigSP()->getElements("services[@type='spray']");
+        if (sprayServices->first())
+            serviceTree.set(&sprayServices->query());
+        else
+            throw makeStringException(0, "launchFtSlaveCmd: no 'spray' dafilesrv services found");
+    }
+    return serviceTree.getClear();
 }
 
 bool FileSprayer::usePullOperation() const

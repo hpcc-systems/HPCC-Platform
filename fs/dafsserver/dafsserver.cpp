@@ -119,7 +119,7 @@ static CriticalSection              secureContextCrit;
 static Owned<ISecureSocketContext>  secureContextServer;
 
 #ifdef _USE_OPENSSL
-static ISecureSocket *createSecureSocket(ISocket *sock)
+static ISecureSocket *createSecureSocket(ISocket *sock, bool disableClientCertVerification)
 {
     {
         CriticalBlock b(secureContextCrit);
@@ -136,10 +136,18 @@ static ISecureSocket *createSecureSocket(ISocket *sock)
             IPropertyTree *info = queryTlsSecretInfo(certScope);
             if (!info)
                 throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
-            Owned<IPropertyTree> cloneInfo = createPTreeFromIPT(info);
-            // we do not want to insist clients provide a cerificate for verification.
-            cloneInfo->setPropBool("verify/@enable", false);
-            secureContextServer.setown(createSecureSocketContextEx2(cloneInfo, ServerSocket));
+            Owned<IPropertyTree> cloneInfo;
+            if (disableClientCertVerification)
+            {
+                // do not insist clients provide a cerificate for verification.
+                // This is used when the connection is TLS, but the authentication is done via other means
+                // e.g. in the case of the streaming service a opaque signed blob is transmitted and must
+                // be verified before proceeding.
+                cloneInfo.setown(createPTreeFromIPT(info));
+                cloneInfo->setPropBool("verify/@enable", false);
+                info = cloneInfo;
+            }
+            secureContextServer.setown(createSecureSocketContextEx2(info, ServerSocket));
 #else
             secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, ServerSocket));
 #endif
@@ -5414,7 +5422,11 @@ public:
                         else
 #endif
                         {
-                            ssock.setown(createSecureSocket(sockSSL.getClear()));
+                            // NB: if this is a dedicated stream service (e.g. in containerized mode)
+                            // disabled cert verification, because stream requests will authenticate via signed opaque blob
+                            bool disableClientCertVerification = (featureSupport == FeatureSupport::stream);
+
+                            ssock.setown(createSecureSocket(sockSSL.getClear(), disableClientCertVerification));
                             int status = ssock->secure_accept();
                             if (status < 0)
                                 throw createDafsException(DAFSERR_serveraccept_failed,"Failure to establish secure connection");
@@ -5449,7 +5461,8 @@ public:
 
                         if (rowServiceSSL) // NB: will be disabled if !_USE_OPENSLL
                         {
-                            ssock.setown(createSecureSocket(acceptedRSSock.getClear()));
+                            // disabled cert verification, because stream requests will authenticate via signed opaque blob
+                            ssock.setown(createSecureSocket(acceptedRSSock.getClear(), true));
                             int status = ssock->secure_accept();
                             if (status < 0)
                                 throw createDafsException(DAFSERR_serveraccept_failed,"Failure to establish SSL row service connection");
@@ -5484,6 +5497,10 @@ public:
                     eps.getUrlStr(peerURL);
                     PROGLOG("Server accepting from %s", peerURL.str());
 #endif
+                    /* NB: if it hits the thread pool limit, it will start throttling (introducing delays),
+                     * whilst it is blocked/delaying here, the accept loop will not be listening for new
+                     * connections.
+                     */
                     runClient(sock.getClear(), false);
                 }
 

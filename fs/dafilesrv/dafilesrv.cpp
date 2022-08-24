@@ -391,8 +391,13 @@ int main(int argc, const char* argv[])
     unsigned short  sslport;
     unsigned dedicatedRowServicePort = DEFAULT_ROWSERVICE_PORT;
 #ifdef _CONTAINERIZED
-    bool stream = strsame(config->queryProp("@application"), "stream");
-    connectMethod = stream ? SSLOnly : SSLNone;
+    // Use the "public" certificate issuer, unless it's visibility is "cluster" (meaning internal only)
+    const char *visibility = getComponentConfigSP()->queryProp("service/@visibility");
+    const char *certScope = strsame("cluster", visibility) ? "local" : "public";
+    IPropertyTree *info = queryTlsSecretInfo(certScope);
+    connectMethod = info ? SSLOnly : SSLNone;
+    // NB: connectMethod will direct the CRemoteFileServer on accept to create a secure socket based on the same issuer certificates
+
     dedicatedRowServicePort = 0; // row service always runs on same secure ssl port in containerized mode
     port = 0;
     sslport = config->getPropInt("service/@port", SECURE_DAFILESRV_PORT);
@@ -503,8 +508,10 @@ int main(int argc, const char* argv[])
     sendbufsize = config->getPropInt("@sendBufSize", sendbufsize);
     recvbufsize = config->getPropInt("@recvBufSize", recvbufsize);
 
+    IPropertyTree *dafileSrvInstance = nullptr;
 #ifndef _CONTAINERIZED
     Owned<IPropertyTree> env = getHPCCEnvironment();
+    Owned<IPropertyTree> _dafileSrvInstance;
     if (env)
     {
         StringBuffer dafilesrvPath("Software/DafilesrvProcess");
@@ -554,7 +561,6 @@ int main(int argc, const char* argv[])
                 rowServiceConfiguration = daFileSrv->queryProp("@rowServiceConfiguration");
 
             // any overrides by Instance definitions?
-            IPropertyTree *dafileSrvInstance = nullptr;
             Owned<IPropertyTreeIterator> iter = daFileSrv->getElements("Instance");
             ForEach(*iter)
             {
@@ -564,8 +570,6 @@ int main(int argc, const char* argv[])
             }
             if (dafileSrvInstance)
             {
-                Owned<IPropertyTree> _dafileSrvInstance;
-
                 // check if there's a DaFileSrvGroup
                 const char *instanceGroupName = dafileSrvInstance->queryProp("@group");
                 if (!isEmptyString(instanceGroupName) && (isEmptyString(componentGroupName) || !strsame(instanceGroupName, componentGroupName))) // i.e. only if different
@@ -580,23 +584,6 @@ int main(int argc, const char* argv[])
                         dafileSrvInstance = _dafileSrvInstance;
                     }
                 }
-                maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
-                maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
-                maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
-
-                parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
-                throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
-                throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
-                throttleQueueLimit = dafileSrvInstance->getPropInt("@throttleQueueLimit", throttleQueueLimit);
-
-                parallelSlowRequestLimit = dafileSrvInstance->getPropInt("@parallelSlowRequestLimit", parallelSlowRequestLimit);
-                throttleSlowDelayMs = dafileSrvInstance->getPropInt("@throttleSlowDelayMs", throttleSlowDelayMs);
-                throttleSlowCPULimit = dafileSrvInstance->getPropInt("@throttleSlowCPULimit", throttleSlowCPULimit);
-                throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
-
-                dedicatedRowServicePort = dafileSrvInstance->getPropInt("@rowServicePort", dedicatedRowServicePort);
-                dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
-                rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
             }
         }
 
@@ -642,6 +629,53 @@ int main(int argc, const char* argv[])
         exit(-1);
     }
 
+    {
+        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
+        lf->setCreateAliasFile(false);
+        lf->setMaxDetail(TopDetail);
+        lf->beginLogging();
+    }
+    write_pidfile(componentName.str());
+#else // _CONTAINERIZED
+    setupContainerizedLogMsgHandler();
+
+    dafileSrvInstance = config;
+
+    // k8s defaults, a bit arbitrary, but allow more concurrency by default than legacy
+    maxThreads = 400;
+    maxThreadsDelayMs = (60*1000);
+    maxAsyncCopy = 400;
+    parallelRequestLimit = 400;
+    throttleDelayMs = 1000;
+    throttleCPULimit = 85;
+    throttleQueueLimit = 1000;
+    parallelSlowRequestLimit = parallelRequestLimit;
+    throttleSlowDelayMs = throttleDelayMs;
+    throttleSlowCPULimit = throttleCPULimit;
+    throttleSlowQueueLimit = throttleQueueLimit;
+#endif
+
+    if (nullptr == dafileSrvInstance)
+        throw makeStringException(-1, "dafilesrv: configuration section missing");
+    maxThreads = dafileSrvInstance->getPropInt("@maxThreads", maxThreads);
+    maxThreadsDelayMs = dafileSrvInstance->getPropInt("@maxThreadsDelayMs", maxThreadsDelayMs);
+    maxAsyncCopy = dafileSrvInstance->getPropInt("@maxAsyncCopy", maxAsyncCopy);
+
+    parallelRequestLimit = dafileSrvInstance->getPropInt("@parallelRequestLimit", parallelRequestLimit);
+    throttleDelayMs = dafileSrvInstance->getPropInt("@throttleDelayMs", throttleDelayMs);
+    throttleCPULimit = dafileSrvInstance->getPropInt("@throttleCPULimit", throttleCPULimit);
+    throttleQueueLimit = dafileSrvInstance->getPropInt("@throttleQueueLimit", throttleQueueLimit);
+
+    parallelSlowRequestLimit = dafileSrvInstance->getPropInt("@parallelSlowRequestLimit", parallelSlowRequestLimit);
+    throttleSlowDelayMs = dafileSrvInstance->getPropInt("@throttleSlowDelayMs", throttleSlowDelayMs);
+    throttleSlowCPULimit = dafileSrvInstance->getPropInt("@throttleSlowCPULimit", throttleSlowCPULimit);
+    throttleSlowQueueLimit = dafileSrvInstance->getPropInt("@throttleSlowQueueLimit", throttleSlowQueueLimit);
+
+    dedicatedRowServicePort = dafileSrvInstance->getPropInt("@rowServicePort", dedicatedRowServicePort);
+    dedicatedRowServiceSSL = dafileSrvInstance->getPropBool("@rowServiceSSL", dedicatedRowServiceSSL);
+    rowServiceOnStdPort = dafileSrvInstance->getPropBool("@rowServiceOnStdPort", rowServiceOnStdPort);
+
+#ifndef _CONTAINERIZED
     if (isdaemon)
     {
 #ifdef _WIN32
@@ -801,15 +835,6 @@ int main(int argc, const char* argv[])
             return ret;
 #endif
     }
-    {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
-        lf->setCreateAliasFile(false);
-        lf->setMaxDetail(TopDetail);
-        lf->beginLogging();
-    }
-    write_pidfile(componentName.str());
-#else // _CONTAINERIZED
-    setupContainerizedLogMsgHandler();
 #endif
 
     PROGLOG("Dafilesrv starting - Build %s", hpccBuildInfo.buildTag);
