@@ -339,9 +339,9 @@ global:
     <sect2>
       <title>Enabling Azure Log Analytics</title>
 
-      <para>Enabling Azure's Log Analytics (ALA) on the target AKS cluster can
-      be done using one of the following options: Direct command line,
-      Scripted command line, or from the Azure portal.</para>
+      <para>Enable Azure's Log Analytics (ALA) on the target AKS cluster using
+      one of the following options: Direct command line, Scripted command
+      line, or from the Azure portal.</para>
 
       <para>For more detailed information refer to the Azure
       documentation:</para>
@@ -394,9 +394,9 @@ global:
         <itemizedlist>
           <listitem>
             <para><emphasis role="bold">LOGANALYTICS_WORKSPACE_NAME</emphasis>
-            The desired name for the Azure LogAnalytics workspace to be
-            associated with target AKS cluster. A new workspace will be
-            created if this value does not exist</para>
+            The desired name for the Azure Log Analytics workspace to be
+            associated with target AKS cluster. A new workspace is created if
+            this value does not exist</para>
           </listitem>
 
           <listitem>
