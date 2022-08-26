@@ -394,6 +394,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
     checkUpdateQuerysetLibraries();
+    espApplicationName.set(process);
 
     daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));
     const char *computer = cfg->queryProp("Software/EspProcess/@computer");
@@ -4855,8 +4856,24 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
         ensureWsWorkunitAccess(context, *cwu, SecAccess_Read);
         PROGLOG("WUCreateZAPInfo(): %s", zapInfoReq.wuid.str());
 
-        zapInfoReq.espIP = req.getESPIPAddress();
-        zapInfoReq.thorIP = req.getThorIPAddress();
+        double version = context.getClientVersion();
+        if (version >= 1.95)
+        {
+            zapInfoReq.esp = req.getESPApplication();
+            if (zapInfoReq.esp.isEmpty())
+                zapInfoReq.esp.set(espApplicationName.get());
+            zapInfoReq.thor = req.getThorProcesses();
+        }
+        else
+        {
+            zapInfoReq.esp = req.getESPIPAddress();
+            if (zapInfoReq.esp.isEmpty())
+            {
+                IpAddress ipaddr = queryHostIP();
+                ipaddr.getIpText(zapInfoReq.esp);
+            }
+            zapInfoReq.thor = req.getThorIPAddress();
+        }
         zapInfoReq.problemDesc = req.getProblemDescription();
         zapInfoReq.whatChanged = req.getWhatChanged();
         zapInfoReq.whereSlow = req.getWhereSlow();
@@ -4915,9 +4932,15 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         StringBuffer EspIP, ThorIP;
         resp.setWUID(wuid.str());
         resp.setBuildVersion(getBuildVersion());
-        IpAddress ipaddr = queryHostIP();
-        ipaddr.getIpText(EspIP);
-        resp.setESPIPAddress(EspIP.str());
+        double version = context.getClientVersion();
+        if (version >= 1.95)
+            resp.setESPApplication(espApplicationName.get());
+        else
+        {
+            IpAddress ipaddr = queryHostIP();
+            ipaddr.getIpText(EspIP);
+            resp.setESPIPAddress(EspIP.str());
+        }
 
         //Get Archive
         Owned<IConstWUQuery> query = cw->getQuery();
@@ -4927,6 +4950,28 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
             query->getQueryText(queryText);
             if (queryText.length() && isArchiveQuery(queryText.str()))
                 resp.setArchive(queryText.str());
+        }
+
+        if (version >= 1.95)
+        {
+            StringBuffer thorProcesses;
+            Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
+            ForEach (*thorInstances)
+            {
+                SCMStringBuffer processName;
+                thorInstances->str(processName);
+                if (processName.length() < 1)
+                    continue;
+                if (!thorProcesses.isEmpty())
+                    thorProcesses.append(",");
+                thorProcesses.append(processName);
+            }
+            if (!thorProcesses.isEmpty())
+                resp.setThorProcesses(thorProcesses);
+
+            resp.setEmailTo(zapEmailTo.get());
+            resp.setEmailFrom(zapEmailFrom.get());
+            return true;
         }
 
         //Get Thor IP
@@ -4975,7 +5020,7 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
         }
         if (ThorIP.length())
             resp.setThorIPAddress(ThorIP.str());
-        double version = context.getClientVersion();
+
         if (version >= 1.73)
         {
             resp.setEmailTo(zapEmailTo.get());
