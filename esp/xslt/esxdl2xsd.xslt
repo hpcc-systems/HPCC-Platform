@@ -107,17 +107,6 @@
                 </xsd:sequence>
             </xsd:complexType>
         </xsl:if>
-        <!--
-            This structure has been marked as the first to use an array EspStringArray
-            so a separate EspStringArray structure definition must be generated.
-        -->
-        <xsl:if test="@espStringArray='1'">
-            <xsd:complexType name="EspStringArray">
-                <xsd:sequence>
-                    <xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
-                </xsd:sequence>
-            </xsd:complexType>
-        </xsl:if>
     </xsl:template>
 
     <xsl:template match="EsdlElement">
@@ -423,6 +412,7 @@
             </wsdl:port>
         </wsdl:service>
     </xsl:template>
+
     <xsl:template name="CreateSchema">
         <xsl:param name="inwsdl" select="false()"/>
         <xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -445,6 +435,19 @@
                 </xsd:sequence>
             </xsd:complexType>
             <xsd:element name="Exceptions" type="tns:ArrayOfEspException"/>
+
+            <!--
+                The first Esdlstruct|EsdlRequest|EsdlResponse that contains a string array is marked with @espStringArray='1'
+                but we are changing order, so look for any object with espStringArray, and if there is one output the following definition
+            -->
+            <xsl:if test="*/@espStringArray='1'">
+                <xsd:complexType name="EspStringArray">
+                    <xsd:sequence>
+                        <xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsl:if>
+
             <xsl:apply-templates select="EsdlEnumType" />
             <xsl:apply-templates select="EsdlStruct"/>
             <xsl:apply-templates select="EsdlRequest"/>
