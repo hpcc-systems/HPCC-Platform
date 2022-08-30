@@ -793,11 +793,32 @@ extern DLLSERVER_API void getAdditionalPluginsPath(StringBuffer &pluginsPath, co
 
 bool SafePluginMap::addPlugin(const char *path, const char *dllname)
 {
+    StringBuffer fullpath;
     if (!endsWithIgnoreCase(path, SharedObjectExtension))
     {
-        if (trace)
-            DBGLOG("Ecl plugin %s ignored", path);
-        return false;
+        //Check to see if the plugin name was the name of the plugin without the shared object extension
+        //If the tail of the path does not contain an extension then check if the corresponding plugin exists.
+        bool ok = false;
+        StringBuffer tail;
+        splitFilename(path, &fullpath, &fullpath, &tail, &tail);
+
+        if (!strchr(tail, '.'))
+        {
+            fullpath.appendf("%s%s%s", SharedObjectPrefix, tail.str(), SharedObjectExtension);
+            Owned<IFile> cur = createIFile(fullpath);
+            if (cur->isFile() == fileBool::foundYes)
+            {
+                path = fullpath;
+                ok = true;
+            }
+       }
+
+        if (!ok)
+        {
+            if (trace)
+                DBGLOG("Ecl plugin %s ignored", path);
+            return false;
+        }
     }
 
     try
