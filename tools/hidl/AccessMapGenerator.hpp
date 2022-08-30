@@ -398,7 +398,6 @@ public:
 
     bool generateMap()
     {
-        size_t rawTermCount = 0;
         const char* service = getVariable("service");
         const char* method = getVariable("method");
 

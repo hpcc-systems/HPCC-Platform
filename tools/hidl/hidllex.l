@@ -1,11 +1,13 @@
 %option nounistd
+%option nounput
+%option noinput
 %option case-insensitive
 %{
 #include "platform.h"
 
 #include <stdlib.h>
 #include <string.h>
-#include "hidlcomp.h"           
+#include "hidlcomp.h"
 #include "hidlgram.h"
 
 #define register
@@ -106,51 +108,51 @@ xsdHexBinary                {yylval.setName((const char *) yytext); if (check_re
 xsdBinary                   {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdQName                        {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdNOTATION                 {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
-xsdToken                        {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;} 
+xsdToken                        {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdLanguage                 {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
-xsdNMTOKEN                  {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;} 
+xsdNMTOKEN                  {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdNMTOKENS                 {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdName                     {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdNCName                   {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdID                           {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
-xsdIDREF                        {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;} 
+xsdIDREF                        {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdIDREFS                   {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdENTITY                   {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 xsdENTITIES                 {yylval.setName((const char *) yytext); if (check_return(XSDTYPE)) return XSDTYPE;}
 
-(true|TRUE|Yes) { 
+(true|TRUE|Yes) {
     if (check_return( BOOL_CONST ))
     {
         yylval.setVal(1);
-        return BOOL_CONST; 
+        return BOOL_CONST;
     }
 }
 
 (false|FALSE|No) {
-    if (check_return( BOOL_CONST )) 
+    if (check_return( BOOL_CONST ))
     {
         yylval.setVal(0);
-        return BOOL_CONST; 
+        return BOOL_CONST;
     }
 }
 
-L?\"([^"\\\n]|{esc})*\" { 
+L?\"([^"\\\n]|{esc})*\" {
     if (check_return( STRING_CONST ))
     {
-        char *sval = (char *) malloc(yyleng+1);     
+        char *sval = (char *) malloc(yyleng+1);
         char *thestr=(char*)yytext;
-        
+
         /* handle escape: esc \\([abfnrtv"'?\\]|[0-7]{1,3}|x[0-9a-fA-F]+) */
         char* p;
         char* tgt;
-        for (p = thestr, tgt=sval; *p!=0; p++) 
+        for (p = thestr, tgt=sval; *p!=0; p++)
         {
             if (*p=='\\')
             {
                 p++;
                 switch(*p)
                 {
-                    case '\\': 
+                    case '\\':
                     case '"': *tgt = *p; tgt++; break;
                     case '\0': yyerror("Can not end string with a single '\\'"); break;
                     case '\'': yyerror("Single quote (') does not need to be escaped"); break;
@@ -161,15 +163,15 @@ L?\"([^"\\\n]|{esc})*\" {
             }
             else
             {
-                *tgt = *p; 
-                tgt++; 
+                *tgt = *p;
+                tgt++;
             }
         }
         *tgt = 0;
 
         yylval.setVal(sval);
-        
-        return STRING_CONST; 
+
+        return STRING_CONST;
     }
 }
 
@@ -178,16 +180,16 @@ L?\"([^"\\\n]|{esc})*\" {
                 if (check_return(INTEGER_CONST)) return INTEGER_CONST;
                 }
 
-{digit}+    { yylval.setVal(atoi ((const char *)yytext)); 
-              if (check_return(INTEGER_CONST)) return INTEGER_CONST; 
+{digit}+    { yylval.setVal(atoi ((const char *)yytext));
+              if (check_return(INTEGER_CONST)) return INTEGER_CONST;
             }
 
-{digit}+\.{digit}+((e|E)("+"|"-")?{digit}+)? { yylval.setVal(atof((const char *)yytext)); 
-              if (check_return(DOUBLE_CONST)) return DOUBLE_CONST; 
+{digit}+\.{digit}+((e|E)("+"|"-")?{digit}+)? { yylval.setVal(atof((const char *)yytext));
+              if (check_return(DOUBLE_CONST)) return DOUBLE_CONST;
             }
 
-\.{digit}+((e|E)("+"|"-")?{digit}+)? { yylval.setVal(atof((const char *)yytext)); 
-              if (check_return(DOUBLE_CONST)) return DOUBLE_CONST; 
+\.{digit}+((e|E)("+"|"-")?{digit}+)? { yylval.setVal(atof((const char *)yytext));
+              if (check_return(DOUBLE_CONST)) return DOUBLE_CONST;
             }
 
 
@@ -201,7 +203,7 @@ L?\"([^"\\\n]|{esc})*\" {
 
 {star}      { if (check_return(STAR)) return STAR; }
 &           { if (check_return(UMBERSAND)) return UMBERSAND; }
-"//".*\n    { if (state==LSskip) outs((const char*)yytext); 
+"//".*\n    { if (state==LSskip) outs((const char*)yytext);
               linenum++;
             }
 "/*"                { BEGIN(COMMENT); nCommentStartLine = linenum; }
@@ -210,10 +212,10 @@ L?\"([^"\\\n]|{esc})*\" {
 <COMMENT>\n         { linenum++;  }
 <COMMENT>"*"        { }
 
-"*/"                { yyerror("No comment has started; \"*/\" is illegal"); }                   
+"*/"                { yyerror("No comment has started; \"*/\" is illegal"); }
 
 
-.           { if (check_return(yytext[0])) return yytext[0]; 
+.           { if (check_return(yytext[0])) return yytext[0];
             }
 
 %%
@@ -222,7 +224,7 @@ L?\"([^"\\\n]|{esc})*\" {
 
 bool check_return(int a)
 {
-    if (state==LSskip) 
+    if (state==LSskip)
    {
       if (isSCM)
       {
@@ -273,20 +275,20 @@ bool check_return(int a)
             }
         }
     }
-    else if (state==LSclarion) 
+    else if (state==LSclarion)
    {
         if (a == SCMEND)
         {
             state = LSskip;
-        } 
-        else 
+        }
+        else
             output_text();
         return false;
     }
     if (a == '{')
     {
         opencurly++;
-        if (state==LSsectionheader) 
+        if (state==LSsectionheader)
             state = LSsectionbody;
     }
     else if (a == '}')
@@ -314,7 +316,7 @@ void output_text()
 {
     if (state==LSclarion) {
         if (yytext[0]=='\n')
-            clarion.append("\r");  
+            clarion.append("\r");
         clarion = clarion.append((const char*)yytext);
     }
     else if (state==LSskip)
