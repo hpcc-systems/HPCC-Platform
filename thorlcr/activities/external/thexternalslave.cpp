@@ -133,7 +133,6 @@ public:
     {
         helper = (IHThorExternalArg *) queryHelper();
         setRequireInitData(false);
-        appendOutputLinked(this);
     }
     virtual void setInputStream(unsigned index, CThorInput &_input, bool consumerOrdered) override
     {
