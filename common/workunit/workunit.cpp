@@ -13908,7 +13908,12 @@ bool isValidMemoryValue(const char *memoryUnit)
 #define ABORT_POLL_PERIOD (5*1000)
 void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config)
 {
-    unsigned timelimit = workunit.getDebugValueInt("thorConnectTimeout", config.getPropInt("@thorConnectTimeout", 60));
+    unsigned timelimit = workunit.getDebugValueInt("maxGraphStartupTime", config.getPropInt("@maxGraphStartupTime", NotFound));
+    if (NotFound == timelimit)
+    {
+        // check legacy property
+        timelimit = workunit.getDebugValueInt("thorConnectTimeout", config.getPropInt("@thorConnectTimeout", 60));
+    }
     StringAttr wuid(workunit.queryWuid());
     IConstWUGraph *graph = workunit.getGraph(graphName);
     if (!graph)
