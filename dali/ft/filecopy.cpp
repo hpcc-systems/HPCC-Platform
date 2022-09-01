@@ -3086,6 +3086,7 @@ void FileSprayer::spray()
     }
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
+    LOG(MCdebugInfo, job, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
 
     LocalAbortHandler localHandler(daftAbortHandler);
 
