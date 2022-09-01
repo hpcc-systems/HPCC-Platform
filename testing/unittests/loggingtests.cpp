@@ -309,6 +309,8 @@ public:
     {
         Owned<IPTree> config(createPTreeFromXMLString(managerConfig));
         Owned<ILoggingManager> manager(m_loader.create(*config));
+        if (!manager)
+            CPPUNIT_FAIL("Could not create logging manager");
 
         manager->init(config, "unittest");
         return manager.getClear();

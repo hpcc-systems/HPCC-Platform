@@ -17005,6 +17005,7 @@ IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr)
             expr = expr->queryDefinition();
             break;
         case no_funcdef:
+        case no_alias_scope:
             expr = expr->queryChild(0);
             break;
         case no_delayedselect:
