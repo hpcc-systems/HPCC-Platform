@@ -1,23 +1,31 @@
 # HPCC Elastic File System (EFS) Storage
 
-## EFS Server Settings
-Make sure an EFS server is available or create one before using this chart.<br/>
-EFS Server settings should be set in the file efs-env<br/>
-The chart requires <EFS region> and <EFS ID>
-The <EFS ID> can be found in AWS Console EFS service or from AWS Cli:
-```console
-  aws efs describe-file-systems --region <EFS region> | grep "^FILESYSTEMS" |  awk -F $'\t' '{print $8, $5}'
-```
-The output will display EFS name and ID.
 
-It is recommended to provide the option "--managed" and a security group id during EKS cluster creation. EFS Server can use the same security group or if you know your security group of node pools they are OK to use for EFS security group. Otherwise you need to provide the following:
-- EKS cluster name
-```console
-kubectl config get-clusters | cut -d'.' -f1
-```
-Set EKS cluster name to variable "EKS_NAME"
 
-- EFS security groups
+## EFS CSI Driver
+"examples/efs" requires Elastic FileSystem (EFS) Container Storage Interface (CSI) driver.
+We provide some scripts to simplify the process. For detail please reference https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html
+Current implementation only tested successfully with a IAM user. It may need update for Active Directory Federation Service (ADFS)
+
+### Prepare environment
+Make sure an EFS server is available or create an [EFS server](#efs-server) before using this chart.<br/>
+Fill the following information in efs-env
+```code
+ACCOUNT_ID       # AWS Account ID
+EKS_NAME         # Elastic Kubernetes Service (EKS) cluster name: kubectl configure get-cluster  (The first part of the name before ".")
+EFS_ID           # EFS ID can be found from AWS Console or command-line:
+                   aws efs describe-file-systems --query "FileSystems[*].FileSystemId" --output text
+EFS_REGION       # EFS region. We strongly suggest you have the same region for EFS server and EKS cluster
+EFS_SECURITY_GROUPS  # EFS security group which is the subnet security group which should be same as EKS
+EFS_BASE_PATH    # Base directory to mount in the EFS. If you use EFS for multiple HPCC clusters you should set this differently to avoid clashing with the other clusters
+```
+#### Get the EFS ID
+```Console
+  aws efs describe-file-systems --region <REGION>
+```
+The output shows "NAME" and FileSystemID
+
+#### How to get EFS security groups
 ```console
   aws efs describe-mount-targets --file-system-id <EFS ID> --region <EFS region> |  awk -F $'\t' '{print $7}'
   # For each file-system mount target:
@@ -25,27 +33,37 @@ Set EKS cluster name to variable "EKS_NAME"
 ```
 Add each unique security group id to the variable "EFS_SECURITY_GROUPS"
 
-There is a setting "EFS_CSI_DRIVER", the default is "true" and it is recommended to leave that.
 
-## Deploy efs-provisioner
-  efs-provisioner pod should be started first:
+### Install EFS CSI Driver
+Run the following command:
+```code
+./install-csi-driver.sh
+```
+To verify
 ```console
-  ./install-efs-provision.sh
-  # To check the pod:
-  kubectl get pod
+helm list -n kube-system
+NAME                    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                           APP VERSION
+aws-efs-csi-driver      kube-system     1               2022-08-19 17:25:53.6078326 -0400 EDT   deployed        aws-efs-csi-driver-2.2.7        1.4.0
+
+kubectl get pod -n kube-system | grep efs-csi
+efs-csi-controller-594c7f67c7-8zk72   3/3     Running   0          32h
+efs-csi-controller-594c7f67c7-mncgd   3/3     Running   0          32h
+efs-csi-node-8g8fk                    3/3     Running   0          32h
+efs-csi-node-fp8vt                    3/3     Running   0          32h
 ```
-There may be some warnings which can be ignored:
+
+### Install "aws-efs" Stroage Class
+```console
+kubectl apply -f storageclass.yaml
+```
+To verify
 ```code
-An error occurred (InvalidPermission.Duplicate) when calling the AuthorizeSecurityGroupIngress operation: the specified rule "peer: sg-0a5a005489115aac6, TCP, from port: 2049, to port: 2049, ALLOW" already exists
+kubectl get sc
+NAME            PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+aws-efs         efs.csi.aws.com         Delete          Immediate              false                  32h
 ```
 
-```code
-Warning: storage.k8s.io/v1beta1 CSIDriver is deprecated in v1.19+, unavailable in v1.22+; use storage.k8s.io/v1 CSIDriver
-csidriver.storage.k8s.io/efs.csi.aws.com configured
-```
-"v1beta" will be replaced with "v1" when it is available.
-
-
+## Deploy HPCC Storage
 ## Deploy HPCC cluster with values-auto-efs.yaml
 It will automically create Persistent Volume Claims (PVC) and delete them when the HPCC cluster is deleted:<br/>
 Under the helm directory:
@@ -79,12 +97,6 @@ For simple setup we recommend you use the same VPC/Subnets and security group fo
 ```console
   aws efs create-file-system --throughput-mode bursting --tags "Key=Name,Value=<EFS Name>" --region <REGION>
 ```
-To get the EFS ID
-```Console
-  aws efs describe-file-systems --region <REGION>
-```
-The output shows "NAME" and FileSystemID
-
 The EFS server FQDN will be
 ```code
   <EFS ID>.efs.<REGION>.amazonaws.com
@@ -96,7 +108,6 @@ Pick a VPC in the the same region of EFS server
   aws ec2 describe-vpcs --region <REGION>
 ```
 The output shows the VPC IDs.
-
 Get all the subnets of the VPC
 ```console
   aws ec2 describe-subnets --region <REGION> --fileters "Name=vpc-id,Values=<VPC ID>"

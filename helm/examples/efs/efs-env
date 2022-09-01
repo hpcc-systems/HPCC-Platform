@@ -1,11 +1,16 @@
-EFS_ID=fs-aa45a1d1
-EFS_REGION=us-east-2
-EFS_SECURITY_GROUPS="sg-d19891b0"
-#EFS_SECURITY_GROUPS="sg-d19891b0 sg-d19891b2 "
-#
+ACCOUNT_ID=
+EKS_NAME=
+
+EFS_ID=
+EFS_BASE_PATH=/hpcc-efs
+EFS_REGION=us-east-1
+EFS_SECURITY_GROUPS=
+# Need VPC_ID if want to add security inbound rule for NFS
+VPC_ID=
 EFS_NAME=efs-provisioner
-EFS_CSI_DRIVER=true
-EKS_NAME=eks-test-us-east-2
+
+# Reference https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html
+EFS_CSI_DRIVER_ACCOUNT_ID_BY_REGION=602401143452
 
 # efs-provisioner
 RECLAIM_POLICY=Retain
