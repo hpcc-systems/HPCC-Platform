@@ -317,16 +317,19 @@ IThorRowInterfaces * CDiskReadSlaveActivityBase::queryProjectedDiskRowInterfaces
 
 void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
-    CRuntimeStatisticCollection activePartStats(diskReadPartStatistics);
-    if (partHandler)
-    {
-        partHandler->gatherStats(activePartStats);
-        stats.set(activePartStats); // replace disk read stats
-    }
     PARENT::serializeStats(mb);
-    mb.append((unsigned)fileStats.size());
-    for (auto &stats: fileStats)
-        stats->serialize(mb);
+    if (partDescs.ordinality())
+    {
+        CRuntimeStatisticCollection activePartStats(diskReadPartStatistics);
+        if (partHandler)
+        {
+            partHandler->gatherStats(activePartStats);
+            stats.set(activePartStats); // replace disk read stats
+        }
+        mb.append((unsigned)fileStats.size());
+        for (auto &stats: fileStats)
+            stats->serialize(mb);
+    }
 }
 
 
