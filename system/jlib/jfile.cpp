@@ -1827,10 +1827,13 @@ void CFileIO::close()
 {
     if (file != NULLFILE)
     {
-        if (!CloseHandle(file))
+        // ensure file handle is cleared before throwing exception, to avoid dtor recalling close() as stack unwinds.
+        HANDLE tmpHandle = NULLFILE;
+        std::swap(tmpHandle, file);
+
+        if (!CloseHandle(tmpHandle))
             throw makeOsException(GetLastError(),"CFileIO::close");
     }
-    file = NULLFILE;
 }
 
 void CFileIO::flush()
@@ -1931,6 +1934,7 @@ CFileIO::~CFileIO()
     catch (IException * e)
     {
         EXCLOG(e, "CFileIO::~CFileIO");
+        PrintStackReport();
         e->Release();
     }
 }
@@ -1939,26 +1943,30 @@ void CFileIO::close()
 {
     if (file != NULLFILE)
     {
+        // ensure file handle is cleared before throwing exception, to avoid dtor recalling close() as stack unwinds.
+        HANDLE tmpHandle = NULLFILE;
+        std::swap(tmpHandle, file);
+
 #ifdef CFILEIOTRACE
-        DBGLOG("CFileIO::close(%d), extraFlags = %d", file, extraFlags);
+        DBGLOG("CFileIO::close(%d), extraFlags = %d", tmpHandle, extraFlags);
 #endif
         if (extraFlags & IFEnocache)
         {
             if (openmode != IFOread)
             {
 #ifdef F_FULLFSYNC
-                fcntl(file, F_FULLFSYNC);
+                fcntl(tmpHandle, F_FULLFSYNC);
 #else
-                fdatasync(file);
+                fdatasync(tmpHandle);
 #endif
             }
 #ifdef POSIX_FADV_DONTNEED
-            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+            posix_fadvise(tmpHandle, 0, 0, POSIX_FADV_DONTNEED);
 #endif
         }
-        if (::close(file) < 0)
+
+        if (::close(tmpHandle) < 0)
             throw makeErrnoException(errno, "CFileIO::close");
-        file=NULLFILE;
     }
 }
 
@@ -2299,10 +2307,13 @@ void CFileAsyncIO::close()
     // wait for all outstanding results
     if (file != NULLFILE)
     {
-        if (!CloseHandle(file))
+        // ensure file handle is cleared before throwing exception, to avoid dtor recalling close() as stack unwinds.
+        HANDLE tmpHandle = NULLFILE;
+        std::swap(tmpHandle, file);
+
+        if (!CloseHandle(tmpHandle))
             throw makeOsException(GetLastError(),"CFileAsyncIO::close");
     }
-    file = NULLFILE;
 }
 
 offset_t CFileAsyncIO::size()
@@ -2467,11 +2478,14 @@ void CFileAsyncIO::close()
 {
     if (file != NULLFILE)
     {
-        aio_cancel(file,NULL);
-        if (_lclose(file) < 0)
+        // ensure file handle is cleared before throwing exception, to avoid dtor recalling close() as stack unwinds.
+        HANDLE tmpHandle = NULLFILE;
+        std::swap(tmpHandle, file);
+
+        aio_cancel(tmpHandle, NULL);
+        if (_lclose(tmpHandle) < 0)
             throw makeErrnoException(errno, "CFileAsyncIO::close");
     }
-    file=NULLFILE;
 }
 
 offset_t CFileAsyncIO::size()
