@@ -3520,7 +3520,7 @@ hthor:
     name: hthor
     analyzeWorkunit: true
     defaultMemoryLimitMB: 300
-    thorConnectTimeout: 600
+    maxGraphStartupTime: 600
     traceLevel: 0
 )!!";
 

@@ -733,6 +733,7 @@ thor:
   numWorkers: 2
   maxJobs: 4
   maxGraphs: 2
+  #maxGraphStartupTime: 60
   #numWorkersPerPod: 1
   #managerResources:
   #  cpu: "1"
