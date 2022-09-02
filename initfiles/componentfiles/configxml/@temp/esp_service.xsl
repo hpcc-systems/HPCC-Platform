@@ -931,13 +931,19 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                                     <xsl:otherwise>true</xsl:otherwise>
                                 </xsl:choose>
                             </xsl:variable>
+                            <xsl:variable name="tls">
+                                <xsl:choose>
+                                    <xsl:when test="@tls"><xsl:value-of select="@tls"/></xsl:when>
+                                    <xsl:otherwise>false</xsl:otherwise>
+                                </xsl:choose>
+                            </xsl:variable>
                             <xsl:variable name="dnsInterval">
                               <xsl:choose>
                                 <xsl:when test="@dnsInterval and @dnsInterval!=''"><xsl:value-of select="@dnsInterval"/></xsl:when>
                                 <xsl:otherwise>-1</xsl:otherwise>
                               </xsl:choose>
                             </xsl:variable>
-                            <ProcessCluster name="{$roxie}" vip="{$vip}" includeTargetInURL="{$sendTarget}" dnsInterval="{$dnsInterval}"></ProcessCluster>
+                            <ProcessCluster name="{$roxie}" vip="{$vip}" includeTargetInURL="{$sendTarget}" dnsInterval="{$dnsInterval}" tls="{$tls}"></ProcessCluster>
                         </xsl:if>
                     </xsl:for-each>
                 </VIPS>
