@@ -860,9 +860,9 @@ public:
 class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress, public CInterface
 {
     friend class CcdFileTest;
-    mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
+    mutable IArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
 #ifdef _CONTAINERIZED
-    mutable ICopyArrayOf<ILazyFileIO> buddyCopying;
+    mutable IArrayOf<ILazyFileIO> buddyCopying;
     mutable bool buddyChecking = false;
 #endif
     bool reportedFilesToCopy = false;
@@ -1470,11 +1470,7 @@ public:
                         break;
                     if (todo.ordinality())
                     {
-                        ILazyFileIO *popped = &todo.popGet();
-                        if (popped->isAliveAndLink())
-                        {
-                            next.setown(popped);
-                        }
+                        next.setown(&todo.popGet());
                         numFilesToProcess--;    // must decrement counter for SNMP accuracy
                     }
                 }
@@ -1569,6 +1565,7 @@ public:
                             if (!check.checkCopyComplete())   // Recheck whether there is a local file we can open
                             {
                                 CriticalBlock b1(crit);
+                                check.link();
                                 buddyCopying.append(check);
                             }
                         }
@@ -1785,7 +1782,7 @@ public:
                                 return ret.getLink();
                             }
 
-                            todo.append(*ret);
+                            todo.append(*ret.getLink());
                             numFilesToProcess++;  // must increment counter for SNMP accuracy
                             toCopy.signal();
                         }
@@ -1793,7 +1790,7 @@ public:
                         {
                             if (traceRemoteFiles)
                                 DBGLOG("Add file %s to buddyCopying list", ret->queryFilename());
-                            buddyCopying.append(*ret);   // We expect someone else to copy it for us
+                            buddyCopying.append(*ret.getLink());   // We expect someone else to copy it for us
                         }
 #else
                         // Single-part files and top-level keys are copied immediately rather than being read remotely while background copying
@@ -1813,9 +1810,9 @@ public:
                             DBGLOG("Received files to copy");
                         reportedFilesToCopy = true;
                         if (replicationLevel)
-                            todo.add(*ret, 0);
+                            todo.add(*ret.getLink(), 0);
                         else
-                            todo.append(*ret);
+                            todo.append(*ret.getLink());
                         numFilesToProcess++;  // must increment counter for SNMP accuracy
                         toCopy.signal();
 #endif
