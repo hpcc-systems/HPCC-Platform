@@ -26,6 +26,7 @@
 #include "exception_util.hpp"
 #include "package.h"
 #include "roxiecontrol.hpp"
+#include "hpccconfig.hpp"
 
 
 static const char* XREF_FEATURE_URL = "DfuXrefAccess";
@@ -703,17 +704,21 @@ void CWsDfuXRefEx::findUnusedFilesWithDetailsInDFS(IEspContext &context, const c
 
 bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
 {
-#ifdef _CONTAINERIZED
-    UNIMPLEMENTED_X("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefUnusedFiles)");
-#else
     const char *process = req.getProcessCluster();
     if (isEmptyString(process))
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "process cluster not specified.");
 
     SocketEndpointArray servers;
+#ifdef _CONTAINERIZED
+    StringBuffer epStr;
+    getService(epStr, process, true);
+    SocketEndpoint ep(epStr);
+    servers.append(ep);
+#else
     getRoxieProcessServers(process, servers);
     if (!servers.length())
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_CLUSTER_INFO, "process cluster, not found.");
+#endif
 
     Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), ROXIECONNECTIONTIMEOUT);
     Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", ROXIECONTROLXREFTIMEOUT);
@@ -741,7 +746,6 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
         resp.setUnusedFilesWithDetails(unusedLFs);
     }
     return true;
-#endif
 }
 
 IXRefNode *CWsDfuXRefEx::getXRefNodeByCluster(const char* cluster)
