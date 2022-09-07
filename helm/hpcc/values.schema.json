@@ -2133,6 +2133,11 @@
           "type": "boolean",
           "description": "[Optional] If lingerPeriod set, allows Thor to process more graphs from any job"
         },
+        "maxGraphStartupTime": {
+          "type": "integer",
+          "description": "[Optional] The time (seconds) for the job to wait for a Thor instance to start",
+          "default": 600
+        },
         "image": {
           "$ref": "#/definitions/image"
         },

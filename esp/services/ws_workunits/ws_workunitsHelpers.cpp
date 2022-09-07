@@ -3965,7 +3965,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
 }
 #endif
 
-void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, const char* thorIP, const char* problemDesc,
+void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* esp, const char* thor, const char* problemDesc,
     const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* tempDirName)
 {
     VStringBuffer fileName("%s%c%s.txt", tempDirName, PATHSEPCHAR, cwu->queryWuid());
@@ -3978,19 +3978,11 @@ void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, cons
     sb.append("User:         ").append(cwu->queryUser()).append("\r\n");
     sb.append("Build Version:").append(getBuildVersion()).append("\r\n");
     sb.append("Cluster:      ").append(cwu->queryClusterName()).append("\r\n");
-    if (!isEmptyString(espIP))
-        sb.append("ESP:          ").append(espIP).append("\r\n");
-    else
-    {
-        StringBuffer espIPAddr;
-        IpAddress ipaddr = queryHostIP();
-        ipaddr.getIpText(espIPAddr);
-        sb.append("ESP:          ").append(espIPAddr.str()).append("\r\n");
-    }
+    sb.append("ESP:          ").append(esp).append("\r\n");
     if (!isEmptyString(url))
         sb.append("URL:          ").append(url).append("\r\n");
-    if (!isEmptyString(thorIP))
-        sb.append("Thor:         ").append(thorIP).append("\r\n");
+    if (!isEmptyString(thor))
+        sb.append("Thor:         ").append(thor).append("\r\n");
     outFile->write(sb.length(), sb.str());
 
     //Exceptions/Warnings/Info
@@ -4360,7 +4352,7 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     thorSlaveLogThreadPoolSize = _thorSlaveLogThreadPoolSize;
 
     //create WU ZAP files
-    createZAPInfoFile(request.url.str(), request.espIP.str(), request.thorIP.str(), request.problemDesc.str(), request.whatChanged.str(),
+    createZAPInfoFile(request.url.str(), request.esp.str(), request.thor.str(), request.problemDesc.str(), request.whatChanged.str(),
         request.whereSlow.str(), cwu, tempDirName);
     createZAPECLQueryArchiveFiles(cwu, tempDirName);
 

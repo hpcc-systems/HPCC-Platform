@@ -402,8 +402,6 @@ dali:
       #  cpu: "1"
       #  memory: "1G"
 
-  #metaAccess: "shared" # enable if coalescer running in separate pod, and thus needs access to meta over PVC mount
-
   #resources:
   #  cpu: "1"
   #  memory: "4G"
@@ -735,6 +733,7 @@ thor:
   numWorkers: 2
   maxJobs: 4
   maxGraphs: 2
+  #maxGraphStartupTime: 60
   #numWorkersPerPod: 1
   #managerResources:
   #  cpu: "1"
