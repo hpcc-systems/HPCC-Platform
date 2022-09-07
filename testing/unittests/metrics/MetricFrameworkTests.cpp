@@ -312,7 +312,8 @@ protected:
 
     void Test_histogram_metric()
     {
-        std::vector<BucketDef> bucketDefs = {{"le 2", 2}, {"le 4", 4}, {"le 8", 8} };
+        //std::vector<BucketDef> bucketDefs = {{"le 2", 2}, {"le 4", 4}, {"le 8", 8} };
+        std::vector<__uint64> bucketDefs = {2, 4, 8};
         std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("requests.dist", "description", SMeasureCount, bucketDefs);
 
         std::vector<__uint64> values;
@@ -350,57 +351,56 @@ protected:
         checkHistogramBucketResult(pHistogram, sumMeasurements, {0,2,1,1});
 
         //
-        // Test scaled histogram for ms.
-        // Create bucket defs in the measurement domain, cycle_t in this case.
-        double msToCyclesScaleFactor = (double)(1000 * 1000) / getCycleToNanoScale();
-        std::vector<BucketDef> msTmeBuckets = {{"le 500", 500}, {"le 1000", 1000}, {"le 2000", 2000} };
-        std::shared_ptr<ScaledHistogramMetric> pScaledHistogram = std::make_shared<ScaledHistogramMetric>("requests.time", "description", SMeasureCount, msTmeBuckets, msToCyclesScaleFactor);
-        int totalDelay = 0;
+        // Test scaled histogram for ns.
+        // Duplicate the convenience function so we don't actually add the metric to the manager
+        double nsToCyclesScaleFactor = 1.0 / getCycleToNanoScale();
+        std::vector<__uint64> timeBuckets = {500000000, 1000000000, 2000000000 };
+        std::shared_ptr<ScaledHistogramMetric> pScaledHistogram = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric("requests.time", "description", SMeasureTimeNs, timeBuckets, nsToCyclesScaleFactor));
+
+        __uint64 totalDelay = 0;
 
         //
         // test a duration < 500ms
         {
             HistogramExecutionTimer h(pScaledHistogram);
             usleep(250*1000);
-            totalDelay += 250;
-
+            totalDelay += 250000000;
         }
+
+        __uint64 delta = 10000000;
+
         checkHistogramBucketResult(pScaledHistogram, -1, {1,0,0,0});
-        CPPUNIT_ASSERT_GREATEREQUAL(totalDelay-10, static_cast<int>(pScaledHistogram->queryValue()));
-        CPPUNIT_ASSERT_LESSEQUAL(totalDelay+10, static_cast<int>(pScaledHistogram->queryValue()));
+        checkHistogramValue(pScaledHistogram, totalDelay, delta);
 
         //
-        // duration > 500, < 1000
+        // duration > 500ms, < 1000mx
         {
             HistogramExecutionTimer h(pScaledHistogram);
             usleep(750*1000);
-            totalDelay += 750;
+            totalDelay += 750000000;
         }
         checkHistogramBucketResult(pScaledHistogram, -1, {1,1,0,0});
-        CPPUNIT_ASSERT_GREATEREQUAL(totalDelay-10, static_cast<int>(pScaledHistogram->queryValue()));
-        CPPUNIT_ASSERT_LESSEQUAL(totalDelay+10, static_cast<int>(pScaledHistogram->queryValue()));
+        checkHistogramValue(pScaledHistogram, totalDelay, delta);
 
         //
-        // duration > 1000, 2000
+        // duration > 1000ms, < 2000ms
         {
             HistogramExecutionTimer h(pScaledHistogram);
             usleep(1250*1000);
-            totalDelay += 1250;
+            totalDelay += 1250000000;
         }
         checkHistogramBucketResult(pScaledHistogram, -1, {1,1,1,0});
-        CPPUNIT_ASSERT_GREATEREQUAL(totalDelay-10, static_cast<int>(pScaledHistogram->queryValue()));
-        CPPUNIT_ASSERT_LESSEQUAL(totalDelay+10, static_cast<int>(pScaledHistogram->queryValue()));
+        checkHistogramValue(pScaledHistogram, totalDelay, delta);
 
         //
-        // duration > 2000
+        // duration > 2000ms (increments the inf bucket)
         {
             HistogramExecutionTimer h(pScaledHistogram);
             usleep(2500*1000);
-            totalDelay += 2500;
+            totalDelay += 2500000000;
         }
         checkHistogramBucketResult(pScaledHistogram, -1, {1,1,1,1});
-        CPPUNIT_ASSERT_GREATEREQUAL(totalDelay-10, static_cast<int>(pScaledHistogram->queryValue()));
-        CPPUNIT_ASSERT_LESSEQUAL(totalDelay+10, static_cast<int>(pScaledHistogram->queryValue()));
+        checkHistogramValue(pScaledHistogram, totalDelay, delta);
     }
 
 
@@ -416,6 +416,15 @@ protected:
         // expected sum check if < 0
         if (expectedSum >= 0)
             CPPUNIT_ASSERT_EQUAL(static_cast<int>(pHistogram->queryValue()), expectedSum);
+    }
+
+
+    void checkHistogramValue(const std::shared_ptr<IMetric> &pHistogram, __uint64 expectedValue, __uint64 error)
+    {
+        __uint64 value = pHistogram->queryValue();
+
+        bool result = ((expectedValue >= (value - error)) && (expectedValue <= (value + error)));
+        CPPUNIT_ASSERT(result);
     }
 
 protected:
