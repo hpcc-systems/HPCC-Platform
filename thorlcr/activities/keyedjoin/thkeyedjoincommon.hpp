@@ -49,6 +49,7 @@ enum GroupFlags:unsigned { gf_null=0x0, gf_limitatmost=0x01, gf_limitabort=0x02,
 enum KJServiceCmds:byte { kjs_nop, kjs_keyopen, kjs_keyread, kjs_keyclose, kjs_fetchopen, kjs_fetchread, kjs_fetchclose };
 enum KJFetchFlags:byte { kjf_nop=0x0, kjf_compressed=0x1, kjf_encrypted=0x2 };
 enum KJServiceErrorCode:byte { kjse_nop, kjse_exception, kjse_unknownhandle };
+enum AllocatorTypes { AT_Transform=1, AT_LookupWithJG, AT_JoinFields, AT_FetchRequest, AT_FetchResponse, AT_JoinGroup, AT_JoinGroupRhsRows, AT_FetchDisk, AT_LookupResponse };
 
 constexpr unsigned partBits = 24;
 constexpr unsigned partMask = 0x00ffffff;

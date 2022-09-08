@@ -192,9 +192,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         Owned<IOutputRowDeserializer> fetchInputDeserializer;
         Owned<IOutputRowSerializer> fetchOutputSerializer;
 
-        Owned<IEngineRowAllocator> fetchDiskAllocator;
-        Owned<IOutputRowDeserializer> fetchDiskDeserializer;
-
         ICodeContext *codeCtx;
 
         CriticalSection crit;
@@ -210,22 +207,20 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         {
             Owned<IOutputMetaData> lookupInputMeta = new CPrefixedOutputMeta(sizeof(KeyLookupHeader), helper->queryIndexReadInputRecordSize());
             lookupInputDeserializer.setown(lookupInputMeta->createDiskDeserializer(codeCtx, id));
-            lookupInputAllocator.setown(codeCtx->getRowAllocatorEx(lookupInputMeta,id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
-            joinFieldsAllocator.setown(codeCtx->getRowAllocatorEx(helper->queryJoinFieldsRecordSize(), id, roxiemem::RHFnone));
+            lookupInputAllocator.setown(codeCtx->getRowAllocatorEx(lookupInputMeta, createCompoundActSeqId(id, AT_LookupWithJG), (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+            joinFieldsAllocator.setown(codeCtx->getRowAllocatorEx(helper->queryJoinFieldsRecordSize(), createCompoundActSeqId(id, AT_JoinFields), roxiemem::RHFnone));
             joinFieldsSerializer.setown(helper->queryJoinFieldsRecordSize()->createDiskSerializer(codeCtx, id));
 
             if (helper->diskAccessRequired())
             {
                 Owned<IOutputMetaData> fetchInputMeta = new CPrefixedOutputMeta(sizeof(FetchRequestHeader), helper->queryFetchInputRecordSize());
-                fetchInputAllocator.setown(codeCtx->getRowAllocatorEx(fetchInputMeta, id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+                fetchInputAllocator.setown(codeCtx->getRowAllocatorEx(fetchInputMeta, createCompoundActSeqId(id, AT_FetchRequest), (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
                 fetchInputDeserializer.setown(fetchInputMeta->createDiskDeserializer(codeCtx, id));
 
                 Owned<IOutputMetaData> fetchOutputMeta = createOutputMetaDataWithChildRow(joinFieldsAllocator, sizeof(FetchReplyHeader));
-                fetchOutputAllocator.setown(codeCtx->getRowAllocatorEx(fetchOutputMeta, id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
+                fetchOutputAllocator.setown(codeCtx->getRowAllocatorEx(fetchOutputMeta, createCompoundActSeqId(id, AT_FetchResponse), (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
                 fetchOutputSerializer.setown(fetchOutputMeta->createDiskSerializer(codeCtx, id));
 
-                fetchDiskAllocator.setown(codeCtx->getRowAllocatorEx(helper->queryDiskRecordSize(), id, (roxiemem::RoxieHeapFlags)roxiemem::RHFpacked|roxiemem::RHFunique));
-                fetchDiskDeserializer.setown(helper->queryDiskRecordSize()->createDiskDeserializer(codeCtx, id));
                 fetchInMinSz = helper->queryFetchInputRecordSize()->getMinRecordSize();
             }
         }
@@ -245,9 +240,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         IOutputRowDeserializer *queryFetchInputDeserializer() const { return fetchInputDeserializer; }
         IEngineRowAllocator *queryFetchOutputAllocator() const { return fetchOutputAllocator; }
         IOutputRowSerializer *queryFetchOutputSerializer() const { return fetchOutputSerializer; }
-
-        IEngineRowAllocator *queryFetchDiskAllocator() const { return fetchDiskAllocator; }
-        IOutputRowDeserializer *queryFetchDiskDeserializer() const { return fetchDiskDeserializer; }
 
         inline IHThorKeyedJoinArg *queryHelper() const { return helper; }
 
@@ -410,9 +402,6 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         IOutputRowDeserializer *queryFetchInputDeserializer() const { return activityCtx->queryFetchInputDeserializer(); }
         IEngineRowAllocator *queryFetchOutputAllocator() const { return activityCtx->queryFetchOutputAllocator(); }
         IOutputRowSerializer *queryFetchOutputSerializer() const { return activityCtx->queryFetchOutputSerializer(); }
-
-        IEngineRowAllocator *queryFetchDiskAllocator() const { return activityCtx->queryFetchDiskAllocator(); }
-        IOutputRowDeserializer *queryFetchDiskDeserializer() const { return activityCtx->queryFetchDiskDeserializer(); }
 
         IKeyManager *createKeyManager()
         {
@@ -606,6 +595,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         {
             clearRows();
         }
+        unsigned getRowCount() const { return rows.size(); }
         void serializeRows(MemoryBuffer &mb) const
         {
             if (rows.size()) // will be 0 if fetch needed
@@ -749,9 +739,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         virtual void process(bool &abortSoon) override
         {
             Owned<IException> exception;
+            CKeyLookupResult lookupResult(*activityCtx); // reply for 1 request row
             try
             {
-                CKeyLookupResult lookupResult(*activityCtx); // reply for 1 request row
 
                 byte errorCode = kjse_nop;
                 CMessageBuffer replyMsg;
@@ -798,7 +788,10 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             }
             catch (IException *e)
             {
-                exception.setown(e);
+                VStringBuffer msg("CKeyLookupRequest pending result [fetchRequired=%s, rows: %u] - ", boolToStr(fetchRequired), fetchRequired ? lookupResult.getCount() : lookupResult.getRowCount());
+                e->errorMessage(msg);
+                exception.setown(makeStringException(e->errorCode(), msg));
+                e->Release();
             }
             if (exception)
                 replyError(exception);
@@ -902,10 +895,9 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         virtual void process(bool &abortSoon) override
         {
             Owned<IException> exception;
+            CFetchLookupResult fetchLookupResult(*activityCtx);
             try
             {
-                CFetchLookupResult fetchLookupResult(*activityCtx);
-
                 byte errorCode = kjse_nop;
                 CMessageBuffer replyMsg;
                 replyMsg.append(errorCode);
@@ -942,7 +934,10 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
             }
             catch (IException *e)
             {
-                exception.setown(e);
+                VStringBuffer msg("CFetchLookupRequest [pending result rows: %u] - ", fetchLookupResult.getRowCount());
+                e->errorMessage(msg);
+                exception.setown(makeStringException(e->errorCode(), msg));
+                e->Release();
             }
             if (exception)
                 replyError(exception);
