@@ -329,7 +329,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
     }
 
     exists(id: string) {
-        return !this._renderElement.select(`#${encodeID(id)}`).empty();
+        return id && !this._renderElement.select(`#${encodeID(id)}`).empty();
     }
 
     clearSelection(broadcast: boolean = false) {
