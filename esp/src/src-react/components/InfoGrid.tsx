@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, CommandBar, ICommandBarItemProps } from "@fluentui/react";
+import { Checkbox, CommandBar, ICommandBarItemProps, Link } from "@fluentui/react";
 import * as domClass from "dojo/dom-class";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
@@ -86,15 +86,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                     const info = extractGraphInfo(Message);
                     if (info.graphID && info.subgraphID && info.activityID) {
                         const txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
-                        Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
+                        return <Link href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>;
                     } else if (info.graphID && info.subgraphID) {
                         const txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
-                        Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
+                        return <Link href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>;
                     } else {
                         Message = Utility.xmlEncode2(Message);
                     }
                     return Message;
-                }, [])
+                }, [wuid])
             },
             Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
             LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },

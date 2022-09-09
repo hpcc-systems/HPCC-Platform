@@ -28,19 +28,16 @@ const smc = new SMCService({ baseUrl: "" });
 export type BuildInfo = { [key: string]: string };
 
 export async function getBuildInfo(): Promise<BuildInfo> {
-    return userStore.getAll().then(userSession => {
-        if (!userSession || !userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked") return {};
-        const getBuildInfo = singletonDebounce(smc, "GetBuildInfo", 60);
-        return getBuildInfo({}).then(response => {
-            const buildInfo = {};
-            response?.BuildInfo?.NamedValue?.forEach(row => {
-                buildInfo[row.Name] = row.Value;
-            });
-            return buildInfo;
-        }).catch(e => {
-            logger.error(e);
-            return {};
+    const getBuildInfo = singletonDebounce(smc, "GetBuildInfo", 60);
+    return getBuildInfo({}).then(response => {
+        const buildInfo = {};
+        response?.BuildInfo?.NamedValue?.forEach(row => {
+            buildInfo[row.Name] = row.Value;
         });
+        return buildInfo;
+    }).catch(e => {
+        logger.error(e);
+        return {};
     });
 }
 

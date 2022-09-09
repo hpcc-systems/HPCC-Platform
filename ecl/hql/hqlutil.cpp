@@ -6592,7 +6592,7 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
             ignore = true; // allow whitespace in front of #option
             break;
         case '#':
-            if (prev == '\n')
+            if (iseol(prev))
             {
                 if ((i + 1 + 6 < lenBuffer) && memicmp(buffer+i+1, "option", 6) == 0)
                 {
@@ -6630,6 +6630,8 @@ IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
                         OwnedHqlExpr arg = createConstant(restOfLine.getClear());
                         attrs.setown(createComma(attrs.getClear(), createAttribute(linkAtom, arg.getClear())));
                     }
+                    // end is pointing at an end of line character - ensure prev is set correctly
+                    next = '\n';
                 }
             }
         }

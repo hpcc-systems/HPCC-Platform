@@ -2,7 +2,6 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { initializeIcons } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
-import { initSession } from "src/Session";
 import { cookieKeyValStore, userKeyValStore } from "src/KeyValStore";
 import { ECLWatchLogger } from "./hooks/logging";
 
@@ -30,8 +29,6 @@ dojoConfig.urlInfo = {
     fullPath: location.origin + "/esp/files"
 };
 dojoConfig.disableLegacyHashing = true;
-
-initSession();
 
 const store = userKeyValStore();
 store.get("ModernMode", false).then(async modernMode => {

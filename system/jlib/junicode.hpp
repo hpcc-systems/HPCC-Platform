@@ -41,6 +41,7 @@ public:
     size32_t getLegalLength();
     void set(size32_t len, const void * start)  { cur = (const byte *)start; end = cur + len; }
     UTF32 next();
+    void skip();    // Skip a single input character (not a codepoint)
     bool done()     { return cur == end; }
 
 protected:

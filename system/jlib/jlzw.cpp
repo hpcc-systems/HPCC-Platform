@@ -2632,7 +2632,7 @@ public:
         // first decrypt
         const byte *p = (const byte *)blk;
         size32_t l = *(const size32_t *)p;
-        aesDecrypt(key.get(),key.length(),p+sizeof(size32_t),l,compbuf);
+        aesDecrypt(key.get(),key.length(),p+sizeof(size32_t),l,compbuf.clear());
         return exp->init(compbuf.bufferBase());         
     }
 
