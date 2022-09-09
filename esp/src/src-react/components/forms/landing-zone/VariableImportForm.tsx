@@ -210,7 +210,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                                     rules={{
                                         required: nlsHPCC.ValidationErrorTargetNameRequired,
                                         pattern: {
-                                            value: /^([a-z0-9]+[-a-z0-9 \._]+)+$/i,
+                                            value: /^(?:[\/\\]?[-a-z0-9_]+[\/\\])+([-a-z0-9 _\.]+)$/i,
                                             message: nlsHPCC.ValidationErrorTargetNameInvalid
                                         }
                                     }}
