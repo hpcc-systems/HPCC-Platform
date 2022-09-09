@@ -1546,14 +1546,18 @@ public:
                     break;
 #ifdef _CONTAINERIZED
                 // Periodically recheck the list to see what is now local, and remove them from the buddyCopying list
-                ICopyArrayOf<ILazyFileIO> checkBuddies;
+                IArrayOf<ILazyFileIO> checkBuddies;
                 {
                     CriticalBlock b(crit);
-                    if (buddyCopying.length())
+                    while (buddyCopying.length())
                     {
-                        buddyCopying.swapWith(checkBuddies);
-                        buddyChecking = true;
+                        ILazyFileIO *popped = &buddyCopying.popGet();
+                        if (popped->isAliveAndLink())
+                        {
+                            checkBuddies.append(*popped);
+                        }
                     }
+                    buddyChecking = true;
                 }
                 if (checkBuddies.length())
                 {
@@ -1670,6 +1674,15 @@ public:
                 numFilesToProcess--;    // must decrement counter for SNMP accuracy
             }
         }
+#ifdef _CONTAINERIZED
+        ForEachItemInRev(idx2, buddyCopying)
+        {
+            if (file == &buddyCopying.item(idx2))
+            {
+                buddyCopying.remove(idx2);
+            }
+        }
+#endif
     }
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
