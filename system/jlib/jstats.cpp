@@ -2390,23 +2390,11 @@ void CRuntimeStatisticCollection::set(const CRuntimeStatisticCollection & other,
 
 void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & other, unsigned node)
 {
-    if (&queryMapping() == &other.queryMapping())
+    ForEachItemIn(i, other)
     {
-        ForEachItemIn(i, *this)
-        {
-            StatisticKind kind = getKind(i);
-            unsigned __int64 value = other.queryStatisticByIndex(i).get();
-            values[i].merge(value, queryBaseMergeMode(kind));
-        }
-    }
-    else
-    {
-        ForEachItemIn(i, other)
-        {
-            StatisticKind kind = other.getKind(i);
-            unsigned __int64 value = other.queryStatisticByIndex(i).get();
-            mergeStatistic(kind, value, node);
-        }
+        StatisticKind kind = other.getKind(i);
+        unsigned __int64 value = other.queryStatisticByIndex(i).get();
+        mergeStatistic(kind, value, node);
     }
 
     CNestedRuntimeStatisticMap *otherNested = other.queryNested();
