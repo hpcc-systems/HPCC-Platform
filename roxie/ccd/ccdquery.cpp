@@ -1492,8 +1492,10 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
                 Owned<IWUGraphStats> graphStats = statsWu->updateStats(thisGraphNameStr.str(), SCTroxie, queryStatisticsComponentName(), graph.getWfid(), 0, true);
                 IStatisticGatherer &builder = graphStats->queryStatsBuilder();
                 ActivityArrayPtr *activities = graphMap.getValue(thisGraphNameStr.str());
-                assertex(activities && *activities);
-                (*activities)->gatherStats(builder, channel, reset);
+                if (activities && *activities)
+                    (*activities)->gatherStats(builder, channel, reset);
+                else
+                    DBGLOG("Unexpected missing activity graph %s - ignored", thisGraphNameStr.str());
             }
             WorkunitUpdate w(&statsWu->lock());
             Owned<IStatisticGatherer> gbuilder = createGlobalStatisticGatherer(w);
