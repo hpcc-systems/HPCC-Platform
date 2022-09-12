@@ -3140,3 +3140,49 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
     else
         throw makeStringExceptionV(0, "ClearExpireDays: Could not find logical file %s", lfn.str());
 }
+
+bool getDefaultValue(const char * processName, const char * propertyName, StringBuffer & strDefaultValue)
+{
+    Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+    Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
+
+    if (env.get())
+    {
+        Owned<IPropertyTreeIterator> processIter = env->getElements(processName);
+        if (processIter->first())
+        {
+            if (processIter->query().hasProp(propertyName))
+            {
+                processIter->query().getProp(propertyName, strDefaultValue);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault()
+{
+    // This function returns the value of the DFUServerProcess' 'noCommon' property, if it is exists. 
+    // Othervise it returns with true, the recent default value of 'noCommon'
+
+    StringBuffer strDefaultValue;
+    if (getDefaultValue("Software/DfuServerProcess", "@noCommon", strDefaultValue))
+        return strToBool(strDefaultValue.str());
+    return true;
+}
+
+FILESERVICES_API int FILESERVICES_CALL fsGetMaxConnectionsDefault()
+{
+    // This function returns the value of the first DFUServer Instance's 'maxConnections' property, if it is exists. 
+    // Othervise it returns with -1, the recent default value of 'maxConnections'
+
+    StringBuffer strDefaultValue;
+    if (getDefaultValue("Software/DfuServerProcess", "@maxConnections", strDefaultValue))
+    {
+        int intDefaultValue;
+        if (sscanf(strDefaultValue.str(),"%d", &intDefaultValue))
+            return intDefaultValue;
+    }
+    return -1;
+}

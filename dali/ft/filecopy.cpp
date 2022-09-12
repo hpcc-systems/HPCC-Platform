@@ -3496,6 +3496,8 @@ void FileSprayer::spray()
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
     LOG(MCdebugInfo, job, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
+    LOG(MCdebugInfo, job, "maxConnections:%d", options->getPropInt(ANmaxConnections));
+
 
     LocalAbortHandler localHandler(daftAbortHandler);
 

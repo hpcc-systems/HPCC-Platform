@@ -217,7 +217,9 @@
                     monitorinterval="900"
                     monitorqueue="dfuserver_monitor_queue"
                     name="mydfuserver"
-                    queue="dfuserver_queue">
+                    queue="dfuserver_queue"
+                    noCommon="true"
+                    maxConnections="-1">
    <Instance computer="localhost"
              directory="${RUNTIME_PATH}/mydfuserver"
              name="s1"
