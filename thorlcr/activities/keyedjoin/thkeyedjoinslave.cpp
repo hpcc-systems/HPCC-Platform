@@ -159,9 +159,6 @@ static const unsigned defaultFetchLookupProcessBatchLimit = 10000;
 class CJoinGroup;
 
 
-enum AllocatorTypes { AT_Transform=1, AT_LookupWithJG, AT_JoinFields, AT_FetchRequest, AT_FetchResponse, AT_JoinGroup, AT_JoinGroupRhsRows, AT_FetchDisk, AT_LookupResponse };
-
-
 struct Row
 {
     const void *rhs;
@@ -1029,10 +1026,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             }
         }
         unsigned queryPartNumIdx(unsigned partNo) const { return partNumMap[partNo]; }
-        virtual void trace(const char *msg) const
+        void trace(const char *msg) const
         {
-            VStringBuffer log("%s (%p): %s", typeid(*this).name(), this, msg);
+            StringBuffer log;
+            getInfo(log).append(": ").append(msg);
             PROGLOG("%s", log.str());
+        }
+        virtual StringBuffer &getInfo(StringBuffer &info) const
+        {
+            return info.appendf("%s (%p)", typeid(*this).name(), this);
         }
         virtual void beforeDispose() override
         {
@@ -1233,7 +1235,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 }
                 catch (IException *e)
                 {
-                    Owned<IException> te = ThorWrapException(e, "%s", "Lookup handler process");
+                    StringBuffer errMsg("Lookup handler process: ");
+                    getInfo(errMsg);
+                    Owned<IException> te = ThorWrapException(e, "%s", errMsg.str());
                     e->Release();
                     EXCLOG(te, nullptr);
                     activity.fireException(te);
@@ -1637,10 +1641,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             limiter = &activity.lookupThreadLimiter;
             allParts = &activity.allIndexParts;
         }
-        virtual void trace(const char *msg) const override
+        virtual StringBuffer &getInfo(StringBuffer &info) const override
         {
-            VStringBuffer log("%s, lookupSlave=%u", msg, lookupSlave);
-            PARENT::trace(log);
+            return PARENT::getInfo(info).append(", lookupSlave=").append(lookupSlave);
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) override
         {
@@ -1775,7 +1778,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         bool encrypted = false;
         bool compressed = false;
-        Owned<IEngineRowAllocator> fetchDiskAllocator;
         CThorContiguousRowBuffer prefetchSource;
         std::vector<PartIO> partIOs;
         std::unique_ptr<std::vector<std::atomic_bool>> partIOCreated;
@@ -1794,8 +1796,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         CFetchLocalLookupHandler(CKeyedJoinSlave &_activity)
             : PARENT(_activity, _activity.fetchInputMetaRowIf, _activity.fetchLookupProcessBatchLimit)
         {
-            Owned<IThorRowInterfaces> fetchDiskRowIf = activity.createRowInterfaces(helper->queryDiskRecordSize());
-            fetchDiskAllocator.set(fetchDiskRowIf->queryRowAllocator());
             limiter = &activity.fetchThreadLimiter;
             allParts = &activity.allDataParts;
         }
