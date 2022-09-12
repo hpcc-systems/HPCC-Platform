@@ -1076,7 +1076,7 @@ public:
         Owned<IQueryFactory> f = getQuery(queryName, NULL, logctx);
         if (f)
         {
-            f->gatherStats(statsWu, channel, reset);
+            f->gatherStats(statsWu, graphName, channel, reset);
         }
         else
             throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName);
@@ -1469,7 +1469,7 @@ public:
                 {
                     statsWu.setown(createLocalWorkUnitFromPTree(createPTreeFromIPT(queryExtendedWU(query->queryWorkUnit())->queryPTree())));
                 }
-                query->gatherStats(statsWu, -1, reset);
+                query->gatherStats(statsWu, graphName, -1, reset);
                 for (unsigned channel = 0; channel < numChannels; channel++)
                     if (agentManagers->item(channel))
                         agentManagers->item(channel)->getStats(queryId, graphName, statsWu, channel+1, reset, logctx);
@@ -3212,7 +3212,8 @@ void mergeNode(IPropertyTree *s1, IPropertyTree *s2, unsigned level);
 MergeInfo mergeTable[] =
 {
     {"Query", "@id", mergeStats},
-    {"Graph", "@id", mergeStats},
+    {"Graphs", NULL, mergeStats},
+    {"Graph", "@name", mergeStats},
     {"xgmml", NULL, mergeStats},
     {"graph", NULL, mergeStats},
     {"node",  "@id", mergeNode},
@@ -3316,7 +3317,8 @@ void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
 static const char *g1 =
         "<Stats>"
         "<Query id='stats'>"
-        "<Graph id='graph1'>"
+        "<Graphs>"
+        "<Graph name='graph1'>"
          "<xgmml>"
           "<graph>"
            "<node id='1'>"
@@ -3369,12 +3371,14 @@ static const char *g1 =
           "</graph>"
          "</xgmml>"
         "</Graph>"
+        "</Graphs>"
         "</Query>"
         "</Stats>";
 static const char *g2 =
         "<Stats>"
         "<Query id='stats'>"
-        "<Graph id='graph1'>"
+        "<Graphs>"
+        "<Graph name='graph1'>"
          "<xgmml>"
           "<graph>"
            "<node id='1'>"
@@ -3421,12 +3425,14 @@ static const char *g2 =
           "</graph>"
          "</xgmml>"
         "</Graph>"
+        "</Graphs>"
         "</Query>"
         "</Stats>";
 static const char *expected =
         "<Stats>"
         "<Query id='stats'>"
-        "<Graph id='graph1'>"
+        "<Graphs>"
+        "<Graph name='graph1'>"
          "<xgmml>"
           "<graph>"
            "<node id='1'>"
@@ -3484,6 +3490,7 @@ static const char *expected =
           "</graph>"
          "</xgmml>"
         "</Graph>"
+        "</Graphs>"
         "</Query>"
         "</Stats>"
         ;
