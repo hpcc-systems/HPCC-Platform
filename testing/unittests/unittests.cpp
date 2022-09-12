@@ -193,12 +193,9 @@ int main(int argc, const char *argv[])
 
     if (useDefaultLocations)
     {
-        StringBuffer binDir;
-        makeAbsolutePath(argv[0], binDir, true);
-
         // Default library location depends on the executable location...
         StringBuffer dir;
-        splitFilename(binDir.str(), &dir, &dir, NULL, NULL);
+        splitFilename(queryCurrentProcessPath(), &dir, &dir, NULL, NULL);
 
         dir.replaceString(PATHSEPSTR "bin" PATHSEPSTR, PATHSEPSTR "lib" PATHSEPSTR);
         if (verbose)
