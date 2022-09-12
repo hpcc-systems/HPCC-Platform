@@ -1900,6 +1900,7 @@ void CRemotePartitioner::callRemote()
 
         if (sprayer.useFtSlave)
         {
+            // NB: In containerized mode, spawnRemoteChild will launch ftslave's locally and set connectEP to localhost
             StringBuffer tmp;
             socket.setown(spawnRemoteChild(SPAWNdfu, slave, connectEP, DAFT_VERSION, queryFtSlaveLogDir(), nullptr, wuid));
             if (!socket)
@@ -1911,10 +1912,19 @@ void CRemotePartitioner::callRemote()
         }
         else
         {
-            setDafsEndpointPort(connectEP);
-            if (connectEP.isNull())
-                throwError1(DFTERR_FailedStartSlave, url.str());
-            socket.setown(connectDafs(connectEP, 5000));
+            Owned<IPropertyTree> serviceTree;
+            if (isContainerized())
+            {
+                serviceTree.setown(sprayer.getSprayService());
+                connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
+            }
+            else
+            {
+                setDafsEndpointPort(connectEP);
+                if (connectEP.isNull())
+                    throwError1(DFTERR_FailedStartSlave, url.str());
+            }
+            socket.setown(connectDafs(connectEP, 60000, serviceTree));
             if (!socket)
                 throwError1(DFTERR_FailedStartSlave, url.str());
             prepareCmd(msg);

@@ -995,12 +995,13 @@ Generate list of available services
 {{ end -}}
 {{ end -}}
 {{ end -}}
-{{- range $.Values.dafilesrv -}}
+{{- range $dafilesrv := $.Values.dafilesrv -}}
  {{- if not .disabled }}
 - name: {{ .name }}
   type: {{ .application | default "stream" }}
   port: {{ .service.servicePort | default 7600 }}
   public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}
+  {{- include "hpcc.addTLSServiceEntries" (dict "root" $ "service" $dafilesrv.service "component" $dafilesrv "visibility" $dafilesrv.service.visibility) }}
  {{ end -}}
 {{ end -}}
 {{- end -}}

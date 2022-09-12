@@ -211,6 +211,7 @@ public:
     void setOperation(dfu_operation op);
     dfu_operation getOperation() const;
     const char * getOperationTypeString() const;
+    IPropertyTree *getSprayService() const;
 
 protected:
     void addEmptyFilesToPartition(unsigned from, unsigned to);
