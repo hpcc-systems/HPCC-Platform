@@ -199,6 +199,7 @@ class CWsDfuXRefEx : public CWsDFUXRef
     void findUnusedFilesWithDetailsInDFS(IEspContext &context, const char *process, const MapStringTo<bool> &usedFileMap, IArrayOf<IEspDFULogicalFile> &unusedFiles);
     const char* formatResult(IEspContext& context, IPropertyTree* result, StringBuffer& formatedResult);
     const char* formatResult(IEspContext& context, StringBuffer& result, StringBuffer& encodedResult);
+    void getRoxieFiles(const char *process, bool checkPackageMaps, MapStringTo<bool> &usedFileMap);
 
 public:
    IMPLEMENT_IINTERFACE;

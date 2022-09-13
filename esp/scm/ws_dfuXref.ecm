@@ -213,6 +213,9 @@ ESPrequest DFUXRefUnusedFilesRequest
     string ProcessCluster;
     bool CheckPackageMaps;
     [min_ver("1.01")] bool GetFileDetails(false);
+    [min_ver("1.02")] ESParray<string> ProcessClusterList;
+    [min_ver("1.02")] ESParray<string> CheckPlanes;
+
 };
 
 ESPresponse [exceptions_inline] DFUXRefUnusedFilesResponse
