@@ -1547,6 +1547,8 @@ protected:
         case type_varstring:
         case type_data:
         case type_qstring:
+        case type_utf8:
+        case type_unicode:
             {
                 line.append("D");
                 appendStringAsQuotedCPP(line, info.dataValue.size, (const char *)info.dataValue.data, false);
@@ -2094,6 +2096,8 @@ id_t ExpressionIRPlayer::doProcessConstant(IHqlExpression * expr)
     case type_varstring:
     case type_data:
     case type_qstring:
+    case type_utf8:
+    case type_unicode:
         info.dataValue.size = value->getSize();
         info.dataValue.data = value->queryValue();
         break;
