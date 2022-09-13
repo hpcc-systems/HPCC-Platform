@@ -823,16 +823,14 @@ public:
 class ExprBuilderInfo
 {
 public:
-    ExprBuilderInfo() : type(0), name(NULL), id(NULL), sequence(0) {}
-
     inline void addOperand(exprid_t id) { args.append((unsigned)id); }
 
 public:
-    typeid_t type;
-    IAtom * name;
-    IIdAtom * id;
-    unsigned __int64 sequence;
-    unsigned __int64 uid;
+    typeid_t type = type_none;
+    IAtom * name = nullptr;
+    IIdAtom * id = nullptr;
+    unsigned __int64 sequence = 0;
+    unsigned __int64 uid = 0;
     IdArray args;
     IdArray special;
     IdArray comment;
@@ -1373,7 +1371,7 @@ public:
             break;
         }
         line.append("}");
-        if (info.uid)
+        if (info.uid && !(options & TIRstripDebugId))
             line.append(" #").append(info.uid);
         finishDefinition(def);
 
@@ -1514,7 +1512,7 @@ protected:
                 appendId(info.comment.item(i));
             }
         }
-        if (info.uid)
+        if (info.uid && !(options & TIRstripDebugId))
             line.append(" #").append(info.uid);
     }
 
@@ -2453,7 +2451,7 @@ public:
     {
         OwnedHqlExpr query = parseQuery(testQuery1, NULL);
         StringArray ir;
-        getIRText(ir, 0, query);
+        getIRText(ir, TIRstripDebugId, query);
         compareStringArrays(ir, expectedIR1, __LINE__);
     }
 };
