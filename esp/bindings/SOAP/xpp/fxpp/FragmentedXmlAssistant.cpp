@@ -28,6 +28,14 @@ namespace fxpp
 namespace fxa
 {
 
+#define DEFAULT_DETECTION_KEYS \
+    { \
+        { "resource", "", ExternalDetectionType::Resource }, \
+        { "resource", "match", ExternalDetectionType::Resource }, \
+        { "path", "", ExternalDetectionType::Path }, \
+        { "path", "match", ExternalDetectionType::Path }, \
+    }
+
 /**
  * IAssistant implementation supporting the registration of elements that may represent either
  * external or embedded fragments.
@@ -333,14 +341,10 @@ protected:
 public:
     CExternalFragmentDetector(const std::initializer_list<DetectionKey>& keys)
     {
-        static const std::initializer_list<DetectionKey> defaultKeys({
-            { "resource", "", ExternalDetectionType::Resource },
-            { "resource", "match", ExternalDetectionType::Resource },
-            { "path", "", ExternalDetectionType::Path },
-            { "path", "match", ExternalDetectionType::Path },
-        });
-
-        initializeKeys(keys.size() ? keys : defaultKeys);
+        if (keys.size())
+            initializeKeys(keys);
+        else
+            initializeKeys(DEFAULT_DETECTION_KEYS);
     }
 
 private:
