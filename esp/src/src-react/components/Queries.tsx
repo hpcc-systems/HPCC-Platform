@@ -89,7 +89,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             },
             Suspended: {
                 headerIcon: "Pause",
-                label: nlsHPCC.Suspended,
+                headerTooltip: nlsHPCC.Suspended,
                 width: 25,
                 sortable: false,
                 formatter: React.useCallback(function (suspended) {
@@ -101,6 +101,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             },
             ErrorCount: {
                 headerIcon: "Warning",
+                headerTooltip: nlsHPCC.ErrorWarnings,
                 width: 25,
                 sortable: false,
                 formatter: React.useCallback(function (error) {
@@ -112,6 +113,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             },
             MixedNodeStates: {
                 headerIcon: "Error",
+                headerTooltip: nlsHPCC.MixedNodeStates,
                 width: 25,
                 sortable: false,
                 formatter: React.useCallback(function (mixed) {
@@ -123,6 +125,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             },
             Activated: {
                 headerIcon: "SkypeCircleCheck",
+                headerTooltip: nlsHPCC.Active,
                 width: 25,
                 formatter: React.useCallback(function (activated) {
                     if (activated === true) {
