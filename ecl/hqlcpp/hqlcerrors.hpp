@@ -578,7 +578,7 @@
 #define HQLWRN_OutputScalarInsideChildQuery_Text "Output(%s) of single value inside a child query has undefined behaviour"
 #define HQLWRN_GlobalDatasetFromChildQuery_Text "Global dataset expression (%s) is used in a child query"
 #define HQLWRN_NestedSequentialUseOrdered_Text  "Using ORDERED instead of SEQUENTIAL for child actions"
-#define HQLWRN_DistributionNotMatchLocalJoin_Text "Input distributions do not appear to match the local join condition"
+#define HQLWRN_DistributionNotMatchLocalJoin_Text "Input distributions do not appear to match the local join condition in activity %u"
 
 #define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
 #define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"

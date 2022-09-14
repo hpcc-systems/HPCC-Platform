@@ -1699,14 +1699,81 @@ bool matchesAnyDistribution(IHqlExpression * distn)
  For a join to be able to be optimized to a local join we need:
  a) The distribution function to have exactly the same form on each side.
  b) All references to fields from the dataset must match the join element
+ c) Note HASH((unsigned6)value) == HASH((unsigned8)value) - so special code to avoid false negatives
 */
+
+static bool preservesHashValue(ITypeInfo * newType, ITypeInfo * oldType)
+{
+    type_t newTypeCode = newType->getTypeCode();
+    if (newTypeCode != oldType->getTypeCode())
+        return false;
+
+    if (newType->getSize() < oldType->getSize())
+        return false;
+
+    //Some types do not trim or cast to a common base type
+    switch (newTypeCode)
+    {
+    case type_varstring:
+    case type_varunicode:
+        if (newType->getSize() != oldType->getSize())
+            return false;
+        break;
+    }
+
+    //Any other type-specific characteristics that prevent the hash values from being the same?
+    switch (newTypeCode)
+    {
+    case type_string:
+    case type_varstring:
+        return (oldType->queryCharset() == newType->queryCharset());
+    default:
+        return true;
+    }
+}
+
+static bool isHashValuePreservingCast(IHqlExpression * expr)
+{
+    if (!isCast(expr))
+        return false;
+    IHqlExpression * arg = expr->queryChild(0);
+    return preservesHashValue(expr->queryType(), arg->queryType());
+}
+
+//Match a sort element, but ignore any casts which will have no effect on the evaluation
+static unsigned fullSortMatch(const HqlExprArray & sorts, IHqlExpression * distribute)
+{
+    unsigned match = sorts.find(*distribute->queryBody());
+    if (match != NotFound)
+        return match;
+    while (isHashValuePreservingCast(distribute))
+        distribute = distribute->queryChild(0);
+
+    ForEachItemIn(i, sorts)
+    {
+        IHqlExpression * cur = &sorts.item(0);
+        while (isHashValuePreservingCast(cur))
+            cur = cur->queryChild(0);
+        if (cur->queryBody() == distribute->queryBody())
+            return i;
+    }
+    return NotFound;
+}
 
 static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpression * distribute2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
     unsigned match1 = sort1.find(*distribute1->queryBody());
     unsigned match2 = sort2.find(*distribute2->queryBody());
     if ((match1 != NotFound) || (match2 != NotFound))
+    {
+        if (match1 != match2)
+        {
+            match1 = fullSortMatch(sort1, distribute1);
+            match2 = fullSortMatch(sort2, distribute2);
+        }
+
         return (match1 == match2);
+    }
 
     node_operator op = distribute1->getOperator();
     if (op != distribute2->getOperator())
@@ -1721,8 +1788,9 @@ static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpressi
     case no_select:
     case no_field:
         {
-            //recurse?
-            return false;
+            match1 = fullSortMatch(sort1, distribute1);
+            match2 = fullSortMatch(sort2, distribute2);
+            return (match1 != NotFound) && (match1 == match2);
         }
     }
 
