@@ -22,7 +22,9 @@
 #include "jlib.hpp"
 #include "jio.hpp"
 #include <math.h>
-
+#include <azure/core.hpp>
+#include <azure/storage/blobs.hpp>
+#include <azure/storage/files/shares.hpp>
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -125,13 +127,13 @@ bool TargetLocation::canPull()
 
 //----------------------------------------------------------------------------
 
-FilePartInfo::FilePartInfo(const RemoteFilename & _filename)
+FilePartInfo::FilePartInfo(const RemoteFilename & _filename, unsigned _partNum) : partNum(_partNum)
 {
     filename.set(_filename);
     init();
 }
 
-FilePartInfo::FilePartInfo()
+FilePartInfo::FilePartInfo(unsigned _partNum) : partNum(_partNum)
 {
     init();
 }
@@ -447,7 +449,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
         msg.clear().append(true);
         catchWriteBuffer(socket, msg);
         if (sprayer.options->getPropInt("@fail", 0)) // probably used as a debug testing option
-            throwError(DFTERR_CopyFailed);
+            throwError1(DFTERR_CopyFailed, "unknown reason");
     }
     return ok;
 }
@@ -1176,7 +1178,7 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
             remoteFilename.append(curBlob.filename);
             blobTarget.clear();
             blobTarget.setRemotePath(remoteFilename);
-            targets.append(* new TargetLocation(blobTarget));
+            targets.append(* new TargetLocation(blobTarget, target->partNum));
             partition.append(*new PartitionPoint(idx, targets.ordinality()-1, curBlob.offset, curBlob.length, curBlob.length));
         }
     }
@@ -1515,6 +1517,46 @@ void FileSprayer::cleanupRecovery()
 bool FileSprayer::usePushWholeOperation() const
 {
     return targets.item(0).filename.isUrl();
+}
+
+bool FileSprayer::useAPICopy()
+{
+    if (isContainerized()) // Future: support in bare-metal?
+    {
+        bool needCalcCRC = calcCRC();
+        if (needCalcCRC && !sources.item(0).hasCRC)
+            return false;
+
+        StringBuffer targetClusterName;
+        distributedTarget->getClusterName(0, targetClusterName); // change this to support logical files in > 1 clusters
+        Owned<IStoragePlane> targetStoragePlane = getDataStoragePlane(targetClusterName.str(), false);
+        if (targetStoragePlane==nullptr)
+            return false;
+        if (isEmptyString(targetStoragePlane->queryStorageApiAccount()))
+            return false;
+        if (isEmptyString(targetStoragePlane->queryStorageContainer()))
+            return false;
+
+        StringBuffer sourceClusterName;
+        distributedSource->getClusterName(0, sourceClusterName);
+        Owned<IStoragePlane> sourceStoragePlane = getDataStoragePlane(sourceClusterName.str(), false);
+        if (sourceStoragePlane==nullptr)
+            return false;
+        if (isEmptyString(sourceStoragePlane->queryStorageApiAccount()))
+            return false;
+        if (isEmptyString(sourceStoragePlane->queryStorageContainer()))
+            return false;
+
+        StorageType stTarget = targetStoragePlane->getStorageType();
+        StorageType stSource = sourceStoragePlane->getStorageType();
+        if ((stTarget==StorageType::StorageTypeAzureFile || stTarget==StorageType::StorageTypeAzureBlob)
+            && (stSource==StorageType::StorageTypeAzureFile || stSource==StorageType::StorageTypeAzureBlob))
+        {
+            LOG(MCdebugInfo, job, "Using Azure API to copy files");
+            return true;
+        }
+    }
+    return false;
 }
 
 bool FileSprayer::canRenameOutput() const
@@ -2012,7 +2054,7 @@ void FileSprayer::gatherMissingSourceTarget(IFileDescriptor * source)
             {
                 for (unsigned copy=0; copy < numCopies; copy++)
                 {
-                    FilePartInfo & next = * new FilePartInfo;
+                    FilePartInfo & next = * new FilePartInfo(idx1);
                     source->getFilename(idx1, copy, next.filename);
                     if (copy==0)
                         primparts.append(next);
@@ -2078,9 +2120,18 @@ void FileSprayer::gatherMissingSourceTarget(IFileDescriptor * source)
                     break;
                 }
             }
-            if (!done) {
-                sources.append(* new FilePartInfo(*((sourceCopy == 0)? &primary.filename : &secondary.filename)));
-                targets.append(* new TargetLocation(*dst));
+            if (!done)
+            {
+                if (sourceCopy == 0)
+                {
+                    sources.append(* new FilePartInfo(primary.filename, primary.partNum));
+                    targets.append(* new TargetLocation(*dst, primary.partNum));
+                }
+                else
+                {
+                    sources.append(* new FilePartInfo(secondary.filename, secondary.partNum));
+                    targets.append(* new TargetLocation(*dst, secondary.partNum));
+                }
                 sources.tos().size = (sourceCopy == 0) ? primarySize : secondarySize;
             }
         }
@@ -2521,7 +2572,7 @@ void FileSprayer::performTransfer()
         if (isAborting())
             throwError(DFTERR_CopyAborted);
         else
-            throwError(DFTERR_CopyFailed);
+            throwError1(DFTERR_CopyFailed, "unknown reason");
     }
 }
 
@@ -2600,6 +2651,360 @@ void FileSprayer::pushParts()
     performTransfer();
 }
 
+using namespace Azure::Storage;
+using namespace Azure::Storage::Files;
+using namespace Azure::Storage::Blobs;
+
+enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
+interface IAPICopyClient : implements IInterface
+{
+    virtual void startCopy(const char *target, const char * source) = 0;
+    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) = 0;
+    virtual ApiCopyStatus abortCopy() = 0;
+    virtual ApiCopyStatus getStatus() const = 0;
+};
+
+class CApiCopyClient : public CInterfaceOf<IAPICopyClient>
+{
+protected:
+    ApiCopyStatus status = ApiCopyStatus::NotStarted;
+public:
+    virtual ApiCopyStatus getStatus() const override
+    {
+        return status;
+    }
+    static void buildStorageURIBase(IStoragePlane * storagePlane, StringBuffer & uri)
+    {
+        const char *accountName = storagePlane->queryStorageApiAccount();
+        uri.appendf("https://%s", accountName);
+
+        if (storagePlane->getStorageType()==StorageType::StorageTypeAzureFile)
+        {
+            uri.append(".file");
+        }
+        else
+        {
+            dbgassertex(storagePlane->getStorageType()==StorageType::StorageTypeAzureBlob);
+            uri.append(".blob");
+        }
+        const char *container = storagePlane->queryStorageContainer();
+        uri.appendf(".core.windows.net/%s", container);
+    }
+    static void buildAzureStorageURI(IDistributedFile *distFile, unsigned partNum, const char * baseURI, const char *sasToken, StringBuffer & uri)
+    {
+        StringBuffer path;
+        distFile->queryPart(partNum).getStorageFilePath(path, 0);
+        StringBuffer tmp;
+        uri.appendf("%s%s%s", baseURI, encodeURL(tmp, path.str()).str(), sasToken);
+    }
+};
+
+class AzureFileClient : public CApiCopyClient
+{
+    std::unique_ptr<Shares::ShareFileClient> fileClient;
+    std::unique_ptr<Shares::StartFileCopyOperation> fileCopyOp;
+public:
+    virtual void startCopy(const char *target, const char * source) override
+    {
+        try
+        {
+            fileClient.reset(new Shares::ShareFileClient(target));
+            fileCopyOp = std::make_unique<Shares::StartFileCopyOperation>(std::move(fileClient->StartCopy(source)));
+            status = ApiCopyStatus::Pending;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            IERRLOG("AzureFileClient startCopy failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            status = ApiCopyStatus::Failed;
+            throw makeStringException(DFTERR_CopyFailed, e.ReasonPhrase.c_str());
+        }
+    }
+    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) override
+    {
+        dateTime.clear();
+        outputLength=0;
+
+        if (status!=ApiCopyStatus::Pending)
+            return status;
+        try
+        {
+            fileCopyOp->Poll();
+            Shares::Models::FileProperties props = fileCopyOp->Value();
+            dateTime.setString(props.LastModified.ToString().c_str());
+            outputLength = props.FileSize;
+            Shares::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Shares::Models::CopyStatus::Pending);
+            if (tstatus==Shares::Models::CopyStatus::Success) // FYI. CopyStatus is an object so can't use switch statement
+                status = ApiCopyStatus::Success;
+            else if (tstatus==Shares::Models::CopyStatus::Pending)
+                status = ApiCopyStatus::Pending;
+            else if (tstatus==Shares::Models::CopyStatus::Aborted)
+                status = ApiCopyStatus::Aborted;
+            else
+                status = ApiCopyStatus::Failed;
+        }
+        catch(const Azure::Core::RequestFailedException& e)
+        {
+            IERRLOG("Transfer using API .Poll() failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            status = ApiCopyStatus::Failed;
+        }
+        return status;
+    }
+    virtual ApiCopyStatus abortCopy() override
+    {
+        if (status==ApiCopyStatus::Aborted || status==ApiCopyStatus::Failed)
+            return status;
+        int64_t outputLength;
+        CDateTime dateTime;
+        status = getProgress(dateTime, outputLength);
+        switch (status)
+        {
+            case ApiCopyStatus::Pending:
+                try
+                {
+                    if (fileCopyOp->HasValue() && fileCopyOp->Value().CopyId.HasValue())
+                        fileClient->AbortCopy(fileCopyOp->Value().CopyId.Value().c_str());
+                    else // not sure that this can ever happen
+                        IERRLOG("AzureFileClient::AbortCopy() failed: CopyId is empty");
+                    status = ApiCopyStatus::Aborted;
+                }
+                catch(const Azure::Core::RequestFailedException& e)
+                {
+                    IERRLOG("Abort copy operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                    status = ApiCopyStatus::Failed;
+                }
+                // fallthrough to delete any file remnants
+            case ApiCopyStatus::Success:
+                // already copied-> need to delete
+                try
+                {
+                    fileClient->Delete();
+                    status = ApiCopyStatus::Aborted;
+                }
+                catch(const Azure::Core::RequestFailedException& e)
+                {
+                    IERRLOG("Delete operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                    status = ApiCopyStatus::Failed;
+                }
+                break;
+        }
+        return status;
+    }
+};
+
+class AzureBlobClient : public CApiCopyClient
+{
+    std::unique_ptr<BlobClient> blobClient;
+    std::unique_ptr<StartBlobCopyOperation> blobCopyOp;
+public:
+    virtual void startCopy(const char *target, const char * source) override
+    {
+        try
+        {
+            blobClient.reset(new BlobClient(target));
+            blobCopyOp = std::make_unique<StartBlobCopyOperation>(std::move(blobClient->StartCopyFromUri(source)));
+            status = ApiCopyStatus::Pending;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            IERRLOG("AzureBlobClient startCopyFromURI failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            status = ApiCopyStatus::Failed;
+            throw MakeStringException(DFTERR_CopyFailed, "%s", e.ReasonPhrase.c_str());
+        }
+    }
+    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) override
+    {
+        dateTime.clear();
+        outputLength=0;
+
+        if (status!=ApiCopyStatus::Pending)
+            return status;
+        try
+        {
+            blobCopyOp->Poll();
+            Models::BlobProperties props = blobCopyOp->Value();
+            dateTime.setString(props.LastModified.ToString().c_str());
+            outputLength = props.BlobSize;
+            Blobs::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Blobs::Models::CopyStatus::Pending);
+            if (tstatus==Blobs::Models::CopyStatus::Success) // FYI. CopyStatus is an object so can't use switch statement
+                status = ApiCopyStatus::Success;
+            else if (tstatus==Blobs::Models::CopyStatus::Pending)
+                status = ApiCopyStatus::Pending;
+            else if (tstatus==Blobs::Models::CopyStatus::Aborted)
+                status = ApiCopyStatus::Aborted;
+            else
+                status = ApiCopyStatus::Failed;
+        }
+        catch(const Azure::Core::RequestFailedException& e)
+        {
+            IERRLOG("Transfer using API .Poll() failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            return ApiCopyStatus::Failed;
+        }
+        return status;
+    }
+    virtual ApiCopyStatus abortCopy() override
+    {
+        if (status==ApiCopyStatus::Aborted || status==ApiCopyStatus::Failed)
+            return status;
+        int64_t outputLength;
+        CDateTime dateTime;
+        status = getProgress(dateTime, outputLength);
+        switch (status)
+        {
+            case ApiCopyStatus::Pending:
+                try
+                {
+                    if (blobCopyOp->HasValue() && blobCopyOp->Value().CopyId.HasValue())
+                        blobClient->AbortCopyFromUri(blobCopyOp->Value().CopyId.Value().c_str());
+                    else // not sure that this can ever happen
+                        IERRLOG("AzureBlobClient::AbortCopy() failed: CopyId is empty");
+                    status = ApiCopyStatus::Aborted;
+                }
+                catch(const Azure::Core::RequestFailedException& e)
+                {
+                    IERRLOG("Abort copy operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                    status = ApiCopyStatus::Failed;
+                }
+                // fallthrough to delete any file remnants
+            case ApiCopyStatus::Success:
+                // already copied-> need to delete
+                try
+                {
+                    blobClient->Delete();
+                    status = ApiCopyStatus::Aborted;
+                }
+                catch(const Azure::Core::RequestFailedException& e)
+                {
+                    IERRLOG("Delete operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                    status = ApiCopyStatus::Failed;
+                }
+                break;
+        }
+        return status;
+    }
+};
+
+void FileSprayer::transferUsingAPI()
+{
+    // N.B. Only call this member function, if FileSprayer::useAPICopy() has returned true
+    // Source
+    StringBuffer sourceClusterName, sourceBaseURI, sourceSAStoken;
+    distributedSource->getClusterName(0, sourceClusterName);
+    Owned<IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
+    CApiCopyClient::buildStorageURIBase(sourcePlane, sourceBaseURI);
+    sourcePlane->getSASToken(sourceSAStoken);
+
+    // Target
+    StringBuffer targetClusterName, targetBaseURI, targetSAStoken;
+    distributedTarget->getClusterName(0, targetClusterName);
+    Owned<IStoragePlane> targetPlane = getDataStoragePlane(targetClusterName.str(), false);
+    CApiCopyClient::buildStorageURIBase(targetPlane, targetBaseURI);
+    targetPlane->getSASToken(targetSAStoken);
+    StorageType targetType = targetPlane->getStorageType();
+
+    OwnedPointerArrayOf<IAPICopyClient> apiClients;
+    unsigned failCount = 0;
+    StringBuffer failedReason;
+    try
+    {
+        ForEachItemIn(idx1, partition)
+        {
+            PartitionPoint & cur = partition.item(idx1);
+            OutputProgress & curProgress = progress.item(idx1);
+            if (curProgress.status==OutputProgress::StatusCopied)
+            {
+                apiClients.append(nullptr); // represents parts already copied
+                continue;
+            }
+
+            StringBuffer sourceURI;
+            unsigned inputPartNum = sources.item(cur.whichInput).partNum;
+            CApiCopyClient::buildAzureStorageURI(distributedSource, inputPartNum, sourceBaseURI.str(), sourceSAStoken.str(), sourceURI);
+
+            StringBuffer targetURI;
+            unsigned outputPartNum = targets.item(cur.whichOutput).partNum;
+            CApiCopyClient::buildAzureStorageURI(distributedTarget, outputPartNum, targetBaseURI.str(), targetSAStoken.str(), targetURI);
+
+            Owned<IAPICopyClient> apiClient;
+            if (targetType==StorageTypeAzureFile)
+                apiClient.setown(new AzureFileClient());
+            else
+                apiClient.setown(new AzureBlobClient());
+            apiClient->startCopy(targetURI.str(), sourceURI.str());
+            apiClients.append(apiClient.getClear());
+            curProgress.status = OutputProgress::StatusActive;
+            curProgress.numReads++;
+            curProgress.numWrites++;
+            if (isAborting())
+                break;
+        }
+    }
+    catch (IException * e)
+    {
+        failCount++;
+        e->errorMessage(failedReason); // Will need this later to throw exception (after aborting pending copy op)
+        e->Release();
+    }
+    // Update progress of copy operations
+    while (!isAborting() && !failCount)
+    {
+        bool anyRemaining = false;
+        ForEachItemIn(idx2, apiClients)
+        {
+            IAPICopyClient * apiClient = apiClients.item(idx2);
+            if (apiClient==nullptr || apiClient->getStatus()==ApiCopyStatus::Success)
+                continue;
+            OutputProgress & curProgress = progress.item(idx2);
+            CDateTime dateTime;
+            int64_t outputLength;
+            ApiCopyStatus status = apiClient->getProgress(dateTime, outputLength);
+            OutputProgress newProgress;
+            newProgress.set(curProgress);
+            if (status != ApiCopyStatus::Aborted && status!= ApiCopyStatus::Failed)
+            {
+                newProgress.resultTime = dateTime;
+                newProgress.outputLength = outputLength;
+                newProgress.inputLength = outputLength; // bytes read==bytes outputted
+            }
+            switch(status)
+            {
+            case ApiCopyStatus::Success:
+                newProgress.status = OutputProgress::StatusCopied;
+                newProgress.outputCRC = curProgress.inputCRC;
+                break;
+            case ApiCopyStatus::Pending:
+                anyRemaining = true;
+                break;
+            case ApiCopyStatus::Failed:
+            case ApiCopyStatus::Aborted:
+                failedReason.append("unknown");
+                failCount++;
+                newProgress.status = OutputProgress::StatusBegin;
+                newProgress.outputLength = 0;
+                newProgress.inputLength = 0;
+                break;
+            }
+            updateProgress(newProgress);
+        }
+        if (isAborting() || !anyRemaining || failCount)
+            break;
+        MilliSleep(1000);
+    }
+    // Something went wrong or abort requested, so abort all Pending copy operations
+    if (isAborting() || failCount)
+    {
+        ForEachItemIn(idx3, apiClients)
+        {
+            IAPICopyClient * apiClient = apiClients.item(idx3);
+            if (apiClient==nullptr || apiClient->getStatus()==ApiCopyStatus::Success)
+                continue;
+            apiClient->abortCopy();
+            OutputProgress & curProgress = progress.item(idx3);
+            curProgress.status = OutputProgress::StatusBegin;
+        }
+        if (failCount)
+            throw makeStringExceptionV(DFTERR_CopyFailed, DFTERR_CopyFailed_Text, failedReason.str());
+    }
+}
 
 void FileSprayer::removeSource()
 {
@@ -2698,7 +3103,7 @@ void FileSprayer::setSource(IDistributedFile * source)
     {
         Owned<IDistributedFilePart> curPart = source->getPart(idx);
         RemoteFilename rfn;
-        FilePartInfo & next = * new FilePartInfo(curPart->getFilename(rfn));
+        FilePartInfo & next = * new FilePartInfo(curPart->getFilename(rfn), idx);
         next.extractExtra(*curPart);
         if (curPart->numCopies()>1)
             next.mirrorFilename.set(curPart->getFilename(rfn,1));
@@ -2747,7 +3152,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
             ForEachItemIn(i, multi)
             {
                 const RemoteFilename &rfn = multi.item(i);
-                FilePartInfo & next = * new FilePartInfo(rfn);
+                FilePartInfo & next = * new FilePartInfo(rfn, idx);
                 Owned<IPartDescriptor> part = source->getPart(idx);
                 next.extractExtra(*part);
                 // If size doesn't set here it will be forced to check the file size on disk (expensive)
@@ -2760,7 +3165,7 @@ void FileSprayer::setSource(IFileDescriptor * source, unsigned copy, unsigned mi
         else
         {
             source->getFilename(idx, copy, filename);
-            FilePartInfo & next = * new FilePartInfo(filename);
+            FilePartInfo & next = * new FilePartInfo(filename,idx);
             Owned<IPartDescriptor> part = source->getPart(idx);
             next.extractExtra(*part);
             if (mirrorCopy != (unsigned)-1)
@@ -2786,7 +3191,7 @@ void FileSprayer::setSource(IDistributedFilePart * part)
 
     unsigned copy = 0;
     RemoteFilename rfn;
-    sources.append(* new FilePartInfo(part->getFilename(rfn,copy)));
+    sources.append(* new FilePartInfo(part->getFilename(rfn,copy), part->getPartIndex()));
     if (compressedInput)
     {
         calcedInputCRC = true;
@@ -2865,7 +3270,7 @@ void FileSprayer::setTarget(IDistributedFile * target)
     {
         Owned<IDistributedFilePart> curPart(target->getPart(idx));
         RemoteFilename rfn;
-        TargetLocation & next = * new TargetLocation(curPart->getFilename(rfn,copy));
+        TargetLocation & next = * new TargetLocation(curPart->getFilename(rfn,copy), idx);
         targets.append(next);
     }
 
@@ -2887,7 +3292,7 @@ void FileSprayer::setTarget(IFileDescriptor * target, unsigned copy)
     for (unsigned idx=0; idx < numParts; idx++)
     {
         target->getFilename(idx, copy, filename);
-        targets.append(*new TargetLocation(filename));
+        targets.append(*new TargetLocation(filename, idx));
     }
 
     checkSprayOptions();
@@ -2974,7 +3379,7 @@ void FileSprayer::addTarget(unsigned idx, INode * node)
     filename.set(sources.item(idx).filename);
     filename.setEp(node->endpoint());
 
-    targets.append(* new TargetLocation(filename));
+    targets.append(* new TargetLocation(filename, idx));
 
     checkSprayOptions();
 }
@@ -3011,7 +3416,8 @@ const char * FileSprayer::querySlaveExecutable(const IpAddress &ip, StringBuffer
     return ret.append("ftslave").str();
 #else
     const char * slave = queryFixedSlave();
-    try {
+    try
+    {
         queryFtSlaveExecutable(ip, ret);
         if (ret.length())
             return ret.str();
@@ -3166,12 +3572,32 @@ void FileSprayer::spray()
     throwExceptionIfAborting();
 
     beforeTransfer();
-    if (usePushWholeOperation())
-        pushWholeParts();
-    else if (usePullOperation())
-        pullParts();
-    else
-        pushParts();
+    bool copiedAlready = false;
+    if (useAPICopy() && (replicate || copySource))
+    {
+        try
+        {
+            transferUsingAPI();
+            copiedAlready=true;
+        }
+        catch (IException *e)
+        {
+            StringBuffer reason;
+            e->errorMessage(reason);
+            // Log this failure (don't re-throw) as it should fall back to the older method to copy
+            OERRLOG("Transfer using API failed: %s (error %d)", reason.str(), e->errorCode());
+            e->Release();
+        }
+    }
+    if (!copiedAlready)
+    {
+        if (usePushWholeOperation())
+            pushWholeParts();
+        else if (usePullOperation())
+            pullParts();
+        else
+            pushParts();
+    }
     afterTransfer();
 
     //If got here then we have succeeded

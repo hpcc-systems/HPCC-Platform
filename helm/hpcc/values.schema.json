@@ -529,7 +529,8 @@
             "hosts": {},
             "umask": {},
             "numMounts": {},
-            "cost": {}
+            "cost": {},
+            "storageapi": {}
           },
           "additionalProperties": false
         }
@@ -579,6 +580,29 @@
             "storageAtRest" : {
               "description": "Storage cost (GiB/month)",
               "type": "number"
+            }
+          }
+        },
+        "storageapi": {
+          "description": "Optional information for storage api",
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Type of storage api",
+              "type": "string",
+              "enum": ["azurefile", "azureblob"]
+            },
+            "account": {
+              "description": "Account name",
+              "type": "string"
+            },
+            "secret": {
+              "description": "Secret id",
+              "type": "string"
+            },
+            "container": {
+              "description": "Container name",
+              "type": "string"
             }
           }
         }

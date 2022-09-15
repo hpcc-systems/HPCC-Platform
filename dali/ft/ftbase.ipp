@@ -35,6 +35,8 @@
 #define ANoutputDirect      "@outputDirect"
 #define ANoutputLength      "@outputLength"
 #define ANoutputOffset      "@outputOffset"
+#define ANinputPartNum      "@inputPartNum"
+#define ANoutputPartNum     "@outputPartNum"
 
 //File attributes
 #define FPrecordSize        "@recordSize"

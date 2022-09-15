@@ -210,7 +210,7 @@ extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);
 /* URL: http://user:passwd@host:port/path */
 extern jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* in);
 extern jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const char* in);
-
+extern jlib_decl StringBuffer& encodeURL(StringBuffer& out, const char* in);
 //--------------------------------------------------------------------------------------------------------------------
 
 class StringPointerArrayMapper : public SimpleArrayMapper<const char *>

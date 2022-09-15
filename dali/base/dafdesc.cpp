@@ -32,6 +32,7 @@
 #include "dafdesc.hpp"
 #include "dadfs.hpp"
 #include "dameta.hpp"
+#include "jsecrets.hpp"
 
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
@@ -3685,6 +3686,34 @@ public:
     }
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
     virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
+    virtual StorageType getStorageType() const override
+    {
+        const char * storageTypeStr = xml->queryProp("storageapi/@type");
+        if (isEmptyString(storageTypeStr))
+            return StorageType::StorageTypeUnknown;
+        if (streq(storageTypeStr, "azurefile"))
+            return StorageType::StorageTypeAzureFile;
+        if (streq(storageTypeStr, "azureblob"))
+            return StorageType::StorageTypeAzureBlob;
+        return StorageType::StorageTypeUnknown;
+    }
+    virtual const char * queryStorageApiAccount() const override
+    {
+        return xml->queryProp("storageapi/@account");
+    }
+    virtual const char * queryStorageContainer() const override
+    {
+        return xml->queryProp("storageapi/@container");
+    }
+    virtual StringBuffer & getSASToken(StringBuffer & token) const override
+    {
+        const char * secretName = xml->queryProp("storageapi/@secret");
+        if (isEmptyString(secretName))
+            return token.clear();  // return empty string if no secret name is specified
+        getSecretValue(token, "storage", secretName, "token", false);
+        return token.trimRight();
+    }
+
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
     {
         if (AccessMode::none == desiredModes)

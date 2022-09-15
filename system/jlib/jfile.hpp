@@ -390,10 +390,10 @@ public:
     const SocketEndpoint & queryEndpoint() const            { return ep; } // node containing file
     const IpAddress      & queryIP() const                  { return ep; }
     unsigned short getPort() const                          { return ep.port; }
-    bool isNull() const;                        
+    bool isNull() const;
 
     // the following overwrite previous contents
-    void set(const RemoteFilename & other);         
+    void set(const RemoteFilename & other);
     void setPath(const SocketEndpoint & _ep, const char * filename); // filename should be full windows or unix path (local)
     void setLocalPath(const char *name);                    // local path - can partial but on linux must be under \c$ or \d$
     void setRemotePath(const char * url,const char *local=NULL); // url should be full (share) path including ep
