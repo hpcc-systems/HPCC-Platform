@@ -148,14 +148,14 @@ protected:
                 StringBuffer sig;
                 bool ok = dsm->digiSign(sig, text);
                 if (!ok)
-                    printf("Asynchronous asyncDigiSignUnitTest() test %d failed!\n", idx);
+                    DBGLOG("Asynchronous asyncDigiSignUnitTest() test %d failed!", idx);
                 ASSERT(ok);
             }
         } afor(_dsm);
 
-        printf("Executing 1000 asyncDigiSignUnitTest() operations\n");
+        DBGLOG("Executing 1000 asyncDigiSignUnitTest() operations");
         afor.For(1000,20,true,true);
-        printf("Asynchronous asyncDigiSignUnitTest() test complete\n");
+        DBGLOG("Asynchronous asyncDigiSignUnitTest() test complete");
     }
 
     void asyncDigiVerifyUnitTest(IDigitalSignatureManager * _dsm)
@@ -171,23 +171,23 @@ protected:
             {
                 dsm = _dsm;
                 text.set("I am here");
-                bool ok = dsm->digiSign(text, sig);
+                bool ok = dsm->digiSign(sig, text);
                 if (!ok)
-                    printf("Asynchronous asyncDigiVerifyUnitTest() failed in digiSign!\n");
+                    DBGLOG("Asynchronous asyncDigiVerifyUnitTest() failed in digiSign!");
                 ASSERT(ok);
             }
             void Do(unsigned idx)
             {
                 bool ok = dsm->digiVerify(sig, text);
                 if (!ok)
-                    printf("Asynchronous asyncDigiVerifyUnitTest() test %d failed!\n", idx);
+                    DBGLOG("Asynchronous asyncDigiVerifyUnitTest() test %d failed!", idx);
                 ASSERT(ok);
             }
         } afor(_dsm);
 
-        printf("Executing 1000 asyncDigiVerifyUnitTest() operations\n");
+        DBGLOG("Executing 1000 asyncDigiVerifyUnitTest() operations");
         afor.For(1000,20,true,true);
-        printf("Asynchronous asyncDigiVerifyUnitTest() test complete\n");
+        DBGLOG("Asynchronous asyncDigiVerifyUnitTest() test complete");
     }
 
     void asyncDigiSignAndVerifyUnitTest(IDigitalSignatureManager * _dsm)
@@ -205,28 +205,25 @@ protected:
             {
                 VStringBuffer text("I am here %d", idx);
                 StringBuffer sig;
-                bool ok = dsm->digiSign(text, sig);
+                bool ok = dsm->digiSign(sig, text);
                 if (!ok)
-                    printf("Asynchronous asyncDigiSignAndVerifyUnitTest() test %d failed!\n", idx);
+                    DBGLOG("Asynchronous asyncDigiSignAndVerifyUnitTest() test %d failed in digiSign!", idx);
                 ASSERT(ok);
 
                 ok = dsm->digiVerify(sig, text);
                 if (!ok)
-                    printf("Asynchronous asyncDigiSignAndVerifyUnitTest() test %d failed!\n", idx);
+                    DBGLOG("Asynchronous asyncDigiSignAndVerifyUnitTest() test %d failed to verify!", idx);
                 ASSERT(ok);
             }
         } afor(_dsm);
 
-        printf("Executing 1000 asynchronous asyncDigiSignAndVerifyUnitTest() operations\n");
+        DBGLOG("Executing 1000 asynchronous asyncDigiSignAndVerifyUnitTest() operations");
         afor.For(1000,20,true,true);
-        printf("Asynchronous asyncDigiSignAndVerifyUnitTest() test complete\n");
+        DBGLOG("Asynchronous asyncDigiSignAndVerifyUnitTest() test complete");
     }
 
     void digiSignTests()
     {
-        Owned<IException> exception;
-        CppUnit::Exception *cppunitException;
-
         const char * text1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         const char * text2 = "~`!@#$%^&*()_-+=0123456789{[}]:;\"'<,>.?/'";
         const char * text3 = "W20180301-154415;ECLUsername";
@@ -236,12 +233,12 @@ protected:
 
         try
         {
-            printf("\nExecuting digiSign() unit tests\n");
+            DBGLOG("Executing digiSign() unit tests");
 
             //Create instance of digital signature manager
             Owned<IDigitalSignatureManager> dsm(createDigitalSignatureManagerInstanceFromKeys(pubKey, privKey, nullptr));
 
-            printf("digiSign() test 1\n");
+            DBGLOG("digiSign() test 1");
             StringBuffer txt(text1);
             bool ok = dsm->digiSign(sig1.clear(), text1);
             ASSERT(ok);
@@ -254,13 +251,13 @@ protected:
             ASSERT(0 == strcmp(text1, txt.str()));//source string should be unchanged
             ASSERT(0 == strcmp(sig.str(), sig1.str()));//signature should be unchanged
 
-            printf("digiSign() test 2\n");
+            DBGLOG("digiSign() test 2");
             ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
             ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
 
-            printf("digiSign() test 3\n");
+            DBGLOG("digiSign() test 3");
             ok = dsm->digiSign(sig2.clear(), text2);
             ASSERT(ok);
             ok = dsm->digiVerify(sig2, text2);
@@ -270,27 +267,27 @@ protected:
             ok = dsm->digiVerify(sig2, text2);
             ASSERT(ok);
 
-            printf("digiSign() test 4\n");
+            DBGLOG("digiSign() test 4");
             ok = dsm->digiVerify(sig1, text1);
             ASSERT(ok);
 
-            printf("digiSign() test 5\n");
+            DBGLOG("digiSign() test 5");
             ok = dsm->digiVerify(sig2, text2);
             ASSERT(ok);
 
-            printf("digiSign() test 6\n");
+            DBGLOG("digiSign() test 6");
             ok = dsm->digiVerify(sig2, text1);
             ASSERT(!ok);//should fail
 
-            printf("digiSign() test 7\n");
+            DBGLOG("digiSign() test 7");
             ok = dsm->digiVerify(sig1, text2);
             ASSERT(!ok);//should fail
 
-            printf("digiSign() test 8\n");
+            DBGLOG("digiSign() test 8");
             ok = dsm->digiSign(sig3.clear(), text3);
             ASSERT(ok);
 
-            printf("digiSign() test 9\n");
+            DBGLOG("digiSign() test 9");
             ok = dsm->digiVerify(sig1, text3);
             ASSERT(!ok);//should fail
             ok = dsm->digiVerify(sig2, text3);
@@ -299,50 +296,45 @@ protected:
             ASSERT(ok);
 
             //Perform
-            printf("digiSign() loop test\n");
+            DBGLOG("digiSign() loop test");
             unsigned now = msTick();
             for (int x=0; x<1000; x++)
             {
                 dsm->digiSign(sig3.clear(), text3);
             }
-            printf("digiSign() 1000 iterations took %d MS\n", msTick() - now);
+            DBGLOG("digiSign() 1000 iterations took %d ms", msTick() - now);
 
-            printf("digiVerify() loop test\n");
+            DBGLOG("digiVerify() loop test");
             now = msTick();
             for (int x=0; x<1000; x++)
             {
                 dsm->digiVerify(sig3, text3);
             }
-            printf("digiverify 1000 iterations took %d MS\n", msTick() - now);
+            DBGLOG("digiverify 1000 iterations took %d ms", msTick() - now);
 
             now = msTick();
-            printf("\nAsynchronous test digiSign\n");
+            DBGLOG("Asynchronous test digiSign");
             asyncDigiSignUnitTest(dsm);
-            printf("digiSign 1000 async iterations took %d MS\n", msTick() - now);
+            DBGLOG("digiSign 1000 async iterations took %d ms", msTick() - now);
 
             now = msTick();
-            printf("\nAsynchronous test digiVerify\n");
+            DBGLOG("Asynchronous test digiVerify");
             asyncDigiVerifyUnitTest(dsm);
-            printf("digiverify 1000 async iterations took %d MS\n", msTick() - now);
+            DBGLOG("digiverify 1000 async iterations took %d ms", msTick() - now);
 
             now = msTick();
-            printf("\nAsynchronous test digiSign and digiVerify\n");
+            DBGLOG("Asynchronous test digiSign and digiVerify");
             asyncDigiSignAndVerifyUnitTest(dsm);
-            printf("digiSign/digiverify 1000 async iterations took %d MS\n", msTick() - now);
+            DBGLOG("digiSign/digiverify 1000 async iterations took %d ms", msTick() - now);
         }
         catch (IException *e)
         {
             StringBuffer err;
             e->errorMessage(err);
-            printf("Digisign IException thrown:%s\n", err.str());
-            exception.setown(e);
+            DBGLOG("Digisign IException thrown:%s", err.str());
+            throw;
         }
-        catch (CppUnit::Exception &e)
-        {
-            printf("Digisign CppUnit::Exception thrown\n");
-            cppunitException = e.clone();
-        }
-        printf("Completed executing digiSign() unit tests\n");
+        DBGLOG("Completed executing digiSign() unit tests");
     }
 
     void _pkeEncryptDecryptTest()
@@ -369,19 +361,19 @@ protected:
         {
             StringBuffer err;
             e->errorMessage(err);
-            printf("pkeEncryptDecryptTest IException thrown:%s\n", err.str());
+            DBGLOG("pkeEncryptDecryptTest IException thrown:%s", err.str());
             throw;
         }
         catch (CppUnit::Exception &e)
         {
-            printf("pkeEncryptDecryptTest CppUnit::Exception thrown\n");
+            DBGLOG("pkeEncryptDecryptTest CppUnit::Exception thrown");
             throw;
         }
     }
 
     void pkeEncryptDecryptTest()
     {
-        printf("\nExecuting pkeEncryptDecryptTest() unit tests\n");
+        DBGLOG("Executing pkeEncryptDecryptTest() unit tests");
         _pkeEncryptDecryptTest();
     }
 
@@ -429,19 +421,19 @@ protected:
         {
             StringBuffer err;
             e->errorMessage(err);
-            printf("pkeEncryptDecryptPassphraseTest IException thrown:%s\n", err.str());
+            DBGLOG("pkeEncryptDecryptPassphraseTest IException thrown:%s", err.str());
             throw;
         }
         catch (CppUnit::Exception &e)
         {
-            printf("pkeEncryptDecryptPassphraseTest CppUnit::Exception thrown\n");
+            DBGLOG("pkeEncryptDecryptPassphraseTest CppUnit::Exception thrown");
             throw;
         }
     }
 
     void pkeEncryptDecryptPassphraseTest()
     {
-        printf("\nExecuting pkeEncryptDecryptPassphraseTest() unit tests\n");
+        DBGLOG("Executing pkeEncryptDecryptPassphraseTest() unit tests");
         _pkeEncryptDecryptPassphraseTest();
     }
 
@@ -460,17 +452,17 @@ protected:
             }
         } afor(std::bind(&CryptoUnitTest::_pkeEncryptDecryptTest, this));
 
-        printf("\nExecuting 1000 asynchronous pkeParallelTest() operations\n");
+        DBGLOG("Executing 1000 asynchronous pkeParallelTest() operations");
         CCycleTimer timer;
         afor.For(1000, 20, true, true);
-        printf("Asynchronous pkeParallelTest() test completed in %u ms\n", timer.elapsedMs());
+        DBGLOG("Asynchronous pkeParallelTest() test completed in %u ms", timer.elapsedMs());
     }
 
     void aesEncryptDecryptTests()
     {
         try
         {
-            printf("\nExecuting aesEncryptDecryptTests() unit tests\n");
+            DBGLOG("Executing aesEncryptDecryptTests() unit tests");
             // create random data
             MemoryBuffer messageMb, encryptedMessageMb, decryptedMessageMb;
 
@@ -480,53 +472,53 @@ protected:
             fillRandomData(aesBlockSize, aesIV);
 
             fillRandomData(1024*100, messageMb);
-            printf("aesEncryptDecryptTests with %u bytes with 256bit aes key\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes with 256bit aes key", messageMb.length());
             aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
-            printf("aesEncryptDecryptTests with %u bytes with 192bit aes key\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes with 192bit aes key", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), 192/8, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), 192/8, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
-            printf("aesEncryptDecryptTests with %u bytes with 128bit aes key\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes with 128bit aes key", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), 128/8, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), 128/8, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             messageMb.clear(); // 0 length test
-            printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
 
             fillRandomData(1, messageMb.clear()); // 1 byte test
-            printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(cryptohelper::aesBlockSize-1, messageMb.clear()); // aesBlockSize-1 test
-            printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(cryptohelper::aesBlockSize, messageMb.clear()); // aesBlockSize test
-            printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
             ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
 
             fillRandomData(cryptohelper::aesBlockSize+1, messageMb.clear()); // aesBlockSize+1 test
-            printf("aesEncryptDecryptTests with %u bytes\n", messageMb.length());
+            DBGLOG("aesEncryptDecryptTests with %u bytes", messageMb.length());
             aesEncrypt(encryptedMessageMb.clear(), messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             aesDecrypt(decryptedMessageMb.clear(), encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
             ASSERT(messageMb.length() == decryptedMessageMb.length());
@@ -536,12 +528,12 @@ protected:
         {
             StringBuffer err;
             e->errorMessage(err);
-            printf("aesWithRsaEncryptedKey IException thrown:%s\n", err.str());
+            DBGLOG("aesWithRsaEncryptedKey IException thrown:%s", err.str());
             throw;
         }
         catch (CppUnit::Exception &e)
         {
-            printf("aesWithRsaEncryptedKey CppUnit::Exception thrown\n");
+            DBGLOG("aesWithRsaEncryptedKey CppUnit::Exception thrown");
             throw;
         }
     }
@@ -550,7 +542,7 @@ protected:
     {
         try
         {
-            printf("\nExecuting aesWithRsaEncryptedKey() unit tests\n");
+            DBGLOG("Executing aesWithRsaEncryptedKey() unit tests");
             // create random data
             MemoryBuffer messageMb;
             fillRandomData(1024*100, messageMb);
@@ -576,12 +568,12 @@ protected:
         {
             StringBuffer err;
             e->errorMessage(err);
-            printf("aesWithRsaEncryptedKey IException thrown:%s\n", err.str());
+            DBGLOG("aesWithRsaEncryptedKey IException thrown:%s", err.str());
             throw;
         }
         catch (CppUnit::Exception &e)
         {
-            printf("aesWithRsaEncryptedKey CppUnit::Exception thrown\n");
+            DBGLOG("aesWithRsaEncryptedKey CppUnit::Exception thrown");
             throw;
         }
     }
@@ -615,10 +607,10 @@ protected:
             }
         } afor;
 
-        printf("\nExecuting 1000 asynchronous aesParallelTest() operations\n");
+        DBGLOG("Executing 1000 asynchronous aesParallelTest() operations");
         CCycleTimer timer;
         afor.For(1000, 20, true, true);
-        printf("Asynchronous aesParallelTest() test completed in %u ms\n", timer.elapsedMs());
+        DBGLOG("Asynchronous aesParallelTest() test completed in %u ms", timer.elapsedMs());
     }
 };
 
@@ -650,12 +642,12 @@ public:
 
         CCycleTimer timer;
         cryptohelper::aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
-        printf("OPENSSL AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("OPENSSL AES %u MB encrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
 
         decryptedMessageMb.ensureCapacity(encryptedMessageMb.length()+aesBlockSize);
         timer.reset();
         cryptohelper::aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
-        printf("OPENSSL AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("OPENSSL AES %u MB decrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
 
         ASSERT(messageMb.length() == decryptedMessageMb.length());
         ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
@@ -663,12 +655,12 @@ public:
         encryptedMessageMb.clear();
         timer.reset();
         jlib::aesEncrypt(aesKey, aesMaxKeySize, messageMb.bytes(), messageMb.length(), encryptedMessageMb);
-        printf("JLIB    AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("JLIB    AES %u MB encrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
 
         decryptedMessageMb.clear();
         timer.reset();
         jlib::aesDecrypt(aesKey, aesMaxKeySize, encryptedMessageMb.bytes(), encryptedMessageMb.length(), decryptedMessageMb);
-        printf("JLIB    AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("JLIB    AES %u MB decrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
 
         ASSERT(messageMb.length() == decryptedMessageMb.length());
         ASSERT(0 == memcmp(messageMb.bytes(), decryptedMessageMb.bytes(), messageMb.length()));
@@ -690,12 +682,12 @@ public:
         encryptedMessageMb.ensureCapacity(dataSz+aesBlockSize);
         CCycleTimer timer;
         aesEncrypt(encryptedMessageMb, messageMb.length(), messageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
-        printf("AES %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("AES %u MB encrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
         MemoryBuffer decryptedMessageMb;
         decryptedMessageMb.ensureCapacity(encryptedMessageMb.length()+aesBlockSize);
         timer.reset();
         aesDecrypt(decryptedMessageMb, encryptedMessageMb.length(), encryptedMessageMb.bytes(), aesMaxKeySize, aesKey, aesIV);
-        printf("AES %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("AES %u MB decrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
     }
 
     void rsaSpeedTest()
@@ -734,7 +726,7 @@ public:
                 break;
         }
         encryptedMessageMb.rewrite(dst-(byte*)encryptedMessageMb.bufferBase());
-        printf("RSA %u MB encrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("RSA %u MB encrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
 
         size32_t encryptedDataSz = encryptedMessageMb.length();
         remaining = encryptedDataSz;
@@ -755,7 +747,7 @@ public:
             if (0 == remaining)
                 break;
         }
-        printf("RSA %u MB decrypt time: %u ms\n", dataSz/0x100000, timer.elapsedMs());
+        DBGLOG("RSA %u MB decrypt time: %u ms", dataSz/0x100000, timer.elapsedMs());
     }
 
     void rsaKeyLoadSpeedTest()
@@ -778,7 +770,7 @@ public:
             MemoryBuffer decryptedMb;
             privateKeyDecrypt(decryptedMb, pkeMb.length(), pkeMb.bytes(), *privateKey);
         }
-        printf("RSA %u cycles - reloading keys each iteration - %u ms\n", numCycles, timer.elapsedMs());
+        DBGLOG("RSA %u cycles - reloading keys each iteration - %u ms", numCycles, timer.elapsedMs());
 
         Owned<CLoadedKey> publicKey = loadPublicKeyFromMemory(pubKey);
         Owned<CLoadedKey> privateKey = loadPrivateKeyFromMemory(privKey, nullptr);
@@ -792,7 +784,7 @@ public:
             MemoryBuffer decryptedMb;
             privateKeyDecrypt(decryptedMb, pkeMb.length(), pkeMb.bytes(), *privateKey);
         }
-        printf("RSA %u cycles - reusing loaded keys - %u ms\n", numCycles, timer.elapsedMs());
+        DBGLOG("RSA %u cycles - reusing loaded keys - %u ms", numCycles, timer.elapsedMs());
     }
 };
 

@@ -157,7 +157,7 @@ interface IQueryFactory : extends IInterface
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
-    virtual void gatherStats(IConstWorkUnit* statsWu, int channel, bool reset) const = 0;
+    virtual void gatherStats(IConstWorkUnit* statsWu, const char *graphName, int channel, bool reset) const = 0;
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
     virtual void mergeStats(const IRoxieContextLogger &from) const = 0;
 

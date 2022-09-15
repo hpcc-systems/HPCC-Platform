@@ -54,6 +54,9 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
     unsigned __int64 duplicateKeyCount;
+    unsigned __int64 numLeafNodes = 0;
+    unsigned __int64 numBranchNodes = 0;
+    unsigned __int64 numBlobNodes = 0;
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
@@ -374,6 +377,9 @@ public:
                     throw;
                 }
                 duplicateKeyCount = builder->getDuplicateCount();
+                numLeafNodes = builder->getNumLeafNodes();
+                numBranchNodes = builder->getNumBranchNodes();
+                numBlobNodes = builder->getNumBlobNodes();
                 close(*partDesc, partCrc);
                 stop();
             }
@@ -431,6 +437,9 @@ public:
                     throw;
                 }
                 duplicateKeyCount = builder->getDuplicateCount();
+                numLeafNodes = builder->getNumLeafNodes();
+                numBranchNodes = builder->getNumBranchNodes();
+                numBlobNodes = builder->getNumBlobNodes();
                 close(*partDesc, partCrc);
                 stop();
 
@@ -662,6 +671,9 @@ public:
     virtual void serializeStats(MemoryBuffer &mb) override
     {
         stats.setStatistic(StPerReplicated, replicateDone);
+        stats.setStatistic(StNumLeafCacheAdds, numLeafNodes);
+        stats.setStatistic(StNumNodeCacheAdds, numBranchNodes);
+        stats.setStatistic(StNumBlobCacheAdds, numBlobNodes);
         PARENT::serializeStats(mb);
     }
 

@@ -49,6 +49,7 @@ enum
     TIRexpandSimpleTypes    = 0x00000001,
     TIRexpandAttributes     = 0x00000002,
     TIRstripAnnotatations   = 0x00000004,
+    TIRstripDebugId         = 0x00000008,
 };
 
 extern HQL_API const char * getOperatorIRText(node_operator op);
