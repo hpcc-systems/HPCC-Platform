@@ -1490,28 +1490,47 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
             }
         }
     }
-    virtual void gatherStats(IConstWorkUnit *statsWu, int channel, bool reset) const override
+    void gatherOneGraphStats(IConstWorkUnit *statsWu, const char *graphName, int channel, bool reset) const
+    {
+        ActivityArrayPtr *activities = graphMap.getValue(graphName);
+        if (activities && *activities)
+        {
+            Owned<IConstWUGraph> graph = dll->queryWorkUnit()->getGraph(graphName);
+            if (graph)
+            {
+                Owned<IWUGraphStats> graphStats = statsWu->updateStats(graphName, SCTroxie, queryStatisticsComponentName(), graph->getWfid(), 0, true);
+                IStatisticGatherer &builder = graphStats->queryStatsBuilder();
+                (*activities)->gatherStats(builder, channel, reset);
+            }
+        }
+        else
+            DBGLOG("Unable to retrieve activity graph for %s", graphName);
+    }
+    virtual void gatherStats(IConstWorkUnit *statsWu, const char *graphName, int channel, bool reset) const override
     {
         if (dll)
         {
             assertex(dll->queryWorkUnit());
-            Owned<IConstWUGraphIterator> graphs = &dll->queryWorkUnit()->getGraphs(GraphTypeActivities);
-            SCMStringBuffer thisGraphNameStr;
-            ForEach(*graphs)
+            if (graphName)
             {
-                IConstWUGraph &graph = graphs->query();
-                graphs->query().getName(thisGraphNameStr);
-                Owned<IWUGraphStats> graphStats = statsWu->updateStats(thisGraphNameStr.str(), SCTroxie, queryStatisticsComponentName(), graph.getWfid(), 0, true);
-                IStatisticGatherer &builder = graphStats->queryStatsBuilder();
-                ActivityArrayPtr *activities = graphMap.getValue(thisGraphNameStr.str());
-                assertex(activities && *activities);
-                (*activities)->gatherStats(builder, channel, reset);
+                gatherOneGraphStats(statsWu, graphName, channel, reset);
             }
-            WorkunitUpdate w(&statsWu->lock());
-            Owned<IStatisticGatherer> gbuilder = createGlobalStatisticGatherer(w);
-            if (channel != -1)
-                gbuilder->beginChannelScope(channel);
-            stats.recordStatistics(*gbuilder, reset);
+            else
+            {
+                Owned<IConstWUGraphIterator> graphs = &dll->queryWorkUnit()->getGraphs(GraphTypeActivities);
+                SCMStringBuffer thisGraphNameStr;
+                ForEach(*graphs)
+                {
+                    IConstWUGraph &graph = graphs->query();
+                    graph.getName(thisGraphNameStr);
+                    gatherOneGraphStats(statsWu, thisGraphNameStr.str(), channel, reset);
+                }
+                WorkunitUpdate w(&statsWu->lock());
+                Owned<IStatisticGatherer> gbuilder = createGlobalStatisticGatherer(w);
+                if (channel != -1)
+                    gbuilder->beginChannelScope(channel);
+                stats.recordStatistics(*gbuilder, reset);
+            }
         }
     }
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
