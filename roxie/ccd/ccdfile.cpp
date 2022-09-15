@@ -3747,6 +3747,10 @@ extern IRoxieWriteHandler *createRoxieWriteHandler(IRoxieDaliHelper *_daliHelper
 
 //================================================================================================================
 
+#ifndef _CONTAINERIZED
+
+// This test is not valid on containerized systems - concept of Roxie "buddy" files is not really a thing
+
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
@@ -3853,5 +3857,5 @@ protected:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( CcdFileTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CcdFileTest, "CcdFileTest" );
-
+#endif
 #endif
