@@ -15,6 +15,7 @@ import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
+import { QuerySortItem } from "src/store/Store";
 
 const logger = scopedLogger("src-react/components/Workunits.tsx");
 
@@ -69,13 +70,16 @@ const defaultUIState = {
 
 interface WorkunitsProps {
     filter?: object;
+    sort?: QuerySortItem;
     store?: WUQueryStore;
 }
 
 const emptyFilter = {};
+const defaultSort = { attribute: "Wuid", descending: true };
 
 export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     filter = emptyFilter,
+    sort = defaultSort,
     store
 }) => {
 
@@ -99,7 +103,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         persistID: "workunits",
         store: gridStore,
         query,
-        sort: { attribute: "Wuid", descending: true },
+        sort,
         filename: "workunits",
         columns: {
             col1: {

@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } 
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
 import { useMyAccount } from "../hooks/user";
@@ -50,14 +51,17 @@ const defaultUIState = {
 interface QueriesProps {
     wuid?: string;
     filter?: object;
+    sort?: QuerySortItem;
     store?: any;
 }
 
 const emptyFilter = {};
+const defaultSort = { attribute: undefined, descending: false };
 
 export const Queries: React.FunctionComponent<QueriesProps> = ({
     wuid,
     filter = emptyFilter,
+    sort = defaultSort,
     store
 }) => {
 
@@ -81,6 +85,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         persistID: "queries",
         store: gridStore,
         query,
+        sort,
         filename: "roxiequeries",
         columns: {
             col1: {
