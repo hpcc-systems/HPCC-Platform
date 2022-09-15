@@ -1238,6 +1238,9 @@ void CHThorIndexWriteActivity::execute()
         builder->finish(metadata, &fileCrc);
         duplicateKeyCount = builder->getDuplicateCount();
         cummulativeDuplicateKeyCount += duplicateKeyCount;
+        totalLeafNodes += builder->getNumLeafNodes();
+        totalBranchNodes += builder->getNumBranchNodes();
+        totalBlobNodes += builder->getNumBlobNodes();
         numDiskWrites = io->getStatistic(StNumDiskWrites);
         out->flush();
         out.clear();
