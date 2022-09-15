@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="HPCC_Terraform_deployment">
+  <title>Deploying HPCC Systems<superscript>®</superscript> with
+  Terraform</title>
+
+  <para>Manual deployments can be error-prone and inconsistent. As your
+  deployments become more customized and your need for additional resources
+  grows it can become exponentially more difficult and time consuming.</para>
+
+  <para>Fortunately, there are multiple IaC (infrastructure as code)
+  orchestration tools available that can simplify the deployment process. One
+  of those orchestration tools is Terraform. This chapter provides
+  instructions on using Terraform modules to deploy an HPCC Systems instance
+  specifically on the Azure Cloud.</para>
+
+  <para>These modules were developed by the HPCC Systems platform team for
+  general open-source community usage. You may require specific customizations
+  for your particular needs. For example, your organization may require
+  opinionated modules for production systems. You can develop your own
+  customized modules, per your requirements and utilize them in the same
+  manner outlined here.</para>
+
+  <sect1 id="Interactive_TerraformDeployment" role="nobrk">
+    <title>Interactive Terraform Deployment </title>
+
+    <para>This section details deploying the containerized HPCC Systems
+    platform onto Azure using Terraform. Using the open source and additional
+    modules from the HPCC Systems Terraform open-source repository. No
+    previous knowledge of Terraform, Kubernetes, or Azure is
+    required.  </para>
+
+    <para>The steps to deploy an HPCC Systems instance using our provided
+    Terraform modules are detailed in the subsequent sections. A short summary
+    of these steps is as follows.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Clone the HPCC Systems Terraform module repository</para>
+      </listitem>
+
+      <listitem>
+        <para>Copy the configuration files (admin.tfvars) from the /examples
+        directory to the corresponding module directory</para>
+      </listitem>
+
+      <listitem>
+        <para>Modify the configuration files for each module</para>
+      </listitem>
+
+      <listitem>
+        <para>Initialize the modules</para>
+      </listitem>
+
+      <listitem>
+        <para>Apply the initialized modules</para>
+      </listitem>
+    </orderedlist>
+
+    <para>The strength of using Terraform modules to deploy your system, you
+    only need to set them up once. After they are in place and configured, you
+    can reuse them to stand up an identical instance of your system. You can
+    do so by initializing and then applying them.</para>
+
+    <sect2 id="TerraformRequirements">
+      <title>Requirements</title>
+
+      <para>What you will need in order to deploy an HPCC Systems instance
+      with Terraform:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A Linux, MacOS, or Windows OS computer system.</para>
+        </listitem>
+
+        <listitem>
+          <para>A browser. Such as Chrome or Firefox.</para>
+        </listitem>
+
+        <listitem>
+          <para>Git and a Github account that you can access and clone the
+          repository.</para>
+        </listitem>
+
+        <listitem>
+          <para>An Azure account with sufficient permissions, rights, credits,
+          and credentials. To obtain one, go to www.azure.com or talk to your
+          manager if you believe that your employer might have a corporate
+          account.</para>
+        </listitem>
+
+        <listitem>
+          <para>A code editor of your choice. There are a few editors
+          integrated with Azure such as VS Code, vi the Visual Editor, Nano,
+          or you can choose to use any another.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>The easiest option which also ensures you have all the tools
+      required is to use Azure is the command portal. Assuming you have an
+      Azure account with all the appropriate credentials you can just go to
+      the Azure command portal</para>
+
+      <programlisting>https://portal.azure.com/</programlisting>
+
+      <para>If this is the first time you have accessed the cloud shell, Azure
+      will prompt you that storage is required for the cloud shell to persist
+      account settings and files. Click through the prompts to create the
+      storage. You should be presented with a shell. At this point, the cloud
+      shell should already be logged into to your Azure account. The major
+      advantage to using the cloud shell is that It will also have other
+      prerequisites installed for you, namely, git, kubectl, helm, and even an
+      editor. Otherwise in addition to installing the Azure CLI you would also
+      need to install the other prerequisites.</para>
+    </sect2>
+
+    <sect2 id="HPCCTerraformRepository">
+      <title>Terraform Repository</title>
+
+      <para>The HPCC Systems Terraform Repository,
+      <emphasis>terraform-azurerm-hpcc</emphasis> is a code repository where
+      the HPCC Systems Terraform modules are stored. The Terraform repository
+      contains three independent modules required to instantiate an HPCC
+      Systems cluster. These are the network, storage, and AKS (Azure
+      Kubernetes Service) modules. The network module must be deployed first,
+      followed by the storage module. Only then can the AKS or root module, be
+      deployed. These modules automatically call other dependent modules upon
+      initialization. There are dependencies which must be in place in order
+      for all the modules to work appropriately.</para>
+
+      <sect3>
+        <title>Cloning the Terraform Repository</title>
+
+        <para>Clone the Terraform Repository,
+        <emphasis>terraform-azurerm-hpcc</emphasis> hosted on the HPCC Systems
+        GitHub account.</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/terraform-azurerm-hpcc.git ">https://github.com/hpcc-systems/terraform-azurerm-hpcc.git</ulink></para>
+
+        <para>To clone the repository:</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open your command line or terminal</para>
+            </listitem>
+
+            <listitem>
+              <para>Determine where to store the repository. Choose a location
+              that is easy to find and remember. This will become the
+              Terraform root directory.</para>
+            </listitem>
+
+            <listitem>
+              <para>Change directory to your chosen location.</para>
+            </listitem>
+
+            <listitem>
+              <para>Run  the following command :</para>
+
+              <programlisting>git clone https://github.com/hpcc-systems/terraform-azurerm-hpcc.git </programlisting>
+            </listitem>
+          </orderedlist>Once the repository is cloned, you will traverse into
+        each module's directory, and configure/modify the admin.tfvars file
+        there, and then apply it.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="T4MModules2Modify">
+      <title>The Modules to Modify</title>
+
+      <para>Once in place these modules can be reused to stand up an exact
+      copy of the instance.</para>
+
+      <para>The order of deployment for these Terraform modules is in fact
+      important.</para>
+
+      <para>The order of deployment that you must follow is:</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Virtual network</para>
+          </listitem>
+
+          <listitem>
+            <para>Storage accounts </para>
+          </listitem>
+
+          <listitem>
+            <para>Root module (AKS)</para>
+          </listitem>
+        </orderedlist></para>
+
+      <informaltable>
+        <tgroup cols="2">
+          <colspec align="left" />
+
+          <colspec align="left" />
+
+          <thead>
+            <row>
+              <entry>Modules </entry>
+
+              <entry>Location </entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>Virtual network </entry>
+
+              <entry>terraform-azurerm-hpcc/modules/virtual_network </entry>
+            </row>
+
+            <row>
+              <entry>Storage accounts </entry>
+
+              <entry>terraform-azurerm-hpcc/modules/storage_accounts </entry>
+            </row>
+
+            <row>
+              <entry>AKS </entry>
+
+              <entry>terraform-azurerm-hpcc </entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+      <para>These modules must be applied in that order since they build on
+      the resources raised by the previous module.</para>
+
+      <para>After you clone the terraform-azurerm-hpcc repository you have
+      access to the modules in that repository.</para>
+    </sect2>
+
+    <sect2>
+      <title id="t4MModify_TheModule">Modify the Modules</title>
+
+      <para>First you will copy the configuration file,
+      <emphasis>admin.tfvars</emphasis> from the examples subdirectory into
+      that modules directory. Then you will modify that file you just copied.
+      You must repeat this step for each module.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Change directory to the virtual network directory
+            first.</para>
+
+            <programlisting>cd terraform-azurerm-hpcc/modules/virtual_network</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Copy the admin.tfvars files from ./examples to
+            ./virtual_network.</para>
+
+            <para><programlisting>cp examples/admin.tfvars ./admin.tfvars </programlisting></para>
+          </listitem>
+        </orderedlist></para>
+
+      <para>To modify the module you can enter the following command
+      (<emphasis role="bold">Note</emphasis> using the code editor in the
+      example, if you prefer you can use nano, vi, or any text editor):</para>
+
+      <para><programlisting>code terraform-azurerm-hpcc/modules/virtual_network/examples/admin.tfvars </programlisting></para>
+
+      <para>With the admin.tfvars file open, you can go through each object
+      block or argument and set it to your preferred values. More information
+      about the module files available in the <emphasis>README.md</emphasis>
+      in HPCC Systems terraform-azurerm-hpcc repository.</para>
+
+      <programlisting>admin = { 
+  name  = "<emphasis role="bold">YourName</emphasis>" 
+  email = "<emphasis role="bold">YourEmail@example.com</emphasis>" 
+        } 
+
+ metadata = { 
+  project             = "hpccdemo" 
+  product_name        = "vnet" 
+  business_unit       = "commercial" 
+  environment         = "sandbox" 
+  market              = "us" 
+  product_group       = "contoso" 
+  resource_group_type = "app" 
+  sre_team            = "hpccplatform" 
+  subscription_type   = "dev" 
+          } 
+ 
+  tags = { "justification" = "testing" } 
+        
+  resource_group = { 
+    unique_name = true 
+    location    = "eastus2" 
+         }     </programlisting>
+
+      <orderedlist>
+        <listitem>
+          <para>Modify this file and replace the values for the <emphasis
+          role="bold">name</emphasis> and <emphasis
+          role="bold">email</emphasis> fields with your user name and your
+          email address.</para>
+        </listitem>
+
+        <listitem>
+          <para>Save the File as admin.tfvars in the module's
+          directory.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect3>
+        <title>Modifying the AKS Module</title>
+
+        <para>The AKS Module is a little different from the other modules. It
+        is not in the modules subdirectory, it is in the base root directory
+        where you previously cloned the Terraform repository. You still need
+        to copy the admin.tfvars file from the examples directory into that
+        root directory, just as you did for the other modules. However, there
+        are a few additional modifications you need to make to this
+        file.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Copy the admin.tfvars files from ./examples to the AKS
+            directory.</para>
+          </listitem>
+        </orderedlist>
+
+        <programlisting>cp examples/admin.tfvars ./admin.tfvars </programlisting>
+
+        <orderedlist continuation="continues">
+          <listitem>
+            <para>Modify the admin.tfvars file, once again add your user name
+            and your email.</para>
+          </listitem>
+
+          <listitem>
+            <para>If you are using the Azure Cloud Shell, find the setting for
+            <emphasis role="bold">auto_launch_eclwatch</emphasis> and set it
+            to false as follows:</para>
+
+            <programlisting>auto_launch_eclwatch = false</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Additionally there is a setting for<emphasis role="bold">
+            version</emphasis> which by default is commented out. Optionally,
+            uncomment the version setting and set to a specific
+            version.</para>
+          </listitem>
+        </orderedlist>
+
+        <graphic fileref="../../images/CNTR-TerraVersion.jpg" />
+
+        <orderedlist continuation="continues">
+          <listitem>
+            <para>Make any other configuration changes and save the
+            admin.tfvars file.</para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>You can create multiple configuration files for
+                  different deployments. Such as the multiple versions which
+                  we just described. In that case you may want to save each
+                  configuration with a different name.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+        </orderedlist>
+      </sect3>
+    </sect2>
+
+    <sect2 id="InitializeTheTerraformModles">
+      <title>Initializing the Terraform Modules</title>
+
+      <para>After configuring the modules, the next step is to initialize. The
+      <emphasis>Terraform init</emphasis> command declares the current working
+      directory as the root or the calling module. During this operation,
+      Terraform downloads all the child modules from their sources and place
+      them in the appropriate relative directories.</para>
+
+      <para>Once again, the order is important. Initialize the modules in the
+      same order of precedence, virtual network first, the storage account
+      second, and then the AKS, or root.</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>Whilst the order the files are applied is important, you can
+            perform the initialization and apply steps after you modify the
+            files while already in the respective directory.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para>To Initialize the Modules </para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Change directory to the modules directory.</para>
+        </listitem>
+
+        <listitem>
+          <para>Run terraform init in that directory:</para>
+
+          <programlisting>terraform init</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Confirm the module has been successfully initialized.</para>
+        </listitem>
+
+        <listitem>
+          <para>Apply the Module</para>
+        </listitem>
+      </orderedlist>
+
+      <para></para>
+    </sect2>
+
+    <sect2 id="ApplyingTheTerraformModules">
+      <title>Applying the Terraform Modules</title>
+
+      <para>This step generates a Terraform Plan to confirm your configuration
+      choices. A Terraform plan displays exactly what it is going to do so you
+      can review it before applying it. You can review and either approve to
+      implement the plan or abort the plan and review your configuration
+      modules for further changes.</para>
+
+      <para>When you issue the Terraform apply command it will validate the
+      Terraform code and generate the plan, which you will then accept or
+      reject to proceed. As with the previous steps, the order the modules are
+      applied is important. You must apply the virtual network first, then the
+      storage, and finally the root.</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>Whilst the order the files are applied is important, you can
+            perform the initialization and apply steps after you modify the
+            files while already in the respective directory.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para>To Generate a Plan and Apply the Modules: </para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Change directory to that modules directory.</para>
+        </listitem>
+
+        <listitem>
+          <para>Run Terraform apply, specifying to use the admin.tfvars file
+          you configured previously. </para>
+
+          <programlisting>terraform apply –var-file=admin.tfvars </programlisting>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>If you created multiple configuration files as described
+                in the previous section (for the AKS module) you can specify
+                to use that specific var-file.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <para>The Terraform plan displays, review the plan and if it aligns
+          with what you expected, approve the plan and enter yes.</para>
+
+          <para><emphasis role="bold">Note</emphasis>: If something does not
+          look correct, do not enter yes. Anything other than yes will abort
+          the application. You can then go and re-examine the admin.tfvars
+          files from the previous steps and make any necessary changes.</para>
+        </listitem>
+
+        <listitem>
+          <para>Terraform initializes all the declared resources until they
+          are all in a ready state. This can take a little time, as it is
+          initializing several resources.</para>
+
+          <para>Successful completion displays a message similar to the
+          following:</para>
+
+          <programlisting>Apply complete! Resources: 11 added, 0 changed, 0 destroyed. </programlisting>
+
+          <para><emphasis role="bold">Note</emphasis>: The number of resources
+          added, changed, or destroyed should match what the plan indicated in
+          the previous step.</para>
+        </listitem>
+
+        <listitem>
+          <para>Repeat these steps for the storage_accounts directory and then
+          for the root module directory.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Once Terraform successfully applies all the modules in the correct
+      sequence, and they all initialize and enter a ready state, your HPCC
+      Systems cluster is up and running.</para>
+
+      <sect3>
+        <title>Verify the Installation</title>
+
+        <para>With your successful Terraform deployment Kubernetes has
+        provisioned all the required HPCC Systems pods. To check their status
+        run:</para>
+
+        <programlisting>kubectl get pods </programlisting>
+
+        <para><emphasis role="bold">Note</emphasis>: If this is the first time
+        helm install has been run, it may take some time for the pods to all
+        get into a <emphasis>Running</emphasis> state. Azure needs to pull
+        container images from Docker, bring each component online, etc.</para>
+
+        <para><graphic
+        fileref="../../images/CNTR_kubctlGetPodsRunning.jpg" />Once all the
+        pods STATUS is Running, the HPCC Systems cluster is ready to be
+        use.</para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Az-AccessECLWatch">
+      <title>Accessing ECLWatch</title>
+
+      <para>To access ECLWatch, an external IP for the ESP running ECLWatch is
+      required. This will be listed as the <emphasis>eclwatch</emphasis>
+      service, and can be obtained by running the following command:</para>
+
+      <programlisting>kubectl get svc </programlisting>
+
+      <para>Your output should be similar to:</para>
+
+      <programlisting>NAME        TYPE         CLUSTER-IP    EXTERNAL-IP     PORT(S)         AGE
+eclservices ClusterIP    10.0.44.11    &lt;none&gt;          8010/TCP        11m
+<emphasis role="bold">eclwatch    LoadBalancer 10.0.21.16    12.87.156.228   8010:30190/TCP  11m</emphasis>
+kubernetes  ClusterIP    10.0.0.1      &lt;none&gt;          443/TCP         4h28m
+mydali      ClusterIP    10.0.195.229  &lt;none&gt;          7070/TCP        11m</programlisting>
+
+      <para>Use the EXTERNAL-IP listed for the ECLWatch service. Open a
+      browser and go to http://&lt;external-ip&gt;:8010/, for example in this
+      case, http://12.87.156.228:8010. If everything is working as expected,
+      the ECLWatch landing page displays.</para>
+    </sect2>
+
+    <sect2>
+      <title>Taking Down The AKS Cluster</title>
+
+      <para>Destroying the AKS Cluster will do just that - completely destroy
+      it. That is the Terraform term for taking down and removing all
+      resources and processes Terraform deployed.</para>
+
+      <para>Just as with the installation, the order that modules are
+      destroyed is also important. Keep in mind that <emphasis role="bold">the
+      AKS module must be destroyed before the Virtual network
+      module.</emphasis> Attempting to destroy resources in the wrong order
+      could leave your deployment in an odd state and may incur unnecessary
+      costs. To help reduce your total costs, always destroy your AKS when you
+      do not intend on using it further.</para>
+
+      <para>Once configured the persisting Terraform modules can easily bring
+      your deployment back up. An exact copy of the instance, can be raised
+      simply by issuing the Terraform apply step you did earlier. This is the
+      real beauty of the Terraform modules, once created they can be reused to
+      generate an exact copy of your deployment. You could also have other
+      configuration options readily available for deployment. </para>
+
+      <para>To destroy the Modules </para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Change directory to the root AKS directory:
+          terraform-azurerm-hpcc </para>
+        </listitem>
+
+        <listitem>
+          <para>Run Terraform destroy </para>
+
+          <programlisting>terraform destroy –var-file=admin.tfvars </programlisting>
+        </listitem>
+
+        <listitem>
+          <para>The Terraform plan displays, review the plan and if it looks
+          correct approve the plan by entering yes.</para>
+
+          <para>Entering anything other than yes aborts.</para>
+        </listitem>
+
+        <listitem>
+          <para>Repeat as necessary for the other modules. However ensure that
+          the virtual network module is the last one to destroy, if you even
+          choose to destroy it. (Apparently the cost for leaving the virtual
+          network running is minimal, but check with your provider or manager
+          for confirmation)</para>
+        </listitem>
+      </orderedlist>
+
+      <para>Terraform, much like the apply step, may take a few minutes to
+      complete the destruction of all the resources. It will confirm the
+      results once competed.</para>
+
+      <para><graphic fileref="../../images/CNTR-DestroyComplete.jpg" /></para>
+    </sect2>
+  </sect1>
+</chapter>
