@@ -103,9 +103,9 @@ interface IMetric
     virtual std::vector<__uint64> queryHistogramValues() const = 0;
 
     /*
-     * Query histogram labels
+     * Query histogram bucket limits
      */
-    virtual std::vector<std::string> queryHistogramLabels() const = 0;
+    virtual std::vector<__uint64> queryHistogramBucketLimits() const = 0;
 };
 
 
@@ -123,7 +123,7 @@ public:
     const MetricMetaData &queryMetaData() const override { return metaData; }
     StatisticMeasure queryUnits() const override { return units; }
     virtual std::vector<__uint64> queryHistogramValues() const override { return {}; }
-    virtual std::vector<std::string> queryHistogramLabels() const override { return {}; }
+    virtual std::vector<__uint64> queryHistogramBucketLimits() const override { return {}; }
 
 
 protected:
@@ -249,17 +249,11 @@ protected:
 };
 
 
-struct BucketDef
-{
-    std::string label;
-    __uint64 limit;
-};
-
 
 class jlib_decl HistogramMetric : public MetricBase
 {
 public:
-    HistogramMetric(const char *name, const char *desc, StatisticMeasure _units, const std::vector<BucketDef> &bucketDefs, const MetricMetaData &_metaData = MetricMetaData());
+    HistogramMetric(const char *name, const char *desc, StatisticMeasure _units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual __uint64 queryValue() const override
     {
@@ -268,14 +262,13 @@ public:
 
     void recordMeasurement(__uint64 measurement);
     virtual std::vector<__uint64> queryHistogramValues() const override;
-    virtual std::vector<std::string> queryHistogramLabels() const override;
+    virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
 
 protected:
     struct Bucket
     {
-        Bucket(const std::string &_label, __uint64 _limit) :
-                label{_label}, limit{_limit}, count{0} {}
-        std::string label;
+        Bucket(__uint64 _limit) :
+                limit{_limit}, count{0} {}
         __uint64 limit;
         __uint64 count;
     };
@@ -284,7 +277,7 @@ protected:
 protected:
     std::vector<Bucket> buckets;
     mutable CriticalSection cs;
-    Bucket inf{"inf", 0};
+    Bucket inf{0};
     __uint64 sum{0};
 };
 
@@ -292,8 +285,9 @@ protected:
 class jlib_decl ScaledHistogramMetric : public HistogramMetric
 {
 public:
-    ScaledHistogramMetric(const char *name, const char *desc, StatisticMeasure units, const std::vector<BucketDef> &bucketDefs, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
+    ScaledHistogramMetric(const char *name, const char *desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
 
+    virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
     virtual __uint64 queryValue() const override
     {
         CriticalBlock block(cs);
@@ -392,10 +386,11 @@ jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetr
                                                                          const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
                                                                          const MetricMetaData &metaData = MetricMetaData());
 
-jlib_decl std::shared_ptr<HistogramMetric> registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<BucketDef> &bucketDefs, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<ScaledHistogramMetric> registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<BucketDef> &bucketDefs,
+jlib_decl std::shared_ptr<HistogramMetric> registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<ScaledHistogramMetric> registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits,
                                                                                double limitsToMeasurementUnitsScaleFactor, const MetricMetaData &metaData = MetricMetaData());
 
+jlib_decl std::shared_ptr<ScaledHistogramMetric> registerCyclesToNsScaledHistogramMetric(const char *name, const char* desc, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
 
 //
 // Convenience function templates to create metrics and add to the manager

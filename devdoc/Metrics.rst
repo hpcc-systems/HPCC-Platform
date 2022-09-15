@@ -302,17 +302,14 @@ maximum bucket limit. This is sometimes known as the "inf" bucket.
 Some storage systems, such as Prometheus, require each bucket to accumulate its measurements with
 the previous bucket(s). It is the responsibility of the sink to accumulate values as needed.
 
-Scaled Time Histogram Metric
-----------------------------
-A specialized histogram where buckets represent elapsed time. When crated, the buckets represent
-elapsed times in specified time units. Internally the metric converts each bucket limit to a count
-of cycles. All measurements are done using a cycle count that represents the number of elapsed cycles
-for the function or process being measured. The histogram collects bucket counts based on cycles,
-however the limits represent the actual durations defined when the histogram was created. The sum
-of all measurements is converted to the specified time units when reported.
-
-Sinks can treat scaled time histograms the same as a regular histogram, no conversions are necessary
-by the sink.
+Scaled Histogram Metric
+-----------------------
+A histogram metric that allows setting the bucket limit units in one domain, but take measurements
+in another domain. For example, the bucket limits may represent millisecond durations, yet it
+is more effecient to use execution cycles to take the measurements. A scaled histogram converts
+from the the measurement domain (cycles) to the limit units domain using a scale factor provided
+at initialization. All conversions are encapsulated in the scaled histogram class such that no
+external scaling is required by any consumer such as a sink.
 
 
 *************
