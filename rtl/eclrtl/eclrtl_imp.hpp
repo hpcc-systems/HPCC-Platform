@@ -114,6 +114,10 @@ class ECLRTL_API rtlCompiledStrRegex
 {
 public:
     inline rtlCompiledStrRegex()            { regex = 0; }
+    inline rtlCompiledStrRegex(const char * pattern, bool isCaseSensitive)
+    {
+        regex = rtlCreateCompiledStrRegExpr(pattern, isCaseSensitive);
+    }
     inline ~rtlCompiledStrRegex()           { rtlDestroyCompiledStrRegExpr(regex); }
 
     inline ICompiledStrRegExpr * operator -> () const { return regex; }
@@ -152,6 +156,10 @@ class ECLRTL_API rtlCompiledUStrRegex
 {
 public:
     inline rtlCompiledUStrRegex()           { regex = 0; }
+    inline rtlCompiledUStrRegex(const UChar * pattern, bool isCaseSensitive)
+    {
+        regex = rtlCreateCompiledUStrRegExpr(pattern, isCaseSensitive);
+    }
     inline ~rtlCompiledUStrRegex()          { rtlDestroyCompiledUStrRegExpr(regex); }
 
     inline ICompiledUStrRegExpr * operator -> () const { return regex; }
