@@ -13912,7 +13912,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     if (NotFound == timelimit)
     {
         // check legacy property
-        timelimit = workunit.getDebugValueInt("thorConnectTimeout", config.getPropInt("@thorConnectTimeout", 60));
+        timelimit = workunit.getDebugValueInt("thorConnectTimeout", config.getPropInt("@thorConnectTimeout", 600));
     }
     StringAttr wuid(workunit.queryWuid());
     IConstWUGraph *graph = workunit.getGraph(graphName);

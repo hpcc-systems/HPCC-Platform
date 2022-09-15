@@ -3520,7 +3520,6 @@ hthor:
     name: hthor
     analyzeWorkunit: true
     defaultMemoryLimitMB: 300
-    maxGraphStartupTime: 600
     traceLevel: 0
 )!!";
 
