@@ -2491,7 +2491,28 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             if (isEmptyString(destPlane))
                 destPlane = req.getDestGroup();  // allow eclwatch to continue providing storage plane as 'destgroup' field
             if (isEmptyString(destPlane))
-                throw makeStringException(ECLWATCH_INVALID_INPUT, "Destination storage plane not specified.");
+            {
+                if (destip.isEmpty())
+                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Neither destination storage plane or destination IP specified.");
+                SocketEndpoint destEp(destip);
+                Owned<IPropertyTreeIterator> planesIter = getDropZonePlanesIterator();
+                ForEach(*planesIter)
+                {
+                    IPropertyTree &lzPlane = planesIter->query();
+                    Owned<IPropertyTreeIterator> hostsIter = lzPlane.getElements("hosts");
+                    ForEach(*hostsIter)
+                    {
+                        SocketEndpoint planeEp(hostsIter->query().queryProp(nullptr));
+                        if (planeEp.ipequals(destEp))
+                        {
+                            destPlane = lzPlane.queryProp("@name");
+                            break;
+                        }
+                    }
+                }
+                if (isEmptyString(destPlane))
+                    throw makeStringException(ECLWATCH_INVALID_INPUT, "Destination IP does not match a hosts based storage plane.");
+            }
 #else
             if (isEmptyString(destPlane) && destip.isEmpty())
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination network IP/storage plane not specified.");
