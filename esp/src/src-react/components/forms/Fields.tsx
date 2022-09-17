@@ -305,6 +305,11 @@ type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | Dat
 export type Fields = { [id: string]: Field };
 
 export interface TargetClusterTextFieldProps extends Omit<AsyncDropdownProps, "options"> {
+    excludeRoxie?: boolean;
+}
+
+export interface TargetClusterOption extends IDropdownOption {
+    queriesOnly: boolean;
 }
 
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
@@ -312,16 +317,21 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
     const [targetClusters, defaultCluster] = useLogicalClusters();
     const [options, setOptions] = React.useState<IDropdownOption[]>();
     const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
-    const { onChange, required, selectedKey } = { ...props };
+    const { excludeRoxie = true, onChange, required, selectedKey } = { ...props };
 
     React.useEffect(() => {
-        const options = targetClusters?.filter(row => {
-            return !(row.Type === "roxie" && row.QueriesOnly === true);
-        })?.map(row => {
+        let clusters = targetClusters;
+        if (excludeRoxie) {
+            clusters = clusters?.filter(row => {
+                return !(row.Type === "roxie" && row.QueriesOnly === true);
+            });
+        }
+        const options = clusters?.map(row => {
             return {
                 key: row.Name || "unknown",
                 text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
-                type: row.Type
+                type: row.Type,
+                queriesOnly: row.QueriesOnly
             };
         }) || [];
         setOptions(options);
@@ -333,7 +343,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
                 onChange(undefined, selectedItem);
             }
         }
-    }, [targetClusters, defaultCluster, onChange, required, selectedKey]);
+    }, [defaultCluster, excludeRoxie, onChange, required, selectedKey, targetClusters]);
 
     return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
 };
