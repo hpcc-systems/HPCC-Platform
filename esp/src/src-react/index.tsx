@@ -39,7 +39,7 @@ store.get("ModernMode", false).then(async modernMode => {
         const authType = await authTypeResp?.text() ?? "None";
         const userStore = cookieKeyValStore();
         const userSession = await userStore.getAll();
-        if (authType.indexOf("None") < 0 && (!userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked")) {
+        if (authType.indexOf("None") < 0 && (!userSession["ESPAuthenticated"] && (!userSession["ECLWatchUser"] || !userSession["Status"] || userSession["Status"] === "Locked"))) {
             window.location.replace("#/login");
             import("./components/forms/Login").then(_ => {
                 try {
