@@ -22,6 +22,7 @@
 
 */}}
 {{- define "hpcc.issuers" -}}
+{{- if (hasKey .me "spec") -}} {{- /* no spec means we are referencing an external issuer and don't need to instantiate our own */ -}}
 {{- $issuerEnabled := (hasKey .me "enabled" | ternary .me.enabled true) -}}
 {{- if $issuerEnabled }}
 apiVersion: cert-manager.io/v1
@@ -43,6 +44,7 @@ spec:
 {{ toYaml .me.spec | indent 2 }}
 
  {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 
