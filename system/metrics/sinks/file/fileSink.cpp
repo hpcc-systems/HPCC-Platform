@@ -65,12 +65,40 @@ void FileMetricSink::writeMeasurementToFile(const std::shared_ptr<IMetric> &pMet
     }
 
     const char *unitsStr = pManager->queryUnitsString(pMetric->queryUnits());
-    if (unitsStr)
-    {
-        name.append(".").append(unitsStr);
-    }
 
-    fprintf(fhandle, "  %s -> %" I64F "d, %s\n", name.c_str(), pMetric->queryValue(), pMetric->queryDescription().c_str());
+    if (pMetric->queryMetricType() != METRICS_HISTOGRAM)
+    {
+        if (!isEmptyString(unitsStr))
+        {
+            name.append(".").append(unitsStr);
+        }
+        fprintf(fhandle, "%s -> %" I64F "d, %s\n", name.c_str(), pMetric->queryValue(), pMetric->queryDescription().c_str());
+    }
+    else
+    {
+        std::vector<__uint64> values = pMetric->queryHistogramValues();
+        std::vector<__uint64> limits = pMetric->queryHistogramBucketLimits();
+        size_t countBucketValues = values.size();
+        __uint64 cumulative;
+
+        for (int i=0; i < countBucketValues - 1; ++i)
+        {
+            cumulative += values[i];
+            fprintf(fhandle, "name=%s, bucket le %" I64F "d=%" I64F "d\n", name.c_str(), limits[i], cumulative);
+        }
+
+        // The inf bucket count is the last element in the array of values returned.
+        // Add it to the cumulative count and print the value
+        cumulative += values[countBucketValues - 1];
+        fprintf(fhandle, "name=%s, bucket inf=%" I64F "d\n", name.c_str(), cumulative);
+
+        // sum - total of all observations
+        fprintf(fhandle, "name=%s, sum=%" I64F "d\n", name.c_str(), pMetric->queryValue());
+
+        // count - total of all bucket counts (same as inf)
+        fprintf(fhandle, "name=%s, count=%" I64F "d\n", name.c_str(), cumulative);
+
+    }
     fflush(fhandle);
 }
 
