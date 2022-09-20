@@ -3143,21 +3143,28 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
 
 bool getDefaultValue(const char * processName, const char * propertyName, StringBuffer & strDefaultValue)
 {
-    Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
-    Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
+    // Returns with true if a default value retrieved and false if not.
 
-    if (env.get())
-    {
-        Owned<IPropertyTreeIterator> processIter = env->getElements(processName);
-        if (processIter->first())
+    #ifdef _CONTAINERIZED
+        // TBD
+
+    #else
+        Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+        Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
+
+        if (env.get())
         {
-            if (processIter->query().hasProp(propertyName))
+            Owned<IPropertyTreeIterator> processIter = env->getElements(processName);
+            if (processIter->first())
             {
-                processIter->query().getProp(propertyName, strDefaultValue);
-                return true;
+                if (processIter->query().hasProp(propertyName))
+                {
+                    processIter->query().getProp(propertyName, strDefaultValue);
+                    return true;
+                }
             }
         }
-    }
+    #endif
     return false;
 }
 
