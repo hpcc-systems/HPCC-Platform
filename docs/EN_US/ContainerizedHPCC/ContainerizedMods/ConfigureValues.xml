@@ -888,9 +888,10 @@
         embedded code, you can have that defined in the code sign sections. If
         you have information that you don't want public but need to run it you
         could use secrets. There is a category named "eclUser" which is where
-        you would put secrets that you want to be readable directly from ECL code.
-        Other secret categories, including the "ecl" category, are read internally
-        by system components and not exposed directly to ECL code.</para>
+        you would put secrets that you want to be readable directly from ECL
+        code. Other secret categories, including the "ecl" category, are read
+        internally by system components and not exposed directly to ECL
+        code.</para>
       </sect3>
 
       <sect3>
@@ -898,12 +899,12 @@
 
         <para>Vaults is another way to do Secrets. The vaults section mirrors
         the secret section but leverages <emphasis>HashiCorp Vault</emphasis>
-        for the storage of secrets. There is a category for vaults named "eclUser".
-        The intent of the eclUser vault category is to be readable directly from ECL
-        code. Only add vault configurations to the "eclUser" category that you want
-        ECL users to be able to access.  Other vault categories, including the "ecl"
-        category, are read internally by system components and not exposed directly
-        to ECL code.</para>
+        for the storage of secrets. There is a category for vaults named
+        "eclUser". The intent of the eclUser vault category is to be readable
+        directly from ECL code. Only add vault configurations to the "eclUser"
+        category that you want ECL users to be able to access. Other vault
+        categories, including the "ecl" category, are read internally by
+        system components and not exposed directly to ECL code.</para>
       </sect3>
     </sect2>
 
@@ -1039,6 +1040,25 @@
           placements to ensure that pods with specific requirements are placed
           on appropriate nodes.</para>
         </sect4>
+      </sect3>
+
+      <sect3 id="ENV_values_yaml">
+        <title>Environment Values</title>
+
+        <para>You can define Environment Variables in a YAML file. The
+        environment values are defined under the <emphasis>#env:</emphasis>
+        portion of the delivered values.yaml as illustrated below.</para>
+
+        <programlisting>#env: 
+#- name: SMTPserver 
+#  value: mysmtpserver</programlisting>
+
+        <para>The env section of the delivered values file adds default
+        environment variables for all components.</para>
+
+        <para>To add environment values you can insert them into your
+        customization configuration YAML file when you deploy your
+        containerized HPCC Systems.</para>
       </sect3>
     </sect2>
   </sect1>
