@@ -1556,6 +1556,7 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user, IEspSecureContext* s
             return false;
         }
         m_permissionsCache->flush();
+        PROGLOG("Permissions cache cleared by admin user %s", user.getName());
     }
     return true;
 }
