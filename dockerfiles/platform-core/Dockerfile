@@ -50,7 +50,8 @@ RUN apt-get install -y \
   zip \
   libarchive13 \
   libatlas3-base \
-  curl
+  curl \
+  clang
 
 ARG USE_CPPUNIT=1
 RUN if [ ${USE_CPPUNIT} -eq 1 ] ; then apt-get install -y libcppunit-1.15-0 ; fi 
