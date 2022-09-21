@@ -926,7 +926,7 @@ Generate service entries for TLS
   tls: {{ (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
   issuer: {{ $issuerName }}
   selfSigned: {{ (hasKey $issuerSpec "selfSigned") }}
-  caCert: {{ (or (hasKey $issuerSpec "ca") (hasKey $issuerSpec "vault")) }}
+  caCert: {{ (not (hasKey $issuerSpec "selfSigned")) }}
         {{- end -}}
       {{- end -}}
     {{- end }}
