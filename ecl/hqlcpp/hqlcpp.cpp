@@ -1921,17 +1921,7 @@ void HqlCppTranslator::cacheOptions()
     }
 
     code->cppInfo.append(* new CppFileInfo(0));
-    options.targetCompiler = DEFAULT_COMPILER;
-    if (wu()->hasDebugValue("targetGcc"))
-        options.targetCompiler = wu()->getDebugValueBool("targetGcc", false) ? GccCppCompiler : Vs6CppCompiler;
-
-    SCMStringBuffer compilerText;
-    wu()->getDebugValue("targetCompiler", compilerText);
-    for (CompilerType iComp = (CompilerType)0; iComp < MaxCompiler; iComp = (CompilerType)(iComp+1))
-    {
-        if (stricmp(compilerText.s.str(), compilerTypeText[iComp]) == 0)
-            options.targetCompiler = iComp;
-    }
+    options.targetCompiler = queryCompilerType(wu(), DEFAULT_COMPILER);
 
     if (getDebugFlag("optimizeProjects", true))
     {

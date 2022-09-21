@@ -27,12 +27,15 @@ enum CompilerType
 {
     Vs6CppCompiler      = 0,
     GccCppCompiler      = 1,
+    ClangCppCompiler    = 2,
     MaxCompiler
 };
-const char * const compilerTypeText[MaxCompiler] = {"vs6", "gcc" };
+const char * const compilerTypeText[MaxCompiler] = {"vs6", "gcc", "clang" };
 
 #ifdef _WIN32
 #define DEFAULT_COMPILER Vs6CppCompiler
+#elif defined(__APPLE__)
+#define DEFAULT_COMPILER ClangCppCompiler
 #else
 #define DEFAULT_COMPILER GccCppCompiler
 #endif

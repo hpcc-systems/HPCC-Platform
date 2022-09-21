@@ -8861,6 +8861,7 @@ bool createMangledFunctionName(StringBuffer & mangled, IHqlExpression * funcdef,
     switch (compiler)
     {
     case GccCppCompiler:
+    case ClangCppCompiler:
         {
             GccCppNameMangler mangler;
             return mangler.mangleFunctionName(mangled, funcdef);
