@@ -3,6 +3,7 @@ import * as ReactDOM from "react-dom";
 import { initializeIcons } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { cookieKeyValStore, userKeyValStore } from "src/KeyValStore";
+import { containerized, ModernMode } from "src/BuildInfo";
 import { ECLWatchLogger } from "./hooks/logging";
 
 import "css!dijit-themes/flat/flat.css";
@@ -31,7 +32,7 @@ dojoConfig.urlInfo = {
 dojoConfig.disableLegacyHashing = true;
 
 const store = userKeyValStore();
-store.get("ModernMode", false).then(async modernMode => {
+store.getEx(ModernMode, { defaultValue: String(containerized) }).then(async modernMode => {
     if (modernMode === String(false)) {
         window.location.replace("/esp/files/stub.htm");
     } else {

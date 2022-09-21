@@ -2,7 +2,7 @@ import * as React from "react";
 import { Route, RouterContext } from "universal-router";
 import { initialize, parseSearch, pushUrl, replaceUrl } from "./util/history";
 
-export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-old";
+export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-bare-metal";
 
 export interface RouteEx<R = any, C extends RouterContext = RouterContext> extends Route<R, C> {
     mainNav: MainNav[];
@@ -32,7 +32,7 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["activities", "topology-old"],
+        mainNav: ["activities", "topology-bare-metal"],
         path: "/clusters",
         children: [
             { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
@@ -40,7 +40,7 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/machines",
         children: [
             { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
@@ -191,28 +191,28 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["topology-old"],
-        path: "/topology-old",
+        mainNav: ["topology-bare-metal"],
+        path: "/topology-bare-metal",
         action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TopologyWidget" />)
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/diskusage", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DiskUsageWidget" />)
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/clusters", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TargetClustersQueryWidget" />)
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />)
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />)
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/security",
         children: [
             { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} />) },
@@ -225,11 +225,11 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/monitoring", action: () => import("./components/Monitoring").then(_ => <_.Monitoring />)
     },
     {
-        mainNav: ["topology-old"],
+        mainNav: ["topology-bare-metal"],
         path: "/desdl",
         children: [
             { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },

@@ -1,8 +1,9 @@
 import * as React from "react";
-import { IconButton, IContextualMenuItem, INavLinkGroup, Nav, Pivot, PivotItem, Stack } from "@fluentui/react";
+import { IconButton, IContextualMenuItem, INavLink, INavLinkGroup, Nav, Pivot, PivotItem, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { hasLogAccess } from "src/ESPLog";
+import { containerized, bare_metal } from "src/BuildInfo";
 import { MainNav, routes } from "../routes";
 import { pushUrl } from "../util/history";
 import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
@@ -10,48 +11,53 @@ import { useUserTheme } from "../hooks/theme";
 import { Breadcrumbs } from "./Breadcrumbs";
 
 //  Top Level Nav  ---
-const navLinkGroups: INavLinkGroup[] = [
-    {
-        links: [
-            {
-                name: nlsHPCC.Activities,
-                url: "#/activities",
-                icon: "Home",
-                key: "activities"
-            },
-            {
-                name: nlsHPCC.ECL,
-                url: "#/workunits",
-                icon: "SetAction",
-                key: "workunits"
-            },
-            {
-                name: nlsHPCC.Files,
-                url: "#/files",
-                icon: "PageData",
-                key: "files"
-            },
-            {
-                name: nlsHPCC.PublishedQueries,
-                url: "#/queries",
-                icon: "Globe",
-                key: "queries"
-            },
-            {
-                name: nlsHPCC.Topology,
-                url: "#/topology",
-                icon: "Org",
-                key: "topology"
-            },
-            {
-                name: nlsHPCC.Operations,
-                url: "#/topology-old",
-                icon: "Admin",
-                key: "topology-old"
-            }
-        ]
+function navLinkGroups(): INavLinkGroup[] {
+    let links: INavLink[] = [
+        {
+            name: nlsHPCC.Activities,
+            url: "#/activities",
+            icon: "Home",
+            key: "activities"
+        },
+        {
+            name: nlsHPCC.ECL,
+            url: "#/workunits",
+            icon: "SetAction",
+            key: "workunits"
+        },
+        {
+            name: nlsHPCC.Files,
+            url: "#/files",
+            icon: "PageData",
+            key: "files"
+        },
+        {
+            name: nlsHPCC.PublishedQueries,
+            url: "#/queries",
+            icon: "Globe",
+            key: "queries"
+        },
+        {
+            name: nlsHPCC.Topology,
+            url: "#/topology",
+            icon: "Org",
+            key: "topology"
+        },
+        {
+            name: nlsHPCC.Operations,
+            url: "#/topology-bare-metal",
+            icon: "Admin",
+            key: "topology-bare-metal"
+        }
+    ];
+    if (!containerized) {
+        links = links.filter(l => l.key !== "topology");
     }
-];
+    if (!bare_metal) {
+        links = links.filter(l => l.key !== "topology-bare-metal");
+    }
+    return [{ links }];
+}
 
 const navIdx: { [id: string]: MainNav[] } = {};
 
@@ -92,7 +98,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
     hashPath
 }) => {
 
-    const menu = useConst([...navLinkGroups]);
+    const menu = useConst([...navLinkGroups()]);
     const { theme, setTheme, isDark } = useUserTheme();
 
     const selKey = React.useMemo(() => {
@@ -144,8 +150,8 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
         { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin" },
     ],
-    "topology-old": [
-        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology-old" },
+    "topology-bare-metal": [
+        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology-bare-metal" },
         { headerText: nlsHPCC.DiskUsage + " (L)", itemKey: "/diskusage" },
         { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/clusters" },
         { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/processes" },
