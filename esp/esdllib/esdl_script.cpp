@@ -29,6 +29,53 @@
 #include <fxpp/FragmentedXmlPullParser.hpp>
 using namespace xpp;
 
+class CEsdlScriptContext : public CInterfaceOf<IEsdlScriptContext>
+{
+public: // ISectionalXmlDocModel
+    virtual IXpathContext* createXpathContext(IXpathContext* parent, const char* section, bool strictParameterDeclaration) override { return docModel->createXpathContext(parent, section, strictParameterDeclaration); }
+    virtual IXpathContext* getCopiedSectionXpathContext(IXpathContext* parent, const char* tgtSection, const char* srcSection, bool strictParameterDeclaration) override { return docModel->getCopiedSectionXpathContext(parent, tgtSection, srcSection, strictParameterDeclaration); }
+    virtual void setContent(const char* section, const char* xml) override { docModel->setContent(section, xml); }
+    virtual void appendContent(const char* section, const char* name, const char* xml) override { docModel->appendContent(section, name, xml); }
+    virtual void setContent(const char* section, IPropertyTree* tree) override { docModel->setContent(section, tree); }
+    virtual bool tokenize(const char* str, const char* delimiters, StringBuffer& resultPath) override { return docModel->tokenize(str, delimiters, resultPath); }
+    virtual void setAttribute(const char* section, const char* name, const char* value) override { docModel->setAttribute(section, name, value); }
+    virtual const char* queryAttribute(const char* section, const char* name) override { return docModel->queryAttribute(section, name); }
+    virtual const char* getAttribute(const char* section, const char* name, StringBuffer& s) override { return docModel->getAttribute(section, name, s); }
+    virtual const char* getXPathString(const char* xpath, StringBuffer& s) const override { return docModel->getXPathString(xpath, s); }
+    virtual __int64 getXPathInt64(const char* xpath, __int64 dft = false) const override { return docModel->getXPathInt64(xpath, dft); }
+    virtual bool getXPathBool(const char* xpath, bool dft = false) const override { return docModel->getXPathBool(xpath, dft); }
+    virtual void toXML(StringBuffer& xml, const char* section, bool includeParentNode = false) override { docModel->toXML(xml, section, includeParentNode); }
+    virtual void toXML(StringBuffer& xml) override { docModel->toXML(xml); }
+    virtual IPropertyTree* createPTreeFromSection(const char* section) override { return docModel->createPTreeFromSection(section); }
+    virtual void cleanupTemporaries() override { docModel->cleanupTemporaries(); }
+public: // IEsdlScriptContext
+    virtual IEspContext* queryEspContext() const override { return espCtx; }
+    virtual IEsdlFunctionRegister* queryFunctionRegister() const override { return functionRegister; }
+    virtual void setTraceToStdout(bool val) override
+    {
+        traceToStdout = val;
+    }
+    virtual bool getTraceToStdout() const override { return traceToStdout; }
+    virtual void setTestMode(bool val) override { testMode = val; }
+    virtual bool getTestMode() const override { return testMode; }
+private:
+    Owned<IEspContext>            espCtx;
+    IEsdlFunctionRegister*        functionRegister = nullptr;
+    Owned<ISectionalXmlDocModel>  docModel;
+    bool                          traceToStdout = false;
+    bool                          testMode = false;
+public:
+    CEsdlScriptContext(IEspContext* _espCtx, IEsdlFunctionRegister* _functionRegister)
+        : functionRegister(_functionRegister)
+    {
+        if (_espCtx)
+            espCtx.set(_espCtx);
+        else
+            espCtx.setown(createEspContext(nullptr));
+        docModel.setown(createSectionalXmlDocModel(this));
+    }
+};
+
 class OptionalCriticalBlock
 {
     CriticalSection *crit = nullptr;
@@ -1402,7 +1449,25 @@ public:
         {
             if (m_test && !sourceContext->evaluateAsBoolean(m_test))
                 return false;
-            targetContext->trace(m_label, m_select, scriptContext->getTraceToStdout());
+            StringBuffer    content;
+            bool            isValue;
+            if (targetContext->selectText(m_select, content, isValue))
+            {
+                if (scriptContext->getTraceToStdout())
+                {
+                    if (m_label.isEmpty())
+                        printf("%s\n", content.str());
+                    else
+                        printf("%s %s\n", m_label.str(), content.str());
+                }
+                else
+                {
+                    if (m_label.isEmpty())
+                        LOG(MCuserInfo, "%s", content.str());
+                    else
+                        LOG(MCuserInfo, "%s %s", m_label.str(), content.str());
+                }
+            }
         }
         catch (IException* e)
         {
@@ -1965,7 +2030,7 @@ public:
         IEsdlTransformOperation *callFunc = esdlFunc;
         if (!callFunc)
         {
-            IEsdlFunctionRegister *activeRegister = static_cast<IEsdlFunctionRegister*>(scriptContext->queryFunctionRegister());
+            IEsdlFunctionRegister *activeRegister = scriptContext->queryFunctionRegister();
             if (!activeRegister)
                 throw MakeStringException(ESDL_SCRIPT_Error, "Runtime function register not found (looking up %s)", m_name.str());
             callFunc = activeRegister->findEsdlFunction(m_name, false);
@@ -2489,7 +2554,7 @@ public:
             sourceContext->setLocation(m_source, true);
         ForEachItemIn(i, m_operations)
             m_operations.item(i).process(scriptContext, targetXpath, sourceContext);
-        scriptContext->cleanupBetweenScripts();
+        scriptContext->cleanupTemporaries();
     }
     void bindFunctionCalls(const char *scopeDescr, IEsdlFunctionRegister *activeFunctionRegister, bool bindLocalOnly)
     {
@@ -2548,7 +2613,7 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
     if (isEmptyString(reqtype))
         throw MakeStringException(ESDL_SCRIPT_Error, "ESDL script request name not set");
 
-    IEspContext *context = reinterpret_cast<IEspContext*>(scriptCtx->queryEspContext());
+    IEspContext *context = scriptCtx->queryEspContext();
 
     if (level >= LogMax)
     {
@@ -2920,6 +2985,10 @@ public:
     }
 };
 
+esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister)
+{
+    return new CEsdlScriptContext(espCtx, functionRegister);
+}
 esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap()
 {
     return new CEsdlTransformMethodMap();
