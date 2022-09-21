@@ -1046,15 +1046,19 @@
         <title>Environment Values</title>
 
         <para>You can define Environment Variables in a YAML file. The
-        environment values are defined under the <emphasis>#env:</emphasis>
-        portion of the delivered values.yaml as illustrated below.</para>
+        environment values are defined under the
+        <emphasis>global.env:</emphasis> portion of the delivered values.yaml
+        as illustrated below.</para>
 
-        <programlisting>#env: 
-#- name: SMTPserver 
-#  value: mysmtpserver</programlisting>
+        <programlisting>global:
+  env:
+  - name: SMTPserver 
+  - value: mysmtpserver</programlisting>
 
-        <para>The env section of the delivered values file adds default
-        environment variables for all components.</para>
+        <para>The global.env section of the delivered values file adds default
+        environment variables for all components. You can also specify
+        environment variables for the individual components. Refer to the
+        schema for setting this value for individual components. </para>
 
         <para>To add environment values you can insert them into your
         customization configuration YAML file when you deploy your
