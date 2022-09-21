@@ -573,6 +573,12 @@ vaults:
     {{- if index $vault "client-secret" }}
       client-secret: {{ index $vault "client-secret" }}
     {{- end -}}
+    {{- if index $vault "appRoleId" }}
+      appRoleId: {{ index $vault "appRoleId" }}
+    {{- end -}}
+    {{- if index $vault "appRoleSecret" }}
+      appRoleSecret: {{ index $vault "appRoleSecret" }}
+    {{- end -}}
   {{- end -}}
  {{- end -}}
 {{- end -}}
