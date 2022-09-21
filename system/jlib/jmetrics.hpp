@@ -47,6 +47,14 @@ enum MetricType
 };
 
 
+enum MetricUnits
+{
+    METRICS_UNITS_COUNT,
+    METRICS_UNITS_NANOSECONDS,
+    METRICS_UNITS_BYTES
+};
+
+
 struct MetricMetaDataItem
 {
     MetricMetaDataItem(const char *_key, const char *_value)
@@ -95,7 +103,7 @@ interface IMetric
     /*
      * Get the units for the metric
      */
-    virtual StatisticMeasure queryUnits() const = 0;
+    virtual MetricUnits queryUnits() const = 0;
 
     /*
      * Query histogram values (for histogram metrics)
@@ -121,14 +129,14 @@ public:
     virtual const std::string &queryDescription() const override { return description; }
     virtual MetricType queryMetricType() const override { return metricType; }
     const MetricMetaData &queryMetaData() const override { return metaData; }
-    StatisticMeasure queryUnits() const override { return units; }
+    MetricUnits queryUnits() const override { return units; }
     virtual std::vector<__uint64> queryHistogramValues() const override { return {}; }
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override { return {}; }
 
 
 protected:
     // No one should be able to create one of these
-    MetricBase(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
+    MetricBase(const char *_name, const char *_desc, MetricType _metricType, MetricUnits _units, const MetricMetaData &_metaData) :
         name{_name},
         description{_desc},
         metricType{_metricType},
@@ -139,7 +147,7 @@ protected:
     std::string name;
     std::string description;
     MetricType metricType;
-    StatisticMeasure units;
+    MetricUnits units;
     MetricMetaData metaData;
 };
 
@@ -150,7 +158,7 @@ public:
     virtual __uint64 queryValue() const override { return value; }
 
 protected:
-    MetricVal(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
+    MetricVal(const char *_name, const char *_desc, MetricType _metricType, MetricUnits _units, const MetricMetaData &_metaData) :
         MetricBase(_name, _desc, _metricType, _units, _metaData) {}
 
     RelaxedAtomic<__uint64> value{0};
@@ -163,7 +171,7 @@ protected:
 class jlib_decl CounterMetric : public MetricVal
 {
 public:
-    CounterMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+    CounterMetric(const char *_name, const char *_description, MetricUnits _units, const MetricMetaData &_metaData = MetricMetaData()) :
         MetricVal{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
     void inc(uint64_t val)
     {
@@ -183,7 +191,7 @@ public:
 class jlib_decl GaugeMetric : public MetricVal
 {
 public:
-    GaugeMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+    GaugeMetric(const char *_name, const char *_description, MetricUnits _units, const MetricMetaData &_metaData = MetricMetaData()) :
         MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData}  { }
 
     void adjust(int64_t delta)
@@ -209,7 +217,7 @@ public:
 class jlib_decl GaugeMetricFromCounters : public MetricVal
 {
 public:
-    GaugeMetricFromCounters(const char *_name, const char *_description, StatisticMeasure _units,
+    GaugeMetricFromCounters(const char *_name, const char *_description, MetricUnits _units,
                             const std::shared_ptr<CounterMetric> &_pBeginCounter, const std::shared_ptr<CounterMetric> &_pEndCounter,
                             const MetricMetaData &_metaData = MetricMetaData()) :
         MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData},
@@ -235,7 +243,7 @@ template<typename T>
 class CustomMetric : public MetricBase
 {
 public:
-    CustomMetric(const char *_name, const char *_desc, MetricType _metricType, T &_value, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+    CustomMetric(const char *_name, const char *_desc, MetricType _metricType, T &_value, MetricUnits _units, const MetricMetaData &_metaData = MetricMetaData()) :
         MetricBase(_name, _desc, _metricType, _units, _metaData),
         value{_value} { }
 
@@ -253,7 +261,7 @@ protected:
 class jlib_decl HistogramMetric : public MetricBase
 {
 public:
-    HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData = MetricMetaData());
+    HistogramMetric(const char *_name, const char *_desc, MetricUnits _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual __uint64 queryValue() const override
     {
@@ -285,7 +293,7 @@ protected:
 class jlib_decl ScaledHistogramMetric : public HistogramMetric
 {
 public:
-    ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
+    ScaledHistogramMetric(const char *_name, const char *_desc, MetricUnits _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
     virtual __uint64 queryValue() const override
@@ -366,7 +374,7 @@ public:
     void startCollecting();
     void stopCollecting();
     std::vector<std::shared_ptr<IMetric>> queryMetricsForReport(const std::string &sinkName);
-    const char * queryUnitsString(StatisticMeasure units) const;
+    const char * queryUnitsString(MetricUnits units) const;
 
 protected:
     void initializeSinks(IPropertyTreeIterator *pSinkIt);
@@ -380,14 +388,14 @@ protected:
     std::mutex metricVectorMutex;
 };
 
-jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
+jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, MetricUnits units, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, MetricUnits units, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, MetricUnits units,
                                                                          const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
                                                                          const MetricMetaData &metaData = MetricMetaData());
 
-jlib_decl std::shared_ptr<HistogramMetric> registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
-jlib_decl std::shared_ptr<ScaledHistogramMetric> registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits,
+jlib_decl std::shared_ptr<HistogramMetric> registerHistogramMetric(const char *name, const char* desc, MetricUnits units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
+jlib_decl std::shared_ptr<ScaledHistogramMetric> registerScaledHistogramMetric(const char *name, const char* desc, MetricUnits units, const std::vector<__uint64> &bucketLimits,
                                                                                double limitsToMeasurementUnitsScaleFactor, const MetricMetaData &metaData = MetricMetaData());
 
 jlib_decl std::shared_ptr<ScaledHistogramMetric> registerCyclesToNsScaledHistogramMetric(const char *name, const char* desc, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData = MetricMetaData());
@@ -395,7 +403,7 @@ jlib_decl std::shared_ptr<ScaledHistogramMetric> registerCyclesToNsScaledHistogr
 //
 // Convenience function templates to create metrics and add to the manager
 template <typename T>
-std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
+std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc, MetricUnits units, const MetricMetaData &metaData = MetricMetaData())
 {
     //
     // std::make_shared is not used so that there are separate memory allocations for the object (metric) and the shared pointer control structure. This ensures

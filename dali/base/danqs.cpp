@@ -33,7 +33,7 @@
 #pragma warning (disable : 4355)
 #endif
 
-static auto pNqRequestsCount = hpccMetrics::registerCounterMetric("dali.nq_requests.received", "The total number of Dali NQ requests received", SMeasureCount);
+static auto pNqRequestsCount = hpccMetrics::registerCounterMetric("dali.nq_requests.received", "The total number of Dali NQ requests received", hpccMetrics::MetricUnits::METRICS_UNITS_COUNT);
 
 enum MQueueRequestKind { 
     MQR_ADD_QUEUE,

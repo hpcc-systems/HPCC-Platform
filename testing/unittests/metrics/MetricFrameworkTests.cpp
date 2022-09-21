@@ -82,7 +82,7 @@ protected:
 
     void Test_counter_metric_increments_properly()
     {
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", METRICS_UNITS_COUNT);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounter->queryValue()));
         int expectedValue = 0;
 
@@ -111,7 +111,7 @@ protected:
 
     void Test_gauge_metric_updates_properly()
     {
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", METRICS_UNITS_COUNT);
         int gaugeValue = pGauge->queryValue();
         CPPUNIT_ASSERT_EQUAL(0, gaugeValue);
 
@@ -136,7 +136,7 @@ protected:
     void Test_custom_metric()
     {
         int customCounter = 0;
-        std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("custom-counter", "description", METRICS_COUNTER, customCounter, SMeasureCount);
+        std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("custom-counter", "description", METRICS_COUNTER, customCounter, METRICS_UNITS_COUNT);
         int customCounterValue = pCustomCounter->queryValue();
         CPPUNIT_ASSERT_EQUAL(0, customCounterValue);
 
@@ -158,8 +158,8 @@ protected:
     void Test_manager_manages_metrics_properly()
     {
         int numAdded;
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", METRICS_UNITS_COUNT);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", METRICS_UNITS_COUNT);
         frameworkTestManager.addMetric(pCounter);
         frameworkTestManager.addMetric(pGauge);
         numAdded = 2;
@@ -173,7 +173,7 @@ protected:
 
         //
         // Add a metric while reporting is enabled and make sure it is returned
-        std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("test-newcounter", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("test-newcounter", "description", METRICS_UNITS_COUNT);
         frameworkTestManager.addMetric(pNewCounter);
         numAdded++;
 
@@ -194,7 +194,7 @@ protected:
 
     void Test_scoped_updater_classes()
     {
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", METRICS_UNITS_COUNT);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
 
         //
@@ -234,8 +234,8 @@ protected:
         // Test that two metrics with the same base name, but differing meta data are added w/o error. Note code shows passing meta data as an externally
         // constructed vector and as a vector constructed in place.
         MetricMetaData metaData1{{"key1", "value1"}};
-        std::shared_ptr<CounterMetric> pCounter1 = std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount, metaData1);
-        std::shared_ptr<CounterMetric> pCounter2 = std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount,
+        std::shared_ptr<CounterMetric> pCounter1 = std::make_shared<CounterMetric>("requests.completed", "description", METRICS_UNITS_COUNT, metaData1);
+        std::shared_ptr<CounterMetric> pCounter2 = std::make_shared<CounterMetric>("requests.completed", "description", METRICS_UNITS_COUNT,
                                                                                    MetricMetaData{{"key1", "value2"}});
 
         frameworkTestManager.addMetric(pCounter1);
@@ -255,8 +255,8 @@ protected:
         //
         // Test that two metrics with the same base name and meta data returns a false when adding to indicate a non-unique name
         MetricMetaData metaData2{{"key1", "value1"}};
-        std::shared_ptr<CounterMetric> pCounter3 = std::make_shared<CounterMetric>("requests.queued", "description", SMeasureCount, metaData2);
-        std::shared_ptr<CounterMetric> pCounter4 = std::make_shared<CounterMetric>("requests.queued", "description", SMeasureCount,
+        std::shared_ptr<CounterMetric> pCounter3 = std::make_shared<CounterMetric>("requests.queued", "description", METRICS_UNITS_COUNT, metaData2);
+        std::shared_ptr<CounterMetric> pCounter4 = std::make_shared<CounterMetric>("requests.queued", "description", METRICS_UNITS_COUNT,
                                                                                    MetricMetaData{{"key1", "value1"}});
         frameworkTestManager.addMetric(pCounter3);
         success = false;
@@ -275,8 +275,8 @@ protected:
 
         //
         // Delete a metric and try to add a like named metric to ensure it does not report an existing metric
-        std::shared_ptr<CounterMetric> pCounter5 = std::make_shared<CounterMetric>("dup-requests.queued", "description", SMeasureCount);
-        std::shared_ptr<CounterMetric> pCounter6 = std::make_shared<CounterMetric>("dup-requests.queued", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter5 = std::make_shared<CounterMetric>("dup-requests.queued", "description", METRICS_UNITS_COUNT);
+        std::shared_ptr<CounterMetric> pCounter6 = std::make_shared<CounterMetric>("dup-requests.queued", "description", METRICS_UNITS_COUNT);
         frameworkTestManager.addMetric(pCounter5);
         pCounter5.reset();
         success = false;
@@ -296,10 +296,10 @@ protected:
 
     void Test_gauge_by_counters_metric()
     {
-        std::shared_ptr<CounterMetric> pCounterTotal = std::make_shared<CounterMetric>("requests.received", "description", SMeasureCount);
-        std::shared_ptr<CounterMetric> pCounterStarted = std::make_shared<CounterMetric>("requests.started", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounterTotal = std::make_shared<CounterMetric>("requests.received", "description", METRICS_UNITS_COUNT);
+        std::shared_ptr<CounterMetric> pCounterStarted = std::make_shared<CounterMetric>("requests.started", "description", METRICS_UNITS_COUNT);
 
-        std::shared_ptr<GaugeMetricFromCounters> pCounterGauge = std::make_shared<GaugeMetricFromCounters>("requests.waiting", "description", SMeasureCount, pCounterTotal, pCounterStarted);
+        std::shared_ptr<GaugeMetricFromCounters> pCounterGauge = std::make_shared<GaugeMetricFromCounters>("requests.waiting", "description", METRICS_UNITS_COUNT, pCounterTotal, pCounterStarted);
 
         pCounterTotal->inc(4);
         pCounterStarted->inc(2);
@@ -314,7 +314,7 @@ protected:
     {
         //std::vector<BucketDef> bucketDefs = {{"le 2", 2}, {"le 4", 4}, {"le 8", 8} };
         std::vector<__uint64> bucketDefs = {2, 4, 8};
-        std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("requests.dist", "description", SMeasureCount, bucketDefs);
+        std::shared_ptr<HistogramMetric> pHistogram = std::make_shared<HistogramMetric>("requests.dist", "description", METRICS_UNITS_COUNT, bucketDefs);
 
         std::vector<__uint64> values;
 
@@ -355,7 +355,7 @@ protected:
         // Duplicate the convenience function so we don't actually add the metric to the manager
         double nsToCyclesScaleFactor = 1.0 / getCycleToNanoScale();
         std::vector<__uint64> timeBuckets = {500000000, 1000000000, 2000000000 };
-        std::shared_ptr<ScaledHistogramMetric> pScaledHistogram = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric("requests.time", "description", SMeasureTimeNs, timeBuckets, nsToCyclesScaleFactor));
+        std::shared_ptr<ScaledHistogramMetric> pScaledHistogram = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric("requests.time", "description", METRICS_UNITS_NANOSECONDS, timeBuckets, nsToCyclesScaleFactor));
 
         __uint64 totalDelay = 0;
 

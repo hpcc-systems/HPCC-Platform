@@ -28,7 +28,7 @@ MODULE_EXIT()
 }
 
 
-HistogramMetric::HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData) :
+HistogramMetric::HistogramMetric(const char *_name, const char *_desc, MetricUnits _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData) :
     MetricBase(_name, _desc, MetricType::METRICS_HISTOGRAM, _units, _metaData)
 {
     buckets.reserve(_bucketLimits.size());
@@ -86,7 +86,7 @@ HistogramMetric::Bucket &HistogramMetric::findBucket(__uint64 measurement)
 }
 
 
-ScaledHistogramMetric::ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData) :
+ScaledHistogramMetric::ScaledHistogramMetric(const char *_name, const char *_desc, MetricUnits _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData) :
     HistogramMetric{_name, _desc, _units, _bucketLimits, _metaData}
 {
     for (auto &b: buckets)
@@ -309,13 +309,13 @@ void MetricsManager::addSink(MetricSink *pSink, const char *name)
 }
 
 
-const char *MetricsManager::queryUnitsString(StatisticMeasure units) const
+const char *MetricsManager::queryUnitsString(MetricUnits units) const
 {
     switch (units)
     {
-    case SMeasureCount:  return "count";
-    case SMeasureTimeNs: return "ns";
-    case SMeasureSize:   return "bytes";
+    case METRICS_UNITS_COUNT:       return "count";
+    case METRICS_UNITS_NANOSECONDS: return "ns";
+    case METRICS_UNITS_BYTES:       return "bytes";
     }
     return nullptr;
 }
@@ -387,19 +387,19 @@ void PeriodicMetricSink::doStopCollecting()
 }
 
 
-std::shared_ptr<CounterMetric> hpccMetrics::registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData)
+std::shared_ptr<CounterMetric> hpccMetrics::registerCounterMetric(const char *name, const char* desc, MetricUnits units, const MetricMetaData &metaData)
 {
     return createMetricAndAddToManager<CounterMetric>(name, desc, units, metaData);
 }
 
 
-std::shared_ptr<GaugeMetric> hpccMetrics::registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData)
+std::shared_ptr<GaugeMetric> hpccMetrics::registerGaugeMetric(const char *name, const char* desc, MetricUnits units, const MetricMetaData &metaData)
 {
     return createMetricAndAddToManager<GaugeMetric>(name, desc, units, metaData);
 }
 
 
-std::shared_ptr<GaugeMetricFromCounters> hpccMetrics::registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
+std::shared_ptr<GaugeMetricFromCounters> hpccMetrics::registerGaugeFromCountersMetric(const char *name, const char* desc, MetricUnits units,
                                                                          const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
                                                                          const MetricMetaData &metaData)
 {
@@ -413,7 +413,7 @@ std::shared_ptr<GaugeMetricFromCounters> hpccMetrics::registerGaugeFromCountersM
 }
 
 
-std::shared_ptr<HistogramMetric> hpccMetrics::registerHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData)
+std::shared_ptr<HistogramMetric> hpccMetrics::registerHistogramMetric(const char *name, const char* desc, MetricUnits units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData)
 {
     std::shared_ptr<HistogramMetric> pMetric = std::shared_ptr<HistogramMetric>(new HistogramMetric(name, desc, units, bucketLimits, metaData));
     queryMetricsManager().addMetric(pMetric);
@@ -421,7 +421,7 @@ std::shared_ptr<HistogramMetric> hpccMetrics::registerHistogramMetric(const char
 }
 
 
-std::shared_ptr<ScaledHistogramMetric> hpccMetrics::registerScaledHistogramMetric(const char *name, const char* desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits,
+std::shared_ptr<ScaledHistogramMetric> hpccMetrics::registerScaledHistogramMetric(const char *name, const char* desc, MetricUnits units, const std::vector<__uint64> &bucketLimits,
                                                                                double limitsToMeasurementUnitsScaleFactor, const MetricMetaData &metaData)
 {
     std::shared_ptr<ScaledHistogramMetric> pMetric = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric(name, desc, units, bucketLimits, limitsToMeasurementUnitsScaleFactor, metaData));
@@ -433,7 +433,7 @@ std::shared_ptr<ScaledHistogramMetric> hpccMetrics::registerScaledHistogramMetri
 std::shared_ptr<ScaledHistogramMetric> hpccMetrics::registerCyclesToNsScaledHistogramMetric(const char *name, const char* desc, const std::vector<__uint64> &bucketLimits, const MetricMetaData &metaData)
 {
     double nsToCyclesScaleFactor = 1.0 / getCycleToNanoScale();
-    std::shared_ptr<ScaledHistogramMetric> pMetric = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric(name, desc, SMeasureTimeNs, bucketLimits, nsToCyclesScaleFactor, metaData));
+    std::shared_ptr<ScaledHistogramMetric> pMetric = std::shared_ptr<ScaledHistogramMetric>(new ScaledHistogramMetric(name, desc, METRICS_UNITS_NANOSECONDS, bucketLimits, nsToCyclesScaleFactor, metaData));
     queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
