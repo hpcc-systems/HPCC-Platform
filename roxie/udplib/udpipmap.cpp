@@ -46,7 +46,7 @@ class IpMapTest : public CppUnit::TestFixture
         auto createMapEntry = [five](const ServerIdentifier ip)
         {
             StringBuffer s;
-            printf("adding ip %s\n", ip.getTraceText(s).str());
+            DBGLOG("adding ip %s", ip.getTraceText(s).str());
             return new unsigned(five);
         };
         IpMapOf<unsigned> map(createMapEntry);
@@ -63,7 +63,7 @@ class IpMapTest : public CppUnit::TestFixture
             ASSERT(v == 5);
             entries++;
         }
-        printf("entries = %d\n", entries);
+        DBGLOG("entries = %d", entries);
         ASSERT(entries == 3);
     }
 #if 0

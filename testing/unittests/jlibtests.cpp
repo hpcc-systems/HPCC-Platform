@@ -23,6 +23,7 @@
 #ifdef _USE_CPPUNIT
 #include <memory>
 #include <chrono>
+#include <algorithm>
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
@@ -470,27 +471,25 @@ protected:
         unsigned fsize = (unsigned)(((double)nr * (double)rs) / (1024.0 * 1024.0));
 
         fflush(NULL);
-        fprintf(stdout,"\n");
-        fflush(NULL);
 
         for(int j=0; j<2; j++)
         {
             if (j==0)
-                fprintf(stdout, "File size: %d (MB) Cache, ", fsize);
+                DBGLOG("File size: %d (MB) Cache", fsize);
             else
-                fprintf(stdout, "\nFile size: %d (MB) Nocache, ", fsize);
+                DBGLOG("File size: %d (MB) Nocache", fsize);
 
             if (server != NULL)
             {
                 SocketEndpoint ep;
                 ep.set(server, 7100);
                 ifile = createRemoteFile(ep, tmpfile);
-                fprintf(stdout, "Remote: (%s)\n", server);
+                DBGLOG("Remote: (%s)", server);
             }
             else
             {
                 ifile = createIFile(tmpfile);
-                fprintf(stdout, "Local:\n");
+                DBGLOG("Local:");
             }
 
             ifile->remove();
@@ -513,7 +512,7 @@ protected:
             }
             catch (...)
             {
-                fprintf(stdout, "ifile->setFilePermissions() exception\n");
+                DBGLOG("ifile->setFilePermissions() exception");
             }
 
             unsigned iter = nr / 40;
@@ -537,7 +536,7 @@ protected:
             double rsec = (double)(msTick() - st)/1000.0;
             unsigned iorate = (unsigned)((double)fsize / rsec);
 
-            fprintf(stdout, "\nwrite - elapsed time = %6.2f (s) iorate = %4d (MB/s)\n", rsec, iorate);
+            DBGLOG("write - elapsed time = %6.2f (s) iorate = %4d (MB/s)", rsec, iorate);
 
             st = msTick();
 
@@ -563,7 +562,7 @@ protected:
             rsec = (double)(msTick() - st)/1000.0;
             iorate = (unsigned)((double)fsize / rsec);
 
-            fprintf(stdout, "\nread -- elapsed time = %6.2f (s) iorate = %4d (MB/s)\n", rsec, iorate);
+            DBGLOG("read -- elapsed time = %6.2f (s) iorate = %4d (MB/s)", rsec, iorate);
 
             ifileio->Release();
             ifile->remove();
@@ -742,7 +741,7 @@ public:
             //Check the values from the quantile iterator match those that are expected
             unsigned pos = (unsigned)iter.get();
 #if 0
-            printf("(%d,%d) %d=%d\n", numItems, numDivisions, i, pos);
+            DBGLOG("(%d,%d) %d=%d", numItems, numDivisions, i, pos);
 #endif
             if (expected)
                 CPPUNIT_ASSERT_EQUAL(expected[i], pos);
@@ -820,7 +819,7 @@ public:
         unsigned value = 0;
         for (unsigned i=0; i < iters; i++)
             value += msTick();
-        printf("msTick() %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("msTick() %uns = %u", (msTick()-startTime)/scale, value);
     }
     void testNsTick()
     {
@@ -828,7 +827,7 @@ public:
         unsigned __int64 value = 0;
         for (unsigned i=0; i < iters; i++)
             value += nsTick();
-        printf("nsTick() %uns = %" I64F "u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("nsTick() %uns = %" I64F "u", (msTick()-startTime)/scale, value);
     }
     void testGetCyclesNow()
     {
@@ -836,7 +835,7 @@ public:
         unsigned value = 0;
         for (unsigned i=0; i < iters; i++)
             value += get_cycles_now();
-        printf("get_cycles_now() %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("get_cycles_now() %uns = %u", (msTick()-startTime)/scale, value);
     }
     void testStdChrono()
     {
@@ -844,7 +843,7 @@ public:
         unsigned value = 0;
         for (unsigned i=0; i < iters; i++)
             value += std::chrono::high_resolution_clock::now().time_since_epoch().count();
-        printf("std::chrono::high_resolution_clock::now() %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("std::chrono::high_resolution_clock::now() %uns = %u", (msTick()-startTime)/scale, value);
     }
     void testGetTimeOfDay()
     {
@@ -856,7 +855,7 @@ public:
             gettimeofday(&tv, NULL);
             value += tv.tv_sec;
         }
-        printf("gettimeofday() %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("gettimeofday() %uns = %u", (msTick()-startTime)/scale, value);
     }
     void testClockGetTimeReal()
     {
@@ -868,7 +867,7 @@ public:
             clock_gettime(CLOCK_REALTIME, &ts);
             value += ts.tv_sec;
         }
-        printf("clock_gettime(REALTIME) %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("clock_gettime(REALTIME) %uns = %u", (msTick()-startTime)/scale, value);
     }
     void testClockGetTimeMono()
     {
@@ -880,7 +879,7 @@ public:
             clock_gettime(CLOCK_MONOTONIC, &ts);
             value += ts.tv_sec;
         }
-        printf("clock_gettime(MONOTONIC) %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("clock_gettime(MONOTONIC) %uns = %u", (msTick()-startTime)/scale, value);
     }
     void testTimestampNow()
     {
@@ -891,7 +890,7 @@ public:
         {
             value += getTimeStampNowValue();
         }
-        printf("getTimeStampNowValue() %uns = %u\n", (msTick()-startTime)/scale, value);
+        DBGLOG("getTimeStampNowValue() %uns = %u", (msTick()-startTime)/scale, value);
     }
 };
 
@@ -1057,11 +1056,11 @@ public:
         unsigned expectedWorkTime = std::max(expectedReadWorkTime, expectedWriteWorkTime);
         if (failures)
         {
-            printf("Fail: Test %u producers %u consumers %u queueItems %u(%u) mismatches fail(@%u=%u)\n", numProducers, numConsumers, queueElements, failures, numClear, (unsigned)failPos, failValue);
+            DBGLOG("Fail: Test %u producers %u consumers %u queueItems %u(%u) mismatches fail(@%u=%u)", numProducers, numConsumers, queueElements, failures, numClear, (unsigned)failPos, failValue);
             ASSERT(failures == 0);
         }
         else
-            printf("Pass: Test %u(@%u) producers %u(@%u) consumers %u queueItems in %ums [%dms]\n", numProducers, writerWork, numConsumers, readerWork, queueElements, timeMs, timeMs-expectedWorkTime);
+            DBGLOG("Pass: Test %u(@%u) producers %u(@%u) consumers %u queueItems in %ums [%dms]", numProducers, writerWork, numConsumers, readerWork, queueElements, timeMs, timeMs-expectedWorkTime);
 
         for (unsigned i4 = 0; i4 < numConsumers; i4++)
         {
@@ -1123,7 +1122,7 @@ public:
         }
         cycle_t stopTime = get_cycles_now();
         unitWorkTimeMs = cycle_to_nanosec(stopTime - startTime) / (1000000 * 10);
-        printf("Work(1) takes %ums\n", unitWorkTimeMs);
+        DBGLOG("Work(1) takes %ums", unitWorkTimeMs);
 
         //How does it scale with number of queue elements?
         for (unsigned elem = 16; elem < 256; elem *= 2)
@@ -1201,7 +1200,7 @@ protected:
         CCycleTimer timer;
         testPatterns(search.get(), patterns);
         if (reportTiming)
-            printf("%u: %u ms\n", length, timer.elapsedMs());
+            DBGLOG("%u: %u ms", length, timer.elapsedMs());
     }
 
     char * generateSearchString(size_t len)
@@ -2129,7 +2128,7 @@ subX:
         encodePTreeName(encoded, input);
         StringBuffer decoded;
         decodePtreeName(decoded, encoded.str());
-        //printf("\nptree name[%d]: %s --> %s --> %s\n", id++, input, encoded.str(), decoded.str());
+        //DBGLOG("\nptree name[%d]: %s --> %s --> %s", id++, input, encoded.str(), decoded.str());
         CPPUNIT_ASSERT(streq(input, decoded.str()));
         if (expected)
         {
@@ -2279,7 +2278,7 @@ Nothing_toEncodeHere:
         catch (IException *e)
         {
             StringBuffer msg;
-            printf("\nPTREE: Exception %d - %s\n", e->errorCode(), e->errorMessage(msg).str());
+            printf("\nPTREE: Exception %d - %s", e->errorCode(), e->errorMessage(msg).str());
             EXCLOG(e, nullptr);
             throw;
         }
@@ -2407,7 +2406,7 @@ public:
             cycle_t endCycles = get_cycles_now();
             unsigned __int64 expected = (unsigned __int64)numIterations * numThreads;
             unsigned __int64 averageTime = cycle_to_nanosec(endCycles - startCycles) / (numIterations * numThreads);
-            printf("%s@%u/%u threads(%u) %" I64F "uns/iteration lost(%" I64F "d)\n", title, NUMVALUES, NUMLOCKS, numThreads, averageTime, expected - value1);
+            DBGLOG("%s@%u/%u threads(%u) %" I64F "uns/iteration lost(%" I64F "d)", title, NUMVALUES, NUMLOCKS, numThreads, averageTime, expected - value1);
             for (unsigned i3 = 0; i3 < numThreads; i3++)
                 threads.item(i3).join();
             return averageTime;
@@ -2448,7 +2447,7 @@ public:
     {};
 
     const unsigned numIterations = 1000000;
-    const unsigned numCores = getAffinityCpus();
+    const unsigned numCores = std::max(getAffinityCpus(), 16U);
     void runAllTests()
     {
         DO_TEST(CriticalSection, CriticalBlock, unsigned __int64, 1, 1);
@@ -2481,7 +2480,7 @@ public:
         DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 5, 1);
         DO_TEST(ReadWriteLock, WriteLockBlock, unsigned __int64, 1, 2);
 
-        printf("Summary\n");
+        DBGLOG("Summary");
         summariseTimings("Uncontended", uncontendedTimes);
         summariseTimings("Minor", minorTimes);
         summariseTimings("Typical", typicalTimes);
@@ -2490,8 +2489,8 @@ public:
 
     void summariseTimings(const char * option, UInt64Array & times)
     {
-        printf("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)   "
-                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)\n", option,
+        DBGLOG("%11s 1x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)   "
+                    "5x: cs(%3" I64F "u) spin(%3" I64F "u) atomic(%3" I64F "u) ratomic(%3" I64F "u) cas(%3" I64F "u) rd(%3" I64F "u) wr(%3" I64F "u)", option,
                     times.item(0), times.item(4), times.item(8), times.item(12), times.item(14), times.item(19), times.item(23),
                     times.item(2), times.item(6), times.item(10), times.item(13), times.item(15), times.item(21), times.item(25));
     }
@@ -2504,7 +2503,7 @@ private:
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AtomicTimingTest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingTest");
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AtomicTimingTest, "AtomicTimingStressTest");
 
 
 //=====================================================================================================================
@@ -2524,7 +2523,7 @@ public:
         CCycleTimer timer;
         for (unsigned i=0; i < num; i++)
             temp.getSystemTimes();
-        printf("Time to get system cpu activity = %" I64F "uns\n", timer.elapsedNs()/num);
+        DBGLOG("Time to get system cpu activity = %" I64F "uns", timer.elapsedNs()/num);
     }
     void getProcessTiming()
     {
@@ -2533,7 +2532,7 @@ public:
         CCycleTimer timer;
         for (unsigned i=0; i < num; i++)
             temp.getProcessTimes();
-        printf("Time to get process cpu activity = %" I64F "uns\n", timer.elapsedNs()/num);
+        DBGLOG("Time to get process cpu activity = %" I64F "uns", timer.elapsedNs()/num);
     }
     void runAllTests()
     {
@@ -2557,10 +2556,10 @@ public:
             CpuInfo deltaSystem = curSystem - prevSystem;
             if (deltaSystem.getTotalNs())
             {
-                printf(" System: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)  ",
+                DBGLOG(" System: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)  ",
                         (unsigned)(deltaSystem.getUserNs() / 1000000), (unsigned)(deltaSystem.getSystemNs() / 1000000), (unsigned)(deltaSystem.getTotalNs() / 1000000),
                         (unsigned)((deltaSystem.getUserNs() * 100) / deltaSystem.getTotalNs()), deltaSystem.getNumContextSwitches());
-                printf(" Process: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)\n",
+                DBGLOG(" Process: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)",
                         (unsigned)(deltaProcess.getUserNs() / 1000000), (unsigned)(deltaProcess.getSystemNs() / 1000000), (unsigned)(deltaProcess.getTotalNs() / 1000000),
                         (unsigned)((deltaProcess.getUserNs() * 100) / deltaSystem.getTotalNs()), deltaProcess.getNumContextSwitches());
             }
@@ -2681,7 +2680,7 @@ public:
                 }
             }
 
-            printf("\nAlgorithm || Compression Time (ms) || Decompression Time (ms) || Compression Ratio\n");
+            DBGLOG("Algorithm || Compression Time (ms) || Decompression Time (ms) || Compression Ratio");
 
             ForEach(*iter)
             {
@@ -2714,7 +2713,7 @@ public:
 
                 float ratio = (float)(src.length()) / compressed.length();
 
-                printf("%9s || %21u || %23u || %17.2f [ %u, %u ]\n", handler.queryType(), (unsigned)cycle_to_millisec(compressCycles), (unsigned)cycle_to_millisec(decompressCycles), ratio, src.length(), compressed.length());
+                DBGLOG("%9s || %21u || %23u || %17.2f [ %u, %u ]", handler.queryType(), (unsigned)cycle_to_millisec(compressCycles), (unsigned)cycle_to_millisec(decompressCycles), ratio, src.length(), compressed.length());
 
                 CPPUNIT_ASSERT(tgt.length() >= sz);
                 CPPUNIT_ASSERT(0 == memcmp(src.bufferBase(), tgt.bufferBase(), sz));
@@ -2876,7 +2875,7 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(blockTime <= expected + 2000000);
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
-            printf("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
+            DBGLOG("%" I64F "u %" I64F "u", blockTime-50000000, postBlockTime-blockTime);
     }
 
     void testStandard2()
@@ -2903,7 +2902,7 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(blockTime <= expected + 2000000);
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
-            printf("%" I64F "u %" I64F "u\n", blockTime-expected, postBlockTime-blockTime);
+            DBGLOG("%" I64F "u %" I64F "u", blockTime-expected, postBlockTime-blockTime);
     }
 
     void testStandard3()
@@ -2926,7 +2925,7 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(blockTime <= expected + 2000000);
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
-            printf("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
+            DBGLOG("%" I64F "u %" I64F "u", blockTime-50000000, postBlockTime-blockTime);
     }
 
     void testLightweight()
@@ -2945,7 +2944,7 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(blockTime <= expected + 2000000);
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
-            printf("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
+            DBGLOG("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
     }
 
     void testLightweight2()
@@ -2972,7 +2971,7 @@ class BlockedTimingTests : public CppUnit::TestFixture
         CPPUNIT_ASSERT(blockTime <= expected + 2000000);
         CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
         if (trace)
-            printf("%" I64F "u %" I64F "u\n", blockTime-expected, postBlockTime-blockTime);
+            DBGLOG("%" I64F "u %" I64F "u", blockTime-expected, postBlockTime-blockTime);
     }
 };
 
