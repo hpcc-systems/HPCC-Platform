@@ -1045,20 +1045,21 @@
       <sect3 id="ENV_values_yaml">
         <title>Environment Values</title>
 
-        <para>You can define Environment Variables in a YAML file. The
+        <para>You can define environment variables in a YAML file. The
         environment values are defined under the
-        <emphasis>global.env:</emphasis> portion of the delivered values.yaml
-        as illustrated below.</para>
+        <emphasis>global.env</emphasis> portion of the provided HPCC Systems
+        values.yaml file. These values are specified as a list of name value
+        pairs as illustrated below.</para>
 
         <programlisting>global:
   env:
   - name: SMTPserver 
-  - value: mysmtpserver</programlisting>
+    value: mysmtpserver</programlisting>
 
-        <para>The global.env section of the delivered values file adds default
-        environment variables for all components. You can also specify
+        <para>The global.env section of the supplied values.yaml file adds
+        default environment variables for all components. You can also specify
         environment variables for the individual components. Refer to the
-        schema for setting this value for individual components. </para>
+        schema for setting this value for individual components.</para>
 
         <para>To add environment values you can insert them into your
         customization configuration YAML file when you deploy your
