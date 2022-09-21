@@ -130,6 +130,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             },
             IsProtected: {
                 headerIcon: "LockSolid",
+                headerTooltip: nlsHPCC.Protected,
                 width: 25,
                 sortable: false,
                 formatter: React.useCallback(function (_protected) {
@@ -141,6 +142,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             },
             IsCompressed: {
                 headerIcon: "ZipFolder",
+                headerTooltip: nlsHPCC.Compressed,
                 width: 25,
                 sortable: false,
                 formatter: React.useCallback(function (compressed) {

@@ -108,6 +108,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             },
             Protected: {
                 headerIcon: "LockSolid",
+                headerTooltip: nlsHPCC.Protected,
                 width: 25,
                 sortable: true,
                 formatter: React.useCallback(function (_protected) {
