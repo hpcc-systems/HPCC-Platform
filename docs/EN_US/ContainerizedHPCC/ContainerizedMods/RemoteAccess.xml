@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="RemoteAccess" role="brk">
+  <title>Create Custom Configuration Charts for Remote File Access</title>
+
+  <para>This section shows a technique to configure two separate HPCC Systems
+  Platform environments, using Helm, where one environment (env1) exposes
+  access to its logical files via the Distributed File System (DFS) service to
+  a separate environment (env2).</para>
+
+  <para>These could be in separate Kubernetes (K8s) instances or in separate
+  namespaces in the same K8s. For simplicity, this section will use two
+  separate namespaces within the same K8s.</para>
+
+  <para>This section assumes you have a copy of default setting values saved
+  to a file using:</para>
+
+  <para><programlisting>helm show values hpcc/hpcc &gt; myvalues.yaml</programlisting></para>
+
+  <sect3>
+    <title>Setting up the first environment (env1)</title>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Create <emphasis role="bold">env1</emphasis> namespace (if it
+          does not already exist).</para>
+
+          <para><programlisting>kubectl create ns env1</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Switch to the <emphasis role="bold">env1</emphasis>
+          namespace.</para>
+
+          <para><programlisting>kubectl config set-context --current --namespace=env1</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Add the jetstack repo and install the jetstack certificate
+          manager.</para>
+
+          <para><programlisting>helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager --set installCRDs=true</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire <emphasis role="bold">certificates:</emphasis>
+          section from your saved default settings yaml file into a new yaml
+          file. </para>
+        </listitem>
+
+        <listitem>
+          <para>Set <emphasis role="bold">certificates.enabled</emphasis> to
+          <emphasis>true</emphasis> in a custom values yaml file.</para>
+
+          <para><programlisting>certificates:
+  <emphasis role="red">enabled: true</emphasis></programlisting></para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>This enables the use of certificates for
+                <emphasis>all</emphasis> esp services and enables mutual TLS
+                (mTLS) between components, too. If you don’t want that (for
+                example, for testing reasons), and only want certificates
+                enabled for the ESP DFS service, then set enabled: false for
+                all other certificates.issuers (such as, "local", "public",
+                "signing", etc.). It this example, we will set these to false.
+                </para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <para>Set <emphasis
+          role="bold">certificates.issuers.remote.enabled</emphasis> to
+          <emphasis>true</emphasis> in the custom values yaml file.
+          <programlisting>remote:
+    name: hpcc-remote-issuer
+    <emphasis role="red">enabled: true</emphasis>
+    kind: Issuer
+    spec:
+      ca:
+        secretName: hpcc-remote-issuer-key-pair</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Set the others to <emphasis>false</emphasis>. <emphasis
+          role="bold"><emphasis
+          role="bold">(certificates.issuers.local.enabled</emphasis>,certificates.issuers.public.enabled,
+          <emphasis
+          role="bold">certificates.issuers.signing.enabled)</emphasis></emphasis></para>
+
+          <para>This is an example of a completed certificates:
+          section:</para>
+
+          <para><programlisting>certificates:<emphasis role="red">  
+  enabled: true</emphasis>
+  issuers:
+    local:
+      name: hpcc-local-issuer
+      enabled: false
+      kind: Issuer
+      spec:
+        ca:
+          secretName: hpcc-local-issuer-key-pair
+    public:
+      name: hpcc-public-issuer
+      <emphasis role="red">enabled: false</emphasis>
+      spec:
+        selfSigned: {}
+    remote:
+      name: hpcc-remote-issuer
+      <emphasis role="red">enabled: true</emphasis>
+      kind: Issuer
+      spec:
+        ca:
+          secretName: hpcc-remote-issuer-key-pair
+    signing: # intended to be used for signing/verification purposes only, e.g. by dafilesrv
+      name: hpcc-signing-issuer
+      <emphasis role="red">enabled: false</emphasis>      
+      kind: Issuer
+      spec:
+        ca:
+          secretName: hpcc-signing-issuer-key-pair
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the entire <emphasis role="bold">esp:</emphasis> section
+          from your saved default settings yaml file into the new yaml file.
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>In the custom values yaml file, add a <emphasis
+          role="bold">remoteClients:</emphasis> section to the esp <emphasis
+          role="bold">dfs</emphasis> service for each client environment that
+          will connect.</para>
+
+          <para><programlisting>- name: dfs
+  application: dfs
+  auth: none
+  replicas: 1
+<emphasis role="red">  remoteClients:
+  - name: env2
+    organization: mycompany</emphasis>
+  service:
+    visibility: local
+    servicePort: 8520
+  resources:
+    cpu: "250m"
+    memory: "1G"</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a root certificate and private key for the <emphasis
+          role="bold">remote</emphasis> certificates issuer authority</para>
+
+          <para><programlisting>openssl req -x509 -newkey rsa:2048 -nodes -keyout ca.key \
+       -sha256 -days 1825 -out ca.crt \
+       -subj "/C=US/ST=Florida/L=Boca/O=HPCC Systems/OU=HPCC Example/CN=info@hpccsystems.com"</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create the k8s secrets pointed to by <emphasis
+          role="bold">certificates.issuers.remote.spec.sa.secretName</emphasis>
+          (for the secret named
+          <emphasis>hpcc-remote-issuer-key-pair</emphasis> above)</para>
+
+          <para><programlisting>kubectl create secret tls hpcc-remote-issuer-key-pair --cert=ca.crt --key=ca.key </programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Install (or update) the hpcc helm chart with your custom yaml
+          settings.</para>
+
+          <para><programlisting>helm install env1 hpcc/hpcc -f mycustomsettings.yaml</programlisting></para>
+
+          <para>(where mycustomsettings.yaml contains all values and changes
+          discussed above)</para>
+
+          <para>At this point the HPCC cluster named env1 starts. In doing so,
+          the "remote" certificate authority generates the client certificates
+          defined in the step above.</para>
+
+          <para>The HPCC cluster named env1 is now setup, but you must extract
+          information from it to supply to the client environments (in this
+          example -- env2).</para>
+        </listitem>
+
+        <listitem>
+          <para>Extract the client secret certificate(s) and key pair(s) from
+          the deployed cluster.</para>
+
+          <para><programlisting>kubectl get secrets</programlisting></para>
+
+          <para>All those prefixed with <emphasis
+          role="bold">client-remote-</emphasis> and <emphasis
+          role="bold">client-remote-dfs-</emphasis> are the secrets to use for
+          the client(s) configured earlier.</para>
+
+          <para>Extract the certificate and key pairs and save to files with
+          these commands:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>You may may meed to install <emphasis
+                role="bold">jq</emphasis> (a command line JSON processor).
+                </para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+
+          <para><programlisting><code>kubectl get secret client-remote-dfs-dfs-env2-tls -o \
+            json | jq -r '.data."tls.crt"'| base64 -d &gt; env2tls.crt 
+
+kubectl get secret client-remote-dfs-dfs-env2-tls -o \
+            json | jq -r '.data."tls.key"'| base64 -d &gt; env2tls.key 
+
+kubectl get secret client-remote-dfs-dfs-env2-tls -o \
+            json | jq -r '.data."ca.crt"' | base64 -d &gt; env2ca.crt </code></programlisting></para>
+
+          <para><emphasis role="bold">Keep a record of the files created here,
+          they are needed when configuring the client
+          environment.</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Get the DFS service external endpoint:</para>
+
+          <para><programlisting>kubectl get svc</programlisting></para>
+
+          <para>Example output:</para>
+
+          <para><programlisting>NAME                 TYPE          CLUSTER-IP    EXTERNAL-IP    PORT(S)         AGE 
+cert-manager         ClusterIP     10.0.1.53     &lt;none&gt;         9402/TCP        24h 
+cert-manager-webhook ClusterIP     10.0.13.136   &lt;none&gt;         443/TCP         24h 
+dfs                  LoadBalancer  10.0.108.249  <emphasis role="red">192.168.0.36   8520</emphasis>:32469/TCP  23h </programlisting></para>
+
+          <para><emphasis role="bold">Keep a record of the external dfs
+          service endpoint, in this example, it’s
+          192.168.0.36:8520.</emphasis></para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+
+  <sect3>
+    <title>Setting up the second environment (env2)</title>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Create <emphasis role="bold">env2</emphasis> namespace (if it
+          does not already exist).</para>
+
+          <para><programlisting>kubectl create ns env2</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Switch to the <emphasis role="bold">env2</emphasis>
+          namespace.</para>
+
+          <para><programlisting>kubectl config set-context --current --namespace=env2</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Create a K8s secret with the remote client certificate and key
+          pair that you saved when setting up env1:</para>
+
+          <para>For example:</para>
+
+          <para><programlisting>kubectl create secret generic env1-access --from-file=env2tls.crt \
+                                          --from-file=env2tls.key \
+                                          --from-file=env2ca.crt</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Name this secret in the <emphasis
+          role="bold">storage:</emphasis> section (within a custom values yaml
+          file), as shown in the example:</para>
+
+          <para><programlisting>secrets:
+  storage:
+    env1-access: env1-access</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Configure access to the remote DFS service.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>You will first need a PVC that maps to the same
+                  storage account and mount point as the data plane that is to
+                  be accessed in the remote environment (env1). How this PVC
+                  is set up depends on the cloud provider. For the purposes of
+                  this document, the PVC is assumed to already exist and is
+                  called "env1-pvc". These remote planes are mounted by the
+                  engines, so that the raw data can be directly accessed by
+                  the client systems.</para>
+
+                  <para>In the client’s planes definition, add a plane
+                  definition for the remote plane that is designated as having
+                  a category type of 'remote' and points to the remote PVC
+                  described above.</para>
+
+                  <para>Also define a "remote" definition for the remote
+                  environment under planes.remote. This defines the remote
+                  service URL, the secret (if required) to access the remote
+                  secured system, and a mapping of remote plane names to the
+                  local plane.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>For example:</para>
+
+          <para><programlisting>storage:
+  planes:
+  - name: env1-data
+    pvc: env1-pvc
+    prefix: "/var/lib/HPCCSystems/env1/hpcc-data"
+    category: remote
+  remote:
+  - name: env1
+    service: <emphasis role="red">https://192.168.0.36:8520</emphasis>
+    secret: env1-access
+    planes:
+    - remote: data
+      local: env1-data</programlisting></para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>This example is only an excerpt because <emphasis
+                  role="bold">planes:</emphasis> is a list. It should not be
+                  used directly on its own because it would replace the
+                  existing planes list. Instead it should be combined into a
+                  definition which defines all planes.</para>
+
+                  <para>This example defines a remote definition such that
+                  logical file names of the form :
+                  <code>'~remote::env1::somescope::somelogicalfilename'</code>
+                  will use these details to access the remote logical
+                  files.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </listitem>
+
+        <listitem>
+          <para>Install (or update) the hpcc helm chart with your custom yaml
+          settings.</para>
+
+          <para><programlisting>helm install env2 hpcc/hpcc -f client-remotesetup.yaml</programlisting></para>
+
+          <para>(where client-remotesetup.yaml contains all values yaml
+          changes discussed above)</para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+
+  <sect3 role="brk">
+    <title>Testing Remote Access</title>
+
+    <para>You can use the ECL IDE, VS-Code, the ECL Playground in ECL Watch,
+    or the ecl command line tool to run the ECL code on the deployed platform
+    instances. The first step creates a test file on env1. The second step
+    access that file from env2.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Run some ECL on env1 to create a test file. For
+          example:</para>
+
+          <para><programlisting>ds := DATASET([{1, 'one'}, {2, 'two'}, {3, 'three'}], {unsigned num, string str}, DISTRIBUTED);
+OUTPUT(ds, , '~somescope::somefilename', OVERWRITE)</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Run some ECL on env2 to read the test file. For
+          example:</para>
+
+          <para><programlisting>ds := DATASET('~remote::env1::somescope::somefilename', {unsigned num, string str}, FLAT);
+OUTPUT(ds, ALL);</programlisting></para>
+        </listitem>
+      </orderedlist></para>
+  </sect3>
+</sect2>

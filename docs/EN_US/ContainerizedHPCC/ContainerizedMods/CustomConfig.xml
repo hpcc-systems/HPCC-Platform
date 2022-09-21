@@ -490,11 +490,12 @@ eclagent:
           <para>After you confirm that your deployment is running, open ECL
           Watch.</para>
 
-          <para>You should not see any Roxie cluster available as a
-          Target.</para>
+          <para>You should not see any Roxie cluster available as a Target.
+          </para>
         </listitem>
       </orderedlist>
     </sect2>
+	<xi:include href="RemoteAccess.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
   </sect1>
 
   <sect1 id="CostTracking1">
