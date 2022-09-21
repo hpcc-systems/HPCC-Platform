@@ -62,17 +62,17 @@
 
     <para>It is your responsibility to determine the appropriate solution to
     process the streaming log data.</para>
-  </sect1>
 
-  <sect1 id="HPCC_LogProcessing_Solution">
-    <title>Log Processing Solutions</title>
+    <sect2 id="HPCC_LogProcessing_Solution">
+      <title>Log Processing Solutions</title>
 
-    <para>There are multiple log processing solutions available. You could
-    choose to integrate HPCC Systems logging data with any existing logging
-    solutions, or to implement another one specifically for HPCC Systems data.
-    Starting with HPCC Systems version 8.4, we provide a lightweight, yet
-    complete log-processing solution for your convenience. The following
-    sections will look at a couple of the possible solutions.</para>
+      <para>There are multiple log processing solutions available. You could
+      choose to integrate HPCC Systems logging data with any existing logging
+      solutions, or to implement another one specifically for HPCC Systems
+      data. Starting with HPCC Systems version 8.4, we provide a lightweight,
+      yet complete log-processing solution for your convenience. The following
+      sections will look at a couple of the possible solutions.</para>
+    </sect2>
   </sect1>
 
   <sect1 id="elastic4HPCC_HelmChart">
@@ -96,62 +96,61 @@
 
     <para>A Kibana index pattern is created automatically based on the default
     filebeat index layout.</para>
-  </sect1>
 
-  <sect1 id="Installing_helm_logging_charts">
-    <title>Installing the elastic4hpcclogs chart</title>
+    <sect2 id="Installing_helm_logging_charts">
+      <title>Installing the elastic4hpcclogs chart</title>
 
-    <para>Installing the provided simple solution is as the name implies,
-    simple and a convenient way to gather and filter log data. It is installed
-    via our helm charts from the HPCC Systems repository. In the
-    HPCC-platform/helm directory, the <emphasis>elastic4hpcclogs</emphasis>
-    chart is delivered along with the other HPCC System platform components.
-    The next sections will show you how to install and set up the Elastic
-    stack logging solution for HPCC Systems.</para>
+      <para>Installing the provided simple solution is as the name implies,
+      simple and a convenient way to gather and filter log data. It is
+      installed via our helm charts from the HPCC Systems repository. In the
+      HPCC-platform/helm directory, the <emphasis>elastic4hpcclogs</emphasis>
+      chart is delivered along with the other HPCC System platform components.
+      The next sections will show you how to install and set up the Elastic
+      stack logging solution for HPCC Systems.</para>
 
-    <sect2 id="logs_Add_theHPCC_Systems_Repo">
-      <title>Add the HPCC Systems Repository</title>
+      <sect3 id="logs_Add_theHPCC_Systems_Repo">
+        <title>Add the HPCC Systems Repository</title>
 
-      <para>The delivered Elastic for HPCC Systems chart can be found in the
-      HPCC Systems Helm repository. To fetch and deploy the HPCC Systems
-      managed charts, add the HPCC Systems Helm repository if you haven't done
-      so already:</para>
+        <para>The delivered Elastic for HPCC Systems chart can be found in the
+        HPCC Systems Helm repository. To fetch and deploy the HPCC Systems
+        managed charts, add the HPCC Systems Helm repository if you haven't
+        done so already:</para>
 
-      <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+        <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
 
-      <para>Once this command has completed successfully, the
-      <emphasis>elastic4hpcclogs</emphasis> chart will be accessible.</para>
+        <para>Once this command has completed successfully, the
+        <emphasis>elastic4hpcclogs</emphasis> chart will be accessible.</para>
 
-      <para>Confirm the appropriate chart was pulled down.</para>
+        <para>Confirm the appropriate chart was pulled down.</para>
 
-      <programlisting>helm list</programlisting>
+        <programlisting>helm list</programlisting>
 
-      <para>Issuing the helm list command will display the available HPCC
-      Systems charts and repositories. The
-      <emphasis>elastic4hpcclogs</emphasis> chart is among them.</para>
+        <para>Issuing the helm list command will display the available HPCC
+        Systems charts and repositories. The
+        <emphasis>elastic4hpcclogs</emphasis> chart is among them.</para>
 
-      <para><graphic fileref="../../images/CL-Img01-1.jpg" /></para>
-    </sect2>
+        <para><graphic fileref="../../images/CL-Img01-1.jpg" /></para>
+      </sect3>
 
-    <sect2 id="Elastic4HPCC_Install_theChart">
-      <title>Install the elastic4hpcc chart</title>
+      <sect3 id="Elastic4HPCC_Install_theChart">
+        <title>Install the elastic4hpcc chart</title>
 
-      <para>Install the <emphasis>elastic4hpcclogs</emphasis> chart using the
-      following command:</para>
+        <para>Install the <emphasis>elastic4hpcclogs</emphasis> chart using
+        the following command:</para>
 
-      <programlisting>helm install &lt;Instance_Name&gt; hpcc/elastic4hpcclogs </programlisting>
+        <programlisting>helm install &lt;Instance_Name&gt; hpcc/elastic4hpcclogs </programlisting>
 
-      <para>Provide the name you wish to call your Elastic Search instance for
-      the &lt;Instance_Name&gt; parameter. For example, you could call your
-      instance "myelk" in which case you would issue the install command as
-      follows:</para>
+        <para>Provide the name you wish to call your Elastic Search instance
+        for the &lt;Instance_Name&gt; parameter. For example, you could call
+        your instance "myelk" in which case you would issue the install
+        command as follows:</para>
 
-      <programlisting>helm install myelk hpcc/elastic4hpcclogs </programlisting>
+        <programlisting>helm install myelk hpcc/elastic4hpcclogs </programlisting>
 
-      <para>Upon successful completion, the following message is
-      displayed:</para>
+        <para>Upon successful completion, the following message is
+        displayed:</para>
 
-      <programlisting>Thank you for installing elastic4hpcclogs. 
+        <programlisting>Thank you for installing elastic4hpcclogs. 
  A lightweight Elastic Search instance for HPCC component log processing. 
 
 This deployment varies slightly from defaults set by Elastic, please review the effective values. 
@@ -160,131 +159,131 @@ PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual 
   when no longer needed.
 </programlisting>
 
-      <para><informaltable colsep="1" frame="all" rowsep="1">
-          <?dbfo keep-together="always"?>
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
 
-          <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
 
-            <colspec />
+              <colspec />
 
-            <tbody>
-              <row>
-                <entry><inlinegraphic
-                fileref="../../images/caution.png" /></entry>
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
 
-                <entry><emphasis role="bold">IMPORTANT: </emphasis>PLEASE
-                NOTE: Elastic Search declares PVC(s) which might require
-                explicit manual removal when no longer needed. This can be
-                particularly important for some cloud providers which could
-                accrue costs even after no longer using your instance. You
-                should ensure no components (such as PVCs) persist and
-                continue to accrue costs.</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable></para>
+                  <entry><emphasis role="bold">IMPORTANT: </emphasis>PLEASE
+                  NOTE: Elastic Search declares PVC(s) which might require
+                  explicit manual removal when no longer needed. This can be
+                  particularly important for some cloud providers which could
+                  accrue costs even after no longer using your instance. You
+                  should ensure no components (such as PVCs) persist and
+                  continue to accrue costs.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
 
-      <para>NOTE: Depending on the version of Kubernetes, users might be
-      warned about deprecated APIs in the Elastic charts (ClusterRole and
-      ClusterRoleBinding are deprecated in v1.17+). Deployments based on
-      Kubernetes &lt; v1.22 should not be impacted.</para>
-    </sect2>
+        <para>NOTE: Depending on the version of Kubernetes, users might be
+        warned about deprecated APIs in the Elastic charts (ClusterRole and
+        ClusterRoleBinding are deprecated in v1.17+). Deployments based on
+        Kubernetes &lt; v1.22 should not be impacted.</para>
+      </sect3>
 
-    <sect2 id="elastic4HPCC_ConfirmingThePodsReady">
-      <title>Confirm Your Pods are Ready</title>
+      <sect3 id="elastic4HPCC_ConfirmingThePodsReady">
+        <title>Confirm Your Pods are Ready</title>
 
-      <para>Confirm the Elastic pods are ready. Sometimes after installing,
-      pods can take a few seconds to come up. Confirming the pods are in a
-      ready state is a good idea before proceeding. To do this, use the
-      following command:</para>
+        <para>Confirm the Elastic pods are ready. Sometimes after installing,
+        pods can take a few seconds to come up. Confirming the pods are in a
+        ready state is a good idea before proceeding. To do this, use the
+        following command:</para>
 
-      <programlisting>kubectl get pods </programlisting>
+        <programlisting>kubectl get pods </programlisting>
 
-      <para>This command returns the following information, displaying the
-      status of the of the pods.</para>
+        <para>This command returns the following information, displaying the
+        status of the of the pods.</para>
 
-      <programlisting>elasticsearch-master-0                    1/1     Running            0          
+        <programlisting>elasticsearch-master-0                    1/1     Running            0          
 myelk-filebeat-6wd2g                      1/1     Running            0          
 myelk-kibana-68688b4d4d-d489b             1/1     Running            0      </programlisting>
 
-      <para><graphic fileref="../../images/CL-Img02-1.jpg" /></para>
+        <para><graphic fileref="../../images/CL-Img02-1.jpg" /></para>
 
-      <para>Once all the pods are indicating a 'ready' state and 'Running',
-      including the three components for filebeats, Elastic Search, and Kibana
-      (highlighted above) you can proceed.</para>
-    </sect2>
+        <para>Once all the pods are indicating a 'ready' state and 'Running',
+        including the three components for filebeats, Elastic Search, and
+        Kibana (highlighted above) you can proceed.</para>
+      </sect3>
 
-    <sect2 id="confirming_elastic_services" role="brk">
-      <title>Confirming the Elastic Services</title>
+      <sect3 id="confirming_elastic_services" role="brk">
+        <title>Confirming the Elastic Services</title>
 
-      <para>To confirm the Elastic services are running, issue the following
-      command:</para>
+        <para>To confirm the Elastic services are running, issue the following
+        command:</para>
 
-      <programlisting>$ kubectl get svc</programlisting>
+        <programlisting>$ kubectl get svc</programlisting>
 
-      <para>This displays the following confirmation information:</para>
+        <para>This displays the following confirmation information:</para>
 
-      <programlisting>... 
+        <programlisting>... 
 elasticsearch-master ClusterIP 10.109.50.54 &lt;none&gt; 9200/TCP,9300/TCP 68m 
 elasticsearch-master-headless ClusterIP None &lt;none&gt; 9200/TCP,9300/TCP 68m 
 myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m 
 ...</programlisting>
 
-      <para>Note: The myelk-kibana service is declared as LoadBalancer for
-      convenience.</para>
-    </sect2>
+        <para>Note: The myelk-kibana service is declared as LoadBalancer for
+        convenience.</para>
+      </sect3>
 
-    <sect2 id="Configuring_of_Elastic_Stack_Components">
-      <title>Configuring of Elastic Stack Components</title>
+      <sect3 id="Configuring_of_Elastic_Stack_Components">
+        <title>Configuring of Elastic Stack Components</title>
 
-      <para>You may need or want to customise the Elastic stack components.
-      The Elastic component charts values can be overridden as part of the
-      HPCC System deployment command.</para>
+        <para>You may need or want to customise the Elastic stack components.
+        The Elastic component charts values can be overridden as part of the
+        HPCC System deployment command.</para>
 
-      <para>For example:</para>
+        <para>For example:</para>
 
-      <programlisting>helm install myelk hpcc/elastic4hpcclogs --set elasticsearch.replicas=2 </programlisting>
+        <programlisting>helm install myelk hpcc/elastic4hpcclogs --set elasticsearch.replicas=2 </programlisting>
 
-      <para>Please see the Elastic Stack GitHub repository for the complete
-      list of all Filebeat, Elastic Search, LogStash and Kibana options with
-      descriptions.</para>
-    </sect2>
+        <para>Please see the Elastic Stack GitHub repository for the complete
+        list of all Filebeat, Elastic Search, LogStash and Kibana options with
+        descriptions.</para>
+      </sect3>
 
-    <sect2>
-      <title>Use of HPCC Systems Component Logs in Kibana</title>
+      <sect3>
+        <title>Use of HPCC Systems Component Logs in Kibana</title>
 
-      <para>Once enabled and running, you can explore and query HPCC Systems
-      component logs from the Kibana user interface. Kibana index patterns are
-      required to explore Elastic Search data from the Kibana user interface.
-      For more information about using the Elastic-Kibana interface please
-      refer to the corresponding documentation:</para>
+        <para>Once enabled and running, you can explore and query HPCC Systems
+        component logs from the Kibana user interface. Kibana index patterns
+        are required to explore Elastic Search data from the Kibana user
+        interface. For more information about using the Elastic-Kibana
+        interface please refer to the corresponding documentation:</para>
 
-      <para><ulink url="???">https://www.elastic.co/</ulink></para>
+        <para><ulink url="???">https://www.elastic.co/</ulink></para>
 
-      <para>and</para>
+        <para>and</para>
 
-      <para><ulink
-      url="???">https://www.elastic.co/elastic-stack/</ulink></para>
-    </sect2>
+        <para><ulink
+        url="???">https://www.elastic.co/elastic-stack/</ulink></para>
+      </sect3>
 
-    <sect2>
-      <title>Configuring logAccess for Elasticstack</title>
+      <sect3>
+        <title>Configuring logAccess for Elasticstack</title>
 
-      <para>The <emphasis>logAccess</emphasis> feature allows HPCC Systems to
-      query and package relevant logs for various features such as the ZAP
-      report, WorkUnit helper logs, ECLWatch log viewer, etc.</para>
+        <para>The <emphasis>logAccess</emphasis> feature allows HPCC Systems
+        to query and package relevant logs for various features such as the
+        ZAP report, WorkUnit helper logs, ECLWatch log viewer, etc.</para>
 
-      <para>Once the logs are migrated or routed to the elastic stack
-      instance. The HPCC Systems platform needs to be able to access those
-      logs. The way you direct HPCC Systems to do so is by providing a values
-      file that includes the log mappings. We have provided a default values
-      file and we provide an example command line that inserts that values
-      file into your deployment.</para>
+        <para>Once the logs are migrated or routed to the elastic stack
+        instance. The HPCC Systems platform needs to be able to access those
+        logs. The way you direct HPCC Systems to do so is by providing a
+        values file that includes the log mappings. We have provided a default
+        values file and we provide an example command line that inserts that
+        values file into your deployment.</para>
 
-      <para>These are the Elastic4HPCCLogs values:</para>
+        <para>These are the Elastic4HPCCLogs values:</para>
 
-      <programlisting># Configures HPCC logAccess to target elastic4hpcclogs deployment
+        <programlisting># Configures HPCC logAccess to target elastic4hpcclogs deployment
 global:
   logAccess:
     name: "Elastic4HPCCLogs"
@@ -295,11 +294,11 @@ global:
         port: 9200
     logMaps:
       - type: "global"                             #These settings apply to all log mappings
-        storeName: "hpcc-logs*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
-        searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
-        timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+        storeName: "hpcc-logs*"                    #Logs are expected to be housed in ES inde
+        searchColumn: "message"                    #The 'message' field is to be targeted for
+        timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log 
       - type: "workunits"                          #Search by workunits specific log mapping
-        storeName: "hpcc-logs*"                    # Only needed if differs from global.storeName
+        storeName: "hpcc-logs*"                    # Only needed if differs from global.store
         searchColumn: "hpcc.log.jobid"             # Field containing WU information
       - type: "components"                         #Search by components specific log mapping
         searchColumn: "kubernetes.container.name"  # Field containing container information
@@ -307,19 +306,21 @@ global:
         searchColumn: "hpcc.log.audience"          # Field containing audience information
       - type: "class"                              #Search by log class specific log mapping
         searchColumn: "hpcc.log.class"             # Field containing log class information
-      - type: "instance"                           #Search by log source instance specific mapping
-        searchColumn: "kubernetes.pod.name"        # Field containing source instance information
-      - type: "host"                               #Search by log source host specific mapping
+      - type: "instance"                           #Search by log source instance specific ma
+        searchColumn: "kubernetes.pod.name"        # Field containing source instance informa
+      - type: "host"                               #Search by log source host specific mappin
         searchColumn: "kubernetes.node.hostname"   # Field containing source host information</programlisting>
 
-      <para>You can use the delivered Elastic4HPCCLogs chart, provided on
-      https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/managed/logging/elastic
-      or you can add the values there to your customized configuration values
-      yaml file. You can then install it using a command such as:</para>
+        <para>You can use the delivered Elastic4HPCCLogs chart, provided on
+        https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/managed/logging/elastic
+        or you can add the values there to your customized configuration
+        values yaml file. You can then install it using a command such
+        as:</para>
 
-      <programlisting>helm install mycluster hpcc/hpcc -f elastic4hpcclogs-hpcc-logaccess.yaml</programlisting>
+        <programlisting>helm install mycluster hpcc/hpcc -f elastic4hpcclogs-hpcc-logaccess.yaml</programlisting>
 
-      <para></para>
+        <para></para>
+      </sect3>
     </sect2>
   </sect1>
 
@@ -356,7 +357,7 @@ global:
         line:</para>
 
         <para>You can create a dedicated log analytics workspace manually, or
-        you can skip this step and utilise the default workspace
+        you can skip this step and utilize the default workspace
         instead.</para>
 
         <para>To create a dedicated workspace enter this command:</para>
@@ -379,12 +380,14 @@ global:
         (with a dedicated log analytics workspace) on the target AKS
         cluster.</para>
 
-        <para>The <emphasis>enable-loganalytics.sh</emphasis> script located
-        at <ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics">
-        https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics</ulink>
-        requires populating the following values in the env-loganalytics
-        environment file.</para>
+        <para>The <emphasis>enable-loganalytics.sh</emphasis> script is
+        located at:</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics">https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics</ulink></para>
+
+        <para>The script requires populating the following values in the
+        env-loganalytics environment file.</para>
 
         <para>Provide these values in the
         <emphasis>env-loganalytics</emphasis> environment file order to create
@@ -509,9 +512,13 @@ global:
           </listitem>
         </itemizedlist>
 
-        <para>The 'create-azure-logaccess-secret.sh' script provided at <ulink
-        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics">https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics</ulink>
-        can be used to create the necessary secret.</para>
+        <para>The 'create-azure-logaccess-secret.sh' script provided
+        at:</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics">https://github.com/hpcc-systems/HPCC-Platform/tree/master/helm/examples/azure/log-analytics</ulink></para>
+
+        <para>The script can be used to create the necessary secret.</para>
 
         <para>Example manual secret creation command (assuming
         ./secrets-templates contains a file named exactly as the above
@@ -684,15 +691,16 @@ ContainerLog
       <title>Asychronous logging configuration</title>
 
       <para>By default log entries will be created and logged asynchronously,
-      so as not to block the client that is logging.
-      Log entries will be held in a queue and output on a background thread.
-      This queue has a maximum depth, once hit, the client will block waiting
-      for capacity. Alternatively, the behaviour can be be configured such
-      that when this limit is hit, logging entries are dropped and lost to
-      avoid any potential blocking.</para>
+      so as not to block the client that is logging. Log entries will be held
+      in a queue and output on a background thread. This queue has a maximum
+      depth, once hit, the client will block waiting for capacity.
+      Alternatively, the behaviour can be be configured such that when this
+      limit is hit, logging entries are dropped and lost to avoid any
+      potential blocking.</para>
 
       <para>NB: normally it is expected that the logging stack will keep up
-      and the default queue limit will be sufficient to avoid any blocking.</para>
+      and the default queue limit will be sufficient to avoid any
+      blocking.</para>
 
       <para>The defaults can be configured by setting
       &lt;section&gt;.logging.queueLen and/or
