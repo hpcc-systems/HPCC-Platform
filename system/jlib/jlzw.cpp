@@ -2846,8 +2846,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(new CFLZCompressHandler());
     addCompressorHandler(new CLZ4HCCompressHandler());    
     ICompressHandler *lz4Compressor = new CLZ4CompressHandler();
-    addCompressorHandler(lz4Compressor);
     defaultCompressor.set(lz4Compressor);
+    addCompressorHandler(lz4Compressor);
     return true;
 }
 
