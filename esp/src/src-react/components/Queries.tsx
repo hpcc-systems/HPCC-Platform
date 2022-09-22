@@ -215,23 +215,31 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "Suspend", text: nlsHPCC.Suspend, disabled: !uiState.isSuspended,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Suspend"); }
+            onClick: () => {
+                WsWorkunits.WUQuerysetQueryAction(selection, "Suspend").then(() => refreshTable());
+            }
         },
         {
             key: "Unsuspend", text: nlsHPCC.Unsuspend, disabled: !uiState.isNotSuspended,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Unsuspend"); }
+            onClick: () => {
+                WsWorkunits.WUQuerysetQueryAction(selection, "Unsuspend").then(() => refreshTable());
+            }
         },
         {
             key: "Activate", text: nlsHPCC.Activate, disabled: !uiState.isActive,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Activate"); }
+            onClick: () => {
+                WsWorkunits.WUQuerysetQueryAction(selection, "Activate").then(() => refreshTable());
+            }
         },
         {
             key: "Deactivate", text: nlsHPCC.Deactivate, disabled: !uiState.isNotActive,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate"); }
+            onClick: () => {
+                WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate").then(() => refreshTable());
+            }
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: gridStore !== undefined || wuid !== undefined, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
@@ -242,7 +250,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, gridStore, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};
