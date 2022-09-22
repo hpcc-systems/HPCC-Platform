@@ -1,6 +1,6 @@
 # Containerized HPCC Systems Secrets
 
-This example demonstrates HPCC use use of Kubernetes and Hashicorp Vault secrets.
+This example demonstrates HPCC use use of Hashicorp Vault secrets using kubernetes authentication.
 
 This example assumes you are starting from a linux command shell in the HPCC-Platform/helm directory.  From there you will find the example files and this README file in the examples/secrets directory.
 
@@ -112,13 +112,6 @@ Create example vault 'eclUser' secrets:
 vault kv put secret/eclUser/vault-example crypt.key=@examples/secrets/crypt.key
 ```
 
-Create example kubernetes secret:
-
-```bash
-kubectl create secret generic k8s-example --from-file=crypt.key=examples/secrets/crypt.key
-```
-
-
 ## 'ecl' category secrets
 
 Secrets in the 'ecl' category are not accessible by ECL code directly and therefore not visible to ECL users.  They can be used by internal ECL feartures
@@ -144,24 +137,17 @@ Create example vault 'ecl' secrets:
 vault kv put secret/ecl/http-connect-vaultsecret url=@examples/secrets/url-basic username=@examples/secrets/username password=@examples/secrets/password
 ```
 
-The following vault secret will be hidden by our "local" kubernetes secret below by default.  But we can ask for it directly in our HTTPCALL (see "httpcall_vault.ecl" example).
-
 ```bash
 vault kv put secret/ecl/http-connect-basicsecret url=@examples/secrets/url-basic username=@examples/secrets/username password=@examples/secrets/password
 ```
 
-Create example kubernetes secret:
-
-```bash
-kubectl create secret generic http-connect-basicsecret --from-file=url=examples/secrets/url-basic --from-file=examples/secrets/username --from-file=examples/secrets/password
-```
 
 ## Installing the HPCC with the secrets added to ECL components
 
 Install the HPCC helm chart with the secrets just defined added to all components that run ECL.
 
 ```bash
-helm install myhpcc hpcc/ --set global.image.version=latest -f examples/secrets/values-secrets.yaml
+helm install myhpcc hpcc/ --set global.image.version=latest -f examples/secrets/values-secrets-k8sauth.yaml
 ```
 
 Use kubectl to check the status of the deployed pods.  Wait until all pods are running before continuing.
@@ -178,19 +164,16 @@ https://hpccsystems.com/download#HPCC-Platform
 
 ## Using the created 'eclUser' category secrets directly in ECL code
 
-The following ecl commands will run the three example ECL files on hthor.
+The following ecl command will run the example ECL file that demonstrates accessing a vault secret directly from ECL code.
 
 ```bash
-ecl run hthor examples/secrets/crypto_secret.ecl
+ecl run hthor examples/secrets/crypto_vault_secret.ecl
 ```
 
 The expected result would be:
 
 ```xml
 <Result>
-<Dataset name='k8s_message'>
- <Row><k8s_message>top secret</k8s_message></Row>
-</Dataset>
 <Dataset name='vault_message'>
  <Row><vault_message>For your eyes only</vault_message></Row>
 </Dataset>
@@ -205,17 +188,13 @@ https://hpccsystems.com/download#HPCC-Platform
 
 --------------------------------------------------------------------------------------------------------
 
-The following ecl commands will run the three example ECL files on hthor.
+The following ecl command will run the example ECL file that demonstrates an HTTPCALL that uses a vault secret for connection and  authentication.
 
 ```bash
-ecl run hthor examples/secrets/httpcall_secret.ecl
-
 ecl run hthor examples/secrets/httpcall_vault.ecl
-
-ecl run hthor examples/secrets/httpcall_vault_direct.ecl
 ```
 
-For each job the expected result would be:
+The expected result would be:
 
 ```xml
 <Result>
