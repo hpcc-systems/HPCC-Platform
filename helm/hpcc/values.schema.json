@@ -2107,7 +2107,7 @@
         },
         "numWorkers": {
           "type": "integer",
-          "description": "The number of worker pods",
+          "description": "The number of worker containers. NB: There will be <numWorker>/<numWorkersPerPod> pods",
           "minimum": 1
         },
         "numWorkersPerPod": {
