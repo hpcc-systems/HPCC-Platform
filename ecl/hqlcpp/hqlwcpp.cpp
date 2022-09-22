@@ -50,6 +50,7 @@ inline const char * intTypeName(unsigned len, CompilerType compiler, bool isSign
     switch (compiler)
     {
     case GccCppCompiler:
+    case ClangCppCompiler:
         return isSigned ? gccIntTypes[len] : gccUIntTypes[len];
     case Vs6CppCompiler:
         return isSigned ? vcIntTypes[len] : vcUIntTypes[len];

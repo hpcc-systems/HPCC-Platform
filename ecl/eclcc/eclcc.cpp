@@ -1240,6 +1240,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     applyDebugOptions(instance.wu);
     applyApplicationOptions(instance.wu);
 
+    optTargetCompiler = queryCompilerType(instance.wu, optTargetCompiler);
     if (optTargetCompiler != DEFAULT_COMPILER)
         instance.wu->setDebugValue("targetCompiler", compilerTypeText[optTargetCompiler], true);
 

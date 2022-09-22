@@ -1694,6 +1694,7 @@ static void generateUnsignedCPP(StringBuffer &s, __uint64 val, unsigned size, Co
     switch (compiler)
     {
     case GccCppCompiler:
+    case ClangCppCompiler:
         if (val && (size > sizeof(unsigned)))
             s.append("LLU");
         else
@@ -1722,6 +1723,7 @@ static void generateSignedCPP(StringBuffer &s, __int64 val, unsigned size, Compi
             switch (compiler)
             {
             case GccCppCompiler:
+            case ClangCppCompiler:
                 s.append("LL");
                 break;
             case Vs6CppCompiler:
