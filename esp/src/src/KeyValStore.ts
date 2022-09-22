@@ -5,13 +5,57 @@ import * as Utility from "./Utility";
 
 declare const dojoConfig;
 
+const isNullish = (item: unknown) => item === null || item === undefined;
+
 export interface IKeyValStore {
     set(key: string, value: string, broadcast?: boolean): Promise<void>;
     get(key: string, broadcast?: boolean): Promise<string | undefined>;
+    getEx(key: string, opts: { defaultValue?: string, broadcast?: boolean }): Promise<string | undefined>;
     getAll(broadcast?: boolean): Promise<{ [key: string]: string }>;
     delete(key: string, broadcast?: boolean): Promise<void>;
     monitor(callback: (messages: ValueChangedMessage[]) => void): IObserverHandle;
 }
+
+class GlobalStorage implements IKeyValStore {
+
+    protected _store: Store;
+
+    constructor(userSepcific: boolean) {
+        this._store = Store.attach({ baseUrl: "" }, "HPCCApps", "ECLWatch", userSepcific);
+    }
+
+    set(key: string, value: string, broadcast?: boolean): Promise<void> {
+        return this._store.set(key, value, broadcast);
+    }
+
+    get(key: string, broadcast?: boolean): Promise<string> {
+        return this._store.get(key, broadcast);
+    }
+
+    getEx(key: string, opts: { defaultValue?: string, broadcast?: boolean }): Promise<string | undefined> {
+        return this.get(key, opts.broadcast).then(response => {
+            if (isNullish(response) && opts.defaultValue !== undefined) {
+                return opts.defaultValue;
+            }
+            return response;
+        });
+    }
+
+    getAll(broadcast?: boolean): Promise<{ [key: string]: string; }> {
+        return this._store.getAll(broadcast);
+    }
+
+    delete(key: string, broadcast?: boolean): Promise<void> {
+        return this._store.delete(key, broadcast);
+    }
+
+    monitor(callback: (messages: ValueChangedMessage[]) => void): IObserverHandle {
+        return this._store.monitor(callback);
+    }
+
+}
+
+let _globalStorage: GlobalStorage;
 
 /**
  *  Global Store
@@ -19,8 +63,13 @@ export interface IKeyValStore {
  *      No push notifications outside of current tab
  */
 export function globalKeyValStore(): IKeyValStore {
-    return Store.attach({ baseUrl: "" }, "HPCCApps", "ECLWatch", false);
+    if (!_globalStorage) {
+        _globalStorage = new GlobalStorage(false);
+    }
+    return _globalStorage;
 }
+
+let _userStorage: GlobalStorage;
 
 /**
  *  User Store
@@ -28,12 +77,14 @@ export function globalKeyValStore(): IKeyValStore {
  *      No push notifications outside of current tab
  */
 export function userKeyValStore(): IKeyValStore {
-    const userName = dojoConfig.username;
-    if (!userName) {
+    if (!dojoConfig.username) {
         //  Fallback to local storage  ---
         return localKeyValStore();
     }
-    return Store.attach({ baseUrl: "" }, "HPCCApps", "ECLWatch", true);
+    if (!_userStorage) {
+        _userStorage = new GlobalStorage(true);
+    }
+    return _userStorage;
 }
 
 class LocalStorage implements IKeyValStore {
@@ -80,6 +131,15 @@ class LocalStorage implements IKeyValStore {
     get(key: string, broadcast?: boolean): Promise<string | undefined> {
         const value = this._storage.getItem(`${this._prefix}:${key}`);
         return Promise.resolve(value);
+    }
+
+    getEx(key: string, opts: { defaultValue?: string, broadcast?: boolean }): Promise<string | undefined> {
+        return this.get(key, opts.broadcast).then(response => {
+            if (isNullish(response) && opts.defaultValue !== undefined) {
+                return opts.defaultValue;
+            }
+            return response;
+        });
     }
 
     getAll(broadcast?: boolean): Promise<{ [key: string]: string }> {
@@ -164,6 +224,15 @@ class CookieStorage implements IKeyValStore {
         const cookies = Utility.parseCookies();
         const value = cookies[key];
         return Promise.resolve(value);
+    }
+
+    getEx(key: string, opts: { defaultValue?: string, broadcast?: boolean }): Promise<string | undefined> {
+        return this.get(key, opts.broadcast).then(response => {
+            if (isNullish(response) && opts.defaultValue !== undefined) {
+                return opts.defaultValue;
+            }
+            return response;
+        });
     }
 
     getAll(broadcast?: boolean): Promise<{ [key: string]: string }> {

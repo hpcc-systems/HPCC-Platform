@@ -1,6 +1,8 @@
+//  See https://github.com/microsoft/fluentui/blob/master/apps/public-docsite-v9/src/shims/ThemeShim/v9ThemeShim.ts
+
 import { IEffects, IPalette, Theme as ThemeV8 } from "@fluentui/react";
 import { BorderRadiusTokens, ColorTokens, ShadowTokens, Theme as ThemeV9, webLightTheme } from "@fluentui/react-components";
-import { blackAlpha, whiteAlpha } from "./themeDuplicates";
+import { blackAlpha, whiteAlpha, grey } from "./themeDuplicates";
 
 /**
  * Creates v9 color tokens from a v8 palette.
@@ -47,10 +49,12 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorNeutralForegroundInvertedPressed: palette.white,
     colorNeutralForegroundInvertedSelected: palette.white,
     colorNeutralForegroundOnBrand: palette.white,
+    colorNeutralForegroundStaticInverted: palette.white,
     colorNeutralForegroundInvertedLink: palette.white,
     colorNeutralForegroundInvertedLinkHover: palette.white,
     colorNeutralForegroundInvertedLinkPressed: palette.white,
     colorNeutralForegroundInvertedLinkSelected: palette.white,
+    colorNeutralForegroundInverted2: palette.white,
     colorBrandForegroundInverted: palette.themeSecondary,
     colorBrandForegroundInvertedHover: palette.themeTertiary,
     colorBrandForegroundInvertedPressed: palette.themeSecondary,
@@ -79,6 +83,7 @@ const mapAliasColors = (palette: IPalette, inverted: boolean): ColorTokens => {
     colorNeutralBackground5Pressed: palette.neutralLighter,
     colorNeutralBackground5Selected: palette.neutralLighterAlt,
     colorNeutralBackground6: palette.neutralLight,
+    colorNeutralBackgroundStatic: grey[20],
     colorNeutralBackgroundInverted: palette.neutralSecondary,
     colorSubtleBackground: "transparent",
     colorSubtleBackgroundHover: palette.neutralLighter,
