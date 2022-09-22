@@ -1592,7 +1592,7 @@ public:
             attr->setPropInt64("@size",totalsize);
 
         // NB: for remote useDafilesrv use case
-        IPropertyTree *remoteStoragePlaneMeta = at->queryPropTree("_remoteStoragePlane");
+        IPropertyTree *remoteStoragePlaneMeta = at ? at->queryPropTree("_remoteStoragePlane") : nullptr;
         if (remoteStoragePlaneMeta)
         {
             assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1

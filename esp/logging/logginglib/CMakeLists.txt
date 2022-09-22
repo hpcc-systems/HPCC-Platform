@@ -30,6 +30,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp        #XmlPullParser.h in generated/ws_loggingservice_esp.ipp
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform   #CSoapRequestBinding
     ${HPCC_SOURCE_DIR}/esp/clients                  #edwin.h in generated/ws_loggingservice.esp
+    ${HPCC_SOURCE_DIR}/esp/esdllib
     ${HPCC_SOURCE_DIR}/common/thorhelper
 )
 
@@ -56,4 +57,5 @@ target_link_libraries ( logginglib
     jlib
     xmllib
     esphttp
+    esdllib
 )

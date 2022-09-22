@@ -930,6 +930,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="heapLockMemory" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Disable locking of heap memory</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
   </xs:attributeGroup>
   <xs:attributeGroup name="Redundancy">
 
@@ -972,9 +979,8 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
-
-
   </xs:attributeGroup>
+
   <xs:attributeGroup name="Tracing">
     <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1">
       <xs:annotation>

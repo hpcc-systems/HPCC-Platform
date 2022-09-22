@@ -324,7 +324,7 @@ public:
         return testname;
     }
 
-    IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config, IInterface *functionRegister=nullptr)
+    IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config, IEsdlFunctionRegister *functionRegister=nullptr)
     {
         Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, functionRegister);
         scriptContext->setTestMode(true);

@@ -37,6 +37,9 @@
                             <xs:attribute name="sendTargetToRoxie" type="xs:boolean" hpcc:displayName="Send Target To Roxie"
                                           hpcc:presetValue="true"
                                           hpcc:tooltip="Send roxie the target from which to run query (disable for backward compatibility issues)"/>
+                            <xs:attribute name="tls" type="xs:boolean" hpcc:displayName="Use TLS"
+                                          hpcc:presetValue="false"
+                                          hpcc:tooltip="Use TLS"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element name="Target" hpcc:displayName="Restrict To Target(s)" hpcc:itemType="wsecl_target"

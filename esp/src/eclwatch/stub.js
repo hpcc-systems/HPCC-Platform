@@ -11,6 +11,7 @@ define([
     "src/Utility",
     "src/Session",
     "src/KeyValStore",
+    "src/BuildInfo",
     "hpcc/LockDialogWidget",
 
     "dojox/html/entities",
@@ -21,13 +22,13 @@ define([
     "css!hpcc/css/hpcc.css"
 
 ], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
-    Utility, Session, KeyValStore, LockDialogWidget,
+    Utility, Session, KeyValStore, BuildInfo, LockDialogWidget,
     entities, Toaster) {
 
     Session.initSession();
 
     const store = KeyValStore.userKeyValStore();
-    store.get("ModernMode", false).then(modernMode => {
+    store.getEx(BuildInfo.ModernMode, { defaultValue: String(BuildInfo.containerized) }).then(modernMode => {
         if (modernMode === String(true)) {
             window.location.replace("/esp/files/index.html");
         } else {

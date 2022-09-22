@@ -46,6 +46,32 @@
 
 #define ESDL_SCRIPT_Warning                       5800
 
+interface IEsdlFunctionRegister;
+
+/**
+ * @brief Script-specific context associated with a sectional document model.
+ *
+ * As a convenience, the context presents itself as the model instance with which it is used. An
+ * implementation must either be assigned or create a model instance for use.
+ */
+interface IEsdlScriptContext : extends ISectionalXmlDocModel
+{
+    virtual IEspContext* queryEspContext() const = 0;
+    virtual IEsdlFunctionRegister* queryFunctionRegister() const = 0;
+    virtual void setTraceToStdout(bool val) = 0;
+    virtual bool getTraceToStdout() const = 0;
+    virtual void setTestMode(bool val) = 0; //enable features that help with unit testing but should never be used in production
+    virtual bool getTestMode() const = 0;
+};
+
+/**
+ * @brief Create an instance of IEsdlScriptContext.
+ *
+ * The absence of a sectional document model in the parameter list implies the returned instance
+ * is responsible for creating its own model.
+ */
+extern "C" esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister);
+
 interface IEsdlCustomTransform : extends IInterface
 {
     virtual void processTransform(IEsdlScriptContext * context, const char *srcSection, const char *tgtSection) = 0;

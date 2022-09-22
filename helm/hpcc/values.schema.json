@@ -772,6 +772,14 @@
         "client-secret": {
           "description": "optional name of kubernetes secret that will provide the vault client token",
           "type": "string"
+        },
+        "appRoleId": {
+          "description": "app role id assigned for use with Hashicorp appRole authentication",
+          "type": "string"
+        },
+        "appRoleSecret": {
+          "description": "name of the secret that will contain the 'secret-id' used with Hashicorp appRole authentication",
+          "type": "string"
         }
       },
       "required": [ "name", "url" ],
@@ -2107,7 +2115,7 @@
         },
         "numWorkers": {
           "type": "integer",
-          "description": "The number of worker pods",
+          "description": "The number of worker containers. NB: There will be <numWorker>/<numWorkersPerPod> pods",
           "minimum": 1
         },
         "numWorkersPerPod": {

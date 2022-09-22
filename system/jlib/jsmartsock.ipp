@@ -61,6 +61,7 @@ class SmartSocketEndpointArray : public SafePointerArrayOf<SmartSocketEndpoint> 
 class jlib_decl CSmartSocketFactory: public Thread,
     implements ISmartSocketFactory
 {
+protected:
     SmartSocketEndpointArray sockArray;
     Mutex lock;
 
