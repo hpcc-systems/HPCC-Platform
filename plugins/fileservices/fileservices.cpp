@@ -3145,26 +3145,29 @@ bool getDefaultValue(const char * processName, const char * propertyName, String
 {
     // Returns with true if a default value retrieved and false if not.
 
-    #ifdef _CONTAINERIZED
-        // TBD
+#ifdef _CONTAINERIZED
+    if (getComponentConfigSP()->hasProp(propertyName)
+    {
+        getComponentConfigSP()->getProp(propertyName, strDefaultValue);
+        return true
+    }
+#else
+    Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+    Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
 
-    #else
-        Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
-        Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
-
-        if (env.get())
+    if (env.get())
+    {
+        Owned<IPropertyTreeIterator> processIter = env->getElements(processName);
+        if (processIter->first())
         {
-            Owned<IPropertyTreeIterator> processIter = env->getElements(processName);
-            if (processIter->first())
+            if (processIter->query().hasProp(propertyName))
             {
-                if (processIter->query().hasProp(propertyName))
-                {
-                    processIter->query().getProp(propertyName, strDefaultValue);
-                    return true;
-                }
+                processIter->query().getProp(propertyName, strDefaultValue);
+                return true;
             }
         }
-    #endif
+    }
+#endif
     return false;
 }
 
@@ -3174,7 +3177,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault()
     // Othervise it returns with true, the recent default value of 'noCommon'
 
     StringBuffer strDefaultValue;
-    if (getDefaultValue("Software/DfuServerProcess", "@noCommon", strDefaultValue))
+    if (getDefaultValue("Software/Globals", "@noCommon", strDefaultValue))
         return strToBool(strDefaultValue.str());
     return true;
 }
@@ -3185,7 +3188,7 @@ FILESERVICES_API int FILESERVICES_CALL fsGetMaxConnectionsDefault()
     // Othervise it returns with -1, the recent default value of 'maxConnections'
 
     StringBuffer strDefaultValue;
-    if (getDefaultValue("Software/DfuServerProcess", "@maxConnections", strDefaultValue))
+    if (getDefaultValue("Software/Globals", "@maxConnections", strDefaultValue))
     {
         int intDefaultValue;
         if (sscanf(strDefaultValue.str(),"%d", &intDefaultValue))

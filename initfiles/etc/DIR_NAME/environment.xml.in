@@ -20,6 +20,8 @@
         storageWrites="0.0038"/>
  </Hardware>
  <Software>
+  <Globals  noCommon="true"
+            maxConnections="-1"/>
   <DropZone build="_"
             buildSet="DropZone"
             description="DropZone process"
@@ -217,9 +219,7 @@
                     monitorinterval="900"
                     monitorqueue="dfuserver_monitor_queue"
                     name="mydfuserver"
-                    queue="dfuserver_queue"
-                    noCommon="true"
-                    maxConnections="-1">
+                    queue="dfuserver_queue">
    <Instance computer="localhost"
              directory="${RUNTIME_PATH}/mydfuserver"
              name="s1"

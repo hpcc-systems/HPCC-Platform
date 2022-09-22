@@ -3498,7 +3498,6 @@ void FileSprayer::spray()
     LOG(MCdebugInfo, job, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
     LOG(MCdebugInfo, job, "maxConnections:%d", options->getPropInt(ANmaxConnections));
 
-
     LocalAbortHandler localHandler(daftAbortHandler);
 
     if (allowRecovery && progressTree->getPropBool(ANcomplete))
