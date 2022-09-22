@@ -12620,7 +12620,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         {
             if (!isDistributedCoLocally(dataset1, dataset2, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             {
-                reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_DistributionNotMatchLocalJoin));
+                reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_DistributionNotMatchLocalJoin), instance->activityId);
             }
         }
     }
