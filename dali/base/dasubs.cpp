@@ -238,7 +238,8 @@ public:
                 {
                     SubscriptionId sid;
                     mb.read(subtag).read(sid);
-                    Owned<INode> subscriber = deserializeINode(mb);
+                    Owned<INode> subscriber = deserializeINode(mb); // NB: no longer used/ignored by server. See HPCC-28302.
+                    subscriber.setown(createINode(mb.getSender()));
                     size32_t dsize;
                     mb.read(dsize);
                     sub.setown(new CSubscriptionStub(subtag,sid,dsize,mb.readDirect(dsize),subscriber));

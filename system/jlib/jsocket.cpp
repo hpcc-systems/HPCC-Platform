@@ -384,6 +384,9 @@ protected:
     SOCKETMODE      sockmode;
     IpAddress       targetip;
     SocketEndpoint  returnep;   // set by set_return_addr
+    SocketEndpoint  peerEp;
+    std::atomic_bool peerEpSet{false};
+    CriticalSection peerEpCrit;
 
     MCASTREQ    *   mcastreq;
     size32_t        nextblocksize;
@@ -468,6 +471,7 @@ public:
 
     void        setTraceName(const char * prefix, const char * name);
     void        setTraceName();
+    void        setPeerEndpoint(const SocketEndpoint &ep);
 
     CSocket(const SocketEndpoint &_ep,SOCKETMODE smode,const char *name);
     CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned);
@@ -483,7 +487,6 @@ public:
     {
         return sock != INVALID_SOCKET;
     }
-
 private:
 
     int closesock()
@@ -1025,7 +1028,7 @@ ErrPortInUse:
 
 
 
-ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
+ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *retPeerEp)
 {
     if ((accept_cancel_state!=accept_not_cancelled) && allowcancel) {
         accept_cancel_state=accept_cancelled;
@@ -1081,10 +1084,13 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
         THROWJSOCKEXCEPTION(JSOCKERR_cancel_accept);
     }
 
-    if (peerEp)
-        getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, *peerEp);
+    SocketEndpoint _peerEp;
+    getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, _peerEp);
+    if (retPeerEp)
+        *retPeerEp = _peerEp;
 
     CSocket *ret = new CSocket(newsock,sm_tcp,true);
+    ret->setPeerEndpoint(_peerEp);
     ret->set_inherit(false);
     return ret;
 
@@ -1161,6 +1167,11 @@ int CSocket::peer_name(char *retname,size32_t namemax)
 
 SocketEndpoint &CSocket::getPeerEndpoint(SocketEndpoint &ep)
 {
+    if (peerEpSet)
+    {
+        ep = peerEp;
+        return ep;
+    }
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
@@ -1175,8 +1186,12 @@ SocketEndpoint &CSocket::getPeerEndpoint(SocketEndpoint &ep)
             DBGLOG("getpeername failed %d",ERRNO());
             ep.set(NULL, 0);
         }
-        else
+        else {
+            CriticalBlock b(peerEpCrit);
             getSockAddrEndpoint(u,ul,ep);
+            peerEp = ep;
+            peerEpSet = true;
+        }
     }
     return ep;
 }
@@ -1547,6 +1562,14 @@ void CSocket::setTraceName()
 #endif
 }
 
+void CSocket::setPeerEndpoint(const SocketEndpoint &ep)
+{
+    assertex(!peerEpSet);
+    peerEpCrit.enter();
+    peerEpSet = true;
+    peerEp = ep;
+    peerEpCrit.leave();
+}
 
 ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
 {

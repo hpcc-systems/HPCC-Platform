@@ -279,7 +279,18 @@ public:
                 PROGLOG("Failed to initialize slaves");
                 return false;
             }
-            Owned<INode> sender = _sender;
+
+            /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
+             * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
+             */
+            unsigned slaveNum;
+            msg.read(slaveNum);
+
+            // recv's _sender will be the peer endpoint (with ephemeral port) and potentially from another network
+            // use workers self identified endpoint.
+            // the endpoint's are used by the group processes to identify which rank their own endpoint is within it.
+            Owned<INode> sender = deserializeINode(msg);
+
             if (NotFound != connectedSlaves.find(sender))
             {
                 StringBuffer epStr;
@@ -287,11 +298,6 @@ public:
                 return false;
             }
 
-            /* NB: in base metal setup, the slaves know which slave number they are in advance, and send their slavenum at registration.
-             * In non attached storage setup, they do not send a slave by default and instead are given a # once all are registered
-             */
-            unsigned slaveNum;
-            msg.read(slaveNum);
             if (NotFound == slaveNum)
             {
                 connectedSlaves.append(sender.getLink());

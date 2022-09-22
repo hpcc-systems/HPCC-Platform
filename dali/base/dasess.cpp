@@ -541,7 +541,10 @@ public:
         case MSR_REGISTER_PROCESS_SESSION: {
                 acceptConnections.wait();
                 acceptConnections.signal();
-                Owned<INode> node(deserializeINode(mb));
+
+                Owned<INode> node(deserializeINode(mb)); // NB: no longer used. See HPCC-28302.
+                node.setown(createINode(mb.getSender()));
+
                 const SocketEndpoint &peerIP = coven.queryComm().queryChannelPeerEndpoint(mb.getSender());
                 Owned<INode> servernode(deserializeINode(mb));  // hopefully me, but not if forwarded
                 int role=0;
@@ -1972,7 +1975,7 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
         if (ok) {
             CMessageBuffer mb;
             mb.append((int)MSR_REGISTER_PROCESS_SESSION);
-            queryMyNode()->serialize(mb);
+            queryMyNode()->serialize(mb); // NB: no longer used/ignored by server. See HPCC-28302.
             comm->queryGroup().queryNode(r).serialize(mb);
             mb.append((int)role);
             if (comm->sendRecv(mb,r,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT)) {

@@ -1639,6 +1639,13 @@ public:
                     remaining = hdr.size-sizeof(hdr);
                     activemsg = new CMessageBuffer(remaining); // will get from low level IO at some stage
                     activeptr = (byte *)activemsg->reserveTruncate(remaining);
+
+                    // Ensure MP packet use peer endpoint
+                    SocketEndpoint peerEp;
+                    sock->getPeerEndpoint(peerEp);
+                    peerEp.port = hdr.sender.port;
+                    hdr.sender.set(peerEp);
+
                     hdr.setMessageFields(*activemsg);
                 }
                 
@@ -2271,27 +2278,24 @@ int CMPConnectThread::run()
 #endif
                 checkSelfDestruct(&connectHdr.id[0],sizeof(connectHdr.id));
 
-                // HPCC-28125 - if remoteep IP != peerEp IP then NAT happening, or rogue client (ssh etc.)
-                // assume we are in single client -> this server mode and not in peer <--> peer mode,
-                // change remoteep to prevent clash with any existing MP connections, log warning
-                // Perhaps better would be for client to send its MAC address or something immutable/unique
-                // But how to handle sending different data to older servers expecting IP:port ?
-                // NB: hostep portion of the handshake payload is not really useful
-                // hostep is used in outbound packet hdrs (localep), perhaps don't rely on what client thinks we are, could reset hostep here ...
-                // hostep.setLocalHost(parent->getPort()); // (but make sure its an external facing NIC/IP)
+                // See HPCC-28125/HPCC-28302
+                // A new client connecting here, creates a new MP channel, which is later looked up based on an
+                // endpoint. The client itself transmits its endpoint in the ConnectHdr and also in the PacketHeader's
+                // sent with each MP packet (received by CMPPacketReader::notifySelected).
+                // The latter is used to enqueue and trigger mp tag matching that delivers the packets to the correct
+                // MP tag listeners.
+                // However, the client-side endpoint cannot be relied upon to be unique, since it may be running on another
+                // private network and therefore multiple clients on different networks connecting to Dali could have the same
+                // client side endpoints. 
+                // To avoid this, always use the server side peer IP and oprt as the mapping from client to MP channel.
+                // The peer port must be used as well, since the client side port from multiple private networks can be the same.
+                // See corresponding change in CMPPacketReader::notifySelected
+                // NB: if all clients are part of the same network, then this step is strictly unecessary.
 
-                if (!_remoteep.ipequals(peerEp))
-                {
-                    if (parent->mpTraceLevel >= ExtraneousMsgThreshold)
-                    {
-                        StringBuffer rIp, pIp;
-                        _remoteep.getIpText(rIp);
-                        peerEp.getIpText(pIp);
-                        PROGLOG("MP: WARNING: client ip sent in (%s:%u) != peer ip (%s:%u)", rIp.str(), _remoteep.port, pIp.str(), peerEp.port);
-                    }
-                    _remoteep.set(peerEp);
-                    connectHdr.id[0].set(_remoteep);
-                }
+                // Ensure MP connection uses peer endpoint
+                _remoteep.set(peerEp);
+                _remoteep.port = connectHdr.id[0].port;
+                connectHdr.id[0].set(_remoteep);
 
                 unsigned __int64 addrval = DIGIT1*connectHdr.id[0].ip[0] + DIGIT2*connectHdr.id[0].ip[1] + DIGIT3*connectHdr.id[0].ip[2] + DIGIT4*connectHdr.id[0].ip[3] + connectHdr.id[0].port;
 #ifdef _TRACE

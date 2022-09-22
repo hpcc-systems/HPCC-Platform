@@ -105,6 +105,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         Owned<INode> masterNode = createINode(ep);
         CMessageBuffer msg;
         msg.append(mySlaveNum);
+        // Send myNode which will form part of the process group.
+        queryMyNode()->serialize(msg);
         queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION);
         if (!queryWorldCommunicator().recv(msg, masterNode, MPTAG_THORREGISTRATION))
             return false;
