@@ -32,21 +32,6 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["activities", "topology-bare-metal"],
-        path: "/clusters",
-        children: [
-            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
-            { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
-        ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/machines",
-        children: [
-            { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
-        ]
-    },
-    {
         mainNav: ["activities"],
         name: "events",
         path: "/events",
@@ -205,11 +190,26 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["topology-bare-metal"],
+        path: "/clusters",
+        children: [
+            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
+            { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
+        ]
+    },
+    {
+        mainNav: ["topology-bare-metal"],
         path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />)
     },
     {
         mainNav: ["topology-bare-metal"],
         path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />)
+    },
+    {
+        mainNav: ["topology-bare-metal"],
+        path: "/machines",
+        children: [
+            { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
+        ]
     },
     {
         mainNav: ["topology-bare-metal"],
