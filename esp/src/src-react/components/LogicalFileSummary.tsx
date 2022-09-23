@@ -172,6 +172,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? file?.CompressedFileSize.toString() : "", readonly: true },
                 "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
                 "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
+                "ExpirationDate": { label: nlsHPCC.ExpirationDate, type: "string", value: file?.ExpirationDate, readonly:true },
                 "ExpireDays": { label: nlsHPCC.ExpireDays, type: "string", value: file?.ExpireDays ? file?.ExpireDays.toString() : "", readonly: true },
                 "Directory": { label: nlsHPCC.Directory, type: "string", value: file?.Dir, readonly: true },
                 "PathMask": { label: nlsHPCC.PathMask, type: "string", value: file?.PathMask, readonly: true },
