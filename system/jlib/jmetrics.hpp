@@ -150,8 +150,8 @@ public:
     virtual __uint64 queryValue() const override { return value; }
 
 protected:
-    MetricVal(const char *name, const char *desc, MetricType metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
-        MetricBase(name, desc, metricType, _units, _metaData) {}
+    MetricVal(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
+        MetricBase(_name, _desc, _metricType, _units, _metaData) {}
 
     RelaxedAtomic<__uint64> value{0};
 };
@@ -163,8 +163,8 @@ protected:
 class jlib_decl CounterMetric : public MetricVal
 {
 public:
-    CounterMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
-        MetricVal{name, description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
+    CounterMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{_name, _description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
     void inc(uint64_t val)
     {
         value.fetch_add(val);
@@ -183,8 +183,8 @@ public:
 class jlib_decl GaugeMetric : public MetricVal
 {
 public:
-    GaugeMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
-        MetricVal{name, description, MetricType::METRICS_GAUGE, _units, _metaData}  { }
+    GaugeMetric(const char *_name, const char *_description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData}  { }
 
     void adjust(int64_t delta)
     {
@@ -209,10 +209,10 @@ public:
 class jlib_decl GaugeMetricFromCounters : public MetricVal
 {
 public:
-    GaugeMetricFromCounters(const char *name, const char *description, StatisticMeasure _units,
+    GaugeMetricFromCounters(const char *_name, const char *_description, StatisticMeasure _units,
                             const std::shared_ptr<CounterMetric> &_pBeginCounter, const std::shared_ptr<CounterMetric> &_pEndCounter,
                             const MetricMetaData &_metaData = MetricMetaData()) :
-        MetricVal{name, description, MetricType::METRICS_GAUGE, _units, _metaData},
+        MetricVal{_name, _description, MetricType::METRICS_GAUGE, _units, _metaData},
         pBeginCounter{_pBeginCounter},
         pEndCounter{_pEndCounter}
     {
@@ -235,8 +235,8 @@ template<typename T>
 class CustomMetric : public MetricBase
 {
 public:
-    CustomMetric(const char *name, const char *desc, MetricType metricType, T &_value, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
-        MetricBase(name, desc, metricType, _units, _metaData),
+    CustomMetric(const char *_name, const char *_desc, MetricType _metricType, T &_value, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricBase(_name, _desc, _metricType, _units, _metaData),
         value{_value} { }
 
     virtual __uint64 queryValue() const override
@@ -253,7 +253,7 @@ protected:
 class jlib_decl HistogramMetric : public MetricBase
 {
 public:
-    HistogramMetric(const char *name, const char *desc, StatisticMeasure _units, const std::vector<__uint64> &bucketLimits, const MetricMetaData &_metaData = MetricMetaData());
+    HistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual __uint64 queryValue() const override
     {
@@ -285,7 +285,7 @@ protected:
 class jlib_decl ScaledHistogramMetric : public HistogramMetric
 {
 public:
-    ScaledHistogramMetric(const char *name, const char *desc, StatisticMeasure units, const std::vector<__uint64> &bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
+    ScaledHistogramMetric(const char *_name, const char *_desc, StatisticMeasure _units, const std::vector<__uint64> &_bucketLimits, double _limitsToMeasurementUnitsScaleFactor, const MetricMetaData &_metaData = MetricMetaData());
 
     virtual std::vector<__uint64> queryHistogramBucketLimits() const override;
     virtual __uint64 queryValue() const override
@@ -330,7 +330,7 @@ public:
     virtual void stopCollection() override;
 
 protected:
-    explicit PeriodicMetricSink(const char *name, const char *type, const IPropertyTree *pSettingsTree);
+    explicit PeriodicMetricSink(const char *_name, const char *_type, const IPropertyTree *_pSettingsTree);
     virtual void prepareToStartCollecting() = 0;
     virtual void collectingHasStopped() = 0;
     virtual void doCollection() = 0;
