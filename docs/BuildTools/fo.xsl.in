@@ -159,12 +159,12 @@
     <xsl:value-of select="$body.font.master * 2.425"></xsl:value-of>
     <xsl:text>pt</xsl:text>
   </xsl:attribute>
-    <xsl:attribute name="color">#A91919</xsl:attribute>
+    <xsl:attribute name="color">#0B5F8B</xsl:attribute>
     <xsl:attribute name="text-decoration">underline</xsl:attribute>
 </xsl:attribute-set>
 
 <xsl:attribute-set name="section.title.level2.properties">
-    <xsl:attribute name="color">#A91919</xsl:attribute>
+    <xsl:attribute name="color">#61AAD4</xsl:attribute>
 </xsl:attribute-set>
 
 <xsl:attribute-set name="section.level1.properties">
