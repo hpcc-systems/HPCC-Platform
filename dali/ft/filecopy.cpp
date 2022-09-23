@@ -22,9 +22,11 @@
 #include "jlib.hpp"
 #include "jio.hpp"
 #include <math.h>
+#ifdef _USE_AZURE
 #include <azure/core.hpp>
 #include <azure/storage/blobs.hpp>
 #include <azure/storage/files/shares.hpp>
+#endif
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -1521,6 +1523,7 @@ bool FileSprayer::usePushWholeOperation() const
 
 bool FileSprayer::useAPICopy()
 {
+#ifdef _USE_AZURE
     if (isContainerized()) // Future: support in bare-metal?
     {
         bool needCalcCRC = calcCRC();
@@ -1552,6 +1555,7 @@ bool FileSprayer::useAPICopy()
             return true;
         }
     }
+#endif
     return false;
 }
 
@@ -2647,10 +2651,6 @@ void FileSprayer::pushParts()
     performTransfer();
 }
 
-using namespace Azure::Storage;
-using namespace Azure::Storage::Files;
-using namespace Azure::Storage::Blobs;
-
 enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
 interface IAPICopyClient : implements IInterface
 {
@@ -2659,6 +2659,11 @@ interface IAPICopyClient : implements IInterface
     virtual ApiCopyStatus abortCopy() = 0;
     virtual ApiCopyStatus getStatus() const = 0;
 };
+
+#ifdef _USE_AZURE
+using namespace Azure::Storage;
+using namespace Azure::Storage::Files;
+using namespace Azure::Storage::Blobs;
 
 class CApiCopyClient : public CInterfaceOf<IAPICopyClient>
 {
@@ -2881,9 +2886,11 @@ public:
         return status;
     }
 };
+#endif
 
 void FileSprayer::transferUsingAPI()
 {
+#ifdef _USE_AZURE
     // N.B. Only call this member function, if FileSprayer::useAPICopy() has returned true
     // Source
     StringBuffer sourceClusterName, sourceBaseURI, sourceSAStoken;
@@ -3003,6 +3010,7 @@ void FileSprayer::transferUsingAPI()
         if (failCount)
             throw makeStringExceptionV(DFTERR_CopyFailed, DFTERR_CopyFailed_Text, failedReason.str());
     }
+#endif
 }
 
 void FileSprayer::removeSource()
