@@ -3,6 +3,7 @@ import { Checkbox, DefaultButton, PrimaryButton, TextField, } from "@fluentui/re
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsWorkunits from "src/WsWorkunits";
+import { useBuildInfo } from "../../hooks/platform";
 import { MessageBox } from "../../layouts/MessageBox";
 import nlsHPCC from "src/nlsHPCC";
 
@@ -13,7 +14,9 @@ interface ZAPDialogValues {
     Wuid: string;
     BuildVersion: string;
     ESPIPAddress: string;
+    ESPApplication: string;
     ThorIPAddress: string;
+    ThorProcesses: string;
     ProblemDescription: string;
     WhatChanged: string;
     WhereSlow: string;
@@ -31,7 +34,9 @@ const defaultValues: ZAPDialogValues = {
     Wuid: "",
     BuildVersion: "",
     ESPIPAddress: "",
+    ESPApplication: "",
     ThorIPAddress: "",
+    ThorProcesses: "",
     ProblemDescription: "",
     WhatChanged: "",
     WhereSlow: "",
@@ -60,6 +65,8 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
     const [emailDisabled, setEmailDisabled] = React.useState(true);
 
     const { handleSubmit, control, reset } = useForm<ZAPDialogValues>({ defaultValues });
+
+    const [, { isContainer }] = useBuildInfo();
 
     const closeForm = React.useCallback(() => {
         setShowForm(false);
@@ -99,14 +106,13 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         link.remove();
 
                         closeForm();
-                        reset(defaultValues);
                     })
                     .catch(err => logger.error(err))
                     ;
             },
             logger.info
         )();
-    }, [closeForm, handleSubmit, reset]);
+    }, [closeForm, handleSubmit]);
 
     React.useEffect(() => {
         WsWorkunits.WUGetZAPInfo({ request: { WUID: wuid } }).then(response => {
@@ -129,13 +135,21 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         <Controller
             control={control} name="ZAPFileName"
             render={({
-                field: { onChange, name: fieldName, value }
+                field: { onChange, name: fieldName, value },
+                fieldState: { error }
             }) => <TextField
                     name={fieldName}
                     onChange={onChange}
                     label={nlsHPCC.FileName}
                     value={value}
+                    errorMessage={error && error?.message}
                 />}
+            rules={{
+                pattern: {
+                    value: /^[-a-z0-9_\.]+$/i,
+                    message: nlsHPCC.ValidationErrorTargetNameInvalid
+                }
+            }}
         />
         <Controller
             control={control} name="Wuid"
@@ -160,26 +174,26 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 />}
         />
         <Controller
-            control={control} name="ESPIPAddress"
+            control={control} name={isContainer ? "ESPApplication" : "ESPIPAddress"}
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
             }) => <TextField
                     name={fieldName}
                     onChange={onChange}
-                    label={nlsHPCC.ESPNetworkAddress}
+                    label={isContainer ? nlsHPCC.ESPProcessName : nlsHPCC.ESPNetworkAddress}
                     value={value}
                 />}
         />
         <Controller
-            control={control} name="ThorIPAddress"
+            control={control} name={isContainer ? "ThorProcesses" : "ThorIPAddress"}
             render={({
                 field: { onChange, name: fieldName, value },
                 fieldState: { error }
             }) => <TextField
                     name={fieldName}
                     onChange={onChange}
-                    label={nlsHPCC.ThorNetworkAddress}
+                    label={isContainer ? nlsHPCC.ThorProcess : nlsHPCC.ThorNetworkAddress}
                     value={value}
                 />}
         />

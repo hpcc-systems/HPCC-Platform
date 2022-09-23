@@ -44,6 +44,8 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/BuildInfo.ts ${CMAKE_CURRENT_BINARY_DIR}/src/BuildInfo.ts @ONLY)
+
 set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/ecl.css
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/hpcc.css

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
 import { Level } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
@@ -8,15 +8,16 @@ import * as cookie from "dojo/cookie";
 import * as WsAccount from "src/ws_account";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
+import { ModernMode } from "src/BuildInfo";
 
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
-import { useGlobalStore } from "../hooks/store";
+import { useGlobalStore, useUserStore } from "../hooks/store";
 import { useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
-import { ComingSoon } from "./controls/ComingSoon";
+import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { toasterScale } from "./controls/CustomToaster";
@@ -78,6 +79,15 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const [log, logLastUpdated] = useECLWatchLogger();
 
+    const [_modernMode, setModernMode] = useUserStore(ModernMode, String(true));
+    const onTechPreviewClick = React.useCallback(
+        (ev?: React.MouseEvent<HTMLButtonElement>, item?: IContextualMenuItem): void => {
+            setModernMode(String(false));
+            switchTechPreview(false);
+        },
+        [setModernMode]
+    );
+
     const advMenuProps = React.useMemo(() => {
         return {
             items: [
@@ -124,11 +134,17 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 },
                 { key: "divider_3", itemType: ContextualMenuItemType.Divider },
                 { key: "config", href: "#/topology/configuration", text: nlsHPCC.Configuration },
+                {
+                    key: "techpreview", text: nlsHPCC.TechPreview,
+                    canCheck: true,
+                    isChecked: true,
+                    onClick: onTechPreviewClick
+                },
                 { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
             ],
             directionalHintFixed: true
         };
-    }, [currentUser?.username, deleteUserSession, setUserSession, userSession]);
+    }, [currentUser?.username, deleteUserSession, onTechPreviewClick, setUserSession, userSession]);
 
     const btnStyles = React.useMemo(() => mergeStyleSets({
         errorsWarnings: {
@@ -207,9 +223,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             <Persona {...personaProps} onClick={() => setShowMyAccount(true)} />
                         </Stack.Item>
                     }
-                    <Stack.Item align="center" >
-                        <ComingSoon defaultValue style={{ color: showEnvironmentTitle && titlebarColor ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }} />
-                    </Stack.Item>
                     <Stack.Item align="center">
                         <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: log.length > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
                             <span className={btnStyles.errorsWarningsCount}>{`(${log.length})`}</span>

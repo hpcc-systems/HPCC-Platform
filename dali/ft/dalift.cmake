@@ -23,7 +23,6 @@
 
 project( dalift ) 
 
-set(CMAKE_CXX_STANDARD 14)
 find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
 find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
 find_package(azure-storage-common-cpp CONFIG REQUIRED)

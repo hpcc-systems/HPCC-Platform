@@ -853,7 +853,9 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
                 if (secret)
                 {
                     MemoryBuffer gitKey;
-                    if (getSecretKeyValue(gitKey, secret, "password"))
+                    if (!getSecretKeyValue(gitKey, secret, "password"))
+                        DBGLOG("Secret doesn't contain password for git user %s", options.gitUser.str());
+                    else
                     {
                         StringBuffer tempDir;
                         getTempFilePath(tempDir, "eclcc", nullptr);
@@ -871,6 +873,8 @@ unsigned EclRepositoryManager::runGitCommand(StringBuffer * output, const char *
                         useScript = true;
                     }
                 }
+                else
+                    DBGLOG("No secret found for git user %s", options.gitUser.str());
             }
         }
 

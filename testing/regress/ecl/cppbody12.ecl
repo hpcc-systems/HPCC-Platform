@@ -26,8 +26,7 @@ ENDC++;
 real doSum(real a, real b) := DEFINE (a + b + storedval);
 
 ds := DATASET(100, transform({unsigned id}, SELF.id := COUNTER));
-s := SORT(ds, HASH(id));
-c := COUNT(NOFOLD(s));
+c := COUNT(NOFOLD(ds));
 
 real doSum2(real a, real b) := DEFINE (a + b + c);
 

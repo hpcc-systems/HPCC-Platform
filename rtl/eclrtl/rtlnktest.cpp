@@ -18,6 +18,7 @@
 #include "jdebug.hpp"
 #include "jsort.hpp"
 #include "jexcept.hpp"
+#include "jlog.hpp"
 #include "rtlnewkey.hpp"
 #include "eclrtl_imp.hpp"
 #include "rtlrecord.hpp"
@@ -972,7 +973,7 @@ protected:
 
         if ((mem1.length() != mem2.length()) || memcmp(mem1.bytes(), mem2.bytes(), mem1.length()) != 0)
         {
-            printf("Filter %s failed\n", str1.str());
+            DBGLOG("Filter %s failed", str1.str());
             CPPUNIT_ASSERT_MESSAGE("Binary filter deserialize failed", false);
         }
     }
@@ -1017,7 +1018,7 @@ protected:
                 StringBuffer actual;
                 for (unsigned i=0; i<cursor.numFilterFields(); i++)
                     cursor.queryFilter(i).serialize(actual.append(","));
-                printf("Failure to match row %u filter '%s' (%s)\n", i, originalFilter, actual.str());
+                DBGLOG("Failure to match row %u filter '%s' (%s)", i, originalFilter, actual.str());
                 CPPUNIT_ASSERT_EQUAL(curExpected[i], cursor.matches(row));
             }
         }
@@ -1139,7 +1140,7 @@ protected:
 
         if (!streq(matches, expected))
         {
-            printf("Failure to match expected keyed filter '%s' (%s, %s)\n", originalFilter, expected, matches.str());
+            DBGLOG("Failure to match expected keyed filter '%s' (%s, %s)", originalFilter, expected, matches.str());
             CPPUNIT_ASSERT(streq(matches, expected));
         }
     }
@@ -1229,10 +1230,10 @@ protected:
         qsortvec(rows.getArray(), rows.ordinality(), compareRow);
     }
 
-    void traceRow(const RtlRow & row)
+    void traceRow(StringBuffer &out, const RtlRow & row)
     {
         row.lazyCalcOffsets(3);
-        printf("%u %u %u", (unsigned)row.getInt(0), (unsigned)row.getInt(1), (unsigned)row.getInt(2));
+        out.appendf("%u %u %u", (unsigned)row.getInt(0), (unsigned)row.getInt(1), (unsigned)row.getInt(2));
     }
 
     const RtlFieldInfo f1 = RtlFieldInfo("f1", nullptr, &int2);
@@ -1283,7 +1284,7 @@ protected:
         unsigned __int64 scanMs = timeScan.elapsedNs();
         CPPUNIT_ASSERT_EQUAL(countScan, countKeyed);
 
-        printf("[%s] %u matches keyed(%" I64F "u) scan(%" I64F "u) (%.3f)\n", filterText, countScan, keyedMs, scanMs, (double)keyedMs/scanMs);
+        DBGLOG("[%s] %u matches keyed(%" I64F "u) scan(%" I64F "u) (%.3f)", filterText, countScan, keyedMs, scanMs, (double)keyedMs/scanMs);
     }
 
 
@@ -1311,17 +1312,18 @@ protected:
         }
         if (hasSearch || hasScan)
         {
-            printf("[%s] Keyed: ", filterText);
+            StringBuffer s;
+            s.appendf("[%s] Keyed: ", filterText);
             if (hasSearch)
-                traceRow(searcher.queryRow());
+                traceRow(s, searcher.queryRow());
             else
-                printf("<missing>");
-            printf(" Scan: ");
+                s.appendf("<missing>");
+            s.appendf(" Scan: ");
             if (hasScan)
-                traceRow(scanner.queryRow());
+                traceRow(s, scanner.queryRow());
             else
-                printf("<missing>");
-            printf("\n");
+                s.appendf("<missing>");
+            DBGLOG("%s", s.str());
             CPPUNIT_ASSERT_MESSAGE("Keyed search did not match scan", false);
         }
         else
@@ -1330,7 +1332,7 @@ protected:
             if (compareTiming)
                 timeKeyedScan(rows, searchRecord, filterText);
             else
-                printf("[%s] %u matches\n", filterText, count);
+                DBGLOG("[%s] %u matches", filterText, count);
         }
     }
 

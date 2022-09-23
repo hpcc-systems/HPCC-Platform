@@ -14245,6 +14245,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
         checkNormalized(curWorkflow);
     }
 
+    if (!curWorkflow.isFunction())
     {
         markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
         traceExpressions("boundary", curWorkflow);

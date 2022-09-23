@@ -234,6 +234,9 @@
   <xi:include href="ContainerizedHPCC/ContainerizedMods/AzureDeployment.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/TerraformDeployChap.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
 
   <xi:include href="ContainerizedHPCC/ContainerizedMods/CustomConfig.xml"
               xmlns:xi="http://www.w3.org/2001/XInclude" />

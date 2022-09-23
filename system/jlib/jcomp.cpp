@@ -48,66 +48,54 @@
 #define CC_EXTRA_OPTIONS        " /FAs"
 #endif
 
-#ifdef _WIN32
-#define DEFAULT_COMPILER Vs6CppCompiler
-#else
-#define DEFAULT_COMPILER GccCppCompiler
-#endif
-
 //---------------------------------------------------------------------------
 
 #define BASE_ADDRESS "0x00480000"
 //#define BASE_ADDRESS        "0x10000000"
 
-static const char * CC_NAME_CPP[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
-static const char * CC_NAME_C[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "gcc\"" };
-static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
-static const char * LIB_DIR[] = { "\"#\\lib\"", "\"#/lib\"" };
-static const char * LIB_OPTION_PREFIX[] = { "", "-Wl," };
-static const char * USE_LIBPATH_FLAG[] = { "/libpath:\"", "-L" };
-static const char * USE_LIBPATH_TAIL[] = { "\"", "" };
-static const char * USE_LIBRPATH_FLAG[] = { NULL, "-Wl,-rpath," };
-static const char * USE_LIB_FLAG[] = { "", "-l" };
-static const char * USE_LIB_TAIL[] = { ".lib", "" };
-static const char * USE_INCLUDE_FLAG[] = { "/I\"", "\"-I" };
-static const char * USE_DEFINE_FLAG[] = { "/D", "-D" };
-static const char * USE_INCLUDE_TAIL[] = { "\"", "\"" };
-static const char * INCLUDEPATH[] = { "\"#\\include\"", "\"#/include\"" };
-static const char * LINK_SEPARATOR[] = { " /link ", " " };
-static const char * OBJECT_FILE_EXT[] = { "obj", "o" };
-static const char * PCH_FILE_EXT[] = { "", "gch" };
+static const char * CC_NAME_CPP[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "clang++\"" };
+static const char * CC_NAME_C[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "gcc\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "clang\"" };
+static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "clang++\""  };
+static const char * LIB_DIR[] = { "\"#\\lib\"", "\"#/lib\"", "\"#/lib\"" };
+static const char * LIB_OPTION_PREFIX[] = { "", "-Wl,", "-Wl," };
+static const char * USE_LIBPATH_FLAG[] = { "/libpath:\"", "-L", "-L" };
+static const char * USE_LIBPATH_TAIL[] = { "\"", "", "" };
+static const char * USE_LIBRPATH_FLAG[] = { NULL, "-Wl,-rpath,", "-Wl,-rpath," };
+static const char * USE_LIB_FLAG[] = { "", "-l", "-l" };
+static const char * USE_LIB_TAIL[] = { ".lib", "", "" };
+static const char * USE_INCLUDE_FLAG[] = { "/I\"", "\"-I", "\"-I" };
+static const char * USE_DEFINE_FLAG[] = { "/D", "-D", "-D" };
+static const char * USE_INCLUDE_TAIL[] = { "\"", "\"", "\"" };
+static const char * INCLUDEPATH[] = { "\"#\\include\"", "\"#/include\"", "\"#/include\"" };
+static const char * LINK_SEPARATOR[] = { " /link ", " ", " " };
+static const char * OBJECT_FILE_EXT[] = { "obj", "o", "o" };
+static const char * PCH_FILE_EXT[] = { "", "gch", "gch" };
 
-static const char * LIBFLAG_DEBUG[] = { "/MDd", "" };
-static const char * LIBFLAG_RELEASE[] = { "/MD", "" };
-static const char * COMPILE_ONLY[] = { "/c", "-c" };
+static const char * LIBFLAG_DEBUG[] = { "/MDd", "", "" };
+static const char * LIBFLAG_RELEASE[] = { "/MD", "", "" };
+static const char * COMPILE_ONLY[] = { "/c", "-c", "-c" };
 
 #ifdef _DEBUG
-static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare" };
+//Clang warns about unused parameters (e.g., -std=c++11) when compiling resource files, therefore suppress that warning.
+static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Werror -Wno-tautological-compare -Wno-unused-command-line-argument" };
 #else
-static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Wno-tautological-compare" };
+static const char * CC_OPTION_CORE[] = { "", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Wno-tautological-compare", "-fvisibility=hidden -DUSE_VISIBILITY=1 -Wno-tautological-compare -Wno-unused-command-line-argument" };
 #endif
-static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." , "" };
-static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0" };
-static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0" };
-static const char * CC_OPTION_C[] = { "", "" };
-static const char * CC_OPTION_CPP[] = { "", "-std=c++11" };
+static const char * LINK_OPTION_CORE[] = { "/DLL /libpath:." ,"","" };
+static const char * CC_OPTION_DEBUG[] = { "/Zm500 /EHsc /GR /Zi /nologo /bigobj", "-g -fPIC  -O0", "-g -fPIC  -O0" };
+static const char * CC_OPTION_RELEASE[] = { "/Zm500 /EHsc /GR /Oi /Ob1 /GF /nologo /bigobj", "-fPIC  -O0", "-fPIC  -O0" };
+static const char * CC_OPTION_C[] = { "", "", "" };
+static const char * CC_OPTION_CPP[] = { "", "-std=c++11", "-std=c++11" };
 
-static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header" };
+static const char * CC_OPTION_PRECOMPILEHEADER[] = { "", " -x c++-header", " -x c++-header" };
 
-#ifdef __APPLE__
-static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
-static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
-static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
-static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
-#else
-static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0" };
-static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0" };
-static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0" };
-static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -Wl,-E -fPIC -pipe -O0" };
-#endif
+static const char * DLL_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -shared -L. -fPIC -pipe -O0", "-g -shared -L. -fPIC -pipe -O0" };
+static const char * EXE_LINK_OPTION_DEBUG[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO /DEBUG /DEBUGTYPE:CV", "-g -L. -Wl,-E -fPIC -pipe -O0", "-g -L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
+static const char * DLL_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-shared -L. -fPIC -pipe -O0", "-shared -L. -fPIC -pipe -O0"  };
+static const char * EXE_LINK_OPTION_RELEASE[] = { "/BASE:" BASE_ADDRESS " /NOLOGO /LARGEADDRESSAWARE /INCREMENTAL:NO", "-L. -Wl,-E -fPIC -pipe -O0", "-L. -fPIC -pipe -O0 -Wl,-export_dynamic -v" };
 
-static const char * LINK_TARGET[] = { " /out:", " -o " };
-static const char * DEFAULT_CC_LOCATION[] = { ".", "." };
+static const char * LINK_TARGET[] = { " /out:", " -o ", " -o " };
+static const char * DEFAULT_CC_LOCATION[] = { ".", ".", "." };
 
 //===========================================================================
 
@@ -136,7 +124,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
         DBGLOG("Include directory set to %s", includes);
         DBGLOG("Library directory set to %s", libs);
     }
-    compilerRoot.set(path ? path : targetCompiler==GccCppCompiler ? "/usr" : ".\\CL");
+    compilerRoot.set(path ? path : targetCompiler!=Vs6CppCompiler ? "/usr" : ".\\CL");
     stdIncludes.set(includes);
     stdLibs.clear();
     for (;;)
@@ -379,7 +367,7 @@ void CppCompiler::addCompileOption(const char * option)
 
 void CppCompiler::setPrecompileHeader(bool _pch)
 {
-    if (targetCompiler!=GccCppCompiler)
+    if (targetCompiler==Vs6CppCompiler)
         throw MakeStringException(0, "precompiled header generation only supported for g++ and compatible compilers");
     precompileHeader = _pch;
 }
@@ -407,7 +395,7 @@ void CppCompiler::addLibrary(const char * libName)
     const char* lname = libName;
     const char * quote;
     StringBuffer path, tail; // NOTE - because of the (hacky) code below that sets lname to point within tail.str(), this must NOT be moved inside the if block
-    if (targetCompiler == GccCppCompiler)
+    if (targetCompiler != Vs6CppCompiler)
     {
         // It seems gcc compiler doesn't like things like -lmydir/libx.so
         splitFilename(libName, &path, &path, &tail, &tail);
@@ -829,6 +817,7 @@ void CppCompiler::removeTemporaries()
             break;
         }
     case GccCppCompiler:
+    case ClangCppCompiler:
         {
             temp.clear().append(coreName).append(".res.s");
             if (checkFileExists(temp.str()))
@@ -877,6 +866,7 @@ void CppCompiler::setOptimizeLevel(unsigned level)
         }
         break;
     case GccCppCompiler:
+    case ClangCppCompiler:
         switch (level)
         {
         case 0: option = "-O0"; break;  // do not optimize
@@ -896,7 +886,7 @@ void CppCompiler::setStripSymbols(bool stripSymbols)
 {
     if (stripSymbols)
     {
-        if (targetCompiler == GccCppCompiler)
+        if ((targetCompiler == GccCppCompiler) || (targetCompiler == ClangCppCompiler))
             addLinkOption("-s");
     }
 }

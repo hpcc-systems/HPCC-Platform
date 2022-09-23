@@ -1,18 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="DPIntro">
   <title><emphasis>Data Patterns Introduction</emphasis></title>
 
-  <para>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-  eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-  commodo consequat.</para>
+  <para>Data Patterns is a Library and ECL bundle that primarily serves as a
+  data profiling tool to give an analysis of a dataset in HPCC.</para>
 
-  <para>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
-  dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-  proident, sunt in culpa qui officia deserunt mollit anim id est
-  laborum.</para>
+  <para>In many places within this document "Data Patterns" is used to mean
+  "data profiling".</para>
 
-  <para/>
+  <para>Data Patterns allows you to see if values in fields of the dataset are
+  optimally represented by its data type, and other general information such
+  as extreme values, averages, and other numerical constants. One record is
+  provided for each field analyzed.</para>
+
+  <para>The analysis provided by the tool allows you to gain an understanding
+  of the general sense of a dataset.</para>
+
+  <para>Data Patterns can be invoked in three ways:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Inside ECL Watch</para>
+    </listitem>
+
+    <listitem>
+      <para>Using the Std.DataPatterns Module in ECL</para>
+    </listitem>
+
+    <listitem>
+      <para>Using the Data Patterns Bundle</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>The installations have differences. Using Data Patterns in ECL watch
+  only supports data profiling and optimization but automatically includes
+  visualizations. The ECL Standard Library does not support visualizations.
+  </para>
+
+  <para>There are numerous parameters for controlling output and
+  analysis:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Analyze all rows of a data set or just a sample</para>
+    </listitem>
+
+    <listitem>
+      <para>Analyze all fields or certain fields only</para>
+    </listitem>
+
+    <listitem>
+      <para>Enable only specified profiling checks</para>
+    </listitem>
+
+    <listitem>
+      <para>Specify returned value counts</para>
+    </listitem>
+  </itemizedlist>
 </chapter>

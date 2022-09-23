@@ -1592,7 +1592,7 @@ public:
             attr->setPropInt64("@size",totalsize);
 
         // NB: for remote useDafilesrv use case
-        IPropertyTree *remoteStoragePlaneMeta = at->queryPropTree("_remoteStoragePlane");
+        IPropertyTree *remoteStoragePlaneMeta = at ? at->queryPropTree("_remoteStoragePlane") : nullptr;
         if (remoteStoragePlaneMeta)
         {
             assertex(1 == clusters.ordinality()); // only one cluster per logical remote file supported/will have resolved to 1
@@ -3701,9 +3701,19 @@ public:
     {
         return xml->queryProp("storageapi/@account");
     }
-    virtual const char * queryStorageContainer() const override
+    virtual const char * queryStorageContainer(unsigned stripeNumber) const override
     {
-        return xml->queryProp("storageapi/@container");
+        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
+            stripeNumber++;
+        StringBuffer path;
+        path.appendf("storageapi/containers[%d]", stripeNumber);
+        const char * container = xml->queryProp(path.str());
+        if (isEmptyString(container))
+        {
+            const char * name = xml->queryProp("@name");
+            throw makeStringExceptionV(-1, "No container provided for %s: path %s", name, path.str());
+        }
+        return container;
     }
     virtual StringBuffer & getSASToken(StringBuffer & token) const override
     {

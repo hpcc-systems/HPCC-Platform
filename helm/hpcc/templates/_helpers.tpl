@@ -221,7 +221,14 @@ storage:
   {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
    {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
   {{- end -}}
-
+  {{- /* Make sure there is enough containers provided if storageapi used*/ -}}
+  {{- if $plane.storageapi -}}
+   {{- $numDevices := int ( $plane.numDevices | default $plane.numDevices | default 1 ) }}
+   {{- $numContainers := len ($plane.storageapi.containers | default list) -}}
+   {{- if ne $numDevices $numContainers -}}
+    {{- $_ := fail (printf "Storage plane '%s' requires %d containers under storageapi" $plane.name $numDevices) -}}
+   {{- end -}}
+  {{- end -}}
   {{- /* Remove pvc-related properties from the aliases*/ -}}
   {{- if $plane.aliases }}
    {{- $_ := set $planeYaml "aliases" (deepCopy $plane.aliases) -}}
@@ -572,6 +579,12 @@ vaults:
       url: {{ $vault.url }}
     {{- if index $vault "client-secret" }}
       client-secret: {{ index $vault "client-secret" }}
+    {{- end -}}
+    {{- if index $vault "appRoleId" }}
+      appRoleId: {{ index $vault "appRoleId" }}
+    {{- end -}}
+    {{- if index $vault "appRoleSecret" }}
+      appRoleSecret: {{ index $vault "appRoleSecret" }}
     {{- end -}}
   {{- end -}}
  {{- end -}}
@@ -926,7 +939,7 @@ Generate service entries for TLS
   tls: {{ (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
   issuer: {{ $issuerName }}
   selfSigned: {{ (hasKey $issuerSpec "selfSigned") }}
-  caCert: {{ (or (hasKey $issuerSpec "ca") (hasKey $issuerSpec "vault")) }}
+  caCert: {{ (not (hasKey $issuerSpec "selfSigned")) }}
         {{- end -}}
       {{- end -}}
     {{- end }}

@@ -27,6 +27,7 @@ interface IWorkUnit;
 
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType);
 extern HQLCPP_API void dumpActivityCounts();
+extern HQLCPP_API CompilerType queryCompilerType(IConstWorkUnit * wu, CompilerType defaultCompiler);
 
 enum EclGenerateTarget { 
     EclGenerateNone, 

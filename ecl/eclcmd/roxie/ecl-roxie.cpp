@@ -534,6 +534,18 @@ public:
                 continue;
             if (iter.matchFlag(optDeleteFiles, ECLOPT_DELETE_FILES))
                 continue;
+            StringAttr plane;
+            if (iter.matchOption(plane, ECLOPT_PLANES))
+            {
+                optPlanes.appendList(plane.get(), ",");
+                continue;
+            }
+            StringAttr cluster;
+            if (iter.matchOption(cluster, ECLOPT_ROXIES))
+            {
+                optProcessClusterList.appendList(cluster.get(), ",");
+                continue;
+            }
             eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
             if (ind != EclCmdOptionMatch)
                 return ind;
@@ -544,9 +556,14 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
-        if (optProcess.isEmpty())
+        if (optProcess.isEmpty() && optProcessClusterList.length()==0)
         {
             fputs("process cluster must be specified.\n", stderr);
+            return false;
+        }
+        if (!optProcess.isEmpty() && optProcessClusterList.length()!=0)
+        {
+            fprintf(stderr, "process cluster should not be specified if %s used.\n", ECLOPT_ROXIES);
             return false;
         }
         if (optDeleteRecursive)
@@ -563,6 +580,8 @@ public:
         setRpcOptions(req->rpc());
 
         req->setProcessCluster(optProcess);
+        req->setCheckPlanes(optPlanes);
+        req->setProcessClusterList(optProcessClusterList);
         req->setCheckPackageMaps(optCheckPackageMaps);
 
         Owned<IClientDFUXRefUnusedFilesResponse> resp = client->DFUXRefUnusedFiles(req);
@@ -632,7 +651,9 @@ public:
             "\n"
             "ecl roxie unused-files <process_cluster>\n"
             " Options:\n"
-            "   <process_cluster>      The roxie process cluster to reload\n",
+            "   <process_cluster>      The roxie process cluster to check, or\n"
+            "   --roxies <list>        A comma-separated list of roxies to check\n"
+            "   --planes <list>        A comma-separated list of data planes to search for files\n",
             stdout);
 
         fputs("\n"
@@ -651,6 +672,8 @@ private:
     bool optDeleteFiles;
     bool optDeleteSubFiles;
     bool optDeleteRecursive;
+    StringArray optPlanes;
+    StringArray optProcessClusterList;
 };
 
 enum class RoxieMemLockAction { lock=0, unlock=1, get=2 };

@@ -125,7 +125,7 @@ This property provides an optional sub-directory within \<prefix> to use as the 
 This provides the name of any secret that is required to access the plane's storage.  It it currently unused, but may be required once inter-cluster remote file access is finished.
 
 * defaultSprayParts: \<number>  
-Earlier we commented that storage planes are similar to clusters in bare-metal.  One key difference is that bare-metal clusters are associated with a fixed size thor, whereas a storage plane is not.  This property allows you to define the number of parts that a file is split into when it is imported/sprayed.  The default is currently 1, but that will soon change to the size of the largest thor cluster.
+Earlier we commented that storage planes are similar to clusters in bare-metal.  One key difference is that bare-metal clusters are associated with a fixed size thor, whereas a storage plane is not.  This property allows you to define the number of parts that a file is split into when it is imported/sprayed.  The default is the size of the largest thor cluster.
 
 * cost:  
 This property allows you to specify the costs associated with the storage so that the platform can calculate an estimate of the costs associated with each file.  Currently only the cost at rest is supported, transactional costs will be added later.  E.g.

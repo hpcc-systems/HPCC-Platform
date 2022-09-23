@@ -262,6 +262,7 @@ MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classc
 MemberFunction::MemberFunction(HqlCppTranslator & _translator, BuildCtx & classctx, const char * text, unsigned _flags) : translator(_translator), ctx(classctx), flags(_flags)
 {
     stmt = ctx.addQuotedFunction(text, (flags & MFdynamicproto) != 0);
+    stmt->setIncomplete(true);
     if (flags & MFoptimize)
         stmt->setForceOptimize(true);
     else if (flags & MFnooptimize)
@@ -300,6 +301,8 @@ void MemberFunction::finish()
 
     if ((flags & MFopt) && (stmt->numChildren() == 0))
         stmt->setIncluded(false);
+    else
+        stmt->setIncomplete(false);
 
     stmt = nullptr;
 }
@@ -2299,6 +2302,7 @@ void ActivityInstance::buildPrefix()
     {
         s.clear().append("struct ").append(className).append(" : public CThor").append(activityArgName).append("Arg").append(baseClassExtra);
         classStmt = classctx.addQuotedCompound(s, ";");
+        classStmt->setIncomplete(true);
 
         if (subgraph)
             classctx.associate(*subgraph);
@@ -2397,6 +2401,9 @@ void ActivityInstance::buildSuffix()
 
         classctx.addQuoted(s);
     }
+
+    if (classStmt)
+        classStmt->setIncomplete(false);
 
     if (numChildQueries)
         addAttributeInt(WaNumChildQueries, numChildQueries);
@@ -3174,9 +3181,8 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
 {
     bool returnByReference = false;
     CHqlBoundTarget target;
-    OwnedHqlExpr returnValue;
-
-    switch (type->getTypeCode())
+    type_t tc = type->getTypeCode();
+    switch (tc)
     {
     case type_varstring:
     case type_varunicode:
@@ -3193,8 +3199,17 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_groupedtable:
         if (!hasStreamedModifier(type))
         {
-            initBoundStringTarget(target, type, "__lenResult", "__result");
-            returnByReference = true;
+            if (hasLinkCountedModifier(type))
+            {
+                target.count.setown(createVariable("__countResult", LINK(sizetType)));
+                target.expr.setown(createVariable("__result", makeReferenceModifier(LINK(type))));
+                returnByReference = true;
+            }
+            else
+            {
+                initBoundStringTarget(target, type, "__lenResult", "__result");
+                returnByReference = true;
+            }
         }
         break;
     case type_row:
@@ -3207,12 +3222,9 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_transform:
         {
             OwnedHqlExpr dataset = createDataset(no_anon, LINK(::queryRecord(type)));
-            BoundRow * row = bindSelf(ctx, dataset, "__self");
-            target.expr.set(row->querySelector());
-            returnByReference = true;
-            //A transform also returns the size that was generated (which will be bound to a local variable)
-            returnValue.setown(getRecordSize(row->querySelector()));
-            break;
+            BoundRow * selfCursor = bindSelf(ctx, dataset, "__self");
+            doBuildTransformBody(ctx, value, selfCursor);
+            return;
         }
     case type_set:
         target.isAll.setown(createVariable("__isAllResult", makeBoolType()));
@@ -3224,13 +3236,23 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
         target.expr.setown(createVariable("__result", makeReferenceModifier(LINK(type))));
         returnByReference = true;
         break;
+    case type_boolean:
+    case type_int:
+    case type_real:
+    case type_char:
+    case type_swapint:
+        break;
+    default:
+        reportError(nullptr, ECODETEXT(HQLERR_UnsupportedReturnType), type->queryTypeName());
+        break;
     }
 
     if (returnByReference)
     {
-        buildExprAssign(ctx, target, value);
-        if (returnValue)
-            buildReturn(ctx, returnValue);
+        if ((tc == type_table) || (tc == type_groupedtable))
+            buildDatasetAssign(ctx, target, value);
+        else
+            buildExprAssign(ctx, target, value);
     }
     else
         buildReturn(ctx, value, type);
@@ -12614,13 +12636,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
-    if (instance->isLocal && !joinToSelf)
+    if (instance->isLocal && !joinToSelf && targetThor())
     {
         if (hasKnownDistribution(dataset1) && hasKnownDistribution(dataset2))
         {
             if (!isDistributedCoLocally(dataset1, dataset2, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             {
-                reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_DistributionNotMatchLocalJoin));
+                reportWarning(CategoryUnexpected, SeverityUnknown, queryLocation(expr), ECODETEXT(HQLWRN_DistributionNotMatchLocalJoin), instance->activityId);
             }
         }
     }
@@ -18359,21 +18381,70 @@ IHqlExpression * HqlCppTranslator::doBuildRegexCompileInstance(BuildCtx & ctx, I
 
     BuildCtx * initCtx = &ctx;
     BuildCtx * declareCtx = &ctx;
+    BuildCtx tempCtx(ctx);
+    bool declareExternal = false;
     if (pattern->isConstant())
-        getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false);
+    {
+        //defaultStaticRegex means regexes are generated globally rather than within an activity.  allowStaticRegex allows the feature to be disabled.
+        if ((options.defaultStaticRegex && options.allowStaticRegex) || !getInvariantMemberContext(ctx, &declareCtx, &initCtx, true, false))
+        {
+            if (options.allowStaticRegex)
+            {
+                //Declare the regular expression globally - and include it in the header if spanning multiple cpp files
+                tempCtx.set(declareAtom);
+                tempCtx.setNextPriority(RegexPatternPrio);
+                declareExternal = options.spanMultipleCpp;
+
+                declareCtx = &tempCtx;
+                initCtx = nullptr;
+
+                match = declareCtx->queryMatchExpr(searchKey);
+                if (match)
+                    return match->queryExpr();
+            }
+        }
+        else
+            initCtx = nullptr;
+    }
 
     StringBuffer tempName;
     getUniqueId(tempName.append("regex"));
     ITypeInfo * type = makeClassType(isUnicode ? "rtlCompiledUStrRegex" : "rtlCompiledStrRegex");
     OwnedHqlExpr regexInstance = createVariable(tempName.str(), type);
-    declareCtx->addDeclare(regexInstance);
+    if (!initCtx)
+    {
+        OwnedITypeInfo patternType;
+        if (isUnicode)
+            patternType.setown(makeVarUnicodeType(UNKNOWN_LENGTH, nullptr));
+        else
+            patternType.set(unknownVarStringType);
 
-    HqlExprArray args;
-    args.append(*LINK(regexInstance));
-    args.append(*LINK(pattern));
-    args.append(*createConstant(isCaseSensitive));
-    IIdAtom * func = isUnicode ? regexNewSetUStrPatternId : regexNewSetStrPatternId;
-    buildFunctionCall(*initCtx, func, args);
+        OwnedHqlExpr castPattern = ensureExprType(pattern, patternType);
+        CHqlBoundExpr boundPattern;
+        buildExpr(ctx, castPattern, boundPattern);
+
+        IHqlStmt * declare = declareCtx->addDeclare(regexInstance);
+        declare->addExpr(LINK(boundPattern.expr));
+        declare->addExpr(createConstant(isCaseSensitive));
+        declare->addOption(classAtom);
+
+        if (declareExternal)
+        {
+            BuildCtx protoctx(*code, mainprototypesAtom);
+            protoctx.addDeclareExternal(regexInstance);
+        }
+    }
+    else
+    {
+        declareCtx->addDeclare(regexInstance);
+
+        HqlExprArray args;
+        args.append(*LINK(regexInstance));
+        args.append(*LINK(pattern));
+        args.append(*createConstant(isCaseSensitive));
+        IIdAtom * func = isUnicode ? regexNewSetUStrPatternId : regexNewSetStrPatternId;
+        buildFunctionCall(*initCtx, func, args);
+    }
     declareCtx->associateExpr(searchKey, regexInstance);
 
     return regexInstance;
@@ -18675,12 +18746,14 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     BuildCtx optimizectx(*code, includeAtom);
     switch (options.targetCompiler)
     {
-#ifndef __APPLE__
     case GccCppCompiler:
         optimizectx.addQuoted("#define NOOPTIMIZE __attribute__((optimize(0)))");
         optimizectx.addQuoted("#define OPTIMIZE __attribute__((optimize(3)))");
         break;
-#endif
+    case ClangCppCompiler:
+        optimizectx.addQuoted("#define NOOPTIMIZE");
+        optimizectx.addQuoted("#define OPTIMIZE");
+        break;
     default:
         optimizectx.addQuoted("#define NOOPTIMIZE");
         optimizectx.addQuoted("#define OPTIMIZE");
@@ -18689,7 +18762,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 
 
     BuildCtx classctx(*code, goAtom);
-    classctx.addQuotedCompoundLiteral("struct MyEclProcess : public EclProcess", ";");
+    IHqlStmt * mainClass = classctx.addQuotedCompoundLiteral("struct MyEclProcess : public EclProcess", ";");
+    mainClass->setIncomplete(true);
 
     classctx.addQuotedLiteral("virtual unsigned getActivityVersion() const override { return ACTIVITY_INTERFACE_VERSION; }");
 
@@ -18748,6 +18822,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
 
     OwnedHqlExpr returnExpr = getSizetConstant(maxSequence);
     performFunc.ctx.addReturn(returnExpr);
+
+    mainClass->setIncomplete(false);
 }
 
 //---------------------------------------------------------------------------

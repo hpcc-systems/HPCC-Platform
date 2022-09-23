@@ -533,7 +533,7 @@
       </sect3>
     </sect2>
 
-    <sect2 id="Az-AccessECLWatch">
+    <sect2 id="Az-ToAccessECLWatch">
       <title>Accessing ECLWatch</title>
 
       <para>To access ECLWatch, an external IP for the ESP running ECLWatch is
