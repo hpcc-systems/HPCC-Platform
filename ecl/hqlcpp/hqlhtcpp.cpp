@@ -12614,7 +12614,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
-    if (instance->isLocal && !joinToSelf)
+    if (instance->isLocal && !joinToSelf && targetThor())
     {
         if (hasKnownDistribution(dataset1) && hasKnownDistribution(dataset2))
         {
