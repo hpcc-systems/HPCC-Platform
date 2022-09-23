@@ -151,6 +151,7 @@ public:
     void                        selectContainer();
     void                        selectElse(IHqlStmt * filter);
     void                        selectPass(IHqlStmt * pass);
+    void                        selectGlobalContext();
     void                        setNextConstructor()    { setNextPriority(ConPrio); }
     void                        setNextDestructor()     { setNextPriority(DesPrio); }
     void                        setNextNormal()         { setNextPriority(NormalPrio); }
@@ -169,6 +170,7 @@ protected:
     void                        appendToOutermostScope(HqlStmt * next);
     void                        init(HqlStmts * _root);
     bool                        isChildOf(HqlStmt * stmt, HqlStmts * stmts);
+    bool                        isGlobalContext() const;
     void                        recordDefine(HqlStmt * declare);
     IHqlStmt *                  recursiveGetBestContext(HqlStmts * searchStmts, HqlExprCopyArray & required);
     void                        selectCompound(IHqlStmt * stmt);
@@ -222,6 +224,7 @@ public:
     virtual unsigned        numChildren() const = 0;
     virtual IHqlStmt *      queryChild(unsigned index) const = 0;
     virtual IHqlExpression *queryExpr(unsigned index) const = 0;
+    virtual bool            hasOption(IAtom * name) const = 0;
 
 //used when creating the statement graph
     virtual void            mergeScopeWithContainer() = 0;
@@ -230,6 +233,7 @@ public:
     virtual void            setIncluded(bool _included) = 0;
     virtual void            finishedFramework() = 0;
     virtual void            addOption(IAtom * name) = 0;
+    virtual void            addExpr(IHqlExpression * expr) = 0;
 };
 
 class HqlCppTranslator;

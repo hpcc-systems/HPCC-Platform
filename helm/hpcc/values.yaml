@@ -171,8 +171,8 @@ storage:
   #   storageapi:                           # Optional information to allow access to storage api
   #     type: azurefile | azureblob
   #     account: <account-name>             # azure storage account name
-  #     container: <container>              # azure container name
   #     secret: <secret-for-sas-token>      # secret name (under secrets/storage) for accessing SAS token
+  #     containers: [ <container-list> ]    # a list of containers
 
   - name: dali
     storageClass: ""

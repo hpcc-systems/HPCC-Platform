@@ -5,6 +5,7 @@ import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { FileParts } from "./FileParts";
 import { useFile, useDefFile } from "../hooks/file";
+import { useUserTheme } from "../hooks/theme";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl, replaceUrl } from "../util/history";
 import { FileBlooms } from "./FileBlooms";
@@ -34,6 +35,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     tab = "summary"
 }) => {
 
+    const { themeV9 } = useUserTheme();
     const [file] = useFile(cluster, logicalFile);
     React.useEffect(() => {
         if (file?.NodeGroup && cluster === undefined) {
@@ -84,7 +86,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Queries} itemKey="queries" style={pivotItemStyle(size, 0)}>
                 <Queries filter={{ FileName: logicalFile }} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length} headerButtonProps={{ disabled: isDFUWorkunit }} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length ?? 0} headerButtonProps={isDFUWorkunit ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} style={pivotItemStyle(size, 0)}>
                 <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="history" style={pivotItemStyle(size, 0)}>

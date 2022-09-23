@@ -227,6 +227,7 @@
 #define HQLERR_CannotFilterLimitInsideActivity  4215
 #define HQLERR_OutputLimitMaxExceeded           4216
 #define HQLERR_OutputLimitFutureMaxExceeded     4217
+#define HQLERR_UnsupportedReturnType            4218
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -538,6 +539,7 @@
 #define HQLERR_CannotFilterLimitInsideActivity_Text "Cannot filter a non keyed limit within a compound activity"
 #define HQLERR_OutputLimitMaxExceeded_Text      "Dali result outputs are restricted to an absolute maximum of %u MB (%u MB specified by option). A huge dali result usually indicates the ECL needs altering."
 #define HQLERR_OutputLimitFutureMaxExceeded_Text "In the next platform version dali result outputs will be restricted to an absolute maximum of %u MB (%u MB specified by option). A huge dali result usually indicates the ECL needs altering."
+#define HQLERR_UnsupportedReturnType_Text       "Function returning type %s is not currently supported"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
@@ -578,7 +580,7 @@
 #define HQLWRN_OutputScalarInsideChildQuery_Text "Output(%s) of single value inside a child query has undefined behaviour"
 #define HQLWRN_GlobalDatasetFromChildQuery_Text "Global dataset expression (%s) is used in a child query"
 #define HQLWRN_NestedSequentialUseOrdered_Text  "Using ORDERED instead of SEQUENTIAL for child actions"
-#define HQLWRN_DistributionNotMatchLocalJoin_Text "Input distributions do not appear to match the local join condition"
+#define HQLWRN_DistributionNotMatchLocalJoin_Text "Input distributions do not appear to match the local join condition in activity %u"
 
 #define HQLERR_DistributionVariableLengthX_Text "DISTRIBUTION does not support variable length field '%s'"
 #define HQLERR_DistributionUnsupportedTypeXX_Text "DISTRIBUTION does not support field '%s' with type %s"

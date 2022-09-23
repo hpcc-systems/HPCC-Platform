@@ -1609,6 +1609,7 @@ extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromXml(const char *XML)
 extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(ILoadedDllEntry * dll);
 extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromFile(const char * filename);
 extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
+extern WORKUNIT_API IWorkUnitFactory * createUnexpectedWorkUnitFactory();
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void exportWorkUnitToBinary(const IConstWorkUnit *wu, MemoryBuffer & serialized);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats);

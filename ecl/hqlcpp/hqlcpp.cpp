@@ -1872,6 +1872,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.generateIR, "generateIR", false),
         DebugOption(options.generateIRAfterTransform, "generateIRAfterTransform", false),
         DebugOption(options.irOptions, "irOptions", EclIR::TIRexpandSimpleTypes),
+        DebugOption(options.allowStaticRegex, "allowStaticRegex", true),
+        DebugOption(options.defaultStaticRegex, "defaultStaticRegex", targetRoxie()),   // Roxie queries are loaded once, and shared.  It makes sense to only compile once.
     };
 
     //get options values from workunit
@@ -1921,17 +1923,7 @@ void HqlCppTranslator::cacheOptions()
     }
 
     code->cppInfo.append(* new CppFileInfo(0));
-    options.targetCompiler = DEFAULT_COMPILER;
-    if (wu()->hasDebugValue("targetGcc"))
-        options.targetCompiler = wu()->getDebugValueBool("targetGcc", false) ? GccCppCompiler : Vs6CppCompiler;
-
-    SCMStringBuffer compilerText;
-    wu()->getDebugValue("targetCompiler", compilerText);
-    for (CompilerType iComp = (CompilerType)0; iComp < MaxCompiler; iComp = (CompilerType)(iComp+1))
-    {
-        if (stricmp(compilerText.s.str(), compilerTypeText[iComp]) == 0)
-            options.targetCompiler = iComp;
-    }
+    options.targetCompiler = queryCompilerType(wu(), DEFAULT_COMPILER);
 
     if (getDebugFlag("optimizeProjects", true))
     {
@@ -12147,12 +12139,14 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx & ctx, IHqlExpression
                 "#endif\n");
     }
 
-    MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
-    if (location)
-        userFunc.ctx.addLine(locationFilename, startLine);
-    userFunc.ctx.addQuoted(body);
-    if (location)
-        userFunc.ctx.addLine();
+    {
+        MemberFunction userFunc(*this, ctx, proto, MFdynamicproto);
+        if (location)
+            userFunc.ctx.addLine(locationFilename, startLine);
+        userFunc.ctx.addQuoted(body);
+        if (location)
+            userFunc.ctx.addLine();
+    }
 
     if (addPragmas)
     {
@@ -12462,70 +12456,88 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &ctx, IHqlExpressi
 
 void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
 {
-    IHqlExpression * outofline = funcdef->queryChild(0);
-    assertex(outofline->getOperator() == no_outofline);
-    IHqlExpression * bodyCode = outofline->queryChild(0);
-
-    StringBuffer proto;
-    BuildCtx funcctx(*code, helperAtom);
-    if (options.spanMultipleCpp)
+    try
     {
-        const bool inChildActivity = true;  // assume the worst
-        OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, inChildActivity));
-        funcctx.addGroupPass(pass);
-    }
-    expandFunctionPrototype(proto, funcdef);
+        IHqlExpression * outofline = funcdef->queryChild(0);
+        assertex(outofline->getOperator() == no_outofline);
+        IHqlExpression * bodyCode = outofline->queryChild(0);
 
-    if (bodyCode->getOperator() == no_embedbody)
-    {
-        if (bodyCode->hasAttribute(_disallowed_Atom))
-            throwError(HQLERR_EmbeddedCppNotAllowed);
-
-        IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);
-        if (languageAttr)
+        StringBuffer proto;
+        BuildCtx funcctx(*code, helperAtom);
+        if (options.spanMultipleCpp)
         {
-            buildScriptFunctionDefinition(funcctx, funcdef, proto);
+            const bool inChildActivity = true;  // assume the worst
+            OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, inChildActivity));
+            funcctx.addGroupPass(pass);
         }
-        else
+        expandFunctionPrototype(proto, funcdef);
+
+        if (bodyCode->getOperator() == no_embedbody)
         {
-            bool isInline = bodyCode->hasAttribute(inlineAtom);
-            if (isInline)
+            if (bodyCode->hasAttribute(_disallowed_Atom))
+                throwError(HQLERR_EmbeddedCppNotAllowed);
+
+            IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);
+            if (languageAttr)
             {
-                if (options.spanMultipleCpp)
-                {
-                    BuildCtx funcctx2(*code, parentHelpersAtom);
-                    buildCppFunctionDefinition(funcctx2, bodyCode, proto);
-                }
-                else
-                    buildCppFunctionDefinition(funcctx, bodyCode, proto);
+                buildScriptFunctionDefinition(funcctx, funcdef, proto);
             }
             else
             {
-                BuildCtx funcctx2(*code, userFunctionAtom);
-                if (options.spanMultipleCpp)
+                bool isInline = bodyCode->hasAttribute(inlineAtom);
+                if (isInline)
                 {
-                    OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, false));
-                    funcctx2.addGroupPass(pass);
+                    if (options.spanMultipleCpp)
+                    {
+                        BuildCtx funcctx2(*code, parentHelpersAtom);
+                        buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                    }
+                    else
+                        buildCppFunctionDefinition(funcctx, bodyCode, proto);
                 }
-                buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                else
+                {
+                    BuildCtx funcctx2(*code, userFunctionAtom);
+                    if (options.spanMultipleCpp)
+                    {
+                        OwnedHqlExpr pass = getSizetConstant(beginFunctionGetCppIndex(0, false));
+                        funcctx2.addGroupPass(pass);
+                    }
+                    buildCppFunctionDefinition(funcctx2, bodyCode, proto);
+                }
             }
         }
-    }
-    else
-    {
-        MemberFunction func(*this, funcctx, proto, MFdynamicproto);
-
-        //MORE: Need to work out how to handle functions that require the context.
-        //Need to create a class instead.
-        if (functionBodyUsesContext(outofline))
+        else
         {
-            func.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
-            func.ctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
+            MemberFunction func(*this, funcctx, proto, MFdynamicproto);
+
+            //MORE: Need to work out how to handle functions that require the context.
+            //Need to create a class instead.
+            if (functionBodyUsesContext(outofline))
+            {
+                func.ctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
+                func.ctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
+            }
+            OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
+            newCode.setown(foldHqlExpression(newCode));
+            ITypeInfo * returnType = funcdef->queryType()->queryChildType();
+            doBuildUserFunctionReturn(func.ctx, returnType, newCode);
         }
-        OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
-        newCode.setown(foldHqlExpression(newCode));
-        ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-        doBuildUserFunctionReturn(func.ctx, returnType, newCode);
+    }
+    catch (IError *)
+    {
+        throw;
+    }
+    catch (IException * e)
+    {
+        IIdAtom * id = funcdef->queryId();
+        if (!id)
+            throw;
+
+        Owned<IException> cleanupE(e);
+        StringBuffer msg;
+        e->errorMessage(msg);
+        throw makeStringExceptionV(e->errorCode(), "%s in function %s", msg.str(), str(id));
     }
 }
 

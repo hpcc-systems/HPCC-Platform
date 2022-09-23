@@ -135,13 +135,21 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         <Controller
             control={control} name="ZAPFileName"
             render={({
-                field: { onChange, name: fieldName, value }
+                field: { onChange, name: fieldName, value },
+                fieldState: { error }
             }) => <TextField
                     name={fieldName}
                     onChange={onChange}
                     label={nlsHPCC.FileName}
                     value={value}
+                    errorMessage={error && error?.message}
                 />}
+            rules={{
+                pattern: {
+                    value: /^[-a-z0-9_\.]+$/i,
+                    message: nlsHPCC.ValidationErrorTargetNameInvalid
+                }
+            }}
         />
         <Controller
             control={control} name="Wuid"

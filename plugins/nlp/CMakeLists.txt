@@ -27,6 +27,9 @@ SET(CMAKE_UNITY_BUILD FALSE)
 
 if(USE_NLP)
 
+    # too many warnings about register qualifiers, and clashes of std::byte with the definition of byte in platform.h
+    set(CMAKE_CXX_STANDARD 11)
+
     include_directories(nlp-engine/cs/include)
     include_directories(nlp-engine/include)
     include_directories(nlp-engine/include/Api)

@@ -20,6 +20,26 @@
 #include "ws_resourcesService.hpp"
 #include "exception_util.hpp"
 
+constexpr const char* svcSpec = "spec";
+constexpr const char* svcSpecType = "type";
+constexpr const char* svcSpecExternalIPs = "externalIPs";
+constexpr const char* svcSpecExternalName = "externalName";
+constexpr const char* svcSpecClusterIPs = "clusterIPs";
+constexpr const char* svcSpecPorts = "ports";
+constexpr const char* svcSpecPortsName = "name";
+constexpr const char* svcSpecPortsProtocol = "protocol";
+constexpr const char* svcSpecPortsPort = "port";
+constexpr const char* svcSpecPortsNodePort = "nodePort";
+constexpr const char* svcSpecPortsTargetPort = "targetPort";
+constexpr const char* svcSpecTypeServiceTypeClusterIP = "ClusterIP";
+constexpr const char* svcSpecTypeServiceTypeNodePort = "NodePort";
+constexpr const char* svcSpecTypeServiceTypeLoadBalancer = "LoadBalancer";
+constexpr const char* svcSpecTypeServiceTypeExternalName = "ExternalName";
+
+constexpr const char* svcStatusLoadBalancerIngress = "status/loadBalancer/ingress";
+constexpr const char* svcStatusLoadBalancerIngressIP = "ip";
+constexpr const char* svcStatusLoadBalancerIngressHostName = "hostname";
+
 bool CWsResourcesEx::onServiceQuery(IEspContext& context, IEspServiceQueryRequest& req, IEspServiceQueryResponse& resp)
 {
     try
@@ -101,6 +121,9 @@ bool CWsResourcesEx::onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequ
                 annotation->setName(decodedAnnotationName);
                 annotationList.append(*annotation.getLink());
             }
+            double version = context.getClientVersion();
+            if (version >= 1.02)
+                getServiceConnection(outputItemTree, discoveredWebLink->updateConnection());
             discoveredWebLinks.append(*discoveredWebLink.getLink());
         }
 #endif
@@ -110,4 +133,70 @@ bool CWsResourcesEx::onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequ
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return false;
+}
+
+void CWsResourcesEx::getServiceConnection(IPropertyTree& rawDataTree, IEspServiceConnection& connection)
+{
+    IPropertyTree* specTree = rawDataTree.queryPropTree(svcSpec);
+    if (!specTree)
+        return;
+
+    connection.setType(specTree->queryProp(svcSpecType));
+    getServiceExternalIP(rawDataTree, connection);
+    getServiceConnectionPorts(specTree, connection);
+}
+
+void CWsResourcesEx::getServiceExternalIP(IPropertyTree& rawDataTree, IEspServiceConnection& connection)
+{
+    IPropertyTree* specTree = rawDataTree.queryPropTree(svcSpec);
+    const char* type = specTree->queryProp(svcSpecType);
+    if (isEmptyString(type))
+        return;
+
+    StringArray externalIPs;
+    if (strieq(type, svcSpecTypeServiceTypeClusterIP) || strieq(type, svcSpecTypeServiceTypeNodePort))
+    {
+        if (specTree->hasProp(svcSpecExternalIPs))
+            externalIPs.append(specTree->queryProp(svcSpecExternalIPs));
+        else
+            connection.setExternalIPStatus(CExternalIPStatus_None);
+    }
+    else if (strieq(type, svcSpecTypeServiceTypeLoadBalancer))
+    {
+        Owned<IPropertyTreeIterator> itr= rawDataTree.getElements(svcStatusLoadBalancerIngress);
+        ForEach(*itr)
+        {
+            IPropertyTree& tree = itr->query();
+            if (tree.hasProp(svcStatusLoadBalancerIngressIP))
+                externalIPs.append(tree.queryProp(svcStatusLoadBalancerIngressIP));
+            else if (tree.hasProp(svcStatusLoadBalancerIngressHostName))
+                externalIPs.append(tree.queryProp(svcStatusLoadBalancerIngressHostName));
+        }
+        if (specTree->hasProp(svcSpecExternalIPs))
+            externalIPs.append(specTree->queryProp(svcSpecExternalIPs));
+        if (externalIPs.length() == 0)
+            connection.setExternalIPStatus(CExternalIPStatus_Pending);
+    }
+    else if (strieq(type, svcSpecTypeServiceTypeExternalName))
+        externalIPs.append(specTree->queryProp(svcSpecExternalName));
+    else
+        connection.setExternalIPStatus(CExternalIPStatus_Unknown);
+    if (externalIPs.length() > 0)
+        connection.setExternalIPs(externalIPs);
+}
+
+void CWsResourcesEx::getServiceConnectionPorts(IPropertyTree* specTree, IEspServiceConnection& connection)
+{
+    IArrayOf<IConstServicePorts> ports;
+    Owned<IPropertyTreeIterator> itr= specTree->getElements(svcSpecPorts);
+    ForEach(*itr)
+    {
+        IPropertyTree& tree = itr->query();
+        Owned<IEspServicePorts> port = createServicePorts();
+        port->setName(tree.queryProp(svcSpecPortsName));
+        port->setProtocol(tree.queryProp(svcSpecPortsProtocol));
+        port->setPort(tree.getPropInt(svcSpecPortsPort));
+        ports.append(*port.getClear());
+    }
+    connection.setPorts(ports);
 }

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2017 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,21 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-real storedval := 1 : stored('s');
+#ifndef _WS_WUHOTSPOT_HPP
+#define _WS_WUHOTSPOT_HPP
 
-real scoreFunc(real a, real b) := 1;   // defines the prototype for the function argument
+#include "workunit.hpp"
 
-real scoreIt(scoreFunc func, real a, real b) := BEGINC++
-    return func(ctx,a-1.0,b-1.0) * func(ctx,a+1.0,b+1.0);
-ENDC++;
-    
-real doSum(real a, real b) := DEFINE (a + b + storedval);
+void processAnalyseHotspot(IConstWorkUnit * wu, IEspWUAnalyseHotspotRequest &req, IEspWUAnalyseHotspotResponse &resp);
 
-ds := DATASET(100, transform({unsigned id}, SELF.id := COUNTER));
-c := COUNT(NOFOLD(ds));
-
-real doSum2(real a, real b) := DEFINE (a + b + c);
-
-output(scoreIt(doSum, 10, 20));
-output(scoreIt(doSum2, 100, 200));
-output(scoreIt(doSum2, 1, 3));
+#endif

@@ -287,6 +287,7 @@ export = {
         Exception: "Exception",
         ExcludeIndexes: "Exclude Indexes",
         ExpireDays: "Expire in (days)",
+        ExpirationDate: "Expiration Date",
         FailIfNoSourceFile: "Fail If No Source File",
         Fatal: "Fatal",
         Favorites: "Favorites",

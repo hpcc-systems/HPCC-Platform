@@ -512,12 +512,21 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             ForEachItemIn(i, errors)
                 addWorkunitException(workunit, &errors.item(i), false);
 
-            VStringBuffer failText("Compile/Link failed for %s (see %s for details)",wuid,cclogfileName.str());
             Owned<IWUException> msg = workunit->createException();
             msg->setExceptionSource("eclccserver");
             msg->setExceptionCode(3000);
-            msg->setExceptionMessage(failText);
-            msg->setSeverity(SeverityError);
+            if (numFailed != 0)
+            {
+                VStringBuffer failText("Compile/Link failed for %s (see %s for details)",wuid,cclogfileName.str());
+                msg->setExceptionMessage(failText);
+                msg->setSeverity(SeverityError);
+            }
+            else
+            {
+                VStringBuffer failText("Compile/Link for %s generated warnings (see %s for details)",wuid,cclogfileName.str());
+                msg->setExceptionMessage(failText);
+                msg->setSeverity(SeverityWarning);
+            }
         }
         return numFailed;
     }

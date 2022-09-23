@@ -36,9 +36,10 @@ public:
     virtual unsigned                numChildren() const override;
     virtual IHqlStmt *              queryChild(unsigned index) const override;
     virtual IHqlExpression *        queryExpr(unsigned index) const override;
+    virtual bool                    hasOption(IAtom * name) const override;
 
             HqlStmts *              queryContainer();
-            void                    addExpr(IHqlExpression * expr);
+    virtual void                    addExpr(IHqlExpression * expr) override;
             void                    killExprs() { exprs.kill(); }
             bool                    isIncomplete()  { return incomplete; }
             unsigned                queryPriority() { return priority; }

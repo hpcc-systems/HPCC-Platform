@@ -600,10 +600,11 @@
               "description": "Secret id",
               "type": "string"
             },
-            "container": {
-              "description": "Container name",
-              "type": "string"
-            }
+	    "containers": {
+              "type": "array",
+	      "description": "List of containers",
+              "items": { "type": "string" }
+	    }
           }
         }
       }

@@ -1050,6 +1050,8 @@ ESPResponse [exceptions_inline] WUDetailsMetaResponse
     ESParray<ESPStruct WUDetailsActivityInfo, Activity> Activities;
 };
 
+// ----------------------------------------------------------------------------------
+
 ESPrequest [nil_remove] WUEclDefinitionActionRequest
 {
     ESParray<string> EclDefinitions;
@@ -1088,6 +1090,8 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
     [min_ver("1.89")] string DfuPublisherState;
 };
 
+// ----------------------------------------------------------------------------------
+
 ESPrequest [nil_remove] WUGetPluginsRequest
 {
 };
@@ -1096,4 +1100,27 @@ ESPresponse [exceptions_inline] WUGetPluginsResponse
 {
     ESParray<ESPstruct WUEclPluginsInFolder> Plugins;
 };
+
+// ----------------------------------------------------------------------------------
+
+ESPrequest [nil_remove] WUAnalyseHotspotRequest
+{
+    string Wuid;
+    [optional] string RootScope;
+    bool OptOnlyActive(false);
+    bool OnlyCriticalPath(false);
+    bool IncludeProperties(true);
+    bool IncludeStatistics(true);
+    double ThresholdPercent(1.0);
+    [optional] ESPstruct WUPropertyOptions PropertyOptions;       // Which attribute details are returned
+};
+
+ESPresponse [exceptions_inline] WUAnalyseHotspotResponse
+{
+    string RootScope;
+    int64 RootTime;
+    ESParray<ESPstruct WUResponseScope, Activity> Activities;
+    ESParray<ESPstruct WUResponseScope, Dependency> Dependencies;
+};
+
 // ----------------------------------------------------------------------------------

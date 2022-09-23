@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,21 +15,26 @@
     limitations under the License.
 ############################################################################## */
 
-real storedval := 1 : stored('s');
 
-real scoreFunc(real a, real b) := 1;   // defines the prototype for the function argument
+import Std.Str;
 
-real scoreIt(scoreFunc func, real a, real b) := BEGINC++
-    return func(ctx,a-1.0,b-1.0) * func(ctx,a+1.0,b+1.0);
-ENDC++;
-    
-real doSum(real a, real b) := DEFINE (a + b + storedval);
+string MyFunc(string s) := DEFINE MAP(
+    REGEXFIND('--', s) => Str.FindReplace(s, '--', '-'),
+    REGEXFIND(' - ', s) => Str.FindReplace(s, ' - ', ' '),
+    s);
 
-ds := DATASET(100, transform({unsigned id}, SELF.id := COUNTER));
-c := COUNT(NOFOLD(ds));
+string MyFunc2(string s) := DEFINE FUNCTION
+    first := s[1];
+    last := s[LENGTH(s)-1];
+    RETURN first + last + last + first;
+END;
 
-real doSum2(real a, real b) := DEFINE (a + b + c);
+string text1 := 'abc -- def -- g - hi' : stored('text1');
+string text2 := 'abc - def - ghi' : stored('text2');
 
-output(scoreIt(doSum, 10, 20));
-output(scoreIt(doSum2, 100, 200));
-output(scoreIt(doSum2, 1, 3));
+
+ordered(
+    output(MyFunc(text1));
+    output(MyFunc(text2));
+    output(MyFunc2(text1));
+);

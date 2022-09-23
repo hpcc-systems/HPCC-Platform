@@ -1008,6 +1008,42 @@ IHqlStmt * BuildCtx::selectBestContext(IHqlExpression * expr)
     return recursiveGetBestContext(curStmts, inScope);
 }
 
+bool BuildCtx::isGlobalContext() const
+{
+    HqlStmts * stmts = curStmts;
+    for (;;)
+    {
+        HqlStmt * container = stmts->queryStmt();
+        if (!container)
+            return true;
+        switch (container->getStmt())
+        {
+        case group_stmt:
+        case pass_stmt:
+            break;
+        default:
+            return false;
+        }
+        stmts = container->queryContainer();
+    }
+}
+
+void BuildCtx::selectGlobalContext()
+{
+    HqlStmt * nestedStmt = nullptr;
+    for (;;)
+    {
+        if (isGlobalContext())
+        {
+            if (nestedStmt)
+                setNextPriority(nestedStmt->queryPriority());
+            return;
+        }
+        nestedStmt = curStmts->queryStmt();
+        curStmts = nestedStmt->queryContainer();
+    }
+}
+
 //---------------------------------------------------------------------------
 
 HqlStmts::HqlStmts(HqlStmt * _owner) : owner(_owner)
@@ -1289,6 +1325,11 @@ bool HqlStmt::hasChildren() const
     return false;
 }
             
+bool HqlStmt::hasOption(IAtom * name) const
+{
+    return hasAttribute(name, exprs);
+}
+
 bool HqlStmt::isIncluded() const
 {
     if (!included)

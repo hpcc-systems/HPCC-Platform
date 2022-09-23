@@ -25,11 +25,39 @@ ESPStruct HPCCService
     bool TLSSecure;
 };
 
+ESPStruct ServicePorts
+{
+    string Name;
+    string Protocol;
+    unsigned Port;
+};
+
+ESPenum ExternalIPStatus : string
+{
+    Unknown("Unknown"),
+    None("None"),
+    Pending("Pending")
+};
+
+//The ExternalIPsEx or ClusterIPsEx is used when ExternalIPs or ClusterIPs is empty.
+//The value is based on the existing https://github.com/kubernetes/kubernetes.
+ESPStruct ServiceConnection
+{
+    string Type;
+    ESParray<string> ExternalIPs;
+    ESPenum ExternalIPStatus ExternalIPStatus; //Use this field when ExternalIPs is empty. 
+                                               //Set to 'none' for spec type 'ClusterIP' and spec type 'NodePort';
+                                               //set to 'pending' for spec type 'LoadBalancer'; leave it empty for spec type 'ExternalName';
+                                               //set to 'unknown' for unknown spec types.
+    ESParray<ESPstruct ServicePorts> Ports;
+};
+
 ESPStruct DiscoveredWebLink
 {
     string ServiceName;
     string NameSpace;
     ESParray<ESPstruct NamedValue> Annotations;
+    [min_ver("1.02")] ESPstruct ServiceConnection Connection;
 };
 
 ESPStruct ConfiguredWebLink
@@ -60,7 +88,7 @@ ESPresponse [nil_remove, exceptions_inline] WebLinksQueryResponse
     ESParray<ESPstruct ConfiguredWebLink> ConfiguredWebLinks;
 };
 
-ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsResources
+ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsResources
 {
     ESPmethod [auth_feature("ResourceQueryAccess:READ")] ServiceQuery(ServiceQueryRequest, ServiceQueryResponse);
     ESPmethod [auth_feature("ResourceQueryAccess:READ"), min_ver("1.01")] WebLinksQuery(WebLinksQueryRequest, WebLinksQueryResponse);

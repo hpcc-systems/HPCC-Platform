@@ -902,3 +902,19 @@ void recordQueueFilePrefixes(IWorkUnit * wu, IPropertyTree * configuration)
         wu->setApplicationValue("prefix", name, prefix, true);
     }
 }
+
+CompilerType queryCompilerType(IConstWorkUnit * wu, CompilerType defaultCompiler)
+{
+    CompilerType targetCompiler = defaultCompiler;
+    if (wu->hasDebugValue("targetGcc"))
+        targetCompiler = wu->getDebugValueBool("targetGcc", false) ? GccCppCompiler : Vs6CppCompiler;
+
+    SCMStringBuffer compilerText;
+    wu->getDebugValue("targetCompiler", compilerText);
+    for (CompilerType iComp = (CompilerType)0; iComp < MaxCompiler; iComp = (CompilerType)(iComp+1))
+    {
+        if (stricmp(compilerText.s.str(), compilerTypeText[iComp]) == 0)
+            targetCompiler = iComp;
+    }
+    return targetCompiler;
+}

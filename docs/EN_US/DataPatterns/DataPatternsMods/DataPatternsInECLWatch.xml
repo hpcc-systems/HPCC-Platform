@@ -1,18 +1,190 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="DPinECLWatch">
   <title><emphasis>Data Patterns In ECL Watch </emphasis></title>
 
-  <para>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-  eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-  commodo consequat.</para>
+  <para>In this example, we'll use a file created by GenData.ecl from the
+  Programmer's Guide.</para>
 
-  <para>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
-  dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-  proident, sunt in culpa qui officia deserunt mollit anim id est
-  laborum.</para>
+  <orderedlist>
+    <listitem>
+      <para>Have a running HPCC Platform. This can be a single or multinode
+      HPCC Systems platform deployment.</para>
+    </listitem>
 
-  <para></para>
+    <listitem>
+      <para>Open ECL Watch in your browser using the following URL:
+      http://nnn.nnn.nnn.nnn:pppp (where nnn.nnn.nnn.nnn is your ESP Server's
+      IP Address and pppp is the port. The default port is 8010).</para>
+    </listitem>
+
+    <listitem>
+      <para>Open the Logical Files list by clicking on the third icon on the
+      left-hand side.</para>
+
+      <graphic fileref="../../images/DP007.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Find the file you want, then click it to open the Logical Files
+      Details page.</para>
+
+      <graphic fileref="../../images/DP005.jpg"/>
+
+      <para><emphasis role="bold">Note</emphasis>: Within ECL Watch, only
+      datasets with known record definitions are supported. This is solely an
+      ECL Watch limitation. You can invoke DataPatterns.Profile()
+      programmatically on any kind of valid dataset, including an index
+      file.</para>
+    </listitem>
+
+    <listitem>
+      <para>The first time you open the Data Patterns tab, a notification
+      tells you that an analysis is not available. Press the Analyze button to
+      generate a Profile analysis. Once complete, the analysis
+      displays.</para>
+
+      <graphic fileref="../../images/DP003.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Click on the title “Data Patterns” on the bar located near the top
+      of the page. Clicking on the Data Patterns title will generate a report
+      of the data file.</para>
+    </listitem>
+  </orderedlist>
+
+  <para>Several columns organize each row of information, and each row of
+  information represents every attribute in the Profile result.</para>
+
+  <para>Here is a short description of each column:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>Type information, Cardinality Count &amp; Filled Count.</para>
+    </listitem>
+
+    <listitem>
+      <para>Min, Avg, Max Length (for string attributes) or Mean, Std.
+      Deviation, Quartiles (for numeric attributes).</para>
+    </listitem>
+
+    <listitem>
+      <para>Quartile bell curve and candlestick</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>only shown for numeric attributes.</para>
+        </listitem>
+
+        <listitem>
+          <para>this column is not displayed if there are no numeric
+          attributes.</para>
+        </listitem>
+      </itemizedlist>
+    </listitem>
+
+    <listitem>
+      <para>Cardinality Breakdown listed by count descending</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>This column is shown for all data scalar data types. </para>
+        </listitem>
+
+        <listitem>
+          <para>this column is not displayed if there are no numeric
+          attributes.</para>
+        </listitem>
+      </itemizedlist>
+    </listitem>
+
+    <listitem>
+      <para>Popular Patterns</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>This column is shown for all data scalar data types. </para>
+        </listitem>
+
+        <listitem>
+          <para>this column is not displayed if there are no numeric
+          attributes.</para>
+        </listitem>
+      </itemizedlist>
+    </listitem>
+  </itemizedlist>
+
+  <para>For example:</para>
+
+  <graphic fileref="../../images/DP004.jpg"/>
+
+  <para>As seen in the “state” section, the cardinality of each state is
+  displayed. The cardinality breakdown is shown for attributes with a low
+  number of unique, non-nil values, showing each value and the number of
+  records that contain the value.</para>
+
+  <para><emphasis role="bold">Note</emphasis>: The lcbLimit parameter governs
+  what “low number” means</para>
+
+  <para>In this example, the cardinality for “NY” is 7%, meaning that 7% of
+  records contain the value “NY”.</para>
+
+  <para>The “Min Length'' displays the shortest length of a value, where null
+  values are ignored. In SET datatypes, however, “Min Length'' may display the
+  fewest number of elements in the set.</para>
+
+  <para>The “Max Length'' displays the longest length of a value, where null
+  values are also ignored. SET datatypes displays the largest number of
+  elements in the set.</para>
+
+  <para>For the “state” section, the Min and Max Lengths both have a value of
+  “2”, since all state abbreviations all consist of 2 letters in the
+  string.</para>
+
+  <para>The “Avg Length'' displays the average length of a value when
+  expressed. In SET datatypes, it is the average number of elements found in
+  the set.</para>
+
+  <para><emphasis role="bold">Optimize Results</emphasis></para>
+
+  <para>Optimizing results assigns the string the most efficient value based
+  on the Maximum Length contained in the specific section of the dataset by
+  rewriting the ECL code. The result is a reduced file size.</para>
+
+  <para>To optimize results, follow the steps below:</para>
+
+  <orderedlist>
+    <listitem>
+      <para>Choose a file to run Data Patterns with.</para>
+    </listitem>
+
+    <listitem>
+      <para>Click the “Optimize” button located near the top of the page.
+      Clicking the optimize button will make a pop-up appear.</para>
+
+      <graphic fileref="../../images/DP009.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Select a target from the drop-down menu.</para>
+
+      <graphic fileref="../../images/DP006.jpg"/>
+    </listitem>
+
+    <listitem>
+      <para>Click the button labeled "Optimize".</para>
+    </listitem>
+
+    <listitem>
+      <para>Check the optimized data file, the original file name with a
+      suffix of " :optimized ". Notice that the file size is smaller.</para>
+    </listitem>
+
+    <listitem>
+      <para>Click on the tab labeled "Data Patterns". The strings now have a
+      new and optimized value.</para>
+    </listitem>
+  </orderedlist>
 </chapter>
