@@ -32,6 +32,7 @@
 #include "hqlcpp.ipp"
 #include "hqlwcpp.hpp"
 #include "hqlwcpp.ipp"
+#include "hqlcatom.hpp"
 
 #define INDENT_SOURCE
 #define FILE_CHUNK_SIZE         65000
@@ -1997,7 +1998,6 @@ void HqlCppWriter::generateStmtCatch(IHqlStmt * stmt)
 void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
 {
     IHqlExpression * name = declare->queryExpr(0);
-    IHqlExpression * value = declare->queryExpr(1);
     
     ITypeInfo * type = name->queryType();
 
@@ -2017,7 +2017,8 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
     //    out.append("const ");
 
     size32_t typeSize = type->getSize();
-    bool useConstructor = false;
+    bool useCurlies = declare->hasOption(classAtom);
+    bool useConstructor = useCurlies;
     if (hasWrapperModifier(type))
     {
         ITypeInfo * builderModifier = queryModifier(type, typemod_builder);
@@ -2059,13 +2060,22 @@ void HqlCppWriter::generateStmtDeclare(IHqlStmt * declare)
             useConstructor = true;
     }
 
+    IHqlExpression * value = declare->queryExpr(1);
     if (value)
     {
         if (useConstructor)
         {
-            out.append("(");
-            generateExprCpp(value);
-            out.append(")");
+            out.append(useCurlies ? "{" : "(");
+            for (unsigned i=1; ; i++)
+            {
+                IHqlExpression * cur = declare->queryExpr(i);
+                if (!cur || cur->isAttribute())
+                    break;
+                if (i != 1)
+                    out.append(", ");
+                generateExprCpp(cur);
+            }
+            out.append(useCurlies ? "}" : ")");
         }
         else
         {

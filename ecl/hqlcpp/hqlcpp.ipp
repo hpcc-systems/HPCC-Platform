@@ -51,6 +51,7 @@ enum {
     EclTextPrio = 1000,         // has no dependencies on anything else
     HashFunctionPrio = 1100,
     TypeInfoPrio = 1200,
+    RegexPatternPrio = 1300,
     RowMetaPrio = 1500,         
     XmlTransformerPrio = 1700,
     SteppedPrio = 1800,
@@ -841,6 +842,8 @@ struct HqlCppOptions
     bool                generateDiskFormats = false;
     bool                generateIR = false;
     bool                generateIRAfterTransform = false;
+    bool                allowStaticRegex = true;
+    bool                defaultStaticRegex = false;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
