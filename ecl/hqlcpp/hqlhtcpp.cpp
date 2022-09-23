@@ -3174,9 +3174,8 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
 {
     bool returnByReference = false;
     CHqlBoundTarget target;
-    OwnedHqlExpr returnValue;
-
-    switch (type->getTypeCode())
+    type_t tc = type->getTypeCode();
+    switch (tc)
     {
     case type_varstring:
     case type_varunicode:
@@ -3193,8 +3192,17 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_groupedtable:
         if (!hasStreamedModifier(type))
         {
-            initBoundStringTarget(target, type, "__lenResult", "__result");
-            returnByReference = true;
+            if (hasLinkCountedModifier(type))
+            {
+                target.count.setown(createVariable("__countResult", LINK(sizetType)));
+                target.expr.setown(createVariable("__result", makeReferenceModifier(LINK(type))));
+                returnByReference = true;
+            }
+            else
+            {
+                initBoundStringTarget(target, type, "__lenResult", "__result");
+                returnByReference = true;
+            }
         }
         break;
     case type_row:
@@ -3207,12 +3215,9 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_transform:
         {
             OwnedHqlExpr dataset = createDataset(no_anon, LINK(::queryRecord(type)));
-            BoundRow * row = bindSelf(ctx, dataset, "__self");
-            target.expr.set(row->querySelector());
-            returnByReference = true;
-            //A transform also returns the size that was generated (which will be bound to a local variable)
-            returnValue.setown(getRecordSize(row->querySelector()));
-            break;
+            BoundRow * selfCursor = bindSelf(ctx, dataset, "__self");
+            doBuildTransformBody(ctx, value, selfCursor);
+            return;
         }
     case type_set:
         target.isAll.setown(createVariable("__isAllResult", makeBoolType()));
@@ -3224,13 +3229,23 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
         target.expr.setown(createVariable("__result", makeReferenceModifier(LINK(type))));
         returnByReference = true;
         break;
+    case type_boolean:
+    case type_int:
+    case type_real:
+    case type_char:
+    case type_swapint:
+        break;
+    default:
+        reportError(nullptr, ECODETEXT(HQLERR_UnsupportedReturnType), type->queryTypeName());
+        break;
     }
 
     if (returnByReference)
     {
-        buildExprAssign(ctx, target, value);
-        if (returnValue)
-            buildReturn(ctx, returnValue);
+        if ((tc == type_table) || (tc == type_groupedtable))
+            buildDatasetAssign(ctx, target, value);
+        else
+            buildExprAssign(ctx, target, value);
     }
     else
         buildReturn(ctx, value, type);
