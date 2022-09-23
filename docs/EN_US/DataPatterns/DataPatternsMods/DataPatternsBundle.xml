@@ -1,18 +1,601 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter id="DPBundle">
   <title><emphasis>Data Patterns Bundle</emphasis></title>
 
-  <para>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-  eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-  veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-  commodo consequat.</para>
+  <para>DataPatterns is an ECL bundle that provides additional data profiling
+  and research tools to an ECL programmer.</para>
 
-  <para>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum
-  dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
-  proident, sunt in culpa qui officia deserunt mollit anim id est
-  laborum.</para>
+  <sect1 id="DPBundleInstall">
+    <title>Installation</title>
 
-  <para></para>
+    <para>Depending on which IDE you are using, VS Code or the ECL IDE, follow
+    the appropriate steps below.</para>
+
+    <sect2>
+      <title>Installing in VS Code</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Open VS Code.</para>
+        </listitem>
+
+        <listitem>
+          <para>In the menu bar on the left, click the HPCC Systems
+          logo.</para>
+
+          <para><graphic fileref="../../images/DP001.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Under “Bundles”, you will see a bundle called
+          “DataPatterns”.</para>
+
+          <para><graphic fileref="../../images/DP002.jpg"/></para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the install link to install the bundle.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2>
+      <title>Installing in the ECL IDE</title>
+
+      <para>You may have to either navigate to the client tools bin directory
+      before executing the command, or use the full path to the ECL
+      tool.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Use the ECL command line tool to install the bundle.</para>
+
+          <programlisting>ecl bundle install https://github.com/hpcc-systems/DataPatterns.git </programlisting>
+        </listitem>
+
+        <listitem>
+          <para>After installation, all of the code here becomes available
+          after you import it in your ECL code:</para>
+
+          <programlisting>IMPORT DataPatterns;</programlisting>
+        </listitem>
+      </orderedlist>
+
+      <para>Complete instructions for managing ECL Bundles can be found in The
+      ECL IDE and HPCC Client Tools documentation.</para>
+
+      <para>Note that is possible to use this code without installing it as a
+      bundle. To do so, simply make it available within your IDE and just
+      ignore the Bundle.ecl file. With the Windows IDE, the DataPatterns
+      directory must not be a top-level item in your repository list; it needs
+      to be installed one level below the top level, such as within your "My
+      Files" folder.</para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="DPProfileBundle">
+    <title>Profile</title>
+
+    <para><emphasis role="bold">The Profile method in the bundle is identical
+    to the Profile method in the Standard Library. See ___: </emphasis></para>
+
+    <para><emphasis role="bold">Example:</emphasis></para>
+
+    <para>The code to use the method differs slightly:</para>
+
+    <programlisting>IMPORT DataPatterns;
+filePath := '~jd::pg::exampledata::people';
+ds := DATASET(filePath, RECORDOF(filePath, LOOKUP), flat);
+profileResults := DataPatterns.Profile(ds);
+OUTPUT(profileResults, ALL, NAMED('profileResults'));</programlisting>
+  </sect1>
+
+  <sect1 id="DPBundleProfile">
+    <title>NormalizeProfileResults</title>
+
+    <para><emphasis role="bold">The result of a call to PROFILE is a rich
+    dataset. There are several fields (depending on the features requested)
+    and some of them can include child datasets embedded for each field from
+    the dataset being profiled.</emphasis></para>
+
+    <para>In some circumstances, it would be advantageous to save the profile
+    results in a more normalized format. For instance, a normalized format
+    would allow the task of comparing one profile result to another to be much
+    easier.</para>
+
+    <para>NormalizeProfileResults() accepts only one argument: the dataset
+    representing the result of a call to PROFILE. The result is a dataset in
+    the following format:</para>
+
+    <programlisting>RECORD
+    STRING      attribute;  // Field from profiled dataset
+    STRING      key;        // Field from profile results
+    STRING      value;      // Value from profile results
+END;</programlisting>
+
+    <para>Some profile results are represented with embedded child datasets
+    (modes, cardinality breakdowns, text patterns, and correlations). When
+    normalizing, portions of these child datasets are converted to string
+    values delimited by the '|' character. If records within the child dataset
+    contain additional information, such as a record count, the additional
+    information is delimited with a ':' character.</para>
+
+    <para>Sample code:</para>
+
+    <para><programlisting>IMPORT DataPatterns;
+filePath := '~thor::mysampledata'; 
+ds := DATASET(filePath, RECORDOF(filePath, LOOKUP), FLAT); 
+profileResults := DataPatterns.Profile(ds); 
+normalizedResults := DataPatterns.NormalizeProfileResults(profileResults); 
+OUTPUT(normalizedResults, ALL, NAMED('normalizedResults')); </programlisting>profileResults:</para>
+
+    <para><informaltable>
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">attribute</emphasis></entry>
+
+              <entry>field1</entry>
+            </row>
+
+            <row>
+              <entry><emphasis
+              role="bold">given_attribute_type</emphasis></entry>
+
+              <entry>string</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">rec_count</emphasis></entry>
+
+              <entry>1000</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">fill_count</emphasis></entry>
+
+              <entry>1000</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">fill_rate</emphasis></entry>
+
+              <entry>100</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">popular_patterns</emphasis></entry>
+
+              <entry>data_patterns: AAAAAA : rec_count: 10 data_patterns: AAA
+              : rec_count: 5</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>normalizedResults:</para>
+
+    <informaltable>
+      <tgroup cols="3">
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">attribute</emphasis></entry>
+
+            <entry><emphasis role="bold">key </emphasis></entry>
+
+            <entry><emphasis role="bold">value</emphasis></entry>
+          </row>
+
+          <row>
+            <entry>field 1</entry>
+
+            <entry>given_attribute_type</entry>
+
+            <entry>string</entry>
+          </row>
+
+          <row>
+            <entry>field 1</entry>
+
+            <entry>rec_count</entry>
+
+            <entry>1000</entry>
+          </row>
+
+          <row>
+            <entry>field 1</entry>
+
+            <entry>fill_count</entry>
+
+            <entry>1000</entry>
+          </row>
+
+          <row>
+            <entry>field 1</entry>
+
+            <entry>fill_rate</entry>
+
+            <entry>100</entry>
+          </row>
+
+          <row>
+            <entry>field 1</entry>
+
+            <entry>popular_patterns</entry>
+
+            <entry>AAAAAA:10|AAA:5</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+  </sect1>
+
+  <sect1 id="DPBundleBRS">
+    <title>BestRecordStructure</title>
+
+    <para><emphasis role="bold">The BestRecordStructure method in the bundle
+    is identical to the BestRecordStructure method in the Standard Library.
+    See ___: </emphasis></para>
+
+    <para><emphasis role="bold">Example:</emphasis></para>
+
+    <para>The code to use the method differs slightly:</para>
+
+    <programlisting>IMPORT DataPatterns;
+filePath := '~jd::pg::exampledata::people';
+ds := DATASET(filePath, RECORDOF(filePath, LOOKUP), flat);
+BRSResults := DataPatterns.BestRecordStructure(ds);
+OUTPUT(BRSResults, ALL, NAMED('BRSResults'));</programlisting>
+  </sect1>
+
+  <sect1 id="DPBundleCardinality">
+    <title>Cardinality</title>
+
+    <para>A portion of PROFILE() deals with cardinality. If there is a
+    low-enough number of unique values within an attribute, PROFILE() will
+    automatically show those values along with the count of the number of
+    records with each value. But what if you're really interested in those
+    values and want to see them all? No matter how many there are? Enter the
+    CARDINALITY() function macro.</para>
+
+    <para>CARDINALITY() finds all the unique values in one or more fields and
+    displays the count of the number of records for each value, without
+    limitation on the number of fields or the number of found values. The
+    result is a simple three-field dataset:</para>
+
+    <programlisting>STRING      attribute;
+UTF8        value;
+UNSIGNED8   rec_count;</programlisting>
+
+    <para>The only required parameter to CARDINALITY() is a dataset to
+    process. You can optionally provide a comma-delimited string naming
+    specific fields, if you don't want to process all of the fields. You can
+    also limit the analysis to only a portion of the dataset (though that is
+    of probably limited usefulness).</para>
+
+    <para>Sample call:</para>
+
+    <para><programlisting>IMPORT DataPatterns;
+
+filePath := '~thor::mysampledata'; 
+ds := DATASET(filePath, RECORDOF(filePath, LOOKUP), FLAT); 
+cardinalityResults := DataPatterns.Cardinality(ds); 
+OUTPUT(cardinalityResults, NAMED('cardinalityResults'));</programlisting>See
+    the comments at the beginning of the Cardinality.ecl file for more
+    details.</para>
+  </sect1>
+
+  <sect1 id="DPBundleBenford">
+    <title>Data Validation Submodule</title>
+
+    <para>Validation exists as a submodule within DataPatterns. It contains
+    two function macros: VALIDATE() and FIX().</para>
+
+    <para>VALIDATE() provides an easy mechanism for testing expected field
+    values at the record level, then append those test results to each record
+    in a standardized layout. Tests are named, and associated with each test
+    is a bit of ECL that defines what a valid field should look like. Fields
+    with values that do not pass that test are flagged.</para>
+
+    <para>FIX() is the other half of the testing: Once you have the output
+    from VALIDATE() you will need to handle the failing field values somehow.
+    The FIX() function macro processes records with failures and gives you the
+    opportunity to correct the error or to omit the record entirely.</para>
+  </sect1>
+
+  <sect1 id="DPBundleBenford">
+    <title>Validation.Validate()</title>
+
+    <para>Validation checks are defined within a semicolon-delimited STRING.
+    Each check should be in the following format:</para>
+
+    <para><programlisting>&lt;test_name&gt;:&lt;test_ecl&gt;</programlisting></para>
+
+    <para>TEST_NAME should be a name somehow representing the check that is
+    being performed. The name will be included in the appended data if the
+    check fails. This name should clearly (but succinctly) describe what is
+    being tested. There is no requirement for a TEST_NAME to be unique (and
+    there some use cases where you may not want it unique at all) but, in
+    general, the name should be unique within a single VALIDATE() call. Names
+    should start with a letter and may contain letters, numbers, periods,
+    dashes, and underscores.</para>
+
+    <para>TEST_ECL is ECL code that performs the test. If a string literal is
+    included in the test then the apostrophes must be escaped because the test
+    is being defined within a string. If a REGEXFIND() or REGEXREPLACE()
+    function is used and anything within the pattern needs to be escaped then
+    the backslash must be double-escaped. ECL already requires a single escape
+    (\\. or \\d) but including it in a test here means you have to
+    double-escape the backslash: \\\\. or \\\\d.</para>
+
+    <para>The ECL code used during the test is executed within the scope of a
+    single dataset record. Syntax-wise, it is similar to creating an ECL
+    filter clause. Like a filter, the ECL should evaluate to a BOOLEAN result
+    and what you want to do is return TRUE if the data being tested is valid.
+    Invalid results, where the ECL returns FALSE, are what is appended to the
+    dataset.</para>
+
+    <para>VALIDATE() imports the Std ECL library, so all standard library
+    functions are available for use within a test. Also, because VALIDATE() is
+    a function macro, any function that is in scope when VALIDATE() is called
+    may also be used within a test. This provides quite a bit of flexibility
+    when it comes to writing tests. The example code below references
+    STARTSWITHAA() which is an example of one of these user-supplied
+    tests.</para>
+
+    <para>VALIDATE() also includes a few internally-defined functions for use
+    within your tests as a convenience. Some are coercion functions that alter
+    a field's value, others are test functions. These tests are not available
+    for use in your own custom, externally-defined tests.</para>
+
+    <para>Coercion helpers:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry><emphasis>OnlyDigit(s)</emphasis></entry>
+
+              <entry>Convert a single argument to a string and remove
+              everything but numeric digits; returns a STRING</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>OnlyChar(s)</emphasis></entry>
+
+              <entry>Convert a single argument to a string and remove
+              everything but numeric digits; returns a STRING</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>WithoutPunct(s)</emphasis></entry>
+
+              <entry>Convert a single argument to a UTF-8 string and remove
+              all punctuation characters; returns a UTF8 string</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Patternize(s)</emphasis></entry>
+
+              <entry>Convert a single argument to a UTF-8 string and remove
+              all punctuation characters; returns a UTF8 string lowercase
+              character -&gt; a uppercase character -&gt; A numeric digit
+              -&gt; 9 everything else -&gt; unchanged The result is returned
+              as a UTF8 string</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>Value testing helpers:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry><emphasis>StrLen(s)</emphasis></entry>
+
+              <entry>Convert a single argument to a UTF-8 string and return
+              its length as an unsigned integer</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>IsOnlyDigits(s)</emphasis></entry>
+
+              <entry>Return TRUE if every character in the value is a
+              digit</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>IsOnlyUppercase(s)</emphasis></entry>
+
+              <entry>Return TRUE if every character in the value is an
+              uppercase character</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>IsOnlyLowercase(s)</emphasis></entry>
+
+              <entry>Return TRUE if every character in the value is a
+              lowercase character</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>IsDecimalNumber(s)</emphasis></entry>
+
+              <entry>Return TRUE if the value is a number, possibly prefixed
+              by a negative sign, and possibly including a decimal
+              portion</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>Record-level testing helpers:</para>
+
+    <para><programlisting>AllFieldsFilled()   Tests every top-level field in the record by coercing
+                    the values to STRING and seeing if any of them are empty;
+                    returns TRUE if no field value is an empty string; note
+                    that this function accepts no argument</programlisting></para>
+
+    <para>Example test specifications:</para>
+
+    <para><programlisting> MyValueIsPos:my_value &gt; 0 // my_value must be greater than zero
+ SomeNumInRange:some_num BETWEEN 50 AND 100 // some_num must be 50..100
+ FIPSLength:StrLen(fips) = 5 // length of FIPS code must be 5
+ DatesOrdered:dateBegin &lt;= dateEnd // make sure dates are not flipped</programlisting>here
+    is a complete example:</para>
+
+    <para><programlisting>IMPORT DataPatterns;
+filePath := '~thor::stock_data.txt';
+DataRec := RECORD STRING tradedate; STRING exchangecode; STRING stocksymbol; 
+STRING openingprice; STRING highprice; STRING lowprice; STRING closingprice; 
+STRING sharestraded; STRING share_value; END;
+ds := DATASET(filePath, DataRec, CSV(SEPARATOR('\t'), HEADING(1)));
+// Custom, external field validation functions 
+StartsWithAA(STRING s) := s[1..2] = 'AA'; IsValidPrice(STRING
+ price) := NOT(REGEXFIND('^\d+?00$', price) AND (UNSIGNED)price &gt;= 10000);          
+checks := 'NonZeroLowPrice:(REAL)lowprice &gt; 0' + ';            
+NonZeroHighPrice:(REAL)highprice &gt; 0' + ';  
+LowPriceLessOrEqualToHighPrice:(REAL)lowprice &lt;= (REAL)highprice' + ';       
+OpeningPriceGreaterThanOne:(REAL)openingprice &gt; 1' + '; 
+OpeningPriceFormat:REGEXFIND(U8\'9+(\\.9{1,2})?\',          
+Patternize(openingprice))' + ';      
+OpeningPriceValid:IsValidPrice(openingprice)' + ';      
+ClosingPriceValid:IsValidPrice(closingprice)' + ';         
+SymbolStartsWithAA:StartsWithAA(stock_symbol)' + ';         
+EveryFieldPresent:AllFieldsFilled()' ;
+validationResult := DataPatterns.Validation.Validate(ds, specStr := checks); 
+OUTPUT(validationResult, {validationResult}, '~thor::stockdatavalidated', OVERWRITE, COMPRESSED);</programlisting></para>
+  </sect1>
+
+  <sect1 id="DPBundleBenford">
+    <title>Validation.Fix()</title>
+
+    <para>Fixes are defined within a semicolon-delimited STRING. Each fix
+    should be in the following format:</para>
+
+    <para><programlisting>&lt;membership_test&gt;:&lt;fix_ecl&gt;</programlisting></para>
+
+    <para>MEMBERSHIP_TEST is a logical clause testing whether one or more
+    tests from the VALIDATE() function is true for that record. The entries
+    here correspond to the TEST_NAME entries from the VALIDATE() function and
+    they can optionally form a boolean expression using AND and OR operators.
+    At its simplest, a MEMBERSHIP_TEST is just a single TEST_NAME entry and it
+    will be interpreted as the following ECL:</para>
+
+    <programlisting>('test_name' IN vaidation_results.violations)</programlisting>
+
+    <para>More complex boolean expressions will use that as the basis. For
+    instance, testing for "test_name_1 OR test_name_2" -- meaning, if either
+    of the two validation checks failed, execute the FIX_ECL code -- would be
+    interpreted as the following ECL:</para>
+
+    <para><programlisting> (('test_name_1' IN vaidation_results.violations)
+   OR
+   ('test_name_2' IN vaidation_results.violations))</programlisting>The NOT()
+    operator is also available, so testing for the absence of a validation is
+    supported.</para>
+
+    <para>FIX_ECL is ECL code that fixes the problem. The most basic fix is
+    redefining a field value (e.g. my_field := new_value_expression). If a
+    string literal is included in the fix then the apostrophes must be escaped
+    because it is being defined within a string. If a REGEXFIND() or
+    REGEXREPLACE() function is used and anything within the pattern needs to
+    be escaped then the backslash must be double-escaped. ECL already requires
+    a single escape (\\. or \\d) but including it in a test here means you
+    have to double-escape the backslash: \\\\. or \\\\d.</para>
+
+    <para>The ECL code used during the fix is executed within the scope of a
+    single dataset record. This means that the expression may reference any
+    field in the record. There is no need to include SELF or LEFT scoping
+    prefixes when citing a dataset field name.</para>
+
+    <para>FIX() imports the Std ECL library, so all standard library functions
+    are available for use within a fix. Also, because FIX() is a function
+    macro, any function that is in scope when FIX() is called may also be used
+    within a fix.</para>
+
+    <para>FIX() also includes a few internally-defined functions for use
+    within your fixes as a convenience:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <tbody>
+            <row>
+              <entry><emphasis>OnlyDigits(s) </emphasis></entry>
+
+              <entry>Convert a single argument to a UTF-8 string and remove
+              everything but numeric digits</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>OnlyDigits(s) </emphasis></entry>
+
+              <entry>Convert a single argument to a UTF-8 string and remove
+              everything but alphabetic characters</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>WithoutPunct(s) </emphasis></entry>
+
+              <entry>Convert a single argument to a UTF-8 string and remove
+              all punctuation characters</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Swap(f1, f2) </emphasis></entry>
+
+              <entry>Swap the contents of two named fields</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>SkipRecord() </emphasis></entry>
+
+              <entry>Remove the current record from the dataset</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>Here is a complete example:</para>
+
+    <para><programlisting>IMPORT DataPatterns;
+
+ValRec := RECORD UNSIGNED2 num_violations; SET OF STRING violations; END;
+
+LAYOUT := RECORD STRING tradedate; 
+   STRING exchangecode; STRING stocksymbol; 
+   STRING openingprice; 
+   STRING highprice; 
+   STRING lowprice; 
+   STRING closingprice; 
+   STRING sharestraded; 
+   STRING sharevalue; 
+   ValRec validationresults; 
+END;
+
+ds := DATASET('~thor::stockdatavalidated', LAYOUT, FLAT);
+
+repairs := 'LowPriceLessThanOrEqualToHighPrice:Swap(highprice, lowprice)' 
+           + '; OpeningPriceValid AND ClosingPriceValid:SkipRecord()' 
+           + '; OpeningPriceGreaterThanOne:opening_price := \'2\'' ;
+
+repairResults := DataPatterns.Validation.Fix(ds, specStr := repairs); 
+OUTPUT(repairResults, {repairResults}, '~thor::stockdatafixed', OVERWRITE, COMPRESSED); </programlisting></para>
+  </sect1>
+
+  <sect1 id="DPBundleTemplate">
+    <title>Profile() Testing</title>
+
+    <para><emphasis role="bold">Profile() Testing <indexterm>
+        <primary>Profile() Testing</primary>
+      </indexterm></emphasis></para>
+
+    <para>The data profiling code can be easily tested with the included Tests
+    module. hthor or ROXIE should be used to execute the tests, simply because
+    Thor takes a relatively long time to execute them. Here is how you invoke
+    the tests:</para>
+
+    <para><programlisting>If the tests pass then the execution will succeed and there will be no output. These tests may take some time to execute on Thor. They run much faster on either hthor or ROXIE, due to the use of small inline datasets.</programlisting></para>
+
+    <para>If the tests pass then the execution will succeed and there will be
+    no output. These tests may take some time to execute on Thor. They run
+    much faster on either hthor or ROXIE, due to the use of small inline
+    datasets.</para>
+  </sect1>
 </chapter>
