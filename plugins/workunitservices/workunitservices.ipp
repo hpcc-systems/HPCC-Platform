@@ -21,7 +21,7 @@
 // pure inlines - used by workunitservices and sasha to serialize rows
 
 
-#define WORKUNIT_SERVICES_BUFFER_MAX (0x100000-1024) 
+#define WORKUNIT_SERVICES_BUFFER_MAX (0x800000-1024)
 #define WUS_STATUS_OVERFLOWED   ((byte)1)
 
 

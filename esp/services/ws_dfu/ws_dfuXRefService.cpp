@@ -702,12 +702,8 @@ void CWsDfuXRefEx::findUnusedFilesWithDetailsInDFS(IEspContext &context, const c
     }
 }
 
-bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
+void CWsDfuXRefEx::getRoxieFiles(const char *process, bool checkPackageMaps, MapStringTo<bool> &usedFileMap)
 {
-    const char *process = req.getProcessCluster();
-    if (isEmptyString(process))
-        throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "process cluster not specified.");
-
     SocketEndpointArray servers;
 #ifdef _CONTAINERIZED
     StringBuffer epStr;
@@ -724,24 +720,58 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
     Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", ROXIECONTROLXREFTIMEOUT);
     if (!controlXrefInfo)
         throw MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "roxie cluster, not responding.");
-    MapStringTo<bool> usedFileMap;
     Owned<IPropertyTreeIterator> roxieFiles = controlXrefInfo->getElements("//File");
     ForEach(*roxieFiles)
         addLfnToUsedFileMap(usedFileMap, roxieFiles->query().queryProp("@name"));
 
-    if (req.getCheckPackageMaps())
+    if (checkPackageMaps)
         addUsedFilesFromPackageMaps(usedFileMap, process);
+}
+
+bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
+{
+    const char *process = req.getProcessCluster();
+    StringArray &processList = req.getProcessClusterList();
+    if (isEmptyString(process) && !processList.length())
+        throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "process cluster not specified.");
+    bool checkPackageMaps = req.getCheckPackageMaps();
+    MapStringTo<bool> usedFileMap;
+    if (!isEmptyString(process))
+        getRoxieFiles(process, checkPackageMaps, usedFileMap);
+    ForEachItemIn(i, processList)
+    {
+        getRoxieFiles(processList.item(i), checkPackageMaps, usedFileMap);
+    }
+
+    StringArray &checkPlanes = req.getCheckPlanes();
     if (!req.getGetFileDetails())
     {
         StringArray unusedFiles;
-        findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
+        if (checkPlanes.length())
+        {
+            ForEachItemIn(idx, checkPlanes)
+            {
+                findUnusedFilesInDFS(unusedFiles, checkPlanes.item(idx), usedFileMap);
+
+            }
+        }
+        else
+            findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
         resp.setUnusedFileCount(unusedFiles.length());
         resp.setUnusedFiles(unusedFiles);
     }
     else
     {
         IArrayOf<IEspDFULogicalFile> unusedLFs;
-        findUnusedFilesWithDetailsInDFS(context, process, usedFileMap, unusedLFs);
+        if (checkPlanes.length())
+        {
+            ForEachItemIn(idx, checkPlanes)
+            {
+                findUnusedFilesWithDetailsInDFS(context, checkPlanes.item(idx), usedFileMap, unusedLFs);
+            }
+        }
+        else
+            findUnusedFilesWithDetailsInDFS(context, process, usedFileMap, unusedLFs);
         resp.setUnusedFileCount(unusedLFs.length());
         resp.setUnusedFilesWithDetails(unusedLFs);
     }

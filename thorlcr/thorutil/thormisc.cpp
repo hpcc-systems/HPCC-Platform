@@ -671,11 +671,11 @@ public:
     {
         assertex(!isEmptyString(_rootDir) && !isEmptyString(_prefix) && !isEmptyString(_subDirName));
         CriticalBlock block(crit);
-        assertex(subDirPath.isEmpty());
         rootDir.set(_rootDir);
         addPathSepChar(rootDir);
         subDirName.set(_subDirName);
         prefix.set(_prefix);
+        // NB: subDirPath will be empty, unless there was a problem during the job ctor. Either way ok to clear/set.
         subDirPath.setf("%s%s", rootDir.str(), subDirName.str());
         bool ret = recursiveCreateDirectory(subDirPath);
         VStringBuffer msg("%s to create temp directory %s", ret ? "Succeeded" : "Failed", subDirPath.str());

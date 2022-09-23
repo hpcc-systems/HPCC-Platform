@@ -82,6 +82,21 @@
                           </xs:restriction>
                       </xs:simpleType>
                   </xs:attribute>
+                  <xs:attribute name="tls" use="optional" default="false">
+                      <xs:annotation>
+                          <xs:appinfo>
+                              <tooltip>Use TLS</tooltip>
+                              <title>Use TLS</title>
+                              <colIndex>5</colIndex>
+                          </xs:appinfo>
+                      </xs:annotation>
+                      <xs:simpleType>
+                          <xs:restriction base="xs:string">
+                              <xs:enumeration value="true"/>
+                              <xs:enumeration value="false"/>
+                          </xs:restriction>
+                      </xs:simpleType>
+                  </xs:attribute>
                 </xs:complexType>
               </xs:element>
               <xs:element name="Target" minOccurs="0" maxOccurs="unbounded">

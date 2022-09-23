@@ -185,6 +185,7 @@ function useFluentStoreGrid({
         });
         storeQuery.then(items => {
             setItems(items);
+            setSelection(selectionHandler.getSelection());
         });
     }, [count, selectionHandler, sorted, start, store], [query]);
 

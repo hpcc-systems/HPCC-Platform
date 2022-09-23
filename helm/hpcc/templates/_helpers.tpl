@@ -580,6 +580,12 @@ vaults:
     {{- if index $vault "client-secret" }}
       client-secret: {{ index $vault "client-secret" }}
     {{- end -}}
+    {{- if index $vault "appRoleId" }}
+      appRoleId: {{ index $vault "appRoleId" }}
+    {{- end -}}
+    {{- if index $vault "appRoleSecret" }}
+      appRoleSecret: {{ index $vault "appRoleSecret" }}
+    {{- end -}}
   {{- end -}}
  {{- end -}}
 {{- end -}}
@@ -933,7 +939,7 @@ Generate service entries for TLS
   tls: {{ (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
   issuer: {{ $issuerName }}
   selfSigned: {{ (hasKey $issuerSpec "selfSigned") }}
-  caCert: {{ (or (hasKey $issuerSpec "ca") (hasKey $issuerSpec "vault")) }}
+  caCert: {{ (not (hasKey $issuerSpec "selfSigned")) }}
         {{- end -}}
       {{- end -}}
     {{- end }}

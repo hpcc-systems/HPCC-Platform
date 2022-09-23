@@ -29,8 +29,6 @@ bool CDALIKVStore::createStore(const char * apptype, const char * storename, con
         throw MakeStringException(-1, "Unable to connect to DALI KeyValue store root: '%s'", DALI_KVSTORE_PATH);
 
     Owned<IPropertyTree> root = conn->getRoot();
-    if (!root.get())
-        throw MakeStringException(-1, "Unable to open DALI KeyValue store root: '%s'", DALI_KVSTORE_PATH);
 
     VStringBuffer xpath("Store[%s='%s'][1]", DALI_KVSTORE_NAME_ATT,  storename);
     if (root->hasProp(xpath.str()))
@@ -90,8 +88,6 @@ bool CDALIKVStore::set(const char * storename, const char * thenamespace, const 
         throw MakeStringException(-1, "DALI Keystore set(): Unable to connect to DALI KeyValue store path '%s'", xpath.str()); //rodrigo, not sure if this is too much info
 
     Owned<IPropertyTree> storetree = conn->getRoot();
-    if (!storetree.get())
-        throw MakeStringException(-1, "DALI KV Store set(): Unable to access store '%s'", storename); //this store doesn't exist
 
     int maxval = storetree->getPropInt(DALI_KVSTORE_MAXVALSIZE_ATT, 0);
     if (maxval > 0 && strlen(value) > maxval)
@@ -166,15 +162,11 @@ IPropertyTree * CDALIKVStore::getAllKeyProperties(const char * storename, const 
 
     xpath.appendf("/%s/%s", ns, key);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperties(): Unable to connect to DALI KeyValue store path '%s'", xpath.str()); //rodrigo, not sure if this is too much info
 
-    Owned<IPropertyTree> keytree = conn->getRoot();
-    if (!keytree.get())
-        throw MakeStringException(-1, "DALI KV Store fetchKeyProperties(): Unable to access key '%s'", key); //this store doesn't exist
-
-    return(keytree->getPropTree("."));
+    return conn->getRoot();
 }
 
 bool CDALIKVStore::fetchKeyProperty(StringBuffer & propval , const char * storename, const char * ns, const char * key, const char * property, ISecUser * username, bool global)
@@ -203,13 +195,11 @@ bool CDALIKVStore::fetchKeyProperty(StringBuffer & propval , const char * storen
 
     xpath.appendf("/%s/%s", ns, key);
 
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchKeyProperty(): Unable to connect to DALI KeyValue store path '%s'", xpath.str()); //rodrigo, not sure if this is too much info
 
     Owned<IPropertyTree> keytree = conn->getRoot();
-    if (!keytree.get())
-        throw MakeStringException(-1, "DALI KV Store fetchKeyProperty(): Unable to access key '%s'", key); //this store doesn't exist
 
     keytree->getProp(property,propval.clear());
     return true;
@@ -237,9 +227,6 @@ bool CDALIKVStore::deletekey(const char * storename, const char * thenamespace, 
         throw MakeStringException(-1, "DALI Keystore deletekey(): Unable to connect to DALI KeyValue store root path '%s'", DALI_KVSTORE_PATH);
 
     Owned<IPropertyTree> storetree = conn->getRoot();
-
-    if(!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore deletekey(): invalid store name '%s' detected!", storename);
 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
@@ -277,9 +264,6 @@ bool CDALIKVStore::deleteNamespace(const char * storename, const char * thenames
 
     Owned<IPropertyTree> storetree = conn->getRoot();
 
-    if(!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore deleteNamespace(): invalid store name '%s' detected!", storename);
-
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
     else
@@ -307,13 +291,11 @@ bool CDALIKVStore::fetchAllNamespaces(StringArray & namespaces, const char * sto
     ensureAttachedToDali(); //throws if in offline mode
 
     VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchAllNamespaces: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
 
     Owned<IPropertyTree> storetree = conn->getRoot();
-    if(!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore fetchAllNamespaces: invalid store name '%s' detected!", storename);
 
     if (global)
         xpath.setf("%s/*", DALI_KVSTORE_GLOBAL); //we're interested in the children of the namespace
@@ -345,14 +327,11 @@ bool CDALIKVStore::fetchKeySet(StringArray & keyset, const char * storename, con
     ensureAttachedToDali(); //throws if in offline mode
 
     VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchKeySet: Unable to connect to DALI KeyValue store path '%s'", DALI_KVSTORE_PATH);
 
     Owned<IPropertyTree> storetree = conn->getRoot();
-
-    if(!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore fetchKeySet: invalid store name '%s' detected!", storename);
 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
@@ -388,14 +367,11 @@ bool CDALIKVStore::fetch(const char * storename, const char * ns, const char * k
     ensureAttachedToDali(); //throws if in offline mode
 
     VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetch: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
 
     Owned<IPropertyTree> storetree = conn->getRoot();
-
-    if(!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore fetch: invalid store name '%s' detected!", storename);
 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
@@ -440,13 +416,11 @@ IPropertyTree * CDALIKVStore::getAllPairs(const char * storename, const char * n
     ensureAttachedToDali(); //throws if in offline mode
 
     VStringBuffer xpath("%s/Store[%s='%s']", DALI_KVSTORE_PATH, DALI_KVSTORE_NAME_ATT, storename);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetchAll: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
 
     Owned<IPropertyTree> storetree = conn->getRoot();
-    if (!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore fetchAll: invalid store name '%s' detected!", storename);
 
     if (global)
         xpath.set(DALI_KVSTORE_GLOBAL);
@@ -484,38 +458,35 @@ IPropertyTree * CDALIKVStore::getStores(const char * namefilter, const char * ow
         namefilter="*";
 
     VStringBuffer xpath("%s", DALI_KVSTORE_PATH);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT_KVSTORE);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT_KVSTORE);
     if (!conn)
         throw MakeStringException(-1, "DALI Keystore fetch: Unable to connect to DALI KeyValue store path '%s'", xpath.str());
 
     Owned<IPropertyTree> filteredstores = createPTree("Stores");
     Owned<IPropertyTree> storetree = conn->getRoot();
 
-    if(!storetree.get())
-        throw MakeStringException(-1, "DALI Keystore fetch: ");
+    StringBuffer name;
+    Owned<IPropertyTreeIterator> iter = storetree->getElements("*");
+    ForEach(*iter)
+    {
+        name.set(iter->query().queryProp(DALI_KVSTORE_NAME_ATT));
+        if (name.length() == 0 || !wildcardmatch(namefilter, name.str()))
+            continue;
 
-      StringBuffer name;
-      Owned<IPropertyTreeIterator> iter = storetree->getElements("*");
-      ForEach(*iter)
-      {
-          name.set(iter->query().queryProp(DALI_KVSTORE_NAME_ATT));
-          if (name.length() == 0 || !wildcardmatch(namefilter, name.str()))
-              continue;
-
-          if (!isEmptyString(ownerfilter))
-          {
-              const char * owner = iter->query().queryProp(DALI_KVSTORE_CREATEDBY_ATT);
-              if (!isEmptyString(owner) && !wildcardmatch(ownerfilter, owner))
-                  continue;
-          }
-          if (!isEmptyString(typefilter))
-          {
-              const char * type = iter->query().queryProp(DALI_KVSTORE_TYPE_ATT);
-              if (!isEmptyString(type) && !wildcardmatch(typefilter, type))
-                  continue;
-          }
-          filteredstores->addPropTree("Store", LINK(&iter->query()));
-      }
+        if (!isEmptyString(ownerfilter))
+        {
+            const char * owner = iter->query().queryProp(DALI_KVSTORE_CREATEDBY_ATT);
+            if (!isEmptyString(owner) && !wildcardmatch(ownerfilter, owner))
+                continue;
+        }
+        if (!isEmptyString(typefilter))
+        {
+            const char * type = iter->query().queryProp(DALI_KVSTORE_TYPE_ATT);
+            if (!isEmptyString(type) && !wildcardmatch(typefilter, type))
+                continue;
+        }
+        filteredstores->addPropTree("Store", LINK(&iter->query()));
+    }
     return(filteredstores.getClear());
 }
 
