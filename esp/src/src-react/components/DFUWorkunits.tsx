@@ -1,12 +1,13 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
 import * as domClass from "dojo/dom-class";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
 import * as Utility from "src/Utility";
+import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { useMyAccount } from "../hooks/user";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -48,13 +49,16 @@ const defaultUIState = {
 
 interface DFUWorkunitsProps {
     filter?: object;
+    sort?: QuerySortItem;
     store?: any;
 }
 
 const emptyFilter = {};
+const defaultSort = { attribute: "Wuid", descending: true };
 
 export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     filter = emptyFilter,
+    sort = defaultSort,
     store
 }) => {
 
@@ -66,10 +70,19 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const { Grid, selection, refreshTable, copyButtons } = useGrid({
-        store: store || ESPDFUWorkunit.CreateWUQueryStore({}),
-        query: formatQuery(filter, mine, currentUser),
-        sort: { attribute: "Wuid", descending: true },
+    const gridStore = React.useMemo(() => {
+        return store || ESPDFUWorkunit.CreateWUQueryStore({});
+    }, [store]);
+
+    const query = React.useMemo(() => {
+        return formatQuery(filter, mine, currentUser);
+    }, [filter, mine, currentUser]);
+
+    const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
+        persistID: "dfuworkunits",
+        store: gridStore,
+        query,
+        sort,
         filename: "dfuworkunits",
         columns: {
             col1: selector({
@@ -77,14 +90,12 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 selectorType: "checkbox"
             }),
             isProtected: {
-                renderHeaderCell: React.useCallback(function (node) {
-                    node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
-                }, []),
+                headerIcon: "LockSolid",
                 width: 25,
                 sortable: false,
                 formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
-                        return Utility.getImageHTML("locked.png");
+                        return <Icon iconName="LockSolid" />;
                     }
                     return "";
                 }, [])
@@ -94,7 +105,11 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 width: 180,
                 formatter: React.useCallback(function (ID, idx) {
                     const wu = ESPDFUWorkunit.Get(ID);
-                    return `<img src='${wu.getStateImage()}'>&nbsp;<a href='#/dfuworkunits/${ID}' class='dgrid-row-url'>${ID}</a>`;
+                    return <>
+                        <Image src={wu.getStateImage()} styles={{ root: { minWidth: "16px" } }} />
+                        &nbsp;
+                        <Link href={`#/dfuworkunits/${ID}`}>{ID}</Link>
+                    </>;
                 }, [])
             },
             Command: {
@@ -161,11 +176,11 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "protect", text: nlsHPCC.Protect, disabled: !uiState.hasNotProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Protect"); }
+            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Protect").then(() => refreshTable()); }
         },
         {
             key: "unprotect", text: nlsHPCC.Unprotect, disabled: !uiState.hasProtected,
-            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Unprotect"); }
+            onClick: () => { FileSpray.DFUWorkunitsAction(selection, "Unprotect").then(() => refreshTable()); }
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -217,5 +232,6 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 <DeleteConfirm />
             </>
         }
+        footer={<GridPagination />}
     />;
 };
