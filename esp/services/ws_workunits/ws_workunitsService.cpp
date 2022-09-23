@@ -46,6 +46,7 @@
 #include "fvdatasource.hpp"
 #include "fvresultset.ipp"
 #include "ws_wudetails.hpp"
+#include "ws_wuhotspot.hpp"
 #include "wuerror.hpp"
 #include "TpWrapper.hpp"
 #include "LogicFileWrapper.hpp"
@@ -4197,6 +4198,32 @@ bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req
     }
     return true;
 }
+
+
+bool CWsWorkunitsEx::onWUAnalyseHotspot(IEspContext &context, IEspWUAnalyseHotspotRequest &req, IEspWUAnalyseHotspotResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid(req.getWuid());
+        WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
+
+        PROGLOG("WUAnalyseHotspot: %s", wuid.str());
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+
+        processAnalyseHotspot(cw, req, resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
 
 static void getWUDetailsMetaProperties(IArrayOf<IEspWUDetailsMetaProperty> & properties)
 {

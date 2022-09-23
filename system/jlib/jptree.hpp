@@ -376,6 +376,9 @@ jlib_decl IPropertyTree *createPTreeFromYAMLString(const char *yaml, byte flags=
 jlib_decl IPropertyTree *createPTreeFromYAMLString(unsigned len, const char *yaml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromYAMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 
+jlib_decl void applyProperties(IPropertyTree * target, const IProperties * source);
+jlib_decl void applyProperty(IPropertyTree * target, const char * source);              // Process name[=value]
+
 #define YAML_HideRootArrayObject 0x04
 #define YAML_SortTags XML_SortTags
 #define YAML_Sanitize XML_Sanitize

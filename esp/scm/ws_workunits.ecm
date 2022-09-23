@@ -115,6 +115,7 @@ ESPservice [
     ESPmethod [cache_seconds(60), min_ver("1.74")] WUGetThorJobQueue(WUGetThorJobQueueRequest, WUGetThorJobQueueResponse);
     ESPmethod [cache_seconds(60), min_ver("1.74")] WUGetThorJobList(WUGetThorJobListRequest, WUGetThorJobListResponse);
     ESPmethod [cache_seconds(60), min_ver("1.79")] WUGetPlugins(WUGetPluginsRequest, WUGetPluginsResponse);
+    ESPmethod [min_ver("1.94")] WUAnalyseHotspot(WUAnalyseHotspotRequest, WUAnalyseHotspotResponse);
 };
 
 

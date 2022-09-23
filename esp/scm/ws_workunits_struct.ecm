@@ -839,6 +839,7 @@ ESPstruct [nil_remove] WUResponseScope
     [optional] string ScopeType;        // e.g. Activity, Edge
     [optional] ESParray<ESPstruct WUResponseProperty, Property> Properties;
     [optional, min_ver("1.76")] ESParray<ESPstruct WUResponseNote, Note> Notes;
+    [optional, min_ver("1.92")] string SinkActivity; // Only used by hotspot code
 };
 
 ESPStruct WUQueryConfigResult

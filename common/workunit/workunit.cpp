@@ -1362,6 +1362,22 @@ protected:
 };
 
 
+class NullExtra : public CInterfaceOf< IConstWUStatistic >
+{
+    virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const { return str; }
+    virtual IStringVal & getCreator(IStringVal & str) const { return str; }
+    virtual IStringVal & getFormattedValue(IStringVal & str) const { return str; }
+    virtual StatisticMeasure getMeasure() const { return SMeasureNone; }
+    virtual StatisticKind getKind() const { return StKindNone;}
+    virtual StatisticCreatorType getCreatorType() const { return SCTnone; }
+    virtual unsigned __int64 getValue() const { return 0; }
+    virtual unsigned __int64 getCount() const { return 0; }
+    virtual unsigned __int64 getMax() const { return 0;}
+    virtual const char * queryScope() const { return nullptr; }
+    virtual StatisticScopeType getScopeType() const { return SSTnone; }
+    virtual unsigned __int64 getTimestamp() const { return 0; }
+};
+static NullExtra nullExtra;
 
 /*
  * An implementation of IConstWUScopeIterator for the query graphs.
@@ -1495,6 +1511,18 @@ public:
                     visitor.noteHint(cur.queryProp("@name"), cur.queryProp("@value"));
                 }
             }
+            if (whichProperties & PTstatistics)
+            {
+                playAttribute(visitor, WaLabel);
+                Owned<IPropertyTreeIterator> attrs = cur.getElements("att");
+                ForEach(*attrs)
+                {
+                    IPropertyTree & cur = attrs->query();
+                    StatisticKind stat = queryStatisticKind(cur.queryProp("@name"), StKindNone);
+                    if (stat != StKindNone)
+                        visitor.noteStatistic(stat, cur.getPropInt64("@value"), nullExtra);
+                }
+            }
             break;
         }
         case SSTedge:
@@ -1508,6 +1536,7 @@ public:
                 playAttribute(visitor, WaSourceIndex);
                 playAttribute(visitor, WaTargetIndex);
                 playAttribute(visitor, WaIsDependency);
+                playAttribute(visitor, WaIsChildGraph);
             }
             break;
         }
@@ -6701,6 +6730,150 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, I
         return new CSecureWorkUnitFactory(getWorkUnitFactory(), secmgr, secuser);
     else
         return getWorkUnitFactory();
+}
+
+class CUnexpectedWorkUnitFactory : implements IWorkUnitFactory, public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    virtual bool initializeStore() override
+    {
+        throwUnexpected();
+    }
+    virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const override
+    {
+        throwUnexpected();
+    }
+    virtual unsigned validateRepository(bool fix) override
+    {
+        throwUnexpected();
+    }
+    virtual void deleteRepository(bool recreate) override
+    {
+        throwUnexpected();
+    }
+    virtual void createRepository() override
+    {
+        throwUnexpected();
+    }
+    virtual const char *queryStoreType() const override
+    {
+        throwUnexpected();
+    }
+    virtual StringArray &getUniqueValues(WUSortField field, const char *prefix, StringArray &result) const override
+    {
+        throwUnexpected();
+    }
+
+    virtual IWorkUnit* createNamedWorkUnit(const char *wuid, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual IWorkUnit* createWorkUnit(const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual bool deleteWorkUnit(const char * wuid, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual bool deleteWorkUnitEx(const char * wuid, bool throwException, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual IConstWorkUnit* openWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual IWorkUnit* updateWorkUnit(const char *wuid, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual bool restoreWorkUnit(const char *base, const char *wuid, bool restoreAssociated) override
+    {
+        throwUnexpected();
+    }
+    virtual void importWorkUnit(const char *zapReportFileName, const char *zapReportPassword,
+        const char *importDir, const char *app, const char *user, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual IWorkUnit * getGlobalWorkUnit(ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+
+    virtual IConstWorkUnitIterator * getWorkUnitsByOwner(const char * owner, ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual IConstWorkUnitIterator * getScheduledWorkUnits(ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+    virtual void descheduleAllWorkUnits(ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+
+    virtual int setTracingLevel(int newLevel) override
+    {
+        throwUnexpected();
+    }
+
+    virtual IConstWorkUnitIterator* getWorkUnitsSorted( WUSortField sortorder, // field to sort by
+                                                        WUSortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
+                                                        const void *filterbuf,  // (appended) string values for filters
+                                                        unsigned startoffset,
+                                                        unsigned maxnum,
+                                                        __int64 *cachehint,
+                                                        unsigned *total,
+                                                        ISecManager *secMgr, ISecUser *secUser) override
+    {
+        throwUnexpected();
+    }
+
+    virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
+                                                WUQuerySortField *filters,
+                                                const void *filterbuf,
+                                                unsigned startoffset,
+                                                unsigned maxnum,
+                                                __int64 *cachehint,
+                                                unsigned *total,
+                                                const MapStringTo<bool> *subset,
+                                                const MapStringTo<bool> *suspendedByCluster) override
+    {
+        throwUnexpected();
+    }
+
+    virtual unsigned numWorkUnits() override
+    {
+        throwUnexpected();
+    }
+
+    virtual bool isAborting(const char *wuid) const override
+    {
+        throwUnexpected();
+    }
+
+    virtual void clearAborting(const char *wuid) override
+    {
+        throwUnexpected();
+    }
+    virtual WUState waitForWorkUnit(const char * wuid, unsigned timeout, bool compiled, std::list<WUState> expectedStates) override
+    {
+        throwUnexpected();
+    }
+    virtual WUAction waitForWorkUnitAction(const char * wuid, WUAction original) override
+    {
+        throwUnexpected();
+    }
+};
+
+IWorkUnitFactory * createUnexpectedWorkUnitFactory()
+{
+    return new CUnexpectedWorkUnitFactory;
 }
 
 //==========================================================================================
