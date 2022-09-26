@@ -612,13 +612,15 @@ void sortSimulator()
     delete[] slaves;
 }
 
+void *leakChecker = nullptr;
+
 int main(int argc, char * argv[] ) 
 {
     InitModuleObjects();
     if (argc < 2)
         usage();
 
-    strdup("Make sure leak checking is working");
+    leakChecker = strdup("Make sure leak checking is working");
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
 
     {
@@ -773,6 +775,7 @@ int main(int argc, char * argv[] )
     }
     ExitModuleObjects();
     releaseAtoms();
+    leakChecker = nullptr;
     return 0;
 }
 
