@@ -446,6 +446,8 @@ public:
 static std::vector<RoxieEndpointInfo> myRoles;
 static std::vector<std::pair<unsigned, unsigned>> agentChannels;
 
+void *leakChecker = nullptr;   // Used to deliberately leak an allocation to ensure leak checking is working
+
 #ifndef _CONTAINERIZED
 void readStaticTopology()
 {
@@ -1567,12 +1569,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
     stopAeronDriver();
 
-    strdup("Make sure leak checking is working");
+    leakChecker = strdup("Make sure leak checking is working");
     roxiemem::releaseRoxieHeap();
     UseSysLogForOperatorMessages(false);
     ExitModuleObjects();
     releaseAtoms();
-    strdup("Make sure leak checking is working");
+    leakChecker = strdup("Make sure leak checking is working");
 #ifdef _WIN32
 #ifdef _DEBUG
 #if 1
@@ -1590,6 +1592,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
 #endif
 #endif
+    leakChecker = nullptr;
     return 0;
 }
 
