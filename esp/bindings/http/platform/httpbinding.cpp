@@ -455,18 +455,21 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
 
     setUnrestrictedSSTypes();
 
+    const char* authDomain = bnd_cfg->queryProp("@authDomain");
+    if (!isEmptyString(authDomain))
+        domainName.set(authDomain);
+    else
+        domainName.set("default");
+
+    readAuthDomainCfg(proc_cfg);
+
     //Even for non-session based environment, the sessionIDCookieName may be used to
     //remove session related cookies cached in some browser page.
     sessionIDCookieName.setf("%s%d", SESSION_ID_COOKIE, m_port);
     if (!m_secmgr.get() || !daliClientActive())
     {
-        if (!daliClientActive())
-        {
-            if (proc_cfg->hasProp("AuthDomains"))
-                throw MakeStringException(-1, "ESP cannot have an 'AuthDomains' setting because no dali connection is available.");
-            if (bnd_cfg->hasProp("@authDomain"))
-                throw MakeStringException(-1, "ESP Binding %s cannot have an '@authDomain' setting because no dali connection is available.", bindname);
-        }
+        if (!daliClientActive() && domainAuthType != AuthPerRequestOnly)
+            throw MakeStringException(-1, "ESP binding %s cannot use AuthDomain named '%s'. Since no dali is active only AuthPerRequestOnly domains are allowed.", bindname, domainName.str());
 
         domainAuthType = AuthPerRequestOnly;
         Owned<IPropertyTree> authcfg = proc_cfg->getPropTree("Authentication");
@@ -500,13 +503,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     }
 
     processName.set(procname);
-    const char* authDomain = bnd_cfg->queryProp("@authDomain");
-    if (!isEmptyString(authDomain))
-        domainName.set(authDomain);
-    else
-        domainName.set("default");
-
-    readAuthDomainCfg(proc_cfg);
 
     if ((domainAuthType == AuthPerSessionOnly) || (domainAuthType == AuthTypeMixed))
     {
