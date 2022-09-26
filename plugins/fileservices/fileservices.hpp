@@ -191,7 +191,6 @@ FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const
 FILESERVICES_API void FILESERVICES_CALL fsSetExpireDays(ICodeContext * ctx, const char *lfn, int expireDays);
 FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, const char *lfn);
 FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault();
-FILESERVICES_API int FILESERVICES_CALL fsGetMaxConnectionsDefault();
 
 //Deprecated, but kept to allow old workunits to load
 FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const char *src);

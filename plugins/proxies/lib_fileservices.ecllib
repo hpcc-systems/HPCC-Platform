@@ -113,5 +113,4 @@ export FileServices := SERVICE : plugin('fileservices'), time
   SetExpireDays(const varstring lfn, integer4 expireDays) : c,context,entrypoint='fsSetExpireDays';
   ClearExpireDays(const varstring lfn) : c,context,entrypoint='fsClearExpireDays';
   boolean GetNoCommonDefault() : c,context,entrypoint='fsGetNoCommonDefault';
-  integer4 GetMaxCOnnectionsDefault() :  c,context,entrypoint='fsGetMaxConnectionsDefault';
 END;

@@ -3141,58 +3141,29 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
         throw makeStringExceptionV(0, "ClearExpireDays: Could not find logical file %s", lfn.str());
 }
 
-bool getDefaultValue(const char * processName, const char * propertyName, StringBuffer & strDefaultValue)
-{
-    // Returns with true if a default value retrieved and false if not.
-
-#ifdef _CONTAINERIZED
-    if (getComponentConfigSP()->hasProp(propertyName)
-    {
-        getComponentConfigSP()->getProp(propertyName, strDefaultValue);
-        return true
-    }
-#else
-    Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
-    Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
-
-    if (env.get())
-    {
-        Owned<IPropertyTreeIterator> processIter = env->getElements(processName);
-        if (processIter->first())
-        {
-            if (processIter->query().hasProp(propertyName))
-            {
-                processIter->query().getProp(propertyName, strDefaultValue);
-                return true;
-            }
-        }
-    }
-#endif
-    return false;
-}
-
+static int noCommonDef = NotFound;
 FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault()
 {
     // This function returns the value of the DFUServerProcess' 'noCommon' property, if it is exists. 
     // Othervise it returns with true, the recent default value of 'noCommon'
-
-    StringBuffer strDefaultValue;
-    if (getDefaultValue("Software/Globals", "@noCommon", strDefaultValue))
-        return strToBool(strDefaultValue.str());
-    return true;
-}
-
-FILESERVICES_API int FILESERVICES_CALL fsGetMaxConnectionsDefault()
-{
-    // This function returns the value of the first DFUServer Instance's 'maxConnections' property, if it is exists. 
-    // Othervise it returns with -1, the recent default value of 'maxConnections'
-
-    StringBuffer strDefaultValue;
-    if (getDefaultValue("Software/Globals", "@maxConnections", strDefaultValue))
+#ifdef _CONTAINERIZED
+    return getComponentConfigSP()->getPropBool("@noCommon", true);
+#else
+    CriticalSection  noCommonDefCrit;
+    CriticalBlock b(noCommonDefCrit);
+    if (NotFound == noCommonDef)
     {
-        int intDefaultValue;
-        if (sscanf(strDefaultValue.str(),"%d", &intDefaultValue))
-            return intDefaultValue;
+        noCommonDef = true;
+        Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+        Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
+
+        if (env.get())
+        {
+            Owned<IPropertyTreeIterator> processIter = env->getElements("Software/Globals");
+            if (processIter->first())
+                noCommonDef = processIter->query().getPropBool("@noCommon", true);
+        }
     }
-    return -1;
+#endif
+    return noCommonDef;
 }
