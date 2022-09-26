@@ -2287,10 +2287,10 @@ int CMPConnectThread::run()
                 // However, the client-side endpoint cannot be relied upon to be unique, since it may be running on another
                 // private network and therefore multiple clients on different networks connecting to Dali could have the same
                 // client side endpoints. 
-                // To avoid this, always use the server side peer IP and oprt as the mapping from client to MP channel.
+                // To avoid this, always use the server side peer IP and port as the mapping from client to MP channel.
                 // The peer port must be used as well, since the client side port from multiple private networks can be the same.
                 // See corresponding change in CMPPacketReader::notifySelected
-                // NB: if all clients are part of the same network, then this step is strictly unecessary.
+                // NB: if all clients are part of the same network, then this step is strictly unnecessary.
 
                 // Ensure MP connection uses peer endpoint
                 _remoteep.set(peerEp);

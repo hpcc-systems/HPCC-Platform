@@ -425,7 +425,7 @@ public:
     void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
     void        shutdownNoThrow(unsigned mode);
 
-    ISocket*    accept(bool allowcancel, SocketEndpoint *peerEp=nullptr);
+    ISocket*    accept(bool allowcancel, SocketEndpoint *retPeerEp=nullptr);
     int         wait_read(unsigned timeout);
     int         logPollError(unsigned revents, const char *rwstr);
     int         wait_write(unsigned timeout);
@@ -1565,10 +1565,9 @@ void CSocket::setTraceName()
 void CSocket::setPeerEndpoint(const SocketEndpoint &ep)
 {
     assertex(!peerEpSet);
-    peerEpCrit.enter();
-    peerEpSet = true;
+    CriticalBlock b(peerEpCrit);
     peerEp = ep;
-    peerEpCrit.leave();
+    peerEpSet = true;
 }
 
 ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
