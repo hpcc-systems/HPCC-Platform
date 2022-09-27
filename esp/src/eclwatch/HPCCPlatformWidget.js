@@ -40,6 +40,17 @@ define([
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
+    /* DEBUG_ONLY
+    "src/nls/bs/hpcc",
+    "src/nls/es/hpcc",
+    "src/nls/fr/hpcc",
+    "src/nls/hr/hpcc",
+    "src/nls/hu/hpcc",
+    "src/nls/pt-br/hpcc",
+    "src/nls/sr/hpcc",
+    "src/nls/zh/hpcc",
+    /* */
+
     "hpcc/DelayLoadWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
@@ -65,7 +76,20 @@ define([
     UpgradeBar, ColorPicker,
     CodeMirror, srcReact, AboutModule, ComingSoonModule,
     _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme, Utility,
-    template) {
+    template,
+
+    /* DEBUG_ONLY
+    bs_hpcc,
+    es_hpcc,
+    fr_hpcc,
+    hr_hpcc,
+    hu_hpcc,
+    pt_br_hpcc,
+    sr_hpcc,
+    zh_hpcc,
+    /* */
+
+) {
 
     declare("HPCCColorPicker", [ColorPicker], {
         _underlay: "/esp/files/eclwatch/img/underlay.png",
@@ -133,6 +157,9 @@ define([
             domStyle.set(dom.byId(this.id + "StackController_stub_Config").parentNode.parentNode, {
                 display: "none"
             });
+            /* DEBUG_ONLY
+            registry.byId(this.id + "Debug").set("hidden", false);
+            /* */
             var teaserNode = dom.byId(this.id + "teaser");
             srcReact.render(ComingSoonModule.ComingSoon, { style: { color: "white" } }, teaserNode);
         },
@@ -435,6 +462,7 @@ define([
         },
 
         _ondebugLanguageFiles: function () {
+            /* DEBUG_ONLY 
             var context = this;
             require(["src/nls/hpcc"], function (lang) {
                 var languageID = [];
@@ -445,40 +473,39 @@ define([
                         languageRequire.push("src/nls/" + key + "/hpcc");
                     }
                 }
-                require(languageRequire, function () {
-                    var errWarnGrid = registry.byId(context.id + "ErrWarnGrid");
-                    arrayUtil.forEach(arguments, function (otherLang, idx) {
-                        var langID = languageID[idx];
-                        for (var key in lang.root) {
-                            if (!otherLang[key]) {
-                                errWarnGrid.loadTopic({
-                                    Severity: "Error",
-                                    Source: context.i18n.Missing,
-                                    Exceptions: [{
-                                        Code: langID,
-                                        FileName: languageRequire[idx] + ".js - " + key,
-                                        Message: "'" + lang.root[key] + "'",
-                                        Javascript: key + ": \"\","
-                                    }]
-                                }, true);
-                            } else if (otherLang[key] === lang.root[key]) {
-                                errWarnGrid.loadTopic({
-                                    Severity: /[a-z]/.test(otherLang[key]) ? "Warning" : "Info",
-                                    Source: context.i18n.EnglishQ,
-                                    Exceptions: [{
-                                        Code: langID,
-                                        FileName: languageRequire[idx] + ".js - " + key,
-                                        Message: otherLang[key],
-                                        Javascript: key + ": \"\","
-                                    }]
-                                }, true);
-                            }
+                var errWarnGrid = registry.byId(context.id + "ErrWarnGrid");
+                arrayUtil.forEach([bs_hpcc, es_hpcc, fr_hpcc, hr_hpcc, hu_hpcc, pt_br_hpcc, sr_hpcc, zh_hpcc], function (otherLang, idx) {
+                    var langID = languageID[idx];
+                    for (var key in lang.root) {
+                        if (!otherLang[key]) {
+                            errWarnGrid.loadTopic({
+                                Severity: "Error",
+                                Source: context.i18n.Missing,
+                                Exceptions: [{
+                                    Code: langID,
+                                    FileName: languageRequire[idx] + ".js - " + key,
+                                    Message: "'" + lang.root[key] + "'",
+                                    Javascript: key + ": \"\","
+                                }]
+                            }, true);
+                        } else if (otherLang[key] === lang.root[key]) {
+                            errWarnGrid.loadTopic({
+                                Severity: /[a-z]/.test(otherLang[key]) ? "Warning" : "Info",
+                                Source: context.i18n.EnglishQ,
+                                Exceptions: [{
+                                    Code: langID,
+                                    FileName: languageRequire[idx] + ".js - " + key,
+                                    Message: otherLang[key],
+                                    Javascript: key + ": \"\","
+                                }]
+                            }, true);
                         }
-                    });
-                    errWarnGrid.refreshTopics();
+                    }
                 });
+                errWarnGrid.refreshTopics();
             });
             this.stackContainer.selectChild(this.errWarnPage);
+            /* */
         },
 
         _onAboutLoaded: false,
