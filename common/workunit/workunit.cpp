@@ -13696,9 +13696,9 @@ extern WORKUNIT_API double getThorWorkerRate()
     return getCostCpuHour() * numCpus ;
 }
 
-extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned clusterWidth)
+extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberOfMachines)
 {
-    return calcCost(getThorManagerRate(), ms) + calcCost(getThorWorkerRate(), ms) * clusterWidth;
+    return calcCost(getThorManagerRate(), ms) + calcCost(getThorWorkerRate(), ms) * numberOfMachines;
 }
 
 void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search)
