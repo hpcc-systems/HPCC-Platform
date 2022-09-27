@@ -2500,14 +2500,21 @@ unsigned FileSprayer::numParallelConnections(unsigned limit)
 
 unsigned FileSprayer::numParallelSlaves()
 {
-    unsigned numPullers = transferSlaves.ordinality();
+    unsigned numPullers = transferSlaves.ordinality();  // == number of targets
     unsigned maxConnections = DEFAULT_MAX_CONNECTIONS;
     unsigned connectOption = options->getPropInt(ANmaxConnections, 0);
+#ifdef _DEBUG
+    LOG(MCdebugInfo, job, "In numParallelSlaves():");
+    LOG(MCdebugInfo, job, "    numPullers:%u", numPullers);
+    LOG(MCdebugInfo, job, "    maxConnections:%u", maxConnections);
+    LOG(MCdebugInfo, job, "    connectOption:%u", connectOption);
+#endif
     if (connectOption)
         maxConnections = connectOption;
     else if (mirroring && (maxConnections * 3 < numPullers))
         maxConnections = numPullers/3;
     if (maxConnections > numPullers) maxConnections = numPullers;
+    LOG(MCdebugInfo, job, "  maxConnections:%u (final)", maxConnections);
     return maxConnections;
 }
 
@@ -3497,6 +3504,7 @@ void FileSprayer::spray()
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
     LOG(MCdebugInfo, job, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
+    LOG(MCdebugInfo, job, "maxConnections option:%d", options->getPropInt(ANmaxConnections));
 
     LocalAbortHandler localHandler(daftAbortHandler);
 

@@ -3140,3 +3140,27 @@ FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, co
     else
         throw makeStringExceptionV(0, "ClearExpireDays: Could not find logical file %s", lfn.str());
 }
+
+static CriticalSection noCommonDefCrit;
+static int noCommonDef = NotFound;
+FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault()
+{
+    // Returns the boolean value of 'noCommon' property from the Software/Globals if it is defined,
+    // Otherwise it returns with true, the recent default value of 'noCommon'
+#ifdef _CONTAINERIZED
+    return getComponentConfigSP()->getPropBool("@noCommon", true);
+#else
+    CriticalBlock b(noCommonDefCrit);
+    if (NotFound == noCommonDef)
+    {
+        // Default value if it is not defined in environment.xml
+        noCommonDef = true;
+        Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+        Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
+
+        if (env.get())
+            noCommonDef = env->getPropBool("@noCommon", noCommonDef);
+    }
+#endif
+    return (bool)noCommonDef;
+}
