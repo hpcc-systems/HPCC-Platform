@@ -4,6 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../components/Common";
+import { updateSort } from "../util/history";
 import { DojoGrid } from "../components/DojoGrid";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "./deepHooks";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
@@ -215,6 +216,7 @@ function useFluentStoreGrid({
             attribute: sorted ? column.key : "",
             descending: sorted ? isSortedDescending : false
         });
+        updateSort(sorted, isSortedDescending, column.key);
     }, [memoizedColumns]);
 
     const renderDetailsHeader = React.useCallback((props: IDetailsHeaderProps, defaultRender?: any) => {
