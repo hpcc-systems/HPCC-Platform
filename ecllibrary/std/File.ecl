@@ -106,8 +106,8 @@ EXPORT FsLandingZoneRecord := lib_fileservices.FsLandingZoneRecord;
 /*------------------------------------- Spray functions -----------------------------------------------------------*/
 
 /**
- * Returns the boolean value of 'noCommon' property of the first DFUServer instance if it is defined,
- * othervise return with 'true' as default.
+ * Returns the boolean value of 'noCommon' property from the Software/Globals if it is defined,
+ * otherwise return with 'true' as default.
  *
  * @return              Boolean value of 'noCommon' property.
  */

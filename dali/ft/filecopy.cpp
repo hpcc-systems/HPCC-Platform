@@ -2487,6 +2487,37 @@ bool FileSprayer::needToCalcOutput()
     return !usePullOperation() || options->getPropBool(ANverify);
 }
 
+
+CriticalSection  maxConnectionsDefCrit;
+static unsigned maxConnectionsDef = NotFound;
+unsigned getMaxConnectionsDefault()
+{
+    // Returns the unsigned integer value of 'maxConnections' property from the Software/Globals if it is defined,
+    // Otherwise it returns with 0, the recent default value of 'maxConnections'
+#ifdef _CONTAINERIZED
+    return getComponentConfigSP()->getPropInt("@maxConnections", 0);
+#else
+    CriticalBlock b(maxConnectionsDefCrit);
+    if (NotFound == maxConnectionsDef)
+    {
+        // Default value if it is not defined in environment.xml
+        maxConnectionsDef = 0;
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> daliEnv = factory->openEnvironment();
+        Owned<IPropertyTree> env = &daliEnv->getPTree();
+
+        if (env.get())
+        {
+            Owned<IPropertyTree> globals = env->getPropTree("Software/Globals");
+            maxConnectionsDef = globals->getPropInt("@maxConnections", maxConnectionsDef);
+        }
+    }
+#endif
+    return maxConnectionsDef;
+}
+
+//TODO Should fix this, because the maxConnections can be thousands if the limit is equal 
+//     with the number of source files.
 unsigned FileSprayer::numParallelConnections(unsigned limit)
 {
     unsigned maxConnections = options->getPropInt(ANmaxConnections, limit);
@@ -2496,14 +2527,23 @@ unsigned FileSprayer::numParallelConnections(unsigned limit)
 
 unsigned FileSprayer::numParallelSlaves()
 {
-    unsigned numPullers = transferSlaves.ordinality();
-    unsigned maxConnections = DEFAULT_MAX_CONNECTIONS;
+    unsigned numPullers = transferSlaves.ordinality();  // == number of targets
+    unsigned defaultMaxConnections = getMaxConnectionsDefault();
+    unsigned maxConnections = (defaultMaxConnections == 0 ? DEFAULT_MAX_CONNECTIONS : defaultMaxConnections);
     unsigned connectOption = options->getPropInt(ANmaxConnections, 0);
+    LOG(MCdebugInfo, job, "In numParallelSlaves():");
+    LOG(MCdebugInfo, job, "    numPullers:%u", numPullers);
+    LOG(MCdebugInfo, job, "    defaultMaxConnections:%u", defaultMaxConnections);
+    LOG(MCdebugInfo, job, "    DEFAULT_MAX_CONNECTIONS:%u", DEFAULT_MAX_CONNECTIONS);
+    LOG(MCdebugInfo, job, "    maxConnections:%u", maxConnections);
+    LOG(MCdebugInfo, job, "    connectOption:%u", connectOption);
+    
     if (connectOption)
         maxConnections = connectOption;
     else if (mirroring && (maxConnections * 3 < numPullers))
         maxConnections = numPullers/3;
     if (maxConnections > numPullers) maxConnections = numPullers;
+    LOG(MCdebugInfo, job, "  maxConnections:%u (final)", maxConnections);
     return maxConnections;
 }
 
@@ -3496,7 +3536,7 @@ void FileSprayer::spray()
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
     LOG(MCdebugInfo, job, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
-    LOG(MCdebugInfo, job, "maxConnections:%d", options->getPropInt(ANmaxConnections));
+    LOG(MCdebugInfo, job, "maxConnections option:%d", options->getPropInt(ANmaxConnections));
 
     LocalAbortHandler localHandler(daftAbortHandler);
 
