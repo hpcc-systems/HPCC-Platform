@@ -123,12 +123,6 @@ jobs:
         run: |
           brew install bison flex pkg-config automake libtool cmake openjdk@11
 
-      - name: Check out source code
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
       - name: "Setup NuGet credentials"
         if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
         shell: "bash"
@@ -140,6 +134,26 @@ jobs:
             -name "GitHub" \
             -username "${{ github.actor }}" \
             -password "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: "Remove builtin vcpkg"
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        working-directory: .
+        shell: "bash"
+        run: |
+          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+      - name: Check out source code
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: "vcpkg Bootstrap"
+        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        working-directory: .
+        shell: "bash"
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
 
       - name: "Generate HPCC-Platform Build Files"
         if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
