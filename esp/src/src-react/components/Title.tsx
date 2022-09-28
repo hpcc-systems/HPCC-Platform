@@ -3,7 +3,6 @@ import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, I
 import { Level } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
-import * as cookie from "dojo/cookie";
 
 import * as WsAccount from "src/ws_account";
 import nlsHPCC from "src/nlsHPCC";
@@ -113,11 +112,14 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             method: "post"
                         }).then(data => {
                             if (data) {
-                                cookie("ECLWatchUser", "", { expires: -1 });
-                                cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
-                                cookie("Status", "", { expires: -1 });
-                                cookie("User", "", { expires: -1 });
-                                deleteUserSession().then(() => window.location.reload());
+                                deleteUserSession().then(() => {
+                                    Utility.deleteCookie("ECLWatchUser");
+                                    Utility.deleteCookie("ESPSessionID");
+                                    Utility.deleteCookie("Status");
+                                    Utility.deleteCookie("User");
+                                    Utility.deleteCookie("ESPSessionState");
+                                    window.location.reload();
+                                });
                             }
                         });
                     }

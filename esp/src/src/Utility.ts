@@ -1055,6 +1055,12 @@ export function parseCookies(): Record<string, any> {
     return cookies;
 }
 
+export function deleteCookie(name: string) {
+    const expireDate = new Date();
+    expireDate.setSeconds(expireDate.getSeconds() + 1);
+    document.cookie = `${name}=; domain=${window.location.hostname}; path=/; expires=${expireDate.toUTCString()}`;
+}
+
 export function formatNum(str): string {
     if (isNaN(str)) {
         return str;

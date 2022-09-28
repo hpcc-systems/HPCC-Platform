@@ -64,7 +64,7 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
                     })
                         .then(({ Exceptions }) => {
                             const err = Exceptions?.Exception[0];
-                            if (err.Code < 0) {
+                            if (err?.Code < 0) {
                                 setShowError(true);
                                 setErrorMessage(err.Message);
                             } else {
