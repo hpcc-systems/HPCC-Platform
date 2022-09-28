@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetNoCommonDefault">
+  <title>GetNoCommonDefault</title>
+
+  <para><emphasis role="bold">STD.File.GetNoCommonDefault<indexterm>
+      <primary>STD.File.GetNoCommonDefault</primary>
+    </indexterm><indexterm>
+      <primary>File.GetNoCommonDefault</primary>
+    </indexterm><indexterm>
+      <primary>GetNoCommonDefault</primary>
+    </indexterm>(</emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetNoCommonDefault returns a BOOLEAN value</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetNoCommonDefault </emphasis>function
+  returns the boolean value of the 'noCommon' property in the system
+  configuration if it is defined. Otherwise it returns 'true' as the
+  default.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.File.GetNoCommonDefault();
+</programlisting>
+
+  <para></para>
+
+  <para>See Also: <link linkend="SprayFixed">SprayFixed</link>, <link
+  linkend="SprayXML">SprayXML</link>, <link
+  linkend="SprayJSON">SprayJSON</link>, <link
+  linkend="SprayVariable">SprayDelimited</link></para>
+
+  <para></para>
+</sect1>
