@@ -188,7 +188,7 @@ function useFluentStoreGrid({
             setItems(items);
             setSelection(selectionHandler.getSelection());
         });
-    }, [count, selectionHandler, sorted, start, store], [query]);
+    }, [count, selectionHandler, start, store], [query]);
 
     React.useEffect(() => {
         refreshTable();
