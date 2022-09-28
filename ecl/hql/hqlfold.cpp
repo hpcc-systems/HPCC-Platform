@@ -1893,7 +1893,7 @@ IHqlExpression * combineMask(IHqlExpression * left, IHqlExpression * right)
     return createBoolExpr(no_ne, newTest, ensureExprType(zero, bandType));
 }
 
-bool constantComparison(IHqlExpression * field, IHqlExpression * expr, HqlExprArray & values)
+static bool extractConstantComparison(IHqlExpression * field, IHqlExpression * expr, HqlExprCopyArray & values)
 {
     IHqlExpression * left = expr->queryChild(0);
     IHqlExpression * right = expr->queryChild(1);
@@ -1904,8 +1904,7 @@ bool constantComparison(IHqlExpression * field, IHqlExpression * expr, HqlExprAr
             return false;
         if (!right->queryValue())
             return false;
-        if (values.find(*right) == NotFound)
-            values.append(*LINK(right));
+        values.append(*right);
         return true;
     case no_in:
         {
@@ -1913,17 +1912,47 @@ bool constantComparison(IHqlExpression * field, IHqlExpression * expr, HqlExprAr
                 return false;
             if (right->getOperator() != no_list)
                 return false;
-            ForEachChild(i, right)
-            {
-                IHqlExpression * cur = right->queryChild(i);
-                if (values.find(*cur) == NotFound)
-                    values.append(*LINK(cur));
-            }
+            if (!right->isConstant())
+                return false;
+            unwindChildren(values, right);
             return true;
         }
     }
     return false;
 }
+
+static void removeDuplicatesAndLink(HqlExprArray & result, const HqlExprCopyArray & values)
+{
+    //Assume that items are not duplicated - the memory usage is not significant, reallocation is.
+    result.ensureCapacity(values.ordinality());
+
+    if (values.ordinality() <= 10)
+    {
+        //Special case small lists with a faster O(N^2) algorithm.
+        ForEachItemIn(i, values)
+        {
+            IHqlExpression & cur = values.item(i);
+            if (!result.contains(cur))
+                result.append(OLINK(cur));
+        }
+    }
+    else
+    {
+        //This list can get quite large, so rather than using result.contains(cur), which would be O(N^2)
+        //use the transformextra which is slightly slower, but O(N).
+        TransformMutexBlock lock;
+        ForEachItemIn(i, values)
+        {
+            IHqlExpression & cur = values.item(i);
+            if (!cur.queryTransformExtra())
+            {
+                result.append(OLINK(cur));
+                cur.setTransformExtra(&cur);
+            }
+        }
+    }
+}
+
 
 bool isFilteredWithin(IHqlExpression * expr, IHqlExpression * dataset, HqlExprArray & filters)
 {
@@ -2049,36 +2078,42 @@ IHqlExpression * foldOrExpr(IHqlExpression * expr, bool fold_x_op_not_x)
     }
 
     //optimize x=a|x=b|x=c to x in (a,b,c)
-    HqlExprArray constantValues;
+    HqlExprCopyArray constantValues;
     for (unsigned idx4 = 0; idx4 < transformedArgs.ordinality()-1; idx4++)
     {
         IHqlExpression & cur = transformedArgs.item(idx4);
-        constantValues.kill();
-
-        if (constantComparison(NULL, &cur, constantValues))
+        if (extractConstantComparison(NULL, &cur, constantValues))
         {
-            bool merged = false;
+            UnsignedArray combinedExprIndexes;
             IHqlExpression * compare = cur.queryChild(0);
-            for (unsigned idx5 = idx4+1; idx5 < transformedArgs.ordinality(); )
+            for (unsigned idx5 = idx4+1; idx5 < transformedArgs.ordinality(); idx5++)
             {
                 IHqlExpression & cur2 = transformedArgs.item(idx5);
-                if (constantComparison(compare, &cur2, constantValues))
+                if (extractConstantComparison(compare, &cur2, constantValues))
                 {
-                    merged = true;
-                    transformedArgs.remove(idx5);
+                    //Save the list of expression indexes so they can be removed later
+                    combinedExprIndexes.append(idx5);
                 }
-                else
-                    idx5++;
             }
 
-            if (merged)
+            if (combinedExprIndexes.ordinality())
             {
+                //Avoid deduping and linking the expressions until we know we are going to combine them
+                HqlExprArray linkedValues;
+                removeDuplicatesAndLink(linkedValues, constantValues);
+
                 //MORE: Should promote all items in the list to the same type.
                 IHqlExpression & first = constantValues.item(0);
-                IHqlExpression * list = createValue(no_list, makeSetType(first.getType()), constantValues);
+                IHqlExpression * list = createValue(no_list, makeSetType(first.getType()), linkedValues);
                 OwnedHqlExpr combined = createBoolExpr(no_in, LINK(compare), list);
                 transformedArgs.replace(*combined.getClear(), idx4);
+
+                //Remove the expressions after the new expression has been created, so that linking can be avoided
+                ForEachItemInRev(i, combinedExprIndexes)
+                    transformedArgs.remove(combinedExprIndexes.item(i));
             }
+
+            constantValues.kill();
         }
     }
 
