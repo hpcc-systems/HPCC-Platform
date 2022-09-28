@@ -91,12 +91,20 @@ jobs:
         run: |
           brew install bison flex pkg-config automake libtool cmake
 
-      - name: "Remove builtin vcpkg"
+      - name: "Setup NuGet credentials"
         if: ${{ needs.check-skip.outputs.platform }}
-        working-directory: .
         shell: "bash"
         run: |
-          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+          ${{ matrix.mono }} `vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -name "GitHub" \
+            -username "hpcc-systems" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+          ${{ matrix.mono }} `vcpkg fetch nuget | tail -n 1` \
+            setapikey "${{ secrets.GITHUB_TOKEN }}" \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
       - name: Check out source code
         if: ${{ needs.check-skip.outputs.platform }}
@@ -104,28 +112,19 @@ jobs:
         with:
           submodules: recursive
 
+      - name: "Remove builtin vcpkg"
+        if: ${{ needs.check-skip.outputs.platform }}
+        working-directory: .
+        shell: "bash"
+        run: |
+          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+
       - name: "vcpkg Bootstrap"
         if: ${{ needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
-
-      - name: "Setup NuGet credentials"
-        if: ${{ needs.check-skip.outputs.platform }}
-        working-directory: ./vcpkg
-        shell: "bash"
-        run: |
-          ${{ matrix.mono }} `./vcpkg fetch nuget | tail -n 1` \
-            sources add \
-            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
-            -storepasswordincleartext \
-            -name "GitHub" \
-            -username "hpcc-systems" \
-            -password "${{ secrets.GITHUB_TOKEN }}"
-          ${{ matrix.mono }} `./vcpkg fetch nuget | tail -n 1` \
-            setapikey "${{ secrets.GITHUB_TOKEN }}" \
-            -source "https://nuget.pkg.github.com/hpcc-systems/index.json"
 
       - name: "Generate HPCC-Platform Build Files"
         if: ${{ needs.check-skip.outputs.platform }}
