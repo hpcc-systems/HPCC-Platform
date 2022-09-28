@@ -264,6 +264,18 @@ jobs:
           -username "${{ github.actor }}" \
           -password "${{ secrets.GITHUB_TOKEN }}"
 
+    - name: "Remove builtin vcpkg"
+      if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+      shell: "bash"
+      run: |
+        sudo rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+    - name: "vcpkg Bootstrap"
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
+      working-directory: ./src/vcpkg
+      run: |
+        ./bootstrap-vcpkg.sh
+
     # Subsequent cache hit builds use cache-timestamp to ensure all sources are marked 'old',
     # except those changed between the cache SHA and the SHA being built.
     # NB: BUILD_TAG is overridden to a constant "smoketest", this is to prevent the auto-generated build tag being
@@ -277,7 +289,7 @@ jobs:
         rm -f CMakeCache.txt
         if [[ ! -f cache-timestamp ]]; then touch cache-timestamp; fi
         touch ../cmake-timestamp
-        `vcpkg fetch cmake | tail -n 1` ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON2=0 -DUSE_PYTHON3=1 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_CASSANDRA=Off -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest" -DSTRIP_RELEASE_SYMBOLS=1
+        `../src/vcpkg/vcpkg fetch cmake | tail -n 1` ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=Release -DUSE_PYTHON2=0 -DUSE_PYTHON3=1 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_CASSANDRA=Off -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest" -DSTRIP_RELEASE_SYMBOLS=1
         make -j$(nproc) install
 
     - name: build-logs-artifact
