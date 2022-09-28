@@ -22,21 +22,23 @@
 
     <para>The entire HPCC Systems configuration in the container space, is
     governed by a single file, a <emphasis>values.yaml</emphasis> file, and
-    its associated schema file.</para>
+    its associated schema (<emphasis>values-schema.json</emphasis>)
+    file.</para>
 
     <sect2 id="WhatIsValues.Yaml">
       <title>The <emphasis>values.yaml</emphasis> and how it is used</title>
 
-      <para>The <emphasis>values.yaml</emphasis> file is the delivered
-      configuration values for a Helm chart. The
-      <emphasis>values.yaml</emphasis> file is used by the Helm chart to
-      control how HPCC Systems is deployed to the cloud. This values file is
-      one file used to configure and get an HPCC Systems instance up and
-      running on Kubernetes. The <emphasis>values.yaml</emphasis> file defines
-      everything that happens to configure and/or define your system for a
-      containerized deployment. You should use the values file provided as a
-      basis for modeling the specific customizations for your deployment
-      specific to your requirements.</para>
+      <para>The supplied stock <emphasis>values.yaml</emphasis> file provided
+      in the HPCC Systems repository is the delivered configuration values for
+      the "hpcc" Helm chart. The <emphasis>values.yaml</emphasis> file is used
+      by the Helm chart to control how HPCC Systems is deployed to the cloud.
+      This <emphasis>values.yaml</emphasis> file is a single file used to
+      configure and get an HPCC Systems instance up and running on Kubernetes.
+      The <emphasis>values.yaml</emphasis> file defines everything that
+      happens to configure and/or define your system for a containerized
+      deployment. You should use the values file provided as a basis for
+      modeling customizations for your deployment specific to your
+      requirements.</para>
 
       <para>The HPCC Systems<emphasis> values.yaml</emphasis> file can be
       found in the HPCC Systems github repository. To use the HPCC Systems
@@ -121,7 +123,7 @@
   </sect1>
 
   <sect1 id="TheValuesYaml_FileAndRelated" role="nobrk">
-    <title>HPCC Systems Components in the <emphasis>values.yaml</emphasis>
+    <title>HPCC Systems Components and the <emphasis>values.yaml</emphasis>
     File</title>
 
     <para>The HPCC Systems Helm charts all ship with stock/default values.
@@ -183,7 +185,7 @@
         schema).</para>
       </sect3>
 
-      <sect3 id="DALI_ValueYAML">
+      <sect3 id="DALI_ValueYAML" role="brk">
         <title>Dali</title>
 
         <para>When configuring Dali, which also has a resources section, it is
@@ -199,7 +201,7 @@
         <title>Components: dafilesvrs, dfuserver</title>
 
         <para>The HPCC Systems components of dafilesvrs, eclccservers,
-        dfuserver, are declared as lists in the yaml, as is the ECL
+        dfuserver, are declared as lists in the YAML file, as is the ECL
         Agent.</para>
 
         <para>Consider the dfuserver which is in the delivered HPCC Systems
@@ -874,7 +876,7 @@
     local:
       name: hpcc-local-issuer</programlisting>
 
-        <para>In the delivered yaml file certificates are not enabled, as
+        <para>In the delivered YAML file certificates are not enabled, as
         illustrated above. You must first install the cert-manager to use this
         feature.</para>
       </sect3>
@@ -957,7 +959,7 @@
       </sect3>
 
       <sect3 id="TAINTS_TOLERATIONS_PLACEMENTS">
-        <title>Taints, Tolerations, and placements</title>
+        <title>Taints, Tolerations, and Placements</title>
 
         <para>This is an important consideration for containerized systems.
         Taints and Tolerations are types of Kubernetes node constraints also
