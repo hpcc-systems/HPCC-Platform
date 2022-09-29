@@ -1117,6 +1117,25 @@ public:
             opttree->setProp("@encryptKey",encryptkey);
             opttree->setProp("@decryptKey",decryptkey);
         }
+
+        // if maxConnection is not passed as a user option, check for a default defined in the config/environment.
+        if (!opttree->hasProp("@maxConnections"))
+        {
+            int configDefault = -1;
+#ifdef _CONTAINERIZED
+            configDefault = getComponentConfigSP()->getPropInt("@maxConnections", -1);
+#else
+            // Default value if it is not defined in environment.xml
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+            Owned<IConstEnvironment> daliEnv = factory->openEnvironment();
+            Owned<IPropertyTree> env = &daliEnv->getPTree();
+            if (env.get())
+                configDefault = env->getPropInt("Software/Globals/@maxConnections", -1);
+#endif
+            if (-1 != configDefault)
+                opttree->setPropInt("@maxConnections", configDefault);
+        }
+
         IDFUprogress *progress = wu->queryUpdateProgress();
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
         IDistributedFileSystem &fsys = queryDistributedFileSystem();

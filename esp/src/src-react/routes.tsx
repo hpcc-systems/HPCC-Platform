@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Route, RouterContext } from "universal-router";
-import { initialize, parseSearch, pushUrl, replaceUrl } from "./util/history";
+import { initialize, parseSearch, parseSort, pushUrl, replaceUrl } from "./util/history";
 
 export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-bare-metal";
 
@@ -32,21 +32,6 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["activities", "topology-bare-metal"],
-        path: "/clusters",
-        children: [
-            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
-            { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
-        ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/machines",
-        children: [
-            { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
-        ]
-    },
-    {
         mainNav: ["activities"],
         name: "events",
         path: "/events",
@@ -71,7 +56,11 @@ export const routes: RoutesEx = [
         mainNav: ["workunits"],
         path: "/workunits",
         children: [
-            { path: "", action: (ctx) => import("./components/Workunits").then(_ => <_.Workunits filter={parseSearch(ctx.search) as any} />) },
+            {
+                path: "", action: (ctx) => import("./components/Workunits").then(_ => {
+                    return <_.Workunits filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} />;
+                })
+            },
             { path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />) },
             { path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} />) },
             { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} queryParams={parseSearch(ctx.search) as any} />) },
@@ -97,7 +86,7 @@ export const routes: RoutesEx = [
                     if (Object.keys(filter).length === 0) {
                         filter = { LogicalFiles: true, SuperFiles: true, Indexes: true };
                     }
-                    return <_.Files filter={filter as any} />;
+                    return <_.Files filter={filter as any} sort={parseSort(context.search)} />;
                 })
             },
             { path: "/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={undefined} logicalFile={params.Name as string} />) },
@@ -144,7 +133,11 @@ export const routes: RoutesEx = [
         mainNav: ["queries"],
         path: "/queries",
         children: [
-            { path: "", action: (context) => import("./components/Queries").then(_ => <_.Queries filter={parseSearch(context.search) as any} />) },
+            {
+                path: "", action: (context) => import("./components/Queries").then(_ => {
+                    return <_.Queries filter={parseSearch(context.search) as any} sort={parseSort(context.search)} />;
+                })
+            },
             { path: "/:QuerySetId/:Id", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} />) },
             { path: "/:QuerySetId/:Id/:Tab", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab={params.Tab as string} />) },
             { path: "/:QuerySetId/:QueryId/graphs/:Wuid/:GraphName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="GraphTree7Widget" params={params} />) },
@@ -205,11 +198,26 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["topology-bare-metal"],
+        path: "/clusters",
+        children: [
+            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
+            { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
+        ]
+    },
+    {
+        mainNav: ["topology-bare-metal"],
         path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />)
     },
     {
         mainNav: ["topology-bare-metal"],
         path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />)
+    },
+    {
+        mainNav: ["topology-bare-metal"],
+        path: "/machines",
+        children: [
+            { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
+        ]
     },
     {
         mainNav: ["topology-bare-metal"],

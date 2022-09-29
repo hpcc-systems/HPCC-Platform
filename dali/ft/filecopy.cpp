@@ -22,9 +22,11 @@
 #include "jlib.hpp"
 #include "jio.hpp"
 #include <math.h>
+#ifdef _USE_AZURE
 #include <azure/core.hpp>
 #include <azure/storage/blobs.hpp>
 #include <azure/storage/files/shares.hpp>
+#endif
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -1521,6 +1523,7 @@ bool FileSprayer::usePushWholeOperation() const
 
 bool FileSprayer::useAPICopy()
 {
+#ifdef _USE_AZURE
     if (isContainerized()) // Future: support in bare-metal?
     {
         bool needCalcCRC = calcCRC();
@@ -1552,6 +1555,7 @@ bool FileSprayer::useAPICopy()
             return true;
         }
     }
+#endif
     return false;
 }
 
@@ -2496,14 +2500,21 @@ unsigned FileSprayer::numParallelConnections(unsigned limit)
 
 unsigned FileSprayer::numParallelSlaves()
 {
-    unsigned numPullers = transferSlaves.ordinality();
+    unsigned numPullers = transferSlaves.ordinality();  // == number of targets
     unsigned maxConnections = DEFAULT_MAX_CONNECTIONS;
     unsigned connectOption = options->getPropInt(ANmaxConnections, 0);
+#ifdef _DEBUG
+    LOG(MCdebugInfo, job, "In numParallelSlaves():");
+    LOG(MCdebugInfo, job, "    numPullers:%u", numPullers);
+    LOG(MCdebugInfo, job, "    maxConnections:%u", maxConnections);
+    LOG(MCdebugInfo, job, "    connectOption:%u", connectOption);
+#endif
     if (connectOption)
         maxConnections = connectOption;
     else if (mirroring && (maxConnections * 3 < numPullers))
         maxConnections = numPullers/3;
     if (maxConnections > numPullers) maxConnections = numPullers;
+    LOG(MCdebugInfo, job, "  maxConnections:%u (final)", maxConnections);
     return maxConnections;
 }
 
@@ -2647,10 +2658,6 @@ void FileSprayer::pushParts()
     performTransfer();
 }
 
-using namespace Azure::Storage;
-using namespace Azure::Storage::Files;
-using namespace Azure::Storage::Blobs;
-
 enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
 interface IAPICopyClient : implements IInterface
 {
@@ -2659,6 +2666,11 @@ interface IAPICopyClient : implements IInterface
     virtual ApiCopyStatus abortCopy() = 0;
     virtual ApiCopyStatus getStatus() const = 0;
 };
+
+#ifdef _USE_AZURE
+using namespace Azure::Storage;
+using namespace Azure::Storage::Files;
+using namespace Azure::Storage::Blobs;
 
 class CApiCopyClient : public CInterfaceOf<IAPICopyClient>
 {
@@ -2881,9 +2893,11 @@ public:
         return status;
     }
 };
+#endif
 
 void FileSprayer::transferUsingAPI()
 {
+#ifdef _USE_AZURE
     // N.B. Only call this member function, if FileSprayer::useAPICopy() has returned true
     // Source
     StringBuffer sourceClusterName, sourceBaseURI, sourceSAStoken;
@@ -3003,6 +3017,7 @@ void FileSprayer::transferUsingAPI()
         if (failCount)
             throw makeStringExceptionV(DFTERR_CopyFailed, DFTERR_CopyFailed_Text, failedReason.str());
     }
+#endif
 }
 
 void FileSprayer::removeSource()
@@ -3496,6 +3511,7 @@ void FileSprayer::spray()
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
     LOG(MCdebugInfo, job, "noCommon:%s", boolToStr(options->getPropBool(ANnocommon)));
+    LOG(MCdebugInfo, job, "maxConnections option:%d", options->getPropInt(ANmaxConnections));
 
     LocalAbortHandler localHandler(daftAbortHandler);
 

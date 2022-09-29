@@ -105,8 +105,9 @@ static const char * resultText[] = { "Done", "Backtrack", "TokenBack", "Continue
 static unsigned patternDepth;
 #endif
 
-bool isAsciiMatch(unsigned code, unsigned next)
+bool isAsciiMatch(unsigned code, unsigned _next)
 {
+    int next = (int)_next;
     switch (code)
     {
     case RCCalnum: return isalnum(next) != 0;
@@ -143,7 +144,7 @@ bool isUnicodeMatch(unsigned code, unsigned next)
     case RCCblank: return u_isspace(next) != 0 || (next == '\t');
     case RCCgraph: return u_isprint(next) && !u_isspace(next);
     case RCCpunct: return u_isprint(next) && !(u_isspace(next) || u_isalnum(next));
-    case RCCxdigit: return (next < 128) && isxdigit(next);          // should be good enough.
+    case RCCxdigit: return (next < 128) && isxdigit((int)next);          // should be good enough.
     case RCCany:   return true;
     default:
         UNIMPLEMENTED;
@@ -1333,8 +1334,9 @@ void RegexAsciiISetPattern::addRange(unsigned low, unsigned high)
         assertex(low < 256 && high < 256);
         for (unsigned i = low; i <= high; i++)
         {
-            include[tolower(i)] = !inverted;
-            include[toupper(i)] = !inverted;
+            int cur = (int)i;
+            include[tolower(cur)] = !inverted;
+            include[toupper(cur)] = !inverted;
         }
     }
 }

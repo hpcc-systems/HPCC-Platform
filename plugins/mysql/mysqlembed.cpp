@@ -600,6 +600,7 @@ public:
             default:
                 bindinfo[i].buffer_type = col->type;
                 bindinfo[i].buffer_length = col->length;
+                bindinfo[i].is_unsigned = col->flags&UNSIGNED_FLAG;
                 break;
             }
             bindinfo[i].buffer = rtlMalloc(bindinfo[i].buffer_length);

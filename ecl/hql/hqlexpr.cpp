@@ -3487,6 +3487,9 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         return createNullExpr(type);
     }
 
+    if ((op == no_list) && (expr->numChildren() == 0))
+        return createNullExpr(type);
+
     IValue * value = expr->queryValue();
     if (value && type->assignableFrom(exprType))    // this last condition is unnecessary, but changes some persist crcs if removed
     {

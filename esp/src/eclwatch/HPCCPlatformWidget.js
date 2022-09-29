@@ -517,11 +517,13 @@ define([
                     method: "post"
                 }).then(function (data) {
                     if (data) {
-                        cookie("ECLWatchUser", "", { expires: -1 });
-                        cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
+                        Utility.deleteCookie("ECLWatchUser");
+                        Utility.deleteCookie("ESPSessionID");
+                        Utility.deleteCookie("Status");
+                        Utility.deleteCookie("User");
+                        Utility.deleteCookie("ESPSessionState");
                         window.location.reload();
                         context.storage.setItem("Status", "logged_out");
-                        cookie("Status", "", { expires: -1 });
                     }
                 });
             });

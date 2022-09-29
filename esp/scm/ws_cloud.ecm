@@ -26,9 +26,19 @@ ESPresponse [encode(0)] GetPODsResponse
     [json_inline(1)] string Result;
 };
 
-ESPservice [auth_feature("CloudAccess:ACCESS"), version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsCloud
+ESPrequest GetServicesRequest
+{
+};
+
+ESPresponse [encode(0)] GetServicesResponse
+{
+    [json_inline(1)] string Result;
+};
+
+ESPservice [auth_feature("CloudAccess:ACCESS"), version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsCloud
 {
     ESPmethod [auth_feature("CloudAccess:READ")] GetPODs(GetPODsRequest, GetPODsResponse);
+    ESPmethod [auth_feature("CloudAccess:READ"), min_ver("1.01")] GetServices(GetServicesRequest, GetServicesResponse);
 };
 
 SCMexportdef(WsCloud);
