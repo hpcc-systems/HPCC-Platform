@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, ChoiceGroup, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator } from "@fluentui/react";
+import { Checkbox, ChoiceGroup, ComboBox, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator, IComboBoxOption, IComboBoxProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import * as WsAccess from "src/ws_access";
@@ -642,15 +642,13 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
     return <AsyncDropdown {...props} options={baseDns} />;
 };
 
-export interface CloudContainerNameFieldProps extends Omit<AsyncDropdownProps, "options"> {
+export interface CloudContainerNameFieldProps extends Omit<IComboBoxProps, "options"> {
 }
 
 export const CloudContainerNameField: React.FunctionComponent<CloudContainerNameFieldProps> = (props) => {
 
     const [cloudContainerNames] = useContainerNames();
-    const [options, setOptions] = React.useState<IDropdownOption[]>();
-    const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
-    const { onChange, required, selectedKey } = { ...props };
+    const [options, setOptions] = React.useState<IComboBoxOption[]>();
 
     React.useEffect(() => {
         const options = cloudContainerNames?.map(row => {
@@ -660,17 +658,9 @@ export const CloudContainerNameField: React.FunctionComponent<CloudContainerName
             };
         }) || [];
         setOptions(options);
+    }, [cloudContainerNames]);
 
-        if (autoSelectDropdown(selectedKey, required)) {
-            const selectedItem = options[0];
-            if (selectedItem) {
-                setDefaultRow(selectedItem);
-                onChange(undefined, selectedItem);
-            }
-        }
-    }, [onChange, required, selectedKey, cloudContainerNames]);
-
-    return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
+    return <ComboBox {...props} allowFreeform={true} autoComplete={"on"} options={options} />;
 };
 
 const states = Object.keys(States).map(s => States[s]);
@@ -1120,7 +1110,6 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <CloudContainerNameField
                         key={fieldID}
-                        selectedKey={field.value}
                         onChange={(ev, row) => {
                             onChange(fieldID, row.key);
                             setDropzone(row.key as string);
