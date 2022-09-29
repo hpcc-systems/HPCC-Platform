@@ -367,7 +367,7 @@ protected:
             totalDelay += 250000000;
         }
 
-        __uint64 delta = 10000000;
+        __uint64 delta = 50000000;  // (50 ms)
 
         checkHistogramBucketResult(pScaledHistogram, -1, {1,0,0,0});
         checkHistogramValue(pScaledHistogram, totalDelay, delta);
