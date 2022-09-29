@@ -1733,7 +1733,7 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeTy
 extern WORKUNIT_API double getMachineCostRate();
 extern WORKUNIT_API double getThorManagerRate();
 extern WORKUNIT_API double getThorWorkerRate();
-extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned clusterWidth);
+extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned numberMachines);
 
 extern WORKUNIT_API IPropertyTree * getWUGraphProgress(const char * wuid, bool readonly);
 

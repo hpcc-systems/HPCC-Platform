@@ -21,26 +21,30 @@
 #include "ws_cloud_esp.ipp"
 #include "InfoCacheReader.hpp"
 
-const unsigned defaultPODInfoCacheForceBuildSecond = 10;
-const unsigned defaultPODInfoCacheAutoRebuildSecond = 120;
+const unsigned defaultK8sResourcesInfoCacheForceBuildSeconds = 10;
+const unsigned defaultK8sResourcesInfoCacheAutoRebuildSeconds = 120;
 
-class CPODs : public CInfoCache
+class CK8sResourcesInfoCache  : public CInfoCache
 {
     StringBuffer pods;
+    StringBuffer services;
+
+    void readToBuffer(const char* command, StringBuffer& output);
 public:
-    const char* read();
+    void read();
     inline const char* queryPODs() { return pods.str(); };
+    inline const char* queryServices() { return services.str(); };
 };
 
-class CPODInfoCacheReader : public CInfoCacheReader
+class CK8sResourcesInfoCacheReader  : public CInfoCacheReader
 {
 public:
-    CPODInfoCacheReader(const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
+    CK8sResourcesInfoCacheReader (const char* _name, unsigned _autoRebuildSeconds, unsigned _forceRebuildSeconds)
         : CInfoCacheReader(_name, _autoRebuildSeconds, _forceRebuildSeconds) {}
 
     virtual CInfoCache* read() override
     {
-        Owned<CPODs> info = new CPODs();
+        Owned<CK8sResourcesInfoCache> info = new CK8sResourcesInfoCache();
         info->read();
         return info.getClear();
     };
@@ -48,13 +52,17 @@ public:
 
 class CWsCloudEx : public CWsCloud
 {
-    Owned<CInfoCacheReader> podInfoCacheReader;
+    Owned<CInfoCacheReader> k8sResourcesInfoCacheReader;
+
+    const char* buildJsonPublicServices(const char* allServices, StringBuffer& publicServices);
+    void addJsonPublicService(IPropertyTree& serviceTree, StringBuffer& publicServices);
 
 public:
     IMPLEMENT_IINTERFACE;
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
 
     virtual bool onGetPODs(IEspContext& context, IEspGetPODsRequest& req, IEspGetPODsResponse& resp) override;
+    virtual bool onGetServices(IEspContext& context, IEspGetServicesRequest& req, IEspGetServicesResponse& resp) override;
 };
 
 #endif //_ESPWIZ_WsCloud_HPP__

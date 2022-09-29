@@ -666,7 +666,10 @@ void XSDSchemaParser::processXSDFiles(const std::string &path, const std::string
                     // If the file has an XSD extension and not previously processed, build the fully
                     // qualified name and parse it.
                     std::string ext = filename.substr(dotPos + 1);
-                    std::transform(ext.begin(), ext.end(), ext.begin(), tolower);
+                    //Ugly.  Because we overload tolower in windows the std::transform resolution fails.
+                    //Therefore assign the function to a variable to force the disambiguation. 
+                    int (*func)(int) = tolower;
+                    std::transform(ext.begin(), ext.end(), ext.begin(), func);
                     if (ext == "xsd" && m_pSchemaItem->addUniqueName(filename))
                     {
                         std::string fullyQualifiedFilePath = path;

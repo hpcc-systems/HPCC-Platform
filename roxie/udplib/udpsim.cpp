@@ -318,15 +318,18 @@ void simulateTraffic()
     }
 }
 
+void *leakChecker = nullptr;
+
 int main(int argc, const char **argv)
 {
     InitModuleObjects();
-    strdup("Make sure leak checking is working");
+    leakChecker = strdup("Make sure leak checking is working");
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time|MSGFIELD_microTime|MSGFIELD_milliTime|MSGFIELD_thread|MSGFIELD_prefix);
     initOptions(argc, argv);
     simulateTraffic();
     ExitModuleObjects();
     releaseAtoms();
+    leakChecker = nullptr;
     return 0;
 }
 

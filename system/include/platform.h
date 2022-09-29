@@ -213,44 +213,47 @@ typedef unsigned long MaxCard;
 
 // MSVC 2008 in debug (perhaps other versions too) will throw exception if negative passed (see bug: #32013)
 #if (_MSC_VER>=1400) // >=vs2005
-#define strictmsvc_isalpha(c) isalpha(c)
-#define isalpha(c) isalpha((const unsigned char)(c))
 
-#define strictmsvc_isupper(c) isupper(c)
-#define isupper(c) isupper((const unsigned char)(c))
+//Defining overloaded versions of these functions is almost certainly undefined behaviour in the c++ standard.
+//However it causes fewer problems than the previous fix using macros to redefine the functions.
+#undef isalpha
+inline bool isalpha(char c) { return isalpha((int)(unsigned char)c); }
 
-#define strictmsvc_islower(c) islower(c)
-#define islower(c) islower((const unsigned char)(c))
+#undef isupper
+inline bool isupper(char c) { return isupper((int)(unsigned char)(c)); }
 
-#define strictmsvc_isdigit(c) isdigit(c)
-#define isdigit(c) isdigit((const unsigned char)(c))
+#undef islower
+inline bool islower(char c) { return islower((int)(unsigned char)(c)); }
 
-#define strictmsvc_isxdigit(c) isxdigit(c)
-#define isxdigit(c) isxdigit((const unsigned char)(c))
+#undef isdigit
+inline bool isdigit(char c) { return isdigit((int)(unsigned char)(c)); }
 
-#define strictmsvc_isspace(c) isspace(c)
-#define isspace(c) isspace((const unsigned char)(c))
+#undef isxdigit
+inline bool isxdigit(char c) { return isxdigit((int)(unsigned char)(c)); }
 
-#define strictmsvc_ispunct(c) ispunct(c)
-#define ispunct(c) ispunct((const unsigned char)(c))
+#undef isspace
+inline bool isspace(char c) { return isspace((int)(unsigned char)(c)); }
 
-#define strictmsvc_isalnum(c) isalnum(c)
-#define isalnum(c) isalnum((const unsigned char)(c))
+#undef ispunct
+inline bool ispunct(char c) { return ispunct((int)(unsigned char)(c)); }
 
-#define strictmsvc_isprint(c) isprint(c)
-#define isprint(c) isprint((const unsigned char)(c))
+#undef isalnum
+inline bool isalnum(char c) { return isalnum((int)(unsigned char)(c)); }
 
-#define strictmsvc_isgraph(c) isgraph(c)
-#define isgraph(c) isgraph((const unsigned char)(c))
+#undef isprint
+inline bool isprint(char c) { return isprint((int)(unsigned char)(c)); }
 
-#define strictmsvc_iscntrl(c) iscntrl(c)
-#define iscntrl(c) iscntrl((const unsigned char)(c))
+#undef isgraph
+inline bool isgraph(char c) { return isgraph((int)(unsigned char)(c)); }
 
-#define strictmsvc_tolower(c) tolower(c)
-#define tolower(c) tolower((const unsigned char)(c))
+#undef iscntrl
+inline bool iscntrl(char c) { return iscntrl((int)(unsigned char)(c)); }
 
-#define strictmsvc_toupper(c) toupper(c)
-#define toupper(c) toupper((const unsigned char)(c))
+#undef tolower
+inline int tolower(char c) { return tolower((int)(unsigned char)(c)); }
+
+#undef toupper
+inline int toupper(char c) { return toupper((int)(unsigned char)(c)); }
 
 #endif // (_MSC_VER>=1400)
 
