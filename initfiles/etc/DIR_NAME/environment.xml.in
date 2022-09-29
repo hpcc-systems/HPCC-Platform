@@ -20,6 +20,8 @@
         storageWrites="0.0038"/>
  </Hardware>
  <Software>
+  <Globals noCommon="true"
+           maxConnections="-1"/>
   <DropZone build="_"
             buildSet="DropZone"
             description="DropZone process"
