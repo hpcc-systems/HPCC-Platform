@@ -3018,6 +3018,16 @@ IHqlStmt * HqlCppTranslator::buildFilterViaExpr(BuildCtx & ctx, IHqlExpression *
     }
 }
 
+IHqlStmt * HqlCppTranslator::buildFilterViaSimpleExpr(BuildCtx & ctx, IHqlExpression * expr)
+{
+    CHqlBoundExpr pure;
+    buildSimpleExpr(ctx, expr, pure);
+    assertex(!pure.length && !pure.count);
+    IHqlStmt * stmt =  ctx.addFilter(pure.expr);
+    ctx.associateExpr(expr, queryBoolExpr(true));
+    return stmt;
+}
+
 void HqlCppTranslator::tidyupExpr(BuildCtx & ctx, CHqlBoundExpr & bound)
 {
     if (isPushed(bound))

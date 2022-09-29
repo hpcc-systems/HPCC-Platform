@@ -50,12 +50,13 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
                     } else {
                         setShowError(false);
                         setErrorMessage("");
+                        onClose();
                     }
                 })
                 .catch(err => logger.error(err))
                 ;
         }
-    }, [currentUser, newPassword1, newPassword2, oldPassword, service]);
+    }, [currentUser, newPassword1, newPassword2, oldPassword, onClose, service]);
 
     return <Dialog hidden={!show} onDismiss={onClose} dialogContentProps={dialogContentProps} minWidth="640px">
         {showError &&

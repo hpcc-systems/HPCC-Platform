@@ -953,7 +953,12 @@ void TransformBuilder::buildTransform(BuildCtx & ctx, IHqlExpression * expr, IHq
 
             if (include)
             {
-                translator.buildFilter(subctx, foldedTest);
+                //Force the expression to be stored in a temp if it is non-trivial - so later code can make use of it
+                translator.buildFilterViaSimpleExpr(subctx, foldedTest);
+                //Also associate the original expression with true - to avoid conditionals within the branch (already done for foldedTest)
+                if (test != foldedTest)
+                    subctx.associateExpr(test, queryBoolExpr(true));
+
                 TransformBuilder childBuilder(*this, subctx);
                 childBuilder.buildTransformChildren(subctx, expr->queryChild(1), parentSelector);
                 childBuilder.flush(subctx);

@@ -1641,6 +1641,7 @@ public:
     void gatherActiveCursors(BuildCtx & ctx, HqlExprCopyArray & activeRows);
 
     IHqlStmt * buildFilterViaExpr(BuildCtx & ctx, IHqlExpression * expr);
+    IHqlStmt * buildFilterViaSimpleExpr(BuildCtx & ctx, IHqlExpression * expr);
 
     void doBuildPureSubExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildTempExprConcat(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
