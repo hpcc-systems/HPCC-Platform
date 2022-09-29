@@ -4601,15 +4601,27 @@ void HqlCppTranslator::doBuildRowAssignProjectRow(BuildCtx & ctx, IReferenceSele
     IHqlExpression * srcRow = expr->queryChild(0);
     IHqlExpression * transform = expr->queryChild(1);
 
+    //Evaluate the row expression here - otherwise it could be re-evaluated lots of times depending on the context it is used
     Owned<IReferenceSelector> source = buildNewRow(ctx, srcRow);
     BuildCtx subctx(ctx);
 
-    OwnedHqlExpr leftSelect = createSelector(no_left, srcRow, querySelSeq(expr));
-    OwnedHqlExpr newRow = srcRow->getOperator() == no_select ? LINK(srcRow) : createRow(no_newrow, LINK(srcRow));
-    OwnedHqlExpr newTransform = replaceSelector(transform, leftSelect, newRow);
+    if (!source->isRoot())
+    {
+        OwnedHqlExpr leftSelect = createSelector(no_left, srcRow, querySelSeq(expr));
+        OwnedHqlExpr newRow = srcRow->getOperator() == no_select ? LINK(srcRow) : createRow(no_newrow, LINK(srcRow));
+        OwnedHqlExpr newTransform = replaceSelector(transform, leftSelect, newRow);
 
-    Owned<BoundRow> selfCursor = target->getRow(subctx);
-    doTransform(subctx, newTransform, selfCursor);
+        Owned<BoundRow> selfCursor = target->getRow(subctx);
+        doTransform(subctx, newTransform, selfCursor);
+    }
+    else
+    {
+        //Alternative implementation that rebinds the selector and uses that directly
+        BoundRow * bound = source->getRow(subctx);
+        bindTableCursor(subctx, srcRow, bound->queryBound(), no_left, querySelSeq(expr));
+        Owned<BoundRow> selfCursor = target->getRow(subctx);
+        doTransform(subctx, transform, selfCursor);
+    }
 }
         
 void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
