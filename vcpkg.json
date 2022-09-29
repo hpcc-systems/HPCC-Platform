@@ -26,7 +26,10 @@
         },
         "h3",
         "hiredis",
-        "icu",
+        {
+            "name": "icu",
+            "platform": "!linux"
+        },
         "jwt-cpp",
         "jsoncpp",
         {
@@ -41,10 +44,6 @@
             "platform": "osx"
         },
         "libgit2",
-        {
-            "name": "libmysql",
-            "platform": "!(windows & x86)"
-        },
         "librdkafka",
         "libuv",
         "libxml2",

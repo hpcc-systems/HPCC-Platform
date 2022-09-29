@@ -1,7 +1,8 @@
 import UniversalRouter, { ResolveContext } from "universal-router";
-import { parse, ParsedQuery, stringify } from "query-string";
+import { exclude, parse, ParsedQuery, pick, stringify } from "query-string";
 import { hashSum, scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
+import { QuerySortItem } from "src/store/Store";
 
 const logger = scopedLogger("../util/history.ts");
 
@@ -38,7 +39,22 @@ function parseHash(hash: string): HistoryLocation {
 
 export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: string): T {
     if (_[0] !== "?") return {} as T;
-    return { ...parse(_.substring(1), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
+    return { ...parse(exclude(_.substring(1), ["sortBy"]), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
+}
+
+export function parseSort(_: string): QuerySortItem {
+    const filter = parse(pick(_.substring(1), ["sortBy"]));
+    let descending = false;
+    let sortBy = filter?.sortBy?.toString();
+    if (filter?.sortBy?.toString().charAt(0) === "-") {
+        descending = true;
+        sortBy = filter?.sortBy.toString().substring(1);
+    }
+    return { attribute: sortBy, descending };
+}
+
+export function updateSort(sorted: boolean, descending: boolean, sortBy: string) {
+    updateParam("sortBy", sorted ? (descending ? "-" : "") + sortBy : undefined);
 }
 
 interface HistoryLocation {

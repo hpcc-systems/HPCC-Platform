@@ -5,6 +5,7 @@ import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
+import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
@@ -83,13 +84,16 @@ const defaultUIState = {
 
 interface FilesProps {
     filter?: object;
+    sort?: QuerySortItem;
     store?: any;
 }
 
 const emptyFilter = {};
+const defaultSort = { attribute: undefined, descending: false };
 
 export const Files: React.FunctionComponent<FilesProps> = ({
     filter = emptyFilter,
+    sort = defaultSort,
     store
 }) => {
 
@@ -119,6 +123,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         persistID: "files",
         store: gridStore,
         query,
+        sort,
         filename: "logicalfiles",
         columns: {
             col1: {

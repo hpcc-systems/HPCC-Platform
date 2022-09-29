@@ -73,7 +73,9 @@ RUN yum install -y \
     java-11-openjdk-devel \
     sqlite-devel \
     libevent-devel \
-    v8-devel
+    v8-devel \
+    libicu-devel \
+    mysql-devel
 
 WORKDIR /hpcc-dev
 

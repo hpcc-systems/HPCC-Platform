@@ -54,7 +54,9 @@ RUN yum install -y \
     numactl-devel \
     java-11-openjdk-devel \
     sqlite-devel \
-    libevent-devel
+    libevent-devel \
+    libicu-devel \
+    mysql-devel
 
 RUN dnf --enablerepo=powertools -y install libmemcached-devel
 
