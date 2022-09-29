@@ -55,6 +55,7 @@
         },
         "libyaml",
         "lz4",
+        "mongo-cxx-driver",
         "nlohmann-json",
         {
             "name": "openblas",
