@@ -3159,7 +3159,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsGetNoCommonDefault()
         Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
 
         if (env.get())
-            noCommonDef = env->getPropBool("@noCommon", noCommonDef);
+            noCommonDef = env->getPropBool("Software/Globals/@noCommon", noCommonDef);
     }
 #endif
     return (bool)noCommonDef;
