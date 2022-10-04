@@ -214,6 +214,7 @@ data:
       template:
         metadata:
           labels:
+            accessDali: "yes"
             accessEsp: "true"
             app: "thor"
             component: "thorworker"
