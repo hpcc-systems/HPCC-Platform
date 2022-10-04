@@ -1,10 +1,10 @@
 import * as React from "react";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
-import { getTheme, PrimaryButton, IconButton, IIconProps, Link, Dropdown, IDropdownOption } from "@fluentui/react";
+import { getTheme, PrimaryButton, IconButton, IIconProps, Link, Dropdown, IDropdownOption, TextField } from "@fluentui/react";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { mergeStyleSets } from "@fluentui/style-utilities";
 import { ECLEditor, IPosition } from "@hpcc-js/codemirror";
-import { Workunit } from "@hpcc-js/comms";
+import { Workunit, WUUpdate } from "@hpcc-js/comms";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
@@ -12,7 +12,7 @@ import { darkTheme } from "../themes";
 import { InfoGrid } from "./InfoGrid";
 import { TabbedResults } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
-import { TargetClusterTextField } from "./forms/Fields";
+import { TargetClusterOption, TargetClusterTextField } from "./forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
 
 import "eclwatch/css/cmDarcula.css";
@@ -115,6 +115,16 @@ const playgroundStyles = mergeStyleSets({
             width: "240px"
         }
     },
+    publishWrapper: {
+        display: "flex",
+        ".ms-TextField-wrapper": {
+            display: "flex",
+            marginLeft: "18px"
+        },
+        ".ms-TextField-errorMessage": {
+            display: "none"
+        }
+    },
     outputButtons: {
         marginLeft: "18px"
     },
@@ -185,6 +195,10 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 
     const [cluster, setCluster] = React.useState("");
     const [wuState, setWuState] = React.useState("");
+    const [queryName, setQueryName] = React.useState("");
+    const queryNameRef = React.useRef(null);
+    const [queryNameErrorMsg, setQueryNameErrorMsg] = React.useState("");
+    const [showSubmitBtn, setShowSubmitBtn] = React.useState(true);
 
     const submitWU = React.useCallback(async () => {
         const wu = await Workunit.create({ baseUrl: "" });
@@ -206,6 +220,36 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
             }
         });
     }, [cluster, editor, setOutputMode, setWorkunit]);
+
+    const publishWU = React.useCallback(async () => {
+        if (queryName === "") {
+            setQueryNameErrorMsg(nlsHPCC.ValidationErrorRequired);
+            queryNameRef.current.focus();
+        } else {
+            setQueryNameErrorMsg("");
+
+            const wu = await Workunit.create({ baseUrl: "" });
+
+            await wu.update({ QueryText: editor.ecl() });
+            await wu.submit(cluster, WUUpdate.Action.Compile);
+
+            wu.watchUntilComplete(changes => {
+                setWuState(wu.State);
+                if (wu.isFailed()) {
+                    pushUrl(`/play/${wu.Wuid}`);
+                    setWorkunit(wu);
+                    displayErrors(wu, editor);
+                    setOutputMode(OutputMode.ERRORS);
+                } else if (wu.isComplete()) {
+                    pushUrl(`/play/${wu.Wuid}`);
+                    wu.publish(queryName);
+                    setWorkunit(wu);
+                    setWuState("Published");
+                    setOutputMode(OutputMode.RESULTS);
+                }
+            });
+        }
+    }, [cluster, editor, queryName, setOutputMode, setWorkunit, setQueryNameErrorMsg]);
 
     const handleKeyUp = React.useCallback((evt) => {
         switch (evt.key) {
@@ -230,12 +274,36 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 
     return <div className={playgroundStyles.toolBar}>
         <div className={playgroundStyles.controlsWrapper}>
-            <PrimaryButton text={nlsHPCC.Submit} onClick={submitWU} />
+            {showSubmitBtn ? (
+                <PrimaryButton text={nlsHPCC.Submit} onClick={submitWU} />
+            ) : (
+                <div className={playgroundStyles.publishWrapper}>
+                    <PrimaryButton text={nlsHPCC.Publish} onClick={publishWU} />
+                    <TextField
+                        label={nlsHPCC.Name}
+                        name="jobName"
+                        componentRef={queryNameRef}
+                        required
+                        errorMessage={queryNameErrorMsg}
+                        onChange={(evt, value) => setQueryName(value)}
+                    />
+                </div>
+            )}
             <TargetClusterTextField
                 key="target-cluster"
                 label={nlsHPCC.Target}
+                excludeRoxie={false}
+                required={true}
                 className={playgroundStyles.inlineDropdown}
-                onChange={React.useCallback((evt, option) => setCluster(option.key.toString()), [setCluster])}
+                onChange={React.useCallback((evt, option: TargetClusterOption) => {
+                    const selectedCluster = option.key.toString();
+                    if (option?.queriesOnly) {
+                        setShowSubmitBtn(false);
+                    } else {
+                        setShowSubmitBtn(true);
+                    }
+                    setCluster(selectedCluster);
+                }, [setCluster])}
             />
             <div className={playgroundStyles.outputButtons}>
                 <IconButton

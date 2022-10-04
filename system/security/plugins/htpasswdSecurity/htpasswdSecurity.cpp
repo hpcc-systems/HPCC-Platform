@@ -141,7 +141,17 @@ protected:
 
     bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
-        return IsPasswordValid(user);
+        bool auth_ok = IsPasswordValid(user);
+        if (auth_ok)
+        {
+            for (unsigned x = 0; x < resources->count(); x++)
+            {
+                ISecResource* resource = resources->queryResource(x);
+                if (resource != nullptr)
+                    resource->setAccessFlags(SecAccess_Full);
+            }
+        }
+        return auth_ok;
     }
 
     unsigned getPasswordExpirationWarningDays(IEspSecureContext* secureContext = nullptr) override

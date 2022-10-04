@@ -23,6 +23,7 @@ proxyItems.forEach(item => {
 module.exports = function (env) {
     const isDev = (env && env.development) || env === "development";
     const isProduction = !isDev;
+    console.log(isProduction ? "Production bundle" : "Debug bundle");
 
     const entry = {
         stub: "eclwatch/stub",
@@ -72,6 +73,18 @@ module.exports = function (env) {
                     test: /\.js$/,
                     use: ["source-map-loader"],
                     enforce: "pre"
+                }, {
+                    test: /\.js$/,
+                    loader: 'string-replace-loader',
+                    options: {
+                        search: isProduction ? "RELEASE_ONLY" : "DEBUG_ONLY",
+                        //   replace: "DEBUG_ONLY */",
+                        replace(match, p1, offset, string) {
+                            console.log(`Replace "${match}" in file "${this.resource}".`)
+                            return "DEBUG_ONLY */"
+                        },
+                        flags: "g"
+                    }
                 }]
         },
         resolve: {

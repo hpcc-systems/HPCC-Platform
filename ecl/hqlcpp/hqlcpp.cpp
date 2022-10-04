@@ -3965,6 +3965,9 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_childquery:
         buildChildGraph(ctx, expr);
         return;
+    case no_executewhen:
+        doBuildStmtExecuteWhen(ctx, expr);
+        return;
     case no_evaluate_stmt:
         expr = expr->queryChild(0);
         if (expr->queryValue())
@@ -7514,6 +7517,34 @@ void HqlCppTranslator::doBuildAssignExecuteWhen(BuildCtx & ctx, const CHqlBoundT
     else
     {
         buildExprAssign(ctx, target, value);
+        buildStmt(ctx, action);
+    }
+}
+
+void HqlCppTranslator::doBuildStmtExecuteWhen(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * value = expr->queryChild(0);
+    IHqlExpression * action = expr->queryChild(1);
+
+    if (expr->hasAttribute(beforeAtom))
+    {
+        buildStmt(ctx, action);
+        buildStmt(ctx, value);
+    }
+    else if (expr->hasAttribute(failureAtom))
+    {
+        BuildCtx tryctx(ctx);
+        tryctx.addTry();
+        buildStmt(tryctx, value);
+
+        BuildCtx catchctx(ctx);
+        catchctx.addCatch(NULL);
+        buildStmt(catchctx, action);
+        catchctx.addThrow(NULL);
+    }
+    else
+    {
+        buildStmt(ctx, value);
         buildStmt(ctx, action);
     }
 }
