@@ -215,7 +215,7 @@ data:
         metadata:
           labels:
             accessDali: "yes"
-            accessEsp: "true"
+            accessEsp: "yes"
             app: "thor"
             component: "thorworker"
             helmVersion: 8.10.0-closedown0
