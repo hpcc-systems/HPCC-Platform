@@ -1491,6 +1491,7 @@ public:
     void doBuildStmtCall(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtCluster(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtEnsureResult(BuildCtx & ctx, IHqlExpression * expr);
+    void doBuildStmtExecuteWhen(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtFail(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtNotify(BuildCtx & ctx, IHqlExpression * expr);
