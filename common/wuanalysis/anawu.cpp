@@ -673,7 +673,11 @@ bool WuScope::gatherCriticalPaths(StringArray & paths, WaThread * childThread, W
             {
                 if (creator->waitsForDependency(this))
                 {
-                    if (creator->gatherCriticalPaths(paths, nullptr, this, getEndTimestamp(), indent+1, options))
+                    bool minimizeDependencies = false;
+                    //Any activity that uses this dependency before the target activity is executed is theoretically
+                    //a dependency, but in practice if the activity was run after this dependency ran it is not likely to be interesting.
+                    stat_type maxTime = minimizeDependencies ? std::min(maxDependantTime, getEndTimestamp()) : maxDependantTime;
+                    if (creator->gatherCriticalPaths(paths, nullptr, this, maxDependantTime, indent+1, options))
                         matchedRoot = true;
                 }
             }
@@ -1040,12 +1044,20 @@ stat_type WuScope::getLocalStartTime() const
 stat_type WuScope::getLifetimeNs() const
 {
     stat_type endTimestamp = getEndTimestamp();
-    if (endTimestamp == 0)
+    if (endTimestamp != 0)
+        return endTimestamp - getBeginTimestamp();
+
+    stat_type elapsed = getStatRaw(StTimeElapsed);
+    if (!elapsed && (queryScopeType() != SSTactivity))
     {
-        stat_type elapsed = getStatRaw(StTimeElapsed);
-        return elapsed;
+        for (auto & cur : scopes)
+        {
+            stat_type childLifetime = cur.getLifetimeNs();
+            if (childLifetime > elapsed)
+                elapsed = childLifetime;
+        }
     }
-    return endTimestamp - getBeginTimestamp();
+    return elapsed;
 }
 
 void WuScope::walkHotspots(CIArrayOf<WuHotspotResult> & results, stat_type totalTime, const char * parent, bool isRoot, const RoxieOptions & options)
@@ -1053,19 +1065,24 @@ void WuScope::walkHotspots(CIArrayOf<WuHotspotResult> & results, stat_type total
     if (recursionCheck == 1)
         return;
     recursionCheck = 1;
+
+    stat_type minTime = options.timeThreshold;
     switch (queryScopeType())
     {
+    case SSTnone: // Global
     case SSTworkflow:
     case SSTgraph:
     case SSTsubgraph:
         for (auto & cur : scopes)
-            cur.walkHotspots(results, totalTime, nullptr, isRoot, options);
+        {
+            if (cur.getLifetimeNs() >= minTime)
+                cur.walkHotspots(results, totalTime, nullptr, isRoot, options);
+        }
         return;
     }
     if (!wasExecuted())
         return;
 
-    stat_type minTime = options.timeThreshold;
     stat_type myDependTime = getStatRaw(StTimeDependencies);
     stat_type localStartTime = getLocalStartTime();
     stat_type myStartTime = (localStartTime > myDependTime) ? localStartTime - myDependTime : 0;
@@ -1956,11 +1973,12 @@ void WorkunitStatsAnalyser::findHotspots(const char * rootScope, stat_type & tot
     }
 
     if (!activity)
-        activity = queryLongestRootActivity();
+        activity = root;
     if (!activity)
         return;
 
     totalTime = activity->getLifetimeNs();
+
     stat_type interesting = (stat_type)(totalTime * opts.thresholdPercent / 100.0);
     opts.timeThreshold = interesting;
     activity->walkHotspots(results, totalTime, "", true, opts);
@@ -2043,7 +2061,7 @@ void WorkunitStatsAnalyser::traceCriticalPaths(const StringArray & args)
         root->resetState();
         WuScope * resolved = resolveActivity(arg);
         StringArray paths;
-        resolved->gatherCriticalPaths(paths, nullptr, nullptr, 0, 0, opts);
+        resolved->gatherCriticalPaths(paths, nullptr, nullptr, resolved->getEndTimestamp(), 0, opts);
         printf("Critical path for %s:\n", arg);
         ForEachItemIn(i, paths)
             puts(paths.item(i));
