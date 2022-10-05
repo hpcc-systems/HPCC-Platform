@@ -26,17 +26,14 @@
 #include "jlog.hpp"
 #include "azurefile.hpp"
 
-#include "storage_credential.h"
-#include "storage_account.h"
-#include "blob/blob_client.h"
-#include "blob/create_block_blob_request.h"
+#include <chrono>
+#include <azure/core.hpp>
+#include <azure/storage/blobs.hpp>
+#include <azure/storage/files/shares.hpp>
 
-using namespace azure::storage_lite;
-
-//#undef some macros that clash with macros or function defined within the azure library
-#undef GetCurrentThreadId
-#undef __declspec
-
+using namespace Azure::Storage;
+using namespace Azure::Storage::Blobs;
+using namespace std::chrono;
 
 #define TRACE_AZURE
 //#define TEST_AZURE_PAGING
@@ -56,7 +53,6 @@ constexpr offset_t azureReadRequestSize = 0x400000;  // Default to requesting 4M
 
 //---------------------------------------------------------------------------------------------------------------------
 
-typedef std::stringstream BlobPageContents;
 class AzureFile;
 class AzureFileReadIO : implements CInterfaceOf<IFileIO>
 {
@@ -95,7 +91,7 @@ protected:
     CriticalSection cs;
     offset_t startResultOffset = 0;
     offset_t endResultOffset = 0;
-    BlobPageContents contents;
+    MemoryBuffer contents;
     FileIOStats stats;
 };
 
@@ -253,30 +249,34 @@ public:
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false) override { UNIMPLEMENTED_X("AzureFile::openMemoryMapped"); }
 
 protected:
+    std::shared_ptr<StorageSharedKeyCredential> getCredentials() const;
+    std::string getBlobUrl() const;
+    std::shared_ptr<BlobContainerClient> getBlobContainerClient() const;
+    template<typename T> std::shared_ptr<T> getClient() const;
     void createAppendBlob();
     void appendToAppendBlob(size32_t len, const void * data);
     void createBlockBlob();
     void appendToBlockBlob(size32_t len, const void * data);
-    void commitBlockBlob();
 
-    offset_t readBlock(BlobPageContents & contents, FileIOStats & stats, offset_t from = 0, offset_t length = unknownFileSize);
+    offset_t readBlock(MemoryBuffer & contents, FileIOStats & stats, offset_t from = 0, offset_t length = unknownFileSize);
     void ensureMetaData();
     void gatherMetaData();
     IFileIO * createFileReadIO();
     IFileIO * createFileWriteIO();
-    std::shared_ptr<azure::storage_lite::blob_client> getClient();
-
+    void setProperties(int64_t _blobSize, Azure::DateTime _lastModified, Azure::DateTime _createdOn);
 protected:
     StringBuffer fullName;
     StringAttr accountName;
     StringAttr accountKey;
-    std::string containerName;
-    std::string blobName;
+    StringAttr containerName;
+    StringAttr blobName;
     offset_t fileSize = unknownFileSize;
     bool haveMeta = false;
     bool isDir = false;
     bool fileExists = false;
-    time_t blobModifiedTime = 0;
+    time_t lastModified = 0;
+    time_t createdOn = 0;
+    std::string blobUrl;
     CriticalSection cs;
 };
 
@@ -344,10 +344,12 @@ offset_t AzureFileReadIO::size()
 
 size_t AzureFileReadIO::extractDataFromResult(size_t offset, size_t length, void * target)
 {
-    //MORE: There are probably more efficient ways of extracting data - but this avoids the clone calling str()
-    contents.seekg(offset);
-    contents.read((char *)target, length);
-    return contents.gcount();
+    if (offset>=contents.length())
+        return 0;
+    const byte * base = (byte *)(contents.bufferBase())+offset;
+    unsigned len = std::min(length, contents.length()-offset);
+    memcpy(target, base, len);
+    return len;
 }
 
 unsigned __int64 AzureFileReadIO::getStatistic(StatisticKind kind)
@@ -469,7 +471,7 @@ AzureFileBlockBlobWriteIO::AzureFileBlockBlobWriteIO(AzureFile * _file) : AzureF
 
 void AzureFileBlockBlobWriteIO::close()
 {
-    file->commitBlockBlob();
+
 }
 
 offset_t AzureFileBlockBlobWriteIO::appendFile(IFile *file, offset_t pos, offset_t len)
@@ -490,26 +492,12 @@ size32_t AzureFileBlockBlobWriteIO::write(offset_t pos, size32_t len, const void
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-
-void throwStorageError(const azure::storage_lite::storage_error & error)
-{
-    unsigned errCode = atoi(error.code.c_str());
-    throw makeStringExceptionV(errCode, "Azure Error: %s, %s", error.code.c_str(), error.code_name.c_str());
-}
-
-template <typename RESULT>
-void checkError(const RESULT & result)
-{
-    if (!result.success())
-        throwStorageError(result.error());
-}
-
 static bool isBase64Char(char c)
 {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '+') || (c == '/') || (c == '=');
 }
 
-static std::shared_ptr<azure::storage_lite::blob_client> getClient(const char * accountName, const char * key)
+static std::shared_ptr<StorageSharedKeyCredential> getCredentials(const char * accountName, const char * key)
 {
     //MORE: The client should be cached and shared between different file access - implement when secret storage is added.
     StringBuffer keyTemp;
@@ -537,21 +525,27 @@ static std::shared_ptr<azure::storage_lite::blob_client> getClient(const char * 
             key = keyTemp.str();
         }
     }
-
-    std::shared_ptr<azure::storage_lite::storage_credential> cred = nullptr;
     try
     {
-        cred = std::make_shared<azure::storage_lite::shared_key_credential>(accountName, key);
+        return std::make_shared<StorageSharedKeyCredential>(accountName, key);
     }
-    catch (const std::exception & e)
+    catch (const Azure::Core::RequestFailedException& e)
     {
-        IException * error = makeStringExceptionV(1234, "Azure access: %s", e.what());
+        IException * error = makeStringExceptionV(-1, "Azure access: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
         throw error;
     }
+}
 
-    std::shared_ptr<azure::storage_lite::storage_account> account = std::make_shared<azure::storage_lite::storage_account>(accountName, cred, /* use_https */ true);
-    const int max_concurrency = 10;
-    return std::make_shared<azure::storage_lite::blob_client>(account, max_concurrency);
+static std::string getContainerUrl(const char *account, const char * container)
+{
+    std::string url("https://");
+    return url.append(account).append(".blob.core.windows.net/").append(container);
+}
+
+static std::string getBlobUrl(const char *account, const char * container, const char *blob)
+{
+    std::string url(getContainerUrl(account, container));
+    return url.append("/").append(blob);
 }
 
 AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
@@ -601,112 +595,163 @@ AzureFile::AzureFile(const char *_azureFileName) : fullName(_azureFileName)
             accountName.set(accessExtra); // Key is retrieved from the secrets
     }
 
-    containerName.assign(filename, slash-filename);
-    blobName.assign(slash+1);
+    containerName.set(filename, slash-filename);
+    blobName.set(slash+1);
+    blobUrl = ::getBlobUrl(accountName, containerName, blobName);
+}
+
+std::shared_ptr<StorageSharedKeyCredential> AzureFile::getCredentials() const
+{
+    return ::getCredentials(accountName, accountKey);
+}
+
+std::string AzureFile::getBlobUrl() const
+{
+    return blobUrl;
+}
+
+std::shared_ptr<BlobContainerClient> AzureFile::getBlobContainerClient() const
+{
+    auto cred = getCredentials();
+    std::string blobContainerUrl = getContainerUrl(accountName, containerName);
+    return std::make_shared<BlobContainerClient>(blobContainerUrl, cred);
+}
+
+template<typename T>
+std::shared_ptr<T> AzureFile::getClient() const
+{
+    auto cred = getCredentials();
+    return std::make_shared<T>(getBlobUrl(), cred);
 }
 
 bool AzureFile::createDirectory()
 {
-    for (;;)
+    auto blobContainerClient = getBlobContainerClient();
+    try
     {
-        //Ensure that the container exists...
-        auto client = getClient();
-        auto ret = client->create_container(containerName).get();
-        if (ret.success())
-            return true;    // No need to create any directory structure - all blobs are flat within the container
-
-        DBGLOG("Failed to create container, Error: %s, %s", ret.error().code.c_str(), ret.error().code_name.c_str());
-
-        //MORE: Need to update the code / code_names so the following works:
-        if (streq(ret.error().code.c_str(), "ContainerAlreadyExists"))
-            return true;
-        if (!streq(ret.error().code.c_str(), "ContainerBeingDeleted"))
-            return true;
-        MilliSleep(100);
+        Azure::Response<Models::CreateBlobContainerResult> result = blobContainerClient->CreateIfNotExists();
+        if (result.Value.Created==false)
+            OERRLOG("Azure create container: container not created");
+        return result.Value.Created;
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure create container failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
     }
 }
 
-
 void AzureFile::createAppendBlob()
 {
-    auto client = getClient();
-    auto ret = client->create_append_blob(containerName, blobName).get();
-    checkError(ret);
+    auto appendBlobClient = getClient<AppendBlobClient>();
+    try
+    {
+        Azure::Response<Models::CreateAppendBlobResult> result = appendBlobClient->CreateIfNotExists();
+        if (result.Value.Created==false)
+            OERRLOG("Azure append blob (container %s blob %s): blob not created", containerName.str(), blobName.str());
+        else
+        {
+            setProperties(0, result.Value.LastModified, result.Value.LastModified);
+        }
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure create append blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
 }
 
 
 void AzureFile::appendToAppendBlob(size32_t len, const void * data)
 {
-    auto client = getClient();
-    std::istringstream input(std::string((const char *)data, len));
-    //implement append_block_from_buffer based on upload_block_from_buffer
-    auto ret = client->append_block_from_stream(containerName, blobName, input).get();
-    checkError(ret);
+    auto appendBlobClient = getClient<AppendBlobClient>();
+    try
+    {
+        // MemoryBodyStream clones the data.  Future: use class derived from Azure::Core::IO::BodyStream to avoid creating a copy of data
+        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast <const uint8_t *>(data), len);
+        appendBlobClient->AppendBlock(content);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure append blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
 }
 
 void AzureFile::createBlockBlob()
 {
-    auto client = getClient();
-    auto http = client->client()->get_handle();
-
-    auto request = std::make_shared<azure::storage_lite::create_block_blob_request>(containerName, blobName);
-
-    auto ret = async_executor<void>::submit(client->account(), request, http, client->context()).get();
-    checkError(ret);
+    auto blockBlobClient = getClient<BlockBlobClient>();
+    try
+    {
+        Azure::Core::IO::MemoryBodyStream empty(nullptr, 0);
+        Azure::Response<Models::UploadBlockBlobResult> result = blockBlobClient->Upload(empty); // need to do this to create an empty blob
+        setProperties(0, result.Value.LastModified, result.Value.LastModified);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure create block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
 }
-
 
 void AzureFile::appendToBlockBlob(size32_t len, const void * data)
 {
-    auto client = getClient();
-    std::string blockid;
-    auto ret = client->upload_block_from_buffer(containerName, blobName, blockid, (const char *)data, len).get();
-    checkError(ret);
+    auto appendBlobClient = getClient<AppendBlobClient>();
+    try
+    {
+        Azure::Core::IO::MemoryBodyStream content(reinterpret_cast <const uint8_t *>(data), len);
+        appendBlobClient->AppendBlock(content);
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure append block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
 }
-
-void AzureFile::commitBlockBlob()
-{
-    auto client = getClient();
-    std::vector<azure::storage_lite::put_block_list_request_base::block_item> blocks;
-    auto ret = client->put_block_list(containerName, blobName, blocks, {}).get();
-    checkError(ret);
-}
-
-std::shared_ptr<azure::storage_lite::blob_client> AzureFile::getClient()
-{
-    return ::getClient(accountName, accountKey);
-}
-
 
 bool AzureFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime)
 {
     ensureMetaData();
     if (createTime)
+    {
         createTime->clear();
+        createTime->set(createdOn);
+    }
     if (modifiedTime)
     {
         modifiedTime->clear();
-        modifiedTime->set(blobModifiedTime);
+        modifiedTime->set(lastModified);
     }
     if (accessedTime)
         accessedTime->clear();
     return false;
 }
 
-offset_t AzureFile::readBlock(BlobPageContents & contents, FileIOStats & stats, offset_t from, offset_t length)
+offset_t AzureFile::readBlock(MemoryBuffer & contents, FileIOStats & stats, offset_t from, offset_t length)
 {
     CCycleTimer timer;
-    {
-        auto client = getClient();
-        azure::storage_lite::blob_client_wrapper wrapper(client);
+    auto blockBlobClient = getClient<BlockBlobClient>();
 
-        //NOTE: Currently each call starts a new thread and then waits for the result.  It will be better in
-        //the long term to avoid the wrapper calls and use the asynchronous calls to read ahead.
-        contents.seekp(0);
-        wrapper.download_blob_to_stream(containerName, blobName, from, length, contents);
+    Azure::Storage::Blobs::DownloadBlobToOptions options;
+    options.Range = Azure::Core::Http::HttpRange();
+    options.Range.Value().Offset = from;
+    options.Range.Value().Length = length;
+    contents.ensureCapacity(length);
+    uint8_t * buffer = reinterpret_cast<uint8_t*>(contents.bufferBase());
+    long int sizeRead = 0;
+    try
+    {
+        Azure::Response<Models::DownloadBlobToResult> result = blockBlobClient->DownloadTo(buffer, length, options);
+        Azure::Core::Http::HttpRange range = result.Value.ContentRange;
+        if (range.Length.HasValue())
+            sizeRead = range.Length.Value();
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure read block blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
     }
 
-    offset_t sizeRead = contents.tellp();
     stats.ioReads++;
     stats.ioReadCycles += timer.elapsedCycles();
     stats.ioReadBytes += sizeRead;
@@ -744,33 +789,48 @@ void AzureFile::ensureMetaData()
 void AzureFile::gatherMetaData()
 {
     CCycleTimer timer;
-
-    auto client = getClient();
-    azure::storage_lite::blob_client_wrapper wrapper(client);
-
-    auto properties = wrapper.get_blob_property(containerName, blobName);
-    if (errno == 0)
+    auto blobClient = getClient<BlobClient>();
+    try
     {
-        fileExists = true;
-        fileSize = properties.size;
-        blobModifiedTime = properties.last_modified;    // Could be more accurate
-        //MORE: extract information from properties.metadata
+        Azure::Response<Models::BlobProperties> properties = blobClient->GetProperties();
+        Models::BlobProperties & props = properties.Value;
+        setProperties(props.BlobSize, props.LastModified, props.CreatedOn);
     }
-    else
+    catch (const Azure::Core::RequestFailedException& e)
     {
         fileExists = false;
+        fileSize = 0;
     }
 }
-
 
 bool AzureFile::remove()
 {
-    auto client = getClient();
-    azure::storage_lite::blob_client_wrapper wrapper(client);
-
-    wrapper.delete_blob(containerName, blobName);
-    return (errno == 0);
+    auto blobClient = getClient<BlobClient>();
+    try
+    {
+        Azure::Response<Models::DeleteBlobResult> resp = blobClient->DeleteIfExists();
+        if (resp.Value.Deleted==true)
+        {
+            fileExists = false;
+            return true;
+        }
+    }
+    catch (const Azure::Core::RequestFailedException& e)
+    {
+        IException * error = makeStringExceptionV(1234, "Azure delete blob failed: %s (%d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+        throw error;
+    }
+    return false;
 }
+
+void AzureFile::setProperties(int64_t _blobSize, Azure::DateTime _lastModified, Azure::DateTime _createdOn)
+{
+    haveMeta = true;
+    fileExists = true;
+    fileSize = _blobSize;
+    lastModified = system_clock::to_time_t(system_clock::time_point(_lastModified));
+    createdOn = system_clock::to_time_t(system_clock::time_point(_createdOn));
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -806,7 +866,6 @@ protected:
     }
 } *azureFileHook;
 
-
 extern AZURE_FILE_API void installFileHook()
 {
     if (!azureFileHook)
@@ -822,13 +881,13 @@ extern AZURE_FILE_API void removeFileHook()
     {
         removeContainedFileHook(azureFileHook);
         delete azureFileHook;
-        azureFileHook = NULL;
+        azureFileHook = nullptr;
     }
 }
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    azureFileHook = NULL;  // Not really needed, but you have to have a modinit to match a modexit
+    azureFileHook = nullptr;
     return true;
 }
 
@@ -838,6 +897,6 @@ MODULE_EXIT()
     {
         removeContainedFileHook(azureFileHook);
         ::Release(azureFileHook);
-        azureFileHook = NULL;
+        azureFileHook = nullptr;
     }
 }

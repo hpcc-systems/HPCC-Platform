@@ -28,8 +28,8 @@
 
 
 /*
- * Direct access to files in s3 buckets
- * Installs hooks into createIFile, spotting filenames of the form s3://url
+ * Direct access to files in Azure blobs
+ * Installs hooks into createIFile, spotting filenames of the form azure://url
  */
 
 extern "C" {
