@@ -214,7 +214,7 @@ data:
       template:
         metadata:
           labels:
-            accessEsp: "true"
+            accessEsp: "yes"
             app: "thor"
             component: "thorworker"
             helmVersion: 8.8.19-closedown0
