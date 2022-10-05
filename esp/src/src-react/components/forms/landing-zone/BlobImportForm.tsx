@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
@@ -7,6 +8,8 @@ import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
 import * as FormStyles from "./styles";
 import { pushUrl } from "../../../util/history";
+
+const logger = scopedLogger("src-react/components/forms/landing-zone/BlobImportForm.tsx");
 
 interface BlobImportFormValues {
     destGroup: string;
@@ -79,14 +82,17 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                     FileSpray.SprayFixed({
                         request: request
                     }).then((response) => {
-                        if (response.SprayFixedResponse?.wuid) {
+                        if (response?.Exceptions) {
+                            const err = response.Exceptions.Exception[0].Message;
+                            logger.error(err);
+                        } else if (response.SprayFixedResponse?.wuid) {
                             pushUrl(`/dfuworkunits/${response.SprayFixedResponse.wuid}`);
                         }
                     });
                 });
             },
             err => {
-                console.log(err);
+                logger.error(err);
             }
         )();
     }, [handleSubmit]);
