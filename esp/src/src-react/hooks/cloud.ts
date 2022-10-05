@@ -4,6 +4,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import type { V1Pod } from "@kubernetes/client-node";
 
 import { useCounter } from "./workunit";
+import nlsHPCC from "src/nlsHPCC";
 
 const logger = scopedLogger("../hooks/cloud.ts");
 
@@ -62,7 +63,9 @@ export function usePods(): [Pod[], () => void] {
                     payload: pod
                 };
             }));
-        }).catch(err => logger.error(err));
+        }).catch(err => {
+            logger.error(nlsHPCC.PodsAccessError);
+        });
     }, [refreshTick]);
 
     return [retVal, refresh];
