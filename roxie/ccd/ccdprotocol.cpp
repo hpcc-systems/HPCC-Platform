@@ -128,6 +128,8 @@ public:
         started.wait();
     }
 
+    virtual ISocket *createSecureSocket (ISocket *base) const = 0;
+
     virtual bool stop()
     {
         if (running)
@@ -225,6 +227,7 @@ class ProtocolSocketListener : public ProtocolListener
     StringAttr keyFile;
     StringAttr passPhrase;
     Owned<ISecureSocketContext> secureContext;
+    bool isSSL = false;
 
 public:
     ProtocolSocketListener(IHpccProtocolMsgSink *_sink, unsigned _port, unsigned _listenQueue, const char *_protocol, const char *_certFile, const char *_keyFile, const char *_passPhrase)
@@ -237,6 +240,11 @@ public:
         certFile.set(_certFile);
         keyFile.set(_keyFile);
         passPhrase.set(_passPhrase);
+        isSSL = streq(protocol.str(), "ssl");
+#ifdef _USE_OPENSSL
+        if (isSSL)
+            secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
+#endif
     }
 
     IHpccProtocolMsgSink *queryMsgSink()
@@ -272,11 +280,55 @@ public:
 
     virtual void runOnce(const char *query);
 
-    virtual void cleanupSocket(ISocket *sock)
+    void cleanupSocket(ISocket *sock) const
     {
         shutdownAndCloseNoThrow(sock);
     }
 
+    virtual ISocket *createSecureSocket (ISocket *base) const override
+    {
+        if (!isSSL)
+            return base;
+#ifdef _USE_OPENSSL
+        Owned<ISecureSocket> ssock;
+        try
+        {
+            ssock.setown(secureContext->createSecureSocket(base));
+            int loglevel = SSLogMin;
+            if (traceLevel > 1)
+                loglevel = SSLogMax;
+            int status = ssock->secure_accept(loglevel);
+            if (status < 0)
+            {
+                // secure_accept may also DBGLOG() errors ...
+                cleanupSocket(ssock);
+                return nullptr;
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            E->errorMessage(s);
+            OWARNLOG("%s", s.str());
+            E->Release();
+            cleanupSocket(ssock);
+            ssock.clear();
+            return nullptr;
+        }
+        catch (...)
+        {
+            OWARNLOG("ProtocolSocketListener failure to establish secure connection");
+            cleanupSocket(ssock);
+            ssock.clear();
+            return nullptr;
+        }
+        return ssock.getClear();
+#else
+        OWARNLOG("ProtocolSocketListener failure to establish secure connection: OpenSSL disabled in build");
+        return nullptr;
+#endif
+
+    }
     virtual int run()
     {
         DBGLOG("ProtocolSocketListener (%d threads) listening to socket on port %d", sink->getPoolSize(), port);
@@ -286,55 +338,8 @@ public:
         while (running)
         {
             Owned<ISocket> client = socket->accept(true);
-            Owned<ISecureSocket> ssock;
             if (client)
             {
-                if (streq(protocol.str(), "ssl"))
-                {
-#ifdef _USE_OPENSSL
-                    try
-                    {
-                        if (!secureContext)
-                            secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
-                        ssock.setown(secureContext->createSecureSocket(client.getClear()));
-                        int loglevel = SSLogMin;
-                        if (traceLevel > 1)
-                            loglevel = SSLogMax;
-                        int status = ssock->secure_accept(loglevel);
-                        if (status < 0)
-                        {
-                            // secure_accept may also DBGLOG() errors ...
-                            cleanupSocket(ssock);
-                            continue;
-                        }
-                    }
-                    catch (IException *E)
-                    {
-                        StringBuffer s;
-                        E->errorMessage(s);
-                        OWARNLOG("%s", s.str());
-                        E->Release();
-                        cleanupSocket(ssock);
-                        ssock.clear();
-                        cleanupSocket(client);
-                        client.clear();
-                        continue;
-                    }
-                    catch (...)
-                    {
-                        OWARNLOG("ProtocolSocketListener failure to establish secure connection");
-                        cleanupSocket(ssock);
-                        ssock.clear();
-                        cleanupSocket(client);
-                        client.clear();
-                        continue;
-                    }
-                    client.setown(ssock.getClear());
-#else
-                    OWARNLOG("ProtocolSocketListener failure to establish secure connection: OpenSSL disabled in build");
-                    continue;
-#endif
-                }
                 client->set_linger(-1);
                 pool->start(client.getClear());
             }
@@ -1510,6 +1515,7 @@ static Owned<IActiveQueryLimiterFactory> queryLimiterFactory;
 class RoxieSocketWorker : public ProtocolQueryWorker
 {
     SocketEndpoint ep;
+    Owned<ISocket> rawClient;
     Owned<SafeSocket> client;
     Owned<IHpccNativeProtocolMsgSink> sink;
 
@@ -1523,13 +1529,24 @@ public:
     //  interface IPooledThread
     virtual void init(void *_r) override
     {
-        client.setown(new CSafeSocket((ISocket *) _r));
+        rawClient.setown((ISocket *) _r);
         ProtocolQueryWorker::init(_r);
     }
 
     virtual void threadmain() override
     {
-        doMain("");
+        ISocket *secure = listener->createSecureSocket(rawClient.getLink());
+        if (secure)
+        {
+            client.setown(new CSafeSocket(secure));
+            rawClient.clear();
+            doMain("");
+        }
+        else
+        {
+            rawClient->shutdownNoThrow();
+            rawClient.clear();
+        }
     }
 
     virtual void runOnce(const char *query)
