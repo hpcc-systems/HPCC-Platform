@@ -794,7 +794,10 @@ void HqlCppCaseInfo::buildGeneralAssign(BuildCtx & ctx, IExprProcessor & target)
     Owned<BuildCtx> subctx = new BuildCtx(ctx);
     CHqlBoundExpr pureCond;
     if (cond.get())
-        translator.buildCachedExpr(*subctx, cond, pureCond);
+    {
+        OwnedHqlExpr simpleCond = complexCompare ? getSimplifyCompareArg(cond) : LINK(cond);
+        translator.buildCachedExpr(*subctx, simpleCond, pureCond);
+    }
     
     OwnedHqlExpr testMore;
 
