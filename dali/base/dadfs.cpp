@@ -3582,7 +3582,26 @@ public:
         if (!external)
             setLFNHash(fdesc);
         setClusters(fdesc);
+
+        StringBuffer oldBaseDir;
+        char pathSepChar = getPathSepChar(directory.get());
+        DFD_OS os = SepCharBaseOs(pathSepChar);
+        clusters.item(0).getBaseDir(oldBaseDir, os);
+        unsigned oldLen = oldBaseDir.length();
         setPreferredClusters(_parent->defprefclusters);
+
+        // Check it the base dir has been changed. If yes, update the 'directory'
+        if (oldLen && strncmp(directory, oldBaseDir, oldLen)==0 && (directory[oldLen]==pathSepChar || directory[oldLen]=='\0'))
+        {
+            StringBuffer newBaseDir;
+            clusters.item(0).getBaseDir(newBaseDir, os);
+            newBaseDir.append(directory.get() + oldBaseDir.length());
+#ifdef _DEBUG
+            PROGLOG("oldBaseDir:'%s', newBaseDir:'%s', directory:'%s'", oldBaseDir.str(), newBaseDir.str(), directory.str());
+#endif
+            directory.set(newBaseDir);
+        }
+
         saveClusters();
         setParts(fdesc,true);
         udesc.set(user);

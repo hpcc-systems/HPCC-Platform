@@ -544,6 +544,10 @@ int FileSizeThread::run()
                 }
                 else
                     remoteFilename.set(cur->filename);
+#ifdef _DEBUG
+                StringBuffer _s;
+                LOG(MCdebugProgressDetail, -1, "remoteFilename: %s", remoteFilename.getRemotePath(_s).str());
+#endif
                 OwnedIFile thisFile = createIFile(remoteFilename);
                 offset_t thisSize = thisFile->size();
                 if (thisSize == -1)
