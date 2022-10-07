@@ -3583,23 +3583,36 @@ public:
             setLFNHash(fdesc);
         setClusters(fdesc);
 
-        StringBuffer oldBaseDir;
-        char pathSepChar = getPathSepChar(directory.get());
-        DFD_OS os = SepCharBaseOs(pathSepChar);
-        clusters.item(0).getBaseDir(oldBaseDir, os);
-        unsigned oldLen = oldBaseDir.length();
-        setPreferredClusters(_parent->defprefclusters);
-
-        // Check it the base dir has been changed. If yes, update the 'directory'
-        if (oldLen && strncmp(directory, oldBaseDir, oldLen)==0 && (directory[oldLen]==pathSepChar || directory[oldLen]=='\0'))
+        if (clusters.ordinality() > 1)
         {
-            StringBuffer newBaseDir;
-            clusters.item(0).getBaseDir(newBaseDir, os);
-            newBaseDir.append(directory.get() + oldBaseDir.length());
+            char pathSepChar = PATHSEPCHAR;
+            DFD_OS os = DFD_OSdefault;
+            StringBuffer oldBaseDir;
+            unsigned oldLen = 0;
+            if (directory.length())
+            {
+                pathSepChar = getPathSepChar(directory.get());
+                os = SepCharBaseOs(pathSepChar);
+                clusters.item(0).getBaseDir(oldBaseDir, os);
+                oldLen = oldBaseDir.length();
+            }
+
+            setPreferredClusters(_parent->defprefclusters);
+
+            // Check if the base dir has been changed. If yes, update the 'directory'
+            if (directory.length() && oldLen && strncmp(directory, oldBaseDir, oldLen)==0 && (directory[oldLen]==pathSepChar || directory[oldLen]=='\0'))
+            {
+                StringBuffer newBaseDir;
+                clusters.item(0).getBaseDir(newBaseDir, os);
 #ifdef _DEBUG
-            PROGLOG("oldBaseDir:'%s', newBaseDir:'%s', directory:'%s'", oldBaseDir.str(), newBaseDir.str(), directory.str());
+                PROGLOG("oldBaseDir:'%s', newBaseDir:'%s'", oldBaseDir.str(), newBaseDir.str());
+#endif            
+                newBaseDir.append(directory.get() + oldBaseDir.length());
+#ifdef _DEBUG
+                PROGLOG("old path:'%s', new path:'%s'", directory.str(), newBaseDir.str());
 #endif
-            directory.set(newBaseDir);
+                directory.set(newBaseDir);
+            }
         }
 
         saveClusters();
