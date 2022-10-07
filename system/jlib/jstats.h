@@ -625,11 +625,13 @@ public:
     virtual bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in);
     virtual void deserializeMerge(MemoryBuffer& in);
+    virtual CRuntimeStatisticCollection &normalize();
 
     // Nested statistics need to be protected before merging, non nested are merged atomically
     inline bool isThreadSafeMergeSource() const { return nested == nullptr; }
 
 protected:
+    StringBuffer &_toStr(StringBuffer &str) const;
     virtual CNestedRuntimeStatisticMap *createNested() const;
     CNestedRuntimeStatisticMap & ensureNested();
     CNestedRuntimeStatisticMap *queryNested() const;

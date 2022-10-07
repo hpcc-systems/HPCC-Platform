@@ -2559,7 +2559,40 @@ StringBuffer & CRuntimeStatisticCollection::toXML(StringBuffer &str) const
     return str;
 }
 
+CRuntimeStatisticCollection & CRuntimeStatisticCollection::normalize()
+{
+    ForEachItem(iStat)
+    {
+        unsigned __int64 value = values[iStat].get();
+        if (value)
+        {
+            StatisticKind kind = getKind(iStat);
+            StatisticKind serialKind = querySerializedKind(kind);
+            if (kind != serialKind)
+            {
+                value = convertMeasure(kind, serialKind, value);
+                StatsMergeAction mergeAction = queryMergeMode(serialKind);
+                mergeStatistic(serialKind, value, mergeAction);
+                setStatistic(kind, 0);
+            }
+        }
+    }
+ //   CNestedRuntimeStatisticMap *qn = queryNested();
+//    if (qn)
+  //      qn->normalize();
+    return *this;
+}
+
 StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
+{
+    MemoryBuffer b;
+    serialize(b);
+    CRuntimeStatisticCollection normalized(mapping, true);
+    normalized.deserializeMerge(b);
+    return normalized._toStr(str);
+}
+
+StringBuffer & CRuntimeStatisticCollection::_toStr(StringBuffer &str) const
 {
     ForEachItem(iStat)
     {
