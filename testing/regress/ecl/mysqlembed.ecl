@@ -47,6 +47,14 @@ childrec := RECORD(stringrec)
    unsigned uti { default(0)}
 END;
 
+jsonstrrec := RECORD(stringrec)
+   string50 properties { default('{ "page": "/" }') },
+   string255 browser { default('{ "name": "Safari", "os": "Mac", "resolution": { "x": 1920, "y": 1080 } }') }    
+END;
+
+browsersrec := RECORD
+   string10 browser 
+END;
 
 stringrec extractName(childrec l) := TRANSFORM
   SELF := l;
@@ -54,6 +62,11 @@ END;
 
 init := DATASET([{'name1', 0x4161, 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
                  {'name2', 66, 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là', '2015-12-25 01:23:45', 127, 255 }], childrec);
+
+initjson := DATASET([{'pageview', '{ "page": "/contact" }', '{ "name": "Firefox", "os": "Windows", "resolution": { "x": 2560, "y": 1600 } }'},
+                 {'purchase', '{ "amount": 500 }', '{ "name": "Chrome", "os": "Windows", "resolution": { "x": 1680, "y": 1050 } }' },
+                 {'purchase', '{ "amount": 200 }', '{ "name": "Safari", "os": "Mac", "resolution": { "x": 1600, "y": 900 } }'},
+                 {'pageview', '{ "page": "/" }', '{ "name": "Safari", "os": "Mac", "resolution": { "x": 1920, "y": 1080 } }'}], jsonstrrec);
 
 drop1() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   DROP TABLE IF EXISTS tbl1;
@@ -67,7 +80,11 @@ drop3() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   DROP FUNCTION IF EXISTS hello;
 ENDEMBED;
 
-drop() := SEQUENTIAL(drop1(), drop2(), drop3());
+drop4() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  DROP TABLE IF EXISTS jsonevents;
+ENDEMBED;
+
+drop() := SEQUENTIAL(drop1(), drop2(), drop3(), drop4());
 
 create1() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   CREATE TABLE tbl1 ( name VARCHAR(20), bval BIT(15), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10), dt DATETIME, ti TINYINT (1), uti TINYINT (1) unsigned );
@@ -85,7 +102,11 @@ create3() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   END
 ENDEMBED;
 
-create() := SEQUENTIAL(create1(), create2(), create3());
+create4() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  CREATE TABLE jsonevents(name varchar(255), properties json, browser json);
+ENDEMBED;
+
+create() := SEQUENTIAL(create1(), create2(), create3(), create4());
 
 initialize(dataset(childrec) values) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
@@ -97,6 +118,18 @@ ENDEMBED;
 
 initializeUtf8() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
   INSERT INTO tbl1 values ('utf8test', 65, 1, 1, 1.2, 3.4, 'aa55aa55', 1234567.89, 'Straße', 'Straße', '2019-02-01 23:59:59', -2, 128);
+ENDEMBED;
+
+initializejson(dataset(jsonstrrec) values) := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  INSERT INTO jsonevents values (?, ?, ?);
+ENDEMBED;
+
+dataset(jsonstrrec) testMySQLJsonDSFiltered() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('OUTPUTFIELDS'))
+  SELECT OUTPUTFIELDS from jsonevents WHERE browser->>'$.name' = 'Safari';
+ENDEMBED;
+
+dataset(browsersrec) testMySQLJsonSubSelect() := EMBED(mysql : server(myServer),user(myUser),database(myDB))
+  SELECT browser->>'$.name' browser from jsonevents;
 ENDEMBED;
 
 dataset(childrec) testMySQLDS() := EMBED(mysql : server(myServer),user(myUser),database(myDB),PROJECTED('OUTPUTFIELDS'))
@@ -207,6 +240,7 @@ sequential (
   initialize(init),
   initializeNulls(),
   initializeUtf8(),
+  initializejson(initjson),
   PARALLEL (
       OUTPUT(testMySQLDS()),
       COUNT(testMySQLDS2()),
@@ -226,6 +260,8 @@ sequential (
       OUTPUT(testMySQLUnicode()),
       OUTPUT(testMySQLDateTime()),
       OUTPUT(testMySQLTransform()),
+      OUTPUT(testMySQLJsonDSFiltered()),
+      OUTPUT(testMySQLJsonSubSelect()),
       OUTPUT(testMySQLStoredProcedure()),
       OUTPUT(testMySQLStoredProcedure2('name1')),
       OUTPUT(testMySQLStoredProcedure3(DATASET([{'name1'},{'name2'}], stringrec)))
