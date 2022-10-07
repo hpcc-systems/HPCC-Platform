@@ -2564,14 +2564,21 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
 {
     ForEachItem(iStat)
     {
+        StatisticKind kind = getKind(iStat);
+        StatisticKind serialKind = querySerializedKind(kind);
+        if (kind != serialKind)
+            continue; // ignore - we will roll this one into the corresponding serialized value's output
         unsigned __int64 value = values[iStat].get();
+        StatisticKind rawKind = queryRawKind(kind);
+        if (kind != rawKind)
+        {
+            // roll raw values into the corresponding serialized value, if present...
+            unsigned __int64 rawValue = getStatisticValue(rawKind);
+            if (rawValue)
+                value += convertMeasure(rawKind, kind, rawValue);
+        }                
         if (value)
         {
-            StatisticKind kind = getKind(iStat);
-            StatisticKind serialKind = querySerializedKind(kind);
-            if (kind != serialKind)
-                value = convertMeasure(kind, serialKind, value);
-
             const char * name = queryStatisticName(serialKind);
             str.append(' ').append(name).append("=");
             formatStatistic(str, value, serialKind);
