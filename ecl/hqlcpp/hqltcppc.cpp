@@ -1411,10 +1411,8 @@ void CIfBlockInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IRe
 
     //MORE: Should also conditionally set a variable to the size of the ifblock to simplify subsequent generated code
     OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
-    CHqlBoundExpr bound;
-    translator.buildSimpleExpr(ctx, cond, bound);
     BuildCtx condctx(ctx);
-    condctx.addFilter(bound.expr);
+    translator.buildFilterViaSimpleExpr(condctx, cond);
 
     //MORE: This test could be avoided if the first child is *actually* variable length
     ensureTargetAvailable(translator, condctx, selector, CContainerInfo::getTotalMinimumSize());
@@ -1429,10 +1427,8 @@ void CIfBlockInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IRe
 void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
-    CHqlBoundExpr bound;
-    translator.buildSimpleExpr(ctx, cond, bound);
     BuildCtx condctx(ctx);
-    condctx.addFilter(bound.expr);
+    translator.buildFilterViaSimpleExpr(condctx, cond);
     CContainerInfo::buildSerialize(translator, condctx, selector, helper, serializeForm);
 }
 

@@ -99,6 +99,14 @@ IReferenceSelector * HqlCppTranslator::doBuildRowIf(BuildCtx & ctx, IHqlExpressi
 
     IHqlExpression * trueBranch = expr->queryChild(1);
     IHqlExpression * falseBranch = expr->queryChild(2);
+    HqlExprAssociation * boundCond = ctx.queryMatchExpr(foldedCond);
+    if (boundCond && boundCond->queryExpr()->queryValue())
+    {
+        if (matchesConstValue(boundCond->queryExpr(), true))
+            return buildNewRow(ctx, trueBranch);
+        else
+            return buildNewRow(ctx, falseBranch);
+    }
 
     //Ideally should have a constant modifier on the following row...
     Owned<ITypeInfo> rowType = makeReferenceModifier(expr->getType());
@@ -116,6 +124,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowIf(BuildCtx & ctx, IHqlExpressi
     doBuildRowIfBranch(ctx, condctx, row, trueBranch);
 
     condctx.selectElse(cond);
+    condctx.associateExpr(foldedCond, queryBoolExpr(false));
 
     condctx.associateExpr(queryConditionalRowMarker(), rowExpr);
     doBuildRowIfBranch(ctx, condctx, row, falseBranch);
@@ -3621,14 +3630,55 @@ void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, const CHqlBoundT
 
 void HqlCppTranslator::buildDatasetAssignIf(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
-    BuildCtx subctx(ctx);
-    IHqlStmt * filter = buildFilterViaExpr(subctx, expr->queryChild(0));
-    buildDatasetAssign(subctx, target, expr->queryChild(1));
+    IHqlExpression * condExpr = expr->queryChild(0);
+    IHqlExpression * trueExpr = expr->queryChild(1);
+    IHqlExpression * falseExpr = expr->queryChild(2);
+    assertex(falseExpr);
 
-    IHqlExpression * elseExpr = expr->queryChild(2);
-    assertex(elseExpr);
+    HqlExprAssociation * boundCond = ctx.queryMatchExpr(condExpr);
+    if (boundCond && boundCond->queryExpr()->queryValue())
+    {
+        if (matchesConstValue(boundCond->queryExpr(), true))
+            buildDatasetAssign(ctx, target, trueExpr);
+        else
+            buildDatasetAssign(ctx, target, falseExpr);
+        return;
+    }
+
+    BuildCtx subctx(ctx);
+    IHqlStmt * filter = buildFilterViaExpr(subctx, condExpr);
+    buildDatasetAssign(subctx, target, trueExpr);
     subctx.selectElse(filter);
-    buildDatasetAssign(subctx, target, elseExpr);
+    subctx.associateExpr(condExpr, queryBoolExpr(false));
+    buildDatasetAssign(subctx, target, falseExpr);
+}
+
+
+void HqlCppTranslator::buildDatasetAssignIf(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
+{
+    IHqlExpression * condExpr = expr->queryChild(0);
+    IHqlExpression * trueExpr = expr->queryChild(1);
+    IHqlExpression * falseExpr = expr->queryChild(2);
+
+    HqlExprAssociation * boundCond = ctx.queryMatchExpr(condExpr);
+    if (boundCond && boundCond->queryExpr()->queryValue())
+    {
+        if (matchesConstValue(boundCond->queryExpr(), true))
+            buildDatasetAssign(ctx, target, trueExpr);
+        else if (falseExpr && (falseExpr->getOperator() != no_null))
+            buildDatasetAssign(ctx, target, falseExpr);
+        return;
+    }
+
+    BuildCtx subctx(ctx);
+    IHqlStmt * filter = buildFilterViaExpr(subctx, condExpr);
+    buildDatasetAssign(subctx, target, trueExpr);
+    if (falseExpr && (falseExpr->getOperator() != no_null))
+    {
+        subctx.selectElse(filter);
+        subctx.associateExpr(condExpr, queryBoolExpr(false));
+        buildDatasetAssign(subctx, target, falseExpr);
+    }
 }
 
 
@@ -3667,19 +3717,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
             break;
         }
     case no_if:
-        {
-            CHqlBoundExpr bound;
-            buildExpr(subctx, expr->queryChild(0), bound);
-            IHqlStmt * filter = subctx.addFilter(bound.expr);
-            buildDatasetAssign(subctx, target, expr->queryChild(1));
-
-            IHqlExpression * elseExpr = expr->queryChild(2);
-            if (elseExpr && elseExpr->getOperator() != no_null)
-            {
-                subctx.selectElse(filter);
-                buildDatasetAssign(subctx, target, elseExpr);
-            }
-        }
+        buildDatasetAssignIf(subctx, target, expr);
         return;
     case no_chooseds:
         buildDatasetAssignChoose(subctx, target, expr);
@@ -4758,13 +4796,27 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
                 }
                 else
                 {
-                    OwnedHqlExpr foldedCond = foldHqlExpression(expr->queryChild(0));
+                    IHqlExpression * condExpr = expr->queryChild(0);
+                    OwnedHqlExpr foldedCond = foldHqlExpression(condExpr);
+                    IHqlExpression * trueExpr = expr->queryChild(1);
+                    IHqlExpression * falseExpr = expr->queryChild(2);
+
+                    HqlExprAssociation * boundCond = ctx.queryMatchExpr(foldedCond);
+                    if (boundCond && boundCond->queryExpr()->queryValue())
+                    {
+                        if (matchesConstValue(boundCond->queryExpr(), true))
+                            buildRowAssign(ctx, target, trueExpr);
+                        else
+                            buildRowAssign(ctx, target, falseExpr);
+                        return;
+                    }
+
                     BuildCtx condctx(ctx);
                     IHqlStmt * cond = buildFilterViaExpr(condctx, foldedCond);
-
-                    buildRowAssign(condctx, target, expr->queryChild(1));
+                    buildRowAssign(condctx, target, trueExpr);
                     condctx.selectElse(cond);
-                    buildRowAssign(condctx, target, expr->queryChild(2));
+                    condctx.associateExpr(foldedCond, queryBoolExpr(false));
+                    buildRowAssign(condctx, target, falseExpr);
                 }
                 return;
             }
