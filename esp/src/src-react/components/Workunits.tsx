@@ -160,18 +160,27 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         }
     });
 
+    const doActionWithWorkunits = React.useCallback(async (action: "Delete" | "Abort") => {
+        const unknownWUs = selection.filter(wu => wu.State === "unknown");
+        if (action === "Delete" && unknownWUs.length) {
+            await WsWorkunits.WUAction(unknownWUs, "SetToFailed");
+        }
+        await WsWorkunits.WUAction(selection, action);
+        refreshTable(true);
+    }, [refreshTable, selection]);
+
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedWorkunits,
         items: selection.map(s => s.Wuid),
-        onSubmit: React.useCallback(async () => {
-            const unknownWUs = selection.filter(wu => wu.State === "unknown");
-            if (unknownWUs.length) {
-                await WsWorkunits.WUAction(unknownWUs, "SetToFailed");
-            }
-            await WsWorkunits.WUAction(selection, "Delete");
-            refreshTable(true);
-        }, [refreshTable, selection])
+        onSubmit: () => doActionWithWorkunits("Delete")
+    });
+
+    const [AbortConfirm, setShowAbortConfirm] = useConfirm({
+        title: nlsHPCC.Abort,
+        message: nlsHPCC.AbortSelectedWorkunits,
+        items: selection.map(s => s.Wuid),
+        onSubmit: () => doActionWithWorkunits("Abort")
     });
 
     //  Filter  ---
@@ -210,7 +219,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: !uiState.hasNotCompleted,
-            onClick: () => { WsWorkunits.WUAction(selection, "Abort"); }
+            onClick: () => setShowAbortConfirm(true)
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -234,7 +243,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => { setMine(!mine); }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, gridStore, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, gridStore, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -278,6 +287,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 <DeleteConfirm />
+                <AbortConfirm />
             </>
         }
         footer={<GridPagination />}

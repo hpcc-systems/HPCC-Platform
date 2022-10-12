@@ -1,6 +1,7 @@
 export = {
     root: {
         Abort: "Abort",
+        AbortSelectedWorkunits: "Abort Selected Workunit(s)? Your login ID will be recorded for this action within the WU(s).",
         AbortedBy: "Aborted by",
         AbortedTime: "Aborted time",
         About: "About",
