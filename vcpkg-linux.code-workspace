@@ -10,9 +10,7 @@
 			"-DUSE_OPTIONAL=OFF",
 			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
-			"-DSUPPRESS_REMBED=ON",
-			"-DUSE_AWS=ON",
-			"-DUSE_JAVA=ON"
+			"-DSUPPRESS_REMBED=ON"
 		],
 		"editor.formatOnSave": false
 	},
