@@ -1,5 +1,5 @@
 build/
-build-vcpkg/
+build-*/
 node_modules/
 vcpkg_installed/
 externals/

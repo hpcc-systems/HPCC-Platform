@@ -7,12 +7,6 @@
 [submodule "esp/src/dgrid"]
 	path = esp/src/dgrid
 	url = https://github.com/hpcc-systems/dgrid.git
-[submodule "plugins/couchbase/libcouchbase-cxx"]
-	path = plugins/couchbase/libcouchbase-cxx
-	url = https://github.com/hpcc-systems/libcouchbase-cxx.git
-[submodule "plugins/couchbase/libcouchbase"]
-	path = plugins/couchbase/libcouchbase
-	url = https://github.com/hpcc-systems/libcouchbase.git
 [submodule "esp/services/ws_sql/libantlr3c"]
 	path = esp/services/ws_sql/libantlr3c
 	url = https://github.com/hpcc-systems/libantlr3c.git

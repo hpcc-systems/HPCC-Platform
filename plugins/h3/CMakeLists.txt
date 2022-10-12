@@ -54,7 +54,8 @@ if(USE_H3)
 
     install(
         TARGETS h3
-        DESTINATION plugins)
+        DESTINATION plugins
+        CALC_DEPS)
 
     target_link_libraries(h3
         eclrtl

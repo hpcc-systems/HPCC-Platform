@@ -5,6 +5,7 @@ PROJECT(sqs
 if(SQS AND USE_AWS)
     ADD_PLUGIN(sqs)
 
+    set(CRT_BUILD_SHARED_LIBS ON)
     find_package(aws-cpp-sdk-core REQUIRED)
     find_package(aws-cpp-sdk-sqs REQUIRED)
     
@@ -35,7 +36,9 @@ if(SQS AND USE_AWS)
 
     install(
         TARGETS sqs
-        DESTINATION plugins)
+        DESTINATION plugins
+        CALC_DEPS
+    )
 
     target_link_libraries(
         sqs

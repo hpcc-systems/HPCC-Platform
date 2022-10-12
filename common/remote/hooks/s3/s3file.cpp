@@ -36,6 +36,9 @@
 
 #include "s3file.hpp"
 
+#ifdef _MSC_VER
+#undef GetObject
+#endif
 /*
  * S3 questions:
  *
