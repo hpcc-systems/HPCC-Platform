@@ -69,28 +69,28 @@ jobs:
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON "-DSUPPRESS_MEMCACHED=ON -DSUPPRESS_COUCHBASEEMBED=ON -DWSSQL_SERVICE=OFF -DUSE_AZURE=OFF'
             cmake_build_options: "--config Release -j2 -- -m"
             event_name: "pull_request"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON "-DSUPPRESS_MEMCACHED=ON -DSUPPRESS_COUCHBASEEMBED=ON -DWSSQL_SERVICE=OFF -DUSE_AZURE=OFF'
             cmake_build_options: "--config Release -j2 -- -m"
             event_name: "schedule"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_MEMCACHED=ON -DSUPPRESS_MONGODBEMBED=ON -DUSE_JAVA=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
             event_name: "schedule"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_MEMCACHED=ON -DSUPPRESS_MONGODBEMBED=ON -DUSE_JAVA=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
             event_name: "pull_request"
       fail-fast: false

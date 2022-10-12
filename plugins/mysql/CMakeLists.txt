@@ -29,11 +29,13 @@ if(MYSQLEMBED)
     if(MAKE_MYSQLEMBED)
         find_package(MYSQL REQUIRED)
         find_package(ZLIB REQUIRED)
+
         set(
             SRCS
             mysqlembed.cpp)
 
         include_directories(
+            ${MYSQL_INCLUDE_DIR}
             ./../../system/include
             ./../../rtl/eclrtl
             ./../../roxie/roxiemem
@@ -41,7 +43,7 @@ if(MYSQLEMBED)
             ./../../rtl/nbcd
             ./../../common/deftype
             ./../../system/jlib
-            ${MYSQL_INCLUDE_DIR})
+        )
 
         add_definitions(-D_USRDLL -DMYSQLEMBED_EXPORTS)
 
