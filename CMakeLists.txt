@@ -67,14 +67,17 @@
 #
 #########################################################
 
-cmake_minimum_required(VERSION 3.24.0)
+cmake_minimum_required(VERSION 3.22.1)
 
 set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include(${HPCC_SOURCE_DIR}/version.cmake)
+
+set(VCPKG_FILES_DIR "${CMAKE_BINARY_DIR}" CACHE STRING "Folder for vcpkg download, build and installed files")
 set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
 set(VCPKG_OVERLAY_PORTS ${HPCC_SOURCE_DIR}/vcpkg/overlays)
-set(VCPKG_INSTALL_OPTIONS "--downloads-root=${CMAKE_BINARY_DIR}/vcpkg_downloads;--x-buildtrees-root=${CMAKE_BINARY_DIR}/vcpkg_buildtrees;--x-packages-root=${CMAKE_BINARY_DIR}/vcpkg_packages")
+set(VCPKG_INSTALLED_DIR "${VCPKG_FILES_DIR}/vcpkg_installed")
+set(VCPKG_INSTALL_OPTIONS "--downloads-root=${VCPKG_FILES_DIR}/vcpkg_downloads;--x-buildtrees-root=${VCPKG_FILES_DIR}/vcpkg_buildtrees;--x-packages-root=${VCPKG_FILES_DIR}/vcpkg_packages")
 set(VCPKG_VERBOSE OFF)
 file(REMOVE ${HPCC_SOURCE_DIR}/vcpkg/vcpkg)
 if(APPLE OR WIN32)
