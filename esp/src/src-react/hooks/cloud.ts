@@ -47,23 +47,27 @@ export function usePods(): [Pod[], () => void] {
     React.useEffect(() => {
         service.getPODs().then((pods: V1Pod[]) => {
             const now = Date.now();
-            setRetVal(pods.map(pod => {
-                const started = new Date(pod.metadata?.creationTimestamp);
-                return {
-                    name: pod.metadata.name,
-                    container: pod.status?.containerStatuses?.reduce((prev, curr) => prev ? prev : curr.name, ""),
-                    port: pod.spec?.containers?.reduce((prev, curr) => {
-                        prev.push(curr.ports?.map(p => `${p.containerPort}/${p.protocol}`).join(", "));
-                        return prev;
-                    }, []).join(", "),
-                    ready: `${pod.status?.containerStatuses?.reduce((prev, curr) => prev + (curr.ready ? 1 : 0), 0)}/${pod.status?.containerStatuses?.length}`,
-                    status: pod.status?.phase,
-                    restarts: pod.status?.containerStatuses?.reduce((prev, curr) => prev + curr.restartCount, 0),
-                    age: formatAge(now - +started),
-                    payload: pod
-                };
-            }));
-        }).catch(err => {
+            setRetVal(pods
+                .filter(pod => {
+                    const labels = pod?.metadata?.labels ?? {};
+                    return labels.hasOwnProperty("app.kubernetes.io/part-of") && labels["app.kubernetes.io/part-of"] === "HPCC-Platform";
+                })
+                .map(pod => {
+                    const started = new Date(pod.metadata?.creationTimestamp);
+                    return {
+                        name: pod.metadata.name,
+                        container: pod.status?.containerStatuses?.reduce((prev, curr) => prev ? prev : curr.name, ""),
+                        port: pod.spec?.containers?.reduce((prev, curr) => {
+                            prev.push(curr.ports?.map(p => `${p.containerPort}/${p.protocol}`).join(", "));
+                            return prev;
+                        }, []).join(", "),
+                        ready: `${pod.status?.containerStatuses?.reduce((prev, curr) => prev + (curr.ready ? 1 : 0), 0)}/${pod.status?.containerStatuses?.length}`,
+                        status: pod.status?.phase,
+                        restarts: pod.status?.containerStatuses?.reduce((prev, curr) => prev + curr.restartCount, 0),
+                        age: formatAge(now - +started),
+                        payload: pod
+                    };
+                })
             logger.error(nlsHPCC.PodsAccessError);
         });
     }, [refreshTick]);
