@@ -2,9 +2,8 @@ import * as React from "react";
 import { CloudService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import type { V1Pod } from "@kubernetes/client-node";
-
-import { useCounter } from "./workunit";
 import nlsHPCC from "src/nlsHPCC";
+import { useCounter } from "./workunit";
 
 const logger = scopedLogger("../hooks/cloud.ts");
 
@@ -68,7 +67,9 @@ export function usePods(): [Pod[], () => void] {
                         payload: pod
                     };
                 })
-            logger.error(nlsHPCC.PodsAccessError);
+            );
+        }).catch(err => {
+            logger.error(`${nlsHPCC.PodsAccessError} (${err.message})`);
         });
     }, [refreshTick]);
 
