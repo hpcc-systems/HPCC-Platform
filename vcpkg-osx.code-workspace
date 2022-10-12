@@ -5,13 +5,15 @@
 		}
 	],
 	"settings": {
-		"cmake.generator": "Unix Makefiles",
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
-			"-DUSE_AZURE=OFF",
-			"-DWSSQL_SERVICE=OFF",
-			"-DINCLUDE_PLUGINS=OFF"
+			"-DINCLUDE_PLUGINS=ON",
+			"-DSUPPRESS_V8EMBED=ON",
+			"-DSUPPRESS_REMBED=ON",
+			"-DSUPPRESS_MEMCACHED=ON",
+			"-DSUPPRESS_MONGODBEMBED=ON",
+			"-DUSE_JAVA=OFF"
 		],
 	},
 	"extensions": {
