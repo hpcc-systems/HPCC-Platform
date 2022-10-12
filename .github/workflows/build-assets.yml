@@ -1,0 +1,210 @@
+name: Build Assets newbuild
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;nuget,GitHub,read"
+  VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
+
+on:
+  push:
+    tags:
+      - "*"
+      - "community_*"
+      - "!community_8.10.*"
+      - "!community_8.8.*"
+      - "!community_8.6.*"
+      - "!community_8.4.*"
+      - "!community_8.2.*"
+      - "!community_8.0.*"
+      - "!community_7.*"
+
+jobs:
+  release:
+    name:  Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: ${{ contains(github.ref, 'rc') }}
+
+  build:
+    needs: release
+    strategy:
+      matrix:
+        include:
+          - os: "windows-2022"
+            triplet: "x64-windows"
+            mono: ""
+            sudo: ""
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
+            cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
+          - os: "macos-12"
+            triplet: "x64-osx"
+            mono: "mono"
+            sudo: "sudo"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
+            cmake_build_options: "--parallel $(nproc)"
+      fail-fast: false
+
+    name: "Build Client Tools"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Display build summary
+        working-directory: .
+        shell: "bash"
+        run: |
+          echo ${{ matrix.os }} ${{ matrix.triplet }}
+          echo "Checkout to $Env:GITHUB_WORKSPACE"
+
+      - name: Calculate vars
+        id: vars
+        shell: "bash"
+        run: |
+          echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+
+      - name: OSX Dependencies
+        if: ${{ contains(matrix.os, 'macos') }}
+        shell: "bash"
+        run: |
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
+
+      - name: "Setup NuGet credentials"
+        shell: "bash"
+        run: |
+          ${{ matrix.mono }} `vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
+            -storepasswordincleartext \
+            -name "GitHub" \
+            -username "${{ github.actor }}" \
+            -password "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: "Remove builtin vcpkg"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
+
+      - name: Check out source code (tag)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          submodules: recursive
+
+      - name: "vcpkg Bootstrap"
+        working-directory: .
+        shell: "bash"
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: "Generate HPCC-Platform Build Files"
+        working-directory: .
+        shell: "bash"
+        run: |
+          mkdir build
+          cd build
+          cmake .. ${{ matrix.cmake_config_options }}
+
+      - name: Bundle
+        working-directory: ./build
+        shell: "bash"
+        run: |
+          cmake --build . ${{ matrix.cmake_build_options }} --target package 
+
+      - uses: AButler/upload-release-assets@v2.0
+        with:
+          files: 'build/*.exe;build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ steps.vars.outputs.branch_name }}
+          
+  build-docker:
+    needs: release
+    strategy:
+      matrix:
+        os:
+          [
+            "ubuntu-22.04",
+            "ubuntu-20.04",
+            "ubuntu-18.04",
+            "centos-8",
+            "centos-7",
+          ]
+      fail-fast: false
+
+    name: Build Platform
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Check out source code (tag)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          submodules: recursive
+
+      - name: Calculate vars
+        id: vars
+        run: |
+          echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+          cd vcpkg
+          echo "vcpkg_sha_short=$(git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
+          echo "cmake_options=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create Build Image  
+        uses: docker/build-push-action@v3
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          file: dockerfiles/vcpkg/${{ matrix.os}}.dockerfile
+          context: dockerfiles/vcpkg
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} 
+            ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:latest
+          cache-from: |
+            ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} 
+            ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:latest
+          build-args: |
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+            BUILD_FOLDER=build-${{ matrix.os }}
+
+      - name: Bundle Regular Package
+        run: |
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+
+      - name: Bundle Stripped Package
+        run: |
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+
+      - name: Bundle containerized packages
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+
+      - name: Bundle containerized stripped packages
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: |
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON -DCPACK_STRIP_FILES=ON"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+
+      - uses: AButler/upload-release-assets@v2.0
+        with:
+          files: 'build/*.deb;build/*.rpm'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ steps.vars.outputs.branch_name }}
