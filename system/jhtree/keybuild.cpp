@@ -81,6 +81,7 @@ protected:
     count_t records;
     unsigned levels;
     offset_t nextPos;
+    offset_t offsetBranches = 0;
     Owned<CKeyHdr> keyHdr;
     CWriteNode *prevLeafNode;
     NodeInfoArray leafInfo;
@@ -412,6 +413,7 @@ protected:
             }
             pendingNodes.kill();
         }
+        offsetBranches = nextPos;
         buildTree(leafInfo);
         if(metadata)
         {
@@ -555,6 +557,7 @@ protected:
     virtual unsigned __int64 getNumLeafNodes() const override { return numLeaves; };
     virtual unsigned __int64 getNumBranchNodes() const override { return numBranches; }
     virtual unsigned __int64 getNumBlobNodes() const override { return numBlobs; }
+    virtual unsigned __int64 getOffsetBranches() const override { return offsetBranches; }
 
 protected:
     void writeMetadata(char const * data, size32_t size)
