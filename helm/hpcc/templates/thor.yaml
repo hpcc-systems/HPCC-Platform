@@ -366,6 +366,9 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       serviceAccountName: {{ $commonCtx.eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
+      initContainers:
+      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ $commonCtx.eclAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
