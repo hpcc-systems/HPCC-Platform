@@ -390,6 +390,7 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
     Linked<IGroup> group;
     StringAttr name; // group name
     ClusterPartDiskMapSpec mspec;
+    bool foreignGroup = false;
     void checkClusterName(INamedGroupStore *resolver)
     {
         // check name matches group
@@ -461,9 +462,14 @@ public:
             return;
         name.set(pt->queryProp("@name"));
         mspec.fromProp(pt);
+        if (0 != (flags & IFDSF_FOREIGN_GROUP))
+            foreignGroup = true;
+        else if (pt->getPropBool("@foreign"))
+            foreignGroup = true;
+
         if ((((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())&&pt->hasProp("Group"))
             group.setown(createIGroup(pt->queryProp("Group")));
-        if (!name.isEmpty()&&!group.get()&&resolver)
+        if (!name.isEmpty()&&!group.get()&&resolver&&!foreignGroup)
         {
             StringBuffer defaultDir;
             GroupType groupType;
@@ -541,10 +547,13 @@ public:
     void serializeTree(IPropertyTree *pt,unsigned flags)
     {
         mspec.toProp(pt);
-        if (group&&(((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())) {
+        if (group && (foreignGroup || ((flags&IFDSF_EXCLUDE_GROUPS)==0) || name.isEmpty()))
+        {
             StringBuffer gs;
             group->getText(gs);
             pt->setProp("Group",gs.str());
+            if (foreignGroup)
+                pt->setPropBool("@foreign", true);
         }
         if (!name.isEmpty()&&((flags&IFDSF_EXCLUDE_CLUSTERNAMES)==0))
             pt->setProp("@name",name);
