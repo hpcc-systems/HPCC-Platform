@@ -50,6 +50,9 @@ test multiclusteradd with replicate
 #include "wujobq.hpp"
 #include "dameta.hpp"
 
+#include "ws_dfsclient.hpp"
+
+
 #define SDS_CONNECT_TIMEOUT (5*60*100)
 
 extern ILogMsgHandler * fileMsgHandler;
@@ -958,7 +961,7 @@ public:
         }
 
         // first see if target exists (and remove if does and overwrite specified)
-        Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,ctx.user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> dfile = wsdfs::lookup(dlfn,ctx.user,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE);
         if (dfile) {
             if (!ctx.superoptions->getOverwrite())
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -1263,9 +1266,9 @@ public:
                                 foreignuserdesc.set(userdesc);
                         }
                     }
-                    srcFile.setown(fdir.lookup(tmp.str(),userdesc,
+                    srcFile.setown(wsdfs::lookup(tmp.str(),userdesc,
                             (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert) ? AccessMode::tbdWrite : AccessMode::tbdRead,
-                            false,false,nullptr,true));
+                            false,false,nullptr,true, INFINITE));
 
                     if (!srcFile)
                         throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
@@ -1415,7 +1418,7 @@ public:
                             }
                             else if (multiclustermerge)
                             {
-                                dstFile.setown(fdir.lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser));
+                                dstFile.setown(wsdfs::lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE));
                                 if (!dstFile)
                                     throw MakeStringException(-1,"Destination for merge %s does not exist",tmp.str());
                                 StringBuffer err;
@@ -1424,7 +1427,7 @@ public:
                             }
                             else
                             {
-                                Owned<IDistributedFile> oldfile = fdir.lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+                                Owned<IDistributedFile> oldfile = wsdfs::lookup(tmp.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE);
                                 if (oldfile)
                                 {
                                     StringBuffer reason;
@@ -1626,7 +1629,7 @@ public:
                     destination->getLogicalName(toname);
                     if (toname.length()) {
                         unsigned start = msTick();
-                        Owned<IDistributedFile> newfile = fdir.lookup(toname.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser);
+                        Owned<IDistributedFile> newfile = wsdfs::lookup(toname.str(),userdesc,AccessMode::tbdWrite,false,false,nullptr,defaultPrivilegedUser,INFINITE);
                         if (newfile) {
                             // check for rename into multicluster
                             CDfsLogicalFileName dstlfn;

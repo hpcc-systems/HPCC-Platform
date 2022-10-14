@@ -46,6 +46,7 @@ include_directories (
          ./../../common/environment 
          ./../../common/workunit
          ./../../system/security/shared
+         ./../../esp/clients/ws_dfsclient
     )
 
 HPCC_ADD_EXECUTABLE ( dfuserver ${SRCS} )
@@ -67,7 +68,8 @@ target_link_libraries ( dfuserver
          schedulectrl 
          dalift 
          jhtree 
-         dfuwu 
+         dfuwu
+         ws_dfsclient
     )
 
 if (NOT CONTAINERIZED)
