@@ -790,10 +790,10 @@ IDFSFile *lookupDFSFile(const char *logicalName, AccessMode accessMode, unsigned
         }
 
         if (tm.timedout())
-            throw makeStringExceptionV(0, "DFSFileLookup timed out: file=%s, timeoutSecs=%u", logicalName, timeoutSecs);
+            break;
         Sleep(5000); // sanity sleep
     }
-    return nullptr; // should never be able to reach here, but keeps compiler happy
+    throw makeStringExceptionV(0, "DFSFileLookup timed out: file=%s, timeoutSecs=%u", logicalName, timeoutSecs);
 }
 
 IDistributedFile *createLegacyDFSFile(IDFSFile *dfsFile)
