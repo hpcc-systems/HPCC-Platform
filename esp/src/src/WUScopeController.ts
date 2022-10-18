@@ -1,6 +1,6 @@
 import { Icon, Palette } from "@hpcc-js/common";
 import { BaseScope, ScopeEdge, ScopeGraph, ScopeSubgraph, ScopeVertex } from "@hpcc-js/comms";
-import { Edge, IEdge, IGraphData, IGraphData2, IHierarchy, ISubgraph, IVertex, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
+import { Edge, IGraphData, IGraphData2, Lineage, Subgraph, Vertex } from "@hpcc-js/graph";
 import { Edge as UtilEdge, Subgraph as UtilSubgraph, Vertex as UtilVertex } from "@hpcc-js/util";
 import { decodeHtml, format, formatNums, isSpill as _isSPill } from "./Utility";
 
@@ -786,15 +786,21 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
     }
 }
 
-export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphData2> {
+export type GraphData2 = IGraphData2<any, any, any>
+export type ISubgraph = any;
+export type IVertex = any;
+export type IEdge = any;
+export type IHierarchy = any;
+
+export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex, IEdge, GraphData2> {
 
     constructor() {
         super();
     }
 
     private collapsedOnce = false;
-    graphGui(graphDB: ScopeGraph): IGraphData2 {
-        const retVal: IGraphData2 = {
+    graphGui(graphDB: ScopeGraph): GraphData2 {
+        const retVal: GraphData2 = {
             subgraphs: [],
             vertices: [],
             edges: [],
@@ -1078,7 +1084,7 @@ export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex
         return this.subgraphsMap[_] || this.verticesMap[_] || this.edgesMap[_];
     }
 
-    rItem(id: string): ScopeSubgraph | ScopeVertex | ScopeEdge {
+    rItem(id: string | number): ScopeSubgraph | ScopeVertex | ScopeEdge {
         return this.scopeSubgraphsMap[id] || this.scopeVerticesMap[id] || this.scopeEdgesMap[id];
     }
 

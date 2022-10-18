@@ -80,7 +80,6 @@ module.exports = function (env) {
                         search: isProduction ? "RELEASE_ONLY" : "DEBUG_ONLY",
                         //   replace: "DEBUG_ONLY */",
                         replace(match, p1, offset, string) {
-                            console.log(`Replace "${match}" in file "${this.resource}".`)
                             return "DEBUG_ONLY */"
                         },
                         flags: "g"
