@@ -608,6 +608,8 @@ define([
             } else if (name === "ServiceNames" && newValue && newValue.Item) {
                 var domElem = registry.byId(this.id + "ServiceNamesCustom");
                 domElem.set("value", newValue.Item.join("\n"));
+            } else if (name === "CompileCost") {
+                this.updateInput("FormattedCompileCost", oldValue, Session.formatCost(newValue));
             } else if (name === "ExecuteCost") {
                 this.updateInput("FormattedExecuteCost", oldValue, Session.formatCost(newValue));
             } else if (name === "FileAccessCost") {

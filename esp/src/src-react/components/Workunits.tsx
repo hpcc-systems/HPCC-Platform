@@ -148,6 +148,12 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     node.innerText = value;
                 }, [])
             },
+            CompileCost: {
+                label: nlsHPCC.CompileCost, width: 100,
+                formatter: React.useCallback(function (cost, row) {
+                    return `${formatCost(cost)}`;
+                }, [])
+            },
             ExecuteCost: {
                 label: nlsHPCC.ExecuteCost, width: 100,
                 formatter: React.useCallback(function (cost, row) {
