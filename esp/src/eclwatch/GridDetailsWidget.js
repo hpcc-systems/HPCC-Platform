@@ -54,6 +54,7 @@ define([
             this.inherited(arguments);
             this.toolbar = registry.byId(this.id + "Toolbar");
             this.gridTab = registry.byId(this.id + "_Grid");
+            this.downloadDialog = registry.byId(this.id + "DownloadToListDialog");
         },
 
         startup: function (args) {
@@ -71,6 +72,11 @@ define([
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();
+        },
+
+        destroy: function (args) {
+            this.downloadDialog.destroyRecursive();
+            this.inherited(arguments);
         },
 
         _onOpen: function (event, params) {
