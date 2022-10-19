@@ -30,7 +30,7 @@ static const char * compatibleVersions[] = {
 
 static const char * EclDefinition =
 "export Logging := SERVICE : time\n"
-"  dbglog(const string src) : c,action,entrypoint='logDbgLog'; \n"
+"  dbglog(const string src) : c,context,action,entrypoint='logDbgLogV2'; \n"
 "  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
 "  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
 "  addWorkunitError(const varstring txt, unsigned code=0, unsigned severity=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
@@ -72,6 +72,18 @@ LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src)
     ForEachItemIn(idx, loglines)
     {
         DBGLOG("%s", loglines.item(idx));
+    }
+}
+
+LOGGING_API void LOGGING_CALL logDbgLogV2(ICodeContext *ctx, unsigned srcLen, const char * src)
+{
+    StringBuffer log(srcLen, src);
+    StringArray loglines;
+    log.replace('\r', ' ');
+    loglines.appendList(log, "\n", false);
+    ForEachItemIn(idx, loglines)
+    {
+        ctx->queryContextLogger().CTXLOG("%s", loglines.item(idx));
     }
 }
 

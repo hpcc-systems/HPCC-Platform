@@ -36,6 +36,7 @@
 extern "C" {
 LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src);
+LOGGING_API void LOGGING_CALL logDbgLogV2(ICodeContext *ctx, unsigned srcLen, const char * src);
 LOGGING_API char * LOGGING_CALL logGetGlobalId(ICodeContext *ctx);
 LOGGING_API char * LOGGING_CALL logGetCallerId(ICodeContext *ctx);
 LOGGING_API char * LOGGING_CALL logGetLocalId(ICodeContext *ctx);
