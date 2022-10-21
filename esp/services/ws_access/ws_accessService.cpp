@@ -208,8 +208,7 @@ void Cws_accessEx::getBasednReq(IEspContext &context, const char* name, const ch
         if (isEmptyString(name))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not specified");
 
-        if(m_basedns.length() == 0)
-            setBasedns(context);
+        setBasedns(context);
 
         ForEachItemIn(i, m_basedns)
         {
@@ -241,9 +240,12 @@ void Cws_accessEx::getBasednReq(IEspContext &context, const char* name, const ch
 void Cws_accessEx::setBasedns(IEspContext &context)
 {
     CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
+    if (secmgr == nullptr)
+        throw makeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+    CriticalBlock b(basednsCrit);
+    if (m_basedns.length() > 0)
+        return;
 
     std::set<std::string> alreadythere;
     ForEachItemInRev(x, m_rawbasedns)
@@ -1148,10 +1150,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                 if(!req.getDeletePermission_isNull())
                     bDeletePermission = req.getDeletePermission();
 
-                if(m_basedns.length() == 0)
-                {
-                    setBasedns(context);
-                }
+                setBasedns(context);
 
                 ForEachItemIn(y, m_basedns)
                 {
@@ -1650,12 +1649,7 @@ bool Cws_accessEx::onPermissions(IEspContext &context, IEspBasednsRequest &req, 
         }
 
         checkUser(context);
-
-        if(m_basedns.length() == 0)
-        {
-            setBasedns(context);
-        }
-
+        setBasedns(context);
         resp.setBasedns(m_basedns);
     }
     catch(IException* e)
@@ -3249,6 +3243,7 @@ bool Cws_accessEx::permissionAddInputOnAccount(IEspContext &context, const char*
     int accountType = req.getAccountType();
     if (basednName && *basednName)
     {
+        setBasedns(context);
         ForEachItemIn(y, m_basedns)
         {
             IEspDnStruct* curbasedn = &(m_basedns.item(y));
@@ -3848,11 +3843,7 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
         bool bIncludeGroup = req.getIncludeGroup();
-
-        if(m_basedns.length() == 0)
-        {
-            setBasedns(context);
-        }
+        setBasedns(context);
 
         StringArray groupnames;
         if (version > 1.02 && !bGroupAccount && bIncludeGroup)
@@ -4284,11 +4275,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
         {
             resp.setFileName(fileName);
             resp.setGroupName(groupName);
-
-            if(m_basedns.length() == 0) //basedns may never be set
-            {
-                setBasedns(context);
-            }
+            setBasedns(context);
 
             //Find out the basedn for RT_FILE_SCOPE
             CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
