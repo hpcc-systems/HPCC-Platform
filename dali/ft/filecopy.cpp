@@ -420,7 +420,7 @@ bool FileTransferThread::launchFtSlaveCmd()
         newProgress.deserializeExtra(msg, 2);
         sprayer.updateProgress(newProgress);
 
-        LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
+        LOG(MCdebugProgress, job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
         if (isAborting())
         {
             if (!sendRemoteAbort(socket))
@@ -430,7 +430,7 @@ bool FileTransferThread::launchFtSlaveCmd()
     msg.read(ok);
     setErrorOwn(deserializeException(msg));
 
-    LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
+    LOG(MCdebugProgress, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
 
     // if communicating with ftslave, the process has a final ack wait
     if (sprayer.useFtSlave)
@@ -486,9 +486,9 @@ bool FileTransferThread::performTransfer()
         return true;
     }
 
-    LOG(MCdebugProgressDetail, job, "Start generate part %s [%p]", url.str(), this);
+    LOG(MCdebugProgress, job, "Start generate part %s [%p]", url.str(), this);
     bool ok = launchFtSlaveCmd();
-    LOG(MCdebugProgressDetail, job, "Stopped generate part %s [%p]", url.str(), this);
+    LOG(MCdebugProgress, job, "Stopped generate part %s [%p]", url.str(), this);
 
     allDone = true;
     return ok;
@@ -675,7 +675,7 @@ FileSprayer::FileSprayer(IPropertyTree * _options, IPropertyTree * _progress, IR
     copyCompressed = false;
     transferBufferSize = options->getPropInt(ANtransferBufferSize);
     if (transferBufferSize)
-        LOG(MCdebugProgressDetail, job, "Using transfer buffer size %d", transferBufferSize);
+        LOG(MCdebugProgress, job, "Using transfer buffer size %d", transferBufferSize);
     else // zero is default
         transferBufferSize = DEFAULT_STD_BUFFER_SIZE;
     progressDone = false;
@@ -746,7 +746,7 @@ void FileSprayer::addEmptyFilesToPartition(unsigned from, unsigned to)
 {
     for (unsigned i = from; i < to ; i++)
     {
-        LOG(MCdebugProgressDetail, job, "Insert a dummy entry for target %d", i);
+        LOG(MCdebugProgress, job, "Insert a dummy entry for target %d", i);
         PartitionPoint & next = createLiteral(0, NULL, 0);
         next.whichOutput = i;
         partition.append(next);
@@ -774,7 +774,7 @@ void FileSprayer::afterTransfer()
 {
     if (calcInputCRC())
     {
-        LOG(MCdebugProgressDetail, job, "Checking input CRCs");
+        LOG(MCdebugProgress, job, "Checking input CRCs");
         CRC32Merger partCRC;
 
         unsigned startCurSource = 0;
@@ -785,7 +785,7 @@ void FileSprayer::afterTransfer()
 
             if (!curProgress.hasInputCRC)
             {
-                LOG(MCdebugProgressDetail, job, "Could not calculate input CRCs - cannot check");
+                LOG(MCdebugProgress, job, "Could not calculate input CRCs - cannot check");
                 break;
             }
             partCRC.addChildCRC(curProgress.inputLength, curProgress.inputCRC, false);
@@ -1065,7 +1065,7 @@ bool FileSprayer::calcInputCRC()
 
 void FileSprayer::calculateOne2OnePartition()
 {
-    LOG(MCdebugProgressDetail, job, "Setting up one2One partition");
+    LOG(MCdebugProgress, job, "Setting up one2One partition");
     if (sources.ordinality() != targets.ordinality())
         throwError(DFTERR_ReplicateNumPartsDiffer);
     if (!srcFormat.equals(tgtFormat))
@@ -1136,7 +1136,7 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
     if (!srcFormat.equals(tgtFormat))
        throwError(DFTERR_SplitPrefixSameFormat);
 
-    LOG(MCdebugProgressDetail, job, "Setting up split prefix partition");
+    LOG(MCdebugProgress, job, "Setting up split prefix partition");
 
     Owned<TargetLocation> target = &targets.popGet();       // remove target, add lots of new ones
     RemoteFilename blobTarget;
@@ -1173,7 +1173,7 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
 
 void FileSprayer::calculateMany2OnePartition()
 {
-    LOG(MCdebugProgressDetail, job, "Setting up many2one partition");
+    LOG(MCdebugProgress, job, "Setting up many2one partition");
     const char *partSeparator = srcFormat.getPartSeparatorString();
     offset_t partSeparatorLength = ( partSeparator == nullptr ? 0 : strlen(partSeparator));
     offset_t lastContentLength = 0;
@@ -1205,7 +1205,7 @@ void FileSprayer::calculateMany2OnePartition()
 
 void FileSprayer::calculateNoSplitPartition()
 {
-    LOG(MCdebugProgressDetail, job, "Setting up no split partition");
+    LOG(MCdebugProgress, job, "Setting up no split partition");
     if (!usePullOperation() && !srcFormat.equals(tgtFormat))
         throwError(DFTERR_NoSplitPushChangeFormat);
 
@@ -1268,7 +1268,7 @@ void FileSprayer::calculateNoSplitPartition()
 
 void FileSprayer::calculateSprayPartition()
 {
-    LOG(MCdebugProgressDetail, job, "Calculating N:M partition");
+    LOG(MCdebugProgress, job, "Calculating N:M partition");
 
     bool calcOutput = needToCalcOutput();
     FormatPartitionerArray partitioners;
@@ -1330,7 +1330,7 @@ IFormatPartitioner * FileSprayer::createPartitioner(aindex_t index, bool calcOut
     StringBuffer remoteFilename;
     FilePartInfo & cur = sources.item(index);
     cur.filename.getRemotePath(remoteFilename.clear());
-    LOG(MCdebugInfoDetail, job, "Partition %d(%s)", index, remoteFilename.str());
+    LOG(MCdebugInfo, job, "Partition %d(%s)", index, remoteFilename.str());
 
     srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
     const SocketEndpoint & ep = cur.filename.queryEndpoint();
@@ -1362,7 +1362,7 @@ void FileSprayer::examineCsvStructure()
         storeCsvRecordStructure(*partitioner);
     }
     else
-        LOG(MCdebugInfoDetail, job, "No source CSV file to examine.");
+        LOG(MCdebugInfo, job, "No source CSV file to examine.");
 }
 
 void FileSprayer::calculateOutputOffsets()
@@ -1908,14 +1908,14 @@ void FileSprayer::displayPartition()
 
 #ifdef _DEBUG
         if ((partition.item(idx).whichInput >= 0) && (partition.item(idx).whichInput < sources.ordinality()) )
-            LOG(MCdebugInfoDetail, unknownJob,
+            LOG(MCdebugInfo, unknownJob,
                      "   Header size: %" I64F "u, XML header size: %" I64F "u, XML footer size: %" I64F "u",
                      sources.item(partition.item(idx).whichInput).headerSize,
                      sources.item(partition.item(idx).whichInput).xmlHeaderLength,
                      sources.item(partition.item(idx).whichInput).xmlFooterLength
             );
         else
-            LOG(MCdebugInfoDetail, unknownJob,"   No source file for this partition");
+            LOG(MCdebugInfo, unknownJob,"   No source file for this partition");
 #endif
     }
 }
@@ -2568,7 +2568,7 @@ void FileSprayer::performTransfer()
 void FileSprayer::pullParts()
 {
     bool needCalcCRC = calcCRC();
-    LOG(MCdebugInfoDetail, job, "Calculate CRC = %d", needCalcCRC);
+    LOG(MCdebugInfo, job, "Calculate CRC = %d", needCalcCRC);
     ForEachItemIn(idx, targets)
     {
         FileTransferThread & next = * new FileTransferThread(*this, FTactionpull, targets.item(idx).filename.queryEndpoint(), needCalcCRC, wuid);
@@ -2590,7 +2590,7 @@ void FileSprayer::pullParts()
 void FileSprayer::pushWholeParts()
 {
     bool needCalcCRC = calcCRC();
-    LOG(MCdebugInfoDetail, job, "Calculate CRC = %d", needCalcCRC);
+    LOG(MCdebugInfo, job, "Calculate CRC = %d", needCalcCRC);
     //Create a slave for each of the target files, but execute it on the node corresponding to the first source file
     //For container mode this will need to execute on this node, or on a load balanced service
     ForEachItemIn(idx, targets)

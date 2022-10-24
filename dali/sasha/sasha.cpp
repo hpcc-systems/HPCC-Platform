@@ -407,7 +407,7 @@ int main(int argc, char* argv[])
     Thread::setDefaultStackSize(0x10000);
     try {
         startMPServer(0);
-        attachStandardFileLogMsgMonitor("sasha.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, LOGFORMAT_table, true);
+        attachStandardFileLogMsgMonitor("sasha.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, LOGFORMAT_table, true);
         queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
 
         SocketEndpoint ep;

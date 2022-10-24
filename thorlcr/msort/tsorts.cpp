@@ -633,7 +633,6 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     CRuntimeStatisticCollection spillStats;
     rowcount_t globalCount = 0;
     bool useTLS = false;
-    unsigned traceLevel = 0;
 
     class CRowToKeySerializer : public CSimpleInterfaceOf<IOutputRowSerializer>
     {
@@ -822,29 +821,6 @@ public:
         isstable = true;
         stopping = false;
         useTLS = queryMtls();
-#ifdef _CONTAINERIZED
-        traceLevel = getComponentConfigSP()->getPropInt("logging/@detail", InfoMsgThreshold);
-#else
-        if (globals)
-        {
-            traceLevel = globals->getPropInt("@traceLevel", 0);
-            switch (traceLevel)
-            {
-                case 0:
-                    traceLevel = InfoMsgThreshold;
-                    break;
-                case 1:
-                    traceLevel = DebugMsgThreshold;
-                    break;
-                case 2:
-                    traceLevel = ExtraneousMsgThreshold;
-                    break;
-                default:
-                    traceLevel = ExtraneousMsgThreshold + 10;
-                    break;
-            }
-        }
-#endif
         threaded.start();
     }
     ~CThorSorter()
@@ -1385,7 +1361,7 @@ public:
     }
     virtual unsigned queryTraceLevel() const override
     {
-        return traceLevel;
+        return 0;
     }
 };
 

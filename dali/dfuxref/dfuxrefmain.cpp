@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator("dfuxref");
         lf->setAppend(false);
-        lf->setMaxDetail(TopDetail);
         lf->setMsgFields(MSGFIELD_STANDARD);
         lf->beginLogging();
     }

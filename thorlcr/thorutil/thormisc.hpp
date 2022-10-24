@@ -424,7 +424,8 @@ inline void ActPrintLog(const CGraphElementBase *container, unsigned traceLevel,
 {
     va_list args;
     va_start(args, format);
-    ActPrintLogArgs(container, thorlog_ecl, MCdebugProgress(traceLevel), format, args);
+    // MORE - do something with level?
+    ActPrintLogArgs(container, thorlog_ecl, MCdebugProgress, format, args);
     va_end(args);
 }
 inline void ActPrintLogEx(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 5, 6)));
@@ -482,7 +483,8 @@ inline void GraphPrintLog(CGraphBase *graph, unsigned traceLevel, const char *fo
 {
     va_list args;
     va_start(args, format);
-    GraphPrintLogArgs(graph, thorlog_null, MCdebugInfo(traceLevel), format, args);
+    // MORE - do something with level?
+    GraphPrintLogArgs(graph, thorlog_null, MCdebugInfo, format, args);
     va_end(args);
 }
 
@@ -591,7 +593,7 @@ inline void readUnderlyingType(MemoryBuffer &mb, T &v)
 }
 
 constexpr unsigned thorDetailedLogLevel = 200;
-constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo(thorDetailedLogLevel));
+constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo);
 
 extern graph_decl StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out);
 extern graph_decl bool getExpertOptBool(const char *opt, bool dft=false);

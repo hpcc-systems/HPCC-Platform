@@ -1991,13 +1991,9 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _list
         switch (mpTraceLevel)
         {
             case 0:
-                parent->mpTraceLevel = InfoMsgThreshold;
-                break;
             case 1:
-                parent->mpTraceLevel = DebugMsgThreshold;
-                break;
             case 2:
-                parent->mpTraceLevel = ExtraneousMsgThreshold;
+                parent->mpTraceLevel = 0;
                 break;
             default:
                 parent->mpTraceLevel = MPVerboseMsgThreshold;
@@ -2005,7 +2001,7 @@ CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port, bool _list
         }
     }
 #else
-    parent->mpTraceLevel = getComponentConfigSP()->getPropInt("logging/@detail", InfoMsgThreshold);
+    parent->mpTraceLevel = getComponentConfigSP()->getPropInt("logging/@detail", 0);
 #endif
 
     if (mpSoMaxConn)

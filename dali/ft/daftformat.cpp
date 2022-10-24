@@ -215,7 +215,7 @@ void CPartitioner::getRecordStructure(StringBuffer & _recordStructure)
 
 CSimpleFixedPartitioner::CSimpleFixedPartitioner(unsigned _recordSize, bool _noTranslation)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CSimpleFixedPartitioner::CSimpleFixedPartitioner( _recordSize:%d, _noTranslation:%d)", _recordSize, _noTranslation);
+    LOG(MCdebugProgress, unknownJob, "CSimpleFixedPartitioner::CSimpleFixedPartitioner( _recordSize:%d, _noTranslation:%d)", _recordSize, _noTranslation);
     recordSize = _recordSize;
     noTranslation = _noTranslation;
 }
@@ -241,7 +241,7 @@ void CSimpleFixedPartitioner::setPartitionRange(offset_t _totalSize, offset_t _t
 
 CSimpleBlockedPartitioner::CSimpleBlockedPartitioner(bool _noTranslation) : CSimpleFixedPartitioner(EFX_BLOCK_SIZE, _noTranslation)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CSimpleBlockedPartitioner::CSimpleBlockedPartitioner( _noTranslation:%d)", _noTranslation);
+    LOG(MCdebugProgress, unknownJob, "CSimpleBlockedPartitioner::CSimpleBlockedPartitioner( _noTranslation:%d)", _noTranslation);
 }
 
 //----------------------------------------------------------------------------
@@ -298,7 +298,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
         {
             // Display progress
             oldInputOffset = nextInputOffset;
-            LOG(MCdebugProgressDetail, unknownJob, "findSplitPoint(splitOffset:%" I64F "d) progress: %3.0f%% done.", splitOffset, (double)100.0*(double)nextInputOffset/(double)splitOffset);
+            LOG(MCdebugProgress, unknownJob, "findSplitPoint(splitOffset:%" I64F "d) progress: %3.0f%% done.", splitOffset, (double)100.0*(double)nextInputOffset/(double)splitOffset);
         }
 
         inputOffset = nextInputOffset;
@@ -315,7 +315,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
         if (size > bufferSize)
         {
-            LOG(MCdebugProgressDetail, unknownJob, "Split record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
+            LOG(MCdebugProgress, unknownJob, "Split record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
             throwError2(DFTERR_WrongSplitRecordSize, size, size);
         }
 
@@ -347,7 +347,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
     cursor.inputOffset = inputOffset;
     cursor.nextInputOffset = nextInputOffset;
-    LOG(MCdebugProgressDetail, unknownJob, "findSplitPoint(splitOffset:%" I64F "d) progress: %3.0f%% done.", splitOffset, 100.0);
+    LOG(MCdebugProgress, unknownJob, "findSplitPoint(splitOffset:%" I64F "d) progress: %3.0f%% done.", splitOffset, 100.0);
 }
 
 
@@ -466,7 +466,7 @@ unsigned CInputBasePartitioner::transformBlock(offset_t endOffset, TransformCurs
 CFixedPartitioner::CFixedPartitioner(size32_t _recordSize) : CInputBasePartitioner(0, _recordSize)
 {
     recordSize = _recordSize;
-    LOG(MCdebugProgressDetail, unknownJob, "CFixedPartitioner::CFixedPartitioner( recordSize:%d)", recordSize);
+    LOG(MCdebugProgress, unknownJob, "CFixedPartitioner::CFixedPartitioner( recordSize:%d)", recordSize);
 }
 
 size32_t CFixedPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
@@ -484,7 +484,7 @@ size32_t CFixedPartitioner::getTransformRecordSize(const byte * record, unsigned
 
 CBlockedPartitioner::CBlockedPartitioner() : CFixedPartitioner(EFX_BLOCK_SIZE)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CBlockedPartitioner::CBlockedPartitioner()");
+    LOG(MCdebugProgress, unknownJob, "CBlockedPartitioner::CBlockedPartitioner()");
 }
 
 
@@ -498,7 +498,7 @@ void CBlockedPartitioner::setTarget(IOutputProcessor * _target)
 
 CVariablePartitioner::CVariablePartitioner(bool _bigendian) : CInputBasePartitioner(sizeof(varLenType), EXPECTED_VARIABLE_LENGTH)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CVariablePartitioner::CVariablePartitioner(_bigendian:%d)", _bigendian);
+    LOG(MCdebugProgress, unknownJob, "CVariablePartitioner::CVariablePartitioner(_bigendian:%d)", _bigendian);
     assertex(sizeof(varLenType) == 4);
     bigendian = _bigendian;
 }
@@ -539,7 +539,7 @@ void CVariablePartitioner::setTarget(IOutputProcessor * _target)
 
 CRECFMvbPartitioner::CRECFMvbPartitioner(bool blocked) : CInputBasePartitioner(blocked?BDW_SIZE:RDW_SIZE, EXPECTED_VARIABLE_LENGTH)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::CRECFMvbPartitioner(blocked:%d)", blocked);
+    LOG(MCdebugProgress, unknownJob, "CRECFMvbPartitioner::CRECFMvbPartitioner(blocked:%d)", blocked);
     isBlocked = blocked;
 }
 
@@ -553,7 +553,7 @@ size32_t CRECFMvbPartitioner::getRecordSize(const byte * record, unsigned maxToR
 
     if (rest)
     {
-        LOG(MCdebugProgressDetail, unknownJob, "Wrong RECFMv RDW info: size:%d (0x%04x) rest:%d (0x%04x) at pos :%d", recordsize ,recordsize, rest, rest, unsigned (record - bufferBase()) );
+        LOG(MCdebugProgress, unknownJob, "Wrong RECFMv RDW info: size:%d (0x%04x) rest:%d (0x%04x) at pos :%d", recordsize ,recordsize, rest, rest, unsigned (record - bufferBase()) );
         throwError1(DFTERR_WrongRECFMvRecordDescriptorWord, rest);
     }
 
@@ -613,7 +613,7 @@ size32_t CRECFMvbPartitioner::getTransformRecordSize(const byte * record, unsign
 
 unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor & cursor)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %" I64F "d (0x%016" I64F "x), TransformCursor & cursor)", endOffset ,endOffset);
+    LOG(MCdebugProgress, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %" I64F "d (0x%016" I64F "x), TransformCursor & cursor)", endOffset ,endOffset);
     const byte *buffer = bufferBase();
     offset_t startOffset = cursor.inputOffset;
     offset_t inputOffset = startOffset;
@@ -680,11 +680,11 @@ unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor
 
 CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartitioner(_format.maxRecordSize, _format.maxRecordSize)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CCsvPartitioner::CCsvPartitioner(_format :'%s', maxRecordSize:%d)", _format.getFileFormatTypeString(), _format.maxRecordSize);
-    LOG(MCdebugProgressDetail, unknownJob, "        separator :'%s'", _format.separate.get());
-    LOG(MCdebugProgressDetail, unknownJob, "        quote     :'%s'", _format.quote.get());
-    LOG(MCdebugProgressDetail, unknownJob, "        terminator:'%s'", _format.terminate.get());
-    LOG(MCdebugProgressDetail, unknownJob, "        escape    :'%s'", _format.escape.get());
+    LOG(MCdebugProgress, unknownJob, "CCsvPartitioner::CCsvPartitioner(_format :'%s', maxRecordSize:%d)", _format.getFileFormatTypeString(), _format.maxRecordSize);
+    LOG(MCdebugProgress, unknownJob, "        separator :'%s'", _format.separate.get());
+    LOG(MCdebugProgress, unknownJob, "        quote     :'%s'", _format.quote.get());
+    LOG(MCdebugProgress, unknownJob, "        terminator:'%s'", _format.terminate.get());
+    LOG(MCdebugProgress, unknownJob, "        escape    :'%s'", _format.escape.get());
 
     maxElementLength = 1;
     format.set(_format);
@@ -700,7 +700,7 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     if (escape && *escape)
     {
         if (quote && (*escape == *quote))
-            LOG(MCdebugProgressDetail, unknownJob, "The quote ('%s') and the escape ('%s') are same, ignore escape.", quote, escape);
+            LOG(MCdebugProgress, unknownJob, "The quote ('%s') and the escape ('%s') are same, ignore escape.", quote, escape);
         else
             addActionList(matcher,  escape, ESCAPE, &maxElementLength);
     }
@@ -744,14 +744,14 @@ void CCsvPartitioner::getRecordStructure(StringBuffer & _recordStructure)
 
         if (size > bufferSize)
         {
-            LOG(MCdebugProgressDetail, unknownJob, "First record size %d (0x%08x) is larger than the buffer size: %d. Please check the separator and terminator parameters.", size, size, bufferSize);
+            LOG(MCdebugProgress, unknownJob, "First record size %d (0x%08x) is larger than the buffer size: %d. Please check the separator and terminator parameters.", size, size, bufferSize);
             throwError2(DFTERR_WrongSplitRecordSize, size, size);
         }
         else if (isFirstRow)
         {
             // Possibly reached the end of the file but the processing is still in first row
             // so no terminator detected
-            LOG(MCdebugProgressDetail, unknownJob, "%d (0x%08x) bytes processed, but there is no terminator found. Please check the separator and terminator parameters.", size, size);
+            LOG(MCdebugProgress, unknownJob, "%d (0x%08x) bytes processed, but there is no terminator found. Please check the separator and terminator parameters.", size, size);
             throwError1(DFTERR_EndOfCsvRecordNotFound, size);
         }
     }
@@ -995,7 +995,7 @@ void CCsvPartitioner::setTarget(IOutputProcessor * _target)
 
 CCsvQuickPartitioner::CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CCsvPartitioner(_format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CCsvQuickPartitioner::CCsvQuickPartitioner(_format.type :'%s', _noTranslation:%d)", _format.getFileFormatTypeString(), _noTranslation);
+    LOG(MCdebugProgress, unknownJob, "CCsvQuickPartitioner::CCsvQuickPartitioner(_format.type :'%s', _noTranslation:%d)", _format.getFileFormatTypeString(), _noTranslation);
     noTranslation = _noTranslation;
 }
 
@@ -1088,10 +1088,10 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 
 CUtfPartitioner::CUtfPartitioner(const FileFormat & _format) : CInputBasePartitioner(_format.maxRecordSize, _format.maxRecordSize)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CUtfPartitioner::CUtfPartitioner(_format.type :'%s', maxRecordSize:%d)", _format.getFileFormatTypeString(), _format.maxRecordSize);
-    LOG(MCdebugProgressDetail, unknownJob, "        separator :'%s'", _format.separate.get());
-    LOG(MCdebugProgressDetail, unknownJob, "        quote     :'%s'", _format.quote.get());
-    LOG(MCdebugProgressDetail, unknownJob, "        terminator:'%s'", _format.terminate.get());
+    LOG(MCdebugProgress, unknownJob, "CUtfPartitioner::CUtfPartitioner(_format.type :'%s', maxRecordSize:%d)", _format.getFileFormatTypeString(), _format.maxRecordSize);
+    LOG(MCdebugProgress, unknownJob, "        separator :'%s'", _format.separate.get());
+    LOG(MCdebugProgress, unknownJob, "        quote     :'%s'", _format.quote.get());
+    LOG(MCdebugProgress, unknownJob, "        terminator:'%s'", _format.terminate.get());
 
     maxElementLength = 1;
     format.set(_format);
@@ -1332,7 +1332,7 @@ void CUtfPartitioner::setTarget(IOutputProcessor * _target)
 
 CUtfQuickPartitioner::CUtfQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CUtfPartitioner(_format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CUtfQuickPartitioner::CUtfQuickPartitioner(_format.type :'%s', _noTranslation:%d)", _format.getFileFormatTypeString(), _noTranslation);
+    LOG(MCdebugProgress, unknownJob, "CUtfQuickPartitioner::CUtfQuickPartitioner(_format.type :'%s', _noTranslation:%d)", _format.getFileFormatTypeString(), _noTranslation);
     noTranslation = _noTranslation;
 }
 
@@ -1463,7 +1463,7 @@ size32_t BufferedDirectReader::ensure(size32_t required)
 
 XmlSplitter::XmlSplitter(const FileFormat & format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "XmlSplitter::XmlSplitter(_format.type :'%s', format.rowTag:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
+    LOG(MCdebugProgress, unknownJob, "XmlSplitter::XmlSplitter(_format.type :'%s', format.rowTag:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
     maxElementLength = 1;
     utfFormat = getUtfFormatType(format.type);
     StringBuffer openTag, closeTag, endTag, endCloseTag;
@@ -1686,7 +1686,7 @@ offset_t XmlSplitter::getFooterLength(BufferedDirectReader & reader, offset_t si
 
 CJsonInputPartitioner::CJsonInputPartitioner(const FileFormat & _format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CJsonInputPartitioner::CJsonInputPartitioner(format.type :'%s', unitSize:%d)", _format.getFileFormatTypeString(), _format.getUnitSize());
+    LOG(MCdebugProgress, unknownJob, "CJsonInputPartitioner::CJsonInputPartitioner(format.type :'%s', unitSize:%d)", _format.getFileFormatTypeString(), _format.getUnitSize());
 
     format.set(_format);
     CriticalBlock block(openfilecachesect);
@@ -1750,7 +1750,7 @@ CJsonPartitioner::CJsonPartitioner(const FileFormat & _format) : CJsonInputParti
 
 CXmlPartitioner::CXmlPartitioner(const FileFormat & _format) : CInputBasePartitioner(_format.maxRecordSize, _format.maxRecordSize), splitter(_format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CXmlPartitioner::CXmlPartitioner(_format.type :'%s', unitSize:%d)", _format.getFileFormatTypeString(), format.getUnitSize());
+    LOG(MCdebugProgress, unknownJob, "CXmlPartitioner::CXmlPartitioner(_format.type :'%s', unitSize:%d)", _format.getFileFormatTypeString(), format.getUnitSize());
     format.set(_format);
     unitSize = format.getUnitSize();
     utfFormat = getUtfFormatType(format.type);
@@ -1782,7 +1782,7 @@ void CXmlPartitioner::setTarget(IOutputProcessor * _target)
 
 CXmlQuickPartitioner::CXmlQuickPartitioner(const FileFormat & _format, bool _noTranslation) : CXmlPartitioner(_format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::CXmlQuickPartitioner(_format.type :'%s', _noTranslation:%d)", _format.getFileFormatTypeString(), _noTranslation);
+    LOG(MCdebugProgress, unknownJob, "CXmlQuickPartitioner::CXmlQuickPartitioner(_format.type :'%s', _noTranslation:%d)", _format.getFileFormatTypeString(), _noTranslation);
     noTranslation = _noTranslation;
 }
 
@@ -1792,7 +1792,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
     numInBuffer = bufferOffset = 0;
     if (splitOffset != 0)
     {
-        LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint(splitOffset:%" I64F "d)", splitOffset);
+        LOG(MCdebugProgress, unknownJob, "CXmlQuickPartitioner::findSplitPoint(splitOffset:%" I64F "d)", splitOffset);
         unsigned delta = (unsigned)(splitOffset & (unitSize-1));
         if (delta)
             splitOffset += (unitSize - delta);
@@ -1818,7 +1818,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                 }
                 if (sizeAvailable >= format.maxRecordSize)
                 {
-                    LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint: record size (>%d bytes) is larger than expected maxRecordSize (%d bytes) [and blockSize (%d bytes)]", sizeRecord, format.maxRecordSize, blockSize);
+                    LOG(MCdebugProgress, unknownJob, "CXmlQuickPartitioner::findSplitPoint: record size (>%d bytes) is larger than expected maxRecordSize (%d bytes) [and blockSize (%d bytes)]", sizeRecord, format.maxRecordSize, blockSize);
                     throwError3(DFTERR_EndOfXmlRecordNotFound, splitOffset+bufferOffset, sizeRecord, format.maxRecordSize);
                 }
                 LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
@@ -1842,7 +1842,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 CRemotePartitioner::CRemotePartitioner(FileSprayer &_sprayer, const SocketEndpoint & _ep, const FileFormat & _srcFormat, const FileFormat & _tgtFormat, const char * _slave, const char *_wuid)
     : wuid(_wuid), sprayer(_sprayer)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CRemotePartitioner::CRemotePartitioner(_srcFormat.type :'%s', _tgtFormat.type:'%s', _slave:'%s', _wuid:'%s')", _srcFormat.getFileFormatTypeString(), _tgtFormat.getFileFormatTypeString(), _slave, _wuid);
+    LOG(MCdebugProgress, unknownJob, "CRemotePartitioner::CRemotePartitioner(_srcFormat.type :'%s', _tgtFormat.type:'%s', _slave:'%s', _wuid:'%s')", _srcFormat.getFileFormatTypeString(), _tgtFormat.getFileFormatTypeString(), _slave, _wuid);
     ep.set(_ep);
     srcFormat.set(_srcFormat);
     tgtFormat.set(_tgtFormat);
@@ -1931,7 +1931,7 @@ void CRemotePartitioner::callRemote()
             sendDaFsFtSlaveCmd(socket, msg);
         }
 
-        LOG(MCdebugProgressDetail, job, "Remote partition part %s[%d]", url.str(), whichInput);
+        LOG(MCdebugProgress, job, "Remote partition part %s[%d]", url.str(), whichInput);
 
         msg.clear();
         if (!catchReadBuffer(socket, msg, FTTIME_PARTITION))
@@ -1952,7 +1952,7 @@ void CRemotePartitioner::callRemote()
             catchWriteBuffer(socket, msg);
         }
 
-        LOG(MCdebugProgressDetail, job, "Remote partition calculated %s[%d] ok(%d)", url.str(), whichInput, ok);
+        LOG(MCdebugProgress, job, "Remote partition calculated %s[%d] ok(%d)", url.str(), whichInput, ok);
     }
     catch (IException * e)
     {
@@ -2293,7 +2293,7 @@ IFormatProcessor * createFormatProcessor(const FileFormat & srcFormat, const Fil
 {
     IFormatProcessor * partitioner;
     bool sameFormats = srcFormat.equals(tgtFormat);
-    LOG(MCdebugProgressDetail, unknownJob, "createFormatProcessor(srcFormat:'%s', tgtFormat:'%s', calcOutput:%d, sameFormats:%d)", srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString(), calcOutput, sameFormats);
+    LOG(MCdebugProgress, unknownJob, "createFormatProcessor(srcFormat:'%s', tgtFormat:'%s', calcOutput:%d, sameFormats:%d)", srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString(), calcOutput, sameFormats);
     switch (srcFormat.type)
     {
     case FFTfixed:
@@ -2353,7 +2353,7 @@ IFormatProcessor * createFormatProcessor(const FileFormat & srcFormat, const Fil
 
 IOutputProcessor * createOutputProcessor(const FileFormat & format)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "createOutputProcessor(format.type:'%s')", format.getFileFormatTypeString());
+    LOG(MCdebugProgress, unknownJob, "createOutputProcessor(format.type:'%s')", format.getFileFormatTypeString());
     switch (format.type)
     {
     case FFTfixed:
@@ -2375,7 +2375,7 @@ IOutputProcessor * createOutputProcessor(const FileFormat & format)
 IFormatPartitioner * createFormatPartitioner(FileSprayer &sprayer, const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid)
 {
     bool sameFormats = sameEncoding(srcFormat, tgtFormat);
-    LOG(MCdebugProgressDetail, unknownJob, "createFormatProcessor(srcFormat.type:'%s', tgtFormat.type:'%s', calcOutput:%d, sameFormats:%d)", srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString(), calcOutput, sameFormats);
+    LOG(MCdebugProgress, unknownJob, "createFormatProcessor(srcFormat.type:'%s', tgtFormat.type:'%s', calcOutput:%d, sameFormats:%d)", srcFormat.getFileFormatTypeString(), tgtFormat.getFileFormatTypeString(), calcOutput, sameFormats);
     if (sameFormats)
     {
         switch (srcFormat.type)

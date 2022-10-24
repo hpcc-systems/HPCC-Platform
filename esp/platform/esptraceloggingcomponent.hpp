@@ -21,23 +21,6 @@
 #include "espcontext.hpp"
 #include "jlog.hpp"
 
-/// Common log message detail priority values.
-namespace TraceLoggingPriority
-{
-    static const LogMsgDetail Critical = 1;
-    static const LogMsgDetail Major = 10;
-    static const LogMsgDetail Highest = 20;
-    static const LogMsgDetail High = 30;
-    static const LogMsgDetail Medium = 40;
-    static const LogMsgDetail Normal = 50;
-    static const LogMsgDetail Low = 60;
-    static const LogMsgDetail Lowest = 70;
-    static const LogMsgDetail Trivial = 80;
-    static const LogMsgDetail DataDump = 90;
-    static const LogMsgDetail CallStack = 100;
-
-} // namespace TraceLoggingPriority
-
 /**
  * ITraceLoggingComponent reimagines multiple platform approahes to trace log output. Specifically,
  * it is a hybrid of the jlog LOG-related functions and the ESP's ESPLOG. Like jlog, trace content
@@ -70,9 +53,6 @@ namespace TraceLoggingPriority
  */
 interface ITraceLoggingComponent : extends IInterface
 {
-    /// Returns the highest accepted message priority for the given message category.
-    virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const = 0;
-
     /// Directs accepted content to implemtation-defined targets.
     virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const = 0;
 
@@ -81,22 +61,19 @@ interface ITraceLoggingComponent : extends IInterface
 
     /**
      * LOG_METHOD_TEMPLATE defines a non-virtual method using its first parameter. The method
-     * defines a shared instance of a LogMsgCategory using the remaining parameters. If the
-     * requested message priority is neither zero nor greater than the message priority limit, the
-     * message will be logged.
+     * defines a shared instance of a LogMsgCategory using the remaining parameters.
      */
 #define LOG_METHOD_TEMPLATE(function, audience, classification) \
-    void function(LogMsgDetail priorityRequested, const char* format, ...) const __attribute__((format(printf, 3, 4))) \
+    void function(const char* format, ...) const __attribute__((format(printf, 2, 3))) \
     { \
-        static const LogMsgCategory LMC##function(audience, classification, 1); \
-        if (priorityRequested && priorityRequested <= tracePriorityLimit(LMC##function)) \
-        { \
-            va_list arguments; \
-            va_start(arguments, format); \
-            traceOutput(LMC##function, format, arguments); \
-            va_end(arguments); \
-        } \
+        static const LogMsgCategory LMC##function(audience, classification); \
+        va_list arguments; \
+        va_start(arguments, format); \
+        traceOutput(LMC##function, format, arguments); \
+        va_end(arguments); \
     }
+
+    // MORE - can remove all these and just use underlying jlog I suspect
 
     LOG_METHOD_TEMPLATE(uerrlog, MSGAUD_user, MSGCLS_error);
     LOG_METHOD_TEMPLATE(uwarnlog, MSGAUD_user, MSGCLS_warning);
@@ -118,14 +95,15 @@ interface ITraceLoggingComponent : extends IInterface
  * Standard interface implementation, inheriting behavior from base class 'C'.
  */
 #define IMPLEMENT_ITRACELOGGINGCOMPONENT_WITH(C) \
-    inline  LogMsgDetail tracePriorityLimit(LogMsgAudience audience, LogMsgClass classification) const { return tracePriorityLimit(LogMsgCategory(audience, classification, 1)); } \
-    virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const override { return C::tracePriorityLimit(category); } \
     virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const override  __attribute__((format(printf, 3, 0))) { return C::traceOutput(category, format, arguments); } \
     virtual const char*  traceId() const override { return C::traceId(); }
 
 /**
  * Utility class for logging entry to and exit from a block of code.
  */
+
+// MORE - this needs feature-level log support
+
 class CTraceBlock
 {
 private:
@@ -136,11 +114,11 @@ public:
         : m_component(component)
         , m_caption(caption)
     {
-        m_component.iproglog(TraceLoggingPriority::CallStack, "Enter '%s'", m_caption.str());
+        m_component.iproglog("Enter '%s'", m_caption.str());
     }
     ~CTraceBlock()
     {
-        m_component.iproglog(TraceLoggingPriority::CallStack, "Exit '%s'", m_caption.str());
+        m_component.iproglog("Exit '%s'", m_caption.str());
     }
 };
 
@@ -155,10 +133,8 @@ class CEspTraceLoggingComponent : implements ITraceLoggingComponent, extends CIn
 {
 public:
     IMPLEMENT_IINTERFACE;
-    virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const override { return (getEspLogLevel() * 10); }
     virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const override { VALOG(category, format, arguments); }
     virtual const char*  traceId() const override { return nullptr; }
-    inline  LogMsgDetail tracePriorityLimit(LogMsgAudience audience, LogMsgClass classification) const { return tracePriorityLimit(LogMsgCategory(audience, classification, 1)); } \
 };
 
 #endif // _EspTraceLoggingComponent_HPP_

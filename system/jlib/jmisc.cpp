@@ -211,7 +211,7 @@ jlib_decl ILogIntercept* interceptLog(ILogIntercept *intercept)
     return old;
 }
 
-jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsigned detail, bool enterQueueMode, bool append)
+jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, bool enterQueueMode, bool append)
 {
     if(enterQueueMode)
         queryLogMsgManager()->enterQueueingMode();
@@ -221,7 +221,6 @@ jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsi
     lf->setRolling(false);
     lf->setAppend(append);
     lf->setCompleteFilespec(filename);//user specified log filespec
-    lf->setMaxDetail(detail ? detail : DefaultDetail);
     lf->setMsgFields(MSGFIELD_STANDARD);
     lf->beginLogging();
     resolvedFS.set(lf->queryLogFileSpec());

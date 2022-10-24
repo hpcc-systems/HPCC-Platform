@@ -20,7 +20,4 @@
 
 #include "daft.hpp"
 
-constexpr LogMsgCategory MCdebugInfoDetail(MCdebugInfo(1000));
-constexpr LogMsgCategory MCdebugProgressDetail(MCdebugProgress(1000));
-
 #endif

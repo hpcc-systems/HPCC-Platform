@@ -4071,7 +4071,7 @@ public:
     virtual void handleMessage(const LogMsg & msg __attribute__((unused))) { counter++; }
     virtual bool needsPrep() const { return false; }
     virtual void prep() {}
-    virtual unsigned queryMessageFields() const { return MSGFIELD_detail; }
+    virtual unsigned queryMessageFields() const { return MSGFIELD_all; }
     virtual void setMessageFields(unsigned _fields __attribute__((unused)) = MSGFIELD_all) {}
     virtual void addToPTree(IPropertyTree * parent __attribute__((unused))) const {}
     virtual int flush() { return 0; }

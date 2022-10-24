@@ -632,7 +632,6 @@ int main(int argc, const char* argv[])
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logDir.str(), "DAFILESRV");
         lf->setCreateAliasFile(false);
-        lf->setMaxDetail(TopDetail);
         lf->beginLogging();
     }
     write_pidfile(componentName.str());

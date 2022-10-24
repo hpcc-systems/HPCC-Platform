@@ -17,8 +17,6 @@
 
 #include "modularlogagent.ipp"
 
-using namespace TraceLoggingPriority;
-
 namespace ModularLogAgent
 {
 
@@ -195,11 +193,6 @@ inline StringBuffer& makeTimestamp(const char* format, StringBuffer& timestamp)
 
 //////////////////// CModule ////////////////////
 
-LogMsgDetail CModule::tracePriorityLimit(const LogMsgCategory& category) const
-{
-    return (m_inheritTracePriorityLimit ? (getEspLogLevel() * 10) : m_tracePriorityLimit);
-}
-
 const char* CModule::traceId() const
 {
     return m_traceId;
@@ -234,19 +227,6 @@ bool CModule::configure(const IPTree& configuration, const CModuleFactory& facto
     else if (module)
         m_traceId.appendf("[%s]", module);
 
-    // Determine the desired trace log output level. An inherited value is not pre-set because
-    // the inherited value might change at runtime.
-    int tracePriorityLimit = configuration.getPropInt(propTracePriorityLimit, INHERIT_TRACE_PRIORITY_LIMIT);
-    if (INHERIT_TRACE_PRIORITY_LIMIT == tracePriorityLimit)
-    {
-        m_inheritTracePriorityLimit = true;
-    }
-    else
-    {
-        m_inheritTracePriorityLimit = false;
-        m_tracePriorityLimit = LogMsgDetail(tracePriorityLimit);
-    }
-
     // Other initialization
     m_disabled = configuration.getPropBool(propDisabled, m_disabled);
 
@@ -268,7 +248,7 @@ StringBuffer& CModule::toString(StringBuffer& str) const
 
 bool CModule::appendProperties(StringBuffer& str) const
 {
-    str.appendf("disabled: %d; trace-priority-limit: %d", !isEnabled(), (m_inheritTracePriorityLimit ? -1 : int(m_tracePriorityLimit)));
+    str.appendf("disabled: %d", !isEnabled());
     return true;
 }
 
@@ -365,7 +345,7 @@ bool CDelegatingAgent::configure(const IPTree& configuration, const CModuleFacto
         result = false;
 
     if (result && !hasService(LGSTGetTransactionSeed) && !hasService(LGSTGetTransactionID) && !hasService(LGSTUpdateLOG))
-        uwarnlog(Highest, "no available log agent services");
+        uwarnlog("no available log agent services");
 
     return result;
 }
@@ -383,7 +363,7 @@ void CDelegatingAgent::updateLog(IEspUpdateLogRequestWrap& request, IEspUpdateLo
 {
     if (!m_updateLog)
     {
-        ierrlog(Major, "UpdateLog service module does not exist");
+        ierrlog("UpdateLog service module does not exist");
         response.setStatusCode(-1);
     }
     else if (!m_updateLog->isEnabled())
@@ -409,7 +389,7 @@ void CDelegatingAgent::updateLog(IEspUpdateLogRequestWrap& request, IEspUpdateLo
             }
             else
             {
-                m_updateLog->ierrlog(Major, "requires XML markup; none given");
+                m_updateLog->ierrlog("requires XML markup; none given");
                 response.setStatusCode(-1);
             }
         }
@@ -424,10 +404,10 @@ bool CDelegatingAgent::hasService(LOGServiceType type) const
     case LGSTGetTransactionID:   return false;
     case LGSTUpdateLOG:          return m_updateLog && m_updateLog->isEnabled();
     case LGSTterm:
-        ierrlog(Major, "invalid service request for LGSTterm");
+        ierrlog("invalid service request for LGSTterm");
         break;
     default:
-        ierrlog(Major, "unexpected service request for %d", int(type));
+        ierrlog("unexpected service request for %d", int(type));
         break;
     }
     return false;
@@ -442,7 +422,7 @@ bool CDelegatingAgent::configureUpdateLog(const IPTree& configuration, const CMo
     bool hasObject = configuration.hasProp(moduleUpdateLog);
     if (hasScalar && hasObject)
     {
-        uerrlog(Major, "%s and %s cannot be configured at the same time", propUpdateLog, moduleUpdateLog);
+        uerrlog("%s and %s cannot be configured at the same time", propUpdateLog, moduleUpdateLog);
         return false;
     }
     if (hasScalar)
@@ -451,7 +431,7 @@ bool CDelegatingAgent::configureUpdateLog(const IPTree& configuration, const CMo
         bool applyDefault = false;
         if (deserializer(updateLogValue, applyDefault) != Deserialization_SUCCESS)
         {
-            uerrlog(Major, "expected Boolean value for %s; found '%s'", propUpdateLog, updateLogValue);
+            uerrlog("expected Boolean value for %s; found '%s'", propUpdateLog, updateLogValue);
             return false;
         }
         if (!applyDefault)
@@ -496,12 +476,12 @@ void CDelegatingUpdateLog::updateLog(const char* updateLogRequest, IEspUpdateLog
         msg.appendf("service is disabled");
         response.setStatusCode(-1);
         response.setStatusMessage(msg);
-        ierrlog(Major, "%s", msg.str());
+        ierrlog("%s", msg.str());
     }
     else if (isEmptyString(updateLogRequest))
     {
         response.setStatusCode(0);
-        iwarnlog(Highest, "no content provided");
+        iwarnlog("no content provided");
     }
     else
     {
@@ -522,7 +502,7 @@ void CDelegatingUpdateLog::updateLog(const char* updateLogRequest, IEspUpdateLog
             {
                 m_target->updateTarget(*scriptContext, *originalContent, intermediateContent, finalContent, response);
             }
-            else if (DataDump <= tracePriorityLimit(MSGAUD_user, MSGCLS_progress))
+            else if (false)  // MORE - feature trace flag?
             {
                 VStringBuffer output("log content with %s target:\n  original content:\n", (m_target ? "disabled" : "no"));
                 scriptContext->toXML(output, IContentTarget::sectionOriginal);
@@ -535,7 +515,7 @@ void CDelegatingUpdateLog::updateLog(const char* updateLogRequest, IEspUpdateLog
                 {
                     output.appendf("\n  final content:\n%s", finalContent.str());
                 }
-                uproglog(DataDump, "%s", output.str());
+                uproglog("%s", output.str());
             }
         }
         catch(IException* e)
@@ -571,7 +551,7 @@ bool CDelegatingUpdateLog::appendProperties(StringBuffer& str) const
 void CContentTarget::updateTarget(IEsdlScriptContext& scriptContext, IXpathContext& originalContent, IXpathContext* intermediateContent, const char* finalContent, IEspUpdateLogResponse& response) const
 {
     TRACE_BLOCK("CContentTarget::updateTarget");
-    if (DataDump <= tracePriorityLimit(MSGAUD_programmer, MSGCLS_information))
+    if (false)  // MORE - feature trace flag?
     {
         StringBuffer output("updateTarget\n  original content:\n");
         scriptContext.toXML(output, sectionOriginal);
@@ -584,7 +564,7 @@ void CContentTarget::updateTarget(IEsdlScriptContext& scriptContext, IXpathConte
         {
             output.appendf("\n  final content:\n%s", finalContent);
         }
-        iinfolog(DataDump, "%s", output.str());
+        iinfolog("%s", output.str());
     }
 }
 
@@ -675,7 +655,7 @@ bool CFileTarget::Pattern::setPattern(const char* pattern)
             case '{':
                 if (inVar)
                 {
-                    m_target.uerrlog(Major, "file path pattern '%s' contains invalid nested variable markup at offset %zu", pattern, (tmp - pattern));
+                    m_target.uerrlog("file path pattern '%s' contains invalid nested variable markup at offset %zu", pattern, (tmp - pattern));
                     result = false;
                 }
                 else if ('$' == *(tmp + 1))
@@ -693,7 +673,7 @@ bool CFileTarget::Pattern::setPattern(const char* pattern)
                 {
                     if (inVarOption)
                     {
-                        m_target.uwarnlog(Highest, "file path pattern '%s' contains unexpected option delimiter at offset %zu", pattern, (tmp - pattern));
+                        m_target.uwarnlog("file path pattern '%s' contains unexpected option delimiter at offset %zu", pattern, (tmp - pattern));
                     }
                     else if (inVarName)
                     {
@@ -707,7 +687,7 @@ bool CFileTarget::Pattern::setPattern(const char* pattern)
                 {
                     if (varName.trim().isEmpty())
                     {
-                        m_target.uerrlog(Major, "file path pattern '%s' contains empty variable name at offset %zu", pattern, (fragmentStart - pattern));
+                        m_target.uerrlog("file path pattern '%s' contains empty variable name at offset %zu", pattern, (fragmentStart - pattern));
                         result = false;
                     }
                     else
@@ -719,7 +699,7 @@ bool CFileTarget::Pattern::setPattern(const char* pattern)
                             varOption.trim();
                             if (!m_target.validateVariable(varName, varOption))
                             {
-                                m_target.uerrlog(Major, "file path pattern '%s' contains invalid variable reference (%s:%s) at offset %zu", pattern, varName.str(), varOption.str(), (fragmentStart - pattern));
+                                m_target.uerrlog("file path pattern '%s' contains invalid variable reference (%s:%s) at offset %zu", pattern, varName.str(), varOption.str(), (fragmentStart - pattern));
                                 result = false;
                             }
                             else
@@ -731,7 +711,7 @@ bool CFileTarget::Pattern::setPattern(const char* pattern)
                         }
                         else if (!m_target.validateVariable(varName, nullptr))
                         {
-                            m_target.uerrlog(Major, "file path pattern '%s' contains invalid variable reference (%s) at offset %zu", pattern, varName.str(), (fragmentStart - pattern));
+                            m_target.uerrlog("file path pattern '%s' contains invalid variable reference (%s) at offset %zu", pattern, varName.str(), (fragmentStart - pattern));
                             result = false;
                         }
                         else
@@ -761,7 +741,7 @@ bool CFileTarget::Pattern::setPattern(const char* pattern)
     }
     else
     {
-        m_target.uerrlog(Major, "file path pattern must not be empty");
+        m_target.uerrlog("file path pattern must not be empty");
         result = false;
     }
     return result;
@@ -838,14 +818,14 @@ void CFileTarget::updateTarget(IEsdlScriptContext& scriptContext, IXpathContext&
 
     if (!m_debugMode && isEmptyString(finalContent))
     {
-        uproglog(Normal, "ignoring update request with empty content");
+        uproglog("ignoring update request with empty content");
         return;
     }
 
     Variables variables;
     readPatternVariables(scriptContext, originalContent, intermediateContent, variables);
     if (variables.find(creationVarName) != variables.end())
-        iwarnlog(Critical, "variable %s should not be read from content", creationVarName);
+        iwarnlog("variable %s should not be read from content", creationVarName);
 
     if (m_debugMode)
     {
@@ -912,7 +892,7 @@ void CFileTarget::updateFile(const char* content, const Variables& variables, IE
     if (contentLength > std::numeric_limits<offset_t>::max())
     {
         VStringBuffer body("update content length (%zu bytes) exceeds supported capacity", contentLength);
-        ierrlog(Major, "%s", body.str());
+        ierrlog("%s", body.str());
         VStringBuffer msg("%s: %s", traceId(), body.str());
         response.setStatusCode(-1);
         response.setStatusMessage(msg);
@@ -964,13 +944,13 @@ void CFileTarget::updateFile(const char* content, const Variables& variables, IE
                     {
                         file->m_io->setSize(originalFileSize);
                         if (file->m_io->size() != originalFileSize)
-                            ierrlog(Major, "failed to undo incomplete update to '%s'", failureTarget.str());
+                            ierrlog("failed to undo incomplete update to '%s'", failureTarget.str());
 
                     }
                     catch(IException* e)
                     {
                         StringBuffer msg;
-                        ierrlog(Major, "exception undoing incomplete update to '%s': %s", failureTarget.str(), e->errorMessage(msg).str());
+                        ierrlog("exception undoing incomplete update to '%s': %s", failureTarget.str(), e->errorMessage(msg).str());
                         e->Release();
                     }
                 }
@@ -1009,22 +989,22 @@ void CFileTarget::readPatternVariables(IEsdlScriptContext& scriptContext, IXpath
             variables[esdlServiceVarName] = parts[2];
         }
         else
-            uwarnlog(Highest, "unexpected format of %s value '%s'; variables %s, %s, and %s are undefined", bindingVarName, binding.str(), processVarName, portVarName, esdlServiceVarName);
+            uwarnlog("unexpected format of %s value '%s'; variables %s, %s, and %s are undefined", bindingVarName, binding.str(), processVarName, portVarName, esdlServiceVarName);
     }
     else
-        uwarnlog(Highest, "evaluation of xpath '%s' failed; variables %s, %s, %s, and %s are undefined", xpathBinding->getXpath(), bindingVarName, processVarName, portVarName, esdlServiceVarName);
+        uwarnlog("evaluation of xpath '%s' failed; variables %s, %s, %s, and %s are undefined", xpathBinding->getXpath(), bindingVarName, processVarName, portVarName, esdlServiceVarName);
     if (originalContent.evaluateAsString(xpathEsdlMethod, esdlMethod) && !esdlMethod.isEmpty())
     {
         variables[esdlMethodVarName] = esdlMethod.str();
     }
     else
-        uwarnlog(Highest, "evaluation of xpath '%s' failed; variable %s is undefined", xpathEsdlMethod->getXpath(), esdlMethodVarName);
+        uwarnlog("evaluation of xpath '%s' failed; variable %s is undefined", xpathEsdlMethod->getXpath(), esdlMethodVarName);
     if (originalContent.evaluateAsString(xpathService, service) && !service.isEmpty())
     {
         variables[serviceVarName] = service.str();
     }
     else
-        uwarnlog(Highest, "evaluation of xpath '%s' failed; variable %s is undefined", xpathService->getXpath(), serviceVarName);
+        uwarnlog("evaluation of xpath '%s' failed; variable %s is undefined", xpathService->getXpath(), serviceVarName);
 }
 
 /**
@@ -1050,7 +1030,7 @@ bool CFileTarget::configureCreationFormat(const IPTree& configuration, const cha
         format.append(defaultValue);
         if (format.isEmpty())
         {
-            ierrlog(Major, "missing value for '%s'", xpath);
+            ierrlog("missing value for '%s'", xpath);
             return false;
         }
     }
@@ -1062,13 +1042,13 @@ bool CFileTarget::configureCreationFormat(const IPTree& configuration, const cha
         if (checkDate &&
             !(modifiers.count('Y') && modifiers.count('m') && modifiers.count('d')))
         {
-            uerrlog(Major, "'%s' value '%s' missing required date modifiers", xpath, format.str());
+            uerrlog("'%s' value '%s' missing required date modifiers", xpath, format.str());
             result = false;
         }
         if (checkTime &&
             !(modifiers.count('H') && modifiers.count('M') && modifiers.count('S')))
         {
-            uerrlog(Major, "'%s' value '%s' missing required time modifiers", xpath, format.str());
+            uerrlog("'%s' value '%s' missing required time modifiers", xpath, format.str());
             result = false;
         }
     }
@@ -1092,12 +1072,12 @@ bool CFileTarget::configureFileHandling(const IPTree& configuration)
         concurrentFiles.append(defaultConcurrentFiles);
     if (TokenDeserializer()(concurrentFiles, m_concurrentFiles) != Deserialization_SUCCESS)
     {
-        uerrlog(Major, "'%s' is an invalid value for '%s'", concurrentFiles.str(), xpathConcurrentFiles);
+        uerrlog("'%s' is an invalid value for '%s'", concurrentFiles.str(), xpathConcurrentFiles);
         result = false;
     }
     else if (0 == m_concurrentFiles)
     {
-        uerrlog(Major, "'%s' cannot be zero", xpathConcurrentFiles);
+        uerrlog("'%s' cannot be zero", xpathConcurrentFiles);
         result = false;
     }
 
@@ -1110,7 +1090,7 @@ bool CFileTarget::configureFileHandling(const IPTree& configuration)
         m_rolloverInterval = NoRollover;
     else
     {
-        uerrlog(Major, "'%s' is an invalid value for '%s'", propValue, xpathRolloverInterval);
+        uerrlog("'%s' is an invalid value for '%s'", propValue, xpathRolloverInterval);
         m_rolloverInterval = UnknownRollover;
         result = false;
     }
@@ -1120,7 +1100,7 @@ bool CFileTarget::configureFileHandling(const IPTree& configuration)
         propValue = defaultRolloverSize;
     if (!extractSize(propValue, m_rolloverSize))
     {
-        uerrlog(Major, "'%s' is an invalid value for '%s'", propValue, xpathRolloverSize);
+        uerrlog("'%s' is an invalid value for '%s'", propValue, xpathRolloverSize);
         result = false;
     }
 
@@ -1135,7 +1115,7 @@ bool CFileTarget::configurePattern(const IPTree& configuration)
     const char* propValue = configuration.queryProp(xpathFilePathPattern);
     if (isEmptyString(propValue))
     {
-        uerrlog(Major, "'%s' is a required configuration value", xpathFilePathPattern);
+        uerrlog("'%s' is a required configuration value", xpathFilePathPattern);
         return false;
     }
     else
@@ -1182,7 +1162,7 @@ bool CFileTarget::validateVariable(const char* name, const char* option) const
                 if (checkTimestampFormat(option, &modifiers))
                 {
                     if (modifiers.empty())
-                        uwarnlog(Highest, "variable '%s' option '%s' contains no timestamp modifiers", name, option);
+                        uwarnlog("variable '%s' option '%s' contains no timestamp modifiers", name, option);
                     valid = true;
                 }
             }
@@ -1190,7 +1170,7 @@ bool CFileTarget::validateVariable(const char* name, const char* option) const
         else
         {
             if (option)
-                uwarnlog(Highest, "variable '%s' references unused option '%s'", name, option);
+                uwarnlog("variable '%s' references unused option '%s'", name, option);
             valid = true;
         }
     }
@@ -1229,9 +1209,9 @@ void CFileTarget::resolveVariable(const char* name, const char* option, const ch
             if (streq(makeTimestamp(format, timestamp), format))
             {
                 if (streq(option, format))
-                    uerrlog(Major, "'%s' is an invalid creation timestamp format string", format);
+                    uerrlog("'%s' is an invalid creation timestamp format string", format);
                 else
-                    uerrlog(Major, "'%s' (derived from option '%s') is an invalid creation timestamp format string", format, option);
+                    uerrlog("'%s' (derived from option '%s') is an invalid creation timestamp format string", format, option);
             }
             output.append(timestamp);
         }
@@ -1239,7 +1219,7 @@ void CFileTarget::resolveVariable(const char* name, const char* option, const ch
     else
     {
         if (!isEmptyString(option))
-            uinfolog(90, "variable substitution of variable '%s' ignoring option '%s'", name, option);
+            uinfolog("variable substitution of variable '%s' ignoring option '%s'", name, option);
         if (value)
             output.append(value);
     }
@@ -1334,12 +1314,12 @@ bool CFileTarget::haveFile(const File& file) const
             Owned<IFile> tmp(createIFile(file.m_filePath));
             if (tmp->exists())
                 return true;
-            iwarnlog(Major, "open file '%s' does not exist", file.m_filePath.str());
+            iwarnlog("open file '%s' does not exist", file.m_filePath.str());
         }
         catch(IException* e)
         {
             StringBuffer msg;
-            ierrlog(Major, "exception checking existence of file '%s': %s", file.m_filePath.str(), e->errorMessage(msg).str());
+            ierrlog("exception checking existence of file '%s': %s", file.m_filePath.str(), e->errorMessage(msg).str());
             e->Release();
         }
     }
@@ -1394,11 +1374,11 @@ bool CFileTarget::createNewFile(File& file, const Pattern& pattern, Variables& s
             }
             if (!newIO)
             {
-                ierrlog(Major, "failed to create and open new file '%s'", filePath.str());
+                ierrlog("failed to create and open new file '%s'", filePath.str());
             }
             else if (!m_header.isEmpty() && newIO->write(0, m_header.length(), m_header) != m_header.length())
             {
-                ierrlog(Major, "failed to add header to '%s'", filePath.str());
+                ierrlog("failed to add header to '%s'", filePath.str());
             }
             else
             {
@@ -1410,13 +1390,13 @@ bool CFileTarget::createNewFile(File& file, const Pattern& pattern, Variables& s
         }
         else
         {
-            ierrlog(Major, "failed to create directory structure for '%s'", filePath.str());
+            ierrlog("failed to create directory structure for '%s'", filePath.str());
         }
     }
     catch(IException* e)
     {
         StringBuffer msg;
-        ierrlog(Major, "exception creating and opening new file '%s': %s", filePath.str(), e->errorMessage(msg).str());
+        ierrlog("exception creating and opening new file '%s': %s", filePath.str(), e->errorMessage(msg).str());
         e->Release();
     }
     return false;
@@ -1433,12 +1413,12 @@ bool CFileTarget::writeChunk(File& file, offset_t pos, size32_t len, const char*
         file.m_lastWrite.setNow();
         if (written == len)
             return true;
-        ierrlog(Major, "failed to write %u bytes to '%s'; wrote %u", len, file.m_filePath.str(), written);
+        ierrlog("failed to write %u bytes to '%s'; wrote %u", len, file.m_filePath.str(), written);
     }
     catch(IException* e)
     {
         StringBuffer msg;
-        ierrlog(Major, "exception writing %u bytes to '%s': %s", len, file.m_filePath.str(), e->errorMessage(msg).str());
+        ierrlog("exception writing %u bytes to '%s': %s", len, file.m_filePath.str(), e->errorMessage(msg).str());
         e->Release();
     }
     return false;
@@ -1478,19 +1458,19 @@ bool CEspLogAgent::init(const char* name, const char* type, IPTree* configuratio
             else
             {
                 // Does use of a legacy configuration suggest a more likely option than XML?
-                uwarnlog(Highest, "%s[%s]: '%s' does not identify an expected content type; assuming XML", ModularLogAgent::moduleAgent, name, configFile);
+                uwarnlog("%s[%s]: '%s' does not identify an expected content type; assuming XML", ModularLogAgent::moduleAgent, name, configFile);
                 tmp.setown(createPTreeFromXMLFile(configFile));
             }
             if (!tmp)
-                uerrlog(Major, "%s[%s]: property tree extraction failed from '%s'", ModularLogAgent::moduleAgent, name, configFile);
+                uerrlog("%s[%s]: property tree extraction failed from '%s'", ModularLogAgent::moduleAgent, name, configFile);
             else if (!streq(tmp->queryName(), ModularLogAgent::moduleAgent))
-                uwarnlog(Major, "%s[%s]: unexpected configuration root '%s' in '%s'", ModularLogAgent::moduleAgent, name, tmp->queryName(), configFile);
+                uwarnlog("%s[%s]: unexpected configuration root '%s' in '%s'", ModularLogAgent::moduleAgent, name, tmp->queryName(), configFile);
         }
         catch (IException* e)
         {
             StringBuffer msg;
             e->errorMessage(msg);
-            uerrlog(Major, "%s[%s]: exception extracting property tree from '%s': %s", ModularLogAgent::moduleAgent, name, configFile, e->errorMessage(msg).str());
+            uerrlog("%s[%s]: exception extracting property tree from '%s': %s", ModularLogAgent::moduleAgent, name, configFile, e->errorMessage(msg).str());
             e->Release();
         }
         if (tmp)
@@ -1514,10 +1494,10 @@ bool CEspLogAgent::init(const char* name, const char* type, IPTree* configuratio
     }
 
     bool result = m_agent->configure(*effectiveConfiguration, *m_factory);
-    if (Trivial <= tracePriorityLimit(MSGAUD_user, MSGCLS_information))
+    if (false)  // MORE - trace feature flag
     {
         StringBuffer desc;
-        iproglog(1, "%s[%s]: configured %s", ModularLogAgent::moduleAgent, name, m_agent->toString(desc).str());
+        iproglog("%s[%s]: configured %s", ModularLogAgent::moduleAgent, name, m_agent->toString(desc).str());
     }
     if (!result)
         m_agent.clear();

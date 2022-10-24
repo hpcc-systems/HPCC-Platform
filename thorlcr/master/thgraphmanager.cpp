@@ -748,10 +748,9 @@ void CJobManager::run()
             factory.setown(getWorkUnitFactory());
             workunit.setown(factory->openWorkUnit(wuid));
 
-            unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", DefaultDetail); 
             ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
             dbgassertex(existingLogHandler);
-            verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
+            verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask())));
 
             allDone = execute(workunit, wuid, graphName, agentep);
             daliLock.clear();

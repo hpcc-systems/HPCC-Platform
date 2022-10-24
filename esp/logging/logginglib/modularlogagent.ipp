@@ -30,9 +30,7 @@ namespace ModularLogAgent
     public:
         constexpr static const char* propDisabled           = "@disabled";
         constexpr static const char* propName               = "@name";
-        constexpr static const char* propTracePriorityLimit = "@trace-priority-limit";
     public:
-        virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const;
         virtual const char* traceId() const;
         virtual void traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const  __attribute__((format(printf, 3, 0)));;
         virtual bool configure(const IPTree& configuration, const CModuleFactory& factory);
@@ -46,7 +44,6 @@ namespace ModularLogAgent
         StringBuffer m_traceId;
         bool         m_disabled = false;
         bool         m_inheritTracePriorityLimit = true;
-        LogMsgDetail m_tracePriorityLimit = TraceLoggingPriority::Major;
     protected:
         virtual bool appendProperties(StringBuffer& str) const;
         template <typename value_t>
@@ -56,7 +53,7 @@ namespace ModularLogAgent
             if (isEmptyString(property) && !optional)
             {
                 if (m_self)
-                    m_self->uerrlog(TraceLoggingPriority::Major, "missing required configuration property '%s'", xpath);
+                    m_self->uerrlog("missing required configuration property '%s'", xpath);
                 return false;
             }
             DeserializationResult dr = TokenDeserializer().deserialize(property, value);
@@ -80,10 +77,6 @@ namespace ModularLogAgent
             if (!isEmptyString(containerPrefix))
                 m_traceId.setf("%s.", containerPrefix);
             return CModule::configure(configuration, factory);
-        }
-        virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const override
-        {
-            return (m_inheritTracePriorityLimit ? m_container.tracePriorityLimit(category) : CModule::tracePriorityLimit(category));
         }
     protected:
         using Container = container_t;
@@ -112,7 +105,7 @@ namespace ModularLogAgent
                 else
                 {
                     if (m_self)
-                        m_self->uerrlog(TraceLoggingPriority::Major, "required configuration node '%s' not found", xpath);
+                        m_self->uerrlog("required configuration node '%s' not found", xpath);
                 }
             }
             else
@@ -132,7 +125,7 @@ namespace ModularLogAgent
             {
                 // should never happen, but just in case...
                 if (m_self)
-                    m_self->ierrlog(TraceLoggingPriority::Major, "factory creation of '%s' reported success but created no instance", node.queryName());
+                    m_self->ierrlog("factory creation of '%s' reported success but created no instance", node.queryName());
             }
             else if (!child->configure(node, factory))
             {

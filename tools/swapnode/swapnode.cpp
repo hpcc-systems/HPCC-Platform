@@ -186,7 +186,7 @@ int main(int argc, const char *argv[])
             addFileTimestamp(logname, true);
             logname.append(".log");
             StringBuffer lf;
-            openLogFile(lf, logname.str(),0,false,true);
+            openLogFile(lf, logname.str(),false,true);
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
 
             Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);

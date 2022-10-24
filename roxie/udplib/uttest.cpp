@@ -628,7 +628,6 @@ int main(int argc, char * argv[] )
         lf->setCreateAliasFile(false);
         lf->setRolling(false);
         lf->setAppend(false);
-        lf->setMaxDetail(TopDetail);
         lf->setMsgFields(MSGFIELD_STANDARD);
         lf->beginLogging();
     }

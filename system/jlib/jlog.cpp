@@ -97,12 +97,11 @@ void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 
 class LoggingFieldColumns
 {
-    const EnumMapping MsgFieldMap[16] =
+    const EnumMapping MsgFieldMap[15] =
     {
         { MSGFIELD_msgID,     "MsgID    " },
         { MSGFIELD_audience,  "Audience " },
         { MSGFIELD_class,     "Class    " },
-        { MSGFIELD_detail,    "Detail     " },
         { MSGFIELD_date,      "Date       " },
         { MSGFIELD_microTime, "Time(micro)     " },
         { MSGFIELD_milliTime, "Time(milli)  " },
@@ -339,8 +338,6 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         out.append("aud=").append(LogMsgAudienceToVarString(category.queryAudience())).append(' ');
     if(fields & MSGFIELD_class)
         out.append("cls=").append(LogMsgClassToFixString(category.queryClass())).append(' ');
-    if(fields & MSGFIELD_detail)
-        out.appendf("det=%d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -416,8 +413,6 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
         out.append("Audience=\"").append(LogMsgAudienceToVarString(category.queryAudience())).append("\" ");
     if(fields & MSGFIELD_class)
         out.append("Class=\"").append(LogMsgClassToVarString(category.queryClass())).append("\" ");
-    if(fields & MSGFIELD_detail)
-        out.append("Detail=\"").append(category.queryDetail()).append("\" ");
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allCategory) out.append("\n     ");
 #endif
@@ -498,8 +493,6 @@ StringBuffer & LogMsg::toStringJSON(StringBuffer & out, unsigned fields) const
         out.append(", \"AUD\": \"").append(LogMsgAudienceToFixString(category.queryAudience())).append("\"");
     if(fields & MSGFIELD_class)
         out.append(", \"CLS\": \"").append(LogMsgClassToFixString(category.queryClass())).append("\"");
-    if(fields & MSGFIELD_detail)
-        out.append(", \"DET\": \"").append(category.queryDetail()).append("\"");
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -568,8 +561,6 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         out.appendf("%s ", LogMsgAudienceToFixString(category.queryAudience()));
     if(fields & MSGFIELD_class)
         out.appendf("%s ", LogMsgClassToFixString(category.queryClass()));
-    if(fields & MSGFIELD_detail)
-        out.appendf("%10d ", category.queryDetail());
     if(fields & MSGFIELD_timeDate)
     {
         time_t timeNum = sysInfo.queryTime();
@@ -719,7 +710,6 @@ void CategoryLogMsgFilter::addToPTree(IPropertyTree * tree) const
     filterTree->setProp("@type", "category");
     filterTree->setPropInt("@audience", audienceMask);
     filterTree->setPropInt("@class", classMask);
-    filterTree->setPropInt("@detail", maxDetail);
     if(localFlag) filterTree->setPropInt("@local", 1);
     tree->addPropTree("filter", filterTree);
 }
@@ -830,14 +820,12 @@ void CategoryLogMsgFilter::orWithFilter(const ILogMsgFilter * filter)
 {
     audienceMask |= filter->queryAudienceMask();
     classMask |= filter->queryClassMask();
-    maxDetail = std::max(maxDetail, filter->queryMaxDetail());
 }
 
 void CategoryLogMsgFilter::reset()
 {
     audienceMask = 0;
     classMask = 0;
-    maxDetail = 0;
 }
 
 // HandleLogMsgHandler
@@ -1835,7 +1823,7 @@ aindex_t CLogMsgManager::findChild(ILogMsgLinkToChild * child) const
 ILogMsgFilter * CLogMsgManager::getCompoundFilter(bool locked) const
 {
     if(!locked) monitorLock.lockRead();
-    Owned<CategoryLogMsgFilter> categoryFilter = new CategoryLogMsgFilter(0, 0, 0, false);
+    Owned<CategoryLogMsgFilter> categoryFilter = new CategoryLogMsgFilter(0, 0, false);
     Owned<ILogMsgFilter> otherFilters;
     ILogMsgFilter * ifilter;
     bool hadCat = false;
@@ -1962,7 +1950,7 @@ ILogMsgFilter * getLogMsgFilterFromPTree(IPropertyTree * xml)
 
 ILogMsgFilter * getDefaultLogMsgFilter()
 {
-    return new CategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail, true);
+    return new CategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, true);
 }
 
 ILogMsgFilter * getPassAllLogMsgFilter()
@@ -1995,16 +1983,16 @@ ILogMsgFilter * queryPassNoneLogMsgFilter()
     return thePassNoneFilter;
 }
 
-ILogMsgFilter * getCategoryLogMsgFilter(unsigned audiences, unsigned classes, LogMsgDetail maxDetail, bool local)
+ILogMsgFilter * getCategoryLogMsgFilter(unsigned audiences, unsigned classes, bool local)
 {
-    if((audiences==MSGAUD_all) && (classes==MSGCLS_all) && (maxDetail==TopDetail))
+    if((audiences==MSGAUD_all) && (classes==MSGCLS_all))
     {
         if(local)
             return LINK(thePassLocalFilter);
         else
             return LINK(thePassAllFilter);
     }
-    return new CategoryLogMsgFilter(audiences, classes, maxDetail, local);
+    return new CategoryLogMsgFilter(audiences, classes, local);
 }
 
 ILogMsgFilter * getPIDLogMsgFilter(unsigned pid, bool local)
@@ -2194,31 +2182,31 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
     return LINK(theStderrHandler);
 }
 
-ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext, unsigned fields, unsigned audiences, unsigned classes, LogMsgDetail detail, LogHandlerFormat logFormat, bool append, bool flushes, bool local)
+ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext, unsigned fields, unsigned audiences, unsigned classes, LogHandlerFormat logFormat, bool append, bool flushes, bool local)
 {
 #ifdef FILE_LOG_ENABLES_QUEUEUING
     queryLogMsgManager()->enterQueueingMode();
 #endif
-    ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, detail, local);
+    ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, local);
     ILogMsgHandler * handler = getFileLogMsgHandler(filename, headertext, fields, logFormat, append, flushes);
     queryLogMsgManager()->addMonitorOwn(handler, filter);
     return handler;
 }
 
-ILogMsgHandler * attachStandardBinLogMsgMonitor(const char * filename, unsigned audiences, unsigned classes, LogMsgDetail detail, bool append, bool local)
+ILogMsgHandler * attachStandardBinLogMsgMonitor(const char * filename, unsigned audiences, unsigned classes, bool append, bool local)
 {
 #ifdef FILE_LOG_ENABLES_QUEUEUING
     queryLogMsgManager()->enterQueueingMode();
 #endif
-    ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, detail, local);
+    ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, local);
     ILogMsgHandler * handler = getBinLogMsgHandler(filename, append);
     queryLogMsgManager()->addMonitorOwn(handler, filter);
     return handler;
 }
 
-ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle, unsigned fields, unsigned audiences, unsigned classes, LogMsgDetail detail, LogHandlerFormat logFormat, bool local)
+ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle, unsigned fields, unsigned audiences, unsigned classes, LogHandlerFormat logFormat, bool local)
 {
-    ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, detail, local);
+    ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, local);
     ILogMsgHandler * handler = getHandleLogMsgHandler(handle, fields, logFormat);
     queryLogMsgManager()->addMonitorOwn(handler, filter);
     return handler;
@@ -2398,8 +2386,6 @@ void setupContainerizedLogMsgHandler()
         //Only recreate filter if at least one filter attribute configured
         if (logConfig->hasProp(logMsgDetailAtt) || logConfig->hasProp(logMsgAudiencesAtt) || logConfig->hasProp(logMsgClassesAtt))
         {
-            LogMsgDetail logDetail = logConfig->getPropInt(logMsgDetailAtt, DefaultDetail);
-
             unsigned msgClasses = MSGCLS_all;
             const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
             if (!isEmptyString(logClasses))
@@ -2415,7 +2401,7 @@ void setupContainerizedLogMsgHandler()
             }
 
             const bool local = true; // Do not include remote messages from other components
-            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
+            Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, local);
             theManager->changeMonitorFilter(theStderrHandler, filter);
         }
 
@@ -2443,7 +2429,7 @@ void setupContainerizedLogMsgHandler()
         if (postMortemLines)
         {
             ILogMsgHandler *fileMsgHandler = getPostMortemLogMsgHandler("/tmp/postmortem.log", postMortemLines, MSGFIELD_STANDARD);
-            queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+            queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all));
         }
     }
 }
@@ -2794,14 +2780,13 @@ private:
 
 public:
     // It's a static object - we don't want to actually link-count it...
-    virtual void Link() const {}
-    virtual bool Release() const { return false; }
-
+    virtual void Link() const override {}
+    virtual bool Release() const override { return false; }
     virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
     {
         VALOG(cat, job, code, format, args);
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const override __attribute__((format(printf,5,0)))
     {
         StringBuffer ss;
         ss.append("ERROR");
@@ -2815,16 +2800,16 @@ public:
             ss.append(": ").valist_appendf(format, args);
         LOG(MCoperatorProgress, unknownJob, "%s", ss.str());
     }
-    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
     }
-    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
     }
-    virtual void mergeStats(const CRuntimeStatisticCollection &from) const
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
     {
     }
-    virtual unsigned queryTraceLevel() const
+    virtual unsigned queryTraceLevel() const override
     {
         return 0;
     }
@@ -2837,7 +2822,7 @@ public:
     {
         callerId.set(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
         return globalId.get();
     }
@@ -2845,22 +2830,22 @@ public:
     {
         return callerId.str();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
         return localId.str();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaders(const char *global, const char *caller) override
     {
         if (global && *global)
             globalIdHeader.set(global);
         if (caller && *caller)
             callerIdHeader.set(caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeader() const override
     {
         return globalIdHeader.str();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeader() const override
     {
         return callerIdHeader.str();
     }
@@ -2890,7 +2875,7 @@ extern jlib_decl void UseSysLogForOperatorMessages(bool use)
         return;
     if (use) {
         msgHandler = getSysLogMsgHandler();
-        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, DefaultDetail, true);  
+        ILogMsgFilter * operatorFilter = getCategoryLogMsgFilter(MSGAUD_operator, MSGCLS_all, true);  
         queryLogMsgManager()->addMonitorOwn(msgHandler, operatorFilter);
     }
     else {
@@ -2937,7 +2922,6 @@ private:
     //ILogMsgFilter fields
     unsigned     msgAudiences;
     unsigned     msgClasses;
-    LogMsgDetail maxDetail;
     bool         local;
 
     //available after logging started
@@ -2963,7 +2947,6 @@ private:
             msgFields = MSGFIELD_STANDARD;
         msgAudiences = MSGAUD_all;
         msgClasses = MSGCLS_all;
-        maxDetail = DefaultDetail;
         name.set(component); //logfile defaults to component name. Change via setName(), setPrefix() and setPostfix()
         extension.set(".log");
         local = true;
@@ -3012,7 +2995,6 @@ public:
     //ILogMsgFilter fields
     void setMsgAudiences(const unsigned _audiences){ msgAudiences = _audiences; }
     void setMsgClasses(const unsigned _classes)    { msgClasses = _classes; }
-    void setMaxDetail(const LogMsgDetail _maxDetail)  { maxDetail = _maxDetail; }
     void setLocal(const bool _local)               { local = _local; }
 
     //query methods (not valid until logging started)
@@ -3073,7 +3055,7 @@ public:
             lmh = getFileLogMsgHandler(lfs.str(), NULL, msgFields);
         }
         lmh->getLogName(expandedLogSpec);
-        queryLogMsgManager()->addMonitorOwn( lmh, getCategoryLogMsgFilter(msgAudiences, msgClasses, maxDetail, local));
+        queryLogMsgManager()->addMonitorOwn( lmh, getCategoryLogMsgFilter(msgAudiences, msgClasses, local));
         return lmh;
     }
 };
@@ -3419,3 +3401,4 @@ IException * ctxlogReport(IException * e, const char * prefix, LogMsgClass cls)
     ctxlogReport(MCexception(e, cls), unknownJob, e, prefix);
     return e;
 }
+

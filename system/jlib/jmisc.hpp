@@ -60,7 +60,7 @@ jlib_decl ILogIntercept* interceptLog(ILogIntercept *intercept); // for custom t
 
 //Use openLogFile() to create/append a simple, local component logfile, providing a filename(or filespec).
 //Typically used to create a non rolling, local logfile in cwd, using default logfile contents
-jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, unsigned detail = 0, bool enterQueueMode = true, bool append = false);
+jlib_decl void openLogFile(StringBuffer & resolvedFS, const char *filename, bool enterQueueMode = true, bool append = false);
 
 #ifndef DISABLE_PRINTLOG
 #define PrintExceptionLog(_e,_txt) EXCLOG(_e, _txt)

@@ -426,7 +426,6 @@ namespace ModularLogAgent
                 bool result = true;
                 if (configuration)
                 {
-                    using namespace TraceLoggingPriority;
                     const char* uid = configuration->queryProp(IModule::propFactoryKey);
                     if (isEmptyString(uid))
                         uid = keyDefault;
@@ -435,12 +434,12 @@ namespace ModularLogAgent
                         typename Collection::const_iterator it = m_registrants.find(uid);
                         if (m_registrants.end() == it)
                         {
-                            container.uerrlog(Major, "unknown key (%s.%s)'", configuration->queryName(), uid);
+                            container.uerrlog("unknown key (%s.%s)'", configuration->queryName(), uid);
                             result = false;
                         }
                         else if (!it->second)
                         {
-                            container.ierrlog(Major, "invalid creator (%s.%s)", configuration->queryName(), uid);
+                            container.ierrlog("invalid creator (%s.%s)", configuration->queryName(), uid);
                             result = false;
                         }
                         else
@@ -448,7 +447,7 @@ namespace ModularLogAgent
                             module.setown((it->second)(container));
                             if (!module)
                             {
-                                container.ierrlog(Major, "creation failed (%s.%s)", configuration->queryName(), uid);
+                                container.ierrlog("creation failed (%s.%s)", configuration->queryName(), uid);
                                 result = false;
                             }
                         }

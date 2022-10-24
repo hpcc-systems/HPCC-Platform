@@ -19481,10 +19481,9 @@ void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr
 
     checkAbort();
 
-    LogMsgCategory MCtraceExpr = MCdebugInfo(level);
-    LOG(MCtraceExpr, unknownJob, "Tracing expressions: %s", title);
-    if(REJECTLOG(MCtraceExpr))
-        return;
+    LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
+    //if(REJECTLOG(MCtraceExpr))
+    //    return;
 
     if (options.traceIR)
     {
@@ -19494,7 +19493,7 @@ void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr
     {
         StringBuffer s;
         processedTreeToECL(expr, s);
-        logECL(MCtraceExpr, s.length(), s.str());
+        logECL(MCdebugInfo, s.length(), s.str());
     }
 }
 
@@ -19510,11 +19509,10 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
     checkAbort();
 
     // DBGLOG("%s",title);
-    static constexpr LogMsgCategory MCtraceExpr = MCdebugInfo(500);
-    LOG(MCtraceExpr, unknownJob, "Tracing expressions: %s", title);
-    if(REJECTLOG(MCtraceExpr))
+    // MORE - feature trace flag
+    if (true)
         return;
-
+    LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
     ForEachItemIn(idx1, workflow)
     {
         WorkflowItem & cur = workflow.item(idx1);
@@ -19522,7 +19520,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 
         if (compound)
         {
-            LOG(MCtraceExpr, unknownJob, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
+            LOG(MCdebugInfo, unknownJob, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
 
             if (options.traceIR)
             {
@@ -19532,7 +19530,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
             {
                 StringBuffer s;
                 processedTreeToECL(compound, s);
-                logECL(MCtraceExpr, s.length(), s.str());
+                logECL(MCdebugInfo, s.length(), s.str());
             }
         }
     }

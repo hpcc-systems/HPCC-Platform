@@ -106,7 +106,6 @@ const char * const helpText[] = {
     "!   -legacyimport Use legacy import semantics (deprecated)",
     "!   -legacywhen   Use legacy when/side-effects semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
-    "!   --logdetail=n Set the level of detail in the log file",
     "?!  --mainrepo=x  The repo used to resolve --main (if not specified)",
     "?!  --mainrepoversion=x  The repo version used to resolve --main (if not specified on --mainrepo)",
     "!   --maxErrors=<n> Limit the number of errors, aborting on the nth (default = 5)",

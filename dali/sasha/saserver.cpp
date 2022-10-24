@@ -354,7 +354,6 @@ int main(int argc, const char* argv[])
             lf->setName("saserver");//override default filename
             if (coalescer)
                 lf->setPostfix("coalesce");
-            lf->setMaxDetail(TopDetail);
             lf->beginLogging();
         }
     #else

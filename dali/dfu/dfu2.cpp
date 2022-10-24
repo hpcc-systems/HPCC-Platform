@@ -109,11 +109,11 @@ int main(int argc, const char *argv[])
         StringBuffer logFile;
         if (!iniFile->getProp("LOGFILE", logFile)) 
             logFile.append("DFU2.log");
-        attachStandardFileLogMsgMonitor(logFile.str(), NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false);
+        attachStandardFileLogMsgMonitor(logFile.str(), NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, false);
 
         unsigned userDetail = iniFile->getPropInt("DETAIL", DefaultDetail);
-        ILogMsgFilter * userOperator = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_disaster|MSGCLS_error|MSGCLS_warning, userDetail, true);
-        ILogMsgFilter * errWarn = getCategoryLogMsgFilter(MSGAUD_operator|MSGAUD_user, MSGCLS_all, TopDetail, true);
+        ILogMsgFilter * userOperator = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_disaster|MSGCLS_error|MSGCLS_warning, true);
+        ILogMsgFilter * errWarn = getCategoryLogMsgFilter(MSGAUD_operator|MSGAUD_user, MSGCLS_all, true);
         ILogMsgFilter * combinedFilter = getOrLogMsgFilterOwn(userOperator, errWarn);
         
         queryLogMsgManager()->changeMonitorFilterOwn(queryStderrLogMsgHandler(), combinedFilter);

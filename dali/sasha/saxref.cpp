@@ -1953,7 +1953,7 @@ int main(int argc, char* argv[])
     aliasLogName.append(".log");
 
     ILogMsgHandler *fileMsgHandler = getRollingFileLogMsgHandler(logName.str(), ".log", MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str());
-    queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
+    queryLogMsgManager()->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all));
     queryStderrLogMsgHandler()->setMessageFields(0);
     StringBuffer cmdline;
     unsigned i;

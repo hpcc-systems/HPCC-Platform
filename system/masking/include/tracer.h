@@ -34,8 +34,6 @@
  * - Message creation based on various combinations of audience and class.
  * - Determination of whether or not an audience and class combination would produce a message.
  *
- * As long as a detail level is included in a message category, levels cannot be ignored. The
- * interface does deemphasize them based on an expectation that they wull be removed in the future.
  */
 interface ITracer : extends IInterface
 {
@@ -50,7 +48,7 @@ interface ITracer : extends IInterface
     virtual void iwarnlog(const char* format, ...) const __attribute__((format(printf, 2, 3))) = 0;
     virtual void proglog(const char* format, ...) const __attribute__((format(printf, 2, 3))) = 0;
     virtual void log(const LogMsgCategory& category, const char* format, ...) const __attribute__((format(printf, 3, 4))) = 0;
-    virtual void log(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail, const char* format, ...) const __attribute__((format(printf, 5, 6))) = 0;
+    virtual void log(LogMsgAudience _audience, LogMsgClass _class, const char* format, ...) const __attribute__((format(printf, 4, 5))) = 0;
 
     virtual bool logIsActive(const LogMsgCategory& category) const = 0;
     virtual bool dbglogIsActive() const = 0;
@@ -63,7 +61,7 @@ interface ITracer : extends IInterface
     virtual bool owarnlogIsActive() const = 0;
     virtual bool iwarnlogIsActive() const = 0;
     virtual bool proglogIsActive() const = 0;
-    virtual bool logIsActive(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail) const = 0;
+    virtual bool logIsActive(LogMsgAudience _audience, LogMsgClass _class) const = 0;
 };
 
 /**
@@ -98,7 +96,7 @@ public:
     virtual void iwarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCdebugWarning); }
     virtual void proglog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCuserProgress); }
     virtual void log(const LogMsgCategory& category, const char* format, ...) const override __attribute__((format(printf, 3, 4))) { do_valog(category); }
-    virtual void log(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail, const char* format, ...) const override __attribute__((format(printf, 5, 6))) { do_valog(LogMsgCategory(_audience, _class, _detail)); }
+    virtual void log(LogMsgAudience _audience, LogMsgClass _class, const char* format, ...) const override __attribute__((format(printf, 4, 5))) { do_valog(LogMsgCategory(_audience, _class)); }
 
     #undef do_valog
 protected:
@@ -116,5 +114,5 @@ public:
     virtual bool owarnlogIsActive() const override { return logIsActive(MCoperatorWarning); }
     virtual bool iwarnlogIsActive() const override { return logIsActive(MCdebugWarning); }
     virtual bool proglogIsActive() const override { return logIsActive(MCuserProgress); }
-    virtual bool logIsActive(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail) const override { return logIsActive(LogMsgCategory(_audience, _class, _detail)); }
+    virtual bool logIsActive(LogMsgAudience _audience, LogMsgClass _class) const override { return logIsActive(LogMsgCategory(_audience, _class)); }
 };

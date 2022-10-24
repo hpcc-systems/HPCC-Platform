@@ -85,9 +85,9 @@ using roxiemem::OwnedRoxieString;
 
 typedef IEclProcess* (* EclProcessFactory)();
 
-constexpr LogMsgCategory MCsetresult = MCprogress(100);     // Category used to inform when setting result
-constexpr LogMsgCategory MCgetresult = MCprogress(200);     // Category used to inform when getting result
-constexpr LogMsgCategory MCrunlock = MCprogress(100);      // Category used to inform about run lock progress
+constexpr LogMsgCategory MCsetresult = MCprogress;     // Category used to inform when setting result
+constexpr LogMsgCategory MCgetresult = MCprogress;     // Category used to inform when getting result
+constexpr LogMsgCategory MCrunlock = MCprogress;      // Category used to inform about run lock progress
 
 Owned<IPropertyTree> agentTopology;
 Owned<IProperties> cmdLineArgs;

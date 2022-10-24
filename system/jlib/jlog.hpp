@@ -118,8 +118,6 @@ typedef enum
  * 3) More control over logging exceptions:                                             *
  *    LOG(LogMsgCategory, [job,] exception [, prefix])                                  *
  *                                                                                      *
- * LogMsgCategory detail level may be modified from the default with a numeric paramter *
- * For example as MCdebugInfo(50).                                                      *
  ****************************************************************************************/
 
 
@@ -240,25 +238,6 @@ inline LogMsgClass LogMsgClassFromAbbrev(char const * abbrev)
     return MSGCLS_unknown;
 }
 
-typedef unsigned LogMsgDetail;
-#define DefaultDetail   DebugMsgThreshold
-#define TopDetail (LogMsgDetail)-1
-
-/*
- * Log message thresholds, assigned to log message category types.
- * It represents the lowest logging level (detail) required to output
- * messages of the given category.
- */
-constexpr LogMsgDetail CriticalMsgThreshold    = 1;  //Use to declare categories reporting critical events (log level => 1)
-constexpr LogMsgDetail FatalMsgThreshold       = 1;  //Use to declare categories reporting Fatal events (log level => 1)
-constexpr LogMsgDetail ErrMsgThreshold         = 10; //Use to declare categories reporting Err messages (log level => 10)
-constexpr LogMsgDetail WarnMsgThreshold        = 20; //Use to declare categories reporting Warn messages (log level => 20)
-constexpr LogMsgDetail AudMsgThreshold         = 30; //Use to declare categories reporting Aud messages (log level => 30)
-constexpr LogMsgDetail ProgressMsgThreshold    = 50; //Use to declare categories reporting Progress messages (log level => 50)
-constexpr LogMsgDetail InfoMsgThreshold        = 60; //Use to declare categories reporting Info messages (log level => 60)
-constexpr LogMsgDetail DebugMsgThreshold       = 80; //Use to declare categories reporting Debug messages (log level => 80)
-constexpr LogMsgDetail ExtraneousMsgThreshold  = 90; //Use to declare categories reporting Extraneous messages (log level => 90)
-
 // Typedef for LogMsgSysInfo
 
 typedef unsigned LogMsgId;
@@ -283,8 +262,7 @@ typedef enum
 {
     MSGFIELD_audience    = 0x000001,
     MSGFIELD_class       = 0x000002,
-    MSGFIELD_detail      = 0x000004,
-    MSGFIELD_allCategory = 0x000007,
+    MSGFIELD_allCategory = 0x000003,
     MSGFIELD_msgID       = 0x000008,
     MSGFIELD_time        = 0x000010,
     MSGFIELD_date        = 0x000020,
@@ -329,8 +307,6 @@ inline const char * LogMsgFieldToString(LogMsgField field)
         return("Audience");
     case MSGFIELD_class:
         return("Class");
-    case MSGFIELD_detail:
-        return("Detail");
     case MSGFIELD_msgID:
         return("Message ID");
     case MSGFIELD_time:
@@ -372,8 +348,6 @@ inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
         return MSGFIELD_audience;
     if(strnicmp(abbrev, "CLS", 3)==0)
         return MSGFIELD_class;
-    if(strnicmp(abbrev, "DET", 3)==0)
-        return MSGFIELD_detail;
     if(strnicmp(abbrev, "MID", 3)==0)
         return MSGFIELD_msgID;
     if(strnicmp(abbrev, "TIM", 3)==0)
@@ -500,23 +474,19 @@ inline char const * msgPrefix(LogMsgClass msgClass)
 class jlib_decl LogMsgCategory
 {
 public:
-    constexpr LogMsgCategory(LogMsgAudience _audience = MSGAUD_programmer, LogMsgClass _class = MSGCLS_information, LogMsgDetail _detail = DefaultDetail) : audience(_audience), msgClass(_class), detail(_detail) {}
+    constexpr LogMsgCategory(LogMsgAudience _audience = MSGAUD_programmer, LogMsgClass _class = MSGCLS_information) : audience(_audience), msgClass(_class) {}
     constexpr LogMsgAudience  queryAudience() const { return audience; }
     constexpr LogMsgClass     queryClass() const { return msgClass; }
-    constexpr LogMsgDetail    queryDetail() const { return detail; }
-    void                      serialize(MemoryBuffer & out) const { out.append(audience).append(msgClass).append(detail); }
+    void                      serialize(MemoryBuffer & out) const { out.append(audience).append(msgClass); }
     void                      deserialize(MemoryBuffer & in)
     {
-        unsigned a, c, d; in.read(a).read(c).read(d);
+        unsigned a, c; in.read(a).read(c);
         audience = (LogMsgAudience) a;
         msgClass = (LogMsgClass) c;
-        detail = (LogMsgDetail) d;
     }
-    constexpr LogMsgCategory  operator ()(unsigned newDetail) const { return LogMsgCategory(audience, msgClass, newDetail); }
 private:
     LogMsgAudience            audience;
     LogMsgClass               msgClass;
-    LogMsgDetail              detail;
 };
 
 // Info about log message determined automatically by system
@@ -621,7 +591,6 @@ interface jlib_decl ILogMsgFilter : public IInterface
     virtual bool              mayIncludeCategory(const LogMsgCategory & cat) const = 0;
     virtual unsigned          queryAudienceMask() const = 0;
     virtual unsigned          queryClassMask() const = 0;
-    virtual LogMsgDetail      queryMaxDetail() const = 0;
     virtual bool              isCategoryFilter() const { return false; }
     virtual void              serialize(MemoryBuffer & out, bool preserveLocal) const = 0;
     virtual void              addToPTree(IPropertyTree * tree) const = 0;
@@ -759,7 +728,7 @@ extern jlib_decl ILogMsgFilter * getPassNoneLogMsgFilter();
 extern jlib_decl ILogMsgFilter * queryPassAllLogMsgFilter();
 extern jlib_decl ILogMsgFilter * queryLocalLogMsgFilter();
 extern jlib_decl ILogMsgFilter * queryPassNoneLogMsgFilter();
-extern jlib_decl ILogMsgFilter * getCategoryLogMsgFilter(unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail maxDetail = TopDetail, bool local = false);
+extern jlib_decl ILogMsgFilter * getCategoryLogMsgFilter(unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, bool local = false);
 extern jlib_decl ILogMsgFilter * getPIDLogMsgFilter(unsigned pid, bool local = false);
 extern jlib_decl ILogMsgFilter * getTIDLogMsgFilter(unsigned tid, bool local = false);
 extern jlib_decl ILogMsgFilter * getNodeLogMsgFilter(const char * name, unsigned port = 0, bool local = false);
@@ -792,9 +761,9 @@ extern jlib_decl void installLogMsgFilterSwitch(ILogMsgHandler * handler, ILogMs
 
 // Functions to make standard handlers and catagory filters and add to manager
 
-extern jlib_decl ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, LogHandlerFormat logFormat = LOGFORMAT_table, bool append = false, bool flushes = true, bool local = false);
-extern jlib_decl ILogMsgHandler * attachStandardBinLogMsgMonitor(const char * filename, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, bool append = false, bool local = false);
-extern jlib_decl ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle = stderr, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, LogHandlerFormat logFormat = LOGFORMAT_table, bool local = false);
+extern jlib_decl ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogHandlerFormat logFormat = LOGFORMAT_table, bool append = false, bool flushes = true, bool local = false);
+extern jlib_decl ILogMsgHandler * attachStandardBinLogMsgMonitor(const char * filename, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, bool append = false, bool local = false);
+extern jlib_decl ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle = stderr, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogHandlerFormat logFormat = LOGFORMAT_table, bool local = false);
 
 // Function to construct filter from serialized and XML forms, and construct handler from XML form, and attach monitor(s) from XML form
 
@@ -805,50 +774,27 @@ extern jlib_decl ILogMsgHandler * attachLogMsgMonitorFromPTree(IPropertyTree * t
 extern jlib_decl void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree);            // Takes tree containing many <monitor> elements
 
 // Standard categories and unknown jobInfo
-constexpr LogMsgCategory MCoperatorDisaster(MSGAUD_operator, MSGCLS_disaster, FatalMsgThreshold);
-constexpr LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error, ErrMsgThreshold);
-constexpr LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error, ErrMsgThreshold);
-constexpr LogMsgCategory MCdebugError(MSGAUD_programmer, MSGCLS_error, ErrMsgThreshold);
-constexpr LogMsgCategory MCauditError(MSGAUD_audit, MSGCLS_error, ErrMsgThreshold);
-constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning, WarnMsgThreshold);
-constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning, WarnMsgThreshold);
-constexpr LogMsgCategory MCdebugWarning(MSGAUD_programmer, MSGCLS_warning, WarnMsgThreshold);
-constexpr LogMsgCategory MCauditWarning(MSGAUD_audit, MSGCLS_warning, WarnMsgThreshold);
-constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress, ProgressMsgThreshold);
-constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
-constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress, DebugMsgThreshold);
-constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information, InfoMsgThreshold);
-constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information, DebugMsgThreshold);
-constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThreshold);
-constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
-constexpr LogMsgCategory MCoperatorMetric(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
-
-/*
- * Function to determine log level (detail) for exceptions, based on log message class
- */
-inline LogMsgDetail mapClassToDefaultDetailLevel(LogMsgClass cls)
-{
-    switch (cls)
-    {
-    case MSGCLS_disaster:
-    case MSGCLS_all:
-        return FatalMsgThreshold;
-    case MSGCLS_error:
-        return ErrMsgThreshold;
-    case MSGCLS_warning:
-        return WarnMsgThreshold;
-    case MSGCLS_information:
-        return InfoMsgThreshold;
-    case MSGCLS_progress:
-        return ProgressMsgThreshold;
-    default:
-        return DefaultDetail;
-    }
-}
+constexpr LogMsgCategory MCoperatorDisaster(MSGAUD_operator, MSGCLS_disaster);
+constexpr LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error);
+constexpr LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error);
+constexpr LogMsgCategory MCdebugError(MSGAUD_programmer, MSGCLS_error);
+constexpr LogMsgCategory MCauditError(MSGAUD_audit, MSGCLS_error);
+constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning);
+constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning);
+constexpr LogMsgCategory MCdebugWarning(MSGAUD_programmer, MSGCLS_warning);
+constexpr LogMsgCategory MCauditWarning(MSGAUD_audit, MSGCLS_warning);
+constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
+constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
+constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
+constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information);
+constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
+constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information);
+constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);
+constexpr LogMsgCategory MCoperatorMetric(MSGAUD_operator, MSGCLS_metric);
 
 inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error)
 {
-    return LogMsgCategory((e)->errorAudience(),cls, mapClassToDefaultDetailLevel(cls));
+    return LogMsgCategory((e)->errorAudience(),cls);
 }
 
 #define MCerror MCuserError
@@ -1293,7 +1239,6 @@ interface IComponentLogFileCreator : extends IInterface
     //ILogMsgFilter fields
     virtual void setMsgAudiences(const unsigned _audiences) = 0;    //log audience
     virtual void setMsgClasses(const unsigned _classes) = 0;        //message class
-    virtual void setMaxDetail(const LogMsgDetail _maxDetail) = 0;   //message detail
     virtual void setLocal(const bool _local) = 0;                   //local logging
 
     //query methods (not valid until logging started)

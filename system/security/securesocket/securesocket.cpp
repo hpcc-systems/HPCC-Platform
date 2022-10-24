@@ -2062,13 +2062,8 @@ public:
         cancelling = false;
         secureContextClient.setown(createSecureSocketContextSecret("local", ClientSocket));
         secureContextServer.setown(createSecureSocketContextSecretSrv("local"));
-#ifdef _CONTAINERIZED
-        tlsLogLevel = getComponentConfigSP()->getPropInt("logging/@detail", SSLogMin);
-        if (tlsLogLevel >= ExtraneousMsgThreshold) // or InfoMsgThreshold ?
-            tlsLogLevel = SSLogMax;
-#else
+        // MORE - feature trace flag
         tlsLogLevel = SSLogMin;
-#endif
     }
 
     virtual ~CSingletonSecureSocketConnection()

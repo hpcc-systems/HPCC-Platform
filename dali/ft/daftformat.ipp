@@ -379,7 +379,7 @@ public:
 
     JsonSplitter(const FileFormat & format, IFileIOStream &stream) : headerLength(0), pathPos(0), tangent(0), rowDepth(0), rowStart((offset_t)-1), rowEnd(0), footerLength((offset_t)-1), newRowSet(true), hasRootArray(false)
     {
-        LOG(MCdebugProgressDetail, unknownJob, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
+        LOG(MCdebugProgress, unknownJob, "JsonSplitter::JsonSplitter(format.type :'%s', rowPath:'%s')", format.getFileFormatTypeString(), format.rowTag.get());
 
         size = stream.size();
         const char *rowPath = format.rowTag;

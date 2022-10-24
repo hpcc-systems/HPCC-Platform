@@ -160,7 +160,6 @@ int main(int argc, const char *argv[])
     if (!stop)
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "dfuserver");
-        lf->setMaxDetail(1000);
         fileMsgHandler = lf->beginLogging();
     }
     StringBuffer ftslogdir;

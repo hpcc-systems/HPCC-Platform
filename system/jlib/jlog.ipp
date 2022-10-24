@@ -31,7 +31,7 @@
 #include "jregexp.hpp"
 
 static unsigned const defaultMsgQueueLimit = 256;
-static LogMsgCategory const dropWarningCategory(MSGAUD_operator, MSGCLS_error, 0);
+static LogMsgCategory const dropWarningCategory(MSGAUD_operator, MSGCLS_error);
 
 // Initial size of StringBuffer used to build output in LogMsg::toString methods
 
@@ -77,7 +77,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_passall); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return false; }
@@ -90,7 +89,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(preserveLocal ? MSGFILTER_passlocal : MSGFILTER_passall); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return true; }
@@ -103,7 +101,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return false; }
     unsigned                  queryAudienceMask() const { return 0; }
     unsigned                  queryClassMask() const { return 0; }
-    LogMsgDetail              queryMaxDetail() const { return 0; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_passnone); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return true; }
@@ -114,26 +111,24 @@ public:
 class CategoryLogMsgFilter : public CLogMsgFilter
 {
 public:
-    CategoryLogMsgFilter(unsigned _aMask, unsigned _cMask, LogMsgDetail _dMax, bool local) : audienceMask(_aMask), classMask(_cMask), maxDetail(_dMax), localFlag(local) {}
-    CategoryLogMsgFilter(MemoryBuffer & in) { in.read(audienceMask); in.read(classMask); in.read(maxDetail); in.read(localFlag); }
-    CategoryLogMsgFilter(IPropertyTree * tree) { audienceMask = tree->getPropInt("@audience", MSGAUD_all); classMask = tree->getPropInt("@class", MSGCLS_all); maxDetail = tree->getPropInt("@detail", TopDetail); localFlag = tree->hasProp("@local"); }
+    CategoryLogMsgFilter(unsigned _aMask, unsigned _cMask, bool local) : audienceMask(_aMask), classMask(_cMask), localFlag(local) {}
+    CategoryLogMsgFilter(MemoryBuffer & in) { in.read(audienceMask); in.read(classMask); in.read(localFlag); }
+    CategoryLogMsgFilter(IPropertyTree * tree) { audienceMask = tree->getPropInt("@audience", MSGAUD_all); classMask = tree->getPropInt("@class", MSGCLS_all); localFlag = tree->hasProp("@local"); }
 
     bool                      includeMessage(const LogMsg & msg) const { if(localFlag && msg.queryRemoteFlag()) return false; return includeCategory(msg.queryCategory()); }
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return includeCategory(cat); }
     unsigned                  queryAudienceMask() const { return audienceMask; }
     unsigned                  queryClassMask() const { return classMask; }
-    LogMsgDetail              queryMaxDetail() const { return maxDetail; }
     bool                      isCategoryFilter() const { return true; }
-    void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_category).append(audienceMask).append(classMask).append(maxDetail); out.append(localFlag && preserveLocal); }
+    void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_category).append(audienceMask).append(classMask); out.append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     void                      orWithFilter(const ILogMsgFilter * filter);
     void                      reset();
-    bool                      includeCategory(const LogMsgCategory & category) const { return (category.queryAudience() & audienceMask) && (category.queryClass() & classMask) && (category.queryDetail() <= maxDetail); }
+    bool                      includeCategory(const LogMsgCategory & category) const { return (category.queryAudience() & audienceMask) && (category.queryClass() & classMask); }
     bool                      queryLocalFlag() const { return localFlag; }
 protected:
     unsigned                  audienceMask;
     unsigned                  classMask;
-    LogMsgDetail              maxDetail;
     bool                      localFlag;
 };
 
@@ -150,7 +145,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_pid).append(pid).append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
@@ -170,7 +164,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_tid).append(tid).append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
@@ -198,7 +191,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_node); node.serialize(out); out.append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
@@ -222,7 +214,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_ip); ip.ipserialize(out); out.append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
@@ -242,7 +233,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_session).append(session).append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
@@ -264,7 +254,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_regex).append(regexText).append(localFlag && preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return localFlag; }
@@ -287,7 +276,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return true; }     // can't just invert
     unsigned                  queryAudienceMask() const { return MSGAUD_all; }
     unsigned                  queryClassMask() const { return MSGCLS_all; }
-    LogMsgDetail              queryMaxDetail() const { return TopDetail; }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const
     {
         if(preserveLocal)
@@ -328,7 +316,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return (arg1->mayIncludeCategory(cat)) && (arg2->mayIncludeCategory(cat)); }
     unsigned                  queryAudienceMask() const { return arg1->queryAudienceMask() & arg2->queryAudienceMask(); }
     unsigned                  queryClassMask() const { return arg1->queryClassMask() & arg2->queryClassMask(); }
-    LogMsgDetail              queryMaxDetail() const { return std::min(arg1->queryMaxDetail(), arg2->queryMaxDetail()); }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_and); arg1->serialize(out, preserveLocal); arg2->serialize(out, preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return arg1->queryLocalFlag() || arg2->queryLocalFlag(); }
@@ -361,7 +348,6 @@ public:
     bool                      mayIncludeCategory(const LogMsgCategory & cat) const { return (arg1->mayIncludeCategory(cat)) || (arg2->mayIncludeCategory(cat)); }
     unsigned                  queryAudienceMask() const { return arg1->queryAudienceMask() | arg2->queryAudienceMask(); }
     unsigned                  queryClassMask() const { return arg1->queryClassMask() | arg2->queryClassMask(); }
-    LogMsgDetail              queryMaxDetail() const { return std::max(arg1->queryMaxDetail(), arg2->queryMaxDetail()); }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const { out.append(MSGFILTER_or); arg1->serialize(out, preserveLocal); arg2->serialize(out, preserveLocal); }
     void                      addToPTree(IPropertyTree * tree) const;
     bool                      queryLocalFlag() const { return arg1->queryLocalFlag() && arg2->queryLocalFlag(); }
@@ -398,7 +384,6 @@ public:
     }
     unsigned                  queryAudienceMask() const { return yes->queryAudienceMask() | no->queryAudienceMask(); }
     unsigned                  queryClassMask() const { return yes->queryClassMask() | no->queryClassMask(); }
-    LogMsgDetail              queryMaxDetail() const { return std::max(yes->queryMaxDetail(), no->queryMaxDetail()); }
     void                      serialize(MemoryBuffer & out, bool preserveLocal) const
     {
         if(preserveLocal)
@@ -730,7 +715,7 @@ private:
     friend class DropLogMsg;
 
 public:
-    CLogMsgManager() : prefilter(0, 0, 0, false), nextID(0), suspendedChildren(false), port(0), session(UnknownSession) { }
+    CLogMsgManager() : prefilter(0, 0, false), nextID(0), suspendedChildren(false), port(0), session(UnknownSession) { }
     ~CLogMsgManager();
     IMPLEMENT_IINTERFACE;
     void                      enterQueueingMode();

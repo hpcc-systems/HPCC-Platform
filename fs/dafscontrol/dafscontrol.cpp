@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
     }
 
     EnableSEHtoExceptionMapping();
-    attachStandardFileLogMsgMonitor("dafscontrol.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail);
+    attachStandardFileLogMsgMonitor("dafscontrol.log", NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all);
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
     int ret = 0;
     try {

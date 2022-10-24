@@ -180,7 +180,7 @@ void ActPrintLog(const CActivityBase *activity, unsigned traceLevel, const char 
 {
     va_list args;
     va_start(args, format);
-    ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugInfo(traceLevel), format, args);
+    ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugInfo, format, args);
     va_end(args);
 }
 

@@ -987,7 +987,7 @@ int main(int argc, char* argv[])
 #else
     "/c$/floodtest.log", 
 #endif
-    NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false);
+    NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, false);
     queryStderrLogMsgHandler()->setMessageFields(0);
     try {
         IRand = createRandomNumberGenerator();

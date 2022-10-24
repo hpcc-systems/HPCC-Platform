@@ -382,7 +382,6 @@ int main(int argc, const char *argv[])
         if (logdir && *logdir)
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir, "toposerver");
-            lf->setMaxDetail(TopDetail);
             lf->beginLogging();
             queryLogMsgManager()->enterQueueingMode();
             queryLogMsgManager()->setQueueDroppingLimit(512, 32);

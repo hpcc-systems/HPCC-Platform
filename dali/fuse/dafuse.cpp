@@ -1043,7 +1043,6 @@ int main(int argc, char *_argv[])
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logName.str());
         lf->setMsgFields(MSGFIELD_STANDARD);
         lf->setAppend(false);
-        ls->setMaxDetail(TopDetail);
         lf->beginLogging();
     }
 

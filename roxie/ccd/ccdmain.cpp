@@ -846,7 +846,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (topology->hasProp("@logfile"))
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(topology, "roxie");
-            lf->setMaxDetail(TopDetail);
             lf->beginLogging();
             logDirectory.set(lf->queryLogDir());
 

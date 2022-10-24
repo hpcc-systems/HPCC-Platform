@@ -713,7 +713,6 @@ int main(int argc, const char* argv[])
             lf->setCreateAliasFile(false);
             lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_code | MSGFIELD_job);
             lf->setMsgAudiences(MSGAUD_audit);
-            lf->setMaxDetail(TopDetail);
             lf->setLocal(false); // include messages from all connected components
             lf->beginLogging();
             auditDir.set(lf->queryLogDir());
