@@ -138,7 +138,7 @@ void CDiskPartHandlerBase::open()
         }
     }
 
-    ActPrintLog(&activity, thorDetailedLogLevel, "%s[part=%d]: Base offset to %" I64F "d", kindStr, which, fileBaseOffset);
+    ActPrintLog(&activity, TraceFlags::Detailed, "%s[part=%d]: Base offset to %" I64F "d", kindStr, which, fileBaseOffset);
 
     if (compressed)
     {
@@ -148,10 +148,10 @@ void CDiskPartHandlerBase::open()
             checkFileCrc = false;
             if (activity.crcCheckCompressed) // applies to encrypted too, (optional, default off)
             {
-                ActPrintLog(&activity, thorDetailedLogLevel, "Calculating crc for file: %s", filename.get());
+                ActPrintLog(&activity, TraceFlags::Detailed, "Calculating crc for file: %s", filename.get());
                 unsigned calcCrc = iFile->getCRC();
                 // NB: for compressed files should always be ~0
-                ActPrintLog(&activity, thorDetailedLogLevel, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
+                ActPrintLog(&activity, TraceFlags::Detailed, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
                 if (calcCrc != storedCrc)
                 {
                     IThorException *e = MakeActivityException(&activity, TE_FileCrc, "CRC Failure validating compressed file: %s", iFile->queryFilename());
@@ -438,8 +438,8 @@ void CDiskWriteSlaveActivityBase::removeFiles()
         return;
     Owned<IFile> primary = createIFile(fName);
     try { primary->remove(); }
-    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Failed to remove file: %s", fName.get()); }
-    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "Failed to remove: %s", fName.get()); }
+    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, MCwarning, "Failed to remove file: %s", fName.get()); }
+    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), MCwarning, "Failed to remove: %s", fName.get()); }
 }
 
 void CDiskWriteSlaveActivityBase::close()
@@ -493,7 +493,7 @@ void CDiskWriteSlaveActivityBase::close()
     }
     catch (IException *e)
     { 
-        ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Error closing file: %s", fName.get());
+        ActPrintLogEx(&queryContainer(), e, MCwarning, "Error closing file: %s", fName.get());
         abortSoon = true;
         removeFiles();
         throw e;

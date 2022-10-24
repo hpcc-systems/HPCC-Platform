@@ -290,7 +290,7 @@ public:
     }
     virtual void process() override
     {
-        ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: Start");
+        ::ActPrintLog(this, TraceFlags::Detailed, "INDEXWRITE: Start");
         init();
 
         IRowStream *stream = inputStream;
@@ -427,7 +427,7 @@ public:
                 {
                     StringBuffer partFname;
                     getPartFilename(*partDesc, 0, partFname);
-                    ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: process: handling fname : %s", partFname.str());
+                    ::ActPrintLog(this, TraceFlags::Detailed, "INDEXWRITE: process: handling fname : %s", partFname.str());
                     open(*partDesc, false);
 
                     BooleanOnOff tf(receiving);
@@ -453,7 +453,7 @@ public:
 
                 if (buildTlk)
                 {
-                    ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: sending rows");
+                    ::ActPrintLog(this, TraceFlags::Detailed, "INDEXWRITE: sending rows");
                     NodeInfoArray tlkRows;
 
                     CMessageBuffer msg;
@@ -496,7 +496,7 @@ public:
 
                     if (firstNode())
                     {
-                        ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: Waiting on tlk to complete");
+                        ::ActPrintLog(this, TraceFlags::Detailed, "INDEXWRITE: Waiting on tlk to complete");
 
                         // JCSMORE if refactor==true, is rowsToReceive here right??
                         unsigned rowsToReceive = (refactor ? (tlkDesc->queryOwner().numParts()-1) : container.queryJob().querySlaves()) -1; // -1 'cos got my own in array already
@@ -526,7 +526,7 @@ public:
 
                         StringBuffer path;
                         getPartFilename(*tlkDesc, 0, path);
-                        ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: creating toplevel key file : %s", path.str());
+                        ::ActPrintLog(this, TraceFlags::Detailed, "INDEXWRITE: creating toplevel key file : %s", path.str());
                         try
                         {
                             open(*tlkDesc, true);
@@ -572,7 +572,7 @@ public:
                     }
                 }
             }
-            ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: All done");
+            ::ActPrintLog(this, TraceFlags::Detailed, "INDEXWRITE: All done");
         }
     }
     virtual void endProcess() override

@@ -112,19 +112,11 @@ MODULE_EXIT()
 
 #define EXTRAS 1024
 #define NL 3
-StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *container, const ActLogEnum flags, const char *format, va_list args)
+StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *container,  const char *format, va_list args)
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
     res.appendf("activity(ch=%d, %s, %" ACTPF "d)", container->queryOwner().queryJobChannelNumber(), activityKindStr(container->getKind()), container->queryId());
-    if (0 != (flags & thorlog_ecl))
-    {
-        StringBuffer ecltext;
-        container->getEclText(ecltext);
-        ecltext.trim();
-        if (ecltext.length() > 0)
-            res.append(" [ecl=").append(ecltext.str()).append(']');
-    }
 #ifdef _WIN32
 #ifdef MEMLOG
     MEMORYSTATUS mS;
@@ -135,19 +127,19 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
     return res;
 }
 
-void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void ActPrintLogArgs(const CGraphElementBase *container, const LogMsgCategory &logCat, const char *format, va_list args)
 {
-    if ((0 == (flags & thorlog_all)) && !container->doLogging())
-        return; // suppress logging child activities unless thorlog_all flag
+    if (0 != (logCat.queryClass() & (MSGCLS_disaster|MSGCLS_error)) && !container->doLogging())
+        return; // suppress logging child activities unless errors
     StringBuffer res;
-    ActPrintLogArgsPrep(res, container, flags, format, args);
+    ActPrintLogArgsPrep(res, container, format, args);
     LOG(logCat, thorJob, "%s", res.str());
 }
 
-void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const LogMsgCategory &logCat, const char *format, va_list args)
 {
     StringBuffer res;
-    ActPrintLogArgsPrep(res, container, flags, format, args);
+    ActPrintLogArgsPrep(res, container, format, args);
     if (e)
     {
         res.append(" : ");
@@ -156,39 +148,53 @@ void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const Ac
     LOG(logCat, thorJob, "%s", res.str());
 }
 
-void ActPrintLogEx(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
+void ActPrintLogEx(const CGraphElementBase *container, const LogMsgCategory &logCat, const char *format, ...)
 {
-    if ((0 == (flags & thorlog_all)) && (NULL != container->queryOwner().queryOwner() && !container->queryOwner().isGlobal()))
-        return; // suppress logging child activities unless thorlog_all flag
+    if (0 != (logCat.queryClass() & (MSGCLS_disaster|MSGCLS_error)) && !container->doLogging())
+        return; // suppress logging child activities unless errors
     StringBuffer res;
     va_list args;
     va_start(args, format);
-    ActPrintLogArgsPrep(res, container, flags, format, args);
+    ActPrintLogArgsPrep(res, container, format, args);
     va_end(args);
     LOG(logCat, thorJob, "%s", res.str());
+}
+
+void ActPrintLog(const CGraphElementBase *container, TraceFlags level, const char *format, ...)
+{
+    if (container->doTrace(level))
+    {
+        va_list args;
+        va_start(args, format);
+        ActPrintLogArgs(container, MCdebugInfo, format, args);
+        va_end(args);
+    }
 }
 
 void ActPrintLog(const CActivityBase *activity, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugProgress, format, args);
+    ActPrintLogArgs(&activity->queryContainer(), MCdebugProgress, format, args);
     va_end(args);
 }
 
-void ActPrintLog(const CActivityBase *activity, unsigned traceLevel, const char *format, ...)
+void ActPrintLog(const CActivityBase *activity, TraceFlags level, const char *format, ...)
 {
-    va_list args;
-    va_start(args, format);
-    ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugInfo, format, args);
-    va_end(args);
+    if (activity->queryContainer().doTrace(level))
+    {
+        va_list args;
+        va_start(args, format);
+        ActPrintLogArgs(&activity->queryContainer(), MCdebugInfo, format, args);
+        va_end(args);
+    }
 }
 
 void ActPrintLog(const CActivityBase *activity, IException *e, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    ActPrintLogArgs(&activity->queryContainer(), e, thorlog_null, MCexception(e, MSGCLS_error), format, args);
+    ActPrintLogArgs(&activity->queryContainer(), e, MCexception(e, MSGCLS_error), format, args);
     va_end(args);
 }
 
@@ -197,28 +203,28 @@ void ActPrintLog(const CActivityBase *activity, IException *e)
     ActPrintLog(activity, e, "%s", "");
 }
 
-void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const LogMsgCategory &logCat, const char *format, va_list args)
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
     res.appendf("graph(%s, %" GIDPF "d)", graph->queryJob().queryGraphName(), graph->queryGraphId());
 }
 
-void GraphPrintLogArgs(CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void GraphPrintLogArgs(CGraphBase *graph, const LogMsgCategory &logCat, const char *format, va_list args)
 {
-    if ((0 == (flags & thorlog_all)) && (NULL != graph->queryOwner() && !graph->isGlobal()))
-        return; // suppress logging from child graph unless thorlog_all flag
+    if (0 != (logCat.queryClass() & (MSGCLS_disaster|MSGCLS_error)) && (NULL != graph->queryOwner() && !graph->isGlobal()))
+        return; // suppress logging from child graph unless error
     StringBuffer res;
-    GraphPrintLogArgsPrep(res, graph, flags, logCat, format, args);
+    GraphPrintLogArgsPrep(res, graph, logCat, format, args);
     LOG(logCat, thorJob, "%s", res.str());
 }
 
-void GraphPrintLogArgs(CGraphBase *graph, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void GraphPrintLogArgs(CGraphBase *graph, IException *e, const LogMsgCategory &logCat, const char *format, va_list args)
 {
-    if ((0 == (flags & thorlog_all)) && (NULL != graph->queryOwner() && !graph->isGlobal()))
-        return; // suppress logging from child graph unless thorlog_all flag
+    if (0 != (logCat.queryClass() & (MSGCLS_disaster|MSGCLS_error)) && (NULL != graph->queryOwner() && !graph->isGlobal()))
+        return; // suppress logging from child graph unless error
     StringBuffer res;
-    GraphPrintLogArgsPrep(res, graph, flags, logCat, format, args);
+    GraphPrintLogArgsPrep(res, graph, logCat, format, args);
     if (e)
     {
         res.append(" : ");
@@ -231,10 +237,20 @@ void GraphPrintLog(CGraphBase *graph, IException *e, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    GraphPrintLogArgs(graph, e, thorlog_null, MCexception(e, MSGCLS_error), format, args);
+    GraphPrintLogArgs(graph, e, MCexception(e, MSGCLS_error), format, args);
     va_end(args);
 }
 
+void GraphPrintTrace(CGraphBase *graph, const char *format, ...)
+{
+    if (graph->queryDetailedTracing())
+    {
+        va_list args;
+        va_start(args, format);
+        GraphPrintLogArgs(graph, MCdebugInfo, format, args);
+        va_end(args);
+    }
+}
 
 class DECL_EXCEPTION CThorException : public CSimpleInterface, implements IThorException
 {
@@ -756,12 +772,13 @@ void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *t
     LOG(MCdebugProgress, thorJob, "temporary rootTempdir: %s, uniqueSubDir: %s, prefix: %s", rootTempDir, uniqueSubDir, tempPrefix);
 }
 
-void ClearTempDir()
+void ClearTempDir(bool traceDetails)
 {
     try
     {
         TempNameHandler.clear(true);
-        LOG(MCthorDetailedDebugInfo, thorJob, "temp directory cleared");
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "temp directory cleared");
     }
     catch (IException *e)
     {

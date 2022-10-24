@@ -50,7 +50,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
                 createDefaultIfFail = true;
         }
         startN = N;
-        ::ActPrintLog(this, thorDetailedLogLevel, "SELECTNTH: Selecting row %" I64F "d", N);
+        ::ActPrintLog(this, TraceFlags::Detailed, "SELECTNTH: Selecting row %" I64F "d", N);
     }
     void sendN()
     {
@@ -105,7 +105,7 @@ public:
         }
 
         seenNth = false;
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (container.doDetailedTracing())
         {
             if (0 == rowN)
             {
@@ -114,7 +114,7 @@ public:
                 StringBuffer meta;
                 meta.appendf("META(totalRowsMin=%" I64F "d,totalRowsMax=%" I64F "d, spilled=%" I64F "d,byteTotal=%" I64F "d)",
                     info.totalRowsMin,info.totalRowsMax,info.spilled,info.byteTotal);
-                ::ActPrintLog(this, thorDetailedLogLevel, "%s", meta.str());
+                ::ActPrintLog(this, TraceFlags::Detailed, "%s", meta.str());
             }
         }
         first = true;

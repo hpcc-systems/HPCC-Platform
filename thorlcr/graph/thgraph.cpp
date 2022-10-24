@@ -386,11 +386,23 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml, 
     alreadyUpdated = false;
     whichBranch = (unsigned)-1;
     log = true;
+    VStringBuffer traceOptName("log%s", activityKindStr(kind));
+    traceOptName.stripChar(' ').toLowerCase();
+    traceFlags = (TraceFlags) queryXGMML().getPropInt("hint[@name=\"traceFlags\"]/@value", queryJob().getOptInt(traceOptName, (int) TraceFlags::Standard));;
     sentActInitData.setown(createThreadSafeBitSet());
     maxCores = queryXGMML().getPropInt("hint[@name=\"max_cores\"]/@value", 0);
     if (0 == maxCores)
         maxCores = queryJob().queryMaxDefaultActivityCores();
     baseHelper.setown(helperFactory());
+    if (doTrace(TraceFlags::Standard))
+    {
+        StringBuffer ecltext;
+        getEclText(ecltext);
+        ecltext.trim();
+        if (ecltext.length() > 0)
+            ActPrintLog("Create activity container for ecl=%s", ecltext.str());
+    }
+
 
     CGraphBase *graphContainer = resultsGraph;
     if (!graphContainer)
@@ -493,7 +505,7 @@ void CGraphElementBase::ActPrintLog(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    ::ActPrintLogArgs(this, thorlog_null, MCdebugProgress, format, args);
+    ::ActPrintLogArgs(this, MCdebugProgress, format, args);
     va_end(args);
 }
 
@@ -501,7 +513,7 @@ void CGraphElementBase::ActPrintLog(IException *e, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    ::ActPrintLogArgs(this, e, thorlog_all, MCexception(e), format, args);
+    ::ActPrintLogArgs(this, e, MCexception(e), format, args);
     va_end(args);
 }
 
@@ -545,7 +557,7 @@ void CGraphElementBase::addInput(unsigned input, CGraphElementBase *inputAct, un
 
 void CGraphElementBase::connectInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx)
 {
-    ::ActPrintLog(this, thorDetailedLogLevel, "CONNECTING (id=%" ACTPF "d, idx=%d) to (id=%" ACTPF "d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
+    ::ActPrintLog(this, TraceFlags::Detailed, "CONNECTING (id=%" ACTPF "d, idx=%d) to (id=%" ACTPF "d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
     while (connectedInputs.ordinality()<=input) connectedInputs.append(NULL);
     connectedInputs.replace(new COwningSimpleIOConnection(LINK(inputAct), inputOutIdx), input);
     while (inputAct->connectedOutputs.ordinality()<=inputOutIdx) inputAct->connectedOutputs.append(NULL);
@@ -1192,12 +1204,12 @@ void traceMemUsage()
 {
     StringBuffer memStatsStr;
     roxiemem::memstats(memStatsStr);
-    LOG(MCthorDetailedDebugInfo, thorJob, "Roxiemem stats: %s", memStatsStr.str());
+    LOG(MCdebugInfo, thorJob, "Roxiemem stats: %s", memStatsStr.str());
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
     {
         memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        LOG(MCthorDetailedDebugInfo, thorJob, "Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+        LOG(MCdebugInfo, thorJob, "Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
     }
 }
 
@@ -1217,6 +1229,7 @@ CGraphBase::CGraphBase(CJobChannel &_jobChannel) : jobChannel(_jobChannel), job(
     counter = 0; // loop/graph counter, will be set by loop/graph activity if needed
     loopBodySubgraph = false;
     sourceActDependents.setown(createPTree());
+    traceGraph = job.getOptBool("traceGraphs", false);
 }
 
 CGraphBase::~CGraphBase()
@@ -1400,11 +1413,11 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     {
         if (!queryOwner())
         {
-            if (!REJECTLOG(MCthorDetailedDebugInfo))
+            if (traceGraph)
             {
                 StringBuffer s;
                 toXML(&queryXGMML(), s, 2);
-                MLOG(MCthorDetailedDebugInfo, thorJob, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
+                MLOG(MCdebugInfo, thorJob, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
             }
         }
         if (localResults)
@@ -1419,11 +1432,11 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     if (!queryOwner())
     {
         GraphPrintLog("Graph Done");
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (traceGraph)
         {
             StringBuffer memStr;
             getSystemTraceInfo(memStr, PerfMonStandard | PerfMonExtended);
-            ::GraphPrintLog(this, thorDetailedLogLevel, "%s", memStr.str());
+            ::GraphPrintTrace(this, "%s", memStr.str());
         }
     }
     if (exception)
@@ -1484,7 +1497,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
         if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinitely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
-            GraphPrintLogEx(this, thorlog_null, MCuserWarning, "Graph wait cancelled, aborted=%s", aborted?"true":"false");
+            GraphPrintLogEx(this, MCuserWarning, "Graph wait cancelled, aborted=%s", aborted?"true":"false");
         else
             graphDone = true;
     }
@@ -1853,7 +1866,7 @@ void CGraphBase::GraphPrintLog(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    ::GraphPrintLogArgs(this, thorlog_null, MCdebugProgress, format, args);
+    ::GraphPrintLogArgs(this, MCdebugProgress, format, args);
     va_end(args);
 }
 
@@ -1861,7 +1874,7 @@ void CGraphBase::GraphPrintLog(IException *e, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    ::GraphPrintLogArgs(this, e, thorlog_null, MCdebugProgress, format, args);
+    ::GraphPrintLogArgs(this, e, MCdebugProgress, format, args);
     va_end(args);
 }
 
@@ -2816,6 +2829,7 @@ void CJobBase::init()
 
     // global setting default on, can be overridden by #option
     timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
+    traceJob = 0 != getWorkUnitValueInt("traceGraph", globals->getPropBool("@traceJob", false));
     maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", 0); // NB: 0 means system decides
     if (0 == maxActivityCores)
         maxActivityCores = getAffinityCpus();
@@ -2929,7 +2943,7 @@ void CJobBase::endJob()
         callThreadTerminationHooks(true); // must call any installed thread termination functions, before unloading plugins
         ::Release(pluginMap);
 
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (traceJob)
             traceMemUsage();
 
         if (numChannels > 1) // if only 1 - then channel allocator is same as sharedAllocator, leaks will be reported by the single channel
@@ -2941,7 +2955,7 @@ void CJobBase::endJob()
             exceptions.setown(makeMultiException());
         exceptions->append(*LINK(e));
     }
-    ClearTempDir();
+    ClearTempDir(traceJob);
     if (exceptions && exceptions->ordinality())
         throw exceptions.getClear();
 }
@@ -3083,7 +3097,8 @@ mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
     deserializeMPtag(mb, tag);
     if (TAG_NULL != tag)
     {
-        LOG(MCthorDetailedDebugInfo, thorJob, "deserializeMPTag: tag = %d", (int)tag);
+        if (job.queryTraceJob())
+            LOG(MCdebugInfo, thorJob, "deserializeMPTag: tag = %d", (int)tag);
         jobComm->flush(tag);
     }
     return tag;
@@ -3119,10 +3134,10 @@ void CJobChannel::clean()
     cleaned = true;
     wait();
 
-    if (!REJECTLOG(MCthorDetailedDebugInfo))
+    if (job.queryTraceJob())
     {
         queryRowManager()->reportMemoryUsage(false);
-        LOG(MCthorDetailedDebugInfo, thorJob, "CJobBase resetting memory manager");
+        LOG(MCdebugInfo, thorJob, "CJobBase resetting memory manager");
     }
 
     if (graphExecutor)
@@ -3271,7 +3286,7 @@ void CActivityBase::abort()
 {
     if (!abortSoon)
     {
-        ::ActPrintLog(this, thorDetailedLogLevel, "Abort condition set");
+        ::ActPrintLog(this, TraceFlags::Detailed, "Abort condition set");
         abortSoon = true;
     }
 }
@@ -3319,7 +3334,7 @@ void CActivityBase::ActPrintLog(const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
-    ::ActPrintLogArgs(&queryContainer(), thorlog_null, MCdebugProgress, format, args);
+    ::ActPrintLogArgs(&queryContainer(), MCdebugProgress, format, args);
     va_end(args);
 }
 
@@ -3327,7 +3342,7 @@ void CActivityBase::ActPrintLog(IException *e, const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
-    ::ActPrintLogArgs(&queryContainer(), e, thorlog_all, MCexception(e), format, args);
+    ::ActPrintLogArgs(&queryContainer(), e, MCexception(e), format, args);
     va_end(args);
 }
 

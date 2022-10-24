@@ -76,7 +76,7 @@ public:
     void CloseWait();
     void Disconnect(); /* async */
 
-    static bool marshall(ISortSlaveMP &slave, ICommunicator *comm, mptag_t tag);  // called slave side
+    static bool marshall(ISortSlaveMP &slave, CActivityBase *activity, ICommunicator *comm, mptag_t tag);  // called slave side
     static void stopmarshall(ICommunicator *comm,mptag_t tag);                   // called slave side
 
 };

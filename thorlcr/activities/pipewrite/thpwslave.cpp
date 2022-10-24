@@ -144,7 +144,7 @@ public:
         verifyPipe();
         if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
             throw pipeException.getClear();
-        ::ActPrintLog(this, thorDetailedLogLevel, "Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
+        ::ActPrintLog(this, TraceFlags::Detailed, "Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
     }
     void endProcess()
     {

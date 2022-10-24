@@ -284,13 +284,13 @@ void SortSlaveMP::Disconnect() /* async */
     sendRecv(mb);
 }
 
-bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag)
+bool SortSlaveMP::marshall(ISortSlaveMP &slave, CActivityBase *activity, ICommunicator* comm, mptag_t tag)
 {
     CMessageBuffer mb;
     rank_t sender;
     comm->recv(mb,0,tag,&sender);       // NB only recv from master
     if (mb.length()==0) {
-        LOG(MCthorDetailedDebugInfo, thorJob, "Stopping SortSlaveMP::marshall");
+        ActPrintLog(activity, TraceFlags::Detailed, "Stopping SortSlaveMP::marshall");
         return false;
     }
     byte fn;
@@ -301,7 +301,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
     mbout.append(okout);
 #ifdef FULLTRACE
     StringBuffer tmp1;
-    LOG(MCthorDetailedDebugInfo, thorJob, ">SortSlaveMP::marshall(%d) got %d from %s tag %d replytag %d",(int)fn, mb.length(), mb.getSender().getUrlStr(tmp1).str(),tag,mb.getReplyTag());
+    ActPrintLog(activity, TraceFlags::Detailed, ">SortSlaveMP::marshall(%d) got %d from %s tag %d replytag %d",(int)fn, mb.length(), mb.getSender().getUrlStr(tmp1).str(),tag,mb.getReplyTag());
 #endif
     bool replydone = false;
     Owned<IException> err;
@@ -531,7 +531,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
     if (!replydone) {
 #ifdef FULLTRACE
         StringBuffer tmp1;
-        LOG(MCthorDetailedDebugInfo, thorJob, "<SortSlaveMP::marshall(%d) send %d to %s tag %d",(int)fn, mbout.length(), mbout.getSender().getUrlStr(tmp1).str(),mbout.getReplyTag());
+        ActPrintLog(activity, TraceFlags::Detailed, "<SortSlaveMP::marshall(%d) send %d to %s tag %d",(int)fn, mbout.length(), mbout.getSender().getUrlStr(tmp1).str(),mbout.getReplyTag());
 #endif
         comm->reply(mbout);
     }

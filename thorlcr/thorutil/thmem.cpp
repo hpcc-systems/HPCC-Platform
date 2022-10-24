@@ -1862,7 +1862,7 @@ public:
              * memory usage.
              */
             size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
-            ActPrintLog(&activity, thorDetailedLogLevel, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
+            ActPrintLog(&activity, TraceFlags::Detailed, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
             spillableRows.setCompBlockSize(compBlkSz);
         }
     }

@@ -73,10 +73,10 @@ protected:
     {
         if (resultData.length() || complete)
         {
-            ::ActPrintLog(this, thorDetailedLogLevel, "flushing result");
+            ::ActPrintLog(this, TraceFlags::Detailed, "flushing result");
             addResult(numResults, resultData, complete);
             resultData.clear();
-            ::ActPrintLog(this, thorDetailedLogLevel, "result flushed");
+            ::ActPrintLog(this, TraceFlags::Detailed, "result flushed");
         }
     }
 public:
@@ -315,7 +315,7 @@ public:
     virtual void flushResults(bool complete=false) override
     {
         assertex(complete);
-        ::ActPrintLog(this, thorDetailedLogLevel, "dictionary result");
+        ::ActPrintLog(this, TraceFlags::Detailed, "dictionary result");
         Owned<IThorRowInterfaces> rowIf = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta());
         IOutputRowDeserializer *deserializer = rowIf->queryRowDeserializer();
         CMessageBuffer mb;
@@ -338,7 +338,7 @@ public:
         rtlSerializeDictionary(out, rowIf->queryRowSerializer(), builder.getcount(), builder.queryrows());
         addResult(usedCount, rowData, complete);
         resultData.clear();
-        ::ActPrintLog(this, thorDetailedLogLevel, "dictionary flushed");
+        ::ActPrintLog(this, TraceFlags::Detailed, "dictionary flushed");
     }
 };
 

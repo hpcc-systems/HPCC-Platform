@@ -1585,7 +1585,8 @@ mptag_t CJobMaster::allocateMPTag()
 {
     mptag_t tag = allocateClusterMPTag();
     queryJobChannel(0).queryJobComm().flush(tag);
-    LOG(MCthorDetailedDebugInfo, thorJob, "allocateMPTag: tag = %d", (int)tag);
+    if (traceJob)
+        LOG(MCdebugInfo, thorJob, "allocateMPTag: tag = %d", (int)tag);
     return tag;
 }
 
@@ -1594,7 +1595,8 @@ void CJobMaster::freeMPTag(mptag_t tag)
     if (TAG_NULL != tag)
     {
         freeClusterMPTag(tag);
-        LOG(MCthorDetailedDebugInfo, thorJob, "freeMPTag: tag = %d", (int)tag);
+        if (traceJob)
+            LOG(MCdebugInfo, thorJob, "freeMPTag: tag = %d", (int)tag);
         queryJobChannel(0).queryJobComm().flush(tag);
     }
 }

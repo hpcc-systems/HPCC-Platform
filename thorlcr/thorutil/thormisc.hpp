@@ -400,14 +400,13 @@ class CGraphElementBase;
 class CActivityBase;
 class CGraphBase;
 interface IRemoteConnection;
-enum ActLogEnum { thorlog_null=0,thorlog_ecl=1,thorlog_all=2 };
 
-extern graph_decl StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *container, const ActLogEnum flags, const char *format, va_list args) __attribute__((format(printf,4,0)));
-extern graph_decl void ActPrintLogEx(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 4, 5)));
-extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,4,0)));
-extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,5,0)));
+extern graph_decl StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *container, const char *format, va_list args) __attribute__((format(printf,3,0)));
+extern graph_decl void ActPrintLogEx(const CGraphElementBase *container, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,3,0)));
+extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,4,0)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, const char *format, ...) __attribute__((format(printf, 2, 3)));
-extern graph_decl void ActPrintLog(const CActivityBase *activity, unsigned traceLevel, const char *format, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl void ActPrintLog(const CActivityBase *activity, TraceFlags level, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, IException *e);
 
@@ -416,24 +415,17 @@ inline void ActPrintLog(const CGraphElementBase *container, const char *format, 
 {
     va_list args;
     va_start(args, format);
-    ActPrintLogArgs(container, thorlog_ecl, MCdebugProgress, format, args);
+    ActPrintLogArgs(container, MCdebugProgress, format, args);
     va_end(args);
 }
-inline void ActPrintLog(const CGraphElementBase *container, unsigned traceLevel, const char *format, ...) __attribute__((format(printf, 3, 4)));
-inline void ActPrintLog(const CGraphElementBase *container, unsigned traceLevel, const char *format, ...)
+extern graph_decl void ActPrintLog(const CGraphElementBase *container, TraceFlags level, const char *format, ...) __attribute__((format(printf, 3, 4)));
+
+inline void ActPrintLogEx(const CGraphElementBase *container, IException *e, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 4, 5)));
+inline void ActPrintLogEx(const CGraphElementBase *container, IException *e, const LogMsgCategory &logCat, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    // MORE - do something with level?
-    ActPrintLogArgs(container, thorlog_ecl, MCdebugProgress, format, args);
-    va_end(args);
-}
-inline void ActPrintLogEx(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 5, 6)));
-inline void ActPrintLogEx(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    ActPrintLogArgs(container, e, flags, logCat, format, args);
+    ActPrintLogArgs(container, e, logCat, format, args);
     va_end(args);
 }
 inline void ActPrintLog(const CGraphElementBase *container, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
@@ -441,32 +433,32 @@ inline void ActPrintLog(const CGraphElementBase *container, IException *e, const
 {
     va_list args;
     va_start(args, format);
-    ActPrintLogArgs(container, e, thorlog_null, MCexception(e, MSGCLS_error), format, args);
+    ActPrintLogArgs(container, e, MCexception(e, MSGCLS_error), format, args);
     va_end(args);
 }
 inline void ActPrintLog(const CGraphElementBase *container, IException *e)
 {
-    ActPrintLogEx(container, e, thorlog_null, MCexception(e, MSGCLS_error), "%s", "");
+    ActPrintLogEx(container, e, MCexception(e, MSGCLS_error), "%s", "");
 }
-extern graph_decl void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,5,0)));
-extern graph_decl void GraphPrintLogArgs(CGraphBase *graph, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,5,0)));
-extern graph_decl void GraphPrintLogArgs(CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,4,0)));
+extern graph_decl void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,4,0)));
+extern graph_decl void GraphPrintLogArgs(CGraphBase *graph, IException *e, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,4,0)));
+extern graph_decl void GraphPrintLogArgs(CGraphBase *graph, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,3,0)));
 extern graph_decl void GraphPrintLog(CGraphBase *graph, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 
-inline void GraphPrintLogEx(CGraphBase *graph, ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 4, 5)));
-inline void GraphPrintLogEx(CGraphBase *graph, ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
+inline void GraphPrintLogEx(CGraphBase *graph, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 3, 4)));
+inline void GraphPrintLogEx(CGraphBase *graph, const LogMsgCategory &logCat, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    GraphPrintLogArgs(graph, flags, logCat, format, args);
+    GraphPrintLogArgs(graph, logCat, format, args);
     va_end(args);
 }
-inline void GraphPrintLogEx(CGraphBase *graph, IException *e, ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 5, 6)));
-inline void GraphPrintLogEx(CGraphBase *graph, IException *e, ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
+inline void GraphPrintLogEx(CGraphBase *graph, IException *e, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 4, 5)));
+inline void GraphPrintLogEx(CGraphBase *graph, IException *e, const LogMsgCategory &logCat, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    GraphPrintLogArgs(graph, e, flags, logCat, format, args);
+    GraphPrintLogArgs(graph, e, logCat, format, args);
     va_end(args);
 }
 inline void GraphPrintLog(CGraphBase *graph, const char *format, ...) __attribute__((format(printf, 2, 3)));
@@ -474,19 +466,11 @@ inline void GraphPrintLog(CGraphBase *graph, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    GraphPrintLogArgs(graph, thorlog_null, MCdebugProgress, format, args);
+    GraphPrintLogArgs(graph, MCdebugProgress, format, args);
     va_end(args);
 }
 
-inline void GraphPrintLog(CGraphBase *graph, unsigned traceLevel, const char *format, ...) __attribute__((format(printf, 3, 4)));
-inline void GraphPrintLog(CGraphBase *graph, unsigned traceLevel, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    // MORE - do something with level?
-    GraphPrintLogArgs(graph, thorlog_null, MCdebugInfo, format, args);
-    va_end(args);
-}
+extern graph_decl void GraphPrintTrace(CGraphBase *graph, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, IException *e, const char *xtra, ...) __attribute__((format(printf, 3, 4)));
@@ -511,7 +495,7 @@ extern graph_decl void setExceptionActivityInfo(CGraphElementBase &container, IT
 extern graph_decl void GetTempFilePath(StringBuffer &name, const char *suffix);
 extern graph_decl void GetTempFileName(StringBuffer &name, const char *suffix);
 extern graph_decl void SetTempDir(const char *rootTempDir, const char *uniqueSubDir, const char *tempPrefix, bool clearDir);
-extern graph_decl void ClearTempDir();
+extern graph_decl void ClearTempDir(bool traceDetails);
 extern graph_decl const char *queryTempDir();
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
 
@@ -591,9 +575,6 @@ inline void readUnderlyingType(MemoryBuffer &mb, T &v)
 {
     mb.read(reinterpret_cast<typename std::underlying_type<T>::type &> (v));
 }
-
-constexpr unsigned thorDetailedLogLevel = 200;
-constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo);
 
 extern graph_decl StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out);
 extern graph_decl bool getExpertOptBool(const char *opt, bool dft=false);

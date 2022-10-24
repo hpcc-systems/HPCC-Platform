@@ -76,8 +76,8 @@ interface ISocketRowWriter: extends IRowWriter
 
 class CActivityBase;
 THORSORT_API IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep, ICommunicator *clusterComm, mptag_t _mpTagRPC);
-IRowStream *ConnectMergeRead(unsigned id,IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs, ISocket *socket);
-ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs);
+IRowStream *ConnectMergeRead(unsigned id,IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs, ISocket *socket, bool traceDetails);
+ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs,bool traceDetails);
 #define SOCKETSERVERINC                    1
 #define NUMSLAVESOCKETS                    2
 
@@ -98,7 +98,7 @@ interface ISortSlaveBase  // for global merging
     virtual unsigned getTransferPort() = 0;
     virtual void startMerging(IArrayOf<IRowStream> &readers, rowcount_t _totalrows) = 0;
     virtual bool queryTLS() const = 0;
-    virtual unsigned queryTraceLevel() const = 0;
+    virtual bool queryTraceDetails() const = 0;
 };
 
 
@@ -115,6 +115,6 @@ interface IMergeTransferServer: extends IInterface
     virtual void subjoin() = 0;
 };
 
-extern DECL_EXPORT IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent);
+extern DECL_EXPORT IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent, bool traceDetails);
 
 #endif

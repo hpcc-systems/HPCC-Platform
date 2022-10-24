@@ -61,8 +61,8 @@ protected:
         }
         else
             abortSoon = true;
-        ::ActPrintLog(this, thorDetailedLogLevel, "ENTH: init - Numerator = %" RCPF "d, Denominator = %" RCPF "d", numerator, denominator);   
-        ::ActPrintLog(this, thorDetailedLogLevel, "%s: Initial value of counter %" RCPF "d", actStr.str(), counter);
+        ::ActPrintLog(this, TraceFlags::Detailed, "ENTH: init - Numerator = %" RCPF "d, Denominator = %" RCPF "d", numerator, denominator);   
+        ::ActPrintLog(this, TraceFlags::Detailed, "%s: Initial value of counter %" RCPF "d", actStr.str(), counter);
     }
     void setLocalCountReq()
     {

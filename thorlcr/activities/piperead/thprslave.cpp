@@ -564,7 +564,7 @@ int PipeWriterThread::run()
     }
     catch (IException *e)
     {
-        ActPrintLog(&activity,e,"PipeWriterThread.3");
+        ActPrintLog(&activity, e, "PipeWriterThread.3");
         if (exc.get())
             e->Release();
         else

@@ -109,6 +109,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
     CThreadedPersistent threaded;
     mptag_t keyLookupMpTag = TAG_NULL;
     bool aborted = false;
+    bool traceDetails = false;
     unsigned numKMCached = 0;
     unsigned numFCCached = 0;
     CJobBase *currentJob = nullptr;
@@ -1175,6 +1176,7 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
         cachedKMsMRU.kill();
         cachedFCsMRU.kill();
         currentJob = nullptr;
+        traceDetails = false;
         numKMCached = 0;
         numFCCached = 0;
     }
@@ -1543,6 +1545,7 @@ public:
          * Once there's a dynamic implementation of the helper this won't be necessary
          */
         currentJob = &job;
+        traceDetails = job.queryTraceJob();
         maxCachedKJManagers = job.getOptUInt("keyedJoinMaxKJMs", defaultMaxCachedKJManagers);
         maxCachedFetchContexts = job.getOptUInt("keyedJoinMaxFetchContexts", defaultMaxCachedFetchContexts);
         unsigned newKeyLookupMaxProcessThreads = job.getOptUInt("keyedJoinMaxProcessors", defaultKeyLookupMaxProcessThreads);
@@ -1554,11 +1557,13 @@ public:
     }
     virtual void reset() override
     {
-        LOG(MCthorDetailedDebugInfo, thorJob, "KJService reset()");
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "KJService reset()");
         processorPool->stopAll(true);
         processorPool->joinAll(false);
         clearAll();
-        LOG(MCthorDetailedDebugInfo, thorJob, "KJService reset() done");
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "KJService reset() done");
     }
     virtual void start() override
     {
@@ -1569,7 +1574,8 @@ public:
     {
         if (aborted)
             return;
-        LOG(MCthorDetailedDebugInfo, thorJob, "KJService stop()");
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "KJService stop()");
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);

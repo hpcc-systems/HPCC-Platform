@@ -46,6 +46,7 @@ class CMergeReadStream : public CSimpleInterface, public IRowStream
 protected:  
     IRowStream *stream;
     SocketEndpoint endpoint;
+    bool traceDetails = false;
     void eos()
     {
         if (stream) {
@@ -55,12 +56,14 @@ protected:
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CMergeReadStream(IThorRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs, unsigned sortTraceLevel=0, ISecureSocketContext *secureContextClient=nullptr)
+    CMergeReadStream(IThorRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs, bool _traceDetails=false, ISecureSocketContext *secureContextClient=nullptr)
+    : traceDetails(_traceDetails)
     {
         endpoint = targetep;
         char url[100];
         targetep.getUrlStr(url,sizeof(url));
-        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
 
@@ -70,10 +73,7 @@ public:
         if (secureContextClient)
         {
             Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(socket.getClear());
-            int tlsTraceLevel = SSLogMin;
-            //if (sortTraceLevel >= ExtraneousMsgThreshold)
-            //    tlsTraceLevel = SSLogMax;
-            int status = ssock->secure_connect(tlsTraceLevel);
+            int status = ssock->secure_connect(traceDetails ? SSLogMax : SSLogMin);
             if (status < 0)
             {
                 ssock->close();
@@ -84,9 +84,10 @@ public:
         }
 #endif // OPENSSL
 
-        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket);
-
-        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) connected to %s",streamno,url);
+        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket,traceDetails);
+        
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "SORT Merge READ: Stream(%u) connected to %s",streamno,url);
     }
     virtual ~CMergeReadStream()
     {
@@ -108,7 +109,8 @@ public:
 #ifdef _FULL_TRACE
             char url[100];
             endpoint.getUrlStr(url,sizeof(url));
-            LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: EOS for %s",url);
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "SORT Merge READ: EOS for %s",url);
 #endif
             eos();
         }
@@ -121,7 +123,8 @@ public:
 #ifdef _FULL_TRACE
             char url[100];
             endpoint.getUrlStr(url,sizeof(url));
-            LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: stop for %s",url);
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "SORT Merge READ: stop for %s",url);
 #endif
             stream->stop();
             eos();
@@ -150,6 +153,7 @@ class CSortMerge: public CSimpleInterface, implements ISocketSelectNotify
     CSortTransferServerThread *parent;
     bool done;
     bool closing;
+    bool traceDetails = false;
     Semaphore donesem;
     Owned<IException> exception;
     ISocketSelectHandler *selecthandler;
@@ -159,16 +163,18 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowcount_t _numrecs,ISocketSelectHandler *_selecthandler);
+    CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowcount_t _numrecs,ISocketSelectHandler *_selecthandler,bool _traceDetails);
     ~CSortMerge()
     {
 #ifdef _FULL_TRACE
-        LOG(MCthorDetailedDebugInfo, thorJob, "~CSortMerge in");
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "~CSortMerge in");
 #endif
         if (started)
             closedown();
 #ifdef _FULL_TRACE
-        LOG(MCthorDetailedDebugInfo, thorJob, "~CSortMerge out");
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "~CSortMerge out");
 #endif
     }
     void init()
@@ -178,7 +184,8 @@ public:
         char name[64];
         int port = socket->peer_name(name,sizeof(name));
         url.append(name).append(':').append(port);
-        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "SORT Merge WRITE: start %s, pos=%" RCPF "d, len=%" RCPF "d",url.str(),poscount,numrecs);
         rowcount_t pos=poscount;
         try
         {
@@ -228,7 +235,8 @@ public:
         char peer[16];
         if (socket) {
             socket->peer_name(peer,sizeof(peer)-1);
-            LOG(MCthorDetailedDebugInfo, thorJob, "waitdone %s",peer);
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "waitdone %s",peer);
         }
         else
             peer[0] = 0;
@@ -236,8 +244,8 @@ public:
             donesem.wait();
         if (exception)
             throw exception.getClear();
-        if (peer[0])
-            LOG(MCthorDetailedDebugInfo, thorJob, "waitdone exit");
+        if (peer[0] && traceDetails)
+            LOG(MCdebugInfo, thorJob, "waitdone exit");
     }
     bool notifySelected(ISocket *sock,unsigned selected)
     {
@@ -246,11 +254,13 @@ public:
                 if (closing) {
                     closing = false;
 #ifdef _FULL_TRACE
-                    LOG(MCthorDetailedDebugInfo, thorJob, "notifySelected calling closedown");
+                    if (traceDetails)
+                        LOG(MCdebugInfo, thorJob, "notifySelected calling closedown");
 #endif
                     closedown();
 #ifdef _FULL_TRACE
-                    LOG(MCthorDetailedDebugInfo, thorJob, "notifySelected called closedown");
+                    if (traceDetails)
+                        LOG(MCdebugInfo, thorJob, "notifySelected called closedown");
 #endif
                     done = true;
                     donesem.signal();
@@ -289,6 +299,7 @@ class CSortTransferServerThread: protected Thread, implements IMergeTransferServ
 protected: friend class CSortMerge;
     ISortSlaveBase &slave;
     bool term;
+    bool traceDetails = false;
     Owned<ISocket> server;
     CriticalSection childsect;
     CSortMergeArray children;
@@ -306,8 +317,8 @@ public:
         Thread::start(); 
     }
 
-    CSortTransferServerThread(ISortSlaveBase &in) 
-        : slave(in), Thread("SortTransferServer") 
+    CSortTransferServerThread(ISortSlaveBase &in,bool _traceDetails) 
+        : slave(in), Thread("SortTransferServer"), traceDetails(_traceDetails) 
     {
         unsigned port = in.getTransferPort();
         server.setown(ISocket::create(port));
@@ -390,7 +401,7 @@ public:
                 try
                 {
                     waitRowIF();
-                    strm = ConnectMergeWrite(rowif,socket,0x100000,poscount,numrecs);
+                    strm = ConnectMergeWrite(rowif,socket,0x100000,poscount,numrecs,traceDetails);
                 }
                 catch (IJSOCK_Exception *e) // retry if failed
                 {
@@ -456,7 +467,7 @@ public:
             selecthandler.setown(createSocketSelectHandler("SORT"));
             selecthandler->start();
         }
-        CSortMerge *sub = new CSortMerge(this,socket,strm,poscount,numrecs,selecthandler); // NB: takes ownership of 'socket'
+        CSortMerge *sub = new CSortMerge(this,socket,strm,poscount,numrecs,selecthandler,traceDetails); // NB: takes ownership of 'socket'
         children.append(*sub);
         selecthandler->add(socket,SELECTMODE_READ,sub);
 
@@ -510,7 +521,8 @@ public:
                 respos += vMAPL(j,i)-vMAPL(j,i-1);      // note we are adding up all of the lower as we want start
 
         rowcount_t totalrows = resnum;
-        LOG(MCthorDetailedDebugInfo, thorJob, "Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "Output start = %" RCPF "d, num = %" RCPF "u",respos,resnum);
 
         IArrayOf<IRowStream> readers;
         IException *exc = NULL;
@@ -525,11 +537,12 @@ public:
                 {
                     if (i==partno)
                     {
-                        LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
+                        if (traceDetails)
+                            LOG(MCdebugInfo, thorJob, "SORT Merge READ: Stream(%u) local, pos=%" RCPF "u len=%" RCPF "u",i,sstart,snum);
                         readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
                     else
-                        readers.append(*new CMergeReadStream(rowif,i,endpoints[i], sstart, snum, slave.queryTraceLevel(), secureContextClients));
+                        readers.append(*new CMergeReadStream(rowif,i,endpoints[i], sstart, snum, slave.queryTraceDetails(), secureContextClients));
                 }
             }
         }
@@ -554,8 +567,8 @@ public:
     }
 };
 
-CSortMerge::CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowcount_t _numrecs,ISocketSelectHandler *_selecthandler)
-    : src(_parent->slave),socket(_socket),out(_out)
+CSortMerge::CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowcount_t _numrecs,ISocketSelectHandler *_selecthandler,bool _traceDetails)
+    : src(_parent->slave),socket(_socket),out(_out),traceDetails(_traceDetails)
 {
     parent = _parent;
     poscount = _poscount;
@@ -571,7 +584,8 @@ void CSortMerge::closedown()
 {
     CriticalBlock block(crit);
 #ifdef _FULL_TRACE
-    LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge: closing %s",url.str());
+    if (traceDetails)
+        LOG(MCdebugInfo, thorJob, "SORT Merge: closing %s",url.str());
 #endif
     if (!socket)
         return;
@@ -606,10 +620,11 @@ void CSortMerge::closedown()
         throw;
     }
     started = false;
-    LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge: finished %s, %d rows merged",url.str(),ndone);
+    if (traceDetails)
+        LOG(MCdebugInfo, thorJob, "SORT Merge: finished %s, %d rows merged",url.str(),ndone);
 }
 
-IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent)
+IMergeTransferServer *createMergeTransferServer(ISortSlaveBase *parent, bool traceDetails)
 {
-    return new CSortTransferServerThread(*parent);
+    return new CSortTransferServerThread(*parent, traceDetails);
 }

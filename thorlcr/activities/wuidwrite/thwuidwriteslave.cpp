@@ -95,7 +95,7 @@ public:
         if (ensureStartFTLookAhead(0))
             setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), WORKUNITWRITE_SMART_BUFFER_SIZE, ::canStall(input), grouped, RCUNBOUND, NULL), false);
 
-        ::ActPrintLog(this, thorDetailedLogLevel, "WORKUNITWRITE: processing first block");
+        ::ActPrintLog(this, TraceFlags::Detailed, "WORKUNITWRITE: processing first block");
 
         CMessageBuffer replyMb;
         replyMb.append((unsigned)0);
@@ -147,7 +147,7 @@ public:
         start();
         processed = THORDATALINK_STARTED;
 
-        ::ActPrintLog(this, thorDetailedLogLevel, "WORKUNITWRITELOCAL: processing first block");
+        ::ActPrintLog(this, TraceFlags::Detailed, "WORKUNITWRITELOCAL: processing first block");
 
         CMessageBuffer reqMsg;
         reqMsg.setReplyTag(replyTag);

@@ -94,10 +94,11 @@ class CSocketRowStream: public CSimpleInterface, implements IRowStream
     unsigned id;
     bool stopped;
     bool busy; // for reenter check
+    bool traceDetails = false;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CSocketRowStream(unsigned _id,IEngineRowAllocator *_allocator,IOutputRowDeserializer *_deserializer,ISocket *_socket)
-        : allocator(_allocator), deserializer(_deserializer), socket(_socket), dsz(0,NULL)
+    CSocketRowStream(unsigned _id,IEngineRowAllocator *_allocator,IOutputRowDeserializer *_deserializer,ISocket *_socket,bool _traceDetails)
+        : allocator(_allocator), deserializer(_deserializer), socket(_socket), dsz(0,NULL),traceDetails(_traceDetails)
     {
         bufferStream.setown(createMemoryBufferSerialStream(inbuf));
         dsz.setStream(bufferStream);
@@ -116,11 +117,13 @@ public:
         if (dsz.eos()) {
             inbuf.clear();
 #ifdef _FULL_TRACE
-            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.nextRow recv (%d,%x)",id,(unsigned)(memsize_t)socket.get());
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "CSocketRowStream.nextRow recv (%d,%x)",id,(unsigned)(memsize_t)socket.get());
 #endif
             size32_t sz = socket->receive_block_size();
 #ifdef _FULL_TRACE
-            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.nextRow(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "CSocketRowStream.nextRow(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
 #endif
             if (sz==0) {
                 // eof so terminate (no need to confirm)
@@ -132,7 +135,8 @@ public:
             socket->receive_block(buf,sz);
             assertex(!dsz.eos());
 #ifdef _FULL_TRACE
-            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.nextRow got (%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "CSocketRowStream.nextRow got (%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
 #endif
         }
         RtlDynamicRowBuilder rowBuilder(allocator);
@@ -148,13 +152,13 @@ public:
             stopped = true;
             try {
 #ifdef _FULL_TRACE
-                LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.stop(%x)",(unsigned)(memsize_t)socket.get());
+                if (traceDetails)
+                    LOG(MCdebugInfo, thorJob, "CSocketRowStream.stop(%x)",(unsigned)(memsize_t)socket.get());
 #endif
                 bool eof = true;
                 socket->write(&eof,sizeof(eof)); // confirm stop
-#ifdef _FULL_TRACE
-                LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.stopped(%x)",(unsigned)(memsize_t)socket.get());
-#endif
+                if (traceDetails)
+                    LOG(MCdebugInfo, thorJob, "CSocketRowStream.stopped(%x)",(unsigned)(memsize_t)socket.get());
             }
             catch (IException *e) {
                 EXCLOG(e,"CSocketRowStream::stop");
@@ -176,11 +180,12 @@ class CSocketRowWriter: public CSimpleInterface, implements ISocketRowWriter
     bool stopped;
     size32_t preallocated;
     bool initbuf;
+    bool traceDetails = false;
     unsigned id;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CSocketRowWriter(unsigned _id, IThorRowInterfaces *_rowif,ISocket *_socket,size32_t _bufsize)
-        : rowif(_rowif), socket(_socket), rsz(outbuf)
+    CSocketRowWriter(unsigned _id, IThorRowInterfaces *_rowif,ISocket *_socket,size32_t _bufsize,bool _traceDetails)
+        : rowif(_rowif), socket(_socket), rsz(outbuf),traceDetails(_traceDetails)
     {
         id = _id;
         assertex(rowif);
@@ -199,9 +204,8 @@ public:
         else
             preallocated = bufsize+initSize;
 
-#ifdef _FULL_TRACE
-        LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter(%d,%x) preallocated = %d",id,(unsigned)(memsize_t)socket.get(),preallocated);
-#endif
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "CSocketRowWriter(%d,%x) preallocated = %d",id,(unsigned)(memsize_t)socket.get(),preallocated);
     }
 
     ~CSocketRowWriter()
@@ -220,13 +224,11 @@ public:
         if (outbuf.length())
             flush();
         try {
-#ifdef _FULL_TRACE
-            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter.stop(%x)",(unsigned)(memsize_t)socket.get());
-#endif
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "CSocketRowWriter.stop(%x)",(unsigned)(memsize_t)socket.get());
             socket->send_block(NULL,0);
-#ifdef _FULL_TRACE
-            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter.stopped(%x)",(unsigned)(memsize_t)socket.get());
-#endif
+            if (traceDetails)
+                LOG(MCdebugInfo, thorJob, "CSocketRowWriter.stopped(%x)",(unsigned)(memsize_t)socket.get());
         }
         catch (IJSOCK_Exception *e) { // already gone!
             if ((e->errorCode()!=JSOCKERR_broken_pipe)&&(e->errorCode()!=JSOCKERR_graceful_close))
@@ -253,12 +255,12 @@ public:
     void flush()
     {
         size32_t l = outbuf.length();
-#ifdef _FULL_TRACE
-        LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter.flush(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),l);
-#endif
+        if (traceDetails)
+            LOG(MCdebugInfo, thorJob, "CSocketRowWriter.flush(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),l);
         if (l) {
             if (!socket->send_block(outbuf.bufferBase(),l)) {
-                LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter remote stop");
+                if (traceDetails)
+                    LOG(MCdebugInfo, thorJob, "CSocketRowWriter remote stop");
                 stopped = true;
             }
             pos += l;
@@ -280,21 +282,24 @@ public:
 };
 
 
-IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs, ISocket *socket)
+IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs, ISocket *socket, bool traceDetails)
 {
     TransferStreamHeader hdr(startrec, numrecs, id);
 #ifdef _FULL_TRACE
-    StringBuffer s;
-    nodeaddr.getUrlStr(s);
-    LOG(MCthorDetailedDebugInfo, thorJob, "ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
+    if (traceDetails)
+    {
+        StringBuffer s;
+        nodeaddr.getUrlStr(s);
+        LOG(MCdebugInfo, thorJob, "ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
+    }
 #endif
     hdr.winrev();
     socket->write(&hdr,sizeof(hdr));
-    return new CSocketRowStream(id,rowif->queryRowAllocator(),rowif->queryRowDeserializer(),socket);
+    return new CSocketRowStream(id,rowif->queryRowAllocator(),rowif->queryRowDeserializer(),socket, traceDetails);
 }
 
 
-ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs)
+ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs,bool traceDetails)
 {
     TransferStreamHeader hdr;
     unsigned remaining = sizeof(hdr);
@@ -324,11 +329,14 @@ ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,si
     startrec = hdr.pos;
     numrecs = hdr.numrecs;
 #ifdef _FULL_TRACE
-    char name[100];
-    int port = socket->peer_name(name,sizeof(name));
-    LOG(MCthorDetailedDebugInfo, thorJob, "ConnectMergeWrite(%d,%s:%d,%x,%" RCPF "d,%" RCPF "u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
+    if (traceDetails)
+    {
+        char name[100];
+        int port = socket->peer_name(name,sizeof(name));
+        LOG(MCdebugInfo, thorJob, "ConnectMergeWrite(%d,%s:%d,%x,%" RCPF "d,%" RCPF "u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
+    }
 #endif
-    return new CSocketRowWriter(hdr.id,rowif,socket,bufsize);
+    return new CSocketRowWriter(hdr.id,rowif,socket,bufsize,traceDetails);
 }
 
 

@@ -1170,7 +1170,7 @@ public:
                 }
                 if (_currentManager)
                     prepareManager(_currentManager);
-                ::ActPrintLog(this, thorDetailedLogLevel, "INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
+                ::ActPrintLog(this, TraceFlags::Detailed, "INDEXGROUPAGGREGATE: Local aggregate table contains %d entries", localAggTable->elementCount());
                 if (!container.queryLocal() && container.queryJob().querySlaves()>1)
                 {
                     Owned<IRowStream> localAggStream = localAggTable->getRowStream(true);

@@ -60,7 +60,7 @@ public:
     }
     virtual bool rejects(const LogMsgCategory& category) const
     {
-        return REJECTLOG(category);
+        return false;
     }
 };
 

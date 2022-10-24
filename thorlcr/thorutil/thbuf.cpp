@@ -319,7 +319,7 @@ public:
 #ifdef _DEBUG
         if (waiting)
         {
-            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowBuffer::stop while nextRow waiting");
+            ActPrintLogEx(&activity->queryContainer(), MCwarning, "CSmartRowBuffer::stop while nextRow waiting");
             PrintStackReport();
         }
 #endif
@@ -414,7 +414,7 @@ public:
             waitflush = true;
             SpinUnblock unblock(lock);
             while (!waitflushsem.wait(1000*60))
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowBuffer::flush stalled");
+                ActPrintLogEx(&activity->queryContainer(), MCwarning, "CSmartRowBuffer::flush stalled");
         }
     }
 
@@ -559,7 +559,7 @@ public:
         SpinBlock block(lock);
 #ifdef _DEBUG
         if (waitingout) {
-            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::stop while nextRow waiting");
+            ActPrintLogEx(&activity->queryContainer(), MCwarning, "CSmartRowInMemoryBuffer::stop while nextRow waiting");
             PrintStackReport();
         }
 #endif
@@ -597,7 +597,7 @@ public:
             waitingin = true;
             SpinUnblock unblock(lock);
             while (!waitinsem.wait(1000*60))
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::flush stalled");
+                ActPrintLogEx(&activity->queryContainer(), MCwarning, "CSmartRowInMemoryBuffer::flush stalled");
         }
     }
 
@@ -778,7 +778,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
         if (readersWaiting)
         {
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "signalReaders: %d", readersWaiting);
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "signalReaders: %d", readersWaiting);
 #endif
             readersWaiting = 0;
             ForEachItemIn(o, outputs)
@@ -801,7 +801,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
         {
             unsigned whichChunk = queryCOutput(output).currentChunkNum - lowestChunk;
 #ifdef TRACE_WRITEAHEAD
-            LOG(MCthorDetailedDebugInfo, thorJob, "output=%d, chunk=%d (whichChunk=%d)", output, currentChunkNum, whichChunk);
+            ActPrintLog(activity, thorJob, TraceFlags::Detailed, "output=%d, chunk=%d (whichChunk=%d)", output, currentChunkNum, whichChunk);
 #endif
             rowSet.setown(readRows(output, whichChunk));
             assertex(rowSet);
@@ -920,7 +920,7 @@ protected:
                 return 0;
             output.readerWaiting = true;
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "readerWait(%d)", output.queryOutput());
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "readerWait(%d)", output.queryOutput());
 #endif
             ++readersWaiting;
             {
@@ -987,7 +987,7 @@ protected:
                 }
                 ++lowestChunk;
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "aNRP: %d, lowestChunk=%d, totalChunksOut=%d", prevChunkNum, lowestChunk, totalChunksOut);
+                ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "aNRP: %d, lowestChunk=%d, totalChunksOut=%d", prevChunkNum, lowestChunk, totalChunksOut);
 #endif
             }
         }
@@ -1008,7 +1008,7 @@ protected:
                 return;
             }
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Input %d stopped, forcing catchup to free pages", output);
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "Input %d stopped, forcing catchup to free pages", output);
 #endif
             while (queryCOutput(output).currentChunkNum < queryCOutput(lO).currentChunkNum)
             {
@@ -1299,12 +1299,12 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                     Owned<Chunk> chunk = new Chunk(nextChunk->offset, required);
                     decFreeChunk(nextChunk, required);
 #ifdef TRACE_WRITEAHEAD
-                    ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %" I64F "d, size=%d, but took required=%d", nextChunk->offset, nextChunk->size+required, required);
+                    ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "getOutOffset: got [free] offset = %" I64F "d, size=%d, but took required=%d", nextChunk->offset, nextChunk->size+required, required);
 #endif
                     return chunk.getClear();
                 }
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %" I64F "d, size=%d", nextChunk->offset, nextChunk->size);
+                ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "getOutOffset: got [free] offset = %" I64F "d, size=%d", nextChunk->offset, nextChunk->size);
 #endif
                 freeChunksSized.remove(nextPos);
                 freeChunks.zap(*nextChunk);
@@ -1355,7 +1355,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         {
             Owned<CRowSet> rowSet = chunkPool.dequeue(freeChunk->rowSet);
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "freeOffsetChunk (chunk=%d) chunkPool, savedChunks size=%d, chunkPool size=%d", rowSet->queryChunk(), savedChunks.ordinality(), chunkPool.ordinality());
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "freeOffsetChunk (chunk=%d) chunkPool, savedChunks size=%d, chunkPool size=%d", rowSet->queryChunk(), savedChunks.ordinality(), chunkPool.ordinality());
 #endif
             VALIDATEEQ(chunk, rowSet->queryChunk());
             return;
@@ -1388,7 +1388,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                 addFreeChunk(freeChunk);
         }
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Added chunk, offset %" I64F "d size=%d to freeChunks", freeChunk->offset, freeChunk->size);
+        ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "Added chunk, offset %" I64F "d size=%d to freeChunks", freeChunk->offset, freeChunk->size);
 #endif
     }
     virtual CRowSet *readRows(unsigned output, unsigned whichChunk)
@@ -1403,7 +1403,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             if (coutput.queryRowSet() && (coutput.queryRowSet()->queryChunk() == currentChunkNum))
             {
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Output: %d, readRows found other output %d with matching offset: %d", output, o, currentChunkNum);
+                ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "Output: %d, readRows found other output %d with matching offset: %d", output, o, currentChunkNum);
 #endif
                 return LINK(coutput.queryRowSet());
             }
@@ -1414,7 +1414,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         {
             rowSet.set(chunk.rowSet);
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "readRows (chunk=%d) output: %d, savedChunks size=%d, chunkPool size=%d, currentChunkNum=%d, whichChunk=%d", rowSet->queryChunk(), output, savedChunks.ordinality(), chunkPool.ordinality(), currentChunkNum, whichChunk);
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "readRows (chunk=%d) output: %d, savedChunks size=%d, chunkPool size=%d, currentChunkNum=%d, whichChunk=%d", rowSet->queryChunk(), output, savedChunks.ordinality(), chunkPool.ordinality(), currentChunkNum, whichChunk);
 #endif
             VALIDATEEQ(rowSet->queryChunk(), currentChunkNum);
         }
@@ -1455,7 +1455,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             chunk.setown(new Chunk(inMemRows));
             chunkPool.enqueue(inMemRows.getLink());
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "flushRows (chunk=%d) savedChunks size=%d, chunkPool size=%d", inMemRows->queryChunk(), savedChunks.ordinality()+1, chunkPool.ordinality());
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "flushRows (chunk=%d) savedChunks size=%d, chunkPool size=%d", inMemRows->queryChunk(), savedChunks.ordinality()+1, chunkPool.ordinality());
 #endif
         }
         else
@@ -1486,7 +1486,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             chunk.setown(getOutOffset(len)); // will find space for 'len', might be bigger if from free list
             spillFileIO->write(chunk->offset, len, mb.toByteArray());
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %" I64F "d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality(), chunk->offset, len);
+            ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %" I64F "d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality(), chunk->offset, len);
 #endif
         }
 
@@ -1523,7 +1523,7 @@ public:
             Owned<Chunk> chunk = savedChunks.dequeue();
             if (!chunk) break;
         }
-        LOG(MCthorDetailedDebugInfo, thorJob, "CSharedWriteAheadDisk: highOffset=%" I64F "d", highOffset);
+        ActPrintLog(activity, TraceFlags::Detailed, "CSharedWriteAheadDisk: highOffset=%" I64F "d", highOffset);
     }
     virtual void reset()
     {
@@ -1564,7 +1564,7 @@ class CSharedWriteAheadMem : public CSharedWriteAheadBase
         Owned<CRowSet> topRowSet = chunkPool.dequeue();
         VALIDATEEQ(chunk, topRowSet->queryChunk());
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "freeOffsetChunk: Dequeue chunkPool chunks: %d, chunkPool.ordinality() = %d", topRowSet->queryChunk(), chunkPool.ordinality());
+        ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "freeOffsetChunk: Dequeue chunkPool chunks: %d, chunkPool.ordinality() = %d", topRowSet->queryChunk(), chunkPool.ordinality());
 #endif
         topRowSet.clear();
         if (writerBlocked)
@@ -1598,14 +1598,14 @@ class CSharedWriteAheadMem : public CSharedWriteAheadBase
             if (NotFound == reader)
             {
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "flushRows: caught up whilst blocked to: %d", inMemRows->queryChunk());
+                ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "flushRows: caught up whilst blocked to: %d", inMemRows->queryChunk());
 #endif
                 return; // caught up whilst blocked
             }
             VALIDATELT(chunkPool.ordinality(), maxPoolChunks);
         }
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d, chunkPool chunks = %d", inMemRows->queryChunk(), 1+chunkPool.ordinality());
+        ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "Flushed chunk = %d, chunkPool chunks = %d", inMemRows->queryChunk(), 1+chunkPool.ordinality());
 #endif
         chunkPool.enqueue(inMemRows.getClear());
     }

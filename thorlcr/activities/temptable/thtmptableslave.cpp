@@ -63,7 +63,7 @@ public:
             __uint64 nodeid = queryCodeContext()->getNodeNum();
             startRow = (nodeid * numRows) / nodes;
             maxRow = ((nodeid + 1) * numRows) / nodes;
-            ::ActPrintLog(this, thorDetailedLogLevel, "InlineSLAVE: numRows = %" I64F "d, nodes = %" I64F
+            ::ActPrintLog(this, TraceFlags::Detailed, "InlineSLAVE: numRows = %" I64F "d, nodes = %" I64F
                          "d, nodeid = %" I64F "d, start = %" I64F "d, max = %" I64F "d",
                          numRows, nodes, nodeid, startRow, maxRow);
         }

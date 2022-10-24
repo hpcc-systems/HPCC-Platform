@@ -137,7 +137,7 @@ CSlaveActivity::~CSlaveActivity()
     inputs.kill();
     outputs.kill();
     if (data) delete [] data;
-    ::ActPrintLog(this, thorDetailedLogLevel, "DESTROYED");
+    ::ActPrintLog(this, TraceFlags::Detailed, "DESTROYED");
 }
 
 bool CSlaveActivity::hasLookAhead(unsigned index) const
@@ -996,7 +996,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (mins >= jobS->queryActInitWaitTimeMins())
                 throw MakeStringException(0, "Timed out after %u minutes, waiting to receive actinit data for graph: %" GIDPF "u", mins, graphId);
 
-            GraphPrintLogEx(this, thorlog_null, MCwarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
+            GraphPrintLogEx(this, MCwarning, "Waited %u minutes for activity initialization message (Master may be blocked on a file lock?).", mins);
         }
         replyTag = msg.getReplyTag();
         msg.read(len);
@@ -1347,7 +1347,7 @@ void CSlaveGraph::serializeDone(MemoryBuffer &mb)
 void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
 {
     if (!started) return;
-    ::GraphPrintLog(this, thorDetailedLogLevel, "Entering getDone");
+    ::GraphPrintTrace(this, "Entering getDone");
     if (!queryOwner() || isGlobal())
     {
         try
@@ -1361,12 +1361,12 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
         }
         catch (IException *)
         {
-            ::GraphPrintLog(this, thorDetailedLogLevel, "Leaving getDone");
+            ::GraphPrintTrace(this, "Leaving getDone");
             getDoneSem.signal();
             throw;
         }
     }
-    ::GraphPrintLog(this, thorDetailedLogLevel, "Leaving getDone");
+    ::GraphPrintTrace(this, "Leaving getDone");
     getDoneSem.signal();
 }
 
@@ -1803,13 +1803,13 @@ void CJobSlave::reportGraphEnd(graph_id gid)
 {
     if (nodesLoaded) // wouldn't mean much if parallel jobs running
         PROGLOG("Graph[%" GIDPF "u] - JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n", gid, cacheAdds.load(), cacheHits.load(), nodesLoaded.load(), blobCacheHits.load(), blobCacheAdds.load(), leafCacheHits.load(), leafCacheAdds.load(), nodeCacheHits.load(), nodeCacheAdds.load());
-    if (!REJECTLOG(MCthorDetailedDebugInfo))
+    if (traceJob)
     {        
         JSocketStatistics stats;
         getSocketStatistics(stats);
         StringBuffer s;
         getSocketStatisticsString(stats,s);
-        MLOG(MCthorDetailedDebugInfo, thorJob, "Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
+        MLOG(MCdebugInfo, thorJob, "Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
     }
     resetSocketStatistics();
 }
@@ -1849,7 +1849,8 @@ mptag_t CJobSlave::deserializeMPTag(MemoryBuffer &mb)
     deserializeMPtag(mb, tag);
     if (TAG_NULL != tag)
     {
-        LOG(MCthorDetailedDebugInfo, thorJob, "CJobSlave::deserializeMPTag: tag = %d", (int)tag);
+        if (traceJob)
+            LOG(MCdebugInfo, thorJob, "CJobSlave::deserializeMPTag: tag = %d", (int)tag);
         for (unsigned c=0; c<queryJobChannels(); c++)
             queryJobChannel(c).queryJobComm().flush(tag);
     }

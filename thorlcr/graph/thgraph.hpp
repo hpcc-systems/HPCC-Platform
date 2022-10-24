@@ -410,7 +410,6 @@ public:
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override { ctx->addWuExceptionEx(text, code, severity, audience, source); }
 };
 
-
 class CJobBase;
 class CJobChannel;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
@@ -428,9 +427,10 @@ protected:
     CGraphDependencyArray dependsOn;
     Owned<IThorBoundLoopGraph> loopGraph; // really only here as master and slave derivatives set/use
     MemoryBuffer createCtxMb, startCtxMb;
-    bool haveCreateCtx;
     unsigned maxCores;
+    bool haveCreateCtx;
     bool isCodeSigned = false;
+    TraceFlags traceFlags = TraceFlags::Standard;      // A bitmask of features to trace
     CActivityCodeContext activityCodeContext;
 
 public:
@@ -491,8 +491,11 @@ public:
     unsigned getOutputs() const { return outputs.ordinality(); }
     bool isSource() const { return isActivitySource(kind); }
     bool isSink() const { return sink; }
-    inline bool doLogging() const { return log; }
+    inline bool doLogging() const { return log || doDetailedTracing(); }
     inline void setLogging(bool _log) { log = _log; }
+    inline bool doDetailedTracing() const { return ((traceFlags & TraceFlags::LevelMask) >= TraceFlags::Detailed); }
+    // MORE - could also check for a feature bit being set
+    inline bool doTrace(TraceFlags level) const { return ((traceFlags & TraceFlags::LevelMask) >= (level & TraceFlags::LevelMask)); }
 
     // NB: in almost all cases queryLocal() == queryLocalData()
     // an exception is e.g. a locally executing keyedjoin, accessing a global key
@@ -640,6 +643,7 @@ protected:
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
     bool connected, started, aborted, graphDone, sequential;
     bool initialized = false;
+    bool traceGraph = false;
     std::atomic_bool progressUpdated;
     unsigned numExecuted = 0; // count of number of times graph has been executed (<=1 unless child or loop graph)
     CJobBase &job;
@@ -692,6 +696,7 @@ public:
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
     void setLogging(bool tf);
+    bool queryDetailedTracing() { return traceGraph; }
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
         parentExtractSz = _parentExtractSz;
@@ -860,6 +865,7 @@ protected:
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
+    bool traceJob = false;
     unsigned channelsPerSlave;
     unsigned numChannels;
     unsigned maxActivityCores, queryMemoryMB, sharedMemoryMB;
@@ -952,6 +958,7 @@ public:
     unsigned queryNodes() const { return nodeGroup->ordinality()-1; }
     IGroup &queryJobGroup() const { return *jobGroup; }
     inline bool queryTimeActivities() const { return timeActivities; }
+    inline bool queryTraceJob() const { return traceJob; }
     unsigned queryMaxDefaultActivityCores() const { return maxActivityCores; }
     IGroup &querySlaveGroup() const { return *slaveGroup; }
     virtual mptag_t deserializeMPTag(MemoryBuffer &mb) { throwUnexpected(); }
@@ -1130,6 +1137,7 @@ public:
     inline bool queryInitialized() const { return initialized; }
     inline void setInitialized(bool tf) { initialized = tf; }
     inline bool queryTimeActivities() const { return timeActivities; }
+    inline bool queryTraceActivity() const { return container.doDetailedTracing(); }
     inline roxiemem::RoxieHeapFlags queryHeapFlags() const { return defaultRoxieMemHeapFlags; }
 
     bool receiveMsg(ICommunicator &comm, CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

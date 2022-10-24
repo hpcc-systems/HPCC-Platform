@@ -35,6 +35,7 @@
 #include "jptree.hpp"
 #include "jsocket.hpp"
 #include "jtime.hpp"
+#include "jtrace.hpp"
 
 typedef enum
 {
@@ -1161,7 +1162,6 @@ inline void DISLOG(IException *except, const char *prefix=NULL)
 inline void removeLog() { queryLogMsgManager()->removeAllMonitors(); queryLogMsgManager()->removeAllChildren(); }
 inline void resetLog()  { queryLogMsgManager()->resetMonitors();     queryLogMsgManager()->removeAllChildren(); }
 #define PREPLOG queryLogMsgManager()->prepAllHandlers
-#define REJECTLOG queryLogMsgManager()->rejectsCategory
 
 #define AUDIT_TYPES_BEGIN typedef enum {
 #define MAKE_AUDIT_TYPE(name, type, categoryid, eventid, level) AUDIT_TYPE_##name,

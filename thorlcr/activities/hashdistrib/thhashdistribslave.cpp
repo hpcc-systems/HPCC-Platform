@@ -599,7 +599,7 @@ protected:
             if (owner.sendBlock(target, msg))
                 return;
             markStopped(target); // Probably a bit pointless if target is 'self' - process loop will have done already
-            ::ActPrintLog(owner.activity, thorDetailedLogLevel, "CSender::sendBlock stopped slave %d (finished=%d)", target+1, numFinished.load());
+            ::ActPrintLog(owner.activity, TraceFlags::Detailed, "CSender::sendBlock stopped slave %d (finished=%d)", target+1, numFinished.load());
         }
         void closeWrite()
         {
@@ -1009,7 +1009,7 @@ protected:
         va_start(args, format);
         msg.valist_appendf(format, args);
         va_end(args);
-        ::ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCdebugProgress, "%s", msg.str());
+        ::ActPrintLogEx(&activity->queryContainer(), MCdebugProgress, "%s", msg.str());
     }
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)))
     {
@@ -1020,7 +1020,7 @@ protected:
         va_start(args, format);
         msg.valist_appendf(format, args);
         va_end(args);
-        ::ActPrintLogEx(&activity->queryContainer(), e, thorlog_all, MCexception(e), "%s", msg.str());
+        ::ActPrintLogEx(&activity->queryContainer(), e, MCexception(e), "%s", msg.str());
     }
 protected:
     CActivityBase *activity;
@@ -1076,7 +1076,7 @@ public:
         }
         else
             compressHandler = queryDefaultCompressHandler();
-        ::ActPrintLog(activity, thorDetailedLogLevel, "Using compressor: %s", compressHandler ? compressHandler->queryType() : "NONE");
+        ::ActPrintLog(activity, TraceFlags::Detailed, "Using compressor: %s", compressHandler ? compressHandler->queryType() : "NONE");
 
         allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);
         if (allowSpill)
@@ -1084,12 +1084,12 @@ public:
         writerPoolSize = activity->getOptUInt(THOROPT_HDIST_WRITE_POOL_SIZE, DEFAULT_WRITEPOOLSIZE);
         if (writerPoolSize>(numnodes*2))
             writerPoolSize = numnodes*2; // limit to 2 per target
-        ::ActPrintLog(activity, thorDetailedLogLevel, "Writer thread pool size : %d", writerPoolSize);
+        ::ActPrintLog(activity, TraceFlags::Detailed, "Writer thread pool size : %d", writerPoolSize);
         candidateLimit = activity->getOptUInt(THOROPT_HDIST_CANDIDATELIMIT);
-        ::ActPrintLog(activity, thorDetailedLogLevel, "candidateLimit : %d", candidateLimit);
-        ::ActPrintLog(activity, thorDetailedLogLevel, "inputBufferSize : %d, bucketSendSize = %d, pullBufferSize=%d", inputBufferSize, bucketSendSize, pullBufferSize);
+        ::ActPrintLog(activity, TraceFlags::Detailed, "candidateLimit : %d", candidateLimit);
+        ::ActPrintLog(activity, TraceFlags::Detailed, "inputBufferSize : %d, bucketSendSize = %d, pullBufferSize=%d", inputBufferSize, bucketSendSize, pullBufferSize);
         targetWriterLimit = activity->getOptUInt(THOROPT_HDIST_TARGETWRITELIMIT);
-        ::ActPrintLog(activity, thorDetailedLogLevel, "targetWriterLimit : %d", targetWriterLimit);
+        ::ActPrintLog(activity, TraceFlags::Detailed, "targetWriterLimit : %d", targetWriterLimit);
     }
 
     virtual void beforeDispose()
@@ -1133,7 +1133,7 @@ public:
 
     virtual IRowStream *connect(IThorRowInterfaces *_rowIf, IRowStream *_input, IHash *_ihash, ICompare *_iCompare, ICompare *_keepBestCompare)
     {
-        ::ActPrintLog(activity, thorDetailedLogLevel, "HASHDISTRIB: connect");
+        ::ActPrintLog(activity, TraceFlags::Detailed, "HASHDISTRIB: connect");
 
         rowIf.set(_rowIf);
         allocator = _rowIf->queryRowAllocator();
@@ -1164,7 +1164,7 @@ public:
         sendException.clear();
         recvException.clear();
         start();
-        ::ActPrintLog(activity, thorDetailedLogLevel, "HASHDISTRIB: connected");
+        ::ActPrintLog(activity, TraceFlags::Detailed, "HASHDISTRIB: connected");
         return piperd.getLink();
     }
 
@@ -1215,7 +1215,7 @@ public:
         MemoryBuffer tempMb;
         try
         {
-            ::ActPrintLog(activity, thorDetailedLogLevel, "Read loop start");
+            ::ActPrintLog(activity, TraceFlags::Detailed, "Read loop start");
             CMessageBuffer recvMb;
             Owned<ISerialStream> stream = createMemoryBufferSerialStream(tempMb);
             CThorStreamDeserializerSource rowSource;
@@ -1224,12 +1224,12 @@ public:
             Owned<IExpander> expander = getExpander();
             while (left && !aborted)
             {
-                ::ActPrintLog(activity, thorDetailedLogLevel, "HDIST: Receiving block");
+                ::ActPrintLog(activity, TraceFlags::Detailed, "HDIST: Receiving block");
                 unsigned n = recvBlock(recvMb);
                 if (n==(unsigned)-1)
                     break;
 #ifdef _FULL_TRACE
-                ::ActPrintLog(activity, thorDetailedLogLevel, "HDIST: Received block %d from slave %d",recvMb.length(),n+1);
+                ::ActPrintLog(activity, TraceFlags::Detailed, "HDIST: Received block %d from slave %d",recvMb.length(),n+1);
 #endif
                 if (recvMb.length())
                 {
@@ -1274,16 +1274,16 @@ public:
                 else
                 {
                     left--;
-                    ::ActPrintLog(activity, thorDetailedLogLevel, "HDIST: finished slave %d, %d left",n+1,left);
+                    ::ActPrintLog(activity, TraceFlags::Detailed, "HDIST: finished slave %d, %d left",n+1,left);
                 }
-                ::ActPrintLog(activity, thorDetailedLogLevel, "HDIST: Put block %d from slave %d",recvMb.length(),n+1);
+                ::ActPrintLog(activity, TraceFlags::Detailed, "HDIST: Put block %d from slave %d",recvMb.length(),n+1);
             }
         }
         catch (IException *e)
         {
             setRecvExc(e);
         }
-        ::ActPrintLog(activity, thorDetailedLogLevel, "HDIST: waiting localFinishedSem");
+        ::ActPrintLog(activity, TraceFlags::Detailed, "HDIST: waiting localFinishedSem");
     }
 
     void recvloopdone()
@@ -2075,7 +2075,7 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
         mptag = container.queryJobChannel().deserializeMPTag(data);
-        ::ActPrintLog(this, thorDetailedLogLevel, "HASHDISTRIB: %sinit tag %d",mergecmp?"merge, ":"",(int)mptag);
+        ::ActPrintLog(this, TraceFlags::Detailed, "HASHDISTRIB: %sinit tag %d",mergecmp?"merge, ":"",(int)mptag);
 
         if (mergecmp)
             distributor = createPullHashDistributor(this, queryJobChannel().queryJobComm(), mptag, false, this);
@@ -2103,7 +2103,7 @@ public:
     }
     virtual void stop() override
     {
-        ::ActPrintLog(this, thorDetailedLogLevel, "HASHDISTRIB: stopping");
+        ::ActPrintLog(this, TraceFlags::Detailed, "HASHDISTRIB: stopping");
         if (out)
         {
             out->stop();
@@ -2260,7 +2260,7 @@ public:
             GetTempFilePath(tempname,"hdprop");
             tempfile.setown(createIFile(tempname.str()));
             {
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
+                ActPrintLogEx(&activity->queryContainer(), MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
                 MemoryAttr ma;
                 if (activity->getOptBool(THOROPT_COMPRESS_SPILLS, true))
                 {
@@ -2364,7 +2364,7 @@ public:
         }
 #ifdef _DEBUG
         for (i=0;i<n;i++)
-            ::ActPrintLog(activity, thorDetailedLogLevel, "after Node %d has %" I64F "d",i, insz[i]);
+            ::ActPrintLog(activity, TraceFlags::Detailed, "after Node %d has %" I64F "d",i, insz[i]);
 #endif
         tot = 0;
         for (i=0;i<n;i++)
@@ -2372,9 +2372,9 @@ public:
             if (sizes[i])
             {
                 if (i==self)
-                    ::ActPrintLog(activity, thorDetailedLogLevel, "Keep %" I64F "d local",sizes[i]);
+                    ::ActPrintLog(activity, TraceFlags::Detailed, "Keep %" I64F "d local",sizes[i]);
                 else
-                    ::ActPrintLog(activity, thorDetailedLogLevel, "Redistribute %" I64F "d to %d",sizes[i],i);
+                    ::ActPrintLog(activity, TraceFlags::Detailed, "Redistribute %" I64F "d to %d",sizes[i],i);
             }
             tot += sizes[i];
         }
@@ -3327,7 +3327,7 @@ void CHashTableRowTable::rehash(const void **newRows)
     }
 
     if (maxRows)
-        ::ActPrintLog(&activity, thorDetailedLogLevel, "Rehashed bucket %d - old size = %d, new size = %d, elements = %d", owner->queryBucketNumber(), maxRows, newMaxRows, htElements);
+        ::ActPrintLog(&activity, TraceFlags::Detailed, "Rehashed bucket %d - old size = %d, new size = %d, elements = %d", owner->queryBucketNumber(), maxRows, newMaxRows, htElements);
 
     const void **oldRows = rows;
     rows = (const void **)_newRows.getClear();
@@ -3414,7 +3414,8 @@ bool CBucket::flush(bool critical)
         {
             if (clearHashTable(critical))
             {
-                LOG(MCthorDetailedDebugInfo, thorJob, "Flushed%s bucket %d - %d elements", critical?"(critical)":"", queryBucketNumber(), count);
+                if (owner.queryTraceActivity())
+                    LOG(MCdebugInfo, thorJob, "Flushed%s bucket %d - %d elements", critical?"(critical)":"", queryBucketNumber(), count);
                 return true;
             }
         }
@@ -3680,7 +3681,7 @@ void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
         buckets[i] = new CBucket(owner, rowIf, keyIf, extractKey, i, &htRows);
         htRows.setOwner(buckets[i]);
     }
-    ::ActPrintLog(&owner, thorDetailedLogLevel, "Max %d buckets, current depth = %d", numBuckets, depth+1);
+    ::ActPrintLog(&owner, TraceFlags::Detailed, "Max %d buckets, current depth = %d", numBuckets, depth+1);
     initCallbacks();
     if (keyStream)
     {
@@ -3713,7 +3714,7 @@ CBucketHandler *CBucketHandler::getNextBucketHandler(Owned<IRowStream> &nextInpu
             Owned<IRowStream> keyStream = bucket->getSpillKeyStream(&keyCount);
             dbgassertex(keyStream);
             Owned<CBucketHandler> newBucketHandler = new CBucketHandler(owner, rowIf, keyIf, iRowHash, iKeyHash, iCompare, extractKey, depth+1, div*numBuckets);
-            ::ActPrintLog(&owner, thorDetailedLogLevel, "Created bucket handler %d, depth %d", currentBucket, depth+1);
+            ::ActPrintLog(&owner, TraceFlags::Detailed, "Created bucket handler %d, depth %d", currentBucket, depth+1);
             nextInput.setown(bucket->getSpillRowStream(&count));
             dbgassertex(nextInput);
             // Use peak in mem keys as estimate for next round of buckets.
@@ -3872,7 +3873,7 @@ public:
         joinargs = (IHThorHashJoinArg *)queryHelper();
         mptag = container.queryJobChannel().deserializeMPTag(data);
         mptag2 = container.queryJobChannel().deserializeMPTag(data);
-        ::ActPrintLog(this, thorDetailedLogLevel, "HASHJOIN: init tags %d,%d",(int)mptag,(int)mptag2);
+        ::ActPrintLog(this, TraceFlags::Detailed, "HASHJOIN: init tags %d,%d",(int)mptag,(int)mptag2);
     }
     virtual void start()
     {
@@ -4425,7 +4426,7 @@ public:
         if (!container.queryLocalOrGrouped())
         {
             mptag = container.queryJobChannel().deserializeMPTag(data);
-            ::ActPrintLog(this, thorDetailedLogLevel, "HASHAGGREGATE: init tags %d",(int)mptag);
+            ::ActPrintLog(this, TraceFlags::Detailed, "HASHAGGREGATE: init tags %d",(int)mptag);
         }
         localAggTable.setown(createRowAggregator(*this, *helper, *helper));
         localAggTable->init(queryRowAllocator());
@@ -4436,7 +4437,7 @@ public:
         PARENT::start();
         doNextGroup(); // or local set if !grouped
         if (!container.queryGrouped())
-            ::ActPrintLog(this, thorDetailedLogLevel, "Table before distribution contains %d entries", localAggTable->elementCount());
+            ::ActPrintLog(this, TraceFlags::Detailed, "Table before distribution contains %d entries", localAggTable->elementCount());
         if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
         {
             Owned<IRowStream> localAggStream = localAggTable->getRowStream(true);

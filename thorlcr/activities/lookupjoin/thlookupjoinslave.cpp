@@ -2162,11 +2162,11 @@ protected:
                 }
             }
             InterChannelBarrier();
-            if (!REJECTLOG(MCthorDetailedDebugInfo))
+            if (container.doDetailedTracing())
             {
-                ::ActPrintLog(this, thorDetailedLogLevel, "Shared memory manager memory report");
+                ::ActPrintLog(this, TraceFlags::Detailed, "Shared memory manager memory report");
                 rightRowManager->reportMemoryUsage(false);
-                ::ActPrintLog(this, thorDetailedLogLevel, "End of shared manager memory report");
+                ::ActPrintLog(this, TraceFlags::Detailed, "End of shared manager memory report");
             }
         }
         else
@@ -2187,11 +2187,11 @@ protected:
                 setFailoverToLocal();
             rhsCollated = lkJoinCh0->isRhsCollated();
         }
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (container.doDetailedTracing())
         {
-            ::ActPrintLog(this, thorDetailedLogLevel, "Channel memory manager report");
+            ::ActPrintLog(this, TraceFlags::Detailed, "Channel memory manager report");
             queryRowManager()->reportMemoryUsage(false);
-            ::ActPrintLog(this, thorDetailedLogLevel, "End of channel memory manager report");
+            ::ActPrintLog(this, TraceFlags::Detailed, "End of channel memory manager report");
         }
         return !hasFailedOverToLocal();
     }

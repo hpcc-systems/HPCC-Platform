@@ -659,11 +659,11 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     {
         try
         {
-            ActPrintLog(activity, thorDetailedLogLevel, "Creating SortSlaveServer on tag %d MP",mpTagRPC);    
-            while(SortSlaveMP::marshall(*this,clusterComm,mpTagRPC)&&!stopping)
+            ActPrintLog(activity, TraceFlags::Detailed, "Creating SortSlaveServer on tag %d MP",mpTagRPC);    
+            while(SortSlaveMP::marshall(*this,activity,clusterComm,mpTagRPC)&&!stopping)
                ;
             stopping = true;
-            ActPrintLog(activity, thorDetailedLogLevel, "Exiting SortSlaveServer on tag %d",mpTagRPC);    
+            ActPrintLog(activity, TraceFlags::Detailed, "Exiting SortSlaveServer on tag %d",mpTagRPC);    
         }
         catch (IJSOCK_Exception *e)
         {
@@ -689,12 +689,12 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     }
     void TraceRow(const char *s, const void *k)
     {
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (activity->queryTraceActivity())
             traceKey(rowif->queryRowSerializer(), s, k);
     }
     void TraceKey(const char *s, const void *k)
     {
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (activity->queryTraceActivity())
             traceKey(keyIf->queryRowSerializer(), s, k);
     }
 
@@ -702,9 +702,9 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     {
         if (!stopping) {
             stopping = true;
-            ActPrintLog(activity, thorDetailedLogLevel, "stopmarshall");
+            ActPrintLog(activity, TraceFlags::Detailed, "stopmarshall");
             SortSlaveMP::stopmarshall(clusterComm,mpTagRPC);
-            ActPrintLog(activity, thorDetailedLogLevel, "stopmarshalldone");
+            ActPrintLog(activity, TraceFlags::Detailed, "stopmarshalldone");
         }
         if (exc)
             throw exc.getClear();
@@ -828,11 +828,11 @@ public:
         try
         {
             stop();
-            ActPrintLog(activity, thorDetailedLogLevel, "Joining Sort Slave Server");
+            ActPrintLog(activity, TraceFlags::Detailed, "Joining Sort Slave Server");
             verifyex(threaded.join(10*60*1000));
             myendpoint.set(NULL,0);
             rowArray.kill();
-            ActPrintLog(activity, thorDetailedLogLevel, "~CThorSorter");
+            ActPrintLog(activity, TraceFlags::Detailed, "~CThorSorter");
         }
         catch (IException *e)
         {
@@ -844,11 +844,11 @@ public:
 // ISortSlaveMP
     virtual bool Connect(unsigned _partno, unsigned _numnodes)
     {
-        ActPrintLog(activity, thorDetailedLogLevel, "Connected to slave %d of %d",_partno,_numnodes);
+        ActPrintLog(activity, TraceFlags::Detailed, "Connected to slave %d of %d",_partno,_numnodes);
         numnodes = _numnodes;
         partno = _partno;
         transferserver.clear();
-        transferserver.setown(createMergeTransferServer(this));
+        transferserver.setown(createMergeTransferServer(this, activity->queryTraceActivity()));
         transferserver->start();
         return true; // used to establish link
     }
@@ -890,7 +890,7 @@ public:
         rowToKeySerializer->serialize(msz, (const byte *)kp);
 
         avrecsize = (size32_t)(grandtotalsize/grandtotal);
-        ActPrintLog(activity, thorDetailedLogLevel, "Ave Rec Size = %u", avrecsize);
+        ActPrintLog(activity, TraceFlags::Detailed, "Ave Rec Size = %u", avrecsize);
         keybufsize = mb.length();
         keybuf = mb.detach();
         return 2;
@@ -1128,14 +1128,14 @@ public:
         startmergesem.signal();
         ActPrintLog(activity, "StartMiniSort output started");
         traceWait("finishedmergesem(2)",finishedmergesem);
-        LOG(MCthorDetailedDebugInfo, thorJob, "StartMiniSort output done");
+        ActPrintLog(activity, TraceFlags::Detailed, "StartMiniSort output done");
         merger.clear();
         intercept.clear();
-        LOG(MCthorDetailedDebugInfo, thorJob, "StartMiniSort exit");
+        ActPrintLog(activity, TraceFlags::Detailed, "StartMiniSort exit");
     }
     virtual void Close()
     {
-        ActPrintLog(activity, thorDetailedLogLevel, "Close");
+        ActPrintLog(activity, TraceFlags::Detailed, "Close");
         try {
             if (transferserver)
                 transferserver->subjoin(); // need to have finished merge threads 
@@ -1151,19 +1151,19 @@ public:
     }
     virtual void CloseWait()
     {
-        ActPrintLog(activity, thorDetailedLogLevel, "Close finished");
+        ActPrintLog(activity, TraceFlags::Detailed, "Close finished");
         if (closeexc.get())
             throw closeexc.getClear();
         rowArray.kill();
     }
     virtual void Disconnect()
     {
-        ActPrintLog(activity, thorDetailedLogLevel, "Disconnecting from slave %d of %d",partno,numnodes);
+        ActPrintLog(activity, TraceFlags::Detailed, "Disconnecting from slave %d of %d",partno,numnodes);
         if (transferserver) {
             transferserver->stop();
             transferserver.clear();
         }
-        ActPrintLog(activity, thorDetailedLogLevel, "Disconnected from slave %d of %d",partno,numnodes);
+        ActPrintLog(activity, TraceFlags::Detailed, "Disconnected from slave %d of %d",partno,numnodes);
     }
 
 // ISortSlaveBase
@@ -1204,14 +1204,14 @@ public:
             Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
             merger.setown(createRowStreamMerger(readers.ordinality(), readers.getArray(), rowCompare, false, linkcounter));
         }
-        ActPrintLog(activity, thorDetailedLogLevel, "Global Merger Created: %d streams", readers.ordinality());
+        ActPrintLog(activity, TraceFlags::Detailed, "Global Merger Created: %d streams", readers.ordinality());
         startmergesem.signal();
         traceWait("finishedmergesem",finishedmergesem);
-        ActPrintLog(activity, thorDetailedLogLevel, "Global Merged completed");
+        ActPrintLog(activity, TraceFlags::Detailed, "Global Merged completed");
         merger.clear();
         readers.kill(); // NB: need to be cleared before intercept, which clears up files
         intercept.clear();
-        ActPrintLog(activity, thorDetailedLogLevel, "Global Merge exit");
+        ActPrintLog(activity, TraceFlags::Detailed, "Global Merge exit");
     }
 
 // IThorSorter
@@ -1359,9 +1359,9 @@ public:
     {
         return useTLS;
     }
-    virtual unsigned queryTraceLevel() const override
+    virtual bool queryTraceDetails() const override
     {
-        return 0;
+        return activity->queryTraceActivity();
     }
 };
 

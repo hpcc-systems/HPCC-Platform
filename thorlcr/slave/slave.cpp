@@ -58,13 +58,13 @@ void ProcessSlaveActivity::beforeDispose()
 {
     // Note - we can't throw from the destructor, so do this in beforeDispose instead
     // If the exception is thrown then we are liable to leak the object, but we are dying anyway...
-    ::ActPrintLog(this, thorDetailedLogLevel, "destroying ProcessSlaveActivity");
-    ::ActPrintLog(this, thorDetailedLogLevel, "ProcessSlaveActivity : joining process thread");
+    ::ActPrintLog(this, TraceFlags::Detailed, "destroying ProcessSlaveActivity");
+    ::ActPrintLog(this, TraceFlags::Detailed, "ProcessSlaveActivity : joining process thread");
     // NB: The activity thread should have already stopped,
     //     if it is still alive at job shutdown and cannot be joined then the thread is in an unknown state.
     if (!threaded.join(FATAL_ACTJOIN_TIMEOUT))
         throw MakeThorFatal(NULL, TE_FailedToAbortSlaves, "Activity %" ACTPF "d failed to stop", container.queryId());
-    ::ActPrintLog(this, thorDetailedLogLevel, "AFTER ProcessSlaveActivity : joining process thread");
+    ::ActPrintLog(this, TraceFlags::Detailed, "AFTER ProcessSlaveActivity : joining process thread");
 }
 
 void ProcessSlaveActivity::startProcess(bool async)
@@ -131,12 +131,12 @@ void ProcessSlaveActivity::threadmain()
         else
             m.append("standard library exception (std::exception ").append(es.what()).append(")");
         m.appendf(" in %" ACTPF "d",container.queryId());
-        ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "%s", m.str());
+        ActPrintLogEx(&queryContainer(), MCerror, "%s", m.str());
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "%s", m.str()));
     }
     catch (CATCHALL)
     {
-        ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "Unknown exception thrown in process()");
+        ActPrintLogEx(&queryContainer(), MCerror, "Unknown exception thrown in process()");
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "FATAL: Unknown exception thrown by ProcessThread"));
     }
     if (exception)

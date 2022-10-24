@@ -116,24 +116,24 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
         if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag))
             return;
         memcpy(tallies, msg.readDirect(numSets*sizeof(unsigned)), numSets*sizeof(unsigned));
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (container.doDetailedTracing())
         {
             StringBuffer s;
             unsigned idx=0;
             for (; idx<numSets; idx++)
                 s.append("[").append(tallies[idx]).append("]");
-            ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETS: Incoming count = %s", s.str());
+            ::ActPrintLog(this, TraceFlags::Detailed, "CHOOSESETS: Incoming count = %s", s.str());
         }
     }
     void sendTallies() // NB: not called on last node.
     {
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (container.doDetailedTracing())
         {
             StringBuffer s;
             unsigned idx=0;
             for (; idx<numSets; idx++)
                 s.append("[").append(tallies[idx]).append("]");
-            ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETS: Outgoing count = %s", s.str());
+            ::ActPrintLog(this, TraceFlags::Detailed, "CHOOSESETS: Outgoing count = %s", s.str());
         }
         CMessageBuffer msg;
         msg.append(numSets * sizeof(unsigned), tallies); 
@@ -367,7 +367,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
         for (unsigned idx=0; idx < numSets; idx++)
         {
             rowcount_t firstToCopy = 0;
-            ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETSLAST: %d P(%" RCPF "d) C(%" RCPF "d) L(%" I64F "d) T(%" RCPF "d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
+            ::ActPrintLog(this, TraceFlags::Detailed, "CHOOSESETSLAST: %d P(%" RCPF "d) C(%" RCPF "d) L(%" I64F "d) T(%" RCPF "d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
             if (((rowcount_t)limits[idx]) < totalCounts[idx])
                 firstToCopy = totalCounts[idx] - (rowcount_t)limits[idx];
             if (priorCounts[idx] + counts[idx] > firstToCopy)
@@ -378,7 +378,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
                     numToSkip[idx] = (unsigned)(firstToCopy - priorCounts[idx]);
                 numToReturn[idx] = (unsigned)(priorCounts[idx] + counts[idx] - firstToCopy);
                 skipAll = false;
-                ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETSLAST: Selection %d.  Range(%d,%" RCPF "d)", idx, numToSkip[idx], counts[idx]);
+                ::ActPrintLog(this, TraceFlags::Detailed, "CHOOSESETSLAST: Selection %d.  Range(%d,%" RCPF "d)", idx, numToSkip[idx], counts[idx]);
             }
         }
         if (skipAll)

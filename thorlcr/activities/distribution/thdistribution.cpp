@@ -48,7 +48,7 @@ public:
             CMessageBuffer msg;
             if (!receiveMsg(msg, RANK_ALL, mpTag, &sender))
                 return;
-            ::ActPrintLog(this, thorDetailedLogLevel, "Received distribution result from node %d", (unsigned)sender);
+            ::ActPrintLog(this, TraceFlags::Detailed, "Received distribution result from node %d", (unsigned)sender);
             if (msg.length())
                 helper->merge(result, msg);
         }
@@ -57,7 +57,7 @@ public:
         tmp.append("<XML>");
         helper->gatherResult(result, tmp);
         tmp.append("</XML>");
-        ::ActPrintLog(this, thorDetailedLogLevel, "Distribution result: %s", tmp.str());
+        ::ActPrintLog(this, TraceFlags::Detailed, "Distribution result: %s", tmp.str());
         helper->sendResult(tmp.length(), tmp.str());
 
         destroyThorRow(result);

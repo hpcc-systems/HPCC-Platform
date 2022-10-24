@@ -232,7 +232,7 @@ public:
             }
 #endif
 
-            ::ActPrintLog(this, thorDetailedLogLevel, "Merge: partitionpos[%d] = %" I64F "d",i,partitionpos[i]);
+            ::ActPrintLog(this, TraceFlags::Detailed, "Merge: partitionpos[%d] = %" I64F "d",i,partitionpos[i]);
         }
         delete [] intertags;
         provider.init(this,queryRowSerializer(),intertag);
@@ -378,7 +378,7 @@ public:
             if (!r)
                 break;
             if (pos+l>end) {
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "overrun in GlobalMergeSlaveActivity::getRows(%u,%" I64F "d,%" I64F "d)",l,rs->getOffset(),end);
+                ActPrintLogEx(&queryContainer(), MCwarning, "overrun in GlobalMergeSlaveActivity::getRows(%u,%" I64F "d,%" I64F "d)",l,rs->getOffset(),end);
                 break; // don't think should happen
             }
             len = l;

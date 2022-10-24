@@ -1454,6 +1454,7 @@ public:
     bool leftouter;  
     bool rightouter;  
     bool exclude; 
+    bool traceDetails;
     
     IHThorJoinArg *helper;  
     Linked<IEngineRowAllocator> allocator;
@@ -1566,6 +1567,7 @@ public:
     {
         allocator.set(rowIf->queryRowAllocator());
         kind = activity.queryContainer().getKind();
+        traceDetails = activity.queryContainer().doDetailedTracing();
         jhelper = _jhelper;
         helper = _helper;
         unsigned flags = helper->getJoinFlags();
@@ -1637,7 +1639,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         }
         int run()
         {
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMultiCoreJoinHelper::cReader started");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMultiCoreJoinHelper::cReader started");
             try {
                 const void * row = parent->jhelper->nextRow();
                 assertex(!row);
@@ -1647,7 +1650,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             }
             for (unsigned i=0;i<parent->numworkers;i++) 
                 parent->addWork(NULL,NULL);
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMultiCoreJoinHelper::cReader exit");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMultiCoreJoinHelper::cReader exit");
             return 0;
         }
     } reader;
@@ -1671,7 +1675,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         }
         int run()
         {
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMultiCoreJoinHelper::cWorker started");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMultiCoreJoinHelper::cWorker started");
 
             Owned<IThorRowInterfaces> rowIf = parent->activity.getRowInterfaces();
             Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RHFpacked|roxiemem::RHFunique));
@@ -1704,7 +1709,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             rowWriter->putRow(NULL); // end-of-stream
             rowWriter->flush();
             stopped = true; // NB: will not get past flush(), until all read
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMultiCoreJoinHelper::cWorker exit");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMultiCoreJoinHelper::cWorker exit");
             return 0;
         }
         bool isStopped() const { return stopped; }
@@ -1848,7 +1854,8 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         }
         int run()
         {
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cReader started");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cReader started");
             try {
                 const void * row = parent->jhelper->nextRow();
                 assertex(!row);
@@ -1857,7 +1864,8 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
                 parent->setException(e,"CMulticoreUnorderedJoinHelper::cReader");
             }
             parent->stopWorkers();
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cReader exit");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cReader exit");
             return 0;
         }
     } reader;
@@ -1876,7 +1884,8 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             Owned<IEngineRowAllocator> allocator = parent->activity.getRowAllocator(rowIf->queryRowMetaData(), (roxiemem::RHFpacked|roxiemem::RHFunique));
 
             Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cWorker started");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cWorker started");
             for (;;)
             {
                 cWorkItem *work = parent->workqueue.dequeue();
@@ -1897,7 +1906,8 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
                     break;
                 }
             }
-            LOG(MCthorDetailedDebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cWorker exit");
+            if (parent->traceDetails)
+                LOG(MCdebugInfo, thorJob, "CMulticoreUnorderedJoinHelper::cWorker exit");
             return 0;
         }
     } **workers;
@@ -1911,7 +1921,7 @@ public:
         unsigned limit = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"limit\"]/@value", numworkers*1000);
         unsigned readGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"readgranularity\"]/@value", DEFAULT_WR_READ_GRANULARITY);
         unsigned writeGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"writegranularity\"]/@value", DEFAULT_WR_WRITE_GRANULARITY);
-        ActPrintLog(&activity, thorDetailedLogLevel, "CMultiCoreUnorderedJoinHelper: limit=%d, readGranularity=%d, writeGranularity=%d", limit, readGranularity, writeGranularity);
+        ActPrintLog(&activity, TraceFlags::Detailed, "CMultiCoreUnorderedJoinHelper: limit=%d, readGranularity=%d, writeGranularity=%d", limit, readGranularity, writeGranularity);
         multiWriter.setown(createSharedWriteBuffer(&activity, rowIf, limit, readGranularity, writeGranularity));
         workers = new cWorker *[numthreads];
         for (unsigned i=0;i<numthreads;i++) 
@@ -2013,7 +2023,7 @@ IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IT
     unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, 0);
     if (0 == numthreads)
         numthreads = activity.queryMaxCores();
-    ActPrintLog(&activity, thorDetailedLogLevel, "Join helper using %d threads", numthreads);
+    ActPrintLog(&activity, TraceFlags::Detailed, "Join helper using %d threads", numthreads);
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
     return new CMultiCoreJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
@@ -2034,7 +2044,7 @@ IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper
     unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, 0);
     if (0 == numthreads)
         numthreads = activity.queryMaxCores();
-    ActPrintLog(&activity, thorDetailedLogLevel, "Self join helper using %d threads", numthreads);
+    ActPrintLog(&activity, TraceFlags::Detailed, "Self join helper using %d threads", numthreads);
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);
     return new CMultiCoreJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);

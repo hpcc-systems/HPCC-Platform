@@ -120,7 +120,7 @@ public:
         try {
 
             StringBuffer epstr;
-            ActPrintLog(activity, thorDetailedLogLevel, "Connect to %s:%d",endpoint.getIpText(epstr).str(),(unsigned)mpport);
+            ActPrintLog(activity, TraceFlags::Detailed, "Connect to %s:%d",endpoint.getIpText(epstr).str(),(unsigned)mpport);
             SocketEndpoint ep = endpoint;
             ep.port = mpport;
             Owned<INode> node = createINode(ep);
@@ -258,7 +258,7 @@ public:
 
     void ConnectSlaves()
     {
-        ActPrintLog(activity, thorDetailedLogLevel, "CSortMaster::ConnectSlaves");
+        ActPrintLog(activity, TraceFlags::Detailed, "CSortMaster::ConnectSlaves");
         class casyncfor: public CAsyncFor
         {
         public:
@@ -470,7 +470,7 @@ public:
             estrecsize = ers/ersn;
         else
             estrecsize = 100;
-        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        if (activity->queryTraceActivity())
         {
             if (min)
                 traceKey(keyIf->queryRowSerializer(),"Min",min);
@@ -695,7 +695,7 @@ public:
             for (;;)
             {
                 iter++;
-                ActPrintLog(activity, thorDetailedLogLevel, "Split: %d",iter);
+                ActPrintLog(activity, TraceFlags::Detailed, "Split: %d",iter);
                 emin.serializeCompress(mbmn.clear());
                 emax.serializeCompress(mbmx.clear());
                 class casyncfor: public CAsyncFor
@@ -1065,7 +1065,7 @@ public:
         if (skewError<0.000000001)
             skewError = 1.0/(double) n;
         double cSkew = ((double)n*(double)max/(double)total - 1.0) / ((double)n-1.0);
-        ActPrintLog(activity, thorDetailedLogLevel, "Skew check: Threshold %" I64F "d/%" I64F "d  Skew: %f/[warning=%f, error=%f]",
+        ActPrintLog(activity, TraceFlags::Detailed, "Skew check: Threshold %" I64F "d/%" I64F "d  Skew: %f/[warning=%f, error=%f]",
                   (unsigned __int64)max*(unsigned __int64)estrecsize,threshold,cSkew,skewWarning,skewError);
         if ((unsigned __int64)max*(unsigned __int64)estrecsize>threshold)
         {
@@ -1299,14 +1299,14 @@ public:
                         i--;
                     }
                 }
-                if (!REJECTLOG(MCthorDetailedDebugInfo))
+                if (activity->queryTraceActivity())
                 {
                     for (i=0;i<numnodes;i++)
                     {
                         CSortNode &slave = slaves.item(i);
                         char url[100];
                         slave.endpoint.getUrlStr(url,sizeof(url));
-                        ActPrintLog(activity, thorDetailedLogLevel, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
+                        ActPrintLog(activity, TraceFlags::Detailed, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
                     }
                 }
                 Owned<IThorException> e = CheckSkewed(threshold,skewWarning,skewError,numnodes,total,max);

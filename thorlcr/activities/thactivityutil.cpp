@@ -211,7 +211,7 @@ public:
     ~CRowStreamLookAhead()
     {
         if (!thread.join(1000*60))
-            ActPrintLogEx(&activity.queryContainer(), thorlog_all, MCuserWarning, "CRowStreamLookAhead join timedout");
+            ActPrintLogEx(&activity.queryContainer(), MCuserError, "CRowStreamLookAhead join timedout");
     }
 // IEngineRowStream
     virtual const void *nextRow() override

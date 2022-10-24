@@ -69,11 +69,11 @@ public:
                 if (abortSoon)
                     return;
                 CMessageBuffer mb;
-                ::ActPrintLog(this, thorDetailedLogLevel, "Merge process, Receiving on tag %d",replyTag);
+                ::ActPrintLog(this, TraceFlags::Detailed, "Merge process, Receiving on tag %d",replyTag);
                 rank_t sender;
                 if (!receiveMsg(mb, RANK_ALL, replyTag, &sender)||abortSoon) 
                     return;
-                ::ActPrintLog(this, thorDetailedLogLevel, "Merge process, Received sample from %d",sender);
+                ::ActPrintLog(this, TraceFlags::Detailed, "Merge process, Received sample from %d",sender);
                 sender--;
                 assertex((unsigned)sender<n);
                 assertex(replytags[(unsigned)sender]==TAG_NULL);
@@ -92,7 +92,7 @@ public:
                 for (unsigned j = 0;j<n;j++)
                     serializeMPtag(mb,intertags[j]);
                 sample.serialize(mb);
-                ::ActPrintLog(this, thorDetailedLogLevel, "Merge process, Replying to node %d tag %d",i+1,replytags[i]);
+                ::ActPrintLog(this, TraceFlags::Detailed, "Merge process, Replying to node %d tag %d",i+1,replytags[i]);
                 if (!queryJobChannel().queryJobComm().send(mb, (rank_t)i+1, replytags[i]))
                     break;
             }

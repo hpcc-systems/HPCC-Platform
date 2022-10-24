@@ -151,7 +151,7 @@ public:
     }
     void process()
     {
-        ::ActPrintLog(this, thorDetailedLogLevel, "ReDistributeActivityMaster::process");
+        ::ActPrintLog(this, TraceFlags::Detailed, "ReDistributeActivityMaster::process");
         HashDistributeMasterBase::process();        
         IHThorHashDistributeArg *helper = (IHThorHashDistributeArg *)queryHelper(); 
         unsigned n = container.queryJob().querySlaves();
@@ -163,20 +163,20 @@ public:
                 if (abortSoon)
                     return;
                 CMessageBuffer mb;
-                ::ActPrintLog(this, thorDetailedLogLevel, "ReDistribute process, Receiving on tag %d",statstag);
+                ::ActPrintLog(this, TraceFlags::Detailed, "ReDistribute process, Receiving on tag %d",statstag);
                 rank_t sender;
                 if (!receiveMsg(mb, RANK_ALL, statstag, &sender)||abortSoon) 
                     return;
-                ::ActPrintLog(this, thorDetailedLogLevel, "ReDistribute process, Received size from %d",sender);
+                ::ActPrintLog(this, TraceFlags::Detailed, "ReDistribute process, Received size from %d",sender);
                 sender--;
                 assertex((unsigned)sender<n);
                 mb.read(sizes[sender]);
             }
-            ::ActPrintLog(this, thorDetailedLogLevel, "ReDistributeActivityMaster::process sizes got");
+            ::ActPrintLog(this, TraceFlags::Detailed, "ReDistributeActivityMaster::process sizes got");
             for (i=0;i<n;i++) {
                 CMessageBuffer mb;
                 mb.append(n*sizeof(offset_t),sizes);
-                ::ActPrintLog(this, thorDetailedLogLevel, "ReDistribute process, Replying to node %d tag %d",i+1,statstag);
+                ::ActPrintLog(this, TraceFlags::Detailed, "ReDistribute process, Replying to node %d tag %d",i+1,statstag);
                 if (!queryJobChannel().queryJobComm().send(mb, (rank_t)i+1, statstag))
                     return;
             }
@@ -200,7 +200,7 @@ public:
             ActPrintLog(e,"ReDistribute");
             throw;
         }
-        ::ActPrintLog(this, thorDetailedLogLevel, "ReDistributeActivityMaster::process exit");
+        ::ActPrintLog(this, TraceFlags::Detailed, "ReDistributeActivityMaster::process exit");
     }
     void abort()
     {

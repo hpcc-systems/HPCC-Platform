@@ -121,7 +121,7 @@ public:
             PARENT::stopInput(0);
             if (abortSoon)
             {
-                ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "MSortSlaveActivity::start aborting");
+                ActPrintLogEx(&queryContainer(), MCwarning, "MSortSlaveActivity::start aborting");
                 barrier->cancel();
                 return;
             }
