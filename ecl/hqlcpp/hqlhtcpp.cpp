@@ -19474,16 +19474,16 @@ static void logECL(const LogMsgCategory & category, size32_t len, const char * e
 }
 
 
-void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr, unsigned level)
+void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr)
 {
     if (!expr)
         return;
 
     checkAbort();
+    if (!options.traceExpressions)
+        return;
 
     LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
-    //if(REJECTLOG(MCtraceExpr))
-    //    return;
 
     if (options.traceIR)
     {
@@ -19498,10 +19498,10 @@ void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr
 }
 
 
-void HqlCppTranslator::traceExpressions(const char * title, HqlExprArray & exprs, unsigned level)
+void HqlCppTranslator::traceExpressions(const char * title, HqlExprArray & exprs)
 {
     OwnedHqlExpr compound = createComma(exprs);
-    traceExpression(title, compound, level);
+    traceExpression(title, compound);
 }
 
 void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & workflow)

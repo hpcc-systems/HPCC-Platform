@@ -844,6 +844,7 @@ struct HqlCppOptions
     bool                generateIRAfterTransform = false;
     bool                allowStaticRegex = true;
     bool                defaultStaticRegex = false;
+    bool                traceExpressions = false;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -2049,9 +2050,9 @@ public:
     bool isLightweightQuery(WorkflowArray & workflow);
 
 public:
-    void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);
-    void traceExpressions(const char * title, HqlExprArray & exprs, unsigned level=500);
-    void traceExpressions(const char * title, WorkflowItem & workflow, unsigned level=500) { traceExpressions(title, workflow.queryExprs(), level); };
+    void traceExpression(const char * title, IHqlExpression * expr);
+    void traceExpressions(const char * title, HqlExprArray & exprs);
+    void traceExpressions(const char * title, WorkflowItem & workflow) { traceExpressions(title, workflow.queryExprs()); };
     void traceExpressions(const char * title, WorkflowArray & exprs);
 
     void checkNormalized(IHqlExpression * expr);

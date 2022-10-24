@@ -1900,6 +1900,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.irOptions, "irOptions", EclIR::TIRexpandSimpleTypes),
         DebugOption(options.allowStaticRegex, "allowStaticRegex", true),
         DebugOption(options.defaultStaticRegex, "defaultStaticRegex", targetRoxie()),   // Roxie queries are loaded once, and shared.  It makes sense to only compile once.
+        DebugOption(options.traceExpressions, "traceExpressions", false),   // Enable expression tracing.
     };
 
     //get options values from workunit
