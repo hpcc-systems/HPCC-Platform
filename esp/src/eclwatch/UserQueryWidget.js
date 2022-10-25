@@ -404,7 +404,7 @@ define([
                     if (!deleteRequests[item.__hpcc_id]) {
                         deleteRequests[item.__hpcc_id] = {
                             action: "Delete",
-                            basedn: item.__hpcc_parent.basedn,
+                            BasednName: item.__hpcc_parent.name,
                             rtype: item.__hpcc_parent.rtype,
                             rtitle: item.__hpcc_parent.rtitle
                         };
