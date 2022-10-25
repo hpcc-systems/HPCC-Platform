@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Route, RouterContext } from "universal-router";
-import { initialize, parseSearch, parseSort, pushUrl, replaceUrl } from "./util/history";
+import { initialize, parsePage, parseSearch, parseSort, pushUrl, replaceUrl } from "./util/history";
 
 export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-bare-metal";
 
@@ -58,7 +58,7 @@ export const routes: RoutesEx = [
         children: [
             {
                 path: "", action: (ctx) => import("./components/Workunits").then(_ => {
-                    return <_.Workunits filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} />;
+                    return <_.Workunits filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} page={parsePage(ctx.search)} />;
                 })
             },
             { path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />) },
@@ -86,7 +86,7 @@ export const routes: RoutesEx = [
                     if (Object.keys(filter).length === 0) {
                         filter = { LogicalFiles: true, SuperFiles: true, Indexes: true };
                     }
-                    return <_.Files filter={filter as any} sort={parseSort(context.search)} />;
+                    return <_.Files filter={filter as any} sort={parseSort(context.search)} page={parsePage(context.search)} />;
                 })
             },
             { path: "/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={undefined} logicalFile={params.Name as string} />) },
@@ -135,7 +135,7 @@ export const routes: RoutesEx = [
         children: [
             {
                 path: "", action: (context) => import("./components/Queries").then(_ => {
-                    return <_.Queries filter={parseSearch(context.search) as any} sort={parseSort(context.search)} />;
+                    return <_.Queries filter={parseSearch(context.search) as any} sort={parseSort(context.search)} page={parsePage(context.search)} />;
                 })
             },
             { path: "/:QuerySetId/:Id", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} />) },

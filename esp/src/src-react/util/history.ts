@@ -39,7 +39,7 @@ function parseHash(hash: string): HistoryLocation {
 
 export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: string): T {
     if (_[0] !== "?") return {} as T;
-    return { ...parse(exclude(_.substring(1), ["sortBy"]), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
+    return { ...parse(exclude(_.substring(1), ["sortBy", "pageNum"]), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
 }
 
 export function parseSort(_: string): QuerySortItem {
@@ -55,6 +55,16 @@ export function parseSort(_: string): QuerySortItem {
 
 export function updateSort(sorted: boolean, descending: boolean, sortBy: string) {
     updateParam("sortBy", sorted ? (descending ? "-" : "") + sortBy : undefined);
+}
+
+export function parsePage(_: string): number {
+    const filter = parse(pick(_.substring(1), ["pageNum"]));
+    const pageNum = filter?.pageNum?.toString() ?? "1";
+    return parseInt(pageNum, 10);
+}
+
+export function updatePage(pageNum: string) {
+    updateParam("pageNum", pageNum);
 }
 
 interface HistoryLocation {
