@@ -162,10 +162,12 @@ static void checkDaliVersionInfo(ICommunicator *comm, CDaliVersion &serverVersio
     mb.append(MCR_GET_VERSION_INFO);
     mb.append(ClientVersion);
     mb.append(MinServerVersion);
-    if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))    
-        throw makeStringException(-1, "failed retrieving version information from server, legacy server?");
+    StringBuffer daliEpStr;
+    comm->queryGroup().queryNode(0).endpoint().getUrlStr(daliEpStr); // NB: there's always exactly 1 node
+    if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
+        throw makeStringExceptionV(-1, "Failed retrieving version information from server [%s], legacy server?", daliEpStr.str());
     if (!mb.length())
-        throw makeStringException(-1, "Failed to receive server information (probably communicating to legacy server)");
+        throw makeStringExceptionV(-1, "Failed to receive server [%s] information (probably communicating to legacy server)", daliEpStr.str());
     StringAttr serverVersionStr, minClientVersionStr;
     mb.read(serverVersionStr);
     serverVersion.set(serverVersionStr), 
@@ -176,13 +178,14 @@ static void checkDaliVersionInfo(ICommunicator *comm, CDaliVersion &serverVersio
     if (clientV.compare(minClientVersion) < 0)
     {
         StringBuffer s("Client version ");
-        s.append(ClientVersion).append(", server requires minimum client version ").append(minClientVersionStr);
+        s.append(ClientVersion).append(", server [").append(daliEpStr).append("] requires minimum client version ").append(minClientVersionStr);
         throw createClientException(DCERR_version_incompatibility, s.str());
     }
     CDaliVersion minServerV(MinServerVersion);
     if (serverVersion.compare(minServerV) < 0)
     {
-        StringBuffer s("Server version ");
+        StringBuffer s("Server [");
+        s.append(daliEpStr).append("] version ");
         s.append(serverVersionStr).append(", client requires minimum server version ").append(MinServerVersion);
         throw createClientException(DCERR_version_incompatibility, s.str());
     }
