@@ -22,21 +22,23 @@
 
     <para>The entire HPCC Systems configuration in the container space, is
     governed by a single file, a <emphasis>values.yaml</emphasis> file, and
-    its associated schema file.</para>
+    its associated schema (<emphasis>values-schema.json</emphasis>)
+    file.</para>
 
     <sect2 id="WhatIsValues.Yaml">
       <title>The <emphasis>values.yaml</emphasis> and how it is used</title>
 
-      <para>The <emphasis>values.yaml</emphasis> file is the delivered
-      configuration values for a Helm chart. The
-      <emphasis>values.yaml</emphasis> file is used by the Helm chart to
-      control how HPCC Systems is deployed to the cloud. This values file is
-      one file used to configure and get an HPCC Systems instance up and
-      running on Kubernetes. The <emphasis>values.yaml</emphasis> file defines
-      everything that happens to configure and/or define your system for a
-      containerized deployment. You should use the values file provided as a
-      basis for modeling the specific customizations for your deployment
-      specific to your requirements.</para>
+      <para>The supplied stock <emphasis>values.yaml</emphasis> file provided
+      in the HPCC Systems repository is the delivered configuration values for
+      the "hpcc" Helm chart. The <emphasis>values.yaml</emphasis> file is used
+      by the Helm chart to control how HPCC Systems is deployed to the cloud.
+      This <emphasis>values.yaml</emphasis> file is a single file used to
+      configure and get an HPCC Systems instance up and running on Kubernetes.
+      The <emphasis>values.yaml</emphasis> file defines everything that
+      happens to configure and/or define your system for a containerized
+      deployment. You should use the values file provided as a basis for
+      modeling customizations for your deployment specific to your
+      requirements.</para>
 
       <para>The HPCC Systems<emphasis> values.yaml</emphasis> file can be
       found in the HPCC Systems github repository. To use the HPCC Systems
@@ -121,7 +123,7 @@
   </sect1>
 
   <sect1 id="TheValuesYaml_FileAndRelated" role="nobrk">
-    <title>HPCC Systems Components in the <emphasis>values.yaml</emphasis>
+    <title>HPCC Systems Components and the <emphasis>values.yaml</emphasis>
     File</title>
 
     <para>The HPCC Systems Helm charts all ship with stock/default values.
@@ -183,7 +185,7 @@
         schema).</para>
       </sect3>
 
-      <sect3 id="DALI_ValueYAML">
+      <sect3 id="DALI_ValueYAML" role="brk">
         <title>Dali</title>
 
         <para>When configuring Dali, which also has a resources section, it is
@@ -199,7 +201,7 @@
         <title>Components: dafilesvrs, dfuserver</title>
 
         <para>The HPCC Systems components of dafilesvrs, eclccservers,
-        dfuserver, are declared as lists in the yaml, as is the ECL
+        dfuserver, are declared as lists in the YAML file, as is the ECL
         Agent.</para>
 
         <para>Consider the dfuserver which is in the delivered HPCC Systems
@@ -874,7 +876,7 @@
     local:
       name: hpcc-local-issuer</programlisting>
 
-        <para>In the delivered yaml file certificates are not enabled, as
+        <para>In the delivered YAML file certificates are not enabled, as
         illustrated above. You must first install the cert-manager to use this
         feature.</para>
       </sect3>
@@ -957,7 +959,7 @@
       </sect3>
 
       <sect3 id="TAINTS_TOLERATIONS_PLACEMENTS">
-        <title>Taints, Tolerations, and placements</title>
+        <title>Taints, Tolerations, and Placements</title>
 
         <para>This is an important consideration for containerized systems.
         Taints and Tolerations are types of Kubernetes node constraints also
@@ -1068,44 +1070,48 @@
     </sect2>
   </sect1>
 
-  <sect1 id="MoreHelmANDYAML" role="nobrk">
-    <title>More Helm and Yaml</title>
+  <sect1 id="MoreHelmANDYAML">
+    <title>Helm and Yaml Basics</title>
 
-    <para>This section is intended to provide some helpful information to get
-    started with a containerized deployment. There are numerous resources for
-    using Kubernetes, Helm, and Yaml files. Previously, we touched on the
-    <emphasis>values.yaml</emphasis> file and the values-schema.json file.
-    This section expands on some of those concepts and how they might be
-    applied when using the containerized version of the HPCC Systems platform.
-    For more information about using Kubernetes, Helm, or YAML files, or for
-    cloud or container deployments, refer to the respective
+    <para>This section is intended to provide some basic information to help
+    you in getting started with your HPCC Systems containerized deployment.
+    There are numerous resources available for learning about Kubernetes,
+    Helm, and YAML files. For more information about using these tools, or for
+    cloud or container deployments, please refer to the respective
     documentation.</para>
+
+    <para>In the previous section, we touched on the
+    <emphasis>values.yaml</emphasis> file and the
+    <emphasis>values-schema.json</emphasis> file. This section expands on some
+    of those concepts and how they might be applied when using the
+    containerized version of the HPCC Systems platform.</para>
 
     <sect2 id="TheValuesYamlFileStruct">
       <title>The <emphasis>values.yaml</emphasis> file structure</title>
 
-      <para>The <emphasis>values.yaml</emphasis> file is a yaml file. Yaml is
-      a data serialization language often used as a format for configuration
-      files. The construct that makes up the bulk of a yaml file is the
-      key-value pair, sometimes referred to as a hash or a dictionary. The
-      key-value pair construct consists of a key that points to some value(s).
-      The values could be strings, numbers, booleans, integers, arrays, or
-      dictionaries, and lists. These values are defined by the schema.</para>
+      <para>The <emphasis>values.yaml</emphasis> file is a YAML file which is
+      a format frequently used for configuration files. The construct that
+      makes up the bulk of a YAML file is the key-value pair, sometimes
+      referred to as a dictionary. The key-value pair construct consists of a
+      key that points to some value(s). These values are defined by the
+      schema.</para>
 
-      <para>In yaml files the indentation is used to represent document
-      structure and nesting. Leading spaces are significant and tabs are not
-      allowed.</para>
+      <para>In these configuration files the indentation used to represent
+      document structure relationship is quite important. Leading spaces are
+      significant and tabs are not allowed.</para>
+
+      <para>YAML files are made up mainly of two types of elements:
+      dictionaries and lists.</para>
 
       <sect3 id="YAML_Dictionary">
         <title>Dictionary</title>
 
-        <para>Dictionaries are collections of key value mappings. All keys are
-        case-sensitive and as we mentioned earlier the indentation is also
-        crucial. These keys must be followed by a colon (:) and a space.
-        Dictionaries can also be nested.</para>
+        <para>Dictionaries are collections of key-value mappings. All keys are
+        case-sensitive and the indentation is also crucial. These keys must be
+        followed by a colon (:) and a space. Dictionaries can also be
+        nested.</para>
 
-        <para>Dictionary is a key: value, followed by another key: value:, for
-        example:</para>
+        <para>For example:</para>
 
         <programlisting>    logging: 
        detail: 80 
@@ -1113,7 +1119,7 @@
 
         <para>This is an example of a dictionary for logging.</para>
 
-        <para>Dictionaries in passed in values files, such as the ones in the
+        <para>Dictionaries in passed in values files, such as in the
         <emphasis>myoverrides.yaml</emphasis> file in the example below, will
         be merged into the corresponding dictionaries in the existing values,
         starting with the default values from the delivered hpcc helm
@@ -1121,23 +1127,19 @@
 
         <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting></para>
 
-        <para>Note that you can pass in as many yaml files as you like, they
-        will be merged in the order that they appear on the command
-        line.</para>
-
         <para>Any pre-existing values in a dictionary that are not overridden
         will continue to be present in the merged result. However, you can
-        delete the contents of a dictionary by setting it to null.</para>
+        override the contents of a dictionary by setting it to null.</para>
       </sect3>
 
       <sect3 id="YAML_Lists">
         <title>Lists</title>
 
         <para>Lists are groups of elements beginning at the same indentation
-        level starting with a - (a dash and a space). Every element of the
-        list is indented at the same level and starts with a dash and a space.
-        Lists can also be nested, and they can be lists of dictionaries, which
-        may in turn also have list properties.</para>
+        level starting with a - (a hyphen and a space). Every element of the
+        list is indented at the same level and starts with a hyphen and a
+        space. Lists can also be nested, and they can even be lists of
+        dictionaries.</para>
 
         <para>An example of a list of dictionaries, with placement.tolerations
         as a nested list.:</para>
@@ -1149,78 +1151,36 @@
     - key: "kubernetes.azure.com/scalesetpriority"
 </programlisting></para>
 
-        <para>A key is denoted using a minus sign, which is an entry item in
-        the list, which itself is a dictionary with nested attributes. Then
-        the next minus sign (at that same indentation level) is the next entry
-        in that list.</para>
+        <para>The list entry here is denoted using the hyphen, which is an
+        entry item in the list, which itself is a dictionary with nested
+        attributes. Then the next hyphen (at that same indentation level) is
+        the next entry in that list. A list can be a list of simple value
+        elements, or the elements can themselves be lists or
+        dictionaries.</para>
       </sect3>
-    </sect2>
 
-    <sect2 id="Global_Image">
-      <title>Global</title>
+      <sect3 id="sections_OfHPCCValues">
+        <title>Sections of the HPCC Systems Values.yaml</title>
 
-      <para>The first section of the <emphasis>values.yaml</emphasis> file
-      describes global values. The global.image.root is a string denoting
-      which version to pull. Global applies generally to everything.</para>
+        <para>The first section of the <emphasis>values.yaml</emphasis> file
+        describes global values. Global applies generally to
+        everything.</para>
 
-      <programlisting># Default values for hpcc.
-
+        <para><programlisting># Default values for hpcc.
 global:
   # Settings in the global section apply to all HPCC components in all subcharts
-
-  image:
-    ## It is recommended to name a specific version rather than latest, for any non-trivial 
-    ## For best results, the helm chart version and platform version should match - default if version
-    ## not specified. Do not override without good reason as undefined behavior may result. 
-    ## version: x.y.z
-    root: "hpccsystems"    # change this to pull from somewhere other than DockerHub hpccsystems
-    pullPolicy: IfNotPresent
-
-  # logging sets the default logging information for all components. Can be overridden locally
-  logging:
-    detail: 80
-</programlisting>
-
-      <para>In the delivered HPCC Systems <emphasis>values.yaml</emphasis>
-      file excerpt (above) <emphasis>global:</emphasis> is a top level
-      dictionary. As noted in the comments, the settings in the global section
-      apply to all HPCC Systems components. Note from the indentation that the
-      other values are nested in that global dictionary.</para>
-
-      <sect3>
-        <title>Image</title>
-
-        <para>In our delivered <emphasis>values.yaml</emphasis> file the value
-        immediately following global: is <emphasis>image:</emphasis> you
-        should use a specific named version rather than using the "latest", as
-        also indicated in the comments in the values file. The Helm chart
-        version and platform version should match. Ideally you shouldn't have
-        to set the image.version at all. By default it will match the helm
-        chart version.</para>
-      </sect3>
-
-      <sect3 id="YAMLGlobal_RootValue">
-        <title>The Root value</title>
-
-        <para>The global dictionary/definition level entry is root. For
-        example</para>
-
-        <para><programlisting>  root: "hpccsystems" # change to pull your images somewhere other than DockerHub hpccsystems
-</programlisting>In <emphasis>values.yaml</emphasis> file this uses our HPCC
-        Systems specific repository. It is possible you may want to pull from
-        some other repository, this then is where to set that value.</para>
-
-        <para><emphasis role="bold">root:</emphasis> SomeValue</para>
-      </sect3>
-
-      <sect3 id="Global_Chart_Values">
-        <title>Other Chart Values</title>
+</programlisting>In the delivered HPCC Systems
+        <emphasis>values.yaml</emphasis> file excerpt (above)
+        <emphasis>global:</emphasis> is the top level dictionary. As noted in
+        the comments, the settings in the global section apply to all HPCC
+        Systems components. Note from the indentation level that the other
+        values are nested in that global dictionary.</para>
 
         <para>Items defined in the global section are shared between all
         components.</para>
 
-        <para>Examples of global values are the storage and security
-        sections.</para>
+        <para>Some examples of global values in the delivered values.yaml file
+        are the storage and security sections.</para>
 
         <programlisting>storage:
   planes:</programlisting>
@@ -1236,89 +1196,51 @@ global:
     embedded: "allow"
     pipe:  "allow"
     extern: "allow"
-    datafile: "allow"</programlisting>In the above examples, storage: and
-        security: are global chart values.</para>
+    datafile: "allow"</programlisting>In the above examples,
+        <emphasis>storage:</emphasis> and <emphasis>security:</emphasis> are
+        global chart values.</para>
       </sect3>
     </sect2>
 
-    <sect2 id="YAML_Usage">
-      <title>Usage</title>
+    <sect2 id="HPCCSystems_YAML_Usage">
+      <title>HPCC Systems Values.yaml File Usage</title>
 
       <para>The HPCC Systems <emphasis>values.yaml</emphasis> file is used by
-      the Helm chart to control how HPCC Systems is deployed. The values file
-      contains dictionaries and lists, and they can be nested to create more
-      complex structures. The stock HPCC Systems
-      <emphasis>values.yaml</emphasis> is intended as a quick start
-      demonstration installation guide which is not appropriate for
+      the Helm chart to control how HPCC Systems is deployed. The stock
+      delivered HPCC Systems <emphasis>values.yaml</emphasis> is intended as a
+      quick start type installation guide which is not appropriate for
       non-trivial practical usage. You should customize your deployment to one
-      which is more suited towards your specific needs. To customize your
-      deployment you override the stock values in the
-      <emphasis>values.yaml</emphasis> file, as in the following
-      example:</para>
-
-      <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>
-
-      <para>The above example uses the <emphasis>myoverrides.yaml</emphasis>
-      file via the -f parameter, which overrides any specified values in the
-      HPCC Systems <emphasis>values.yaml</emphasis> file. It's important to
-      note that this merges the overrides from myoverrides.yaml. Anything
-      that's in the values in the helm chart itself that is not overwritten by
-      the passed in values will remain active. When there are 2 yaml files
-      such as this example (the stock <emphasis>values.yaml</emphasis>, and
-      the myoverrides.yaml), if there is a matching entry (anything other than
-      a dictionary) the value from 2nd file will overwrite the first.
-      Dictionaries however will always be merged.</para>
+      more suited towards your specific needs.</para>
 
       <para>Further information about customized deployments is covered in
-      other sections, as well as the Kubernetes Helm documentation. Consulting
-      the Helm documentation provides complete detail for every aspect of Helm
-      chart usage, and not only for a few select cases described.</para>
-
-      <sect3 id="SampYaml-UseCase">
-        <title>Use Case</title>
-
-        <para>For instance, you want to update logging detail. You could have
-        another yaml file to update that value, or any other list value using
-        an override yaml file.</para>
-
-        <para>As we will see later, components are defined as lists, so any
-        definition of a component in a user values file will replace all
-        instances of the component in the default chart. You can remove all
-        components defined in a list, by replacing the list with a null list,
-        for example,</para>
-
-        <programlisting> thor: []</programlisting>
-
-        <para>This will remove all Thor components.</para>
-
-        <para>Other options (for instance configuring the costs for cpu or
-        file access) are implemented as a dictionary, so options can be
-        selectively set in a users values file, and the other options will be
-        retained.</para>
-      </sect3>
+      previous sections, as well as the Kubernetes and Helm
+      documentation.</para>
 
       <sect3 id="merging_AND_Overrides">
         <title>Merging and Overriding</title>
 
-        <para>Having multiple yaml files, such as one for logging, another for
-        storage, yet another for secrets and so forth, the files can be in
-        version control. They can be versioned, checked in, etc. and have the
+        <para>Having multiple YAML files, such as one for logging, another for
+        storage, yet another for secrets and so forth, allows granular
+        configuration. These configuration files can all be under version
+        control. There they can be versioned, checked in, etc. and have the
         benefit of only defining/changing the specific area required, while
-        ensuring any non-changing areas are left untouched. The rule here to
-        keep in mind where multiple yaml files are applied, the later ones
-        will always overwrite the values in the earlier ones. They are merged
-        in in sequence.</para>
+        ensuring any non-changing areas are left untouched.</para>
+
+        <para>The rule here to keep in mind where multiple YAML files are
+        applied, the later ones will always overwrite the values in the
+        earlier ones. They are always merged in in sequence. The values are
+        always merged in the order they are given on the helm command
+        line.</para>
 
         <para>Another point to consider, where there is a global dictionary
-        such as root: and its value is redefined in the 2nd file (as a
-        dictionary) it would not be overwritten. You can't simply overwrite a
-        dictionary. You can redefine a dictionary and set it to null (such as
-        the Thor example in the previous section), which will effectively wipe
-        it out.</para>
+        such as root: and its value is redefined in a 2nd file (as a
+        dictionary) it would not be overwritten. You simply cannot overwrite a
+        dictionary. You can redefine a dictionary and set it to null, which
+        will effectively wipe out the first.</para>
 
         <para><emphasis role="bold">WARNING</emphasis>: If you had a global
         definition (such as storage.planes) and merge it where that becomes
-        redefined it would wipe out every definition in the list.</para>
+        redefined it would wipe out every definition in that list.</para>
 
         <para>Another means to wipe out every value in a list is to pass in an
         empty set denoted by a [ ] such as this example:</para>
@@ -1330,7 +1252,7 @@ global:
           <title>Generally applicable</title>
 
           <para>These items are generally applicable for our HPCC Systems Helm
-          yaml files.</para>
+          YAML files.</para>
 
           <itemizedlist>
             <listitem>
@@ -1346,61 +1268,56 @@ global:
             </listitem>
 
             <listitem>
-              <para>yaml files are merged in sequence.</para>
+              <para>YAML files are merged in sequence.</para>
             </listitem>
           </itemizedlist>
 
-          <para>Generally regarding the HPCC Systems components, the
-          components are lists. As stated previously, If you have an empty
-          value list [ ], it would invalidate that list elsewhere.</para>
+          <para>Regarding the HPCC Systems components, primarily the
+          components are lists. If you have an empty value list denoted by [
+          ], it would invalidate that list elsewhere.</para>
         </sect4>
       </sect3>
-    </sect2>
 
-    <sect2 id="Additional_YMLUSage">
-      <title>Additional Usage</title>
+      <sect3 id="Additional_YMLUSage">
+        <title>Additional Usage</title>
 
-      <para>Components are added or modified by passing in overrides. Chart
-      values are only overridden, either by passing in override values file
-      using -f, (for override file) or via --set where you can override a
-      single value. Those passed in values are always merged in the order they
-      are given on the helm command line.</para>
+        <para>HPCC Systems components are added or modified by passing in
+        override values. The Helm chart values are overridden, either by
+        passing in override values file(s) using -f, (for override file) or
+        via --set where you can override a single value. Those passed in
+        values are always merged in the same order they are given on the helm
+        command line.</para>
 
-      <para>For example you can</para>
+        <para>For example:</para>
 
-      <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>To
-      override any values in the delivered <emphasis>values.yaml</emphasis>.
-      Or you can use --set as in the following example:</para>
+        <para><programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml</programlisting>Overrides
+        any values in the delivered <emphasis>values.yaml</emphasis> by
+        passing in values defined in
+        <emphasis>myoverrides.yaml</emphasis></para>
 
-      <programlisting>helm install myhpcc hpcc/hpcc --set storage.daliStorage.plane=dali-plane</programlisting>
+        <para>You can also use --set as in the following example:</para>
 
-      <para>To override only the global.image.version value. Again, the order
-      the values are merged in is the same in which they are issued on the
-      command line. Now consider:</para>
+        <programlisting>helm install myhpcc hpcc/hpcc --set storage.daliStorage.plane=dali-plane</programlisting>
 
-      <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml --set storage.daliStorage.plane=dali-plane</programlisting>
+        <para>To override only that one specified value.</para>
 
-      <para>In the preceding example, the --set flag in the above command
-      overrides the value for the storage.daliStorage.plane (if) set in the
-      myoverrides.yaml, which overrides any <emphasis>values.yaml</emphasis>
-      file settings and results in setting it to dali-plane. So, irrespective
-      of the value in the yaml file for this particular setting, the order
-      specified on the command line overwrites it in the order supplied on the
-      command line.</para>
+        <para>It is even possible to combine file and single value overrides,
+        for instance:</para>
 
-      <sect3 id="using_the_set_flag">
-        <title>command line options</title>
+        <programlisting>helm install myhpcc hpcc/hpcc -f myoverrides.yaml --set storage.daliStorage.plane=dali-plane</programlisting>
+
+        <para>In the preceding example, the --set flag overrides the value for
+        the storage.daliStorage.plane (if) set in the
+        <emphasis>myoverrides.yaml</emphasis>, which would override any
+        <emphasis>values.yaml</emphasis> file settings and results in setting
+        its value to <emphasis>dali-plane</emphasis>.</para>
 
         <para>If the <emphasis>--set</emphasis> flag is used on helm install
         or helm upgrade, those values are simply converted to YAML on the
         client side.</para>
 
-        <para>You can specify the -f flag multiple times. The priority will be
-        given to the last (right-most) file specified. <programlisting>$ helm install myhpcc hpcc/hpcc -f myvalues.yaml -f override.yaml</programlisting></para>
-
-        <para>For the above example, if both myvalues.yaml and override.yaml
-        contained a key called 'Test', the value set in override.yaml would
-        take precedence.</para>
+        <para>You can specify the override flags multiple times. The priority
+        will be given to the last (right-most) file specified.</para>
       </sect3>
     </sect2>
   </sect1>

@@ -72,7 +72,9 @@ data:
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
-{{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
+          initContainers:
+          {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
+          {{- include "hpcc.addImagePullSecrets" . | nindent 10 -}}
           containers:
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunContainer" (. | merge (dict "command" $misc.postJobCommand)) | indent 10 }}

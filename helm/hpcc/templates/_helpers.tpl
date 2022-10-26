@@ -1011,6 +1011,7 @@ Generate list of available services
 {{- range $dafilesrv := $.Values.dafilesrv -}}
  {{- if not .disabled }}
 - name: {{ .name }}
+  class: dafilesrv
   type: {{ .application | default "stream" }}
   port: {{ .service.servicePort | default 7600 }}
   public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}

@@ -44,6 +44,8 @@
 #include "dameta.hpp"
 #include "daqueue.hpp"
 
+#include "ws_dfsclient.hpp"
+
 #define DFU_WU_URL          "DfuWorkunitsAccess"
 #define DFU_EX_URL          "DfuExceptionsAccess"
 #define FILE_SPRAY_URL      "FileSprayAccess"
@@ -2700,7 +2702,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             logicalName.setForeign(ep,false);
         }
 
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = wsdfs::lookup(logicalName, udesc, AccessMode::tbdRead, false, false, nullptr, defaultPrivilegedUser, INFINITE);
         if (!file)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", logicalName.get());
 

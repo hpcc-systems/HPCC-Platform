@@ -1329,6 +1329,7 @@ public:
     void buildDatasetAssignAggregate(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignCombine(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
+    void buildDatasetAssignIf(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
@@ -1491,6 +1492,7 @@ public:
     void doBuildStmtCall(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtCluster(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtEnsureResult(BuildCtx & ctx, IHqlExpression * expr);
+    void doBuildStmtExecuteWhen(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtFail(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtNotify(BuildCtx & ctx, IHqlExpression * expr);

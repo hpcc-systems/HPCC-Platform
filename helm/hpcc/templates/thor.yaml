@@ -214,7 +214,8 @@ data:
       template:
         metadata:
           labels:
-            accessEsp: "true"
+            accessDali: "yes"
+            accessEsp: "yes"
             app: "thor"
             component: "thorworker"
             helmVersion: 8.11.0-trunk0
@@ -322,7 +323,6 @@ data:
               job: "_HPCC_JOBNAME_"
 {{- end -}}
 
-{{- $local := dict "first" true }}
 {{ range $.Values.thor -}}
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
@@ -366,6 +366,9 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
       {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       serviceAccountName: {{ $commonCtx.eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
+      initContainers:
+      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.addImagePullSecrets" $commonCtx | nindent 6 -}}
       containers:
       - name: {{ $commonCtx.eclAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -463,13 +466,12 @@ kind: ConfigMap
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") }}
-{{- if $local.first }}
-{{- $_ := set $local "first" false }}
-## thorworker and thormanager pods have unique names by workunit not by cluster. So we have to use a global certificate.
-## create these only once
+
+## thorworker and thormanager jobs generate pods with names based on wuid, the corresponding certificates will be named based on cluster and component.
+##   This wouldn't work for a service because the client couldn't identify the cert matched the fqdn used to connect, but will be good enough for our current purposes.
+
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thormanager") }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thorworker") }}
-{{- end }}
 
 {{- if $commonCtx.eclAgentUseChildProcesses }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}

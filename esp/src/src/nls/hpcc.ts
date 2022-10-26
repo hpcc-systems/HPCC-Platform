@@ -1,6 +1,7 @@
 export = {
     root: {
         Abort: "Abort",
+        AbortSelectedWorkunits: "Abort Selected Workunit(s)? Your login ID will be recorded for this action within the WU(s).",
         AbortedBy: "Aborted by",
         AbortedTime: "Aborted time",
         About: "About",
@@ -639,6 +640,7 @@ export = {
         PleaseEnterANumber: "Please enter a number 1 - ",
         PleaseLogin: "Please log in using your username and password",
         Pods: "Pods",
+        PodsAccessError: "Cannot retrieve list of pods",
         Port: "Port",
         Prefix: "Prefix",
         PrefixPlaceholder: "filename{:length}, filesize{:[B|L][1-8]}",

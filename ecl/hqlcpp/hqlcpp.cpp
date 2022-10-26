@@ -3965,6 +3965,9 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_childquery:
         buildChildGraph(ctx, expr);
         return;
+    case no_executewhen:
+        doBuildStmtExecuteWhen(ctx, expr);
+        return;
     case no_evaluate_stmt:
         expr = expr->queryChild(0);
         if (expr->queryValue())
@@ -7518,6 +7521,34 @@ void HqlCppTranslator::doBuildAssignExecuteWhen(BuildCtx & ctx, const CHqlBoundT
     }
 }
 
+void HqlCppTranslator::doBuildStmtExecuteWhen(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * value = expr->queryChild(0);
+    IHqlExpression * action = expr->queryChild(1);
+
+    if (expr->hasAttribute(beforeAtom))
+    {
+        buildStmt(ctx, action);
+        buildStmt(ctx, value);
+    }
+    else if (expr->hasAttribute(failureAtom))
+    {
+        BuildCtx tryctx(ctx);
+        tryctx.addTry();
+        buildStmt(tryctx, value);
+
+        BuildCtx catchctx(ctx);
+        catchctx.addCatch(NULL);
+        buildStmt(catchctx, action);
+        catchctx.addThrow(NULL);
+    }
+    else
+    {
+        buildStmt(ctx, value);
+        buildStmt(ctx, action);
+    }
+}
+
 void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
     assertex(expr->numChildren() == 2);
@@ -7726,36 +7757,59 @@ void HqlCppTranslator::doBuildAssignIf(BuildCtx & ctx, const CHqlBoundTarget & t
         return;
     }
 
+    IHqlExpression * condExpr = expr->queryChild(0);
     IHqlExpression * trueExpr = expr->queryChild(1);
     IHqlExpression * falseExpr = expr->queryChild(2);
 
-    BuildCtx subctx(ctx);
-    CHqlBoundExpr cond;
-    buildCachedExpr(subctx, expr->queryChild(0), cond);
+    HqlExprAssociation * boundCond = ctx.queryMatchExpr(condExpr);
+    if (boundCond && boundCond->queryExpr()->queryValue())
+    {
+        if (matchesConstValue(boundCond->queryExpr(), true))
+            buildExprAssign(ctx, target, trueExpr);
+        else
+            buildExprAssign(ctx, target, falseExpr);
+        return;
+    }
 
-    IHqlStmt * test = subctx.addFilter(cond.expr);
+    BuildCtx subctx(ctx);
+    IHqlStmt * test = buildFilterViaExpr(subctx, condExpr);
     buildExprAssign(subctx, target, trueExpr);
 
     subctx.selectElse(test);
+    subctx.associateExpr(condExpr, queryBoolExpr(false));
     buildExprAssign(subctx, target, falseExpr);
 }
 
 void HqlCppTranslator::doBuildExprIf(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
+    IHqlExpression * condExpr = expr->queryChild(0);
+    IHqlExpression * trueExpr = expr->queryChild(1);
+    IHqlExpression * falseExpr = expr->queryChild(2);
+
+    HqlExprAssociation * boundCond = ctx.queryMatchExpr(condExpr);
+    if (boundCond && boundCond->queryExpr()->queryValue())
+    {
+        if (expr->isPure() && ctx.getMatchExpr(expr, tgt))
+            return;
+
+        if (matchesConstValue(boundCond->queryExpr(), true))
+            buildExpr(ctx, trueExpr, tgt);
+        else
+            buildExpr(ctx, falseExpr, tgt);
+        return;
+    }
+
     if (ifRequiresAssignment(ctx, expr))
     {
         buildTempExpr(ctx, expr, tgt);
         return;
     }
 
-    IHqlExpression * trueExpr = expr->queryChild(1);
-    IHqlExpression * falseExpr = expr->queryChild(2);
-
     //Length should not be conditional...
     CHqlBoundExpr cond;
     CHqlBoundExpr boundTrue;
     CHqlBoundExpr boundFalse;
-    buildCachedExpr(ctx, expr->queryChild(0), cond);
+    buildCachedExpr(ctx, condExpr, cond);
     buildCachedExpr(ctx, trueExpr, boundTrue);
     buildCachedExpr(ctx, falseExpr, boundFalse);
     //true and false should have same type...
@@ -7769,18 +7823,29 @@ void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
     if (converted)
         return buildStmt(ctx, converted);
 
+    IHqlExpression * condExpr = expr->queryChild(0);
+    IHqlExpression * trueExpr = expr->queryChild(1);
+    IHqlExpression * falseExpr = expr->queryChild(2);
+
+    HqlExprAssociation * boundCond = ctx.queryMatchExpr(condExpr);
+    if (boundCond && boundCond->queryExpr()->queryValue())
+    {
+        if (matchesConstValue(boundCond->queryExpr(), true))
+            buildStmt(ctx, trueExpr);
+        else
+            buildStmt(ctx, falseExpr);
+        return;
+    }
+
     BuildCtx subctx(ctx);
-    CHqlBoundExpr cond;
-    buildCachedExpr(subctx, expr->queryChild(0), cond);
+    IHqlStmt * test = buildFilterViaExpr(subctx, condExpr);
+    optimizeBuildActionList(subctx, trueExpr);
 
-    IHqlStmt * test = subctx.addFilter(cond.expr);
-    optimizeBuildActionList(subctx, expr->queryChild(1));
-
-    IHqlExpression * elseExpr = queryRealChild(expr, 2);
-    if (elseExpr && elseExpr->getOperator() != no_null)
+    if (falseExpr && falseExpr->getOperator() != no_null)
     {
         subctx.selectElse(test);
-        optimizeBuildActionList(subctx, elseExpr);
+        subctx.associateExpr(condExpr, queryBoolExpr(false));
+        optimizeBuildActionList(subctx, falseExpr);
     }
 }
 

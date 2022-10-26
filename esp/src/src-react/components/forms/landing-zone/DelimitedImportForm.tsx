@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, Dropdown, mergeStyleSets, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
@@ -7,6 +8,8 @@ import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
 import { pushUrl } from "../../../util/history";
 import * as FormStyles from "./styles";
+
+const logger = scopedLogger("src-react/components/forms/landing-zone/DelimitedImportForm.tsx");
 
 interface DelimitedImportFormValues {
     destGroup: string;
@@ -99,14 +102,17 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                     FileSpray.SprayVariable({
                         request: request
                     }).then((response) => {
-                        if (response.SprayResponse?.wuid) {
+                        if (response?.Exceptions) {
+                            const err = response.Exceptions.Exception[0].Message;
+                            logger.error(err);
+                        } else if (response.SprayResponse?.wuid) {
                             pushUrl(`/dfuworkunits/${response.SprayResponse.wuid}`);
                         }
                     });
                 });
             },
             err => {
-                console.log(err);
+                logger.error(err);
             }
         )();
     }, [handleSubmit]);
@@ -227,7 +233,7 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                                     rules={{
                                         required: nlsHPCC.ValidationErrorTargetNameRequired,
                                         pattern: {
-                                            value: /^(?:[\/\\]?[-a-z0-9_]+[\/\\])+([-a-z0-9 _\.]+)$/i,
+                                            value: /^[-a-z0-9_]+[-a-z0-9 _\.]+$/i,
                                             message: nlsHPCC.ValidationErrorTargetNameInvalid
                                         }
                                     }}

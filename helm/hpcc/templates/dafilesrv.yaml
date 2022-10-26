@@ -15,8 +15,8 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
-
-
+{{- $networkPolicyCtx := dict -}}
+{{- $_ := set $networkPolicyCtx "firstSprayService" true -}}
 {{ range $.Values.dafilesrv -}}
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
@@ -50,6 +50,7 @@ spec:
       labels:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "dafilesrv" "name" "dafilesrv" "instance" .name) | indent 8 }}
         server: {{ .name | quote }}
+        helmVersion: 8.11.0-trunk0
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
@@ -101,5 +102,51 @@ kind: ConfigMap
 {{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 7600 ) }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" "dafilesrv" "visibility" .service.visibility) }}
+{{/*
+Generate network policies for spray services to allow ingress from dfuservers
+*/}}
+{{- if eq .application "spray" -}}
+ {{- if $networkPolicyCtx.firstSprayService -}}
+  {{- $_ := set $networkPolicyCtx "dfuServerMap" dict -}}
+  {{- $_ := set $networkPolicyCtx "untargetedDfuServers" list -}}
+  {{- range $dfuServer := $.Values.dfuserver -}}
+   {{- if not $dfuServer.disabled -}}
+    {{- if hasKey $dfuServer "sprayServiceName" -}}
+     {{- $sprayServiceNames := (get $networkPolicyCtx.dfuServerMap $dfuServer.sprayServiceName) | default list -}}
+     {{- $sprayServiceNames := append $sprayServiceNames $dfuServer.name -}}
+     {{- $_ := set $networkPolicyCtx.dfuServerMap $dfuServer.sprayServiceName $sprayServiceNames -}}
+    {{- else -}}
+     {{- $_ := set $networkPolicyCtx "untargetedDfuServers" (append $networkPolicyCtx.untargetedDfuServers $dfuServer.name) -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{ end }}
+ {{/*
+ Dfuservers without a specifically named spray service (sprayServiceName) are assigned to the 1st spray-service
+ */}}
+ {{- $_ := set $commonCtx "allowedDfuServers" (ternary $networkPolicyCtx.untargetedDfuServers list $networkPolicyCtx.firstSprayService) -}}
+ {{- if hasKey $networkPolicyCtx.dfuServerMap .name -}}
+  {{- $_ := set $commonCtx "allowedDfuServers" (concat $commonCtx.allowedDfuServers (get $networkPolicyCtx.dfuServerMap .name)) -}}
+ {{- end -}}
+ {{- if $commonCtx.allowedDfuServers -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-np" .name }}
+spec:
+  podSelector:
+    matchLabels:
+      server: {{ .name | quote }}
+  ingress:
+  - from:
+    - podSelector:
+        matchExpressions:
+        - key: run
+          operator: In
+          values: [ {{ join "," $commonCtx.allowedDfuServers }} ]
+---
+ {{- end -}}
+ {{- $_ := set $networkPolicyCtx "firstSprayService" false -}}
+{{- end }}
 {{- end }}
 {{- end }}

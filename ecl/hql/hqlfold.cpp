@@ -2448,6 +2448,21 @@ static IHqlExpression * foldHashXX(IHqlExpression * expr)
     return createConstant(expr->queryType()->castFrom(true, (__int64)hashCode));
 }
 
+//If cond has value condValue, can expr be simplified by removing an unnecessary IF()?
+static IHqlExpression * optimizeIfBranch(IHqlExpression * expr, IHqlExpression * cond, bool condValue)
+{
+    if (!expr)
+        return expr;
+    if (expr->getOperator() != no_if)
+        return expr;
+    if (expr->queryChild(0) != cond)
+        return expr;
+
+    if (condValue)
+        return optimizeIfBranch(expr->queryChild(1), cond, true);
+    else
+        return optimizeIfBranch(expr->queryChild(2), cond, false);
+}
 
 //---------------------------------------------------------------------------
 
@@ -2995,10 +3010,10 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 return LINK(branch);
             }
 
-            if (expr->queryChild(2))
+            IHqlExpression * falseValue = expr->queryChild(2);
+            if (falseValue)
             {
                 IHqlExpression * trueValue = expr->queryChild(1);
-                IHqlExpression * falseValue = expr->queryChild(2);
                 if (trueValue == falseValue)        // occurs in generated code...
                     return LINK(trueValue);
 
@@ -3025,6 +3040,31 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     }
                     if (ret)
                         return ret.getClear();
+                }
+
+                //IF (cond, IF(cond, b, c), IF (cond, d, e)) -> IF (cond, b, e)
+                IHqlExpression * newTrueExpr = optimizeIfBranch(trueValue, child, true);
+                IHqlExpression * newFalseExpr = optimizeIfBranch(falseValue, child, false);
+                if ((trueValue != newTrueExpr) || (falseValue != newFalseExpr))
+                {
+                    //The following should be good for datasets and datarows.  However, the current logic to merge
+                    //projects into IFs if they are not shared is a bit flawed - and this causes many cases to get
+                    //worse.
+                    if (!expr->isDataset() && !expr->isDatarow())
+                    {
+                        HqlExprArray args;
+                        args.append(*LINK(child));
+                        //An IF() action could theoretically evaluate to a null action (in the future...)
+                        //Protect against that by creating a null action for the true branch.
+                        if (newTrueExpr)
+                            args.append(*LINK(newTrueExpr));
+                        else
+                            args.append(*createNullExpr(expr));
+                        if (newFalseExpr)
+                            args.append(*LINK(newFalseExpr));
+                        unwindChildren(args, expr, 3);
+                        return expr->clone(args);
+                    }
                 }
             }
             break;
