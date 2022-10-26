@@ -53,8 +53,18 @@ global:
     ## To properly allow access to the kubectl API from pods that need it, the cidr of the kubectl endpoint needs to be supplied
     ## This may be obtained via "kubectl get endpoints --namespace default kubernetes"
     ## If these are not supplied, egress controls will allow access to any IPs/ports from any pod where API access is needed
-    # kubeApiCidr: 172.17.0.3/32  
+    # kubeApiCidr: 172.17.0.3/32
     # kubeApiPort: 7443
+
+    ## named egress sections defined here, can be referenced by components, or they can define their own egress section explicitly
+    #engineEgress:
+    #- to:
+    #  - ipBlock:
+    #      cidr: 10.9.8.7/32
+    #  ports:
+    #  - protocol: TCP
+    #    port: 443
+
 
   cost:
     currencyCode: USD
@@ -479,6 +489,7 @@ eclagent:
   #resources:
   #  cpu: "1"
   #  memory: "1G"
+  #egress: engineEgress
 
 - name: roxie-workunit
   replicas: 1
@@ -489,6 +500,7 @@ eclagent:
   #resources:
   #  cpu: "1"
   #  memory: "1G"
+  #egress: engineEgress
 
 eclccserver:
 - name: myeclccserver
@@ -724,6 +736,7 @@ roxie:
     replicas: 1
   #directAccessPlanes: []  #add direct access planes that roxie will read from without copying the data to its default data plane
   #ldapUser: roxie_file_access    #add system username for accessing files
+  #egress: engineEgress
 
 ## The [manager/worker/eclAgent]Resources define the resource limits for each pod.
 ## workerMemory defines the memory requirements for each individual worker.
@@ -752,6 +765,7 @@ thor:
   #eclAgentResources:
   #  cpu: "1"
   #  memory: "2G"
+  #egress: engineEgress
 
 eclscheduler:
 - name: eclscheduler

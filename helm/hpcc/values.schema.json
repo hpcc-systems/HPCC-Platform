@@ -220,6 +220,9 @@
           "labels": {
             "type": "object",
             "additionalProperties": { "type": "string" }
+          },
+          "egress": {
+              "$ref" : "#/definitions/egress"
           }
         },
         "additionalProperties": { "type": ["integer", "string", "boolean"] },
@@ -278,7 +281,7 @@
           "$ref": "#/definitions/logAccess"
         },
         "egress": {
-          "$ref": "#/definitions/egress"
+          "$ref": "#/definitions/globalEgress"
         },
         "defaultEsp": {
           "type": "string"
@@ -600,11 +603,11 @@
               "description": "Secret id",
               "type": "string"
             },
-	    "containers": {
+      	    "containers": {
               "type": "array",
-	      "description": "List of containers",
+              "description": "List of containers",
               "items": { "type": "string" }
-	    }
+            }
           }
         }
       }
@@ -1020,6 +1023,23 @@
       }
     },
     "egress": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Named egress section (from global.egress) to apply to this component"
+        },
+        {
+          "type": "array",
+          "items": {
+            "additionalProperties": {
+              "type": "array",
+              "items": { "type": "object" }
+            }
+          }
+        }  
+      ]
+    },
+    "globalEgress": {
       "type": "object",
       "properties": {
         "restricted": {
@@ -1039,7 +1059,16 @@
           "description": "Label that has been applied to the kube-system namespace, used to restrict DNS service calls on port 53 to pods in the kube-system namespace"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": {
+        "type": "array",
+        "properties":
+        {
+          "egress": {
+            "$ref" : "#/definitions/egress"
+          },              
+          "additionalProperties": false
+        }
+      }
     },
     "service": {
       "description": "Service properties",
@@ -1129,6 +1158,9 @@
         },
         "service": {
           "$ref": "#/definitions/service"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -1205,6 +1237,9 @@
         },
         "cost": {
           "$ref" : "#/definitions/componentCost"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -1299,6 +1334,9 @@
         },
         "corsAllowed": {
           "$ref": "#/definitions/corsAllowed"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -1354,6 +1392,9 @@
         },
         "cost": {
           "$ref" : "#/definitions/componentCost"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -2015,6 +2056,9 @@
           "default": 5000,
           "minimum": 0,
           "description": "Interval (in milliseconds) between checks that client socket is still open"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -2220,6 +2264,9 @@
         "expert": {
           "description": "Custom internal options usually reserved for internal testing",
           "type": "object"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -2285,6 +2332,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },
@@ -2323,7 +2373,8 @@
             "resources": {},
             "env": {},
             "annotations": {},
-            "labels": {}
+            "labels": {},
+            "egress": {}
           },
           "additionalProperties": false
         }
@@ -2370,7 +2421,8 @@
             "annotations": {},
             "labels": {},
             "limit": {},
-            "cutoff": {}    
+            "cutoff": {},
+            "egress": {}    
           },
           "additionalProperties": false
         }
@@ -2397,7 +2449,8 @@
             "annotations": {},
             "labels": {},
             "limit": {},
-            "cutoff": {}
+            "cutoff": {},
+            "egress": {}
           },
           "additionalProperties": false
         }
@@ -2422,7 +2475,8 @@
             "annotations": {},
             "labels": {},
             "limit": {},
-            "cutoff": {}    
+            "cutoff": {},
+            "egress": {}
           },
           "additionalProperties": false
         }
@@ -2455,7 +2509,8 @@
         "plane": {},
         "resources": {},
         "annotations": {},
-        "labels": {}
+        "labels": {},
+        "egress": {}
       },
       "additionalProperties": false
     },
@@ -2523,6 +2578,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "egress": {
+          "$ref" : "#/definitions/egress"
         }
       }
     },

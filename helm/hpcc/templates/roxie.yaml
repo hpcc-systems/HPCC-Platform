@@ -218,7 +218,9 @@ kind: ConfigMap
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap")) }}
 ---
 
+{{- $_ := set $commonCtx "instanceNames" list -}}
 {{ if $roxie.serverReplicas -}}
+{{ $_ := set $commonCtx "instanceNames" (list $servername) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -314,6 +316,7 @@ spec:
 {{ range $c, $e := until ($commonCtx.numChannels|int) -}}
 {{- $channel := add $c 1 -}}
 {{- $name := printf "%s-agent-%d" $roxie.name $channel }}
+{{- $_ := set $commonCtx "instanceNames" (append $commonCtx.instanceNames $name) }}
 
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $name "services" $roxie.services "component" "roxie-agent" "external" false) }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $name "services" $roxie.services "component" "roxie-agent" "external" true) }}
@@ -419,6 +422,8 @@ spec:
 
 {{- end }}
 {{- end }}
+---
+{{ include "hpcc.addEgress" (dict "root" $ "me" $roxie "labels" $commonCtx.instanceNames) }}
 {{- end }}
 {{- end }}
  
