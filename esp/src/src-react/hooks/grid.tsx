@@ -188,11 +188,15 @@ function useFluentStoreGrid({
             setItems(items);
             setSelection(selectionHandler.getSelection());
         });
-    }, [count, selectionHandler, start, store], [query]);
+    }, [count, selectionHandler, start, store], [query, sorted]);
 
     React.useEffect(() => {
         refreshTable();
     }, [refreshTable]);
+
+    React.useEffect(() => {
+        setSorted(sort);
+    }, [sort]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, sorted);
@@ -308,8 +312,9 @@ export function useFluentPagedGrid({
 }: useFluentPagedGridProps): useFluentPagedGridResponse {
 
     const [page, setPage] = React.useState(pageNum - 1);
+    const [sortBy, setSortBy] = React.useState(sort);
     const [pageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, 25);
-    const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
+    const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort: sortBy, start: page * pageSize, count: pageSize, columns, filename });
     const { theme } = useUserTheme();
 
     const paginationStyles = React.useMemo(() => mergeStyleSets({
@@ -359,6 +364,10 @@ export function useFluentPagedGrid({
             setPage(maxPage);
         }
     }, [page, pageSize, total]);
+
+    React.useEffect(() => {
+        setSortBy(sort);
+    }, [sort]);
 
     React.useEffect(() => {
         const _page = pageNum >= 1 ? pageNum - 1 : 0;

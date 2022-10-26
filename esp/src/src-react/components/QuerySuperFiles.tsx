@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { scopedLogger } from "@hpcc-js/util";
 import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
@@ -17,11 +18,15 @@ const defaultUIState = {
 interface QuerySuperFilesProps {
     querySet?: string;
     queryId?: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "__hpcc_id", descending: false };
 
 export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
     querySet,
-    queryId
+    queryId,
+    sort = defaultSort
 }) => {
 
     const query = React.useMemo(() => {
@@ -34,7 +39,7 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
     const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: { attribute: "__hpcc_id", descending: false },
+        sort,
         filename: "querySuperFiles",
         columns: {
             col1: { selectorType: "checkbox", width: 25 },

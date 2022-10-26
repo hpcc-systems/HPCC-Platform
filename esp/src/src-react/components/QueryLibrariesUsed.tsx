@@ -3,6 +3,7 @@ import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import * as ESPQuery from "src/ESPQuery";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 
@@ -11,11 +12,15 @@ const logger = scopedLogger("src-react/components/QueryLibrariesUsed.tsx");
 interface QueryLibrariesUsedProps {
     querySet?: string;
     queryId?: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "__hpcc_id", descending: false };
 
 export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps> = ({
     querySet,
-    queryId
+    queryId,
+    sort = defaultSort
 }) => {
 
     const query = React.useMemo(() => {
@@ -27,7 +32,7 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
     const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: { attribute: "__hpcc_id", descending: false },
+        sort,
         filename: "queryLibraries",
         columns: {
             Name: { label: nlsHPCC.LibrariesUsed }

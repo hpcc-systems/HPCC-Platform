@@ -1,16 +1,21 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitVariables } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
 
 interface VariablesProps {
     wuid: string;
+    sort?: QuerySortItem;
 }
 
+const defaultSort = { attribute: "Wuid", descending: true };
+
 export const Variables: React.FunctionComponent<VariablesProps> = ({
-    wuid
+    wuid,
+    sort = defaultSort
 }) => {
 
     const [variables, , , refreshData] = useWorkunitVariables(wuid);
@@ -21,7 +26,7 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
         data,
         primaryID: "__hpcc_id",
         alphaNumColumns: { Name: true, Value: true },
-        sort: { attribute: "Wuid", descending: true },
+        sort,
         filename: "variables",
         columns: {
             Type: { label: nlsHPCC.Type, width: 180 },

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResources } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
@@ -11,10 +12,14 @@ const defaultUIState = {
 
 interface ResourcesProps {
     wuid: string;
+    sort?: QuerySortItem;
 }
 
+const defaultSort = { attribute: "Wuid", descending: true };
+
 export const Resources: React.FunctionComponent<ResourcesProps> = ({
-    wuid
+    wuid,
+    sort = defaultSort
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -26,7 +31,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
         data,
         primaryID: "DisplayPath",
         alphaNumColumns: { Name: true, Value: true },
-        sort: { attribute: "Wuid", descending: true },
+        sort,
         filename: "resources",
         columns: {
             col1: {

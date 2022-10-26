@@ -2,6 +2,7 @@ import * as React from "react";
 import { ICommandBarItemProps, CommandBar } from "@fluentui/react";
 import { format as d3Format } from "@hpcc-js/common";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -11,11 +12,15 @@ const formatNum = d3Format(",");
 interface FilePartsProps {
     cluster?: string;
     logicalFile: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "Id", descending: false };
 
 export const FileParts: React.FunctionComponent<FilePartsProps> = ({
     cluster,
-    logicalFile
+    logicalFile,
+    sort = defaultSort
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
@@ -25,7 +30,7 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
     const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "Id",
-        sort: { attribute: "Id", descending: false },
+        sort,
         filename: "fileParts",
         columns: {
             Id: { label: nlsHPCC.Part, sortable: true, width: 80 },

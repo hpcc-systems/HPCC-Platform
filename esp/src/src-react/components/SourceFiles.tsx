@@ -2,6 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import * as domClass from "dojo/dom-class";
 import * as Utility from "src/Utility";
+import { QuerySortItem } from "src/store/Store";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
@@ -13,10 +14,14 @@ const defaultUIState = {
 
 interface SourceFilesProps {
     wuid: string;
+    sort?: QuerySortItem
 }
 
+const defaultSort = { attribute: "Name", descending: false };
+
 export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
-    wuid
+    wuid,
+    sort = defaultSort
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -28,7 +33,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         data,
         primaryID: "Name",
         alphaNumColumns: { Name: true, Value: true },
-        sort: { attribute: "Name", descending: false },
+        sort,
         filename: "sourceFiles",
         columns: {
             col1: {
