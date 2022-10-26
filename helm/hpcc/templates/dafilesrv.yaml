@@ -148,5 +148,7 @@ spec:
  {{- end -}}
  {{- $_ := set $networkPolicyCtx "firstSprayService" false -}}
 {{- end }}
+---
+{{ include "hpcc.addEgress" $commonCtx }}
 {{- end }}
 {{- end }}

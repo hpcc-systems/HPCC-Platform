@@ -211,6 +211,7 @@ Expose dali as a external service, only if there is a service definition and daf
 {{- include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 7070 ) | nindent 0 }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" $service "component" "dali" "external" false) }}
-
+---
+{{ include "hpcc.addEgress" $commonCtx }}
 {{- end }}
 {{- end }}

@@ -83,7 +83,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
             helmVersion: 8.10.5-closedown0
-            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName) | indent 8 }}
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName "instanceOf" (printf "%s-job" .eclAgentName)) | indent 8 }}
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
@@ -152,7 +152,7 @@ data:
             helmVersion: 8.10.5-closedown0
             instance: "_HPCC_JOBNAME_"
             job: "_HPCC_JOBNAME_"
-            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "thormanager" "name" "thor" "instance" $thorManagerJobName ) | indent 12 }}
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "thormanager" "name" "thor" "instance" $thorManagerJobName "instanceOf" (printf "%s-thormanager-job" .me.name)) | indent 12 }}
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
@@ -221,7 +221,7 @@ data:
             helmVersion: 8.10.5-closedown0
             instance: "_HPCC_JOBNAME_"
             job: "_HPCC_JOBNAME_"
-            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "thorworker" "name" "thor" "instance" $thorWorkerJobName ) | indent 12 }}
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "thorworker" "name" "thor" "instance" $thorWorkerJobName "instanceOf" (printf "%s-thorworker-job" .me.name)) | indent 12 }}
 {{- if hasKey $thorScope "labels" }}
 {{ toYaml $thorScope.labels | indent 12 }}
 {{- end }}
@@ -476,5 +476,9 @@ kind: ConfigMap
 {{- if $commonCtx.eclAgentUseChildProcesses }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}
 {{- end }}
+---
+{{- $egressedPodLabels := list (printf "%s-thormanager-job" .name) (printf "%s-thorworker-job" .name) -}}
+{{- $egressedPodLabels := append $egressedPodLabels (ternary $commonCtx.eclAgentName (printf "%s-eclagent-job" .name) $commonCtx.eclAgentUseChildProcesses) -}}
+{{- include "hpcc.addEgress" (dict "root" $ "me" . "labels" $egressedPodLabels) | nindent 0 -}}
 {{- end }}
 {{- end }}

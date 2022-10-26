@@ -53,8 +53,18 @@ global:
     ## To properly allow access to the kubectl API from pods that need it, the cidr of the kubectl endpoint needs to be supplied
     ## This may be obtained via "kubectl get endpoints --namespace default kubernetes"
     ## If these are not supplied, egress controls will allow access to any IPs/ports from any pod where API access is needed
-    # kubeApiCidr: 172.17.0.3/32  
+    # kubeApiCidr: 172.17.0.3/32
     # kubeApiPort: 7443
+
+    ## named egress sections defined here, can be referenced by multiple components, or they can define their own explicitly
+    #engines:
+    #- to:
+    #  - ipBlock:
+    #      cidr: 10.9.8.7/32
+    #  ports:
+    #  - protocol: TCP
+    #    port: 443
+
 
   cost:
     currencyCode: USD
@@ -459,6 +469,7 @@ sasha:
 dfuserver:
 - name: dfuserver
   maxJobs: 1
+  #egress: myegress
   #resources:
   #  cpu: "1"
   #  memory: "2G"
