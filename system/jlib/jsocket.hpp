@@ -732,5 +732,11 @@ public:
 
 extern jlib_decl void shutdownAndCloseNoThrow(ISocket * optSocket);     // Safely shutdown and close a socket without throwing an exception.
 
+#ifdef _WIN32
+#define SOCKETERRNO() WSAGetLastError()
+#else
+#define SOCKETERRNO() (errno)
+#endif
+
 #endif
 
