@@ -468,11 +468,37 @@ extern jlib_decl void removeIFileCreateHook(IRemoteFileCreateHook *);
 
 extern jlib_decl IFile * createIFile(const RemoteFilename & filename);
 
-// Hook mechanism for accessing files inside containers (eg zipfiles)
+interface IStorageApiInfo : implements IInterface
+{
+    virtual const char * getStorageType() const = 0;
+    virtual const char * queryStorageApiAccount() const = 0;
+    virtual const char * queryStorageContainer(unsigned stripeNumber) const = 0;
+    virtual StringBuffer & getSASToken(StringBuffer & token) const = 0;
+};
 
+extern jlib_decl bool canApiCopy(IStorageApiInfo * source, IStorageApiInfo * target);
+extern jlib_decl IStorageApiInfo * createStorageApiInfo(IPropertyTree *xml);
+
+enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
+interface IAPICopyClientOp : implements IInterface
+{
+    virtual void startCopy(const char *source, const char * target) = 0;
+    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) = 0;
+    virtual ApiCopyStatus abortCopy() = 0;
+    virtual ApiCopyStatus getStatus() const = 0;
+};
+
+interface IAPICopyClient : implements IInterface
+{
+    virtual const char * name() const = 0;
+    virtual IAPICopyClientOp * startCopy(const char *srcPath, unsigned srcStripeNum,  const char *tgtPath, unsigned tgtStripeNum) = 0;
+};
+
+// Hook mechanism for accessing files inside containers (eg zipfiles)
 interface IContainedFileHook: extends IInterface
 {
     virtual IFile * createIFile(const char *fileName) = 0;
+    virtual IAPICopyClient * getCopyApiClient(IStorageApiInfo * source, IStorageApiInfo * target) = 0;
 };
 extern jlib_decl void addContainedFileHook(IContainedFileHook *);
 extern jlib_decl void removeContainedFileHook(IContainedFileHook *);
@@ -649,7 +675,7 @@ extern jlib_decl void writeSentinelFile(IFile * file);
 extern jlib_decl void removeSentinelFile(IFile * file);
 extern jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails);
 extern jlib_decl timestamp_type getTimeStamp(IFile * file);
-
+extern jlib_decl IAPICopyClient * createApiCopyClient(IStorageApiInfo * source, IStorageApiInfo * target);
 #ifdef _WIN32
 const static bool filenamesAreCaseSensitive = false;
 #else

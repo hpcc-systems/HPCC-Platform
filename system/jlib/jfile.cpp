@@ -7472,3 +7472,15 @@ IPropertyTree * getRemoteStorage(const char * name)
     Owned<IPropertyTree> global = getGlobalConfig();
     return global->getPropTree(xpath);
 }
+
+IAPICopyClient * createApiCopyClient(IStorageApiInfo * source, IStorageApiInfo * target)
+{
+    ReadLockBlock block(containedFileHookLock);
+    ForEachItemIn(i, containedFileHooks)
+    {
+        IAPICopyClient * copyClient = containedFileHooks.item(i).getCopyApiClient(source, target);
+        if (copyClient)
+            return copyClient;
+    }
+    return nullptr;
+}

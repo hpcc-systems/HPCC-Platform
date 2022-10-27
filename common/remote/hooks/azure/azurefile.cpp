@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#include <azure/core.hpp>
+#include <azure/storage/blobs.hpp>
+#include <azure/storage/files/shares.hpp>
 #include "platform.h"
 #include "jlib.hpp"
 #include "jio.hpp"
@@ -33,6 +36,7 @@
 
 using namespace Azure::Storage;
 using namespace Azure::Storage::Blobs;
+using namespace Azure::Storage::Files;
 using namespace std::chrono;
 
 #define TRACE_AZURE
@@ -839,6 +843,251 @@ static IFile *createAzureFile(const char *azureFileName)
     return new AzureFile(azureFileName);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class AzureAPICopyClientBase : public CInterfaceOf<IAPICopyClientOp>
+{
+    ApiCopyStatus status = ApiCopyStatus::NotStarted;
+    virtual void doStartCopy(const char * source, const char *target) = 0;
+    virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) = 0;
+    virtual void doAbortCopy() = 0;
+    virtual void doDelete() = 0;
+
+public:
+    virtual void startCopy(const char * source, const char *target) override
+    {
+        try
+        {
+            doStartCopy(source, target);
+            status = ApiCopyStatus::Pending;
+        }
+        catch (const Azure::Core::RequestFailedException& e)
+        {
+            IERRLOG("AzureFileClient startCopy failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            status = ApiCopyStatus::Failed;
+            throw makeStringException(MSGAUD_operator, -1, e.ReasonPhrase.c_str());
+        }
+    }
+    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) override
+    {
+        dateTime.clear();
+        outputLength=0;
+
+        if (status!=ApiCopyStatus::Pending)
+            return status;
+        try
+        {
+            status = doGetProgress(dateTime, outputLength);
+        }
+        catch(const Azure::Core::RequestFailedException& e)
+        {
+            IERRLOG("Transfer using API .Poll() failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+            status = ApiCopyStatus::Failed;
+        }
+        return status;
+    }
+    virtual ApiCopyStatus abortCopy() override
+    {
+        if (status==ApiCopyStatus::Aborted || status==ApiCopyStatus::Failed)
+            return status;
+        int64_t outputLength;
+        CDateTime dateTime;
+        status = getProgress(dateTime, outputLength);
+        switch (status)
+        {
+        case ApiCopyStatus::Pending:
+            try
+            {
+                doAbortCopy();
+                status = ApiCopyStatus::Aborted;
+            }
+            catch(const Azure::Core::RequestFailedException& e)
+            {
+                IERRLOG("Abort copy operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
+                status = ApiCopyStatus::Failed;
+            }
+            // fallthrough to delete any file remnants
+        case ApiCopyStatus::Success:
+            // already copied-> need to delete
+            try
+            {
+                doDelete();
+                status = ApiCopyStatus::Aborted;
+            }
+            catch(const Azure::Core::RequestFailedException& e)
+            {
+                // Ignore exceptions as file may not exist (may have been aborted already)
+            }
+            break;
+        }
+        return status;
+    }
+    virtual ApiCopyStatus getStatus() const override
+    {
+        return status;
+    }
+};
+
+class AzureFileClient : public AzureAPICopyClientBase
+{
+    std::unique_ptr<Shares::ShareFileClient> fileClient;
+    Shares::StartFileCopyOperation fileCopyOp;
+
+    virtual void doStartCopy(const char * source, const char *target) override
+    {
+        fileClient.reset(new Shares::ShareFileClient(target));
+        fileCopyOp = std::move(fileClient->StartCopy(source));
+    }
+    virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
+    {
+        fileCopyOp.Poll();
+        Shares::Models::FileProperties props = fileCopyOp.Value();
+        dateTime.setString(props.LastModified.ToString().c_str());
+        outputLength = props.FileSize;
+        Shares::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Shares::Models::CopyStatus::Pending);
+        if (tstatus==Shares::Models::CopyStatus::Success) // FYI. CopyStatus is an object so can't use switch statement
+            return ApiCopyStatus::Success;
+        else if (tstatus==Shares::Models::CopyStatus::Pending)
+            return ApiCopyStatus::Pending;
+        else if (tstatus==Shares::Models::CopyStatus::Aborted)
+            return ApiCopyStatus::Aborted;
+        return ApiCopyStatus::Failed;
+    }
+    virtual void doAbortCopy() override
+    {
+        if (fileCopyOp.HasValue() && fileCopyOp.Value().CopyId.HasValue())
+            fileClient->AbortCopy(fileCopyOp.Value().CopyId.Value().c_str());
+        else
+            IERRLOG("AzureFileClient::AbortCopy() failed: CopyId is empty");
+    }
+    virtual void doDelete() override
+    {
+        fileClient->Delete();
+    }
+};
+
+class AzureBlobClient : public AzureAPICopyClientBase
+{
+    std::unique_ptr<BlobClient> blobClient;
+    StartBlobCopyOperation blobCopyOp;
+
+    virtual void doStartCopy(const char * source, const char *target) override
+    {
+        blobClient.reset(new BlobClient(target));
+        blobCopyOp = std::move(blobClient->StartCopyFromUri(source));
+    }
+    virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
+    {
+        blobCopyOp.Poll();
+        Models::BlobProperties props = blobCopyOp.Value();
+        dateTime.setString(props.LastModified.ToString().c_str());
+        outputLength = props.BlobSize;
+        Blobs::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Blobs::Models::CopyStatus::Pending);
+        if (tstatus==Blobs::Models::CopyStatus::Success) // FYI. CopyStatus is an object so can't use switch statement
+            return ApiCopyStatus::Success;
+        else if (tstatus==Blobs::Models::CopyStatus::Pending)
+            return ApiCopyStatus::Pending;
+        else if (tstatus==Blobs::Models::CopyStatus::Aborted)
+            return ApiCopyStatus::Aborted;
+        return ApiCopyStatus::Failed;
+    }
+    virtual void doAbortCopy() override
+    {
+        if (blobCopyOp.HasValue() && blobCopyOp.Value().CopyId.HasValue())
+            blobClient->AbortCopyFromUri(blobCopyOp.Value().CopyId.Value().c_str());
+        else
+            IERRLOG("AzureBlobClient::AbortCopy() failed: CopyId is empty");
+    }
+    virtual void doDelete() override
+    {
+        blobClient->Delete();
+    }
+};
+
+
+class CAzureApiCopyClient : public CInterfaceOf<IAPICopyClient>
+{
+public:
+    CAzureApiCopyClient(IStorageApiInfo *_sourceApiInfo, IStorageApiInfo *_targetApiInfo): sourceApiInfo(_sourceApiInfo), targetApiInfo(_targetApiInfo)
+    {
+        buildStorageURIBase(sourceApiInfo, sourceURIbase);
+        buildStorageURIBase(targetApiInfo, targetURIbase);
+    }
+    virtual const char * name() const override
+    {
+        return "Azure API copy client";
+    }
+    static bool canCopy(IStorageApiInfo *_sourceApiInfo, IStorageApiInfo *_targetApiInfo)
+    {
+        if (_sourceApiInfo && _targetApiInfo)
+        {
+            const char * stSource = _sourceApiInfo->getStorageType();
+            const char * stTarget = _targetApiInfo->getStorageType();
+            if (stSource && stTarget)
+            {
+                if ((isAzureFile(stSource) || isAzureBlob(stSource))
+                    && (isAzureFile(stTarget) || isAzureBlob(stTarget)))
+                return true;
+            }
+        }
+        return false;
+    }
+    virtual IAPICopyClientOp * startCopy(const char *srcPath, unsigned srcStripeNum,  const char *tgtPath, unsigned tgtStripeNum) override
+    {
+        if (!haveSASTokens)
+        {
+            sourceApiInfo->getSASToken(sourceSASToken);
+            targetApiInfo->getSASToken(targetSASToken);
+            haveSASTokens=true;
+        }
+        StringBuffer sourceURI, targetURI;
+        buildURI(sourceURI, sourceURIbase, srcStripeNum,  srcPath, sourceApiInfo, sourceSASToken);
+        buildURI(targetURI, targetURIbase, tgtStripeNum,  tgtPath, targetApiInfo, targetSASToken);
+        Owned<IAPICopyClientOp> apiClient;
+        if (isAzureFile(targetApiInfo->getStorageType()))
+            apiClient.setown(new AzureFileClient());
+        else
+            apiClient.setown(new AzureBlobClient());
+        apiClient->startCopy(sourceURI, targetURI);
+        return apiClient.getClear();
+    }
+protected:
+    void buildStorageURIBase(IStorageApiInfo * storageApiInfo, StringBuffer & uri)
+    {
+        const char *accountName = storageApiInfo->queryStorageApiAccount();
+        uri.appendf("https://%s", accountName);
+
+        if (isAzureFile(targetApiInfo->getStorageType()))
+        {
+            uri.append(".file");
+        }
+        else
+        {
+            dbgassertex(isAzureBlob(targetApiInfo->getStorageType()));
+            uri.append(".blob");
+        }
+        uri.append(".core.windows.net/");
+    }
+    void buildURI(StringBuffer & fulluri, const char * baseURI, unsigned stripeNum, const char *filePath, IStorageApiInfo *apiInfo, const char *token)
+    {
+        StringBuffer tmp;
+        const char * container = apiInfo->queryStorageContainer(stripeNum);
+        fulluri.appendf("%s%s%s%s", baseURI, container, encodeURL(tmp, filePath).str(), token);
+    }
+    static inline bool isAzureFile(const char *storageType)
+    {
+        return strsame(storageType, "azurefile");
+    }
+    static inline bool isAzureBlob(const char *storageType)
+    {
+        return strsame(storageType, "azureblob");
+    }
+
+    Linked<IStorageApiInfo> sourceApiInfo, targetApiInfo;
+    StringBuffer sourceURIbase, targetURIbase;
+    bool haveSASTokens = false;
+    StringBuffer sourceSASToken, targetSASToken;
+};
 
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -851,6 +1100,12 @@ public:
             return createAzureFile(fileName);
         else
             return nullptr;
+    }
+    virtual IAPICopyClient * getCopyApiClient(IStorageApiInfo * source, IStorageApiInfo * target) override
+    {
+        if (CAzureApiCopyClient::canCopy(source, target))
+            return new CAzureApiCopyClient(source, target);
+        return nullptr;
     }
 
 protected:
