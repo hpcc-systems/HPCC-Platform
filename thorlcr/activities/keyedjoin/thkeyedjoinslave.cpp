@@ -1016,7 +1016,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             {
                 unsigned partNo = partCopy & partMask;
                 unsigned copy = partCopy >> partBits;
-                IPartDescriptor &pd = allParts->item(partNo);
+                IPartDescriptor &pd = activity.getIndexPart(partNo);
                 RemoteFilename rfn;
                 pd.getFilename(copy, rfn);
                 StringBuffer path;
@@ -1260,7 +1260,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             if (!translators[selected])
             {
-                IPartDescriptor &part = activity.allIndexParts.item(partNo);
+                IPartDescriptor &part = activity.getIndexPart(partNo);
                 IPropertyTree &props = part.queryOwner().queryProperties();
                 unsigned publishedFormatCrc = (unsigned)props.getPropInt("@formatCrc", 0);
                 Owned<IOutputMetaData> publishedFormat = getDaliLayoutInfo(props);
@@ -1429,6 +1429,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             if (keyManager)
                 (*keyManager).Release();
         }
+        virtual void addPartNum(unsigned partCopy)
+        {
+            PARENT::addPartNum(partCopy);
+            if (1 == queues.size()) // i.e. 1st
+            {
+                // ensure that 1st entry points to a valid queues/batchArray index
+                // because queueLookup on a local key (merge) has no partNo, and uses 0 as a placeholder
+                partNumMap[0] = 0;
+            }
+        }
         virtual void process(CThorExpandingRowArray &processing, unsigned __unused) override
         {
             if (!keyManager)
@@ -1462,7 +1472,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 }
             }
         }
-
     };
     class CRemoteLookupHandler : public CLookupHandler
     {
@@ -2231,6 +2240,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     CPartDescriptorArray allDataParts;
     CPartDescriptorArray allIndexParts;
     std::vector<unsigned> localIndexParts, localFetchPartMap;
+    std::vector<unsigned> partNumToAllPartsIdx; // only used if a KJ,LOCAL where each worker has a fragment of the parts
     IArrayOf<IKeyIndex> tlkKeyIndexes;
     Owned<IEngineRowAllocator> joinFieldsAllocator;
     OwnedConstThorRow defaultRight;
@@ -2420,6 +2430,16 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         CLookupHandler *lookupHandler = keyLookupHandlers.queryHandler(partNo);
         lookupHandler->queueLookup(indexLookupRow, partNo);
     }
+    void queueLookupForLocalKey(const void *indexLookupRow)
+    {
+        // NB: only 1 thread calling this method, so call to lookupHandler->queueLookup() doesn't need protecting
+        KeyLookupHeader lookupKeyHeader;
+        getHeaderFromRow(indexLookupRow, lookupKeyHeader);
+        lookupKeyHeader.jg->incPending(); // each queued lookup pending a result
+
+        CLookupHandler *lookupHandler = keyLookupHandlers.queryHandler(0);
+        lookupHandler->queueLookup(indexLookupRow, 0);
+    }
     unsigned getTlkKeyManagers(IArrayOf<IKeyManager> &keyManagers)
     {
         keyManagers.kill();
@@ -2435,7 +2455,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     }
     IKeyIndex *createPartKeyIndex(unsigned partNo, unsigned copy, bool delayed)
     {
-        IPartDescriptor &filePart = allIndexParts.item(partNo);
+        IPartDescriptor &filePart = getIndexPart(partNo);
         unsigned crc=0;
         filePart.getCrc(crc);
         RemoteFilename rfn;
@@ -2541,7 +2561,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             indexLookupRow.setown(preparePendingLookupRow(keyFieldsRowBuilder.getUnfinalizedClear(), keyFieldsRowBuilder.getMaxLength(), lhsRow, keyedFieldsRowSize));
             if (keyLookupHandlers.isLocalKey())
-                queueLookupForPart(0, indexLookupRow);
+                queueLookupForLocalKey(indexLookupRow);
             else if (!remoteKeyedLookup) // either local only or legacy, either way lookup in all allIndexParts I have
             {
                 ForEachItemIn(p, allIndexParts)
@@ -2942,6 +2962,11 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         handlerContainer.trace();
 #endif
     }
+    IPartDescriptor &getIndexPart(unsigned partNo)
+    {
+        unsigned idx = container.queryLocalData() ? partNumToAllPartsIdx[partNo] : partNo;
+        return allIndexParts.item(idx);
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
 
@@ -3032,6 +3057,7 @@ public:
             tlkKeyIndexes.kill();
             allIndexParts.kill();
             localIndexParts.clear();
+            partNumToAllPartsIdx.clear();
             localFetchPartMap.clear();
 
             allDataParts.kill();
@@ -3107,14 +3133,32 @@ public:
                 {
                     localIndexParts.resize(numMappedParts);
                     data.read(numMappedParts * sizeof(unsigned), &localIndexParts[0]);
+                    if (container.queryLocalData())
+                    {
+                        ISuperFileDescriptor *superFdesc = indexFileDesc.querySuperFileDescriptor();
+
+                        // allIndexParts contains the local parts only, we need a map from partNo->allIndexParts position
+                        for (unsigned idx=0; idx<localIndexParts.size(); idx++)
+                        {
+                            unsigned partNo = localIndexParts[idx];
+                            partNo &= partMask;
+                            if (superFdesc)
+                            {
+                                unsigned subfile, subpartnum;
+                                superFdesc->mapSubPart(partNo, subfile, subpartnum);
+                                partNo = superWidth*subfile+subpartnum;
+                            }
+                            while (partNo > partNumToAllPartsIdx.size())
+                                partNumToAllPartsIdx.push_back(NotFound);
+                            partNumToAllPartsIdx.push_back(idx);
+                        }
+                    }
                 }
                 if (remoteKeyedLookup)
                 {
                     indexPartToSlaveMap.resize(totalIndexParts);
                     data.read(totalIndexParts * sizeof(unsigned), &indexPartToSlaveMap[0]);
                 }
-                else if (container.queryLocalData())
-                    totalIndexParts = numIndexParts; // will be same unless local data only
                 data.read(indexFileStatsTableEntry);
             }
             ISuperFileDescriptor *superFdesc = numIndexParts?allIndexParts.item(0).queryOwner().querySuperFileDescriptor():nullptr;
