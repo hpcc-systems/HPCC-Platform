@@ -1505,7 +1505,7 @@ spec:
   subject:
     organizations:
     - HPCC Systems
-  commonName: {{ $name }}.{{ $domain }}
+  commonName: {{ trunc 64 (printf "%s.%s" $name $domain) }}
   isCA: false
   privateKey:
     algorithm: RSA
@@ -1567,7 +1567,7 @@ Builds the commonName for a client certificate.  Used in creation of both certif
     {{- $namespace := .root.Release.Namespace -}}
     {{- $service := (.service | default dict) -}}
     {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
-    {{- .client }}@{{ .instance }}.{{ .component }}.{{ $domain }}
+    {{- trunc 64 (printf "%s@%s.%s" .client .instance $domain) }}
    {{- end -}}
   {{- end -}}
  {{- end -}}
