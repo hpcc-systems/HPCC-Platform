@@ -76,20 +76,22 @@ class Cws_accessEx : public Cws_access
     void setBasedns(IEspContext &context);
     void getBasednReq(IEspContext &context, const char* name, const char* basedn,
         const char* rType, const char* rTitle, IEspDnStruct* dn);
-    bool permissionAddInputOnResource(IEspContext &context, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
-    bool permissionAddInputOnAccount(IEspContext &context, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
-    bool getNewFileScopePermissions(ISecManager* secmgr, const char* name, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
-    bool setNewFileScopePermissions(ISecManager* secmgr, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
+    bool permissionAddInputOnResource(IEspContext &context, CLdapSecManager *secmgr, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
+    bool permissionAddInputOnAccount(IEspContext &context, CLdapSecManager *secmgr, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
+    bool getNewFileScopePermissions(CLdapSecManager* secmgr, const char* name, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
+    bool setNewFileScopePermissions(CLdapSecManager* secmgr, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
     bool permissionsReset(CLdapSecManager* ldapsecmgr, const char* basedn, const char* rtype, const char* prefix,
         const char* resourceName, ACT_TYPE accountType, const char* accountName,
         bool allow_access, bool allow_read, bool allow_write, bool allow_full,
         bool deny_access, bool deny_read, bool deny_write, bool deny_full);
     void getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
         int accountType, StringArray& basednNames);
-    int enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg);
+    int enableDisableScopeScans(IEspContext &context, CLdapSecManager *secmgr, bool doEnable, StringBuffer &retMsg);
     CLdapSecManager* queryLDAPSecurityManager(IEspContext &context);
     void addResourcePermission(const char *name, int type, int allows, int denies, IArrayOf<IEspResourcePermission> &permissions);
     const char* getPasswordExpiration(ISecUser *usr, StringBuffer &passwordExpiration);
+    void checkUser(IEspContext &context, CLdapSecManager *ldapSecMgr, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
+    CLdapSecManager* queryLDAPSecurityManagerAndCheckUser(IEspContext &context, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
 
 public:
     IMPLEMENT_IINTERFACE;
