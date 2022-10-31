@@ -393,6 +393,7 @@ int CHttpMessage::parseOneHeader(char* oneline)
                 if(port != NULL)
                 {
                     m_port = atoi(port);
+                    hasPortInHost = true;
                 }
             }
             m_host.set(value);
