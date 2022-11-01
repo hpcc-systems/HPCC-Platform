@@ -46,12 +46,16 @@ IF (NOT MYSQL_FOUND)
       SET (osdir "unknown")
     ENDIF()
     IF (NOT ("${osdir}" STREQUAL "unknown"))
-      FIND_PATH (MYSQL_INCLUDE_DIR NAMES mysql.h PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/include"
-        "${EXTERNALS_DIRECTORY}/mysql/include" NO_DEFAULT_PATH)
-      FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib"
-        "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib" NO_DEFAULT_PATH)
-      FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib_alt} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib"
-        "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib" NO_DEFAULT_PATH)
+      IF( "${MYSQL_INCLUDE_DIR}" STREQUAL "" )
+        FIND_PATH (MYSQL_INCLUDE_DIR NAMES mysql.h PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/include"
+          "${EXTERNALS_DIRECTORY}/mysql/include" NO_DEFAULT_PATH)
+      ENDIF()
+      IF( "${MYSQL_LIBRARIES}" STREQUAL "" )
+        FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib"
+          "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib" NO_DEFAULT_PATH)
+        FIND_LIBRARY (MYSQL_LIBRARIES NAMES ${mysql_lib_alt} PATHS "${EXTERNALS_DIRECTORY}/mysql/${osdir}/lib"
+          "${EXTERNALS_DIRECTORY}/mysql/${osdir}" "${EXTERNALS_DIRECTORY}/mysql/lib" NO_DEFAULT_PATH)
+      ENDIF()
     ENDIF()
   ENDIF()
 
