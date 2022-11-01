@@ -39,8 +39,10 @@
             spaces)</para><para><emphasis role="bold">ALL</emphasis> (remove
             all spaces, even those within the
             string_value)</para><para><emphasis
-            role="bold">WHITESPACE</emphasis> removes all white space
-            characters</para></entry>
+            role="bold">WHITESPACE</emphasis> Used in conjunction with any of
+            the other flags, this removes ALL white space characters from the
+            specified area. If omitted, only the space character (0x20) is
+            removed.</para></entry>
           </row>
 
           <row>
@@ -54,13 +56,13 @@
 
   <para>The <emphasis role="bold">TRIM </emphasis>function returns the
   <emphasis>string_value </emphasis>with all trailing and/or leading spaces
-  (0x20) removed. </para>
+  (0x20) removed.</para>
 
   <para>The <emphasis role="bold">WHITESPACE</emphasis> option removes all
   white space characters. In STRING, this is space (0x20), horizontal tab,
   vertical tab, line feed, form feed, carriage return (0x09 to 0x0D), and
   non-breaking space (0xA0). For UNICODE, it removes all characters with the
-  white space property. </para>
+  white space property.</para>
 
   <para>Example:</para>
 
