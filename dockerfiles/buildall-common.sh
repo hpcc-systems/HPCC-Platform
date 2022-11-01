@@ -30,6 +30,11 @@ BUILD_TYPE=                                     # Set to Debug for a debug build
 DOCKER_REPO=hpccsystems
 DEST_DOCKER_REGISTRY=docker.io
 USE_CPPUNIT=1
+SIGN_MODULES=OFF
+SIGNING_SECRET=
+SIGNING_KEYID=HPCCSystems
+SIGNING_PASSPHRASE=
+KEY_COMMAND=
 
 # These values are set in a GitHub workflow build
 
@@ -38,6 +43,8 @@ USE_CPPUNIT=1
 [[ -n ${INPUT_GITHUB_TOKEN} ]] && GITHUB_TOKEN=${INPUT_GITHUB_TOKEN}
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
+[[ -n ${INPUT_SIGN_MODULES} ]] && SIGN_MODULES=${INPUT_SIGN_MODULES}
+[[ -n ${INPUT_SIGNING_KEYID} ]] && SIGNING_KEYID=${INPUT_SIGNING_KEYID}
 
 DEST_DOCKER_REPO=${DOCKER_REPO}
 [[ -n ${INPUT_LN_DOCKER_REPO} ]] && DEST_DOCKER_REPO=${INPUT_LN_DOCKER_REPO}
@@ -67,6 +74,24 @@ else
   USE_CPPUNIT=0
 fi
 
+if [[ "${SIGN_MODULES}" != "OFF" ]] ; then
+  if [[ -n ${INPUT_SIGNING_SECRET} ]] ; then
+    echo "${INPUT_SIGNING_SECRET}" > private.key
+    SECRET_KEY="--secret id=key,src=private.key"
+  else
+    echo "Signing Secret required to sign modules"
+    exit 1
+  fi
+  if [[ -n {INPUT_SIGNING_PASSPHRASE} ]] ; then
+    echo "${INPUT_SIGNING_PASSPHRASE}" > passphrase.txt
+    SECRET_PASSPHRASE="--secret id=passphrase,src=passphrase.txt"
+  else
+    echo "Signing Passphrase required to sign modules"
+    exit 1
+  fi
+  KEY_COMMAND="${SECRET_KEY} ${SECRET_PASSPHRASE} --build-arg SIGNING_MODULES=ON --build-arg SIGNING_KEYID=${SIGNING_KEYID}" 
+fi
+
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
   LATEST=1
 fi
@@ -87,7 +112,8 @@ build_image() {
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
   if [ "$rebuild" = "1" ] || ! docker pull ${DEST_DOCKER_REGISTRY}/${DOCKER_REPO}/${name}:${label} ; then
-    docker image build -t ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label} \
+    DOCKER_BUILDKIT=1 docker image build \
+       -t ${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO}/${name}:${label} ${KEY_COMMAND} \
        --build-arg BASE_VER=${BASE_VER} \
        --build-arg DOCKER_REPO=${DOCKER_REPO} \
        --build-arg DEST_DOCKER_REPO=${DEST_DOCKER_REGISTRY}/${DEST_DOCKER_REPO} \

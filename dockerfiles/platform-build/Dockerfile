@@ -65,13 +65,28 @@ RUN mono `./vcpkg fetch nuget | tail -n 1` \
     -username "${GITHUB_ACTOR}" \
     -password "${GITHUB_TOKEN}"
 
+
 WORKDIR /hpcc-dev
 RUN mkdir build
 WORKDIR /hpcc-dev/build
 
+ARG SIGN_MODULES=OFF
+RUN --mount=type=secret,id=key,uid=10000 if [[ "${SIGN_MODULES}" != "OFF" ]] ; \
+    then \
+        gpg --batch --import /run/secrets/key && gpg --list-secret-keys ; \
+    else \
+        echo "skipping ECL signing" ; \
+    fi
+
 ARG BUILD_TYPE=RelWithDebInfo
 ARG USE_CPPUNIT=1
-RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev -DCONTAINERIZED=1 -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DUSE_PYTHON2=0 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=${USE_CPPUNIT}
+ARG SIGNING_KEYID=HPCCSystems
+ARG SIGNING_PASSPHRASE=none
+RUN --mount=type=secret,id=passphrase,uid=10000 cmake /hpcc-dev/HPCC-Platform \
+    -Wno-dev -DCONTAINERIZED=1 \
+    -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DUSE_PYTHON2=0 \
+    -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=${USE_CPPUNIT} -DSIGN_MODULES=${SIGN_MODULES} \
+    -DSIGN_MODULES_KEYID=${SIGNING_KEYID} -DSIGN_MODULES_PASSPHRASE=$(cat /run/secrets/passphrase)
 RUN rm -rf ./vcpkg_downloads && rm -rf ./vcpkg_buildtrees && rm -rf ./vcpkg_packages
 
 ARG BUILD_THREADS
@@ -90,4 +105,3 @@ RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems
 RUN mkdir /var/log/HPCCSystems && chown hpcc:hpcc /var/log/HPCCSystems
 RUN mkdir /var/lock/HPCCSystems && chown hpcc:hpcc /var/lock/HPCCSystems
 RUN mkdir /var/run/HPCCSystems && chown hpcc:hpcc /var/run/HPCCSystems
-
