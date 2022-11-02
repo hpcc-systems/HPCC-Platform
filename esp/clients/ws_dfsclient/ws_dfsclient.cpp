@@ -574,6 +574,7 @@ IClientWsDfs *getDfsClient(const char *serviceUrl, IUserDescriptor *userDesc)
 }
 
 static CriticalSection localSecretCrit;
+static constexpr unsigned cachedSecretTimeoutSecs = 120; // 2 mins
 static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretName)
 {
     /*
@@ -593,11 +594,26 @@ static void configureClientSSL(IEspClientRpcSettings &rpc, const char *secretNam
     clientPrivateKeyFilename.append(tempDirStr).append("tls.key");
     caCertFilename.append(tempDirStr).append("ca.crt");
 
+    bool cacheEntryValid = false;
     CriticalBlock b(localSecretCrit);
-    if (!checkDirExists(tempDirStr.str()))
+    Owned<IFile> tempDir = createIFile(tempDirStr);
+    CDateTime timeOutTime, nowTime;
+    bool dirExists = false;
+    if (tempDir->getTime(&timeOutTime, nullptr, nullptr))
     {
-        Owned<IFile> dir = createIFile(tempDirStr.str());
-        dir->createDirectory();
+        dirExists = true;
+        timeOutTime.adjustTimeSecs(cachedSecretTimeoutSecs);
+        nowTime.setNow();
+        if (nowTime.compare(timeOutTime, false) < 0)
+            cacheEntryValid = true;
+    }
+
+    if (!cacheEntryValid)
+    {
+        if (dirExists)
+            verifyex(tempDir->setTime(&nowTime, &nowTime, nullptr));
+        else
+            verifyex(tempDir->createDirectory());
         StringBuffer secretValue;
 
         Owned<IFile> file = createIFile(clientCertFilename);
