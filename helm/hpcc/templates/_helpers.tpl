@@ -1265,8 +1265,9 @@ dali data
 {{- end -}}
 
 {{/*
-A template to generate the standard app.kubernetes.io labels
+A template to generate the standard app.kubernetes.io labels and standard HPCC labels
 
+Pass in root, name, component, instance
 root name(k8s application name) component(component within the application, can be same as app) instance 
 
 https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
@@ -1281,8 +1282,13 @@ app.kubernetes.io/part-of    The name of a higher level application this one is 
 app.kubernetes.io/managed-by The tool being used to manage the operation of an application helm
 app.kubernetes.io/created-by The controller/user who created this resource                 controller-manager
 helm.sh/chart                This should be the chart name and version
+----------------------------+-------------------------------------------------------------+----------
+| HPCC Label                | Description                                                 | Example |
+----------------------------+-------------------------------------------------------------+----------
+instanceOf                   The instance type, by default = app.kubernetes.io/instance    hthor-job
 */}}
 {{- define "hpcc.addStandardLabels" }}
+{{- $instanceOf := .instanceOf | default .instance }}
 app.kubernetes.io/part-of: HPCC-Platform
 {{- if .name }}
 app.kubernetes.io/name: {{ .name }}
@@ -1306,6 +1312,7 @@ helm.sh/chart: {{ .root.Chart.Name }}-{{ .root.Chart.Version | replace "+" "_" }
   {{- end }}
  {{- end }}
 {{- end }}
+instanceOf: {{ $instanceOf }}
 {{- end }}
 
 {{/*
@@ -2010,3 +2017,44 @@ Pass in a dictionary with "services"
 {{- end -}}
 {{- $_ := set $root "services" $newServices -}}
 {{- end -}}
+
+{{/*
+A template to generate a NetworkPolicy for a named egress section that applies to a component
+Pass in dict with .root, .me and .labels
+*/}}
+{{- define "hpcc.addEgress" }}
+{{- $lvars := dict "egress" list -}}
+{{- $_ := set $lvars "labels" (ternary .labels (list .me.name) (hasKey . "labels")) -}}
+{{- if hasKey .me "egress" -}}
+ {{- if eq "string" (kindOf .me.egress) -}}
+  {{- if hasKey .root.Values.global "egress" -}}
+   {{- if hasKey .root.Values.global.egress .me.egress -}}
+    {{- $_ := set $lvars "egress" (get .root.Values.global.egress .me.egress) -}}
+   {{- else -}}
+    {{- required (printf "Specified named egress %s not found in global egress section" .me.egress) nil -}}
+   {{- end -}}
+  {{- else -}}
+   {{- required "global egress section not found" nil -}}
+  {{- end -}}
+ {{- else -}}
+  {{- $_ := set $lvars "egress" .me.egress -}}
+ {{- end -}}
+{{- end -}}
+{{- if $lvars.egress }} 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-egress-np" .me.name | quote }}
+spec:
+  podSelector:
+    matchExpressions:
+    - key: instanceOf
+      operator: In
+      values: [ {{ join "," $lvars.labels }} ]
+  policyTypes:
+  - Egress
+  egress:
+{{ toYaml $lvars.egress | indent 2 }}
+{{- end -}}
+{{- end -}}
+
