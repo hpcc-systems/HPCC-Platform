@@ -13,7 +13,7 @@ const defaultUIState = {
 interface SuperFilesProps {
     cluster: string;
     logicalFile: string;
-    sort?: QuerySortItem
+    sort?: QuerySortItem;
 }
 
 const defaultSort = { attribute: "Name", descending: false };
