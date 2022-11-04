@@ -1182,6 +1182,7 @@ public:
     SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
     SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
     SecAccessFlags getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags=0);
+    SecAccessFlags getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags=0);
     void setDefaultUser(IUserDescriptor *user);
     IUserDescriptor* queryDefaultUser();
 
@@ -11845,6 +11846,13 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
 
 SecAccessFlags CDistributedFileDirectory::getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags)
 {
+    return getScopePermissions(dlfn.get(),user,auditflags);
+}
+
+SecAccessFlags CDistributedFileDirectory::getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags)
+{
+    CDfsLogicalFileName dlfn;
+    dlfn.setPlaneExternal(dropZoneName,dropZonePath);
     return getScopePermissions(dlfn.get(),user,auditflags);
 }
 
