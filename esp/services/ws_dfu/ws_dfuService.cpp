@@ -2299,12 +2299,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 FileDetails.setCompressedFileSize(compressedSize);
                 if (version >= 1.34)
                 {
-                    __int64 diff = size - compressedSize;
-                    // This is slightly strange - compressionRatio = compressedSize/size would be more intuitive.
-                    // Ensure +ve otherwise indexes which are larger than the input rows look very strange.
-                    if (diff < 0)
-                        diff = 0;
-                    Decimal d(((double) diff)/size*100);
+                    Decimal d(((double) compressedSize)/size*100);
                     d.round(2);
                     FileDetails.setPercentCompressed(d.getCString());
                 }
