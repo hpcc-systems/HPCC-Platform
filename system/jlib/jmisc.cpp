@@ -646,40 +646,6 @@ void close_program(HANDLE handle)
 
 #endif
 
-#ifndef _WIN32
-bool CopyFile(const char *file, const char *newfile, bool fail)
-{
-    struct stat s;
-    if ((fail) && (0 == stat((char *)newfile, &s))) return false;
-    FILE *in=fopen(file,"rb"), *out=fopen(newfile,"wb");
-    try
-    {
-        if (!in)
-            throw MakeStringException(-1, "failed to open %s for copy",file);
-        if (!out)
-            throw MakeStringException(-1, "failed to create %s",newfile);
-        char b[1024];
-        while (true)
-        {
-            int c=fread(b,1,sizeof(b),in);
-            if (!c) break;
-            if (!fwrite(b,c,1,out)) throw MakeStringException(-1, "failed to copy file %s to %s",file,newfile);
-        }
-        fclose(in);
-        fclose(out);
-        stat((char *)file, &s);
-        chmod(newfile, s.st_mode);
-    } catch (...)
-    {
-        if (in)  fclose(in);
-        if (out) fclose(out);
-        return false;
-    }
-
-    return true;
-}
-#endif
-
 //========================================================================================================================
 
 static bool hadAbortSignal = false;
