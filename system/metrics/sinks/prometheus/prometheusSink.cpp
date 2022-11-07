@@ -20,6 +20,8 @@
 
 using namespace hpccMetrics;
 
+std::map<std::string, std::vector<std::string>> histogramLabels;
+
 extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree)
 {
     return new PrometheusMetricSink(name, pSettingsTree);
@@ -91,9 +93,11 @@ const char * PrometheusMetricSink::mapHPCCMetricTypeToPrometheusStr(MetricType t
         return "counter";
     case hpccMetrics::METRICS_GAUGE:
         return "gauge";
+    case hpccMetrics::METRICS_HISTOGRAM:
+        return "histogram";
     default:
         LOG(MCinternalWarning, "Encountered unknown metric - cannot map to Prometheus metric!");
-        return nullptr;
+        return "unknowntype";
     }
 }
 
@@ -109,42 +113,149 @@ void PrometheusMetricSink::toPrometheusMetrics(const std::vector<std::shared_ptr
 
     for (auto &pMetric: reportMetrics)
     {
-        std::string name = pMetric->queryName();
+        std::string metricName = getPrometheusMetricName(pMetric);
 
-        //'.' is a known char used in HPCC metric names but invalid in Prometheus
-        std::replace(name.begin(), name.end(), '.', '_');
+        MetricType metricType = pMetric->queryMetricType();
+
         if (verbose)
         {
+            const char * prometheusMetricType = mapHPCCMetricTypeToPrometheusStr(metricType);
             if (!pMetric->queryDescription().empty())
-                out.append("# HELP ").append(name.c_str()).append(" ").append(pMetric->queryDescription().c_str()).append("\n");
+                out.append("# HELP ").append(metricName.c_str()).append(" ").append(pMetric->queryDescription().c_str()).append("\n");
 
-            MetricType type = pMetric->queryMetricType();
-            const char * promtype = mapHPCCMetricTypeToPrometheusStr(type);
-            if (promtype)
-                out.append("# TYPE ").append(name.c_str()).append(" ").append(promtype).append("\n");
+            if (prometheusMetricType)
+                out.append("# TYPE ").append(metricName.c_str()).append(" ").append(prometheusMetricType).append("\n");
         }
 
-        out.append(name.c_str());
-        const auto & metaData = pMetric->queryMetaData();
-        if (metaData.size()>0)
+        if (metricType == hpccMetrics::METRICS_HISTOGRAM)
         {
-            out.append(" {");
-            bool firstEntry = true;
-            for (auto &metaDataIt: metaData)
-            {
-                if (!firstEntry)
-                    out.append(",");
-                else
-                    firstEntry=false;
-
-                out.append(metaDataIt.key.c_str()).append("=\"").append(metaDataIt.value.c_str()).append("\"");
-            }
-            out.append("}");
+            toPrometheusHistogram(metricName, pMetric, out);
         }
+        else
+        {
+            out.append(metricName.c_str());
+            const auto &metaData = pMetric->queryMetaData();
+            if (!metaData.empty())
+            {
+                out.append(" {");
+                bool firstEntry = true;
+                for (auto &metaDataIt: metaData)
+                {
+                    if (!firstEntry)
+                        out.append(",");
+                    else
+                        firstEntry = false;
 
-        out.append(" ").append(pMetric->queryValue()).append("\n");
+                    out.append(metaDataIt.key.c_str()).append("=\"").append(metaDataIt.value.c_str()).append("\"");
+                }
+                out.append("}");
+            }
+            out.append(" ").append(pMetric->queryValue()).append("\n");
+        }
     }
 }
+
+void PrometheusMetricSink::toPrometheusHistogram(const std::string &name, const std::shared_ptr<IMetric> &pHistogram, StringBuffer & out)
+{
+    auto labels = getHistogramLabels(name, pHistogram);
+    auto bucketCounts = pHistogram->queryHistogramValues();
+    unsigned bucketLabelIndex = 0;
+    __uint64 cumulativeBucketCount = 0;
+    for (auto const &bucketCount: bucketCounts)
+    {
+        cumulativeBucketCount += bucketCount;
+        out.append(labels[bucketLabelIndex++].c_str()).append(" ").append(cumulativeBucketCount).append("\n");
+    }
+
+    // Indices for the histogram value and cumulative count labels (stored sequentially after the
+    // bucket count labels in the labels vector
+    unsigned valueLabelIndex = bucketCounts.size();
+    unsigned cumulativeCountLabelIndex = valueLabelIndex + 1;
+
+    out.append(labels[valueLabelIndex].c_str()).append(" ").append(pHistogram->queryValue()).append("\n");
+    out.append(labels[cumulativeCountLabelIndex].c_str()).append(" ").append(cumulativeBucketCount).append("\n");
+}
+
+
+std::string PrometheusMetricSink::getPrometheusMetricName(const std::shared_ptr<IMetric> &pMetric)
+{
+    std::string name = pMetric->queryName();
+
+    //'.' is a known char used in HPCC metric names but invalid in Prometheus
+    std::replace(name.begin(), name.end(), '.', '_');
+    name.append("_").append(getPrometheusMetricUnits(pMetric));
+    return name;
+}
+
+std::string PrometheusMetricSink::getPrometheusMetricUnits(const std::shared_ptr<IMetric> &pMetric)
+{
+    std::string unitsStr;
+    switch (pMetric->queryUnits())
+    {
+        case SMeasureCount:
+            unitsStr = "total";
+            break;
+        case SMeasureSize:
+            unitsStr = "bytes";
+            break;
+        case SMeasureTimeNs:
+            unitsStr = "seconds";
+            break;
+        default:
+            unitsStr = "";
+            break;
+    }
+    return unitsStr;
+}
+
+// return a vector of label strings matching the exposition format for a histogram as defined by the Prometheus spec.
+// See https://prometheus.io/docs/instrumenting/exposition_formats/ for more information
+const std::vector<std::string> &PrometheusMetricSink::getHistogramLabels(const std::string &name, const std::shared_ptr<IMetric> &pHistogram)
+{
+    auto it = histogramLabels.find(name);
+    if (it != histogramLabels.end())
+    {
+        return it->second;
+    }
+
+    StatisticMeasure units = pHistogram->queryUnits();
+    std::vector<std::string> labels;
+    std::vector<__uint64> bucketLimits = pHistogram->queryHistogramBucketLimits();
+
+    for (const auto &limit: bucketLimits)
+    {
+        std::string label(name);
+        label.append("_bucket{le=\"");
+        if (units == SMeasureTimeNs)
+        {
+            double secs = (double)limit / 1000000000.0;
+            label.append(std::to_string(secs)).append("\"}");
+        }
+        else
+        {
+            label.append(std::to_string(limit)).append("\"}");
+        }
+        labels.emplace_back(label);
+    }
+
+    // Add the inf label
+    std::string infLabel(name);
+    infLabel.append("_bucket{\"le=+Inf\"}");
+    labels.emplace_back(infLabel);
+
+    // Sum and count
+    std::string sumLabel;
+    sumLabel.append("_sum");
+    labels.emplace_back(sumLabel);
+
+    std::string countLabel;
+    countLabel.append("_count");
+    labels.emplace_back(countLabel);
+
+    // Insert the labels for reuse
+    auto insertRet = histogramLabels.insert({name, labels});
+    return insertRet.first->second;
+};
 
 void PrometheusMetricSink::startCollection(MetricsManager *_pManager)
 {

@@ -22,6 +22,8 @@
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <thread>
+#include <map>
+#include <vector>
 
 //including cpp-httplib single header file REST client
 //  doesn't work with format-nonliteral as an error
@@ -98,6 +100,12 @@ protected:
 
     static const char * mapHPCCMetricTypeToPrometheusStr(MetricType type);
     static void toPrometheusMetrics(const std::vector<std::shared_ptr<IMetric>> &, StringBuffer & out, bool verbose);
+
+    static std::string getPrometheusMetricName(const std::shared_ptr<IMetric> &pMetric);
+    static std::string getPrometheusMetricUnits(const std::shared_ptr<IMetric> &pMetric);
+
+    static void toPrometheusHistogram(const std::string &name, const std::shared_ptr<IMetric> &, StringBuffer & out);
+    static const std::vector<std::string> &getHistogramLabels(const std::string &name, const std::shared_ptr<IMetric> &pHistogram);
 };
 
 extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree);
