@@ -195,9 +195,9 @@ ${copyCSVRowsTPL(rows)} \
 
 function doDownload(type: string, wuid: string, sequence?: number, logicalName?: string) {
     const base = new ESPBase();
-    if (sequence !== undefined) {
+    if (wuid && sequence) {
         window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&Sequence=" + sequence, "_blank");
-    } else if (logicalName !== undefined) {
+    } else if (logicalName) {
         window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&LogicalName=" + logicalName, "_blank");
     }
 }
@@ -331,10 +331,10 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             key: "download", text: nlsHPCC.DownloadToCSV, iconOnly: true, iconProps: { iconName: "Download" },
             subMenuProps: {
                 items: [
-                    { key: "zip", text: nlsHPCC.Zip, onClick: () => doDownload("zip", wuid, result.Sequence) },
-                    { key: "gzip", text: nlsHPCC.GZip, onClick: () => doDownload("gzip", wuid, result.Sequence) },
-                    { key: "xls", text: nlsHPCC.XLS, onClick: () => doDownload("xls", wuid, result.Sequence) },
-                    { key: "csv", text: nlsHPCC.CSV, onClick: () => doDownload("csv", wuid, result.Sequence) },
+                    { key: "zip", text: nlsHPCC.Zip, onClick: () => doDownload("zip", wuid, result.Sequence, result.LogicalFileName) },
+                    { key: "gzip", text: nlsHPCC.GZip, onClick: () => doDownload("gzip", wuid, result.Sequence, result.LogicalFileName) },
+                    { key: "xls", text: nlsHPCC.XLS, onClick: () => doDownload("xls", wuid, result.Sequence, result.LogicalFileName) },
+                    { key: "csv", text: nlsHPCC.CSV, onClick: () => doDownload("csv", wuid, result.Sequence, result.LogicalFileName) },
                 ]
             }
         }
