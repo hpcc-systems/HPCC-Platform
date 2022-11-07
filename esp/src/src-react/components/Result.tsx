@@ -3,6 +3,7 @@ import * as ReactDOM from "react-dom";
 import { Checkbox, CommandBar, ContextualMenuItemType, DefaultButton, Dialog, DialogFooter, DialogType, ICommandBarItemProps, PrimaryButton, SpinButton, Stack } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Result as CommsResult, XSDXMLNode } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { WUResult } from "@hpcc-js/eclwatch";
 import nlsHPCC from "src/nlsHPCC";
 import { ESPBase } from "src/ESPBase";
@@ -16,6 +17,8 @@ import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 
 import "src-react-css/components/DojoGrid.css";
+
+const logger = scopedLogger("src-react/components/Result.tsx");
 
 function eclTypeTPL(type: string, isSet: boolean) {
     const prefix = isSet ? "SET OF " : "";
@@ -256,7 +259,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                 };
             });
             setFilterFields(filterFields);
-        });
+        }).catch(err => logger.error(err));
     }, [result]);
 
     //  Filter  ---
