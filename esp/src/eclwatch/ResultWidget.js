@@ -7,6 +7,7 @@ define([
 
     "dijit/registry",
     "dijit/form/TextBox",
+    "dijit/Tooltip",
 
     "dgrid/Grid",
     "dgrid/Keyboard",
@@ -25,6 +26,7 @@ define([
     "dojo/text!../templates/ResultWidget.html",
 
     "hpcc/FilterDropDownWidget",
+    "dojo/query",
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
@@ -32,7 +34,7 @@ define([
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator"
 ], function (declare, lang, arrayUtil, nlsHPCCMod, ioQuery,
-    registry, TextBox,
+    registry, TextBox, Tooltip,
     Grid, Keyboard, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
     _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, TableContainer, DGridHeaderHookMod,
     template) {
@@ -106,6 +108,10 @@ define([
 
         _onDownloadCSV: function (args) {
             this._doDownload("csv");
+        },
+
+        _onDownloadJSON: function (args) {
+            this._doDownload("json");
         },
 
         _onFileDetails: function (args) {
@@ -230,6 +236,16 @@ define([
                             context.gridDPHook.resize(evt.columnId);
                         }, 20);
                     });
+                    if (structure.filter(row => row.children).length > 0) {
+                        new Tooltip({
+                            connectId: context.id + "Toolbar",
+                            selector: ".downloadCSV",
+                            position: ["below"],
+                            getContent: function () {
+                                return context.i18n.DownloadToCSVNonFlatWarning;
+                            }
+                        });
+                    }
 
                 });
             } else {

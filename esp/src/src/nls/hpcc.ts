@@ -234,6 +234,7 @@ export = {
         Download: "Download",
         Downloads: "Downloads",
         DownloadToCSV: "Download to CSV",
+        DownloadToCSVNonFlatWarning: "Please note: downloading files containing nested datasets as comma-separated data may not be formatted as expected",
         DownloadSelectionAsCSV: "Download selection as CSV",
         DropZone: "Drop Zone",
         DueToInctivity: "You will be logged out of all ECL Watch sessions in 3 minutes due to inactivity.",
