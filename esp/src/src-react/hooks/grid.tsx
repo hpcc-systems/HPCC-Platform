@@ -4,7 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { createCopyDownloadSelection } from "../components/Common";
-import { updateSort } from "../util/history";
+import { updatePage, updateSort } from "../util/history";
 import { DojoGrid } from "../components/DojoGrid";
 import { useDeepCallback, useDeepEffect, useDeepMemo } from "./deepHooks";
 import { Pagination } from "@fluentui/react-experiments/lib/Pagination";
@@ -284,6 +284,7 @@ interface useFluentPagedGridProps {
     store: BaseStore<any, any>,
     query?: QueryRequest,
     sort?: QuerySortItem,
+    pageNum?: number,
     columns: DojoColumns,
     filename: string
 }
@@ -301,11 +302,12 @@ export function useFluentPagedGrid({
     store,
     query,
     sort,
+    pageNum = 1,
     columns,
     filename
 }: useFluentPagedGridProps): useFluentPagedGridResponse {
 
-    const [page, setPage] = React.useState(0);
+    const [page, setPage] = React.useState(pageNum - 1);
     const [pageSize, setPersistedPageSize] = useUserStore(`${persistID}_pageSize`, 25);
     const { Grid, selection, copyButtons, total, refreshTable } = useFluentStoreGrid({ store, query, sort, start: page * pageSize, count: pageSize, columns, filename });
     const { theme } = useUserTheme();
@@ -358,12 +360,20 @@ export function useFluentPagedGrid({
         }
     }, [page, pageSize, total]);
 
+    React.useEffect(() => {
+        const _page = pageNum >= 1 ? pageNum - 1 : 0;
+        setPage(_page);
+    }, [pageNum]);
+
     const GridPagination = React.useCallback(() => {
         return <Stack horizontal className={paginationStyles.root}>
             <Stack.Item className={paginationStyles.pageControls}>
                 <Pagination
                     selectedPageIndex={page} itemsPerPage={pageSize} totalItemCount={total}
-                    pageCount={Math.ceil(total / pageSize)} format="buttons" onPageChange={index => setPage(Math.round(index))}
+                    pageCount={Math.ceil(total / pageSize)} format="buttons" onPageChange={index => {
+                        setPage(Math.round(index));
+                        updatePage(Math.round(index + 1).toString());
+                    }}
                     onRenderVisibleItemLabel={props => {
                         const start = props.selectedPageIndex === 0 ? 1 : (props.selectedPageIndex * props.itemsPerPage) + 1;
                         const end = (props.itemsPerPage * (props.selectedPageIndex + 1)) > props.totalItemCount ? props.totalItemCount : props.itemsPerPage * (props.selectedPageIndex + 1);

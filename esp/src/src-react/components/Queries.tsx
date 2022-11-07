@@ -53,6 +53,7 @@ interface QueriesProps {
     filter?: object;
     sort?: QuerySortItem;
     store?: any;
+    page?: number;
 }
 
 const emptyFilter = {};
@@ -62,6 +63,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     wuid,
     filter = emptyFilter,
     sort = defaultSort,
+    page = 1,
     store
 }) => {
 
@@ -86,6 +88,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         store: gridStore,
         query,
         sort,
+        pageNum: page,
         filename: "roxiequeries",
         columns: {
             col1: {

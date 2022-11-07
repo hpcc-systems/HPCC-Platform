@@ -72,6 +72,7 @@ interface WorkunitsProps {
     filter?: object;
     sort?: QuerySortItem;
     store?: WUQueryStore;
+    page?: number;
 }
 
 const emptyFilter = {};
@@ -80,6 +81,7 @@ const defaultSort = { attribute: "Wuid", descending: true };
 export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     filter = emptyFilter,
     sort = defaultSort,
+    page = 1,
     store
 }) => {
 
@@ -104,6 +106,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         store: gridStore,
         query,
         sort,
+        pageNum: page,
         filename: "workunits",
         columns: {
             col1: {
