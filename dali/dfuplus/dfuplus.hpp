@@ -45,6 +45,8 @@ public:
     bool checkLocalDaFileSvr(const char *eps,SocketEndpoint &epout); // only supported in dfuplus command line
 
 private:
+    void setMtlsSecret(IEspClientRpcSettings &rpc);
+
     int spray();
     int replicate();
     int despray();
