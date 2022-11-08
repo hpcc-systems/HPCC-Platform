@@ -796,24 +796,21 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
             return;
         }
         nodeGroup.setown(getClusterProcessNodeGroup(processName, eqThorCluster));
+        if (!nodeGroup || (nodeGroup->ordinality() == 0))
+        {
+            OWARNLOG("Cannot find node group for %s", processName);
+            return;
+        }
     }
     else
     {
         getClusterSpareGroupName(*cluster, groupName);
-        if (groupName.length() < 1)
-        {
-            OWARNLOG("Cannot find group name for %s", processName);
-            return;
-        }
         nodeGroup.setown(queryNamedGroupStore().lookup(groupName.str()));
-    }
-    if (!nodeGroup || (nodeGroup->ordinality() == 0))
-    {
-        OWARNLOG("Cannot find node group for %s", processName);
-        return;
+        if (!nodeGroup || (nodeGroup->ordinality() == 0))
+            return; //The thor may not have spare node.
     }
 
-    int slavesPerNode = cluster->getPropInt("@slavesPerNode");
+    unsigned processNumber = 1;
     Owned<INodeIterator> gi = nodeGroup->getIterator();
     ForEach(*gi)
     {
@@ -850,10 +847,11 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
             continue;
         }
 
-        //Each thor slave is a process. The i is used to check whether the process is running or not.
-        for (unsigned i = 1; i <= slavesPerNode; i++)
-            setProcessRequest(machineInfoData, uniqueProcesses, netAddress.str(), addressRead.str(),
-                processType, processName, directory, i);
+        //Each thor slave is a process. Each process has a PID file.
+        //The PID file is used to get the information about the process.
+        //PID file name for thor slave: thorslave_{processName}_{processNumber}.pid
+        setProcessRequest(machineInfoData, uniqueProcesses, netAddress.str(), addressRead.str(),
+            processType, processName, directory, processNumber++);
     }
 
     return;
