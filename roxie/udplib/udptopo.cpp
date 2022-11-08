@@ -21,6 +21,7 @@
 #include "udptopo.hpp"
 #include "udpipmap.hpp"
 #include "roxie.hpp"
+#include "jtrace.hpp"
 #include "portlist.h"
 #include <thread>
 #include <string>
@@ -52,7 +53,7 @@ void ChannelInfo::noteChannelsSick(unsigned primarySubChannel) const
         unsigned newDelay = currentDelay[subChannel] / 2;
         if (newDelay < minIbytiDelay)
             newDelay = minIbytiDelay;
-        if (traceIBYTIfails)
+        if (doTrace(traceIBYTIfails))
             DBGLOG("IBYTI delay for subchannel %d is now %d", subChannel, newDelay);
         currentDelay[subChannel] = newDelay;
         subChannel++;
@@ -63,7 +64,7 @@ void ChannelInfo::noteChannelsSick(unsigned primarySubChannel) const
 
 void ChannelInfo::noteChannelHealthy(unsigned subChannel) const
 {
-    if (traceIBYTIfails && currentDelay[subChannel] != initIbytiDelay)
+    if (doTrace(traceIBYTIfails) && currentDelay[subChannel] != initIbytiDelay)
         DBGLOG("Resetting IBYTI delay for subchannel %d to %d", subChannel, initIbytiDelay);
     currentDelay[subChannel] = initIbytiDelay;
 }

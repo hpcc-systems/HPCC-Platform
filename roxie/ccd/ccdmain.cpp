@@ -85,7 +85,6 @@ bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceActivityCharacteristics = false;
 unsigned actResetLogPeriod = 300;
-bool traceRoxiePackets = false;
 bool delaySubchannelPackets = false;    // For debugging/testing purposes only
 bool defaultTimeActivities = true;
 bool defaultTraceEnabled = false;
@@ -773,7 +772,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 {
                     // Makes debugging easier...
                     IPropertyTree *service = topology->addPropTree("RoxieFarmProcess");
-                    service->setPropInt("@port", 9876);
+                    service->setPropInt("@port", topology->getPropInt("@port", 9876));
                 }
 #endif
                 runOnce = false;
@@ -823,10 +822,18 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         directoryTree.clear();
 
+        // Tracing feature flags
+        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceRoxieActiveQueries));
+
         //Logging stuff
 #ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
-            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
+        {
+            if (topology->getPropBool("@minlog", false))
+                queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
+            else
+                queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
+        }
         else
             removeLog();
         if (topology->hasProp("@logfile"))
@@ -1120,8 +1127,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         traceActivityCharacteristics = topology->getPropBool("@traceActivityCharacteristics", traceActivityCharacteristics);
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
-        traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
-        traceIBYTIfails = topology->getPropBool("@traceIBYTIfails", false);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
         IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", roxieMulticastEnabled ? 0 : 10);
         IBYTIbufferLifetime = topology->getPropInt("@IBYTIbufferLifetime", initIbytiDelay);

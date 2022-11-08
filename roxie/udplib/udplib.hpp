@@ -231,7 +231,6 @@ extern UDPLIB_API bool udpRemoveDuplicatePermits;
 
 //Should be in ccd
 extern UDPLIB_API unsigned multicastTTL;
-extern UDPLIB_API bool traceIBYTIfails;
 
 // -- Reported metrics --------------------------------------------------------------------------
 

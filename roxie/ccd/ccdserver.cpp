@@ -5087,19 +5087,12 @@ public:
                                         buf.read(idx);
                                         buf.read(childProcessed);
                                         buf.read(childStrands);
-                                        if (traceLevel > 5)
-                                            activity.queryLogCtx().CTXLOG("Processing ChildCount %d idx %d strands %d for child %d subgraph %d", childProcessed, idx, childStrands, childId, graphId);
                                         //activity.queryContext()->noteProcessed(graphId, childId, idx, childProcessed, childStrands);
                                     }
                                     else
                                     {
                                         CRuntimeStatisticCollection childStats(allStatistics);
                                         childStats.deserialize(buf);
-                                        if (traceLevel > 5)
-                                        {
-                                            StringBuffer s;
-                                            activity.queryLogCtx().CTXLOG("Processing ChildStats for child %d subgraph %d: %s", childId, graphId, childStats.toStr(s).str());
-                                        }
                                         //activity.queryContext()->mergeActivityStats(childStats, graphId, childId);
                                         activity.mergeStats(childStats);
                                     }
@@ -11783,8 +11776,8 @@ public:
                         processed++;
                         if (processed==rowLimit)
                         {
-                            if (traceLevel > 4)
-                                DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                            if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                                CTXLOG("onLimitExceeded line = %d", __LINE__);
                             helper.onLimitExceeded();
                         }
                         return rowBuilder.finalizeRowClear(outSize);
@@ -11800,8 +11793,8 @@ public:
                 processed++;
                 if (processed==rowLimit)
                 {
-                    if (traceLevel > 4)
-                        DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                    if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                        CTXLOG("onLimitExceeded line = %d", __LINE__);
                     ReleaseClearRoxieRow(ret);
                     helper.onLimitExceeded(); // should not return
                     throwUnexpected();
@@ -17900,8 +17893,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         helper.onLimitExceeded();
     }
 
@@ -20233,8 +20226,8 @@ public:
             if (processed > rowLimit)
             {
                 ReleaseRoxieRow(ret);
-                if (traceLevel > 4)
-                    DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                    CTXLOG("onLimitExceeded line = %d", __LINE__);
                 helper.onLimitExceeded();
             }
         }
@@ -20251,8 +20244,8 @@ public:
             if (processed > rowLimit)
             {
                 ReleaseRoxieRow(ret);
-                if (traceLevel > 4)
-                    DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                    CTXLOG("onLimitExceeded line = %d", __LINE__);
                 helper.onLimitExceeded();
             }
         }
@@ -22378,8 +22371,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         assertex(compoundHelper);
         if (isKeyed) // MORE does this exist for diskread? should it?
         {
@@ -22533,8 +22526,8 @@ public:
                 processed++;
                 if (processed > rowLimit)
                 {
-                    if (traceLevel > 4)
-                        DBGLOG("activityid = %d line = %d", activityId, __LINE__);
+                    if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                        CTXLOG("onLimitExceeded line = %d", __LINE__);
                     ReleaseRoxieRow(ret);
                     compoundHelper->onLimitExceeded();
                     throwUnexpected(); // onLimitExceeded is not supposed to return
@@ -22689,8 +22682,8 @@ public:
                         OwnedConstRoxieRow ret = rowBuilder.finalizeRowClear(sizeGot); 
                         if (processed > rowLimit)
                         {
-                            if (traceLevel > 4)
-                                DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                            if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                                CTXLOG("onLimitExceeded line = %d", __LINE__);
                             readHelper->onLimitExceeded();
                             throwUnexpected(); // onLimitExceeded is not supposed to return
                         }
@@ -23504,8 +23497,8 @@ public:
                                         unsigned __int64 count = countKey->checkCount(keyedLimit);
                                         if (count > keyedLimit)
                                         {
-                                            if (traceLevel > 4)
-                                                DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                                            if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                                                CTXLOG("onLimitExceeded line = %d", __LINE__);
                                             onLimitExceeded(true);
                                         }
                                     }
@@ -23870,8 +23863,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         if (isKeyed)
         {
             if (indexHelper.getFlags() & (TIRkeyedlimitskips|TIRkeyedlimitcreates))
@@ -24377,8 +24370,8 @@ public:
                         {
                             throwUnexpected(); // should not have used simple variant if maySkip set...
                         }
-                        if (traceLevel > 4)
-                            DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                            CTXLOG("onLimitExceeded line = %d", __LINE__);
                         indexHelper.onLimitExceeded();
                         break;
                     }
@@ -24583,8 +24576,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         if (isKeyed)
         {
             if (indexHelper.getFlags() & (TIRkeyedlimitskips|TIRkeyedlimitcreates))
@@ -24819,8 +24812,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d line = %d", isKeyed, __LINE__);
         throwUnexpected();
     }
 
@@ -24998,8 +24991,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         throwUnexpected();
     }
 
@@ -25101,8 +25094,8 @@ public:
             keyedCount++;
             if (keyedCount > keyedLimit)
             {
-                if (traceLevel > 4)
-                    DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+                    CTXLOG("onLimitExceeded line = %d", __LINE__);
                 onLimitExceeded(true); 
                 break;
             }
@@ -25145,8 +25138,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         if (isKeyed)
         {
             if (indexHelper.getFlags() & (TIRkeyedlimitskips|TIRkeyedlimitcreates))
@@ -25353,8 +25346,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            DBGLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         if (isKeyed)
             throwUnexpected();
         helper.onLimitExceeded();
@@ -26197,8 +26190,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("onLimitExceeded isKeyed = %d  line = %d", isKeyed, __LINE__);
         if (isKeyed)
             throwUnexpected();
         helper.onLimitExceeded();
@@ -26637,8 +26630,8 @@ public:
 
     virtual void onLimitExceeded(bool isKeyed)
     {
-        if (traceLevel > 4)
-            DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
+        if (doTrace(traceLimitExceeded, TraceFlags::Detailed))
+            CTXLOG("isKeyed = %d  line = %d", isKeyed, __LINE__);
         if (isKeyed)
             throwUnexpected();
         helper.onLimitExceeded();

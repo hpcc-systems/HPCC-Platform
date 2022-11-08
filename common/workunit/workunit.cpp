@@ -14398,6 +14398,20 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 #endif
 }
 
+TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & optNames, TraceFlags dft)
+{
+    for (auto &o: optNames)
+    {
+        if (wu->hasDebugValue(o.name))
+        {
+            if (wu->getDebugValueBool(o.name, false))
+                dft |= o.value;
+            else
+                dft &= ~o.value;
+        }
+    }
+    return dft;
+}
 
 #ifdef _CONTAINERIZED
 bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)

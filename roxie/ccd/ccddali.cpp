@@ -68,7 +68,7 @@ public:
         CriticalBlock b(crit);
         try
         {
-            if (traceLevel > 5)
+            if (doTrace(traceSubscriptions))
                 DBGLOG("Subscribing to %s, %p", xpath.get(), this);
             if (exact && queryDaliServerVersion().compare(SDS_SVER_MIN_NODESUBSCRIBE) >= 0)
             {
@@ -93,7 +93,7 @@ public:
         notifier = NULL;
         try
         {
-            if (traceLevel > 5)
+            if (doTrace(traceSubscriptions))
                 DBGLOG("unsubscribing from %s, %p", xpath.get(), this);
             if (change)
             {
@@ -120,7 +120,7 @@ public:
         // Despite the danger of deadlocks (that requires careful code in the notifier to avoid), I think it is neccessary to hold the lock during the call,
         // as otherwise notifier may point to a deleted object.
         CriticalBlock b(crit);
-        if (traceLevel > 5)
+        if (doTrace(traceSubscriptions))
             DBGLOG("resubscribing to %s, %p", xpath.get(), this);
         change = querySDS().subscribe(xpath, *this, true);
         if (notifier)
@@ -136,7 +136,7 @@ public:
         Linked<ISafeSDSSubscription> myNotifier;
         {
             CriticalBlock b(crit);
-            if (traceLevel > 5)
+            if (doTrace(traceSubscriptions))
                 DBGLOG("Notification on %s (%s), %p", xpath.get(), daliXpath ? daliXpath : "", this);
             myNotifier.setown(notifier ? notifier->linkIfAlive() : nullptr);
             // allow crit to be released, allowing this to be unsubscribed, to avoid deadlocking when other threads via notify call unsubscribe

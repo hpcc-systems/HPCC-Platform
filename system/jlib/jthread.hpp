@@ -25,6 +25,7 @@
 #include "jexcept.hpp"
 #include "jhash.hpp"
 #include <functional>
+#include "jtrace.hpp"
 
 #ifdef _WIN32
 #define DEFAULT_THREAD_PRIORITY THREAD_PRIORITY_NORMAL
@@ -96,6 +97,7 @@ private:
 
 protected:
     StringAttr cthreadname;
+    TraceFlags traceFlags = TraceFlags::Standard;
 public:
 #ifndef _WIN32
     Semaphore suspend;
@@ -172,6 +174,7 @@ class jlib_decl CThreadedPersistent
     bool halt;
     enum ThreadStates { s_ready, s_running, s_joining };
 
+    TraceFlags traceFlags = TraceFlags::Standard;
     void threadmain();
 public:
     CThreadedPersistent(const char *name, IThreaded *_owner);

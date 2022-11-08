@@ -1830,7 +1830,7 @@ public:
         if (!compressing())
         {
             header.append("Content-Length: ").append(length).append("\r\n\r\n");
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Writing HTTP header length %d to HTTP socket", header.length());
             sock->write(header.str(), header.length());
             sent += header.length();
@@ -1863,15 +1863,15 @@ public:
 
             MemoryBuffer mb;
             zlib_deflate(mb, content.str(), content.length(), GZ_DEFAULT_COMPRESSION, zt);
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Compressed content length %u to %u (%s)", content.length(), mb.length(), compressTypeName());
 
             header.append("Content-Length: ").append(mb.length()).append("\r\n\r\n");
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Writing HTTP header length %d to HTTP socket (compressed body)", header.length());
             sock->write(header.str(), header.length());
             sent += header.length();
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Writing compressed %s content, length %u, to HTTP socket", compressTypeName(), mb.length());
 
             sock->write(mb.toByteArray(), mb.length());
@@ -1900,25 +1900,25 @@ void CSafeSocket::flush()
         resp.init(contentLength, mlResponseFmt, respCompression);
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Writing content head length %" I64F "u to HTTP %s", static_cast<__uint64>(contentHead.length()), resp.traceName());
             resp.write(contentHead.str(), contentHead.length());
         }
         ForEachItemIn(idx2, queued)
         {
             unsigned length = lengths.item(idx2);
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Writing block length %d to HTTP %s", length, resp.traceName());
             resp.write(queued.item(idx2), length);
         }
         if (!adaptiveRoot || mlResponseFmt != MarkupFmt_JSON)
         {
-            if (traceLevel > 5)
+            if (doTrace(traceHttp))
                 DBGLOG("Writing content tail length %" I64F "u to HTTP %s", static_cast<__uint64>(contentTail.length()), resp.traceName());
             resp.write(contentTail.str(), contentTail.length());
         }
         sent += resp.finalize();
-        if (traceLevel > 5)
+            if (doTrace(traceHttp))
             DBGLOG("Total written %d", sent);
     }
 }

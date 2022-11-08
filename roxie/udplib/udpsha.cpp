@@ -78,7 +78,6 @@ bool udpAllowAsyncPermits = false;      // Allow requests to send more data to o
 bool udpRemoveDuplicatePermits = true;
 
 unsigned multicastTTL = 1;
-bool traceIBYTIfails = false;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {

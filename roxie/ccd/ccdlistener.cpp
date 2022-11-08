@@ -111,7 +111,7 @@ class CascadeManager : public CInterface
         {
             unlockChildren();
             entered = false;
-            if (traceLevel > 5)
+            if (doTrace(traceRoxieLock))
                 DBGLOG("globalLock released");
             globalLock.signal();
             globalSignals++;
@@ -279,13 +279,13 @@ private:
 
     void getGlobalLock()
     {
-        if (traceLevel > 5)
+        if (doTrace(traceRoxieLock))
             DBGLOG("in getGlobalLock");
         if (!globalLock.wait(2000))  // since all lock in the same order it's ok to block for a bit here
             throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
         globalLocks++;
         entered = true;
-        if (traceLevel > 5)
+        if (doTrace(traceRoxieLock))
             DBGLOG("globalLock locked");
     }
 
@@ -297,13 +297,13 @@ private:
         }
         catch(...)
         {
-            if (traceLevel>5)
+            if (doTrace(traceRoxieLock))
                 DBGLOG("Failed to get child locks - unlocking");
             assertex(entered);
             entered = false;
             globalLock.signal();
             globalSignals++;
-            if (traceLevel > 5)
+            if (doTrace(traceRoxieLock))
                 DBGLOG("globalLock released");
             throw;
         }
@@ -328,7 +328,7 @@ public:
     inline bool checkEntered(){return entered;}
     void doLockChild(IPropertyTree *xml, const char *logText, StringBuffer &reply)
     {
-        if (traceLevel > 5)
+        if (doTrace(traceRoxieLock))
             DBGLOG("doLockChild: %s", logText);
         isOriginal = false;
         bool unlock = xml->getPropBool("@unlock", false);
@@ -357,8 +357,7 @@ public:
             }
             catch (IException *E)
             {
-                if (traceLevel > 5)
-                    logctx.logOperatorException(E, __FILE__, __LINE__, "Trying to get global lock");
+                logctx.logOperatorException(E, __FILE__, __LINE__, "Trying to get global lock");
                 E->Release();
                 reply.append("<Lock>0</Lock>");
             }
@@ -394,8 +393,7 @@ public:
             catch (IException *E)
             {
                 unsigned errCode = E->errorCode();
-                if (traceLevel > 5)
-                    logctx.logOperatorException(E, __FILE__, __LINE__, "In doLockGlobal()");
+                logctx.logOperatorException(E, __FILE__, __LINE__, "In doLockGlobal()");
                 E->Release();
 
                 if ( (!--attemptsLeft) || (errCode == ROXIE_CLUSTER_SYNC_ERROR))
@@ -408,7 +406,7 @@ public:
                 Sleep(lockDelay);
             }
         }
-        if (traceLevel > 5)
+        if (doTrace(traceRoxieLock))
             DBGLOG("doLockGlobal got %d locks", locksGot);
         reply.append("<Lock>").append(locksGot).append("</Lock>");
         reply.append("<NumServers>").append(servers.ordinality()).append("</NumServers>");
@@ -646,10 +644,10 @@ public:
             if (accepted && threadsActive > sink->getMaxActiveThreads())
             {
                 sink->setMaxActiveThreads(threadsActive);
-                if (traceLevel > 1)
+                if (doTrace(traceRoxieActiveQueries))
                     DBGLOG("Maximum queries active %d of %d for pool %d", threadsActive, poolSize, parent->queryPort());
             }
-            if (!accepted && traceLevel > 5)
+            if (!accepted && doTrace(traceRoxieActiveQueries, TraceFlags::Detailed))
                 DBGLOG("Too many active queries (%d >= %d)", threadsActive, poolSize);
         }
         sink->incActiveThreadCount();

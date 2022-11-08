@@ -346,7 +346,6 @@ extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceActivityCharacteristics;
 extern unsigned actResetLogPeriod;
-extern bool traceRoxiePackets;
 extern bool delaySubchannelPackets;
 extern bool traceTranslations;
 extern bool defaultTimeActivities;
