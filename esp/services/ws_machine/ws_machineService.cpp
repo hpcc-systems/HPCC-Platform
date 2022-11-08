@@ -1156,6 +1156,8 @@ void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadPar
     }
     else
     {
+        ESPLOG(LogMax, "netAddress(%s), command(%s)", pParam->m_machineData.getNetworkAddress(), preflightCommand.str());
+
         error = runCommand(context, pParam->m_machineData.getNetworkAddress(), pParam->m_machineData.getNetworkAddressInEnvSetting(), pParam->m_machineData.getOS(), preflightCommand.str(), pParam->m_options.getUserName(), pParam->m_options.getPassword(), response);
         if ((error == 0) && (response.length() > 0))
             readPreflightResponse(context, pParam, response.str(), error);
@@ -1488,24 +1490,11 @@ bool CStorageData::read(const char* s)
     if (m_diskSpaceTotal > 0)
         m_diskSpacePercentAvail = round((float)m_diskSpaceAvailable*100/m_diskSpaceTotal);
 
-    if (data.length() > 2)
-    {
-        pStr = data.item(2);
-        if (isdigit(*pStr))
-        {
-            m_diskSpaceActualSize = atol(pStr);
-            if (m_toMByte)
-                m_diskSpaceActualSize = llround((double)m_diskSpaceActualSize/1024);
-
-            //If a given path (ex. /var/lib/HPCCSystems/hpcc-mirror/thor) in the usage request does not exist,
-            //the data.item(3) is the path (ex. /var/lib/HPCCSystems/hpcc-mirror/) the usage script is used
-            //to read the DiskSpace.
-            if (m_readPath && (data.length() > 3))
-                m_path.set(data.item(3));
-        }
-        else if (m_readPath)
-            m_path.set(pStr);
-    }
+    //If a given path (ex. /var/lib/HPCCSystems/hpcc-mirror/thor) in the usage request does not exist,
+    //the data.item(2) is the path where the usage script is used to read the DiskSpace
+    //(ex. /var/lib/HPCCSystems/hpcc-mirror/).
+    if (m_readPath && (data.length() > 2))
+        m_path.set(data.item(2));
 
     return true;
 }
@@ -2688,7 +2677,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
         command.appendf("%s", t.queryProp("@path"));
         pathCount++;
     }
-    ESPLOG(LogMax, "command(%s)", command.str());
+    ESPLOG(LogMax, "netAddress(%s), command(%s)", param->request->queryProp("@netAddress"), command.str());
 
     StringBuffer response;
     int error = runCommand(context, param->request->queryProp("@netAddress"), nullptr,
@@ -2721,7 +2710,6 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
         diskPathTree.addPropInt64("@used", sData.getDiskSpaceUsed());
         diskPathTree.addPropInt64("@available", sData.getDiskSpaceAvailable());
         diskPathTree.addPropInt("@percentAvail", sData.getDiskSpacePercentAvail());
-        diskPathTree.addPropInt64("@size", sData.getDiskSpaceActualSize());
         const char* pathUsed = sData.getDiskSpacePath();
         if (!isEmptyString(pathUsed))
             diskPathTree.addProp("@pathUsed", pathUsed);
@@ -2815,8 +2803,6 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
                             VStringBuffer desc("%s not found. Read disk usage from %s", aDiskPath, pathUsed);
                             diskUsage->setDescription(desc);
                         }
-                        if ((version >= 1.18) && folderTree->hasProp("@size"))
-                            diskUsage->setActualSize(folderTree->getPropInt64("@size"));
                     }
                 }
                 diskUsages.append(*diskUsage.getClear());
