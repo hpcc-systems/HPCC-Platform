@@ -1152,6 +1152,12 @@ void CHThorIndexWriteActivity::execute()
     // Loop thru the results
     unsigned __int64 reccount = 0;
     unsigned int fileCrc = -1;
+    offset_t offsetBranches = 0;
+    offset_t uncompressedSize = 0;
+    unsigned __int64 numLeafNodes = 0;
+    unsigned __int64 numBlobNodes = 0;
+    unsigned __int64 numBranchNodes = 0;
+
     file.setown(createIFile(filename.get()));
     {
         OwnedIFileIO io;
@@ -1221,6 +1227,7 @@ void CHThorIndexWriteActivity::execute()
                 RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
                 size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
                 builder->processKeyData(rowBuffer, fpos, thisSize);
+                uncompressedSize += (thisSize + 8); // Fileposition is always stored.....
             }
             catch(IException * e)
             {
@@ -1238,10 +1245,15 @@ void CHThorIndexWriteActivity::execute()
         builder->finish(metadata, &fileCrc);
         duplicateKeyCount = builder->getDuplicateCount();
         cummulativeDuplicateKeyCount += duplicateKeyCount;
-        totalLeafNodes += builder->getNumLeafNodes();
-        totalBranchNodes += builder->getNumBranchNodes();
-        totalBlobNodes += builder->getNumBlobNodes();
+        numLeafNodes = builder->getNumLeafNodes();
+        numBranchNodes = builder->getNumBranchNodes();
+        numBlobNodes = builder->getNumBlobNodes();
+
+        totalLeafNodes += numLeafNodes;
+        totalBranchNodes += numBranchNodes;
+        totalBlobNodes += numBlobNodes;
         numDiskWrites = io->getStatistic(StNumDiskWrites);
+        offsetBranches = builder->getOffsetBranches();
         out->flush();
         out.clear();
     }
@@ -1286,8 +1298,10 @@ void CHThorIndexWriteActivity::execute()
         desc->addCluster(mygroupname.str(),mygrp, partmap);
         attrs.set(&desc->queryPart(0)->queryProperties());
     }
-    attrs->setPropInt64("@size", indexFileSize);
+    attrs->setPropInt64("@size", uncompressedSize);
+    attrs->setPropInt64("@compressedSize", indexFileSize);
     attrs->setPropInt64("@recordCount", reccount);
+    attrs->setPropInt64("@offsetBranches", offsetBranches);
 
     CDateTime createTime, modifiedTime, accessedTime;
     file->getTime(&createTime, &modifiedTime, &accessedTime);
@@ -1306,13 +1320,17 @@ void CHThorIndexWriteActivity::execute()
     // properties of the logical file
     IPropertyTree & properties = desc->queryProperties();
     properties.setProp("@kind", "key");
-    properties.setPropInt64("@size", indexFileSize);
+    properties.setPropInt64("@size", uncompressedSize);
+    properties.setPropInt64("@compressedSize", indexFileSize);
     properties.setPropInt64("@recordCount", reccount);
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());
     properties.setProp("@job", agent.queryWorkUnit()->queryJobName());
     properties.setPropInt64("@duplicateKeyCount",duplicateKeyCount);
     properties.setPropInt64("@numDiskWrites", numDiskWrites);
+    properties.setPropInt64("@numLeafNodes", numLeafNodes);
+    properties.setPropInt64("@numBranchNodes", numBranchNodes);
+    properties.setPropInt64("@numBlobNodes", numBlobNodes);
 
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)

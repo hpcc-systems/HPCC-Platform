@@ -3602,7 +3602,6 @@ public:
         bool useableCheckSum = true;
         MemoryBuffer pmb;
         unsigned n = fdesc->numParts();
-        bool compressed = isCompressed(nullptr);
         for (unsigned i=0;i<n;i++)
         {
             IPropertyTree *partattr = &fdesc->queryPart(i)->queryProperties();
@@ -3621,14 +3620,11 @@ public:
                         totalsize = psz;
                     else
                         totalsize += psz;
-                    if (compressed)
-                    {
-                        psz = (offset_t)partattr->getPropInt64("@compressedSize", -1);
-                        if (psz==(offset_t)-1)
-                            totalCompressedSize = psz;
-                        else
-                            totalCompressedSize += psz;
-                    }
+                    psz = (offset_t)partattr->getPropInt64("@compressedSize", -1);
+                    if (psz==(offset_t)-1)
+                        totalCompressedSize = psz;
+                    else
+                        totalCompressedSize += psz;
                 }
                 if (useableCheckSum)
                 {
@@ -3643,7 +3639,7 @@ public:
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
             queryAttributes().setPropInt64("@size", totalsize);
-        if (totalCompressedSize!=(offset_t)-1)
+        if ((totalCompressedSize!=(offset_t)-1) && (totalCompressedSize != 0))
             queryAttributes().setPropInt64("@compressedSize", totalCompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
