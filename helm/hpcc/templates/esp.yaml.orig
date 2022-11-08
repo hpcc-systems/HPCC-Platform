@@ -116,8 +116,12 @@ spec:
         server: {{ .name | quote }}
         accessDali: "yes"
         app: {{ $application }}
+<<<<<<< HEAD
         helmVersion: 8.8.25-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "name" $application "component" "esp" "instance" .name) | indent 8 }}
+=======
+        helmVersion: 8.8.25-closedown0
+>>>>>>> origin/candidate-8.6.x
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
 {{- end }}

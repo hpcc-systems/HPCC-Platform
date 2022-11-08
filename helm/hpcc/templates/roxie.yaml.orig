@@ -176,8 +176,12 @@ kind: Service
 metadata:
   name: {{ $commonCtx.toponame | quote }}
   labels:
+<<<<<<< HEAD
     helmVersion: 8.8.25-closedown0
     {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 4 }}
+=======
+    helmVersion: 8.8.25-closedown0
+>>>>>>> origin/candidate-8.6.x
 spec:
   ports:
   - port: {{ $commonCtx.topoport  }}
@@ -236,8 +240,12 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
+<<<<<<< HEAD
         helmVersion: 8.8.25-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $servername) | indent 8 }}
+=======
+        helmVersion: 8.8.25-closedown0
+>>>>>>> origin/candidate-8.6.x
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
 {{- end }}

@@ -82,8 +82,12 @@ data:
           labels:
             accessDali: "yes"
             accessEsp: "yes"
+<<<<<<< HEAD
             helmVersion: 8.8.25-closedown0
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclagent" "name" "thor" "instance" $eclAgentJobName) | indent 8 }}
+=======
+            helmVersion: 8.8.25-closedown0
+>>>>>>> origin/candidate-8.6.x
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
