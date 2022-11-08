@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -8,11 +9,15 @@ import { HolyGrail } from "../layouts/HolyGrail";
 interface FileBloomsProps {
     cluster?: string;
     logicalFile: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "FieldNames", descending: false };
 
 export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
     cluster,
-    logicalFile
+    logicalFile,
+    sort = defaultSort
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
@@ -22,7 +27,7 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
     const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "FieldNames",
-        sort: { attribute: "FieldNames", descending: false },
+        sort,
         filename: "fileBlooms",
         columns: {
             FieldNames: { label: nlsHPCC.FieldNames, sortable: true, width: 320 },

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useConfirm } from "../hooks/confirm";
 import { useFileHistory } from "../hooks/file";
 import { useFluentGrid } from "../hooks/grid";
@@ -10,11 +11,15 @@ import { ShortVerticalDivider } from "./Common";
 interface FileHistoryProps {
     cluster: string;
     logicalFile: string;
+    sort?: QuerySortItem
 }
+
+const defaultSort = { attribute: "Name", descending: false };
 
 export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
     cluster,
-    logicalFile
+    logicalFile,
+    sort = defaultSort
 }) => {
 
     //  Grid ---
@@ -24,7 +29,7 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
     const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: { attribute: "Name", descending: false },
+        sort,
         filename: "filehistory",
         columns: {
             Name: { label: nlsHPCC.Name, sortable: false },

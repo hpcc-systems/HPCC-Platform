@@ -4,6 +4,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as ESPQuery from "src/ESPQuery";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 
@@ -23,11 +24,15 @@ function getStateImageName(row) {
 interface QueryGraphsProps {
     querySet: string;
     queryId: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "__hpcc_id", descending: false };
 
 export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
     querySet,
-    queryId
+    queryId,
+    sort = defaultSort
 }) => {
 
     const query = React.useMemo(() => {
@@ -39,7 +44,7 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
     const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
-        sort: { attribute: "__hpcc_id", descending: false },
+        sort,
         filename: "queryGraphs",
         columns: {
             col1: { width: 27, selectorType: "checkbox" },
