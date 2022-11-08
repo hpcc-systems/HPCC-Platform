@@ -43,9 +43,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: false
-      - uses: azure/setup-helm@v1
+      - uses: azure/setup-helm@v3
         with:
           version: 'latest'
+          token: ${{ secrets.GITHUB_TOKEN }}
         id: install
       - name: Install additional tools
         working-directory: .

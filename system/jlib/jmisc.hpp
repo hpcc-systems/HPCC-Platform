@@ -81,11 +81,6 @@ jlib_decl bool wait_program(HANDLE handle,DWORD &runcode,bool block=true);
 jlib_decl bool interrupt_program(HANDLE handle, bool killChildren, int signum=0); // no signum means use default
 jlib_decl bool getHomeDir(StringBuffer & homepath);
 
-#ifndef _WIN32
-jlib_decl bool CopyFile(const char *file, const char *newfile, bool fail);
-#endif
-
-
 //Endian support
 
 
