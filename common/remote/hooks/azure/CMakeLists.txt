@@ -19,7 +19,7 @@
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for amazon azure direct reading hook
+#    Cmake Input File for azure direct reading hook
 #####################################################
 
 if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
@@ -27,6 +27,7 @@ if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
 endif()
 
 find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
+find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
 find_package(azure-storage-common-cpp CONFIG REQUIRED)
 
 project( azurefile )
@@ -51,4 +52,5 @@ target_link_libraries ( azurefile
         curl
         Azure::azure-storage-common
         Azure::azure-storage-blobs
-   )
+        Azure::azure-storage-files-shares
+    )

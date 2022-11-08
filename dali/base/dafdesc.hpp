@@ -331,14 +331,8 @@ interface IStoragePlaneAlias: extends IInterface
     virtual const char *queryPrefix() const = 0 ;
 };
 
-enum StorageType
-{
-    StorageTypeUnknown,
-    StorageTypeAzureFile,
-    StorageTypeAzureBlob
-};
-
 //I'm not sure if this should be used in place of an IGroup, probably as system gradually changes
+interface IStorageApiInfo;
 interface IStoragePlane: extends IInterface
 {
     virtual const char * queryPrefix() const = 0;
@@ -347,10 +341,7 @@ interface IStoragePlane: extends IInterface
     virtual unsigned numDefaultSprayParts() const = 0 ;
     virtual bool queryDirPerPart() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
-    virtual StorageType getStorageType() const = 0;
-    virtual const char * queryStorageApiAccount() const = 0;
-    virtual const char * queryStorageContainer(unsigned stripeNumber) const = 0;
-    virtual StringBuffer & getSASToken(StringBuffer & token) const = 0;
+    virtual IStorageApiInfo *getStorageApiInfo() = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
