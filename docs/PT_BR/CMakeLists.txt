@@ -73,7 +73,6 @@ add_subdirectory(HPCCDataTutorial)
 
 add_subdirectory(HPCCSystemAdmin)
 add_subdirectory(HPCCSpark)
-add_subdirectory(IMDB)
 add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(RoxieReference)
