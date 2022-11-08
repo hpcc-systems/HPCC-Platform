@@ -110,13 +110,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         filename: "workunits",
         columns: {
             col1: {
-                width: 27,
+                width: 16,
                 selectorType: "checkbox"
             },
             Protected: {
                 headerIcon: "LockSolid",
                 headerTooltip: nlsHPCC.Protected,
-                width: 25,
+                width: 16,
                 sortable: true,
                 formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
@@ -136,13 +136,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
                     </>;
                 }, [])
             },
-            Owner: { label: nlsHPCC.Owner, width: 90 },
-            Jobname: { label: nlsHPCC.JobName, width: 350 },
-            Cluster: { label: nlsHPCC.Cluster, width: 60 },
-            RoxieCluster: { label: nlsHPCC.RoxieCluster, width: 90 },
+            Owner: { label: nlsHPCC.Owner, width: 80 },
+            Jobname: { label: nlsHPCC.JobName },
+            Cluster: { label: nlsHPCC.Cluster },
+            RoxieCluster: { label: nlsHPCC.RoxieCluster },
             State: { label: nlsHPCC.State, width: 60 },
             TotalClusterTime: {
-                label: nlsHPCC.TotalClusterTime, width: 115,
+                label: nlsHPCC.TotalClusterTime, width: 120,
                 renderCell: React.useCallback(function (object, value, node) {
                     domClass.add(node, "justify-right");
                     node.innerText = value;
