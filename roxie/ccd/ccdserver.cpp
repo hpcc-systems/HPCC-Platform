@@ -12395,6 +12395,11 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     StringBuffer filename;
     unsigned __int64 duplicateKeyCount = 0;
     unsigned __int64 cummulativeDuplicateKeyCount = 0;
+    unsigned __int64 numLeafNodes = 0;
+    unsigned __int64 numBlobNodes = 0;
+    unsigned __int64 numBranchNodes = 0;
+    offset_t offsetBranches = 0;
+    offset_t uncompressedSize = 0;
 
     void updateWorkUnitResult()
     {
@@ -12603,6 +12608,7 @@ public:
                     RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
                     size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
                     builder->processKeyData(rowBuffer, fpos, thisSize);
+                    uncompressedSize += (thisSize + 8); // Fileposition is always stored.....
                 }
                 catch(IException * e)
                 {
@@ -12613,9 +12619,13 @@ public:
             duplicateKeyCount = builder->getDuplicateCount();
             cummulativeDuplicateKeyCount += duplicateKeyCount;
             builder->finish(metadata, &fileCrc);
-            noteStatistic(StNumLeafCacheAdds, builder->getNumLeafNodes());
-            noteStatistic(StNumNodeCacheAdds, builder->getNumBranchNodes());
-            noteStatistic(StNumBlobCacheAdds, builder->getNumBlobNodes());
+            numLeafNodes = builder->getNumLeafNodes();
+            numBranchNodes = builder->getNumBranchNodes();
+            numBlobNodes = builder->getNumBlobNodes();
+            offsetBranches = builder->getOffsetBranches();
+            noteStatistic(StNumLeafCacheAdds, numLeafNodes);
+            noteStatistic(StNumNodeCacheAdds, numBranchNodes);
+            noteStatistic(StNumBlobCacheAdds, numBlobNodes);
             clearKeyStoreCache(false);
         }
     }
@@ -12643,6 +12653,12 @@ public:
     virtual void reset()
     {
         CRoxieServerActivity::reset();
+        duplicateKeyCount = 0;
+        numLeafNodes = 0;
+        numBlobNodes = 0;
+        numBranchNodes = 0;
+        offsetBranches = 0;
+        uncompressedSize = 0;
         noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         writer.clear();
     }
@@ -12653,7 +12669,7 @@ public:
     {
         // Now publish to name services
         StringBuffer dir, base;
-        offset_t indexFileSize = writer->queryFile()->size();
+        offset_t compressedFileSize = writer->queryFile()->size();
         if(clusterHandler)
             clusterHandler->getDirAndFilename(dir, base);
 
@@ -12663,8 +12679,10 @@ public:
             attrs.setown(createPTree("Part", ipt_fast));  // clusterHandler is going to set attributes
         else
             attrs.set(&desc->queryPart(0)->queryProperties());
-        attrs->setPropInt64("@size", indexFileSize);
+        attrs->setPropInt64("@size", uncompressedSize);
+        attrs->setPropInt64("@compressedSize", compressedFileSize);
         attrs->setPropInt64("@recordCount", reccount);
+        attrs->setPropInt64("@offsetBranches", offsetBranches);
 
         CDateTime createTime, modifiedTime, accessedTime;
         writer->queryFile()->getTime(&createTime, &modifiedTime, &accessedTime);
@@ -12683,9 +12701,14 @@ public:
         // properties of the logical file
         IPropertyTree & properties = desc->queryProperties();
         properties.setProp("@kind", "key");
-        properties.setPropInt64("@size", indexFileSize);
+        properties.setPropInt64("@size", uncompressedSize);
+        properties.setPropInt64("@compressedSize", compressedFileSize);
         properties.setPropInt64("@recordCount", reccount);
         properties.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
+        properties.setPropInt64("@numLeafNodes", numLeafNodes);
+        properties.setPropInt64("@numBranchNodes", numBranchNodes);
+        properties.setPropInt64("@numBlobNodes", numBlobNodes);
+
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)
         {

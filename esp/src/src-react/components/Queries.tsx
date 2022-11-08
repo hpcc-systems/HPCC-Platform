@@ -53,6 +53,7 @@ interface QueriesProps {
     filter?: object;
     sort?: QuerySortItem;
     store?: any;
+    page?: number;
 }
 
 const emptyFilter = {};
@@ -62,6 +63,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     wuid,
     filter = emptyFilter,
     sort = defaultSort,
+    page = 1,
     store
 }) => {
 
@@ -86,6 +88,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         store: gridStore,
         query,
         sort,
+        pageNum: page,
         filename: "roxiequeries",
         columns: {
             col1: {
@@ -244,7 +247,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: gridStore !== undefined || wuid !== undefined, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
@@ -255,7 +258,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, gridStore, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};

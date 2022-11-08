@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2022 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,26 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef AZURE_FILE_HPP
-#define AZURE_FILE_HPP
 
-#include "jfile.hpp"
+ds := DATASET([10,20,30,30.6D,40D, 49.99D, 50D, 60D], { decimal5_2 value }) : global;
 
-#ifdef AZURE_FILE_EXPORTS
-#define AZURE_FILE_API DECL_EXPORT
-#else
-#define AZURE_FILE_API DECL_IMPORT
-#endif
-
-
-/*
- * Direct access to files in Azure blobs
- * Installs hooks into createIFile, spotting filenames of the form azure://url
- */
-
-extern "C" {
-  extern AZURE_FILE_API void installFileHook();
-  extern AZURE_FILE_API void removeFileHook();
-};
-
-#endif
+output(ds(value*10.0D in [300,500]));

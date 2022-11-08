@@ -390,6 +390,7 @@ struct CClusterInfo: implements IClusterInfo, public CInterface
     Linked<IGroup> group;
     StringAttr name; // group name
     ClusterPartDiskMapSpec mspec;
+    bool foreignGroup = false;
     void checkClusterName(INamedGroupStore *resolver)
     {
         // check name matches group
@@ -461,9 +462,14 @@ public:
             return;
         name.set(pt->queryProp("@name"));
         mspec.fromProp(pt);
+        if (0 != (flags & IFDSF_FOREIGN_GROUP))
+            foreignGroup = true;
+        else if (pt->getPropBool("@foreign"))
+            foreignGroup = true;
+
         if ((((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())&&pt->hasProp("Group"))
             group.setown(createIGroup(pt->queryProp("Group")));
-        if (!name.isEmpty()&&!group.get()&&resolver)
+        if (!name.isEmpty()&&!group.get()&&resolver&&!foreignGroup)
         {
             StringBuffer defaultDir;
             GroupType groupType;
@@ -541,10 +547,13 @@ public:
     void serializeTree(IPropertyTree *pt,unsigned flags)
     {
         mspec.toProp(pt);
-        if (group&&(((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())) {
+        if (group && (foreignGroup || ((flags&IFDSF_EXCLUDE_GROUPS)==0) || name.isEmpty()))
+        {
             StringBuffer gs;
             group->getText(gs);
             pt->setProp("Group",gs.str());
+            if (foreignGroup)
+                pt->setPropBool("@foreign", true);
         }
         if (!name.isEmpty()&&((flags&IFDSF_EXCLUDE_CLUSTERNAMES)==0))
             pt->setProp("@name",name);
@@ -3686,43 +3695,6 @@ public:
     }
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
     virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
-    virtual StorageType getStorageType() const override
-    {
-        const char * storageTypeStr = xml->queryProp("storageapi/@type");
-        if (isEmptyString(storageTypeStr))
-            return StorageType::StorageTypeUnknown;
-        if (streq(storageTypeStr, "azurefile"))
-            return StorageType::StorageTypeAzureFile;
-        if (streq(storageTypeStr, "azureblob"))
-            return StorageType::StorageTypeAzureBlob;
-        return StorageType::StorageTypeUnknown;
-    }
-    virtual const char * queryStorageApiAccount() const override
-    {
-        return xml->queryProp("storageapi/@account");
-    }
-    virtual const char * queryStorageContainer(unsigned stripeNumber) const override
-    {
-        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
-            stripeNumber++;
-        StringBuffer path;
-        path.appendf("storageapi/containers[%d]", stripeNumber);
-        const char * container = xml->queryProp(path.str());
-        if (isEmptyString(container))
-        {
-            const char * name = xml->queryProp("@name");
-            throw makeStringExceptionV(-1, "No container provided for %s: path %s", name, path.str());
-        }
-        return container;
-    }
-    virtual StringBuffer & getSASToken(StringBuffer & token) const override
-    {
-        const char * secretName = xml->queryProp("storageapi/@secret");
-        if (isEmptyString(secretName))
-            return token.clear();  // return empty string if no secret name is specified
-        getSecretValue(token, "storage", secretName, "token", false);
-        return token.trimRight();
-    }
 
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const override
     {
@@ -3748,6 +3720,13 @@ public:
             }
         }
         return LINK(bestMatch);
+    }
+    virtual IStorageApiInfo *getStorageApiInfo()
+    {
+        IPropertyTree *apiInfo = xml->getPropTree("storageapi");
+        if (apiInfo)
+            return createStorageApiInfo(apiInfo);
+        return nullptr;
     }
 private:
     Linked<IPropertyTree> xml;

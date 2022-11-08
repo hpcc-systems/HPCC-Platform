@@ -22,11 +22,6 @@
 #include "jlib.hpp"
 #include "jio.hpp"
 #include <math.h>
-#ifdef _USE_AZURE
-#include <azure/core.hpp>
-#include <azure/storage/blobs.hpp>
-#include <azure/storage/files/shares.hpp>
-#endif
 #include "jmutex.hpp"
 #include "jfile.hpp"
 #include "jsocket.hpp"
@@ -1521,42 +1516,27 @@ bool FileSprayer::usePushWholeOperation() const
     return targets.item(0).filename.isUrl();
 }
 
-bool FileSprayer::useAPICopy()
+IAPICopyClient * FileSprayer::getAPICopyClient()
 {
-#ifdef _USE_AZURE
-    if (isContainerized()) // Future: support in bare-metal?
-    {
-        bool needCalcCRC = calcCRC();
-        if (needCalcCRC && !sources.item(0).hasCRC)
-            return false;
+    bool needCalcCRC = calcCRC();
+    if (needCalcCRC && !sources.item(0).hasCRC)
+        return nullptr;
 
-        StringBuffer targetClusterName;
-        distributedTarget->getClusterName(0, targetClusterName); // change this to support logical files in > 1 clusters
-        Owned<IStoragePlane> targetStoragePlane = getDataStoragePlane(targetClusterName.str(), false);
-        if (targetStoragePlane==nullptr)
-            return false;
-        if (isEmptyString(targetStoragePlane->queryStorageApiAccount()))
-            return false;
+    StringBuffer sourceClusterName;
+    distributedSource->getClusterName(0, sourceClusterName);
+    Owned<IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
+    Owned<IStorageApiInfo> sourceAPIInfo = sourcePlane->getStorageApiInfo();
+    if (!sourceAPIInfo)
+        return nullptr;
 
-        StringBuffer sourceClusterName;
-        distributedSource->getClusterName(0, sourceClusterName);
-        Owned<IStoragePlane> sourceStoragePlane = getDataStoragePlane(sourceClusterName.str(), false);
-        if (sourceStoragePlane==nullptr)
-            return false;
-        if (isEmptyString(sourceStoragePlane->queryStorageApiAccount()))
-            return false;
+    StringBuffer targetClusterName;
+    distributedTarget->getClusterName(0, targetClusterName);
+    Owned<IStoragePlane> targetPlane = getDataStoragePlane(targetClusterName.str(), false);
+    Owned<IStorageApiInfo> targetAPIInfo = targetPlane->getStorageApiInfo();
+    if (!targetAPIInfo)
+        return nullptr;
 
-        StorageType stTarget = targetStoragePlane->getStorageType();
-        StorageType stSource = sourceStoragePlane->getStorageType();
-        if ((stTarget==StorageType::StorageTypeAzureFile || stTarget==StorageType::StorageTypeAzureBlob)
-            && (stSource==StorageType::StorageTypeAzureFile || stSource==StorageType::StorageTypeAzureBlob))
-        {
-            LOG(MCdebugInfo, job, "Using Azure API to copy files");
-            return true;
-        }
-    }
-#endif
-    return false;
+    return createApiCopyClient(sourceAPIInfo, targetAPIInfo);
 }
 
 bool FileSprayer::canRenameOutput() const
@@ -2658,265 +2638,14 @@ void FileSprayer::pushParts()
     performTransfer();
 }
 
-enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
-interface IAPICopyClient : implements IInterface
+void FileSprayer::transferUsingAPI(IAPICopyClient * copyClient)
 {
-    virtual void startCopy(const char *target, const char * source) = 0;
-    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) = 0;
-    virtual ApiCopyStatus abortCopy() = 0;
-    virtual ApiCopyStatus getStatus() const = 0;
-};
+    LOG(MCdebugInfo, job, "Transfer files using api: %s", copyClient->name());
 
-#ifdef _USE_AZURE
-using namespace Azure::Storage;
-using namespace Azure::Storage::Files;
-using namespace Azure::Storage::Blobs;
-
-class CApiCopyClient : public CInterfaceOf<IAPICopyClient>
-{
-protected:
-    ApiCopyStatus status = ApiCopyStatus::NotStarted;
-public:
-    virtual ApiCopyStatus getStatus() const override
-    {
-        return status;
-    }
-    static void buildStorageURIBase(IStoragePlane * storagePlane, StringBuffer & uri)
-    {
-        const char *accountName = storagePlane->queryStorageApiAccount();
-        uri.appendf("https://%s", accountName);
-
-        if (storagePlane->getStorageType()==StorageType::StorageTypeAzureFile)
-        {
-            uri.append(".file");
-        }
-        else
-        {
-            dbgassertex(storagePlane->getStorageType()==StorageType::StorageTypeAzureBlob);
-            uri.append(".blob");
-        }
-        uri.append(".core.windows.net/");
-    }
-    static void buildAzureStorageURI(IDistributedFile *distFile, IStoragePlane * storagePlane, unsigned partNum, unsigned copyNum, const char * baseURI, const char *sasToken, StringBuffer & uri)
-    {
-        IDistributedFilePart & distFilePart = distFile->queryPart(partNum);
-        StringBuffer path;
-        distFilePart.getStorageFilePath(path, copyNum);
-
-        unsigned stripeNum = distFilePart.getStripeNum(copyNum);
-        const char * container = storagePlane->queryStorageContainer(stripeNum);
-        StringBuffer tmp;
-        uri.appendf("%s%s%s%s", baseURI, container, encodeURL(tmp, path.str()).str(), sasToken);
-    }
-};
-
-class AzureFileClient : public CApiCopyClient
-{
-    std::unique_ptr<Shares::ShareFileClient> fileClient;
-    Shares::StartFileCopyOperation fileCopyOp;
-public:
-    virtual void startCopy(const char *target, const char * source) override
-    {
-        try
-        {
-            fileClient.reset(new Shares::ShareFileClient(target));
-            fileCopyOp = std::move(fileClient->StartCopy(source));
-            status = ApiCopyStatus::Pending;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            IERRLOG("AzureFileClient startCopy failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-            status = ApiCopyStatus::Failed;
-            throw makeStringException(DFTERR_CopyFailed, e.ReasonPhrase.c_str());
-        }
-    }
-    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) override
-    {
-        dateTime.clear();
-        outputLength=0;
-
-        if (status!=ApiCopyStatus::Pending)
-            return status;
-        try
-        {
-            fileCopyOp.Poll();
-            Shares::Models::FileProperties props = fileCopyOp.Value();
-            dateTime.setString(props.LastModified.ToString().c_str());
-            outputLength = props.FileSize;
-            Shares::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Shares::Models::CopyStatus::Pending);
-            if (tstatus==Shares::Models::CopyStatus::Success) // FYI. CopyStatus is an object so can't use switch statement
-                status = ApiCopyStatus::Success;
-            else if (tstatus==Shares::Models::CopyStatus::Pending)
-                status = ApiCopyStatus::Pending;
-            else if (tstatus==Shares::Models::CopyStatus::Aborted)
-                status = ApiCopyStatus::Aborted;
-            else
-                status = ApiCopyStatus::Failed;
-        }
-        catch(const Azure::Core::RequestFailedException& e)
-        {
-            IERRLOG("Transfer using API .Poll() failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-            status = ApiCopyStatus::Failed;
-        }
-        return status;
-    }
-    virtual ApiCopyStatus abortCopy() override
-    {
-        if (status==ApiCopyStatus::Aborted || status==ApiCopyStatus::Failed)
-            return status;
-        int64_t outputLength;
-        CDateTime dateTime;
-        status = getProgress(dateTime, outputLength);
-        switch (status)
-        {
-            case ApiCopyStatus::Pending:
-                try
-                {
-                    if (fileCopyOp.HasValue() && fileCopyOp.Value().CopyId.HasValue())
-                        fileClient->AbortCopy(fileCopyOp.Value().CopyId.Value().c_str());
-                    else // not sure that this can ever happen
-                        IERRLOG("AzureFileClient::AbortCopy() failed: CopyId is empty");
-                    status = ApiCopyStatus::Aborted;
-                }
-                catch(const Azure::Core::RequestFailedException& e)
-                {
-                    IERRLOG("Abort copy operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-                    status = ApiCopyStatus::Failed;
-                }
-                // fallthrough to delete any file remnants
-            case ApiCopyStatus::Success:
-                // already copied-> need to delete
-                try
-                {
-                    fileClient->Delete();
-                    status = ApiCopyStatus::Aborted;
-                }
-                catch(const Azure::Core::RequestFailedException& e)
-                {
-                    IERRLOG("Delete operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-                    status = ApiCopyStatus::Failed;
-                }
-                break;
-        }
-        return status;
-    }
-};
-
-class AzureBlobClient : public CApiCopyClient
-{
-    std::unique_ptr<BlobClient> blobClient;
-    StartBlobCopyOperation blobCopyOp;
-public:
-    virtual void startCopy(const char *target, const char * source) override
-    {
-        try
-        {
-            blobClient.reset(new BlobClient(target));
-            blobCopyOp = std::move(blobClient->StartCopyFromUri(source));
-            status = ApiCopyStatus::Pending;
-        }
-        catch (const Azure::Core::RequestFailedException& e)
-        {
-            IERRLOG("AzureBlobClient startCopyFromURI failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-            status = ApiCopyStatus::Failed;
-            throw MakeStringException(DFTERR_CopyFailed, "%s", e.ReasonPhrase.c_str());
-        }
-    }
-    virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) override
-    {
-        dateTime.clear();
-        outputLength=0;
-
-        if (status!=ApiCopyStatus::Pending)
-            return status;
-        try
-        {
-            blobCopyOp.Poll();
-            Models::BlobProperties props = blobCopyOp.Value();
-            dateTime.setString(props.LastModified.ToString().c_str());
-            outputLength = props.BlobSize;
-            Blobs::Models::CopyStatus tstatus = props.CopyStatus.HasValue()?props.CopyStatus.Value():(Blobs::Models::CopyStatus::Pending);
-            if (tstatus==Blobs::Models::CopyStatus::Success) // FYI. CopyStatus is an object so can't use switch statement
-                status = ApiCopyStatus::Success;
-            else if (tstatus==Blobs::Models::CopyStatus::Pending)
-                status = ApiCopyStatus::Pending;
-            else if (tstatus==Blobs::Models::CopyStatus::Aborted)
-                status = ApiCopyStatus::Aborted;
-            else
-                status = ApiCopyStatus::Failed;
-        }
-        catch(const Azure::Core::RequestFailedException& e)
-        {
-            IERRLOG("Transfer using API .Poll() failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-            return ApiCopyStatus::Failed;
-        }
-        return status;
-    }
-    virtual ApiCopyStatus abortCopy() override
-    {
-        if (status==ApiCopyStatus::Aborted || status==ApiCopyStatus::Failed)
-            return status;
-        int64_t outputLength;
-        CDateTime dateTime;
-        status = getProgress(dateTime, outputLength);
-        switch (status)
-        {
-            case ApiCopyStatus::Pending:
-                try
-                {
-                    if (blobCopyOp.HasValue() && blobCopyOp.Value().CopyId.HasValue())
-                        blobClient->AbortCopyFromUri(blobCopyOp.Value().CopyId.Value().c_str());
-                    else // not sure that this can ever happen
-                        IERRLOG("AzureBlobClient::AbortCopy() failed: CopyId is empty");
-                    status = ApiCopyStatus::Aborted;
-                }
-                catch(const Azure::Core::RequestFailedException& e)
-                {
-                    IERRLOG("Abort copy operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-                    status = ApiCopyStatus::Failed;
-                }
-                // fallthrough to delete any file remnants
-            case ApiCopyStatus::Success:
-                // already copied-> need to delete
-                try
-                {
-                    blobClient->Delete();
-                    status = ApiCopyStatus::Aborted;
-                }
-                catch(const Azure::Core::RequestFailedException& e)
-                {
-                    IERRLOG("Delete operation failed: %s (code %d)", e.ReasonPhrase.c_str(), static_cast<int>(e.StatusCode));
-                    status = ApiCopyStatus::Failed;
-                }
-                break;
-        }
-        return status;
-    }
-};
-#endif
-
-void FileSprayer::transferUsingAPI()
-{
-#ifdef _USE_AZURE
-    // N.B. Only call this member function, if FileSprayer::useAPICopy() has returned true
-    // Source
-    StringBuffer sourceClusterName, sourceBaseURI, sourceSAStoken;
-    distributedSource->getClusterName(0, sourceClusterName);
-    Owned<IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
-    CApiCopyClient::buildStorageURIBase(sourcePlane, sourceBaseURI);
-    sourcePlane->getSASToken(sourceSAStoken);
-
-    // Target
-    StringBuffer targetClusterName, targetBaseURI, targetSAStoken;
-    distributedTarget->getClusterName(0, targetClusterName);
-    Owned<IStoragePlane> targetPlane = getDataStoragePlane(targetClusterName.str(), false);
-    CApiCopyClient::buildStorageURIBase(targetPlane, targetBaseURI);
-    targetPlane->getSASToken(targetSAStoken);
-    StorageType targetType = targetPlane->getStorageType();
-
-    OwnedPointerArrayOf<IAPICopyClient> apiClients;
+    OwnedPointerArrayOf<IAPICopyClientOp> apiClients;
     unsigned failCount = 0;
     StringBuffer failedReason;
+    const unsigned copyNum = 0; // Use copyNum=0 for all parts (may need to change this later)
     try
     {
         ForEachItemIn(idx1, partition)
@@ -2929,21 +2658,22 @@ void FileSprayer::transferUsingAPI()
                 continue;
             }
 
-            StringBuffer sourceURI;
             unsigned inputPartNum = sources.item(cur.whichInput).partNum;
-            CApiCopyClient::buildAzureStorageURI(distributedSource, sourcePlane, inputPartNum, 0, sourceBaseURI.str(), sourceSAStoken.str(), sourceURI);
+            IDistributedFilePart & srcDistFilePart = distributedSource->queryPart(inputPartNum);
+            StringBuffer sourcePath;
+            srcDistFilePart.getStorageFilePath(sourcePath, copyNum);
+            unsigned sourceStripeNum = srcDistFilePart.getStripeNum(copyNum);
 
-            StringBuffer targetURI;
             unsigned outputPartNum = targets.item(cur.whichOutput).partNum;
-            CApiCopyClient::buildAzureStorageURI(distributedTarget, targetPlane, outputPartNum, 0, targetBaseURI.str(), targetSAStoken.str(), targetURI);
+            IDistributedFilePart & tgtDistFilePart = distributedTarget->queryPart(outputPartNum);
+            StringBuffer targetPath;
+            tgtDistFilePart.getStorageFilePath(targetPath, copyNum);
+            unsigned targetStripeNum = tgtDistFilePart.getStripeNum(copyNum);
 
-            Owned<IAPICopyClient> apiClient;
-            if (targetType==StorageTypeAzureFile)
-                apiClient.setown(new AzureFileClient());
-            else
-                apiClient.setown(new AzureBlobClient());
-            apiClient->startCopy(targetURI.str(), sourceURI.str());
+            Owned<IAPICopyClientOp> apiClient;
+            apiClient.setown(copyClient->startCopy(sourcePath, sourceStripeNum, targetPath, targetStripeNum));
             apiClients.append(apiClient.getClear());
+
             curProgress.status = OutputProgress::StatusActive;
             curProgress.numReads++;
             curProgress.numWrites++;
@@ -2963,7 +2693,7 @@ void FileSprayer::transferUsingAPI()
         bool anyRemaining = false;
         ForEachItemIn(idx2, apiClients)
         {
-            IAPICopyClient * apiClient = apiClients.item(idx2);
+            IAPICopyClientOp * apiClient = apiClients.item(idx2);
             if (apiClient==nullptr || apiClient->getStatus()==ApiCopyStatus::Success)
                 continue;
             OutputProgress & curProgress = progress.item(idx2);
@@ -3002,13 +2732,13 @@ void FileSprayer::transferUsingAPI()
             break;
         MilliSleep(1000);
     }
-    // Something went wrong or abort requested, so abort all Pending copy operations
+    // Something went wrong or abort requested, so abort all pending copy operations & delete any successful copies
     if (isAborting() || failCount)
     {
         ForEachItemIn(idx3, apiClients)
         {
-            IAPICopyClient * apiClient = apiClients.item(idx3);
-            if (apiClient==nullptr || apiClient->getStatus()==ApiCopyStatus::Success)
+            IAPICopyClientOp * apiClient = apiClients.item(idx3);
+            if (apiClient==nullptr)
                 continue;
             apiClient->abortCopy();
             OutputProgress & curProgress = progress.item(idx3);
@@ -3017,7 +2747,6 @@ void FileSprayer::transferUsingAPI()
         if (failCount)
             throw makeStringExceptionV(DFTERR_CopyFailed, DFTERR_CopyFailed_Text, failedReason.str());
     }
-#endif
 }
 
 void FileSprayer::removeSource()
@@ -3588,20 +3317,24 @@ void FileSprayer::spray()
 
     beforeTransfer();
     bool copiedAlready = false;
-    if (useAPICopy() && (replicate || copySource))
+    if ((replicate || copySource))
     {
-        try
+        Owned<IAPICopyClient> copyClient = getAPICopyClient();
+        if (copyClient)
         {
-            transferUsingAPI();
-            copiedAlready=true;
-        }
-        catch (IException *e)
-        {
-            StringBuffer reason;
-            e->errorMessage(reason);
-            // Log this failure (don't re-throw) as it should fall back to the older method to copy
-            OERRLOG("Transfer using API failed: %s (error %d)", reason.str(), e->errorCode());
-            e->Release();
+            try
+            {
+                transferUsingAPI(copyClient);
+                copiedAlready=true;
+            }
+            catch (IException *e)
+            {
+                StringBuffer reason;
+                e->errorMessage(reason);
+                // Log this failure (don't re-throw) as it should fall back to the older method to copy
+                OERRLOG("Transfer using API failed: %s (error %d)", reason.str(), e->errorCode());
+                e->Release();
+            }
         }
     }
     if (!copiedAlready)

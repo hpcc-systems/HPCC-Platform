@@ -72,6 +72,7 @@ interface WorkunitsProps {
     filter?: object;
     sort?: QuerySortItem;
     store?: WUQueryStore;
+    page?: number;
 }
 
 const emptyFilter = {};
@@ -80,6 +81,7 @@ const defaultSort = { attribute: "Wuid", descending: true };
 export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     filter = emptyFilter,
     sort = defaultSort,
+    page = 1,
     store
 }) => {
 
@@ -104,6 +106,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         store: gridStore,
         query,
         sort,
+        pageNum: page,
         filename: "workunits",
         columns: {
             col1: {
@@ -236,14 +239,14 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!gridStore, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: hasFilter ? "FilterSolid" : "Filter" },
             onClick: () => { setShowFilter(true); }
         },
         {
             key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => { setMine(!mine); }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, gridStore, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {

@@ -23,12 +23,6 @@
 
 project( dalift ) 
 
-if(USE_AZURE)
-    find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
-    find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
-    find_package(azure-storage-common-cpp CONFIG REQUIRED)
-endif(USE_AZURE)
-
 set (    SRCS 
          daft.cpp 
          daftformat.cpp 
@@ -67,13 +61,4 @@ target_link_libraries ( dalift
 if (NOT CONTAINERIZED)
     target_link_libraries ( dalift environment )
 endif()
-
-if(USE_AZURE)
-    target_link_libraries ( dalift
-         Azure::azure-storage-common
-         Azure::azure-storage-blobs
-         Azure::azure-storage-files-shares
-    )
-endif(USE_AZURE)
-
 

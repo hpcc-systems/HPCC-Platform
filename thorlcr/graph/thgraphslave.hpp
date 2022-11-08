@@ -208,6 +208,9 @@ protected:
     bool optStableInput = true; // is the input forced to ordered?
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
+    bool someInactiveStats = false; // set if activity has collated some stats from previous iterations
+    CriticalSection statsCs; // to be used to protect objects refernce during stat. collection
+    CRuntimeStatisticCollection inactiveStats; // stats collected from previous iteration, to be combined with current 'stats'
     std::vector<OwnedPtr<CRuntimeStatisticCollection>> fileStats;
 
 protected:
@@ -219,6 +222,7 @@ protected:
     void startLookAhead(unsigned index);
     bool isLookAheadActive(unsigned index) const;
     void setupSpace4FileStats(unsigned where, bool statsForMultipleFiles, bool isSuper, unsigned numSubs, const StatisticsMapping & statsMapping);
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const {}
 public:
     IMPLEMENT_IINTERFACE_USING(CActivityBase)
 

@@ -140,6 +140,8 @@ kind: ConfigMap
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $roxie.name "services" $roxie.services "component" "localroxie" "external" false) }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $roxie.name "services" $roxie.services "component" "localroxie" "external" true) }}
 {{ include "hpcc.addUDPCertificate" (dict "root" $ "name" $roxie.name "component" "localudpkey") }}
+---
+{{ include "hpcc.addEgress" $commonCtx }}
 
 {{- end }}
 {{- end }}

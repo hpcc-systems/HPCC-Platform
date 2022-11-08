@@ -5491,9 +5491,19 @@ void HqlCppTranslator::doBuildAssignIn(BuildCtx & ctx, const CHqlBoundTarget & t
         break;
     case no_list:
         {
-            HqlCppCaseInfo info(*this);
-            doBuildInCaseInfo(expr, info, values);
-            info.buildAssign(ctx, target);
+            //The code currently generated for decimal IN does not work - because it does not force the
+            //argument into a temporary.  See HPCC-28291
+            IHqlExpression * searchExpr = expr->queryChild(0);
+            if (!isDecimalType(searchExpr->queryType()))
+            {
+                HqlCppCaseInfo info(*this);
+                doBuildInCaseInfo(expr, info, values);
+                info.buildAssign(ctx, target);
+            }
+            else
+            {
+                doBuildAssignInStored(ctx, target, expr);
+            }
             break;
         }
     case no_createset:

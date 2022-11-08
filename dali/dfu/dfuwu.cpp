@@ -416,6 +416,87 @@ static bool notePublisherSubTaskState(const char *subtaskWuid, DFUstate state)
     return true;
 }
 
+static bool prepareToResubmitFailedPublisherTasks(const char *publisherWuid, StringArray &taskWuidsToResubmit)
+{
+    //make sure wuid is a publisher, but not a child task of a publisher
+    if (!publisherWuid || 'P'!=*publisherWuid || strchr(publisherWuid, 'T')!=nullptr)
+       throw MakeStringException(-1,"DFUWU: Attempt to resubmit publisher workunit with non publisher wuid %s", publisherWuid);
+    StringBuffer publisherRoot;
+    getXPath(publisherRoot, publisherWuid);
+
+    Owned<IRemoteConnection> conn = querySDS().connect(publisherRoot.str(), myProcessSession(), RTM_LOCK_WRITE, NOTE_SUBTASK_SDS_LOCK_TIMEOUT);
+    if (!conn)
+       throw MakeStringException(-1,"DFUWU: Could not connect to publisher workunit %s", publisherWuid);
+    IPropertyTree *root = conn->queryRoot();
+    IPropertyTree *progress = root->queryPropTree("Progress");
+    if (!progress)
+       throw MakeStringException(-1,"DFUWU: Could not open progress section of publisher workunit %s", publisherWuid);
+    DFUstate state = decodeDFUstate(progress->queryProp("@state"));
+    if (state!=DFUstate_aborted && state!=DFUstate_failed)
+       throw MakeStringException(-1,"DFUWU: Can only resubmit publisher workunits that are in a failed or aborted state %s", publisherWuid);
+
+    unsigned taskCount = 0;
+    unsigned tasksFinished = 0;
+    Owned<IPropertyTreeIterator> tasks = root->getElements("Tasks/*");
+    ForEach(*tasks)
+    {
+        IPropertyTree &task = tasks->query();
+        const char *taskWuid = task.queryName();
+        if ('P'!=*taskWuid || !strchr(taskWuid, 'T'))
+            continue;
+        taskCount++;
+        IPropertyTree *taskProgress = task.queryPropTree("Progress");
+        if (!taskProgress)
+        {
+            taskWuidsToResubmit.append(taskWuid);
+            continue;
+        }
+        DFUstate taskState = decodeDFUstate(taskProgress->queryProp("@state"));
+        switch (taskState)
+        {
+            case DFUstate_finished:
+                tasksFinished++;
+                break;
+
+            case DFUstate_unknown:
+            case DFUstate_aborted:
+            case DFUstate_failed:
+                taskWuidsToResubmit.append(taskWuid);
+                break;
+
+            case DFUstate_scheduled:
+            case DFUstate_queued:
+            case DFUstate_started:
+            case DFUstate_monitoring:
+            case DFUstate_aborting:
+            default:
+                //still in process
+                break;
+        }
+    }
+
+    progress->setPropInt("@taskcount", taskCount);
+    progress->setPropInt("@tasksfinished", tasksFinished);
+    progress->setPropInt("@tasksfailed", 0); //reset
+    if (taskCount>0)
+        root->setPropInt("@percentdone", (tasksFinished * 100) / taskCount);
+    progress->setProp("@state", (taskCount==tasksFinished) ? "finished" : "started");
+    unsigned edition = (unsigned) progress->getPropInt("Edition", 0);
+    progress->setPropInt("Edition", ++edition);
+    conn->commit();
+    return true;
+}
+
+static bool resubmitFailedPublisherTasks(const char *publisherWuid)
+{
+    StringArray taskWuidsToResubmit;
+    if (!prepareToResubmitFailedPublisherTasks(publisherWuid, taskWuidsToResubmit))
+        return false;
+    ForEachItemIn(i, taskWuidsToResubmit)
+        submitDFUWorkUnit(taskWuidsToResubmit.item(i));
+    return true;
+}
+
 class CDFUprogress: public CLinkedDFUWUchild, implements IDFUprogress
 {
 public:
@@ -3507,8 +3588,19 @@ extern dfuwu_decl void submitDFUWorkUnit(IDFUWorkUnit *workunit)
     queue->enqueue(item);
 }
 
+static bool isDfuPublisherWuid(const char *wuid)
+{
+    return (!isEmptyString(wuid) && 'P'==*wuid && !strchr(wuid, 'T'));
+}
+
 extern dfuwu_decl void submitDFUWorkUnit(const char *wuid)
 {
+    if (isDfuPublisherWuid(wuid))
+    {
+        resubmitFailedPublisherTasks(wuid);
+        return;
+    }
+
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->updateWorkUnit(wuid);
     if(!wu)

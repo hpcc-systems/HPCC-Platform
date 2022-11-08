@@ -9,6 +9,7 @@ import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 
 const defaultUIState = {
     hasSelection: false,
@@ -17,11 +18,15 @@ const defaultUIState = {
 interface SubFilesProps {
     cluster?: string;
     logicalFile: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "Modified", descending: true };
 
 export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     cluster,
-    logicalFile
+    logicalFile,
+    sort = defaultSort
 }) => {
 
     const [file, , , refresh] = useFile(cluster, logicalFile);
@@ -33,7 +38,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         data,
         primaryID: "Name",
         alphaNumColumns: { RecordCount: true, Totalsize: true },
-        sort: { attribute: "Modified", descending: true },
+        sort,
         filename: "subfiles",
         columns: {
             sel: { width: 27, selectorType: "checkbox" },

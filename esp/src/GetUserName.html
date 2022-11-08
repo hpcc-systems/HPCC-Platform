@@ -8,7 +8,7 @@
         body {
             font-family: Lucida Sans, Lucida Grande, Arial !important;
             font-size: 15px !important;
-            background-color: #1A9BD7;
+            background-color: #155d8a;
         }
 
         .container {
@@ -53,7 +53,7 @@
         }
 
         #button {
-            background-color: #1A9BD7;
+            background-color: #155d8a;
             border: none;
             color: white;
             padding: 15px 32px;
@@ -86,12 +86,11 @@
 <body>
     <div id="container" class="container visible">
         <div class="formContainer">
-            <img id="logo" src="eclwatch/img/Loginlogo.png">
+            <img id="logo" src="eclwatch/img/hpccsystems.svg" alt="HPCC Systems" style="width: 206px" />
             <p id="loginStr" class="loginStr"></p>
             <div class="login">
                 <form method="POST" action="/esp/login">
-                    <input id="username" type="text" name="username" placeholder="username" class="loginStr"
-                        autofocus></input>
+                    <input id="username" type="text" name="username" placeholder="username" class="loginStr" autofocus></input>
                     <button class="loginStr" id="button" type="submit"></button>
                 </form>
             </div>

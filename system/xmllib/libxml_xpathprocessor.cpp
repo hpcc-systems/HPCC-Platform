@@ -967,7 +967,7 @@ public:
 
     StringBuffer &toXMLNodeSet(xmlXPathObjectPtr obj, StringBuffer &xml)
     {
-        if (!obj || !obj->type==XPATH_NODESET || !obj->nodesetval || !obj->nodesetval->nodeTab || obj->nodesetval->nodeNr<1)
+        if (!obj || obj->type!=XPATH_NODESET || !obj->nodesetval || !obj->nodesetval->nodeTab || obj->nodesetval->nodeNr<1)
             return xml;
         xmlNodePtr *nodes = obj->nodesetval->nodeTab;
         for (int i = 0; i < obj->nodesetval->nodeNr; i++)
@@ -1184,7 +1184,7 @@ public:
     virtual StringBuffer &toXml(const char *xpath, StringBuffer & xml) override
     {
         xmlXPathObjectPtr obj = evaluate(xpath);
-        if (!obj || !obj->type==XPATH_NODESET || !obj->nodesetval || !obj->nodesetval->nodeTab || obj->nodesetval->nodeNr!=1)
+        if (!obj || obj->type!=XPATH_NODESET || !obj->nodesetval || !obj->nodesetval->nodeTab || obj->nodesetval->nodeNr!=1)
             return xml;
         xmlNodePtr node = obj->nodesetval->nodeTab[0];
         if (!node)

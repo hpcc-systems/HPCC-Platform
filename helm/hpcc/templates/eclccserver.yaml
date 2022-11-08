@@ -54,7 +54,7 @@ data:
       template:
         metadata:
           labels:
-            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclccserver" "name" "eclccserver" "instance" $compileJobName ) | indent 12 }}
+            {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclccserver" "name" "eclccserver" "instance" $compileJobName "instanceOf" (printf "%s-job" .me.name)) | indent 12 }}
             accessDali: "yes"
             accessEsp: "yes"
             helmVersion: 8.11.0-trunk0
@@ -199,6 +199,7 @@ kind: ConfigMap
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclccserver") }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "compile") }}
-
+---
+{{- include "hpcc.addEgress" (dict "root" $ "me" . "labels" (list .name (printf "%s-job" .name))) | nindent 0 -}}
 {{- end }}
 {{- end }}

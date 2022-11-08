@@ -585,6 +585,10 @@ public:
         else
             return NULL;
     }
+    virtual IAPICopyClient * getCopyApiClient(IStorageApiInfo * source, IStorageApiInfo * target) override
+    {
+        return nullptr;
+    }
 
 protected:
     static bool isGitFileName(const char *fileName)

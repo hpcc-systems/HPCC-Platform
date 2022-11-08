@@ -103,6 +103,7 @@ interface IKeyBuilder : public IInterface
     virtual unsigned __int64 getNumLeafNodes() const = 0;
     virtual unsigned __int64 getNumBranchNodes() const = 0;
     virtual unsigned __int64 getNumBlobNodes() const = 0;
+    virtual unsigned __int64 getOffsetBranches() const = 0;
 };
 
 extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, bool enforceOrder, bool isTLK);

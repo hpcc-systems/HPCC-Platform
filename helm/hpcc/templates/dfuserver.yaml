@@ -102,5 +102,7 @@ kind: ConfigMap
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.dfuServerConfigMap")) }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "dfuserver" "external" false) }}
+---
+{{ include "hpcc.addEgress" $commonCtx }}
 {{- end }}
 {{- end }}

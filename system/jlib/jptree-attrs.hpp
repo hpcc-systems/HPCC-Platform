@@ -45,7 +45,11 @@
     "@numclusters",
     "@numparts",
     "@numsubfiles",
+    "@numBranchNodes"
+    "@numBlobNodes"
+    "@numLeafNodes"
     "@offset",
+    "@offsetBranches",
     "@partmask",
     "@persistent",
     "@prevenqueuedt",

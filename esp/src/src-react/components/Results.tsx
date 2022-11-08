@@ -2,6 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem, ScrollablePane, Sticky } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResults } from "../hooks/workunit";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -14,10 +15,14 @@ const defaultUIState = {
 
 interface ResultsProps {
     wuid: string;
+    sort?: QuerySortItem;
 }
 
+const defaultSort = { attribute: "Wuid", descending: true };
+
 export const Results: React.FunctionComponent<ResultsProps> = ({
-    wuid
+    wuid,
+    sort = defaultSort
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -29,7 +34,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         data,
         primaryID: "__hpcc_id",
         alphaNumColumns: { Name: true, Value: true },
-        sort: { attribute: "Wuid", descending: true },
+        sort,
         filename: "results",
         columns: {
             col1: {

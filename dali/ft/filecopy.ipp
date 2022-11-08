@@ -263,7 +263,7 @@ protected:
     void pullParts();
     void pushWholeParts();
     void pushParts();
-    void transferUsingAPI();
+    void transferUsingAPI(IAPICopyClient * copyClient);
     const char * queryFixedSlave() const;
     const char * querySlaveExecutable(const IpAddress &ip, StringBuffer &ret) const;
     const char * querySplitPrefix();
@@ -275,7 +275,7 @@ protected:
     bool usePullOperation() const;
     bool usePushOperation() const;
     bool usePushWholeOperation() const;
-    bool useAPICopy();
+    IAPICopyClient * getAPICopyClient();
     void updateSizeRead();
     void waitForTransferSem(Semaphore & sem);
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);

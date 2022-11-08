@@ -86,6 +86,7 @@ interface FilesProps {
     filter?: object;
     sort?: QuerySortItem;
     store?: any;
+    page?: number;
 }
 
 const emptyFilter = {};
@@ -94,6 +95,7 @@ const defaultSort = { attribute: undefined, descending: false };
 export const Files: React.FunctionComponent<FilesProps> = ({
     filter = emptyFilter,
     sort = defaultSort,
+    page = 1,
     store
 }) => {
 
@@ -124,6 +126,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         store: gridStore,
         query,
         sort,
+        pageNum: page,
         filename: "logicalfiles",
         columns: {
             col1: {

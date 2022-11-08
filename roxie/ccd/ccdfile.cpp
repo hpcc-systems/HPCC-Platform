@@ -1693,6 +1693,7 @@ public:
         unsigned replicationLevel = getReplicationLevel(channel);
         IPropertyTree &partProps = pdesc->queryProperties();
         offset_t dfsSize = partProps.getPropInt64("@size", -1);
+        dfsSize = partProps.getPropInt64("@compressedSize", dfsSize); // Disk size is the compressed size if it has been filled in.
         bool local = partProps.getPropBool("@local");
         CDateTime dfsDate;
         if (checkFileDate)

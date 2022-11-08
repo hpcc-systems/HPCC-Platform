@@ -32,7 +32,6 @@ ESPStruct [nil_remove] DiskUsage
     int64 Available;
     int PercentAvailable;
     [min_ver("1.17")] string Exception;
-    [min_ver("1.18")] int64 ActualSize;
 };
 
 ESPStruct [nil_remove] MachineUsage

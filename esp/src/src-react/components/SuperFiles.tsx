@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { ShortVerticalDivider } from "./Common";
@@ -12,11 +13,15 @@ const defaultUIState = {
 interface SuperFilesProps {
     cluster: string;
     logicalFile: string;
+    sort?: QuerySortItem
 }
+
+const defaultSort = { attribute: "Name", descending: false };
 
 export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     cluster,
-    logicalFile
+    logicalFile,
+    sort = defaultSort
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
@@ -27,7 +32,7 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "Name",
-        sort: { attribute: "Name", descending: false },
+        sort,
         filename: "superFiles",
         columns: {
             col1: {

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -8,11 +9,15 @@ import { HolyGrail } from "../layouts/HolyGrail";
 interface ProtectedByProps {
     cluster: string;
     logicalFile: string;
+    sort?: QuerySortItem;
 }
+
+const defaultSort = { attribute: "Owner", descending: false };
 
 export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
     cluster,
-    logicalFile
+    logicalFile,
+    sort = defaultSort
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
@@ -22,7 +27,7 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
     const { Grid, copyButtons } = useFluentGrid({
         data,
         primaryID: "Owner",
-        sort: { attribute: "Owner", descending: false },
+        sort,
         filename: "protectedBy",
         columns: {
             Owner: { label: nlsHPCC.Owner, width: 320 },
