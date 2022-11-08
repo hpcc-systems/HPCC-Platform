@@ -284,7 +284,7 @@ public:
         start();
 
         if (ensureStartFTLookAhead(0))
-            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, true, false, RCUNBOUND, this), false);
+            setLookAhead(0, createRowStreamLookAhead(this, inputStream, queryRowInterfaces(input), INDEXWRITE_SMART_BUFFER_SIZE, ::canStall(input), false, RCUNBOUND, this), false);
 
         if (refactor)
         {
