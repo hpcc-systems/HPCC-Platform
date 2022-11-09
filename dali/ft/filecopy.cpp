@@ -1522,16 +1522,28 @@ IAPICopyClient * FileSprayer::getAPICopyClient()
     if (needCalcCRC && !sources.item(0).hasCRC)
         return nullptr;
 
+    if (!distributedSource)
+        return nullptr;
+
     StringBuffer sourceClusterName;
     distributedSource->getClusterName(0, sourceClusterName);
     Owned<IStoragePlane> sourcePlane = getDataStoragePlane(sourceClusterName.str(), false);
+    if (!sourcePlane)
+        return nullptr;
+
     Owned<IStorageApiInfo> sourceAPIInfo = sourcePlane->getStorageApiInfo();
     if (!sourceAPIInfo)
+        return nullptr;
+
+    if (!distributedTarget)
         return nullptr;
 
     StringBuffer targetClusterName;
     distributedTarget->getClusterName(0, targetClusterName);
     Owned<IStoragePlane> targetPlane = getDataStoragePlane(targetClusterName.str(), false);
+    if (!targetPlane)
+        return nullptr;
+
     Owned<IStorageApiInfo> targetAPIInfo = targetPlane->getStorageApiInfo();
     if (!targetAPIInfo)
         return nullptr;
