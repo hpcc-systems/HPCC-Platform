@@ -49,8 +49,8 @@ getBuildInfo().then(info => {
 });
 
 const format = d3Format(",.2f");
-export function formatCost(value?: number | string): string {
-    if (value !== 0 && !value) {
+export function formatCost(value): string {
+    if (isNaN(value)) {
         logger.debug(`formatCost called for a nullish value: ${value}`);
         return "";
     }

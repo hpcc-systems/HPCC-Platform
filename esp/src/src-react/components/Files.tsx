@@ -200,10 +200,10 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 }, []),
             },
             MinSkew: {
-                label: nlsHPCC.MinSkew, width: 60, formatter: React.useCallback((value, row) => value ?? "", [])
+                label: nlsHPCC.MinSkew, width: 60, formatter: React.useCallback((value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : "", [])
             },
             MaxSkew: {
-                label: nlsHPCC.MaxSkew, width: 60, formatter: React.useCallback((value, row) => value ?? "", [])
+                label: nlsHPCC.MaxSkew, width: 60, formatter: React.useCallback((value, row) => value ? `${Utility.formatDecimal(value / 100)}%` : "", [])
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
             AtRestCost: {

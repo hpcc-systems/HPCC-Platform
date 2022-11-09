@@ -736,13 +736,27 @@ define([
                     MinSkew: {
                         label: nlsHPCC.MinSkew, width: 60,
                         formatter: function (value, row) {
-                            return value !== undefined ? value : "";
+                            if (value !== undefined && value !== null) {
+                                if (value.toString().indexOf(".") >= 0) {
+                                    return Math.abs(value) + "%";
+                                } else {
+                                    return Utility.formatDecimal(value / 100) + "%";
+                                }
+                            }
+                            return "";
                         }
                     },
                     MaxSkew: {
                         label: nlsHPCC.MaxSkew, width: 60,
                         formatter: function (value, row) {
-                            return value !== undefined ? value : "";
+                            if (value !== undefined && value !== null) {
+                                if (value.toString().indexOf(".") >= 0) {
+                                    return value + "%";
+                                } else {
+                                    return Utility.formatDecimal(value / 100) + "%";
+                                }
+                            }
+                            return "";
                         }
                     },
                     Modified: { label: this.i18n.ModifiedUTCGMT, width: 162 },
