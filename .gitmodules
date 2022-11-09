@@ -19,9 +19,6 @@
 [submodule "system/aeron"]
 	path = system/aeron
 	url = https://github.com/hpcc-systems/aeron.git
-[submodule "system/azure_sm/azure-storage-cpplite"]
-	path = system/azure/azure-storage-cpplite
-	url = https://github.com/hpcc-systems/azure-storage-cpplite.git
 [submodule "plugins/spark/spark-hadoop"]
 	path = plugins/spark/spark-hadoop
 	url = https://github.com/hpcc-systems/spark-hadoop
