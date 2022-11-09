@@ -256,6 +256,7 @@ bool isSimpleTranslatedStringExpr(IHqlExpression * expr)
         case no_variable:
         case no_callback:
         case no_select:
+        case no_quoted:
             return true;
         case no_cast:
         case no_implicitcast:
@@ -287,6 +288,7 @@ bool isSimpleTranslatedExpr(IHqlExpression * expr)
     case type_decimal:
     case type_unicode:
     case type_varunicode:
+    case type_utf8:
         //Less strict rules for strings (and decimal), because string temporaries are more expensive.
         return isSimpleTranslatedStringExpr(expr);
     case type_set:
@@ -791,6 +793,58 @@ IHqlExpression * createTranslated(IHqlExpression * expr, IHqlExpression * length
     return createValue(no_translated, expr->getType(), LINK(expr), LINK(length));
 }
 
+static bool canRemoveCast(IHqlExpression * child, ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_string:
+    case type_data:
+    case type_unicode:
+    case type_qstring:
+    case type_utf8:
+        break;
+    default:
+        return false;
+    }
+
+    ITypeInfo * childType = child->queryType()->queryPromotedType();
+    if (type->getStringLen() < childType->getStringLen())
+    {
+        if (child->getOperator() == no_if)
+        {
+            return canRemoveCast(child->queryChild(1), type) && canRemoveCast(child->queryChild(2), type);
+        }
+        return false;
+    }
+    type_t tc = type->getTypeCode();
+    if (tc != childType->getTypeCode())
+    {
+        if (tc == type_string)
+        {
+            if (childType->getTypeCode() != type_varstring)
+                return false;
+            if (type->queryCharset() != childType->queryCharset())
+                return false;
+        }
+        else if (tc == type_unicode)
+        {
+            if (childType->getTypeCode() != type_varunicode)
+                return false;
+            if (type->queryLocale() != childType->queryLocale())
+                return false;
+        }
+        else
+            return false;
+    }
+    else
+    {
+        Owned<ITypeInfo> stretched = getStretchedType(type->getStringLen(), childType);
+        if (stretched != type)
+            return false;
+    }
+    return true;
+}
+
 static IHqlExpression * querySimplifyCompareArgCast(IHqlExpression * expr)
 {
     if (expr->isConstant())
@@ -798,47 +852,9 @@ static IHqlExpression * querySimplifyCompareArgCast(IHqlExpression * expr)
     while ((expr->getOperator() == no_implicitcast) || (expr->getOperator() == no_cast))
     {
         ITypeInfo * type = expr->queryType()->queryPromotedType();
-        switch (type->getTypeCode())
-        {
-        case type_string:
-        case type_data:
-        case type_unicode:
-        case type_qstring:
-        case type_utf8:
-            break;
-        default:
-            return expr;
-        }
         IHqlExpression * child = expr->queryChild(0);
-        ITypeInfo * childType = child->queryType()->queryPromotedType();
-        if (type->getStringLen() < childType->getStringLen())
+        if (!canRemoveCast(child, type))
             break;
-        type_t tc = type->getTypeCode();
-        if (tc != childType->getTypeCode())
-        {
-            if (tc == type_string)
-            {
-                if (childType->getTypeCode() != type_varstring)
-                    break;
-                if (type->queryCharset() != childType->queryCharset())
-                    break;
-            }
-            else if (tc == type_unicode)
-            {
-                if (childType->getTypeCode() != type_varunicode)
-                    break;
-                if (type->queryLocale() != childType->queryLocale())
-                    break;
-            }
-            else
-                break;
-        }
-        else
-        {
-            Owned<ITypeInfo> stretched = getStretchedType(type->getStringLen(), childType);
-            if (stretched != type)
-                break;
-        }
         expr = child;
     }
     return expr;
@@ -847,7 +863,17 @@ static IHqlExpression * querySimplifyCompareArgCast(IHqlExpression * expr)
 
 IHqlExpression * getSimplifyCompareArg(IHqlExpression * expr)
 {
-    IHqlExpression * cast = querySimplifyCompareArgCast(expr);
+    IHqlExpression * cast = expr;
+    for (;;)
+    {
+        cast = querySimplifyCompareArgCast(expr);
+        while (isOpRedundantForCompare(cast))
+            cast = cast->queryChild(0);
+        if (cast == expr)
+            break;
+        expr = cast;
+    }
+
     if (cast->getOperator() != no_substring)
         return LINK(cast);
     if (cast->queryChild(0)->queryType()->getTypeCode() == type_qstring)
@@ -4402,6 +4428,12 @@ void HqlCppTranslator::buildSimpleExpr(BuildCtx & ctx, IHqlExpression * expr, CH
                 break;
             }
         }
+    case no_matchtext:
+    case no_matchunicode:
+    case no_matchutf8:
+        if (!queryRealChild(expr, 0) && ctx.queryMatchExpr(activeValidateMarkerExpr))
+            simple = true;
+        break;
     }
 
     if (simple)
@@ -6778,6 +6810,54 @@ void HqlCppTranslator::doBuildExprCast(BuildCtx & ctx, IHqlExpression * expr, CH
             }
             break;
         }
+    }
+
+    if (expr->isPure() && ctx.getMatchExpr(expr, tgt))
+        return;
+
+    //A few casts have to go via an intermediate type.  Special case them here to make it more likely that the arguments
+    //will be commoned up.  since (cast)translated will not match (cast)original
+    ITypeInfo * argType = arg->queryType();
+    Owned<ITypeInfo> intermediateType;
+    switch (exprType->getTypeCode())
+    {
+    case type_swapint:
+        {
+            if (exprType == argType)
+                break;
+            if (argType->getTypeCode() != type_int)
+                intermediateType.setown(makeIntType(exprType->getSize(), exprType->isSigned()));
+            break;
+        }
+        case type_int:
+        {
+            switch (argType->getTypeCode())
+            {
+            case type_qstring:
+                //Even better would be to implement qString->int function
+                intermediateType.setown(makeStringType(argType->getStringLen(), NULL, NULL));
+                break;
+            }
+            break;
+        }
+        case type_real:
+        {
+            switch (argType->getTypeCode())
+            {
+            case type_swapint:
+                intermediateType.setown(makeIntType(argType->getSize(), argType->isSigned()));
+                break;
+            }
+            break;
+        }
+    }
+
+    if (intermediateType)
+    {
+        OwnedHqlExpr intermediate = createValue(no_implicitcast, intermediateType.getClear(), LINK(arg));
+        OwnedHqlExpr recast = createValue(no_implicitcast, LINK(exprType), intermediate.getClear());
+        buildExpr(ctx, recast, tgt);
+        return;
     }
 
     CHqlBoundExpr pure;
