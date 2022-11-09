@@ -62,10 +62,13 @@
 #include "rtlrecord.hpp"
 #include "rtldynfield.hpp"
 
+constexpr __uint64 defaultFetchThresholdNs = 20000; // Assume anything < 20us comes from the page cache, everything above probably went to disk
+
 static std::atomic<CKeyStore *> keyStore(nullptr);
 static unsigned defaultKeyIndexLimit = 200;
 static CNodeCache *nodeCache = NULL;
 static CriticalSection *initCrit = NULL;
+static __uint64 fetchThresholdCycles = 0;
 
 bool useMemoryMappedIndexes = false;
 bool linuxYield = false;
@@ -75,6 +78,7 @@ bool flushJHtreeCacheOnOOM = true;
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 {
     initCrit = new CriticalSection;
+    fetchThresholdCycles = nanosec_to_cycle(defaultFetchThresholdNs);
     return 1;
 }
 
@@ -1070,7 +1074,7 @@ CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_na
     init(hdr, isTLK);
 }
 
-CJHTreeNode *CMemKeyIndex::loadNode(CJHTreeNode * optNode, offset_t pos)
+CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t pos)
 {
     nodesLoaded++;
     if (pos + keyHdr->getNodeSize() > io->fileSize())
@@ -1109,12 +1113,14 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     init(hdr, isTLK);
 }
 
-CJHTreeNode *CDiskKeyIndex::loadNode(CJHTreeNode * optNode, offset_t pos)
+CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t pos)
 {
     nodesLoaded++;
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
+
+    CCycleTimer fetchTimer(fetchCycles != nullptr);
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
         IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
@@ -1123,6 +1129,8 @@ CJHTreeNode *CDiskKeyIndex::loadNode(CJHTreeNode * optNode, offset_t pos)
         EXCLOG(E, m.str());
         throw E;
     }
+    if (fetchCycles)
+        *fetchCycles = fetchTimer.elapsedCycles();
     if (optNode)
         return CKeyIndex::loadNode(optNode, nodeData, pos, true);
     return CKeyIndex::loadNode(nodeData, pos, true);
@@ -2422,6 +2430,11 @@ extern jhtree_decl void setLegacyNodeCache(bool _value)
     return queryNodeCache()->setLegacyLocking(_value);
 }
 
+void setNodeFetchThresholdNs(__uint64 thresholdNs)
+{
+    fetchThresholdCycles = nanosec_to_cycle(thresholdNs);
+}
+
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo)
 {
     // MORE - consider reporting root nodes of open IKeyIndexes too?
@@ -2444,6 +2457,10 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 constexpr StatisticKind addStatId[CacheMax] = { StNumNodeCacheAdds, StNumLeafCacheAdds, StNumBlobCacheAdds };
 constexpr StatisticKind hitStatId[CacheMax] = { StNumNodeCacheHits, StNumLeafCacheHits, StNumBlobCacheHits };
 constexpr StatisticKind loadStatId[CacheMax] = { StCycleNodeLoadCycles, StCycleLeafLoadCycles, StCycleBlobLoadCycles };
+constexpr StatisticKind readStatId[CacheMax] = { StCycleNodeReadCycles, StCycleLeafReadCycles, StCycleBlobReadCycles };
+constexpr StatisticKind fetchStatId[CacheMax] = { StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches };
+constexpr StatisticKind fetchTimeId[CacheMax] = { StCycleNodeFetchCycles, StCycleLeafFetchCycles, StCycleBlobFetchCycles };
+
 constexpr RelaxedAtomic<unsigned> * hitMetric[CacheMax] = { &nodeCacheHits, &leafCacheHits, &blobCacheHits };
 constexpr RelaxedAtomic<unsigned> * addMetric[CacheMax] = { &nodeCacheAdds, &leafCacheAdds, &blobCacheAdds };
 constexpr RelaxedAtomic<unsigned> * dupMetric[CacheMax] = { &nodeCacheDups, &leafCacheDups, &blobCacheDups };
@@ -2565,6 +2582,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
             unsigned whichCs = hashcode % numLoadCritSects;
 
             cycle_t startCycles = get_cycles_now();
+            cycle_t fetchCycles = 0;
             //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
             //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
             //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
@@ -2572,7 +2590,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
                 CriticalBlock loadBlock(loadCs[whichCs]);
                 if (!ownedNode->isReady())
                 {
-                    keyIndex->loadNode(ownedNode, pos);
+                    keyIndex->loadNode(&fetchCycles, ownedNode, pos);
 
                     //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
                     cache[cacheType].noteReady(*ownedNode);
@@ -2581,7 +2599,16 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
                 else
                     (*dupMetric[cacheType])++; // Would have previously loaded the page twice
             }
-            if (ctx) ctx->noteStatistic(loadStatId[cacheType], get_cycles_now() - startCycles);
+            if (ctx)
+            {
+                ctx->noteStatistic(loadStatId[cacheType], get_cycles_now() - startCycles);
+                ctx->noteStatistic(readStatId[cacheType], fetchCycles);
+                if (fetchCycles >= fetchThresholdCycles)
+                {
+                    ctx->noteStatistic(fetchStatId[cacheType], 1);
+                    ctx->noteStatistic(fetchTimeId[cacheType], fetchCycles);
+                }
+            }
 
             return ownedNode.getClear();
         }

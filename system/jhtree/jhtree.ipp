@@ -76,11 +76,11 @@ enum request { LTE, GTE };
 interface INodeLoader
 {
     virtual CJHTreeNode * createNode(NodeType type) = 0;
-    virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset) = 0;
+    virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) = 0;
     virtual CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
     virtual CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
 
-    inline CJHTreeNode *loadNode(offset_t offset) { return loadNode(nullptr, offset); }
+    inline CJHTreeNode *loadNode(offset_t offset) { return loadNode(nullptr, nullptr, offset); }
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -157,7 +157,7 @@ public:
  
  // INodeLoader impl.
     virtual CJHTreeNode * createNode(NodeType type) final;
-    virtual CJHTreeNode * loadNode(CJHTreeNode * optNode, offset_t offset) = 0;
+    virtual CJHTreeNode * loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) = 0;
     CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
     CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
 
@@ -174,7 +174,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset);
+    virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -190,7 +190,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset);
+    virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
