@@ -621,8 +621,17 @@ public:
         writer.outputEndArray("Log");
     };
 
-    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
     {
+        StringBuffer text, prefix;
+        getLogPrefix(prefix);
+        text.valist_appendf(format, args);
+        CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
+    }
+
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
+    {
+        LogContextScope ls(nullptr);
         if (category == LOG_TRACING)
             DBGLOG("[%s] %s", prefix, text);
         else
@@ -635,6 +644,7 @@ public:
     }
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const  __attribute__((format(printf,6,0)))
     {
+        LogContextScope ls(nullptr);
         StringBuffer text;
         text.append("ERROR");
         if (E)

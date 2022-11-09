@@ -232,13 +232,13 @@ public:
     {
         return ctx->collectingDetailedStatistics();
     }
-    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
     {
-        ctx->CTXLOGva(format, args);
+        ctx->CTXLOGva(cat, job, code, format, args);
     }
-    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
     {
-        ctx->CTXLOGa(category, prefix, text);
+        ctx->CTXLOGa(category, cat, job, code, prefix, text);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
@@ -1247,12 +1247,15 @@ public:
     }
 
     // MORE - most of this is copied from ccd.hpp - can't we refactor?
-    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
     {
         if (ctx)
-            ctx->CTXLOGa(category, prefix, text);
+            ctx->CTXLOGa(category, cat, job, code, prefix, text);
         else
-            DBGLOG("[%s] %s", prefix, text);
+        {
+            LogContextScope ls(nullptr);
+            LOG(cat, job, code, "[%s] %s", prefix, text);
+        }
     }
 
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const __attribute__((format(printf,6,0)))
@@ -1261,6 +1264,7 @@ public:
             ctx->CTXLOGaeva(E, file, line, prefix, format, args);
         else
         {
+            LogContextScope ls(nullptr);
             StringBuffer ss;
             ss.appendf("[%s] ERROR", prefix);
             if (E)

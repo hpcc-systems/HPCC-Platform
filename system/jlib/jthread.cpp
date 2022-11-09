@@ -166,7 +166,7 @@ void *Thread::_threadmain(void *v)
 #endif
 {
     Thread * t = (Thread *)v;
-    resetThreadLogging(t->traceFlags);
+    resetThreadLogging(t->logctx, t->traceFlags);
 #ifdef _WIN32
     if (SEHHandling) 
         EnableSEHtranslation();
@@ -382,7 +382,7 @@ void Thread::start()
         return;
     }
     Link();
-    getThreadLoggingInfo(traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
+    getThreadLoggingInfo(logctx, traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
     startRelease();
 }
 
@@ -562,7 +562,7 @@ void CThreadedPersistent::threadmain()
             break;
         try
         {
-            resetThreadLogging(traceFlags);
+            resetThreadLogging(logctx, traceFlags);
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -594,7 +594,7 @@ void CThreadedPersistent::start()
         PrintStackReport();
         throw MakeStringExceptionDirect(-1, msg.str());
     }
-    getThreadLoggingInfo(traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
+    getThreadLoggingInfo(logctx, traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
     sem.signal();
 }
 
@@ -877,7 +877,7 @@ public:
                 if (parent.stopall)
                     break;
             }
-            resetThreadLogging(traceFlags);
+            resetThreadLogging(logctx, traceFlags);
             parent.notifyStarted(this);
             try
             {
@@ -910,7 +910,7 @@ public:
     void go(void *param)
     {
         thread->init(param);
-        getThreadLoggingInfo(traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
+        getThreadLoggingInfo(logctx, traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
         cycle();
     }
 

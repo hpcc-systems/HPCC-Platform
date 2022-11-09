@@ -263,20 +263,23 @@ static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
 
 static thread_local LogMsgJobInfo defaultJobInfo;
 static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
+static thread_local const IContextLogger *default_thread_logctx = nullptr;
 
 const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
 
-void getThreadLoggingInfo(TraceFlags &_traceFlags)
+void getThreadLoggingInfo(const IContextLogger * &_logctx, TraceFlags &_traceFlags)
 {
+    _logctx = default_thread_logctx;
     _traceFlags = threadTraceFlags;
 }
 
-void resetThreadLogging(TraceFlags _traceFlags)
+void resetThreadLogging(const IContextLogger *_logctx, TraceFlags _traceFlags)
 {
     // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
     // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
     // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
     defaultJobInfo = globalDefaultJobInfo;
+    default_thread_logctx = _logctx;
     threadTraceFlags = _traceFlags;
 }
 
@@ -2567,7 +2570,7 @@ void IContextLogger::CTXLOG(const char *format, ...) const
 {
     va_list args;
     va_start(args, format);
-    CTXLOGva(format, args);
+    CTXLOGva(MCdebugInfo, unknownJob, NoLogMsgCode, format, args);
     va_end(args);
 }
 
@@ -2626,11 +2629,9 @@ public:
     virtual void Link() const {}
     virtual bool Release() const { return false; }
 
-    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0)))
     {
-        StringBuffer ss;
-        ss.valist_appendf(format, args);
-        DBGLOG("%s", ss.str());
+        VALOG(cat, job, code, format, args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
@@ -3153,17 +3154,22 @@ void setTraceLevel(TraceFlags level)
     threadTraceFlags |= (level & TraceFlags::LevelMask);
 }
 
-LogContextScope::LogContextScope()
+LogContextScope::LogContextScope(const IContextLogger *ctx)
 {
     prevFlags = threadTraceFlags;
+    prev = default_thread_logctx;
+    default_thread_logctx = ctx;
 }
-LogContextScope::LogContextScope(TraceFlags traceFlags)
+LogContextScope::LogContextScope(const IContextLogger *ctx, TraceFlags traceFlags)
 {
     prevFlags = threadTraceFlags;
     threadTraceFlags = traceFlags;
+    prev = default_thread_logctx;
+    default_thread_logctx = ctx;
 }
 LogContextScope::~LogContextScope()
 {
+    default_thread_logctx = prev;
     threadTraceFlags = prevFlags;
 }
 
@@ -3184,4 +3190,71 @@ TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_lis
 
     }
     return dft;
+}
+
+void ctxlogReport(const LogMsgCategory & cat, const char * format, ...) 
+{
+    va_list args;
+    va_start(args, format);
+    ctxlogReportVA(cat, unknownJob, NoLogMsgCode, format, args); 
+    va_end(args);
+}
+
+void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args) 
+{
+    ctxlogReportVA(cat, unknownJob, NoLogMsgCode, format, args); 
+}
+void ctxlogReport(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    ctxlogReportVA(cat, unknownJob, code, format, args); 
+    va_end(args);
+}
+void ctxlogReportVA(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args)
+{
+    ctxlogReportVA(cat, unknownJob, code, format, args); 
+}
+void ctxlogReport(const LogMsgCategory & cat, const IException * e, const char * prefix)
+{
+    ctxlogReport(cat, unknownJob, e, prefix);
+}
+void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    ctxlogReportVA(cat, job, NoLogMsgCode, format, args); 
+    va_end(args);
+}
+void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
+{
+    ctxlogReportVA(cat, job, NoLogMsgCode, format, args); 
+}
+void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    ctxlogReportVA(cat, job, code, format, args); 
+    va_end(args);
+}
+void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) 
+{
+    if (default_thread_logctx)
+    {
+        LogContextScope ls(nullptr);
+        ls.prev->CTXLOGva(cat, job, code, format, args);
+    }
+    else
+        queryLogMsgManager()->report_va(cat, job, code, format, args);
+}
+void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix)
+{
+    StringBuffer buff;
+    e->errorMessage(buff);
+    ctxlogReport(cat, job, e->errorCode(), "%s%s%s", prefix ? prefix : "", prefix ? prefix : " : ", buff.str());
+}
+IException * ctxlogReport(IException * e, const char * prefix, LogMsgClass cls)
+{
+    ctxlogReport(MCexception(e, cls), unknownJob, e, prefix);
+    return e;
 }

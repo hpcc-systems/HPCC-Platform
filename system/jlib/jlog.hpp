@@ -869,6 +869,7 @@ extern jlib_decl void setDefaultJobId(LogMsgJobId id, bool threaded = false);
 #define LOGMSGREPORTER queryLogMsgManager()
 #define FLLOG LogMsgPrepender(__FILE__, __LINE__).report
 
+#if 0
 #ifdef _PROFILING_WITH_TRUETIME_
 //It can't cope with the macro definition..... at least v6.5 can't.
 inline void LOG(const LogMsg & msg)
@@ -935,14 +936,22 @@ inline void VALOG(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgC
 #define LOG LOGMSGREPORTER->report
 #define VALOG LOGMSGREPORTER->report_va
 #endif
+#else
+extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const char * format, ...) __attribute__((format(printf, 2, 3)));
+extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, const char * format, va_list args) __attribute__((format(printf, 2, 0)));
+extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 3, 4)));
+extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf, 3, 0)));
+extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL);
+extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) __attribute__((format(printf, 3, 4)));
+extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) __attribute__((format(printf, 3, 0)));
+extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, ...) __attribute__((format(printf, 4, 5)));
+extern jlib_decl void ctxlogReportVA(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char * format, va_list args) __attribute__((format(printf, 4, 0)));
+extern jlib_decl void ctxlogReport(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL);
+extern jlib_decl IException * ctxlogReport(IException * e, const char * prefix = NULL, LogMsgClass cls = MSGCLS_error); // uses MCexception(e, cls), unknownJob, handy for EXCLOG
+#define LOG ::ctxlogReport
+#define VALOG ::ctxlogReportVA
 
-#define INTLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"=%d", expr)
-#define OCTLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"=0%o", expr)
-#define HEXLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"=0x%X", expr)
-#define DBLLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"=%lg", expr)
-#define CHRLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"=%c", expr)
-#define STRLOG(category, job, expr) LOGMSGREPORTER->report(category, job, #expr"='%s'", expr)
-#define TOSTRLOG(category, job, prefix, func) { if (!REJECTLOG(category)) { StringBuffer buff; func(buff); LOGMSGREPORTER->report(category, job, prefix"'%s'", buff.str()); } }
+#endif
 
 inline void DBGLOG(char const * format, ...) __attribute__((format(printf, 1, 2)));
 inline void DBGLOG(char const * format, ...)
@@ -1229,9 +1238,9 @@ extern jlib_decl void AuditSystemAccess(const char *userid, bool success, char c
 
 interface jlib_decl IContextLogger : extends IInterface
 {
-    void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
-    void mCTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
-    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0))) = 0;
+    virtual void CTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
+    virtual void mCTXLOG(const char *format, ...) const  __attribute__((format(printf, 2, 3)));
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)));
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
