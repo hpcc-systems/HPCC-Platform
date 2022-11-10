@@ -3560,6 +3560,14 @@ bool Cws_accessEx::onUserResetPass(IEspContext &context, IEspUserResetPassReques
             return false;
         }
 
+        SecFeatureSet sfs = ldapsecmgr->queryImplementedFeatures();
+        if (!(sfs & SMF_UpdateUserPassword))
+        {
+            resp.setRetcode(-1);
+            resp.setRetmsg("Changing password is not supported.");
+            return false;
+        }
+
         bool ret = ldapsecmgr->updateUserPassword(username, req.getNewPassword());
         if(ret)
         {
