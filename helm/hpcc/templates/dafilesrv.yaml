@@ -50,7 +50,7 @@ spec:
       labels:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "dafilesrv" "name" "dafilesrv" "instance" .name) | indent 8 }}
         server: {{ .name | quote }}
-        helmVersion: 8.10.6-rc3
+        helmVersion: 8.10.6-rc4
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
