@@ -850,7 +850,19 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     if (e)
     {
         if (!exitException)
+        {
             exitException.setown(e);
+            Owned<IWorkUnit> w = &workunit->lock();
+            Owned<IWUException> we = w->createException();
+            we->setSeverity(SeverityInformation);
+            StringBuffer errStr;
+            e->errorMessage(errStr);
+            we->setExceptionMessage(errStr);
+            we->setExceptionSource("thormasterexception");
+            we->setExceptionCode(e->errorCode());
+
+            w->setState(WUStateWait);
+        }
         return;
     }
 #else
@@ -1332,15 +1344,18 @@ void thorMain(ILogMsgHandler *logHandler, const char *wuid, const char *graphNam
                         Owned<IWorkUnit> w = &workunit->lock();
                         if (e)
                         {
-                            Owned<IWUException> we = w->createException();
-                            we->setSeverity(SeverityInformation);
-                            StringBuffer errStr;
-                            e->errorMessage(errStr);
-                            we->setExceptionMessage(errStr);
-                            we->setExceptionSource("thormasterexception");
-                            we->setExceptionCode(e->errorCode());
+                            if (WUStateWait != w->getState()) // if set already, can only mean exception has been set already (see CJobManager::reply)
+                            {
+                                Owned<IWUException> we = w->createException();
+                                we->setSeverity(SeverityInformation);
+                                StringBuffer errStr;
+                                e->errorMessage(errStr);
+                                we->setExceptionMessage(errStr);
+                                we->setExceptionSource("thormasterexception");
+                                we->setExceptionCode(e->errorCode());
 
-                            w->setState(WUStateWait);
+                                w->setState(WUStateWait);
+                            }
                             break;
                         }
 

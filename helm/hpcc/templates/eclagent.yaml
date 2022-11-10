@@ -187,7 +187,7 @@ kind: ConfigMap
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" $apptype) }}
 ---
-{{- $egressedPodLabels := list (ternary .name (printf "%s-job" .name) .useChildProcesses) -}}
+{{- $egressedPodLabels := list (ternary .name (printf "%s-job" .name) (.useChildProcesses | default false)) -}}
 {{- include "hpcc.addEgress" (dict "root" $ "me" . "labels" $egressedPodLabels) | nindent 0 -}}
 {{- end }}
 {{- end }}
