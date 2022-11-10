@@ -475,30 +475,6 @@ public:
     {
         return initialized;
     }
-    PyFrameObject *pushDummyFrame()
-    {
-        PyThreadState* threadstate = PyThreadState_GET();
-        if (!threadstate->frame)
-        {
-            OwnedPyObject globals = PyDict_New();
-            OwnedPyObject locals = PyDict_New();
-            OwnedPyX<PyCodeObject> code = PyCode_NewEmpty("<dummy>","<dummy>", 0);
-            checkPythonError();
-            PyFrameObject *frame = PyFrame_New(threadstate, code, globals, locals);
-            checkPythonError();
-            threadstate->frame = frame;
-            return frame;
-        }
-        return NULL;
-    }
-
-    void popDummyFrame(PyFrameObject *frame)
-    {
-        PyThreadState* threadstate = PyThreadState_GET();
-        if (threadstate->frame == frame)
-            threadstate->frame = NULL;
-    }
-
 
     PyObject *getActivityContextTupleType()
     {
@@ -545,9 +521,7 @@ public:
             OwnedPyObject recname = PyUnicode_FromString("namerec");     // MORE - do we care what the name is?
             OwnedPyObject ntargs = PyTuple_Pack(2, recname.get(), pnames.get());
             checkPythonError();
-            OwnedPyX<PyFrameObject> frame = pushDummyFrame();
             mynamedtupletype.setown(PyObject_CallObject(namedtuple, ntargs));
-            popDummyFrame(frame);
             checkPythonError();
             PyDict_SetItem(namedtupleTypes, pnames, mynamedtupletype);
         }
