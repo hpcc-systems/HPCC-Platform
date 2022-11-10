@@ -67,24 +67,23 @@ void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
         std::vector<__uint64> values = pMetric->queryHistogramValues();
         std::vector<__uint64> limits = pMetric->queryHistogramBucketLimits();
         size_t countBucketValues = values.size();
-        __uint64 cumulative;
+        __uint64 cumulative = 0;
 
         for (int i=0; i < countBucketValues - 1; ++i)
         {
             cumulative += values[i];
-            LOG(MCmetrics, "name=%s, bucket le %" I64F "d=%" I64F "d\n", name.c_str(), limits[i], cumulative);
+            LOG(MCmetrics, "name=%s, bucket le %" I64F "d=%" I64F "d", name.c_str(), limits[i], cumulative);
         }
 
         // The inf bucket count is the last element in the array of values returned.
         // Add it to the cumulative count and print the value
         cumulative += values[countBucketValues - 1];
-        LOG(MCmetrics, "name=%s, bucket inf=%" I64F "d\n", name.c_str(), cumulative);
+        LOG(MCmetrics, "name=%s, bucket inf=%" I64F "d", name.c_str(), cumulative);
 
         // sum - total of all observations
-        LOG(MCmetrics, "name=%s, sum=%" I64F "d\n", name.c_str(), pMetric->queryValue());
+        LOG(MCmetrics, "name=%s, sum=%" I64F "d", name.c_str(), pMetric->queryValue());
 
         // count - total of all bucket counts (same as inf)
-        LOG(MCmetrics, "name=%s, count=%" I64F "d\n", name.c_str(), cumulative);
-
+        LOG(MCmetrics, "name=%s, count=%" I64F "d", name.c_str(), cumulative);
     }
 }

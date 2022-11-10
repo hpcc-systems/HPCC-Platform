@@ -79,7 +79,7 @@ void FileMetricSink::writeMeasurementToFile(const std::shared_ptr<IMetric> &pMet
         std::vector<__uint64> values = pMetric->queryHistogramValues();
         std::vector<__uint64> limits = pMetric->queryHistogramBucketLimits();
         size_t countBucketValues = values.size();
-        __uint64 cumulative;
+        __uint64 cumulative = 0;
 
         for (int i=0; i < countBucketValues - 1; ++i)
         {
