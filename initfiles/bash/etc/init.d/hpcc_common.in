@@ -313,6 +313,7 @@ configGenCmd() {
     # Creating logfiles for component
     logDir=$log/${compName}
 
+    export LSAN_OPTIONS=suppressions=${path}/etc/init.d/lsan-supp.txt
     configcmd="${cfggenpre[@]} ${configgen_path}/configgen -env ${envfile} -od ${runtime} -id ${componentFile} -c ${compName}"
     log "$configcmd"
     if [ "$(whoami)" != "${user}" ]; then
@@ -558,6 +559,7 @@ startCmd() {
         UMASK_ARG="--umask ${umask}"
     fi
 
+    export LSAN_OPTIONS=suppressions=${path}/etc/init.d/lsan-supp.txt
     EXEC_COMMAND="${bin_path}/init_${compType} "
     startcmd="${START_STOP_DAEMON} -S -p ${pid}/init_${compName}.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b"
 
