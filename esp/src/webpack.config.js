@@ -78,7 +78,6 @@ module.exports = function (env) {
                     loader: 'string-replace-loader',
                     options: {
                         search: isProduction ? "RELEASE_ONLY" : "DEBUG_ONLY",
-                        //   replace: "DEBUG_ONLY */",
                         replace(match, p1, offset, string) {
                             return "DEBUG_ONLY */"
                         },

@@ -169,7 +169,9 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
             }
         });
         setIdx(idx);
-        onDockPanelCreate(retVal);
+        setTimeout(() => {
+            onDockPanelCreate(retVal);
+        }, 0);
         return retVal;
     });
 

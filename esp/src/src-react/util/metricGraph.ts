@@ -1,8 +1,10 @@
 import { d3Event, select as d3Select, SVGZoomWidget } from "@hpcc-js/common";
 import { graphviz } from "@hpcc-js/graph";
-import { Graph2 } from "@hpcc-js/util";
+import { Graph2, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
 import { MetricsOptions } from "../hooks/metrics";
+
+const logger = scopedLogger("src-react/util/metricGraph.ts");
 
 declare const dojoConfig;
 
@@ -36,12 +38,21 @@ function shape(kind: string) {
     return KindShape[kind] || "rectangle";
 }
 
+const CHARS = new Set("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 function encodeID(id: string): string {
-    return id.split(":").join("__colon__").split(" ").join("__space__").split("+").join("__plus__");
+    let retVal = "";
+    for (let i = 0; i < id.length; ++i) {
+        if (CHARS.has(id.charAt(i))) {
+            retVal += id.charAt(i);
+        } else {
+            retVal += `__${id.charCodeAt(i)}__`;
+        }
+    }
+    return retVal;
 }
 
 function decodeID(id: string): string {
-    return id.split("__plus__").join("+").split("__space__").join(" ").split("__colon__").join(":");
+    return id.replace(/__(\d+)__/gm, (_match, p1) => String.fromCharCode(+p1));
 }
 
 export interface IScope {
@@ -164,12 +175,12 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         data.forEach((scope: IScope) => {
             if (scope.type === "edge") {
                 if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdSource]))
-                    console.warn(`Missing vertex:  ${(scope as IScopeEdge).IdSource}`);
+                    logger.warning(`Missing vertex:  ${(scope as IScopeEdge).IdSource}`);
                 else if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdTarget])) {
-                    console.warn(`Missing vertex:  ${(scope as IScopeEdge).IdTarget}`);
+                    logger.warning(`Missing vertex:  ${(scope as IScopeEdge).IdTarget}`);
                 } else {
                     if (scope.__parentName && !this.subgraphExists(scope.__parentName)) {
-                        console.warn(`Edge missing subgraph:  ${scope.__parentName}`);
+                        logger.warning(`Edge missing subgraph:  ${scope.__parentName}`);
                     }
                     if (this.subgraphExists(scope.__parentName)) {
                         this.addEdge(scope as IScopeEdge, this.subgraph(scope.__parentName));
@@ -188,7 +199,8 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     vertexTpl(v: IScope, options: MetricsOptions): string {
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${format(options.activityTpl, v)}" shape="${shape(v.Kind)}"]`;
+        const label = v.type === "activity" ? format(options.activityTpl, v) : v.Label || v.id;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${label}" shape="${shape(v.Kind)}"]`;
     }
 
     protected _dedupEdges: { [scopeName: string]: boolean } = {};
@@ -333,7 +345,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
     }
 
     clearSelection(broadcast: boolean = false) {
-        Object.keys(this._selection).forEach(name => {
+        Object.keys(this._selection).filter(name => !!name).forEach(name => {
             d3Select(`#${encodeID(name)}`).classed("selected", false);
         });
         this._selection = {};
@@ -349,14 +361,21 @@ export class MetricGraphWidget extends SVGZoomWidget {
         this._selectionChanged(broadcast);
     }
 
+    selectionCompare(_: string[]): boolean {
+        const currSelection = this.selection();
+        return currSelection.length !== _.length || _.some(id => currSelection.indexOf(id) < 0);
+    }
+
     selection(): string[];
     selection(_: string[]): this;
     selection(_: string[], broadcast: boolean): this;
     selection(_?: string[], broadcast: boolean = false): string[] | this {
         if (!arguments.length) return Object.keys(this._selection);
-        this.clearSelection();
-        _.forEach(id => this._selection[id] = true);
-        this._selectionChanged(broadcast);
+        if (this.selectionCompare(_)) {
+            this.clearSelection();
+            _.forEach(id => this._selection[id] = true);
+            this._selectionChanged(broadcast);
+        }
         return this;
     }
 
@@ -441,27 +460,31 @@ export class MetricGraphWidget extends SVGZoomWidget {
                 this?._prevGV?.terminate();
                 const dot = this._dot;
                 this._prevGV = graphviz(dot, "dot", dojoConfig.urlInfo.fullPath + "/dist");
-                this._prevGV.response.then(svg => {
+                this._prevGV.response.then(response => {
                     //  Check for race condition  ---
                     if (dot === this._prevDot) {
-                        const startPos = svg.indexOf("<g id=");
-                        const endPos = svg.indexOf("</svg>");
-                        this._renderElement.html(svg.substring(startPos, endPos));
-                        const context = this;
-                        setTimeout(() => {
-                            this.zoomToFit(0);
-                            this._renderElement.selectAll(".node,.edge,.cluster")
-                                .on("click", function () {
-                                    const event = d3Event();
-                                    if (!event.ctrlKey) {
-                                        context.clearSelection();
-                                    }
-                                    context.toggleSelection(decodeID(this.id), true);
-                                });
-                            if (callback) {
-                                callback(this);
-                            }
-                        }, 0);
+                        if (response.svg) {
+                            const startPos = response.svg.indexOf("<g id=");
+                            const endPos = response.svg.indexOf("</svg>");
+                            this._renderElement.html(response.svg.substring(startPos, endPos));
+                            const context = this;
+                            setTimeout(() => {
+                                this.zoomToFit(0);
+                                this._renderElement.selectAll(".node,.edge,.cluster")
+                                    .on("click", function () {
+                                        const event = d3Event();
+                                        if (!event.ctrlKey) {
+                                            context.clearSelection();
+                                        }
+                                        context.toggleSelection(decodeID(this.id), true);
+                                    });
+                                if (callback) {
+                                    callback(this);
+                                }
+                            }, 0);
+                        } else if (response.error) {
+                            logger.error(`Invalid DOT:  ${response.error}\nresponse.errorDot`);
+                        }
                     }
                 }).catch(e => {
                     if (callback) {

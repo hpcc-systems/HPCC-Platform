@@ -9,6 +9,7 @@ export interface HolyGrailProps {
     right?: any;
     footer?: any;
     footerStyles?: any;
+    fullscreen?: boolean;
 }
 
 export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
@@ -17,7 +18,8 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
     main,
     right,
     footer,
-    footerStyles = { flex: "0 0", minWidth: 0 }
+    footerStyles = { flex: "0 0", minWidth: 0 },
+    fullscreen = false
 }) => {
 
     const { isDark } = useUserTheme();
@@ -41,6 +43,16 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
                     backgroundColor: btnDisabledBgColor,
                 }
             }
+        },
+        fullscreen: {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            background: "white"
+        },
+        normal: {
         }
     }), [btnDisabledColor, btnDisabledBgColor, btnHoverBgColor]);
 
@@ -56,7 +68,7 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
         }
     }, [isDark]);
 
-    return <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: "100%", overflow: "hidden" }}>
+    return <div className={fullscreen ? layoutStyles.fullscreen : layoutStyles.normal} style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: "100%", overflow: "hidden" }}>
         <header className={layoutStyles.header} style={{ flex: "0 0", minWidth: 0 }}>{header}</header>
         <div style={{ flex: "1 1", display: "flex", minWidth: 0 }} >
             <div style={{ flex: "0 2" }}>{left}</div>
