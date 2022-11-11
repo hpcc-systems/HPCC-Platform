@@ -35,13 +35,15 @@ static constexpr const char * defaultHPCCLogProcIDCol      = "hpcc_log_procid";
 static constexpr const char * defaultHPCCLogThreadIDCol    = "hpcc_log_threadid";
 static constexpr const char * defaultHPCCLogMessageCol     = "hpcc_log_message";
 static constexpr const char * defaultHPCCLogJobIDCol       = "hpcc_log_jobid";
-static constexpr const char * defaultHPCCLogComponentCol   = "kubernetes_container_name";
+static constexpr const char * defaultHPCCLogComponentCol   = "hpcc_log_component";
 static constexpr const char * defaultHPCCLogTypeCol        = "hpcc_log_class";
 static constexpr const char * defaultHPCCLogAudCol         = "hpcc_log_audience";
 
 static constexpr const char * logMapIndexPatternAtt = "@storeName";
 static constexpr const char * logMapSearchColAtt = "@searchColumn";
 static constexpr const char * logMapTimeStampColAtt = "@timeStampColumn";
+static constexpr const char * logMapKeyColAtt = "@keyColumn";
+
 
 static constexpr std::size_t  defaultMaxRecordsPerFetch = 100;
 
@@ -342,6 +344,8 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
                 m_componentsIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
             if (logMap.hasProp(logMapSearchColAtt))
                 m_componentsSearchColName = logMap.queryProp(logMapSearchColAtt);
+            if (logMap.hasProp(logMapKeyColAtt))
+                m_componentsLookupKeyColumn = logMap.queryProp(logMapKeyColAtt);
         }
         else if (streq(logMapType, "class"))
         {
@@ -381,14 +385,14 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns)
 {
     //timestamp, source component, message
-    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol);
+    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogComponentCol, defaultHPCCLogMessageCol);
 }
 
 void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns)
 {
     //timestamp, source component, all hpcc.log fields
     columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s, %s",
-    m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
+    m_globalIndexTimestampField.str(), defaultHPCCLogComponentCol, defaultHPCCLogMessageCol, m_classSearchColName.str(),
     m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
 }
 
@@ -438,6 +442,21 @@ void AzureLogAnalyticsCurlClient::searchMetaData(StringBuffer & search, const Lo
         {
             search.append("\n| project ");
             selectcols.getString(search, ",");
+
+            //determine if componentname field included or not
+            bool componentFieldFound = false;
+            if (!isEmptyString(m_componentsSearchColName))
+            {
+                ForEachItemIn(idx, selectcols)
+                {
+                    if (strsame(m_componentsSearchColName,selectcols.item(idx)))
+                    {
+                        componentFieldFound = true;
+                        break;
+                    }
+                }
+            }
+            m_IncludeComponentName = componentFieldFound;
         }
         else
         {
@@ -483,7 +502,7 @@ void throwIfMultiIndexDetected(const char * currentIndex, const char * proposedI
 void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryString, StringBuffer & queryIndex, const ILogAccessFilter * filter)
 {
     if (filter == nullptr)
-        throw makeStringExceptionV(-1, "%s: Null filter detected while creating Elastic Stack query string", COMPONENT_NAME);
+        throw makeStringExceptionV(-1, "%s: Null filter detected while creating Azure KQL query string", COMPONENT_NAME);
 
     StringBuffer queryValue;
     std::string queryField = m_globalSearchColName.str();
@@ -621,6 +640,15 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
     queryString.append(" ").append(queryField.c_str()).append(" =~ '").append(queryValue.str()).append("'");
 }
 
+void AzureLogAnalyticsCurlClient::declareContainerIndexJoinTable(StringBuffer & queryString, const LogAccessConditions & options)
+{
+    queryString.append("let ").append(m_componentsIndexSearchPattern).append("Table = ").append(m_componentsIndexSearchPattern);
+    queryString.append("\n| extend ").append(defaultHPCCLogComponentCol).append(" = extract(\"k8s_([0-9A-Za-z-]+)\", 1, ").append(m_componentsSearchColName).append(", typeof(string))");
+    //we need to add filters here, at least a time constraint
+    //| where TimeGenerated > TS
+    queryString.append("\n| project ").append(defaultHPCCLogComponentCol).append(", ").append(m_componentsLookupKeyColumn).append(";\n");
+}
+
 void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryString, StringBuffer & queryIndex, const LogAccessConditions & options)
 {
     try
@@ -631,6 +659,10 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         //Forced to format log structure in query until a proper log ingest rule is created
         queryIndex.set(m_globalIndexSearchPattern.str());
+
+        if(m_IncludeComponentName)
+            declareContainerIndexJoinTable(queryString, options);
+
         queryString.append(queryIndex);
         generateHPCCLogColumnstAllColumns(queryString, m_globalSearchColName.str()); 
 
@@ -648,6 +680,8 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         StringBuffer range;
         azureLogAnalyticsTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
         queryString.append("\n| where ").append(range.str());
+        if(m_IncludeComponentName)
+            queryString.append("\n| join kind=leftouter ").append(m_componentsIndexSearchPattern).append("Table on ").append(m_componentsLookupKeyColumn);
 
         searchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
 

@@ -63,6 +63,10 @@ private:
     StringBuffer m_aadClientID;
     StringBuffer m_aadClientSecret;
 
+    StringBuffer m_componentsLookupKeyColumn;
+
+    bool m_IncludeComponentName = true;
+
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);
 
@@ -72,6 +76,7 @@ public:
     void searchMetaData(StringBuffer & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, unsigned size = defaultEntryLimit, offset_t from = defaultEntryStart);
     void populateKQLQueryString(StringBuffer & queryString, StringBuffer& queryIndex, const LogAccessConditions & options);
     void populateKQLQueryString(StringBuffer & queryString, StringBuffer& queryIndex, const ILogAccessFilter * filter);
+    void declareContainerIndexJoinTable(StringBuffer & queryString, const LogAccessConditions & options);
     static void azureLogAnalyticsTimestampQueryRangeString(StringBuffer & range, const char * timestampfield, std::time_t from, std::time_t to);
     static unsigned processHitsJsonResp(IPropertyTreeIterator * lines, IPropertyTreeIterator * columns, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped, bool reportHeader);
     static bool processSearchJsonResp(LogQueryResultDetails & resultDetails, const std::string & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format, bool reportHeader);
