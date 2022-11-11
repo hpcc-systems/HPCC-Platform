@@ -38,6 +38,8 @@
 
 #include "espcontext.hpp"
 #include "esdl_script.hpp"
+#include "tokenserialization.hpp"
+#include "txsummary.hpp"
 
 //only support libxml2 for now
 
@@ -713,6 +715,97 @@ static void toXmlString(xmlXPathParserContextPtr ctxt, int nargs)
     xmlXPathFreeNodeSet(toSerialize);
 }
 
+static void getTxSummary(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    CTxSummary* txSummary = nullptr;
+    if (scriptContext)
+    {
+        IEspContext* espContext = scriptContext->queryEspContext();
+        if (espContext)
+            txSummary = espContext->queryTxSummary();
+    }
+    if (!txSummary)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs > 3)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    unsigned style = TXSUMMARY_OUT_TEXT;
+    LogLevel level = LogMin;
+    unsigned group = TXSUMMARY_GRP_ENTERPRISE;
+    xmlChar* tmp;
+    if (3 <= nargs)
+    {
+        tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        if (*tmp)
+        {
+            if (strieq((const char*)tmp, "core"))
+                group = TXSUMMARY_GRP_CORE;
+            else if (!streq((const char*)tmp, "enterprise"))
+            {
+                xmlFree(tmp);
+                xmlXPathSetError((ctxt), XPATH_EXPR_ERROR);
+                return;
+            }
+        }
+        xmlFree(tmp);
+    }
+    if (2 <= nargs)
+    {
+        tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        if (*tmp)
+        {
+            if (strieq((const char*)tmp, "normal") || streq((const char*)tmp, "5"))
+                level = LogNormal;
+            else if (strieq((const char*)tmp, "max") || streq((const char*)tmp, "10"))
+                level = LogMax;
+            else if (!strieq((const char*)tmp, "min"))
+            {
+                if (TokenDeserializer().deserialize((const char*)tmp, level) != Deserialization_SUCCESS || level < LogMin || level > LogMax)
+                {
+                    xmlFree(tmp);
+                    xmlXPathSetError((ctxt), XPATH_EXPR_ERROR);
+                    return;
+                }
+            }
+        }
+        xmlFree(tmp);
+    }
+    if (1 <= nargs)
+    {
+        tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        if (*tmp)
+        {
+            if (strieq((const char*)tmp, "json"))
+                style = TXSUMMARY_OUT_JSON;
+            else if (!strieq((const char*)tmp, "text"))
+            {
+                xmlFree(tmp);
+                xmlXPathSetError((ctxt), XPATH_EXPR_ERROR);
+                return;
+            }
+        }
+        xmlFree(tmp);
+    }
+
+    StringBuffer output;
+    txSummary->serialize(output, level, group, style);
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar*)output.str()));
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -735,6 +828,7 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "compressString", (void *)compressString);
     xpathContext->registerFunction(uri, "decompressString", (void *)decompressString);
     xpathContext->registerFunction(uri, "toXmlString", (void *)toXmlString);
+    xpathContext->registerFunction(uri, "getTxSummary", (void *)getTxSummary);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)
