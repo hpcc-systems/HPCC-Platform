@@ -97,7 +97,7 @@ jobs:
 
     name: "Build with vcpkg"
     needs: check-skip
-    if: github.repository == "hpcc-systems/HPCC-Platform"
+    if: github.repository == 'hpcc-systems/HPCC-Platform'
     runs-on: ${{ matrix.os }}
     steps:
       - name: Display build summary
