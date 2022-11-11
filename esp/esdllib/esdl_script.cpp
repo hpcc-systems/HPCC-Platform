@@ -471,8 +471,37 @@ public:
 
         m_server.setown(compileOptionalXpath(stag.getValue("server")));
         m_user.setown(compileOptionalXpath(stag.getValue("user")));
-        m_password.setown(compileOptionalXpath(stag.getValue("password")));
         m_database.setown(compileOptionalXpath(stag.getValue("database")));
+
+        /*
+         * Use of secrets for database connection information is the recommended best practice. Use
+         * of an inline plaintext password is the worst option, with use of an easily decrypted
+         * inline password only slightly less risky.
+         *
+         * An encrypted password literal takes precedence over a password XPath. A decrypted value
+         * is converted into an XPath, allowing its use in place of a password XPath.
+         */
+        const char* encryptedPassword = stag.getValue("encrypted-password");
+        if (!isEmptyString(encryptedPassword))
+        {
+            try
+            {
+                StringBuffer tmp;
+                decrypt(tmp, encryptedPassword);
+                m_password.setown(compileOptionalXpath(VStringBuffer("'%s'", tmp.str())));
+            }
+            catch (IException* e)
+            {
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, "invalid encrypted-password", m_traceName, !m_ignoreCodingErrors);
+                e->Release();
+            }
+            catch (...)
+            {
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, "invalid encrypted-password", m_traceName, !m_ignoreCodingErrors);
+            }
+        }
+        else
+            m_password.setown(compileOptionalXpath(stag.getValue("password")));
 
         //script can set any MYSQL options using an attribute with the same name as the option enum, for example
         //    MYSQL_SET_CHARSET_NAME="'latin1'" or MYSQL_SET_CHARSET_NAME="$charset"

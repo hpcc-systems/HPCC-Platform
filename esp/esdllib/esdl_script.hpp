@@ -42,6 +42,7 @@
 
 #define ESDL_SCRIPT_Error                         5700
 #define ESDL_SCRIPT_MissingOperationAttr          5710
+#define ESDL_SCRIPT_InvalidOperationAttr          5711
 #define ESDL_SCRIPT_UnknownOperation              5720
 
 #define ESDL_SCRIPT_Warning                       5800
