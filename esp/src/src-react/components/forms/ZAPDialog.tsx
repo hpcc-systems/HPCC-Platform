@@ -1,13 +1,22 @@
 import * as React from "react";
-import { Checkbox, DefaultButton, PrimaryButton, TextField, } from "@fluentui/react";
+import { Checkbox, DefaultButton, Dropdown, mergeStyleSets, PrimaryButton, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
+import { LogType } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsWorkunits from "src/WsWorkunits";
 import { useBuildInfo } from "../../hooks/platform";
 import { MessageBox } from "../../layouts/MessageBox";
 import nlsHPCC from "src/nlsHPCC";
+import { useUserTheme } from "../../hooks/theme";
 
 const logger = scopedLogger("../components/forms/ZAPDialog.tsx");
+
+enum ColumnMode {
+    MIN = 0,
+    DEFAULT = 1,
+    ALL = 2,
+    CUSTOM = 3
+}
 
 interface ZAPDialogValues {
     ZAPFileName: string;
@@ -27,6 +36,22 @@ interface ZAPDialogValues {
     EmailFrom: string;
     EmailSubject: string;
     EmailBody: string;
+    LogFilter: {
+        WildcardFilter?: string;
+        AbsoluteTimeRange?: {
+            StartDate?: string;
+            EndDate?: string;
+        };
+        RelativeLogTimeRangeBuffer?: string;
+        LineLimit?: string;
+        LineStartFrom?: string;
+        SelectColumnMode?: ColumnMode;
+        CustomColumns?: string;
+        ComponentsFilter?: string;
+        Format?: string;
+        sortByTimeDirection?: string;
+        LogEventType?: string;
+    };
 }
 
 const defaultValues: ZAPDialogValues = {
@@ -46,7 +71,23 @@ const defaultValues: ZAPDialogValues = {
     EmailTo: "",
     EmailFrom: "",
     EmailSubject: "",
-    EmailBody: ""
+    EmailBody: "",
+    LogFilter: {
+        WildcardFilter: "",
+        AbsoluteTimeRange: {
+            StartDate: "",
+            EndDate: "",
+        },
+        RelativeLogTimeRangeBuffer: "",
+        LineLimit: "10000",
+        LineStartFrom: "",
+        SelectColumnMode: ColumnMode.DEFAULT,
+        CustomColumns: "",
+        ComponentsFilter: "",
+        Format: "CSV",
+        sortByTimeDirection: "1",
+        LogEventType: "ALL"
+    }
 };
 
 interface ZAPDialogProps {
@@ -62,7 +103,38 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
     setShowForm
 }) => {
 
+    const { theme } = useUserTheme();
+
+    const formClasses = React.useMemo(() => mergeStyleSets({
+        label: {
+            fontSize: 14,
+            fontWeight: 600,
+            color: theme.palette.neutralTertiary,
+            boxSizing: "border-box",
+            margin: 0,
+            display: "block",
+            padding: "5px 0px"
+        },
+        input: {
+            fontSize: 14,
+            fontWeight: 400,
+            height: 32,
+            margin: 0,
+            padding: "0px 8px",
+            boxSizing: "border-box",
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.neutralSecondary}`,
+            background: "none transparent",
+            color: theme.palette.neutralPrimary,
+            width: "100%",
+            textOverflow: "ellipsis",
+            outline: 0
+        }
+    }), [theme]);
+
     const [emailDisabled, setEmailDisabled] = React.useState(true);
+    const [columnMode, setColumnMode] = React.useState(ColumnMode.DEFAULT);
+    const [showCustomColumns, setShowCustomColumns] = React.useState(false);
     const [logAccessorMessage, setLogAccessorMessage] = React.useState("");
 
     const { handleSubmit, control, reset } = useForm<ZAPDialogValues>({ defaultValues });
@@ -77,12 +149,25 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         handleSubmit(
             (data, evt) => {
                 const formData = new FormData();
+                const logFilter = data.LogFilter;
+
+                delete data.LogFilter;
 
                 for (const key in data) {
                     formData.append(key, data[key]);
                 }
+                for (const key in logFilter) {
+                    if (key === "AbsoluteTimeRange") {
+                        const startDate = logFilter.AbsoluteTimeRange.StartDate ? new Date(logFilter.AbsoluteTimeRange.StartDate).toISOString() : "";
+                        const endDate = logFilter.AbsoluteTimeRange.EndDate ? new Date(logFilter.AbsoluteTimeRange.EndDate).toISOString() : "";
+                        formData.append("LogFilter.AbsoluteTimeRange.StartDate", startDate);
+                        formData.append("LogFilter.AbsoluteTimeRange.EndDate", endDate);
+                    } else {
+                        formData.append(`LogFilter.${key}`, logFilter[key]);
+                    }
+                }
 
-                fetch("/WsWorkunits/WUCreateAndDownloadZAPInfo", {
+                fetch("/WsWorkunits/WUCreateZAPInfo", {
                     method: "POST",
                     body: formData
                 })
@@ -92,13 +177,13 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     }))
                     .then(file => {
                         let filename = "";
-                        const headers = file.filename.split(";");
+                        const headers = file?.filename?.split(";") ?? [];
                         for (const header of headers) {
                             if (header.trim().indexOf("filename=") > -1) {
                                 filename = header.replace("filename=", "");
                             }
                         }
-                        const urlObj = window.URL.createObjectURL(file.blob);
+                        const urlObj = window.URL.createObjectURL(file?.blob);
 
                         const link = document.createElement("a");
                         link.href = urlObj;
@@ -123,6 +208,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         WsWorkunits.WUGetZAPInfo({ request: { WUID: wuid } }).then(response => {
             setEmailDisabled(response?.WUGetZAPInfoResponse?.EmailTo === null);
             setLogAccessorMessage(response?.WUGetZAPInfoResponse?.Message ?? "");
+            delete response?.WUGetZAPInfoResponse?.Archive;
             const newValues = { ...defaultValues, ...response?.WUGetZAPInfoResponse, ...{ Wuid: wuid } };
             for (const key in newValues) {
                 if (newValues[key] === null) {
@@ -316,18 +402,177 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     disabled={emailDisabled}
                 />}
         />
-        <Controller
-            control={control} name="EmailBody"
-            render={({
-                field: { onChange, name: fieldName, value }
-            }) => <TextField
-                    name={fieldName}
-                    onChange={onChange}
-                    label={nlsHPCC.EmailBody}
-                    multiline={true}
-                    value={value}
-                    disabled={emailDisabled}
-                />}
-        />
+        <fieldset style={{ marginTop: 8 }}>
+            <legend>{nlsHPCC.LogFilters}</legend>
+            <Controller
+                control={control} name="LogFilter.WildcardFilter"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        label={nlsHPCC.WildcardFilter}
+                        value={value}
+                    />
+                }
+            />
+            <Controller
+                control={control} name="LogFilter.AbsoluteTimeRange.StartDate"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <div>
+                        <label htmlFor={fieldName} className={formClasses.label}>{nlsHPCC.FromDate}</label>
+                        <input
+                            key={fieldName}
+                            type="datetime-local"
+                            name={fieldName}
+                            className={formClasses.input}
+                            defaultValue={value}
+                            onChange={onChange}
+                        />
+                    </div>
+                }
+            />
+            <Controller
+                control={control} name="LogFilter.AbsoluteTimeRange.EndDate"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <div>
+                        <label htmlFor={fieldName} className={formClasses.label}>{nlsHPCC.ToDate}</label>
+                        <input
+                            key={fieldName}
+                            type="datetime-local"
+                            name={fieldName}
+                            className={formClasses.input}
+                            defaultValue={value}
+                            onChange={onChange}
+                        />
+                    </div>
+                }
+            />
+            <Controller
+                control={control} name="LogFilter.RelativeLogTimeRangeBuffer"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        label={nlsHPCC.RelativeLogTimeRange}
+                        value={value}
+                    />}
+            />
+            <Controller
+                control={control} name="LogFilter.LineLimit"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        label={nlsHPCC.LogLineLimit}
+                        value={value}
+                    />}
+            />
+            <Controller
+                control={control} name="LogFilter.LineStartFrom"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        label={nlsHPCC.LogLineStartFrom}
+                        value={value}
+                    />}
+            />
+            <Controller
+                control={control} name="LogFilter.SelectColumnMode"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <Dropdown
+                        key={fieldName}
+                        label={nlsHPCC.ColumnMode}
+                        options={[
+                            { key: ColumnMode.MIN, text: "MIN" },
+                            { key: ColumnMode.DEFAULT, text: "DEFAULT" },
+                            { key: ColumnMode.ALL, text: "ALL" },
+                            { key: ColumnMode.CUSTOM, text: "CUSTOM" }
+                        ]}
+                        selectedKey={columnMode}
+                        onChange={(evt, option) => {
+                            setShowCustomColumns(option.key === ColumnMode.CUSTOM ? true : false);
+                            setColumnMode(option.key as ColumnMode);
+                        }}
+                    />}
+            />
+            <div style={{ display: showCustomColumns ? "block" : "none" }}>
+                <Controller
+                    control={control} name="LogFilter.CustomColumns"
+                    render={({
+                        field: { onChange, name: fieldName, value }
+                    }) => <TextField
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.CustomLogColumns}
+                            multiline={true}
+                            value={value}
+                        />}
+                />
+            </div>
+            <Controller
+                control={control} name="LogFilter.ComponentsFilter"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        label={nlsHPCC.Components}
+                        multiline={true}
+                        value={value}
+                    />}
+            />
+            <Controller
+                control={control} name="LogFilter.Format"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        label={nlsHPCC.LogFormat}
+                        value={value}
+                    />}
+            />
+            <Controller
+                control={control} name="LogFilter.sortByTimeDirection"
+                render={({
+                    field: { name: fieldName }
+                }) => <Dropdown
+                        key={fieldName}
+                        label={nlsHPCC.Sort}
+                        options={[
+                            { key: "0", text: "ASC" },
+                            { key: "1", text: "DESC" },
+                        ]}
+                        defaultSelectedKey="1"
+                    />}
+            />
+            <Controller
+                control={control} name="LogFilter.LogEventType"
+                render={({
+                    field: { name: fieldName }
+                }) => <Dropdown
+                        key={fieldName}
+                        label={nlsHPCC.Class}
+                        options={[
+                            { key: "ALL", text: "All" },
+                            { key: LogType.Disaster, text: "Disaster" },
+                            { key: LogType.Error, text: "Error" },
+                            { key: LogType.Warning, text: "Warning" },
+                            { key: LogType.Information, text: "Information" },
+                            { key: LogType.Progress, text: "Progress" },
+                            { key: LogType.Metric, text: "Metric" },
+                        ]}
+                        defaultSelectedKey="ALL"
+                    />}
+            />
+        </fieldset>
     </MessageBox>;
 };
