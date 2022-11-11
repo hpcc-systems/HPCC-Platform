@@ -95,6 +95,14 @@ bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & r
             return false;
         }
 
+        SecFeatureSet sfs = secmgr->queryImplementedFeatures();
+        if (!(sfs & SMF_UpdateUserPassword))
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("Changing password is not supported.");
+            return false;
+        }
+
         bool ok = false;
         try
         {
@@ -210,6 +218,12 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             if (version >= 1.05)
             {
                 resp.setAccountStatus(userInContext->getAuthenticateStatus());
+            }
+
+            if (version >= 1.06)
+            {
+                SecFeatureSet sfs = secmgr->queryImplementedFeatures();
+                resp.setCanUpdatePassword((sfs & SMF_UpdateUserPassword) ? true : false);
             }
         }
     }

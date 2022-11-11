@@ -616,6 +616,13 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
         return 1;
     }
 
+    SecFeatureSet sfs = secmgr->queryImplementedFeatures();
+    if (!(sfs & SMF_UpdateUserPassword))
+    {
+        message.append("Changing password is not supported.");
+        return 1;
+    }
+
     bool returnFlag = false;
     try
     {
