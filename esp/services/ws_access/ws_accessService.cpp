@@ -26,7 +26,7 @@
 
 #include <set>
 
-#define MSG_SEC_MANAGER_IS_NULL "Security manager is not found. Please check if the system authentication is set up correctly"
+#define MSG_SEC_MANAGER_IS_NULL "Security manager is not found, or is not LDAP. Please check if the system authentication is set up correctly."
 #define MSG_SEC_MANAGER_ISNT_LDAP "LDAP Security manager is required for this feature. Please enable LDAP in the system configuration"
 
 #define FILE_SCOPE_URL "FileScopeAccess"
@@ -37,11 +37,14 @@
 #define MAX_RESOURCES_DISPLAY 3000
 static const long MAXXLSTRANSFER = 5000000;
 
-void checkUser(IEspContext& context, const char* rtype = NULL, const char* rtitle = NULL, unsigned int SecAccessFlags = SecAccess_Full)
+void Cws_accessEx::checkUser(IEspContext& context, CLdapSecManager* secmgr, const char* rtype, const char* rtitle, unsigned int SecAccessFlags)
 {
-    CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+    if (secmgr == nullptr)
+    {
+        secmgr = queryLDAPSecurityManager(context);
+        if (secmgr == nullptr)
+            throw makeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+    }
 
     if (rtype && rtitle && strieq(rtype, FILE_SCOPE_RTYPE) && strieq(rtitle, FILE_SCOPE_RTITLE))
     {
@@ -58,6 +61,16 @@ void checkUser(IEspContext& context, const char* rtype = NULL, const char* rtitl
         context.setAuthStatus(AUTH_STATUS_NOACCESS);
         throw MakeStringException(ECLWATCH_ADMIN_ACCESS_DENIED, "Access denied, administrators only.");
     }
+}
+
+CLdapSecManager* Cws_accessEx::queryLDAPSecurityManagerAndCheckUser(IEspContext& context, const char* rtype, const char* rtitle, unsigned int SecAccessFlags)
+{
+    CLdapSecManager* ldapSecMgr = queryLDAPSecurityManager(context);
+    if (ldapSecMgr == nullptr)
+        throw makeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+    checkUser(context, ldapSecMgr, rtype, rtitle, SecAccessFlags);
+    return ldapSecMgr;
 }
 
 void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -208,8 +221,7 @@ void Cws_accessEx::getBasednReq(IEspContext &context, const char* name, const ch
         if (isEmptyString(name))
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not specified");
 
-        if(m_basedns.length() == 0)
-            setBasedns(context);
+        setBasedns(context);
 
         ForEachItemIn(i, m_basedns)
         {
@@ -240,10 +252,13 @@ void Cws_accessEx::getBasednReq(IEspContext &context, const char* name, const ch
 
 void Cws_accessEx::setBasedns(IEspContext &context)
 {
-    CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
+    CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
+    if (secmgr == nullptr)
+        throw makeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+    CriticalBlock b(basednsCrit);
+    if (m_basedns.length() > 0)
+        return;
 
     std::set<std::string> alreadythere;
     ForEachItemInRev(x, m_rawbasedns)
@@ -283,7 +298,7 @@ void Cws_accessEx::setBasedns(IEspContext &context)
     return;
 }
 
-bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, const char* name, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
+bool Cws_accessEx::getNewFileScopePermissions(CLdapSecManager* secmgr, const char* name, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
 {
     if (!secmgr)
         return false;
@@ -330,14 +345,13 @@ bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, const char* n
         newResources.append(lastFileScope.str());
     }
 
-    CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
     while (newResources.ordinality())
     {
         StringBuffer namebuf(newResources.item(0));
         try
         {
             IArrayOf<CPermission> permissions;
-            ldapsecmgr->getPermissionsArray(basednReq->getBasedn(), str2type(basednReq->getRtype()), namebuf.str(), permissions);
+            secmgr->getPermissionsArray(basednReq->getBasedn(), str2type(basednReq->getRtype()), namebuf.str(), permissions);
             if (!permissions.ordinality())
             {
                 break;
@@ -356,7 +370,7 @@ bool Cws_accessEx::getNewFileScopePermissions(ISecManager* secmgr, const char* n
     return true;
 }
 
-bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
+bool Cws_accessEx::setNewFileScopePermissions(CLdapSecManager* secmgr, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
 {
     if (!secmgr || !newResources.ordinality())
     {
@@ -385,8 +399,7 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspDnStruct*
     }
 
     IArrayOf<CPermission> requiredPermissions;
-    CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
-    ldapsecmgr->getPermissionsArray(basednBuf, str2type(basednReq->getRtype()), existingResource.str(), requiredPermissions);
+    secmgr->getPermissionsArray(basednBuf, str2type(basednReq->getRtype()), existingResource.str(), requiredPermissions);
     if (!requiredPermissions.ordinality())
     {
         return false;
@@ -422,7 +435,7 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspDnStruct*
         {
             StringBuffer namebuf(newResources.item(y));
             paction.m_rname.clear().append(namebuf.str());
-            ldapsecmgr->changePermission(paction);
+            secmgr->changePermission(paction);
         }
 
     }
@@ -451,7 +464,7 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
                 throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
         }
 
-        checkUser(context);
+        checkUser(context, secmgr);
 
         const char* searchstr = req.getSearchinput();
         int numusers = secmgr->countUsers(searchstr, MAX_USERS_DISPLAY);
@@ -546,7 +559,7 @@ bool Cws_accessEx::onUserQuery(IEspContext &context, IEspUserQueryRequest &req, 
             resp.setNoSecMngr(true);
             return true;
         }
-        checkUser(context);
+        checkUser(context, secmgr);
 
         __int64 pageStartFrom = 0;
         unsigned pageSize = 100;
@@ -625,20 +638,15 @@ bool Cws_accessEx::onUserEdit(IEspContext &context, IEspUserEditRequest &req, IE
 {
     try
     {
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         resp.setUsername(req.getUsername());
         double version = context.getClientVersion();
         if (version >= 1.13)
-            resp.setIsLDAPAdmin(ldapsecmgr->isSuperUser(context.queryUser()));
+            resp.setIsLDAPAdmin(secmgr->isSuperUser(context.queryUser()));
 
         StringArray groupnames;
-        ldapsecmgr->getGroups(req.getUsername(), groupnames);
+        secmgr->getGroups(req.getUsername(), groupnames);
         IArrayOf<IEspGroupInfo> groups;
         for(unsigned i = 0; i < groupnames.length(); i++)
         {
@@ -663,13 +671,7 @@ bool Cws_accessEx::onUserGroupEditInput(IEspContext &context, IEspUserGroupEditI
 {
     try
     {
-        checkUser(context);
-
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManagerAndCheckUser(context);
         resp.setUsername(req.getUsername());
 
         std::set<std::string> ogrps;
@@ -719,12 +721,7 @@ bool Cws_accessEx::onUserGroupEdit(IEspContext &context, IEspUserGroupEditReques
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
         if(username == NULL || *username == '\0')
@@ -788,7 +785,7 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
             }
         }
 
-        checkUser(context);
+        checkUser(context, secmgr0);
 
         StringArray groupnames;
         StringArray groupManagedBy;
@@ -847,7 +844,7 @@ bool Cws_accessEx::onGroupQuery(IEspContext &context, IEspGroupQueryRequest &req
             return true;
         }
 
-        checkUser(context);
+        checkUser(context, secmgr);
 
         __int64 pageStartFrom = 0;
         unsigned pageSize = 100;
@@ -909,12 +906,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
 {
     try
     {
-        checkUser(context);
-
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
         if(username == NULL || *username == '\0')
@@ -930,8 +922,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             return false;
         }
 
-        CLdapSecManager* secmgr0 = (CLdapSecManager*)secmgr;
-        if((secmgr0->getLdapServerType() == ACTIVE_DIRECTORY) && (strlen(username) > 20))
+        if((secmgr->getLdapServerType() == ACTIVE_DIRECTORY) && (strlen(username) > 20))
         {
             resp.setRetcode(-1);
             resp.setRetmsg("Username can't be more than 20 characters.");
@@ -1000,12 +991,7 @@ bool Cws_accessEx::onUserAction(IEspContext &context, IEspUserActionRequest &req
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* action = req.getActionType();
         if (!action || !*action)
@@ -1050,12 +1036,7 @@ bool Cws_accessEx::onGroupAdd(IEspContext &context, IEspGroupAddRequest &req, IE
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* groupname = req.getGroupname();
 
@@ -1110,11 +1091,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* action = req.getActionType();
         if (!action || !*action)
@@ -1136,8 +1113,6 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
         }
         else if (!stricmp(action, "delete"))
         {
-            CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
-
             StringArray& groupnames = req.getGroupnames();
 
             IArrayOf<IEspAccountPermission> accountPermissions;
@@ -1148,10 +1123,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                 if(!req.getDeletePermission_isNull())
                     bDeletePermission = req.getDeletePermission();
 
-                if(m_basedns.length() == 0)
-                {
-                    setBasedns(context);
-                }
+                setBasedns(context);
 
                 ForEachItemIn(y, m_basedns)
                 {
@@ -1218,7 +1190,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                         try
                         {
                             IArrayOf<CPermission> permissions;
-                            ldapsecmgr->getPermissionsArray(bnname, rtype, resourceName, permissions);
+                            secmgr->getPermissionsArray(bnname, rtype, resourceName, permissions);
                             ForEachItemIn(x, permissions)
                             {
                                 CPermission& perm = permissions.item(x);
@@ -1262,7 +1234,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
                                             paction.m_denies = perm.getDenies();
                                             paction.m_action.append("delete");
 
-                                            if(!ldapsecmgr->changePermission(paction))
+                                            if (!secmgr->changePermission(paction))
                                             {
                                                 resp.setRetcode(-1);
                                                 resp.setRetmsg("Unknown error");
@@ -1337,13 +1309,8 @@ bool Cws_accessEx::onGroupEdit(IEspContext &context, IEspGroupEditRequest &req, 
 {
     try
     {
-        checkUser(context);
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         resp.setGroupname(req.getGroupname());
 
         StringArray usernames;
@@ -1403,7 +1370,7 @@ bool Cws_accessEx::onGroupMemberQuery(IEspContext &context, IEspGroupMemberQuery
             return true;
         }
 
-        checkUser(context);
+        checkUser(context, secmgr);
 
         __int64 pageStartFrom = 0;
         unsigned pageSize = 100;
@@ -1483,18 +1450,13 @@ bool Cws_accessEx::onGroupMemberEditInput(IEspContext &context, IEspGroupMemberE
 {
     try
     {
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         resp.setGroupname(req.getGroupname());
 
         std::set<std::string> ousrs;
         StringArray ousernames;
-        ldapsecmgr->getGroupMembers(req.getGroupname(), ousernames);
+        secmgr->getGroupMembers(req.getGroupname(), ousernames);
         unsigned i = 0;
         for(i = 0; i < ousernames.length(); i++)
         {
@@ -1549,12 +1511,7 @@ bool Cws_accessEx::onGroupMemberEdit(IEspContext &context, IEspGroupMemberEditRe
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* groupname = req.getGroupname();
         if(groupname == NULL || *groupname == '\0')
@@ -1649,13 +1606,8 @@ bool Cws_accessEx::onPermissions(IEspContext &context, IEspBasednsRequest &req, 
                 throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
         }
 
-        checkUser(context);
-
-        if(m_basedns.length() == 0)
-        {
-            setBasedns(context);
-        }
-
+        checkUser(context, secmgr);
+        setBasedns(context);
         resp.setBasedns(m_basedns);
     }
     catch(IException* e)
@@ -1673,11 +1625,7 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
-
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         double version = context.getClientVersion();
         const char* filterInput = req.getSearchinput();
@@ -1844,7 +1792,7 @@ bool Cws_accessEx::onResourceQuery(IEspContext &context, IEspResourceQueryReques
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
+        checkUser(context, secmgr, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         SecResourceType rtype = str2type(basednReq->getRtype());
         const char* moduleTemplate = NULL;
@@ -1931,7 +1879,7 @@ bool Cws_accessEx::onResourceAddInput(IEspContext &context, IEspResourceAddInput
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        checkUser(context, nullptr, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         resp.setRtype(req.getRtype());
@@ -1969,12 +1917,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
-
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager *secmgr = queryLDAPSecurityManagerAndCheckUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
 
         double version = context.getClientVersion();
         if (version < 1.14)
@@ -2083,12 +2026,7 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
 
         StringArray& names = req.getNames();
 
@@ -2214,14 +2152,7 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
-
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManagerAndCheckUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         double version = context.getClientVersion();
         SecResourceType rtype = str2type(basednReq->getRtype());
@@ -2291,7 +2222,7 @@ bool Cws_accessEx::onResourcePermissionQuery(IEspContext &context, IEspResourceP
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
+        checkUser(context, ldapSecMgr, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Read);
 
         __int64 pageStartFrom = 0;
         unsigned pageSize = 100;
@@ -2347,12 +2278,7 @@ bool Cws_accessEx::onQueryViews(IEspContext &context, IEspQueryViewsRequest &req
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         IArrayOf<IEspView> views;
         StringArray names, descriptions, viewManagedBy;
@@ -2381,11 +2307,7 @@ bool Cws_accessEx::onAddView(IEspContext &context, IEspAddViewRequest &req, IEsp
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* viewname = req.getViewname();
         const char* description = req.getDescription();
@@ -2406,11 +2328,7 @@ bool Cws_accessEx::onDeleteView(IEspContext &context, IEspDeleteViewRequest &req
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* viewname = req.getViewname();
         secmgr->deleteView(req.getViewname());
@@ -2429,11 +2347,7 @@ bool Cws_accessEx::onQueryViewColumns(IEspContext &context, IEspQueryViewColumns
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         IArrayOf<IEspViewColumn> viewColumns;
         StringArray files, columns;
@@ -2466,11 +2380,7 @@ bool Cws_accessEx::onAddViewColumn(IEspContext &context, IEspAddViewColumnReques
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* filename = req.getFilename();
         const char* columnname = req.getColumnname();
@@ -2509,11 +2419,7 @@ bool Cws_accessEx::onDeleteViewColumn(IEspContext &context, IEspDeleteViewColumn
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         StringArray files, columns;
 
@@ -2542,11 +2448,7 @@ bool Cws_accessEx::onQueryViewMembers(IEspContext &context, IEspQueryViewMembers
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* reqViewname = req.getViewname();
         StringArray users, groups;
@@ -2587,11 +2489,7 @@ bool Cws_accessEx::onAddViewMember(IEspContext &context, IEspAddViewMemberReques
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         StringArray users, groups;
         const char* viewname = req.getViewname();
@@ -2629,11 +2527,7 @@ bool Cws_accessEx::onDeleteViewMember(IEspContext &context, IEspDeleteViewMember
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         StringArray users, groups;
         const char* viewname = req.getViewname();
@@ -2671,11 +2565,7 @@ bool Cws_accessEx::onQueryUserViewColumns(IEspContext &context, IEspQueryUserVie
 {
     try
     {
-        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
 
@@ -2719,7 +2609,7 @@ bool Cws_accessEx::onPermissionAddInput(IEspContext &context, IEspPermissionAddR
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        CLdapSecManager *secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         resp.setBasedn(req.getBasedn());
         resp.setRname(req.getRname());
@@ -2730,18 +2620,18 @@ bool Cws_accessEx::onPermissionAddInput(IEspContext &context, IEspPermissionAddR
         double version = context.getClientVersion();
         if (version < 1.01)
         {
-            return permissionAddInputOnResource(context, req, resp);
+            return permissionAddInputOnResource(context, secmgr, req, resp);
         }
         else
         {
             const char* accountName = req.getAccountName();
             if (!accountName || !*accountName)
             {
-                return permissionAddInputOnResource(context, req, resp);
+                return permissionAddInputOnResource(context, secmgr, req, resp);
             }
             else
             {
-                return permissionAddInputOnAccount(context, accountName, req, resp);
+                return permissionAddInputOnAccount(context, secmgr, accountName, req, resp);
             }
         }
     }
@@ -2758,7 +2648,7 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
 {
     try
     {
-        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         //resp.setRname(req.getRname());
@@ -2782,11 +2672,6 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
 
         resp.setResourceList(nameList.str());
         resp.setResources(names);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
         int numusers = secmgr->countUsers("", MAX_USERS_DISPLAY);
         if(numusers == -1)
@@ -2848,11 +2733,7 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
 
 bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermissionsCacheRequest &req, IEspClearPermissionsCacheResponse &resp)
 {
-    checkUser(context);
-
-    ISecManager* secmgr = context.querySecManager();
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+    CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
     //Clear local cache
     Owned<ISecUser> user = secmgr->createUser(context.queryUserId(), context.querySecureContext());
@@ -2897,10 +2778,10 @@ bool Cws_accessEx::onQueryScopeScansEnabled(IEspContext &context, IEspQueryScope
 
 bool Cws_accessEx::onEnableScopeScans(IEspContext &context, IEspEnableScopeScansRequest &req, IEspEnableScopeScansResponse &resp)
 {
-    checkUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Full);
+    CLdapSecManager *secmgr = queryLDAPSecurityManagerAndCheckUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Full);
 
     StringBuffer retMsg;
-    int rc = enableDisableScopeScans(context, true, retMsg);
+    int rc = enableDisableScopeScans(context, secmgr, true, retMsg);
     resp.updateScopeScansStatus().setIsEnabled(rc == 0);
     resp.updateScopeScansStatus().setRetcode(rc);
     resp.updateScopeScansStatus().setRetmsg(retMsg.str());
@@ -2909,22 +2790,18 @@ bool Cws_accessEx::onEnableScopeScans(IEspContext &context, IEspEnableScopeScans
 
 bool Cws_accessEx::onDisableScopeScans(IEspContext &context, IEspDisableScopeScansRequest &req, IEspDisableScopeScansResponse &resp)
 {
-    checkUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Full);
+    CLdapSecManager *secmgr = queryLDAPSecurityManagerAndCheckUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Full);
 
     StringBuffer retMsg;
-    int rc = enableDisableScopeScans(context, false, retMsg);
+    int rc = enableDisableScopeScans(context, secmgr, false, retMsg);
     resp.updateScopeScansStatus().setIsEnabled(rc != 0);
     resp.updateScopeScansStatus().setRetcode(rc);
     resp.updateScopeScansStatus().setRetmsg(retMsg.str());
     return true;
 }
 
-int Cws_accessEx::enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg)
+int Cws_accessEx::enableDisableScopeScans(IEspContext &context, CLdapSecManager *secmgr, bool doEnable, StringBuffer &retMsg)
 {
-    ISecManager* secmgr = context.querySecManager();
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
     Owned<IUserDescriptor> userdesc;
     userdesc.setown(createUserDescriptor());
     userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
@@ -2989,7 +2866,7 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManagerAndCheckUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
 
         double version = context.getClientVersion();
         if (version < 1.14)
@@ -3001,12 +2878,7 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
             resp.setPrefix(req.getPrefix());
         }
 
-        ISecManager* secmgr = context.querySecManager();
 
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         const char* users = req.getUserarray();
         const char* groups = req.getGrouparray();
         if ((!users || !*users) && (!groups || !*groups))
@@ -3170,13 +3042,8 @@ void Cws_accessEx::getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr
     return;
 }
 
-bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp)
+bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, CLdapSecManager *secmgr, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp)
 {
-    CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
     int numusers = secmgr->countUsers("", MAX_USERS_DISPLAY);
     if(numusers == -1)
     {
@@ -3229,13 +3096,8 @@ bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermis
     return true;
 }
 
-bool Cws_accessEx::permissionAddInputOnAccount(IEspContext &context, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp)
+bool Cws_accessEx::permissionAddInputOnAccount(IEspContext &context, CLdapSecManager *secmgr, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp)
 {
-    CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-    if(secmgr == NULL)
-        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
     double version = context.getClientVersion();
     if (version < 1.14)
     {
@@ -3249,6 +3111,7 @@ bool Cws_accessEx::permissionAddInputOnAccount(IEspContext &context, const char*
     int accountType = req.getAccountType();
     if (basednName && *basednName)
     {
+        setBasedns(context);
         ForEachItemIn(y, m_basedns)
         {
             IEspDnStruct* curbasedn = &(m_basedns.item(y));
@@ -3338,7 +3201,7 @@ bool Cws_accessEx::onPermissionAction(IEspContext &context, IEspPermissionAction
         Owned<IEspDnStruct> basednReq = createDnStruct();
         getBasednReq(context, req.getBasednName(), req.getBasedn(), req.getRtype(), req.getRtitle(), basednReq);
 
-        checkUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManagerAndCheckUser(context, basednReq->getRtype(), basednReq->getRtitle(), SecAccess_Full);
 
         double version = context.getClientVersion();
         if (version < 1.14)
@@ -3349,10 +3212,6 @@ bool Cws_accessEx::onPermissionAction(IEspContext &context, IEspPermissionAction
             resp.setRtitle(req.getRtitle());
             resp.setPrefix(req.getPrefix());
         }
-        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManager(context);
-
-        if(ldapsecmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
         CPermissionAction paction;
         paction.m_basedn.append(basednReq->getBasedn());
@@ -3516,7 +3375,7 @@ bool Cws_accessEx::onUserResetPassInput(IEspContext &context, IEspUserResetPassI
 {
     try
     {
-        checkUser(context);
+        checkUser(context, nullptr);
 
         resp.setUsername(req.getUsername());
     }
@@ -3533,15 +3392,8 @@ bool Cws_accessEx::onUserResetPass(IEspContext &context, IEspUserResetPassReques
 {
     try
     {
-        checkUser(context);
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManagerAndCheckUser(context);
         resp.setUsername(req.getUsername());
-
-        ISecManager* secmgr = context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
 
         const char* username = req.getUsername();
         if(username == NULL)
@@ -3584,12 +3436,7 @@ bool Cws_accessEx::onUserPosix(IEspContext &context, IEspUserPosixRequest &req, 
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
         if(username == NULL || *username == '\0')
@@ -3600,7 +3447,7 @@ bool Cws_accessEx::onUserPosix(IEspContext &context, IEspUserPosixRequest &req, 
         }
 
         bool enable = req.getPosixenabled();
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
+        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
         if(enable)
         {
             const char* gidnumber = req.getGidnumber();
@@ -3662,12 +3509,7 @@ bool Cws_accessEx::onUserPosixInput(IEspContext &context, IEspUserPosixInputRequ
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
         if(username == NULL || *username == '\0')
@@ -3675,7 +3517,7 @@ bool Cws_accessEx::onUserPosixInput(IEspContext &context, IEspUserPosixInputRequ
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
+        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
         secmgr->getUserInfo(*user.get());
 
         resp.setUsername(username);
@@ -3702,12 +3544,7 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
         if(username == NULL || *username == '\0')
@@ -3726,7 +3563,7 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
             return false;
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
+        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
 
         user->setFirstName(firstname);
         user->setLastName(lastname);
@@ -3768,12 +3605,7 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
 {
     try
     {
-        checkUser(context);
-
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
-
-        if(secmgr == NULL)
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         const char* username = req.getUsername();
         if(username == NULL || *username == '\0')
@@ -3781,7 +3613,7 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
             throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify a username.");
         }
 
-        Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
+        Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
         secmgr->getUserInfo(*user.get());
 
         resp.setUsername(username);
@@ -3838,7 +3670,7 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             bGroupAccount = false;
         }
         else
-            checkUser(context);
+            checkUser(context, nullptr);
 
         double version = context.getClientVersion();
 
@@ -3848,11 +3680,7 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
         bool bIncludeGroup = req.getIncludeGroup();
-
-        if(m_basedns.length() == 0)
-        {
-            setBasedns(context);
-        }
+        setBasedns(context);
 
         StringArray groupnames;
         if (version > 1.02 && !bGroupAccount && bIncludeGroup)
@@ -4184,7 +4012,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                 throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
         }
 
-        checkUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Read);
+        checkUser(context, secmgr, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Read);
 
         //Get all users for input form
         int numusers = secmgr->countUsers("", MAX_USERS_DISPLAY);
@@ -4284,14 +4112,9 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
         {
             resp.setFileName(fileName);
             resp.setGroupName(groupName);
-
-            if(m_basedns.length() == 0) //basedns may never be set
-            {
-                setBasedns(context);
-            }
+            setBasedns(context);
 
             //Find out the basedn for RT_FILE_SCOPE
-            CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
             StringBuffer basednStr;
             ForEachItemIn(y, m_basedns)
             {
@@ -4356,7 +4179,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                     try
                     {
                         IArrayOf<CPermission> permissions;
-                        ldapsecmgr->getPermissionsArray(basednStr.str(), RT_FILE_SCOPE, namebuf.str(), permissions);
+                        secmgr->getPermissionsArray(basednStr.str(), RT_FILE_SCOPE, namebuf.str(), permissions);
                         ForEachItemIn(x, permissions)
                         {
                             CPermission& perm = permissions.item(x);
@@ -4410,15 +4233,7 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
 {
     try
     {
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-        if(secmgr == NULL)
-        {
-            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-        }
-
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
-
-        checkUser(context);
+        CLdapSecManager* secmgr = queryLDAPSecurityManagerAndCheckUser(context);
 
         StringBuffer xls;
         xls.append("<html xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">");
@@ -4447,13 +4262,13 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                 if (!username || !*username)
                     continue;
 
-                Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(username, context.querySecureContext());
+                Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(username, context.querySecureContext()));
                 secmgr->getUserInfo(*user.get());
                 const char* firstname = user->getFirstName();
                 const char* lastname = user->getLastName();
 
                 StringArray groupnames1;
-                ldapsecmgr->getGroups(username, groupnames1);
+                secmgr->getGroups(username, groupnames1);
                 ///groupnames1.append("TestGroup1");
                 ///groupnames1.append("TestGroup2");
                 if (groupnames1.length() < 1)
@@ -4504,7 +4319,7 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                     continue;
 
                 StringArray usernames1;
-                ldapsecmgr->getGroupMembers(groupname, usernames1);
+                secmgr->getGroupMembers(groupname, usernames1);
                 ///usernames1.append("_clo");
                 ///usernames1.append("_rkc");
                 for(unsigned j = 0; j < usernames1.length(); j++)
@@ -4513,7 +4328,7 @@ bool Cws_accessEx::onUserAccountExport(IEspContext &context, IEspUserAccountExpo
                     if(usrname == NULL || usrname[0] == '\0')
                         continue;
 
-                    Owned<CLdapSecUser> user = (CLdapSecUser*)secmgr->createUser(usrname, context.querySecureContext());
+                    Owned<CLdapSecUser> user = dynamic_cast<CLdapSecUser*>(secmgr->createUser(usrname, context.querySecureContext()));
                     secmgr->getUserInfo(*user.get());
                     const char* firstname = user->getFirstName();
                     const char* lastname = user->getLastName();
