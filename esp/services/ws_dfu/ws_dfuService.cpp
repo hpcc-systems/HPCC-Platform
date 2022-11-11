@@ -2672,8 +2672,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             FileDetails.setCost(atRestCost+accessCost);
         else
         {
-            FileDetails.setAccessCost(atRestCost);
-            FileDetails.setAtRestCost(accessCost);
+            FileDetails.setAccessCost(accessCost);
+            FileDetails.setAtRestCost(atRestCost);
         }
     }
     PROGLOG("doGetFileDetails: %s done", name);
