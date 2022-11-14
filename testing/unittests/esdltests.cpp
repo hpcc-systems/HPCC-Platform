@@ -306,6 +306,7 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testEsdlTransformRequestNamespaces);
         CPPUNIT_TEST(testScriptContext);
         CPPUNIT_TEST(testTargetElement);
+        CPPUNIT_TEST(testStringFunctions);
       //The following require setup, uncomment for development testing for now:
       //CPPUNIT_TEST(testMysql);
       //CPPUNIT_TEST(testCallFunctions); //requires a particular roxie query
@@ -1732,6 +1733,93 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
             E->Release();
             CPPUNIT_ASSERT(false);
         }
+    }
+
+    void testStringFunctions()
+    {
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+          <root>
+            <Request>
+            </Request>
+          </root>
+        )!!";
+
+        static constexpr const char * stringFunctionsScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" source="Request" target="Request">
+          <es:set-value target="deprecated-encrypt-empty" select="deprecatedEncryptString('') = ''"/>
+          <es:set-value target="deprecated-decrypt-empty" select="deprecatedDecryptString('') = ''"/>
+          <es:set-value target="to-encrypt" select="'this is not secret'"/>
+          <es:set-value target="deprecated-encrypt-value" select="deprecatedEncryptString(to-encrypt) != to-encrypt"/>
+          <es:set-value target="deprecated-decrypt-value" select="deprecatedDecryptString(deprecatedEncryptString(to-encrypt)) = to-encrypt"/>
+          <es:set-value target="encode-base64-empty" select="encodeBase64String('') = ''"/>
+          <es:set-value target="decode-base64-empty" select="decodeBase64String('') = ''"/>
+          <es:set-value target="to-encode" select="'sample text to Base64 encode and decode'"/>
+          <es:set-value target="encode-base64-value" select="encodeBase64String(to-encode) != to-encode"/>
+          <es:set-value target="decode-base64-value" select="decodeBase64String(encodeBase64String(to-encode)) = to-encode"/>
+          <es:set-value target="compress-empty" select="compressString('') = 'AAEAAAAA'"/>
+          <es:variable name="blob" select="toXmlString(.)"/>
+          <es:set-value target="compress-value" select="compressString($blob) != $blob"/>
+          <es:set-value target="decompress-value" select="decompressString(compressString($blob)) = $blob"/>
+          <es:variable name="escaped" select="escapeXmlCharacters($blob)"/>
+          <es:set-value target="escape-xml-value" select="$escaped != $blob"/>
+          <es:set-value target="unescape-xml-value" select="unescapeXmlCharacters($escaped) = $blob"/>
+        </es:CustomRequestTransform>
+        )!!";
+
+        try {
+          Owned<IEspContext> ctx = createEspContext(nullptr);
+          Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr);
+          scriptContext->setTestMode(true);
+          scriptContext->setTraceToStdout(true);
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
+          scriptContext->setContent("StringFunctions", input);
+
+          unsigned failed = false;
+          runTransform(scriptContext, stringFunctionsScript, "StringFunctions", nullptr, "StringFunctions 1", 0);
+          if (!checkTestResult(scriptContext, "deprecated-encrypt-empty"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "deprecated-decrypt-empty"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "deprecated-encrypt-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "deprecated-decrypt-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "encode-base64-empty"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "decode-base64-empty"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "encode-base64-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "decode-base64-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "compress-empty"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "compress-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "decompress-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "escape-xml-value"))
+            failed = true;
+          if (!checkTestResult(scriptContext, "unescape-xml-value"))
+            failed = true;
+          CPPUNIT_ASSERT(!failed);
+        }
+        catch (IException *E)
+        {
+          StringBuffer m;
+          fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "StringFunctions", E->errorCode(), E->errorMessage(m).str());
+          E->Release();
+          CPPUNIT_ASSERT(false);
+        }
+    }
+    bool checkTestResult(IEsdlScriptContext* scriptContext, const char* test)
+    {
+      bool result = scriptContext->getXPathBool(VStringBuffer("//%s", test));
+      if (!result)
+        fprintf(stdout, "\nTest(StringFunctions-%s) failed\n", test);
+      return result;
     }
 
     void testHTTPPostXml()
