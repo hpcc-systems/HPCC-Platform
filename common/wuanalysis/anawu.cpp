@@ -1930,6 +1930,9 @@ void WorkunitStatsAnalyser::reportActivity(const StringArray & args)
 
     //Note the activities that are reported in this, often don't overlap with the critical path - if the critical path
     //is a direct input to the root activity.
+    if (minTime >= maxTime)
+        throw MakeStringException(0, "Invalid time range %llu..%llu", minTime, maxTime);
+
     stat_type totalTime = (maxTime - minTime);
     stat_type interesting = (stat_type)(totalTime * opts.thresholdPercent / 100.0);
     printf("Activity for (%llu..%llu %.2f%%):\n", minTime, maxTime, opts.thresholdPercent);

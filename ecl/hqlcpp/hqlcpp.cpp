@@ -4402,6 +4402,7 @@ void HqlCppTranslator::buildSimpleExpr(BuildCtx & ctx, IHqlExpression * expr, CH
                 break;
             }
         }
+        break;
     }
 
     if (simple)
