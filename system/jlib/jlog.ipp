@@ -982,6 +982,7 @@ private:
 };
 
 // Reset logging-related thread-local variables, when a threadpool starts
-extern void resetThreadLogging();
+extern void resetThreadLogging(TraceFlags _traceFlags);
+extern void getThreadLoggingInfo(TraceFlags &_traceFlags);
 
 #endif

@@ -364,7 +364,7 @@ public:
     virtual void removeCache(const IResolvedFile *file)
     {
         CriticalBlock b(cacheLock);
-        if (traceLevel > 9)
+        if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
             DBGLOG("removeCache %s", file->queryFileName());
         // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table. 
         // So only remove from hash table if what we find there matches the item that is being deleted.
@@ -409,7 +409,7 @@ static bool checkCachedDaliMiss(const char *filename)
 {
     CriticalBlock b(daliMissesCrit);
     bool ret = daliMisses->find(filename) != NULL;
-    if (traceLevel > 9)
+    if (doTrace(traceRoxieFiles, TraceFlags::Max))
         DBGLOG("checkCachedDaliMiss %s returns %d", filename, ret);
     return ret;
 }
@@ -469,7 +469,7 @@ protected:
             result = daliFiles.lookupCache(fileName);
             if (result)
             {
-                if (traceLevel > 9)
+                if (doTrace(traceRoxieFiles, TraceFlags::Max))
                     DBGLOG("resolveLFNusingDaliOrLocal %s - cache hit", fileName);
                 return result;
             }
@@ -567,7 +567,7 @@ protected:
                         // implies that a package file had ~ in subfile names - shouldn't really, but we allow it (and just strip the ~)
                         subFileName.remove(0,1);
                     }
-                    if (traceLevel > 9)
+                    if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
                         DBGLOG("Looking up subfile %s", subFileName.str());
                     AccessMode subAccessMode = AccessMode::readRandom;   // NOTE - overwriting a superfile does NOT require write access to subfiles
                     Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, subAccessMode, false, false, isPrivilegedUser);
@@ -687,7 +687,7 @@ public:
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false, ignoreForeignPrefix);
-        if (traceLevel > 5)
+        if (doTrace(traceRoxieFiles, TraceFlags::Max))
             DBGLOG("lookupFileName %s", fileName.str());
 
         const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, AccessMode::readRandom, false, true, isPrivilegedUser);
@@ -698,7 +698,7 @@ public:
                     compulsoryMsg.append(" (Package is compulsory)");
             if (!opt && !pretendAllOpt)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s%s", fileName.str(), compulsoryMsg.str());
-            if (traceLevel > 4)
+        if (doTrace(traceRoxieFiles))
                 DBGLOG("Could not resolve OPT filename %s%s", fileName.str(), compulsoryMsg.str());
         }
         return result;

@@ -258,16 +258,26 @@ void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 }
 
 static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
+
+// NOTE - extern thread_local variables are very inefficient - don't be tempted to expose the variables directly
+
 static thread_local LogMsgJobInfo defaultJobInfo;
+static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
 
 const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
 
-void resetThreadLogging()
+void getThreadLoggingInfo(TraceFlags &_traceFlags)
+{
+    _traceFlags = threadTraceFlags;
+}
+
+void resetThreadLogging(TraceFlags _traceFlags)
 {
     // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
     // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
     // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
     defaultJobInfo = globalDefaultJobInfo;
+    threadTraceFlags = _traceFlags;
 }
 
 const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
@@ -3112,3 +3122,66 @@ IRemoteLogAccess *queryRemoteLogAccessor()
     );
 }
 
+bool doTrace(TraceFlags featureFlag, TraceFlags level)
+{
+    if ((threadTraceFlags & TraceFlags::LevelMask) < level)
+        return false;
+    return (threadTraceFlags & featureFlag) == featureFlag;
+}
+
+void setTraceFlag(TraceFlags flag, bool enable)
+{
+    if (enable)
+        threadTraceFlags |= flag;
+    else
+        threadTraceFlags &= ~flag;
+}
+
+void updateTraceFlags(TraceFlags flag)
+{
+    threadTraceFlags = flag;
+}
+
+TraceFlags queryTraceFlags()
+{
+    return threadTraceFlags;
+}
+
+void setTraceLevel(TraceFlags level)
+{
+    threadTraceFlags &= ~TraceFlags::LevelMask;
+    threadTraceFlags |= (level & TraceFlags::LevelMask);
+}
+
+LogContextScope::LogContextScope()
+{
+    prevFlags = threadTraceFlags;
+}
+LogContextScope::LogContextScope(TraceFlags traceFlags)
+{
+    prevFlags = threadTraceFlags;
+    threadTraceFlags = traceFlags;
+}
+LogContextScope::~LogContextScope()
+{
+    threadTraceFlags = prevFlags;
+}
+
+TraceFlags loadTraceFlags(const IPropertyTree *ptree, const std::initializer_list<TraceOption> &optNames, TraceFlags dft)
+{
+    for (auto &o: optNames)
+    {
+        VStringBuffer attrName("@%s", o.name);
+        if (!ptree->hasProp(attrName))
+            attrName.clear().appendf("_%s", o.name);
+        if (ptree->hasProp(attrName))
+        {
+            if (ptree->getPropBool(attrName, false))
+                dft |= o.value;
+            else
+                dft &= ~o.value;
+        }
+
+    }
+    return dft;
+}

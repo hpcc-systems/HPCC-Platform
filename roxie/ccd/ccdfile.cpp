@@ -222,7 +222,7 @@ public:
         }
         catch (IException *E) 
         {
-            if (traceLevel > 5)
+            if (doTrace(traceRoxieFiles))
             {
                 StringBuffer s;
                 DBGLOG("setFailure ignoring exception %s from IFileIO close", E->errorMessage(s).str());
@@ -269,7 +269,7 @@ public:
                         throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Failed to open file %s at any of the following remote locations %s", logical->queryFilename(), filesTried.str()); // operations doesn't want a trap
                 }
                 const char *sourceName = sources.item(currentIdx).queryFilename();
-                if (traceLevel > 10)
+                if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
                     DBGLOG("Trying to open %s", sourceName);
                 try
                 {
@@ -288,7 +288,7 @@ public:
                             current.setown(f->open(IFOread));
                         if (current)
                         {
-                            if (traceLevel > 5)
+                            if (doTrace(traceRoxieFiles))
                                 DBGLOG("Opening %s", sourceName);
                             if (useRemoteResources)
                                 disconnectRemoteIoOnExit(current);
@@ -335,7 +335,7 @@ public:
     {
         if (newSource)
         {
-            if (traceLevel > 10)
+            if (doTrace(traceRoxieFiles, TraceFlags::Max))
                 DBGLOG("Adding information for location %s for %s", newSource->queryFilename(), logical->queryFilename());
             CriticalBlock b(crit);
             sources.append(*newSource);
@@ -829,7 +829,7 @@ public:
             startOffset = ((startOffset+nodeSize-1)/nodeSize)*nodeSize;
             do
             {
-                if (traceLevel > 8)
+                if (doTrace(traceRoxiePrewarm))
                     DBGLOG("prewarming index page %u %s %" I64F "x-%" I64F "x", (int) nodeType, filename, startOffset, endOffset);
                 bool loaded = keyIndex->prewarmPage(startOffset, nodeType);
                 if (!loaded)
@@ -978,7 +978,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     // NOTE - this location is shared with other nodes - who may also be writing
                     VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", cacheRootDirectory.str(), roxieName.str(), 0);
                     atomicWriteFile(cacheFileName, ret);
-                    if (traceLevel > 8)
+                    if (doTrace(traceRoxiePrewarm))
                         DBGLOG("Channel 0 cache info:\n%s", ret.str());
                 }
                 for (unsigned channel : topology->queryChannels())
@@ -988,7 +988,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     {
                         VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", cacheRootDirectory.str(), roxieName.str(), channel);
                         atomicWriteFile(cacheFileName, ret);
-                        if (traceLevel > 8)
+                        if (doTrace(traceRoxiePrewarm))
                             DBGLOG("Channel %u cache info:\n%s", channel, ret.str());
                     }
                 }
@@ -1139,7 +1139,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     {
                         const char *remoteName = remoteLocationInfo.item(idx);
                         Owned<IFile> remote = createIFile(remoteName);
-                        if (traceLevel > 5)
+                        if (doTrace(traceRoxieFiles))
                             DBGLOG("checking remote location %s", remoteName);
                         RoxieFileStatus status = fileUpToDate(remote, size, modified, isCompressed);
                         if (status==FileIsValid)
@@ -1173,7 +1173,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
                 else
                 {
-                    if (traceLevel >= 2)
+                    if (doTrace(TraceFlags::Always, TraceFlags::Detailed))
                     {
 #ifndef _CONTAINERIZED
                         DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
@@ -1249,7 +1249,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 else
                 {
                     DBGLOG("%sing %s to %s", msg, sourceFile->queryFilename(), targetFilename);
-                    if (traceLevel > 5)
+                    if (doTrace(traceRoxieFiles))
                     {
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
@@ -2027,7 +2027,7 @@ public:
                         unsigned age = msTick() - f->getLastAccessed();
                         if (age > maxFileAge[remote])
                         {
-                            if (traceLevel > 5)
+                            if (doTrace(traceRoxieFiles))
                             {
                                 // NOTE - querySource will cause the file to be opened if not already open
                                 // That's OK here, since we know the file is open and remote.
@@ -2054,7 +2054,7 @@ public:
                 ILazyFileIO &f = goers.item(idx++);
                 if (!f.isCopying())
                 {
-                    if (traceLevel > 5)
+                    if (doTrace(traceRoxieFiles))
                     {
                         unsigned age = msTick() - f.getLastAccessed();
                         DBGLOG("Closing %s (last accessed %u ms ago)", f.queryFilename(), age);
@@ -2643,7 +2643,7 @@ protected:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        if (traceLevel > 2)
+        if (doTrace(traceRoxieFiles))
             DBGLOG("Superfile %s change detected", lfn.get());
 
         {
@@ -2676,7 +2676,7 @@ public:
         fileCheckSum = 0;
         if (dFile)
         {
-            if (traceLevel > 5)
+            if (doTrace(traceRoxieFiles))
                 DBGLOG("Roxie server adding information for file %s", lfn.get());
             bool tsSet = dFile->getModificationTime(fileTimeStamp);
             dFile->getFileCheckSum(fileCheckSum);
@@ -2812,7 +2812,7 @@ public:
     }
     virtual void serializePartial(MemoryBuffer &mb, unsigned channel, bool isLocal) const override
     {
-        if (traceLevel > 6)
+        if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
             DBGLOG("Serializing file information for dynamic file %s, channel %d, local %d", lfn.get(), channel, isLocal);
         byte type = (byte) fileType;
         mb.append(type);
@@ -2940,14 +2940,14 @@ public:
 
                         if (thisFormatCrc == expectedFormatCrc && projectedFormatCrc == expectedFormatCrc && (actualUnknown || alwaysTrustFormatCrcs))
                         {
-                            if (traceLevel > 5)
+                            if (doTrace(traceRoxieFiles))
                                 DBGLOG("In query %s: Assume no translation required for file %s, crc's match", queryName, subname);
                         }
                         else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL)
                         {
                             if (thisFormatCrc)
                                 throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s (disk format not serialized)", subname);
-                            else if (traceLevel > 5)
+                            else if (doTrace(traceRoxieFiles))
                                 DBGLOG("In query %s: Assume no translation required for %s, disk format unknown", queryName, subname);
                         }
                         else
@@ -2973,7 +2973,7 @@ public:
                     prevFormatCrc = thisFormatCrc;
                 }
             }
-            else if (traceLevel > 5)
+            else if (doTrace(traceRoxieFiles))
                 DBGLOG("In query %s: Assume no translation required, subfile is null", queryName);
             result->addTranslator(LINK(translator), LINK(keyedTranslator), LINK(actual));
         }
@@ -3143,7 +3143,7 @@ public:
                 ret->addKey(keyset.getClear());
             else if (!isOpt)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Key %s has no key parts", lfn.get());
-            else if (traceLevel > 4)
+            else if (doTrace(traceMissingOptFiles))
                 DBGLOG(ROXIE_OPT_REPORTING, "Key %s has no key parts", lfn.get());
         }
         return ret.getClear();
@@ -3228,7 +3228,7 @@ public:
     {
         if (cached)
         {
-            if (traceLevel > 9)
+            if (doTrace(traceRoxieFiles, TraceFlags::Max))
                 DBGLOG("setCache removing from prior cache %s", queryFileName());
             if (cache==NULL)
                 cached->removeCache(this);
@@ -3350,7 +3350,7 @@ public:
             }
             if (ok)
             {
-                if (traceLevel > 6)
+                if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
                     { StringBuffer s; DBGLOG("Processing information from server in response to %s", newHeader.toString(s).str()); }
 
                 MemoryBuffer &serverData = callback->queryData();
@@ -3425,7 +3425,7 @@ private:
         }
         else
         {
-            if (traceLevel > 6)
+            if (doTrace(traceRoxieFiles, TraceFlags::Detailed))
                 DBGLOG("No information for %s subFile %d of file %s", remote ? "remote" : "", fileNo, lfn.get());
             files.append(NULL);
         }

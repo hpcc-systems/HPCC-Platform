@@ -439,6 +439,8 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(parallelWorkflow, wu, "parallelWorkflow");
     updateFromWorkUnit(sinkMode, wu, "sinkMode");
     updateFromWorkUnit(numWorkflowThreads, wu, "numWorkflowthreads");
+
+    updateTraceFlags(loadTraceFlags(&wu, roxieTraceOptions, queryTraceFlags()));
 }
 
 void QueryOptions::updateFromWorkUnitM(memsize_t &value, IConstWorkUnit &wu, const char *name)
@@ -514,6 +516,8 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(parallelWorkflow, ctx, "@parallelWorkflow", "_parallelWorkflow");
         updateFromContext(numWorkflowThreads, ctx, "@numWorkflowThreads", "_numWorkflowThreads");
         updateFromContext(statsToWorkunit, ctx, "@statsToWorkunit", "_statsToWorkunit");
+
+        updateTraceFlags(loadTraceFlags(ctx, roxieTraceOptions, queryTraceFlags()));
     }
 }
 
@@ -1249,7 +1253,7 @@ public:
 
     void addToMap()
     {
-        if (traceRoxiePackets)
+        if (doTrace(traceRoxiePackets))
             DBGLOG("addToMap %s: hashvalue = %" I64F "x channel %d", id.str(), hashValue, channelNo);
         hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
         CriticalBlock b(activeQueriesCrit);
@@ -1279,12 +1283,12 @@ public:
 static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files, bool isDynamic)
     {
         hash64_t hashValue = package.queryHash();
-        if (traceLevel > 8)
+        if (doTrace(traceQueryHashes))
             DBGLOG("getQueryHash: %s %" I64F "u from package", id, hashValue);
         if (dll)
         {
             hashValue = rtlHash64VStr(dll->queryDll()->queryName(), hashValue);
-            if (traceLevel > 8)
+            if (doTrace(traceQueryHashes))
                 DBGLOG("getQueryHash: %s %" I64F "u from dll", id, hashValue);
             if (!lockSuperFiles && !allFilesDynamic && !isDynamic && !package.isCompulsory())
             {
@@ -1317,7 +1321,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
                                         if (indexFile)
                                         {
                                             hashValue = indexFile->addHash64(hashValue);
-                                            if (traceLevel > 8)
+                                            if (doTrace(traceQueryHashes))
                                                 DBGLOG("getQueryHash: %s %" I64F "u from index %s", id, hashValue, indexName);
                                             files.append(*const_cast<IResolvedFile *>(indexFile));
                                         }
@@ -1332,7 +1336,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
                                             if (dataFile)
                                             {
                                                 hashValue = dataFile->addHash64(hashValue);
-                                                if (traceLevel > 8)
+                                                if (doTrace(traceQueryHashes))
                                                     DBGLOG("getQueryHash: %s %" I64F "u from index %s", id, hashValue, fileName);
                                                 files.append(*const_cast<IResolvedFile *>(dataFile));
                                             }
@@ -1348,17 +1352,17 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         if (id)
             hashValue = rtlHash64VStr(id, hashValue);
         hashValue = rtlHash64VStr("Roxie", hashValue);  // Adds some noise into the hash - otherwise adjacent wuids tend to hash very close together
-        if (traceLevel > 8)
+        if (doTrace(traceQueryHashes))
             DBGLOG("getQueryHash: %s %" I64F "u from id", id, hashValue);
         if (stateInfo)
         {
             StringBuffer xml;
             toXML(stateInfo, xml);
             hashValue = rtlHash64Data(xml.length(), xml.str(), hashValue);
-            if (traceLevel > 8)
+            if (doTrace(traceQueryHashes))
                 DBGLOG("getQueryHash: %s %" I64F "u from stateInfo", id, hashValue);
         }
-        if (traceLevel > 8)
+        if (doTrace(traceQueryHashes))
             DBGLOG("getQueryHash: %s %" I64F "u", id, hashValue);
         return hashValue;
     }

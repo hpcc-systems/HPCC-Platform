@@ -89,11 +89,6 @@ unsigned RoxiePacketHeader::priorityHash() const
     unsigned hash = serverId.hash();
     hash = hashc((const unsigned char *) &uid, sizeof(uid), hash);
     hash += overflowSequence; // MORE - is this better than hashing?
-    if (traceLevel > 9)
-    {
-        StringBuffer s;
-        DBGLOG("Calculating hash: %s hash was %d", toString(s).str(), hash);
-    }
     return hash;
 }
 
@@ -323,7 +318,7 @@ void openMulticastSocket()
             DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
             throwUnexpected();
         }
-        if (traceLevel)
+        if (doTrace(TraceFlags::Always))
             DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", ccdMulticastPort, udpMulticastBufferSize, actualSize);
         if (roxieMulticastEnabled && !localAgent)
         {
@@ -367,7 +362,7 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
             {
                 // Note that we expand any writes on channel 0 here, since we need to capture the server's view of what agents are on each channel
                 bool allOk = true;
-                if (traceRoxiePackets)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer header;
                     DBGLOG("Translating packet sent to channel 0: %s", buf.toString(header).str());
@@ -407,7 +402,7 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
                 break;
             if (includeSelf || !buf.subChannels[subChannel].isMe())
             {
-                if (traceRoxiePackets)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s, header;
                     DBGLOG("Writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
@@ -419,7 +414,7 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
                 if (delaySubchannelPackets)
                     MilliSleep(100);
             }
-            else if (traceRoxiePackets)
+            else if (doTrace(traceRoxiePackets))
             {
                 StringBuffer s, header;
                 DBGLOG("NOT writing %d bytes to subchannel %d (%s) %s", buf.packetlength, subChannel, buf.subChannels[subChannel].getTraceText(s).str(), buf.toString(header).str());
@@ -1535,7 +1530,7 @@ public:
                 for (unsigned subChannel = 0; subChannel < mySubChannel; subChannel++)
                     delay += getIbytiDelay(header.subChannels[subChannel].getIpAddress());
                 unsigned start = 0;
-                if (traceRoxiePackets)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer x;
                     DBGLOG("YES myTurnToDelay subchannel=%u delay=%u %s", mySubChannel, delay, header.toString(x).str());
@@ -1543,7 +1538,7 @@ public:
                 }
                 if (delay)
                     ibytiSem.wait(delay);
-                if (traceRoxiePackets || (delay && !abortJob && traceIBYTIfails))
+                if (doTrace(traceRoxiePackets) || (delay && !abortJob && doTrace(traceIBYTIfails)))
                 {
                     StringBuffer x;
                     DBGLOG("Delay %u done, abortJob=%d, elapsed=%d", delay, (int) abortJob, msTick()-start);
@@ -1577,13 +1572,13 @@ public:
                         if (!abortJob)
                         {
                             topology->queryChannelInfo(channel).noteChannelsSick(primarySubChannel);
-                            if (traceRoxiePackets || traceIBYTIfails)
+                            if (doTrace(traceRoxiePackets) || doTrace(traceIBYTIfails))
                             {
                                 StringBuffer x;
                                 DBGLOG("Delay %u done, abortJob=%d", delay, (int) abortJob);
                             }
                         }
-                        if (logctx.queryTraceLevel() > 8)
+                        if (doTrace(traceIBYTIfails))
                         {
                             StringBuffer x;
                             logctx.CTXLOG("Buddy did%s send IBYTI, updated delay : %s",
@@ -2150,7 +2145,7 @@ public:
         {
             if (finger->matches(ibyti))
             {
-                if (traceRoxiePackets)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
                     DBGLOG("IBYTI removing delayed packet %s", finger->describe(s).str());
@@ -2168,7 +2163,7 @@ public:
         // Goes on the end. But percolate the expiry time backwards
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
         DelayedPacketEntry *newEntry = new DelayedPacketEntry(packet, expires);
-        if (traceRoxiePackets)
+        if (doTrace(traceRoxiePackets))
         {
             StringBuffer s;
             DBGLOG("Adding delayed packet %s", packet->queryHeader().toString(s).str());
@@ -2201,7 +2196,7 @@ public:
             {
                 ISerializedRoxieQueryPacket *packet = finger->getClear();
                 const RoxiePacketHeader &header = packet->queryHeader();
-                if (traceRoxiePackets)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
                     DBGLOG("No IBYTI received yet for delayed packet %s", header.toString(s).str());
@@ -2552,7 +2547,7 @@ public:
             if (!foundInQ)
                 abortRunning(header, queue, false, preActivity);
 
-            if (traceRoxiePackets || traceLevel > 10)
+            if (doTrace(traceRoxiePackets))
             {
                 StringBuffer s; 
                 DBGLOG("Abort activity %s", header.toString(s).str());
@@ -2564,7 +2559,7 @@ public:
             unsigned subChannel = header.getRespondingSubChannel();
             if (subChannel == mySubChannel)
             {
-                if (traceRoxiePackets || traceLevel > 10)
+                if (doTrace(traceRoxiePackets))
                     DBGLOG("doIBYTI packet was from self");
                 ibytiPacketsFromSelf.fastInc();
             }
@@ -2583,7 +2578,7 @@ public:
                     foundInQ = queue.remove(header);
                 if (foundInQ)
                 {
-                    if (traceRoxiePackets || traceLevel > 10)
+                    if (doTrace(traceRoxiePackets))
                     {
                         StringBuffer s; 
                         DBGLOG("Removed activity from Q : %s", header.toString(s).str());
@@ -2593,7 +2588,7 @@ public:
                 }
                 if (abortRunning(header, queue, true, preActivity))
                 {
-                    if (traceRoxiePackets || traceLevel > 10)
+                    if (doTrace(traceRoxiePackets))
                     {
                         StringBuffer s;
                         DBGLOG("Aborted running activity : %s", header.toString(s).str());
@@ -2604,7 +2599,7 @@ public:
                         ibytiPacketsHalfWorked.fastInc();
                     return;
                 }               
-                if (traceRoxiePackets || traceLevel > 10)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
                     DBGLOG("doIBYTI packet was too late (or too early) : %s", header.toString(s).str());
@@ -2645,7 +2640,7 @@ public:
             if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
             {
                 Owned<IRoxieQueryPacket> packet = deserializeCallbackPacket(mb);
-                if (traceLevel > 10)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
                     DBGLOG("ROXIE_CALLBACK %s", header.toString(s).str());
@@ -2654,7 +2649,7 @@ public:
             }
             else if (IBYTIbufferSize && queue.lookupOrphanIBYTI(header))
             {
-                if (traceRoxiePackets || traceLevel > 10)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
                     DBGLOG("doIBYTI packet was too early : %s", header.toString(s).str());
@@ -2783,7 +2778,7 @@ public:
                 RoxiePacketHeader &header = *(RoxiePacketHeader *) mb.toByteArray();
                 if (l != header.packetlength)
                     DBGLOG("sock->read returned %d but packetlength was %d", l, header.packetlength);
-                if (traceRoxiePackets || traceLevel > 10)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
                     DBGLOG("Read roxie packet: %s", header.toString(s).str());
@@ -3205,7 +3200,7 @@ public:
         unsigned retries = header.thisChannelRetries(0);
         if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
         {
-            if (traceLevel > 5)
+            if (doTrace(traceRoxiePackets))
             {
                 StringBuffer s; 
                 DBGLOG("ROXIE_CALLBACK %s", header.toString(s).str());
@@ -3462,7 +3457,7 @@ class PingTimer : public Thread
             data.senderIP.ipset(myNode.getIpAddress());
             data.tick = usTick();
             mb.append(sizeof(PingRecord), &data);
-            if (traceLevel > 1)
+            if (doTrace(traceRoxiePings))
                 DBGLOG("PING sent");
             Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
             ROQ->sendPacket(packet, logctx);
@@ -3509,7 +3504,7 @@ public:
                     unsigned elapsed = usTick() - answer->tick;
                     pingsReceived++;
                     pingsElapsed += elapsed;
-                    if (traceLevel > 10)
+                    if (doTrace(traceRoxiePings, TraceFlags::Max))
                         DBGLOG("PING reply channel=%d, time %d", header->channel, elapsed); // DBGLOG is slower than the pings so be careful!
                 }
                 else
@@ -3520,7 +3515,7 @@ public:
             {
                 if (!pingsReceived && roxieMulticastEnabled)
                     DBGLOG("PING: NO replies received! Please check multicast settings, and that your network supports multicast.");
-                else if (traceLevel)
+                else if (doTrace(traceRoxiePings))
                     DBGLOG("PING: %d replies received, average delay %uus", pingsReceived, pingsReceived ? pingsElapsed / pingsReceived : 0);
                 pingsReceived = 0;
                 pingsElapsed = 0;
