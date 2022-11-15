@@ -848,17 +848,17 @@ static IFile *createAzureFile(const char *azureFileName)
 class AzureAPICopyClientBase : public CInterfaceOf<IAPICopyClientOp>
 {
     ApiCopyStatus status = ApiCopyStatus::NotStarted;
-    virtual void doStartCopy(const char * source, const char *target) = 0;
+    virtual void doStartCopy(const char * source) = 0;
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) = 0;
     virtual void doAbortCopy() = 0;
     virtual void doDelete() = 0;
 
 public:
-    virtual void startCopy(const char * source, const char *target) override
+    virtual void startCopy(const char * source) override
     {
         try
         {
-            doStartCopy(source, target);
+            doStartCopy(source);
             status = ApiCopyStatus::Pending;
         }
         catch (const Azure::Core::RequestFailedException& e)
@@ -933,9 +933,8 @@ class AzureFileClient : public AzureAPICopyClientBase
     std::unique_ptr<Shares::ShareFileClient> fileClient;
     Shares::StartFileCopyOperation fileCopyOp;
 
-    virtual void doStartCopy(const char * source, const char *target) override
+    virtual void doStartCopy(const char * source) override
     {
-        fileClient.reset(new Shares::ShareFileClient(target));
         fileCopyOp = std::move(fileClient->StartCopy(source));
     }
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
@@ -964,6 +963,11 @@ class AzureFileClient : public AzureAPICopyClientBase
     {
         fileClient->Delete();
     }
+public:
+    AzureFileClient(const char *target)
+    {
+        fileClient.reset(new Shares::ShareFileClient(target));
+    }
 };
 
 class AzureBlobClient : public AzureAPICopyClientBase
@@ -971,9 +975,8 @@ class AzureBlobClient : public AzureAPICopyClientBase
     std::unique_ptr<BlobClient> blobClient;
     StartBlobCopyOperation blobCopyOp;
 
-    virtual void doStartCopy(const char * source, const char *target) override
+    virtual void doStartCopy(const char * source) override
     {
-        blobClient.reset(new BlobClient(target));
         blobCopyOp = std::move(blobClient->StartCopyFromUri(source));
     }
     virtual ApiCopyStatus doGetProgress(CDateTime & dateTime, int64_t & outputLength) override
@@ -1002,6 +1005,11 @@ class AzureBlobClient : public AzureAPICopyClientBase
     {
         blobClient->Delete();
     }
+public:
+    AzureBlobClient(const char * target)
+    {
+        blobClient.reset(new BlobClient(target));
+    }
 };
 
 
@@ -1010,8 +1018,8 @@ class CAzureApiCopyClient : public CInterfaceOf<IAPICopyClient>
 public:
     CAzureApiCopyClient(IStorageApiInfo *_sourceApiInfo, IStorageApiInfo *_targetApiInfo): sourceApiInfo(_sourceApiInfo), targetApiInfo(_targetApiInfo)
     {
-        buildStorageURIBase(sourceApiInfo, sourceURIbase);
-        buildStorageURIBase(targetApiInfo, targetURIbase);
+        dbgassertex(isAzureBlob(sourceApiInfo->getStorageType())||isAzureFile(sourceApiInfo->getStorageType()));
+        dbgassertex(isAzureBlob(targetApiInfo->getStorageType())||isAzureFile(targetApiInfo->getStorageType()));
     }
     virtual const char * name() const override
     {
@@ -1032,47 +1040,36 @@ public:
         }
         return false;
     }
-    virtual IAPICopyClientOp * startCopy(const char *srcPath, unsigned srcStripeNum,  const char *tgtPath, unsigned tgtStripeNum) override
+    virtual IAPICopyClientOp * startCopy(const char *srcPath, unsigned srcStripeNum,  const char *tgtPath, unsigned tgtStripeNum) const override
     {
-        if (!haveSASTokens)
-        {
-            sourceApiInfo->getSASToken(sourceSASToken);
-            targetApiInfo->getSASToken(targetSASToken);
-            haveSASTokens=true;
-        }
-        StringBuffer sourceURI, targetURI;
-        buildURI(sourceURI, sourceURIbase, srcStripeNum,  srcPath, sourceApiInfo, sourceSASToken);
-        buildURI(targetURI, targetURIbase, tgtStripeNum,  tgtPath, targetApiInfo, targetSASToken);
+        StringBuffer targetURI;
+        getAzureURI(targetURI, tgtStripeNum,  tgtPath, targetApiInfo);
         Owned<IAPICopyClientOp> apiClient;
         if (isAzureFile(targetApiInfo->getStorageType()))
-            apiClient.setown(new AzureFileClient());
+            apiClient.setown(new AzureFileClient(targetURI.str()));
         else
-            apiClient.setown(new AzureBlobClient());
-        apiClient->startCopy(sourceURI, targetURI);
+            apiClient.setown(new AzureBlobClient(targetURI.str()));
+
+        StringBuffer sourceURI;
+        getAzureURI(sourceURI, srcStripeNum, srcPath, sourceApiInfo);
+        apiClient->startCopy(sourceURI.str());
         return apiClient.getClear();
     }
 protected:
-    void buildStorageURIBase(IStorageApiInfo * storageApiInfo, StringBuffer & uri)
+    void getAzureURI(StringBuffer & uri, unsigned stripeNum, const char *filePath, const IStorageApiInfo *apiInfo) const
     {
-        const char *accountName = storageApiInfo->queryStorageApiAccount();
+        const char *accountName = apiInfo->queryStorageApiAccount(stripeNum);
         uri.appendf("https://%s", accountName);
 
-        if (isAzureFile(targetApiInfo->getStorageType()))
-        {
+        if (isAzureFile(apiInfo->getStorageType()))
             uri.append(".file");
-        }
         else
-        {
-            dbgassertex(isAzureBlob(targetApiInfo->getStorageType()));
             uri.append(".blob");
-        }
         uri.append(".core.windows.net/");
-    }
-    void buildURI(StringBuffer & fulluri, const char * baseURI, unsigned stripeNum, const char *filePath, IStorageApiInfo *apiInfo, const char *token)
-    {
-        StringBuffer tmp;
-        const char * container = apiInfo->queryStorageContainer(stripeNum);
-        fulluri.appendf("%s%s%s%s", baseURI, container, encodeURL(tmp, filePath).str(), token);
+
+        StringBuffer tmp, token;
+        const char * container = apiInfo->queryStorageContainerName(stripeNum);
+        uri.appendf("%s%s%s", container, encodeURL(tmp, filePath).str(), apiInfo->getSASToken(stripeNum, token).str());
     }
     static inline bool isAzureFile(const char *storageType)
     {
@@ -1084,9 +1081,6 @@ protected:
     }
 
     Linked<IStorageApiInfo> sourceApiInfo, targetApiInfo;
-    StringBuffer sourceURIbase, targetURIbase;
-    bool haveSASTokens = false;
-    StringBuffer sourceSASToken, targetSASToken;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
