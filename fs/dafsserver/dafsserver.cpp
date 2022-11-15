@@ -95,7 +95,7 @@ static unsigned maxReceiveTime = 0;
 
 #ifndef _CONTAINERIZED
 //Security and default port attributes
-static class _securitySettings
+static class _securitySettingsServer
 {
 public:
     DAFSConnectCfg  connectMethod;
@@ -105,7 +105,7 @@ public:
     const char *    privateKey;
     const char *    passPhrase;
 
-    _securitySettings()
+    _securitySettingsServer()
     {
         queryDafsSecSettings(&connectMethod, &daFileSrvPort, &daFileSrvSSLPort, &certificate, &privateKey, &passPhrase);
     }

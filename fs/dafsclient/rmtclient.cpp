@@ -89,7 +89,7 @@ MODULE_INIT(INIT_PRIORITY_DAFSCLIENT)
 
 
 //Security and default port attributes
-static class _securitySettings
+static class _securitySettingsClient
 {
 public:
     DAFSConnectCfg  queryConnectMethod() { ensureReady(); return connectMethod; }
