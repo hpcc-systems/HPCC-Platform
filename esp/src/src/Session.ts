@@ -48,7 +48,7 @@ getBuildInfo().then(info => {
     dojoConfig.currencyCode = info["currencyCode"] ?? "";
 });
 
-const format = d3Format(".2f");
+const format = d3Format(",.2f");
 export function formatCost(value?: number | string): string {
     if (value !== 0 && !value) {
         logger.debug(`formatCost called for a nullish value: ${value}`);
