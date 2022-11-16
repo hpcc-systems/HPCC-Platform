@@ -471,18 +471,16 @@ extern jlib_decl IFile * createIFile(const RemoteFilename & filename);
 interface IStorageApiInfo : implements IInterface
 {
     virtual const char * getStorageType() const = 0;
-    virtual const char * queryStorageApiAccount() const = 0;
-    virtual const char * queryStorageContainer(unsigned stripeNumber) const = 0;
-    virtual StringBuffer & getSASToken(StringBuffer & token) const = 0;
+    virtual const char * queryStorageApiAccount(unsigned stripeNumber) const = 0;
+    virtual const char * queryStorageContainerName(unsigned stripeNumber) const = 0;
+    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const = 0;
 };
-
-extern jlib_decl bool canApiCopy(IStorageApiInfo * source, IStorageApiInfo * target);
 extern jlib_decl IStorageApiInfo * createStorageApiInfo(IPropertyTree *xml);
 
 enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
 interface IAPICopyClientOp : implements IInterface
 {
-    virtual void startCopy(const char *source, const char * target) = 0;
+    virtual void startCopy(const char *source) = 0;
     virtual ApiCopyStatus getProgress(CDateTime & dateTime, int64_t & outputLength) = 0;
     virtual ApiCopyStatus abortCopy() = 0;
     virtual ApiCopyStatus getStatus() const = 0;
@@ -491,7 +489,7 @@ interface IAPICopyClientOp : implements IInterface
 interface IAPICopyClient : implements IInterface
 {
     virtual const char * name() const = 0;
-    virtual IAPICopyClientOp * startCopy(const char *srcPath, unsigned srcStripeNum,  const char *tgtPath, unsigned tgtStripeNum) = 0;
+    virtual IAPICopyClientOp * startCopy(const char *srcPath, unsigned srcStripeNum,  const char *tgtPath, unsigned tgtStripeNum) const = 0;
 };
 
 // Hook mechanism for accessing files inside containers (eg zipfiles)

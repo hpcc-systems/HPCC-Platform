@@ -606,9 +606,30 @@
       	    "containers": {
               "type": "array",
               "description": "List of containers",
-              "items": { "type": "string" }
+              "items": {
+                "description": "storage container/file share (one item for each device)",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "Name of storage container/file share",
+                    "type" : "string"
+                  },
+                  "account" : {
+                    "description" : "Acccount Name (optional - will default to parent object if not specified)",
+                    "type" : "string"
+                  },
+                  "secret" : {
+                    "description" : "Secret id (optional - will default to parent object if not specified)",
+                    "type" : "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [ "name" ]
+              }
             }
-          }
+          },
+          "additionalProperties": false,
+          "required": [ "type", "containers" ]
         }
       }
     },

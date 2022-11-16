@@ -2557,31 +2557,41 @@ public:
     {
         return xml->queryProp("@type");
     }
-    virtual const char * queryStorageApiAccount() const override
+    virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
     {
-        return xml->queryProp("@account");
+        const char *account = queryContainer(stripeNumber)->queryProp("@account");
+        if (isEmptyString(account))
+            account = xml->queryProp("@account");
+        return account;
     }
-    virtual const char * queryStorageContainer(unsigned stripeNumber) const override
+    virtual const char * queryStorageContainerName(unsigned stripeNumber) const override
     {
-        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
-            stripeNumber++;
-        StringBuffer path;
-        path.appendf("containers[%d]", stripeNumber);
-        const char * container = xml->queryProp(path.str());
-        if (isEmptyString(container))
-            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
-        return container;
+        return queryContainer(stripeNumber)->queryProp("@name");
     }
-    virtual StringBuffer & getSASToken(StringBuffer & token) const override
+    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const override
     {
-        const char * secretName = xml->queryProp("@secret");
+        const char * secretName = queryContainer(stripeNumber)->queryProp("@secret");
         if (isEmptyString(secretName))
-            return token.clear();  // return empty string if no secret name is specified
+        {
+            secretName = xml->queryProp("@secret");
+            if (isEmptyString(secretName))
+                return token.clear();  // return empty string if no secret name is specified
+        }
         getSecretValue(token, "storage", secretName, "token", false);
         return token.trimRight();
     }
 
 private:
+    IPropertyTree * queryContainer(unsigned stripeNumber) const
+    {
+        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
+            stripeNumber++;
+        VStringBuffer path("containers[%u]", stripeNumber);
+        IPropertyTree *container = xml->queryPropTree(path.str());
+        if (!container)
+            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
+        return container;
+    }
     Linked<IPropertyTree> xml;
 };
 
