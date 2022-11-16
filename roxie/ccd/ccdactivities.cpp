@@ -2425,6 +2425,9 @@ static const StatisticsMapping indexAgentStats({StNumIndexSeeks, StNumIndexScans
                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
                                                 StCycleBlobLoadCycles, StCycleLeafLoadCycles, StCycleNodeLoadCycles, // only need to accumulate cycles in the agents - serialized as times
+                                                StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, // only need to accumulate cycles in the agents - serialized as times
+                                                StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, // only need to accumulate cycles in the agents - serialized as times
+                                                StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                 StNumIndexRowsRead});
 
 class CRoxieIndexActivityFactory : public CRoxieKeyedActivityFactory
