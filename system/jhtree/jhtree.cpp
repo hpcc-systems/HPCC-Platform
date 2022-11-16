@@ -817,54 +817,51 @@ unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
 IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK)
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
-    {
-        MTIME_SECTION(queryActiveTimer(), "CKeyStore_load");
-        IKeyIndex *keyIndex;
-        StringBuffer fname;
-        fname.append(fileName).append('/').append(crc);
+    IKeyIndex *keyIndex;
+    StringBuffer fname;
+    fname.append(fileName).append('/').append(crc);
 
-        // MORE - holds onto the mutex way too long
-        synchronized block(mutex);
-        keyIndex = keyIndexCache.query(fname);
-        if (NULL == keyIndex)
+    // MORE - holds onto the mutex way too long
+    synchronized block(mutex);
+    keyIndex = keyIndexCache.query(fname);
+    if (NULL == keyIndex)
+    {
+        if (iMappedFile)
         {
-            if (iMappedFile)
-            {
-                assert(!iFileIO && !part);
-                keyIndex = new CMemKeyIndex(getUniqId(fileIdx), LINK(iMappedFile), fname, isTLK);
-            }
-            else if (iFileIO)
-            {
-                assert(!part);
-                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK);
-            }
-            else
-            {
-                assert(fileIdx==(unsigned) -1);
-                Owned<IFile> iFile;
-                if (part)
-                {
-                    iFile.setown(part->open());
-                    if (NULL == iFile.get())
-                        throw MakeStringException(0, "Failed to open index file %s", fileName);
-                }
-                else
-                    iFile.setown(createIFile(fileName));
-                IFileIO *fio = iFile->open(IFOread);
-                if (fio)
-                    keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK);
-                else
-                    throw MakeStringException(0, "Failed to open index file %s", fileName);
-            }
-            keyIndexCache.replace(fname, *LINK(keyIndex));
+            assert(!iFileIO && !part);
+            keyIndex = new CMemKeyIndex(getUniqId(fileIdx), LINK(iMappedFile), fname, isTLK);
+        }
+        else if (iFileIO)
+        {
+            assert(!part);
+            keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK);
         }
         else
         {
-            LINK(keyIndex);
+            assert(fileIdx==(unsigned) -1);
+            Owned<IFile> iFile;
+            if (part)
+            {
+                iFile.setown(part->open());
+                if (NULL == iFile.get())
+                    throw MakeStringException(0, "Failed to open index file %s", fileName);
+            }
+            else
+                iFile.setown(createIFile(fileName));
+            IFileIO *fio = iFile->open(IFOread);
+            if (fio)
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK);
+            else
+                throw MakeStringException(0, "Failed to open index file %s", fileName);
         }
-        assertex(NULL != keyIndex);
-        return keyIndex;
+        keyIndexCache.replace(fname, *LINK(keyIndex));
     }
+    else
+    {
+        LINK(keyIndex);
+    }
+    assertex(NULL != keyIndex);
+    return keyIndex;
 }
 
 IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK)
@@ -1085,7 +1082,6 @@ CJHTreeNode *CMemKeyIndex::loadNode(CJHTreeNode * optNode, offset_t pos)
         throw E;
     }
     char *nodeData = (char *) (io->base() + pos);
-    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (optNode)
         return CKeyIndex::loadNode(optNode, nodeData, pos, false);
     return CKeyIndex::loadNode(nodeData, pos, false);
@@ -1119,7 +1115,6 @@ CJHTreeNode *CDiskKeyIndex::loadNode(CJHTreeNode * optNode, offset_t pos)
     unsigned nodeSize = keyHdr->getNodeSize();
     MemoryAttr ma;
     char *nodeData = (char *) ma.allocate(nodeSize);
-    MTIME_SECTION(queryActiveTimer(), "JHTREE read node");
     if (io->read(pos, nodeSize, nodeData) != nodeSize)
     {
         IException *E = MakeStringException(errno, "Error %d reading node at position %" I64F "x", errno, pos); 
@@ -1169,11 +1164,8 @@ CJHTreeNode * CKeyIndex::loadNode(CJHTreeNode * ret, char *nodeData, offset_t po
 {
     try
     {
-        {
-            MTIME_SECTION(queryActiveTimer(), "JHTREE load node");
-            ret->load(keyHdr, nodeData, pos, needsCopy);
-            return ret;
-        }
+        ret->load(keyHdr, nodeData, pos, needsCopy);
+        return ret;
     }
     catch (IException *E)
     {
