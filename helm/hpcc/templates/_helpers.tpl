@@ -2058,3 +2058,31 @@ spec:
 {{- end -}}
 {{- end -}}
 
+{{- define "hpcc.generateWarnings" -}}
+{{/*
+Generate a list of warnings
+Pass in dict with root
+*/}}
+{{- $ctx := dict "warnings" list "root" .root -}}
+{{- include "hpcc.getWarnings" $ctx -}}
+{{- if $ctx.warnings }}
+warnings:
+ {{- range $warning := $ctx.warnings }}
+- msg: {{ $warning.msg | quote }}
+  severity: {{ $warning.severity | quote }}
+  source: {{ $warning.source | quote }}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "hpcc.printWarnings" -}}
+{{/*
+Print warnings
+Pass in dict with root
+*/}}
+{{- $ctx := dict "warnings" list "root" .root -}}
+{{- include "hpcc.getWarnings" $ctx -}}
+{{- range $warning := $ctx.warnings }}
+ {{ printf "**** %s: %s ****" (upper $warning.severity) $warning.msg }}
+{{- end -}}
+{{- end -}}
