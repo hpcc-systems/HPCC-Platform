@@ -375,7 +375,7 @@ protected:
         {
             KeyHdr *hdr = keyHdr->getHdrStruct();
             hdr->nument = records;
-            hdr->root = nextPos - hdr->nodeSize;
+            hdr->root = children.item(0).pos;
             hdr->phyrec = hdr->numrec = nextPos-1;
             hdr->maxmrk = hdr->nodeSize/4; // always this in ctree.
             hdr->namlen = 255;
