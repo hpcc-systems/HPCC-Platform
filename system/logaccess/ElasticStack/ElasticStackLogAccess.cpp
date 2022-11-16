@@ -139,7 +139,7 @@ ElasticStackLogAccess::ElasticStackLogAccess(const std::vector<std::string> &hos
             if (logMap.hasProp(LOGMAP_SEARCHCOL_ATT))
                 m_instanceSearchColName = logMap.queryProp(LOGMAP_SEARCHCOL_ATT);
         }
-        else if (streq(logMapType, "host"))
+        else if (streq(logMapType, "host") || streq(logMapType, "node"))
         {
             if (logMap.hasProp(LOGMAP_INDEXPATTERN_ATT))
                 m_hostIndexSearchPattern = logMap.queryProp(LOGMAP_INDEXPATTERN_ATT);

@@ -33,7 +33,6 @@ class AzureLogAnalyticsCurlClient : public CInterfaceOf<IRemoteLogAccess>
 {
 private:
     static constexpr const char * type = "azureloganalyticscurl";
-
     Owned<IPropertyTree> m_pluginCfg;
 
     StringBuffer m_globalIndexSearchPattern;
@@ -82,8 +81,8 @@ public:
     // IRemoteLogAccess methods
     virtual bool fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) override;
     virtual const char * getRemoteLogAccessType() const override { return type; }
-    virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
-    virtual const char * fetchConnectionStr() const override { return m_logAnalyticsWorkspaceID.str();}
+    virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree(""); }
+    virtual const char * fetchConnectionStr() const override { return m_logAnalyticsWorkspaceID.str(); }
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) override;
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) override;
 };

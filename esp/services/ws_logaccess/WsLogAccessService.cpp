@@ -13,11 +13,85 @@ bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessI
     bool success = true;
     if (queryRemoteLogAccessor())
     {
+        IPropertyTree *logColumnDefinitions = queryRemoteLogAccessor()->queryLogMap();
+        if (!logColumnDefinitions)
+        {
+            success = false;
+            OERRLOG("WsLogaccess: NULL col definitions - check logaccess logmap config!");
+        }
+        else
+        {
+            double clientVer = context.getClientVersion();
+
+            if (clientVer >= 1.04)
+            {
+                IArrayOf<IEspLogColumn> logColumns;
+                Owned<IPropertyTreeIterator> columnIter = logColumnDefinitions->getElements("logMaps");
+                ForEach(*columnIter)
+                {
+                    IPropertyTree &column = columnIter->query();
+                    if (column.hasProp("@searchColumn"))
+                    {
+                        Owned<IEspLogColumn> espLogColumn = createLogColumn();
+
+                        const char *csearchColumn = column.queryProp("@searchColumn");
+                        const char *cprojectName = column.queryProp("@projectName");
+                        espLogColumn->setName(!isEmptyString(cprojectName) ? cprojectName: csearchColumn);
+
+                        if (column.hasProp("@type"))
+                            espLogColumn->setLogType(column.queryProp("@type"));
+
+                        if (column.hasProp("@columnMode"))
+                            espLogColumn->setColumnMode(column.queryProp("@columnMode"));
+
+                        if (column.hasProp("enumValues"))
+                        {
+                            Owned<IPropertyTreeIterator> enumValues = column.getElements("enumValues");
+                            StringArray enumValuesArr;
+                            ForEach(*enumValues)
+                            {
+                                IPropertyTree &enumVal = enumValues->query();
+                                enumValuesArr.append(enumVal.queryProp("@code"));
+                            }
+                            espLogColumn->setEnumeratedValues(enumValuesArr);
+                        }
+                        if (column.hasProp("@columnType"))
+                        {
+                            try
+                            {
+                                espLogColumn->setColumnType(column.queryProp("@columnType"));
+                            }
+                            catch (IException *e)
+                            {
+                                VStringBuffer msg("Invalid col type found in logaccess logmap config for '%s'", csearchColumn);
+                                EXCLOG(e, msg.str());
+                                e->Release();
+                            }
+                            catch(...)
+                            {
+                                WARNLOG("Invalid col type found in logaccess logmap config");
+                            }
+                        }
+                        logColumns.append(*espLogColumn.getClear());
+                    }
+                    else
+                    {
+                        DBGLOG("Encountered Column definition without NAME!");
+                        OERRLOG("WsLogaccess: col definitions without @searchColumn - check logaccess logmap config!");
+                    }
+                }
+                resp.setColumns(logColumns);
+            }
+        }
+
         resp.setRemoteLogManagerType(queryRemoteLogAccessor()->getRemoteLogAccessType());
         resp.setRemoteLogManagerConnectionString(queryRemoteLogAccessor()->fetchConnectionStr());
     }
     else
+    {
         success = false;
+        OERRLOG("WsLogaccess: No logAccess available - check logaccess config!");
+    }
 
     return success;
 }

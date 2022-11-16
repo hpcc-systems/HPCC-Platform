@@ -91,7 +91,6 @@ static void requestLogAnalyticsAccessToken(StringBuffer & token, const char * cl
         VStringBuffer tokenRequestURL("https://login.microsoftonline.com/%s/oauth2/token", tenantID);
         VStringBuffer tokenRequestFields("grant_type=client_credentials&resource=https://api.loganalytics.io&client_secret=%s&client_id=%s", clientSecret, clientID);
 
-        
             /*"curl -X POST -d 'grant_type=client_credentials&client_id=<ADApplicationID>&client_secret=<thesecret>&resource=https://api.loganalytics.io'
                https://login.microsoftonline.com/<tenantID>/oauth2/token
             "*/
@@ -390,7 +389,7 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
             if (logMap.hasProp(logMapSearchColAtt))
                 m_instanceSearchColName = logMap.queryProp(logMapSearchColAtt);
         }
-        else if (streq(logMapType, "host"))
+        else if (streq(logMapType, "host") || streq(logMapType, "node"))
         {
             if (logMap.hasProp(logMapIndexPatternAtt))
                 m_hostIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
