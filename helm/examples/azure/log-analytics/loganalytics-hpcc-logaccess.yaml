@@ -19,22 +19,68 @@ global:
       storeName: "ContainerLog"
       searchColumn: "LogEntry"
       timeStampColumn: "hpcc_log_timestamp"
+      columnMode: "ALL"
     - type: "workunits"
       storeName: "ContainerLog"
       searchColumn: "hpcc_log_jobid"
+      columnMode: "DEFAULT"
     - type: "components"
       storeName: "ContainerInventory"
       searchColumn: "Name"
       keyColumn: "ContainerID"
+      columnMode: "MIN"
     - type: "audience"
       searchColumn: "hpcc_log_audience"
+      EnumValues:
+      - Code: OPR
+        Label: Operator
+      - Code: USR
+        Label: User
+      - Code: PRO
+        Label: Programmer
+      - Code: ADT
+        Label: Audit
+      columnMode: "DEFAULT"
     - type: "class"
       searchColumn: "hpcc_log_class"
+      EnumValues:
+      - Code: DIS
+        Label: Disaster
+      - Code: ERR
+        Label: Error
+      - Code: WRN
+        Label: Warning
+      - Code: INF
+        Label: Information
+      - Code: PRO
+        Label: Progress
+      - Code: MET
+        Label: Metric
+      columnMode: "DEFAULT"
     - type: "instance"
       storeName: "ContainerInventory"
       searchColumn: "Name"
-    - type: "host"
+      projectName: "hpcc_log_component"
+      columnMode: "ALL"
+    - type: "node"
+      columnMode: "DEFAULT"
       searchColumn: "Computer"
+      columnMode: "ALL"
+    - type: "message"
+      searchColumn: "hpcc_log_message"
+      columnMode: "MIN"
+    - type: "logid"
+      searchColumn: "hpcc_log_sequence"
+      columnMode: "DEFAULT"
+    - type: "processid"
+      searchColumn: "hpcc_log_procid"
+      columnMode: "ALL"
+    - type: "threadid"
+      searchColumn: "hpcc_log_threadid"
+      columnMode: "DEFAULT"
+    - type: "timestamp"
+      searchColumn: "hpcc_log_timestamp"
+      columnMode: "MIN"
 secrets:
   esp:
     azure-logaccess: "azure-logaccess"
