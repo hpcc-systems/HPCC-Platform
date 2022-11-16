@@ -1875,7 +1875,8 @@ void CEspHttpServer::sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest&
     else
         espURL.set("http://");
     m_request->getHost(espURL);
-    espURL.append(":").append(m_request->getPort());
+    if (m_request->getHasPortInHost())
+        espURL.append(":").append(m_request->getPort());
 
     StringBuffer content(
         "<!DOCTYPE html>"

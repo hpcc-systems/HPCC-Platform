@@ -918,6 +918,21 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(Start) },
     { CYCLESTAT(Start) },
     { ENUMSTAT(ActivityCharacteristics) },
+    { TIMESTAT(NodeRead) },
+    { CYCLESTAT(NodeRead) },
+    { TIMESTAT(LeafRead) },
+    { CYCLESTAT(LeafRead) },
+    { TIMESTAT(BlobRead) },
+    { CYCLESTAT(BlobRead) },
+    { NUMSTAT(NodeDiskFetches) },
+    { NUMSTAT(LeafDiskFetches) },
+    { NUMSTAT(BlobDiskFetches) },
+    { TIMESTAT(NodeFetch) },
+    { CYCLESTAT(NodeFetch) },
+    { TIMESTAT(LeafFetch) },
+    { CYCLESTAT(LeafFetch) },
+    { TIMESTAT(BlobFetch) },
+    { CYCLESTAT(BlobFetch) },
 };
 
 

@@ -110,6 +110,7 @@ export = {
         Columns: "Columns",
         Command: "Command",
         Comment: "Comment",
+        CompileCost: "Compile Cost",
         Compiled: "Compiled",
         Compiling: "Compiling",
         Completed: "Completed",

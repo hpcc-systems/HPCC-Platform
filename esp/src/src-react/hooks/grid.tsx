@@ -1,5 +1,5 @@
 import * as React from "react";
-import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IStackProps, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, Dropdown, IColumn, ICommandBarItemProps, IDetailsHeaderProps, IDetailsListStyles, IStackProps, mergeStyleSets, Selection, Stack, TooltipHost, TooltipOverflowMode } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { BaseStore, Memory, QueryRequest, QuerySortItem } from "src/store/Memory";
 import nlsHPCC from "src/nlsHPCC";
@@ -153,6 +153,21 @@ interface useFluentStoreGridResponse {
     refreshTable: (clearSelection?: boolean) => void
 }
 
+const gridStyles = (height: number): Partial<IDetailsListStyles> => {
+    return {
+        root: {
+            height,
+            minHeight: height,
+            maxHeight: height,
+        },
+        headerWrapper: {
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
+        }
+    };
+};
+
 function useFluentStoreGrid({
     store,
     query,
@@ -244,7 +259,7 @@ function useFluentStoreGrid({
         onItemInvoked={this._onItemInvoked}
         onColumnHeaderClick={onColumnClick}
         onRenderDetailsHeader={renderDetailsHeader}
-        styles={{ root: { height, minHeight: height, maxHeight: height } }}
+        styles={gridStyles(height)}
     />, [fluentColumns, items, onColumnClick, renderDetailsHeader, selectionHandler]);
 
     const copyButtons = React.useMemo((): ICommandBarItemProps[] => [

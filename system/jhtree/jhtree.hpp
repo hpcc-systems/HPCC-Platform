@@ -153,6 +153,7 @@ extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize);
 extern jhtree_decl void setLegacyNodeCache(bool _value);
+extern jhtree_decl void setNodeFetchThresholdNs(__uint64 thresholdNs);
 
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo);
 

@@ -4428,6 +4428,7 @@ void HqlCppTranslator::buildSimpleExpr(BuildCtx & ctx, IHqlExpression * expr, CH
                 break;
             }
         }
+        break;
     case no_matchtext:
     case no_matchunicode:
     case no_matchutf8:

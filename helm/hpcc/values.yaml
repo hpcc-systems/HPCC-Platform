@@ -68,10 +68,11 @@ global:
 
   cost:
     currencyCode: USD
-    perCpu: 0.126
-    storageAtRest: 0.0135
-    storageReads: 0.0485
-    storageWrites: 0.0038
+    # The following are example pricing based on standard Azure pricing and should be updated to reflect actual rates
+    perCpu: 0.0565        # D64ds_v4 compute node ($2,639.68/month for 64 vCPU)
+    storageAtRest: 0.0208 # Blob storage pricing (East US/Flag NS/LRS redundancy/Hot)
+    storageReads: 0.004   # Blob storage pricing (East US/Flag NS/LRS redundancy/Hot)
+    storageWrites: 0.05   # Blob storage pricing (East US/Flag NS/LRS redundancy/Hot)
 
   # postJobCommand will execute at the end of a dynamically launched K8s job,
   # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.

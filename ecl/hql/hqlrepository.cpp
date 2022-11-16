@@ -770,6 +770,8 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
 
     //Strip any trailing newlines and spaces.
     sha.clip();
+    if (options.optVerbose)
+        DBGLOG("Version '%s' resolved to sha '%s'", version.str(), sha.str());
 
     if (sha.isEmpty())
         throw makeStringExceptionV(99, "Branch/tag '%s' could not be found for dependency '%s'.", version.str(), defaultUrl);
