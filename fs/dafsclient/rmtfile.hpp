@@ -115,7 +115,7 @@ interface IIndexLookup;
 extern DAFSCLIENT_API IIndexLookup *createRemoteFilteredKey(SocketEndpoint &ep, const char * filename, unsigned crc, IOutputMetaData *actual, IOutputMetaData *projected, const RowFilter &fieldFilters, unsigned __int64 chooseNLimit);
 
 ////
-
+extern DAFSCLIENT_API IStorageApiInfo * createStorageApiInfo(IPropertyTree *xml);
 
 
 #endif

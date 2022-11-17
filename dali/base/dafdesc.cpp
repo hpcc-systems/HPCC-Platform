@@ -33,6 +33,7 @@
 #include "dadfs.hpp"
 #include "dameta.hpp"
 #include "jsecrets.hpp"
+#include "rmtfile.hpp"
 
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 

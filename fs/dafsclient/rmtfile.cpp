@@ -2595,7 +2595,7 @@ private:
     Linked<IPropertyTree> xml;
 };
 
-IStorageApiInfo * createStorageApiInfo(IPropertyTree *xml)
+extern IStorageApiInfo * createStorageApiInfo(IPropertyTree *xml)
 {
     return new CStorageApiInfo(xml);
 }
