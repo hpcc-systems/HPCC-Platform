@@ -2070,6 +2070,7 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
             resp.setPrefix(req.getPrefix());
         }
         SecResourceType rtype = str2type(basednReq->getRtype());
+        Owned<IMultiException> me = MakeMultiException("onResourceDelete");
         try
         {
             for(unsigned i = 0; i < names.length(); i++)
@@ -2087,23 +2088,26 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
                 if(prefix && *prefix)
                     namebuf.insert(0, prefix);
 
-                secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn(), context.querySecureContext());
+                try
+                {
+                    secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn(), context.querySecureContext());
+                }
+                catch(IException* e)
+                {
+                    me->append(*e);
+                }
             }
         }
-        catch(IException* e)
-        {
-            StringBuffer emsg;
-            e->errorMessage(emsg);
-            resp.setRetcode(e->errorCode());
-            resp.setRetmsg(emsg.str());
-            return false;
-        }
+
         catch(...)
         {
             resp.setRetcode(-1);
             resp.setRetmsg("Unknown error");
             return false;
         }
+
+        if(me->ordinality())
+            throw me.getLink();
 
         resp.setRetcode(0);
     }
