@@ -472,17 +472,17 @@ public:
         filter->append(option, fieldFilter);
     }
 
-    inline const byte *queryKeyBuffer()
+    inline const byte *queryKeyBuffer() override
     {
         if(layoutTrans)
         {
             buf.setLength(0);
             MemoryBufferBuilder aBuilder(buf, 0);
-            layoutSize = layoutTrans->translate(aBuilder, unexpectedFieldCallback, reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer()));
+            layoutSize = layoutTrans->translate(aBuilder, unexpectedFieldCallback, keyCursor->queryRecordBuffer());
             return aBuilder.getSelf();
         }
         else
-            return reinterpret_cast<byte const *>(keyCursor->queryKeyBuffer());
+            return keyCursor->queryRecordBuffer();
     }
 
     inline size32_t queryRowSize()
@@ -496,6 +496,11 @@ public:
     inline unsigned __int64 querySequence()
     {
         return keyCursor ? keyCursor->getSequence() : 0;
+    }
+
+    virtual offset_t queryFPos() const override
+    {
+        return keyCursor ? keyCursor->getFPos() : 0;
     }
 
     virtual bool lookup(bool exact)
@@ -1222,36 +1227,10 @@ CJHTreeNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *
     return node;
 }
 
-void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool raw)
-{
-    if (!raw)
-        fprintf(out, "Node dump: fpos(%" I64F "d) type %s\n", node->getFpos(), node->getNodeTypeName());
-    if (rowCount==0 || rowCount > node->getNumKeys())
-        rowCount = node->getNumKeys();
-    for (unsigned int i=0; i<rowCount; i++)
-    {
-        char *dst = (char *) alloca(node->getKeyLen()+50);
-        node->getValueAt(i, dst);
-        if (raw)
-        {
-            fwrite(dst, 1, length, out);
-        }
-        else
-        {
-            offset_t pos = node->getFPosAt(i);
-            StringBuffer s;
-            appendURL(&s, dst, length, true);
-            fprintf(out, "keyVal %d [%" I64F "d] = %s\n", i, pos, s.str());
-        }
-    }
-    if (!raw)
-        fprintf(out, "==========\n");
-}
-
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 {
     Owned<CJHTreeNode> node = loadNode(pos);
-    ::dumpNode(out, node, keySize(), count, isRaw);
+    node->dump(out, keySize(), count, isRaw);
 }
 
 bool CKeyIndex::hasSpecialFileposition() const
@@ -1506,7 +1485,8 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _l
     : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
 {
     nodeKey = 0;
-    keyBuffer = (char *) malloc(key.keySize());  // MORE - keyedSize would do eventually
+    keyedBuffer = (char *) malloc(key.keyedSize());
+    fullBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
 
 CKeyCursor::CKeyCursor(const CKeyCursor &from)
@@ -1515,8 +1495,10 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
     nodeKey = from.nodeKey;
     node.set(from.node);
     unsigned keySize = key.keySize();
-    keyBuffer = (char *) malloc(keySize);  // MORE - keyedSize would do eventually. And we may not even need all of that in the derived case
-    memcpy(keyBuffer, from.keyBuffer, keySize);
+    keyedBuffer = (char *) malloc(key.keyedSize());
+    memcpy(keyedBuffer, from.keyedBuffer, key.keyedSize());
+    fullBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
+    fullBufferValid = false;
     eof = from.eof;
     matched = from.matched;
 }
@@ -1525,7 +1507,8 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
 CKeyCursor::~CKeyCursor()
 {
     key.Release();
-    free(keyBuffer);
+    free(keyedBuffer);
+    free(fullBuffer);
 }
 
 void CKeyCursor::reset()
@@ -1537,18 +1520,24 @@ void CKeyCursor::reset()
         setLow(0);
 }
 
-bool CKeyCursor::next(char *dst, KeyStatsCollector &stats)
+bool CKeyCursor::next(KeyStatsCollector &stats)
 {
+    return _next(stats);
+}
+
+bool CKeyCursor::_next(KeyStatsCollector &stats)
+{
+    fullBufferValid = false;
     if (!node)
     {
         node.setown(key.locateFirstNode(stats));
         nodeKey = 0;
-        return node && node->getValueAt(nodeKey, dst);
+        return node && node->getKeyAt(nodeKey, keyedBuffer);
     }
     else
     {
         key.keyScans++;
-        if (!node->getValueAt( ++nodeKey, dst))
+        if (!node->getKeyAt( ++nodeKey, keyedBuffer))
         {
             offset_t rsib = node->getRightSib();
             NodeType type = node->getNodeType();
@@ -1559,7 +1548,7 @@ bool CKeyCursor::next(char *dst, KeyStatsCollector &stats)
                 if (node != NULL)
                 {
                     nodeKey = 0;
-                    return node->getValueAt(0, dst);
+                    return node->getKeyAt(0, keyedBuffer);
                 }
             }
             return false;
@@ -1579,11 +1568,21 @@ size32_t CKeyCursor::getKeyedSize() const
     return key.keyedSize();
 }
 
-const byte *CKeyCursor::queryKeyBuffer() const
+const byte *CKeyCursor::queryRecordBuffer() const
 {
-    return (const byte *) keyBuffer;
+    assertex(node);
+    if (!fullBufferValid)
+    {
+        node->getValueAt(nodeKey, fullBuffer);
+        fullBufferValid = true;
+    }
+    return (const byte *) fullBuffer;
 }
 
+const byte *CKeyCursor::queryKeyedBuffer() const
+{
+    return (const byte *) keyedBuffer;
+}
 
 size32_t CKeyCursor::getSize()
 {
@@ -1591,7 +1590,7 @@ size32_t CKeyCursor::getSize()
     return node->getSizeAt(nodeKey);
 }
 
-offset_t CKeyCursor::getFPos()
+offset_t CKeyCursor::getFPos() const
 {
     assertex(node);
     return node->getFPosAt(nodeKey);
@@ -1603,15 +1602,21 @@ unsigned __int64 CKeyCursor::getSequence()
     return node->getSequence(nodeKey);
 }
 
-bool CKeyCursor::last(char *dst, KeyStatsCollector &stats)
+bool CKeyCursor::_last(KeyStatsCollector &stats)
 {
+    fullBufferValid = false;
     node.setown(key.locateLastNode(stats));
-    nodeKey = node->getNumKeys()-1;
-    return node->getValueAt( nodeKey, dst );
+    if (node)
+    {
+        nodeKey = node->getNumKeys()-1;
+        return true;
+    }
+    return false;
 }
 
-bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
+bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
 {
+    fullBufferValid = false;
     key.keySeeks++;
     unsigned lwm = 0;
     unsigned branchDepth = key.getBranchDepth();
@@ -1624,15 +1629,15 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
         unsigned numKeys = node->getNumKeys();
         if (nodeKey < numKeys-1)
         {   
-            int rc = node->compareValueAt(src, ++nodeKey);
+            int rc = node->compareValueAt(keyedBuffer, ++nodeKey);
             if (rc <= 0)
             {
-                node->getValueAt(nodeKey, dst);
+                node->getKeyAt(nodeKey, keyedBuffer);
                 return true; 
             }
             if (nodeKey < numKeys-1)
             {
-                rc = node->compareValueAt(src, numKeys-1);
+                rc = node->compareValueAt(keyedBuffer, numKeys-1);
                 if (rc <= 0)
                     lwm = nodeKey+1;
             }
@@ -1651,7 +1656,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
         while ((int)a<b)
         {
             int i = a+(b-a)/2;
-            int rc = node->compareValueAt(src, i);
+            int rc = node->compareValueAt(keyedBuffer, i);
             if (rc>0)
                 a = i+1;
             else
@@ -1669,7 +1674,7 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
             }
             if (node)
             {
-                node->getValueAt(nodeKey, dst);
+                node->getKeyAt(nodeKey, keyedBuffer);
                 return true; 
             }
             else
@@ -1690,8 +1695,9 @@ bool CKeyCursor::gtEqual(const char *src, char *dst, KeyStatsCollector &stats)
     }
 }
 
-bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
+bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
 {
+    fullBufferValid = false;
     key.keySeeks++;
     matched = false;
     unsigned lwm = 0;
@@ -1705,7 +1711,7 @@ bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
         unsigned numKeys = node->getNumKeys();
         if (nodeKey < numKeys-1)
         {   
-            int rc = node->compareValueAt(src, ++nodeKey);
+            int rc = node->compareValueAt(keyedBuffer, ++nodeKey);
             if (rc < 0)
             {
                 --nodeKey;
@@ -1713,7 +1719,7 @@ bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
             }
             if (nodeKey < numKeys-1)
             {
-                rc = node->compareValueAt(src, numKeys-1);
+                rc = node->compareValueAt(keyedBuffer, numKeys-1);
                 if (rc < 0)
                     lwm = nodeKey;
             }
@@ -1732,7 +1738,7 @@ bool CKeyCursor::ltEqual(const char *src, KeyStatsCollector &stats)
         while ((int)a<b)
         {
             int i = a+(b+1-a)/2;
-            int rc = node->compareValueAt(src, i-1);
+            int rc = node->compareValueAt(keyedBuffer, i-1);
             if (rc>=0)
                 a = i;
             else
@@ -1803,11 +1809,12 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats
         offset_t nodeAddress;
         mb.read(nodeAddress);
         mb.read(nodeKey);
+        fullBufferValid = false;
         if (nodeAddress)
         {
             node.setown(key.getNode(nodeAddress, NodeLeaf, stats.ctx));
-            if (node && keyBuffer)
-                node->getValueAt(nodeKey, keyBuffer);
+            if (node && keyedBuffer)
+                node->getKeyAt(nodeKey, keyedBuffer);
         }
     }
 }
@@ -1837,20 +1844,20 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
     {
         if (matched)
         {
-            if (!next(keyBuffer, stats))
+            if (!_next(stats))
                 eof = true;
             lscans++;
         }
         else
         {
-            if (!gtEqual(keyBuffer, keyBuffer, stats))
+            if (!_gtEqual(stats))
                 eof = true;
             lseeks++;
         }
         if (!eof)
         {
             unsigned i = 0;
-            matched = filter->matchesBuffer(keyBuffer, lastSeg, i);
+            matched = filter->matchesBuffer(keyedBuffer, lastSeg, i);
             if (matched)
             {
                 ret = true;
@@ -1860,7 +1867,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
             if (linuxYield)
                 sched_yield();
 #endif
-            eof = !filter->incrementKey(i, keyBuffer);
+            eof = !filter->incrementKey(i, keyedBuffer);
             if (!exact)
             {
                 ret = true;
@@ -1872,7 +1879,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
             eof = true;
     }
     if (logExcessiveSeeks && lwildseeks > 1000 && ret)
-        reportExcessiveSeeks(lwildseeks, lastSeg, getSize(), stats);
+        reportExcessiveSeeks(lwildseeks, lastSeg, stats);
     stats.noteSeeks(lseeks, lscans, lwildseeks);
     return ret;
 }
@@ -1891,13 +1898,13 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
         unsigned i;
         for (i = 0; i < key.keySize(); i++)
         {
-            unsigned char c = ((unsigned char *) keyBuffer)[i];
+            unsigned char c = ((unsigned char *) keyedBuffer)[i];
             recstr.appendf("%c", isprint(c) ? c : '.');
         }
         recstr.append ("    ");
         for (i = 0; i < key.keySize(); i++)
         {
-            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+            recstr.appendf("%02x ", ((unsigned char *) keyedBuffer)[i]);
         }
         DBGLOG("SKIP: Got skips=%02d seeks=%02d scans=%02d : %s", stats.skips, stats.seeks, stats.scans, recstr.str());
     }
@@ -1919,7 +1926,7 @@ unsigned __int64 CKeyCursor::getCount(KeyStatsCollector &stats)
         {
             unsigned __int64 locount = getSequence();
             endRange(lastRealSeg);
-            ltEqual(keyBuffer, stats);
+            _ltEqual(stats);
             lseeks++;
             result += getSequence()-locount+1;
             if (!incrementKey(lastRealSeg))
@@ -1942,7 +1949,7 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
     if (lastFullSeg == (unsigned) -1)
     {
         stats.noteSeeks(1, 0, 0);
-        if (last(nullptr, stats))
+        if (_last(stats))
             return getSequence()+1;
         else
             return 0;
@@ -1953,7 +1960,7 @@ unsigned __int64 CKeyCursor::checkCount(unsigned __int64 max, KeyStatsCollector 
         {
             unsigned __int64 locount = getSequence();
             endRange(lastFullSeg);
-            ltEqual(keyBuffer, stats);
+            _ltEqual(stats);
             lseeks++;
             result += getSequence()-locount+1;
             if (max && (result > max))
@@ -1972,7 +1979,7 @@ unsigned __int64 CKeyCursor::getCurrentRangeCount(unsigned groupSegCount, KeySta
 {
     unsigned __int64 locount = getSequence();
     endRange(groupSegCount);
-    ltEqual(keyBuffer, stats);
+    _ltEqual(stats);
     stats.noteSeeks(1, 0, 0);
     return getSequence()-locount+1;
 }
@@ -1985,14 +1992,14 @@ bool CKeyCursor::nextRange(unsigned groupSegCount)
     return true;
 }
 
-void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size32_t recSize, KeyStatsCollector &stats)
+void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats)
 {
     StringBuffer recstr;
     unsigned i;
     bool printHex = false;
-    for (i = 0; i < recSize; i++)
+    for (i = 0; i < key.keySize(); i++)
     {
-        unsigned char c = ((unsigned char *) keyBuffer)[i];
+        unsigned char c = ((unsigned char *) keyedBuffer)[i];
         if (isprint(c))
             recstr.append(c);
         else
@@ -2004,9 +2011,9 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size3
     if (printHex)
     {
         recstr.append ("\n");
-        for (i = 0; i < recSize; i++)
+        for (i = 0; i < key.keySize(); i++)
         {
-            recstr.appendf("%02x ", ((unsigned char *) keyBuffer)[i]);
+            recstr.appendf("%02x ", ((unsigned char *) keyedBuffer)[i]);
         }
     }
     recstr.append ("\nusing filter:\n");
@@ -2029,12 +2036,12 @@ bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen
     const byte *seek = (const byte *) _seek;
     while (seeklen)
     {
-        int c = *seek - (byte) (keyBuffer[seekOffset]);
+        int c = *seek - (byte) (keyedBuffer[seekOffset]);
         if (c < 0)
             return false;
         else if (c>0)
         {
-            memcpy(keyBuffer+seekOffset, seek, seeklen);
+            memcpy(keyedBuffer+seekOffset, seek, seeklen);
             break;
         }
         seek++;
@@ -2044,7 +2051,7 @@ bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen
     if (!seeklen) return false;
 
     unsigned j = setLowAfter(seekOffset + seeklen);
-    bool canmatch = filter->matchesBuffer(keyBuffer, filter->lastRealSeg(), j);
+    bool canmatch = filter->matchesBuffer(keyedBuffer, filter->lastRealSeg(), j);
     if (!canmatch)
         eof = !incrementKey(j);
     matched = false;
@@ -2059,7 +2066,7 @@ IKeyCursor * CKeyCursor::fixSortSegs(unsigned sortFieldOffset)
 CPartialKeyCursor::CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset)
 : CKeyCursor(from)
 {
-    filter = filter->fixSortSegs(keyBuffer, sortFieldOffset);
+    filter = filter->fixSortSegs( keyedBuffer, sortFieldOffset);
 }
 
 CPartialKeyCursor::~CPartialKeyCursor()
@@ -2674,8 +2681,8 @@ class CKeyMerger : public CKeyLevelManager
 
     inline int BuffCompare(unsigned a, unsigned b)
     {
-        const byte *c1 = cursors[mergeheap[a]]->queryKeyBuffer();
-        const byte *c2 = cursors[mergeheap[b]]->queryKeyBuffer();
+        const byte *c1 = cursors[mergeheap[a]]->queryKeyedBuffer();
+        const byte *c2 = cursors[mergeheap[b]]->queryKeyedBuffer();
 
         //Only compare the keyed portion, and if equal tie-break on lower input numbers having priority
         //In the future this should use the comparison functions from the type info
@@ -2830,13 +2837,13 @@ public:
                     key = mergeheap[0];
                     keyCursor = cursors[key];
                 }
-                const byte *keyBuffer = keyCursor->queryKeyBuffer();
+                const byte *keyBuffer = keyCursor->queryKeyedBuffer();
                 if (memcmp(seek, keyBuffer+seekOffset, seeklen) <= 0)
                 {
 #ifdef _DEBUG
                     if (traceSmartStepping)
                     {
-                        unsigned keySize = keyCursor->getSize();  // MORE - is this the current row size?
+                        unsigned keySize = keyCursor->getKeyedSize();
                         DBGLOG("SKIP: merged key = %d", key);
                         StringBuffer recstr;
                         unsigned i;
@@ -2921,7 +2928,7 @@ public:
                             lnullSkips++;
                     }
                     found = cursor->lookup(true, stats);
-                    if (!found || !seek || memcmp(cursor->queryKeyBuffer() + seekOffset, seek, seeklen) >= 0)
+                    if (!found || !seek || memcmp(cursor->queryKeyedBuffer() + seekOffset, seek, seeklen) >= 0)
                         break;
                 }
                 stats.noteSkips(lskips, lnullSkips);

@@ -57,10 +57,11 @@ public:
 
     bool getCursorNext(IKeyCursor * keyCursor, KeyStatsCollector &stats)
     {
-        if(keyCursor->next(row, stats))
+        if(keyCursor->next(stats))
         {
+            memcpy(row, keyCursor->queryRecordBuffer(), keyCursor->getSize());
             thisrowsize = keyCursor->getSize() - sizeof(offset_t);
-            *fpos = rtlReadBigUInt8(row + thisrowsize);
+            *fpos = keyCursor->getFPos();
             return true;
         }
         *fpos = 0;
@@ -279,20 +280,19 @@ public:
 
     void getRawToEnd()
     {
-        char * buff = reinterpret_cast<char *>(malloc(rowsize));
         while(!eof)
         {
-            if(keyCursor->next(buff, stats))
+            if(keyCursor->next(stats))
             {
+                const byte *buff = keyCursor->queryRecordBuffer();
                 size32_t offset = keyCursor->getSize() - sizeof(offset_t);
-                offset_t fpos = rtlReadBigUInt8(buff + offset);
-                crc.tally(rowsize, buff);
+                offset_t fpos = keyCursor->getFPos();
+                crc.tally(keyCursor->getSize(), buff);
                 crc.tally(sizeof(fpos), &fpos);
             }
             else
                 eof = true;
         }
-        free(buff);
     }
 
     size32_t queryKeyedSize() const { return keyedsize; }

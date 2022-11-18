@@ -151,7 +151,7 @@ public:
     void load(KeyHdr &_hdr);
     virtual void write(IFileIOStream *, CRC32 *crc) override;
 
-    unsigned int getMaxKeyLength();
+    unsigned int getMaxKeyLength();  // MORE - is this correctly named? Is it the max record length?
     void setMaxKeyLength(uint32_t max) { hdr.length = max; };
     bool isVariable();
     inline unsigned int getNodeKeyLength() 
@@ -162,7 +162,6 @@ public:
     {
         return (hdr.nodeKeyLength != -1);
     }
-    inline unsigned char getKeyPad() { return hdr.keypad; }
     inline char getKeyType() { return hdr.ktype; }
     inline offset_t getRootFPos() { return hdr.root; }
     inline unsigned short getMaxNodeBytes() { return hdr.maxkbl; }
@@ -197,12 +196,10 @@ class jhtree_decl CNodeBase : public CWritableKeyNode
 {
 protected:
     NodeHdr hdr;
-    size32_t keyLen;
-    size32_t keyCompareLen;
     CKeyHdr *keyHdr;
     byte keyType;
     bool isVariable;
-    std::atomic<bool> ready{false}; // is this node read for use?  Can be checked outside a critsec, but only set within one.
+    std::atomic<bool> ready{false}; // is this node ready for use?  Can be checked outside a critsec, but only set within one.
 
 private:
     offset_t fpos;
@@ -210,7 +207,6 @@ private:
 public:
     virtual void write(IFileIOStream *, CRC32 *crc) { throwUnexpected(); }
     inline offset_t getFpos() const { assertex(fpos); return fpos; }
-    inline size32_t getKeyLen() const { return keyLen; }
     inline size32_t getNumKeys() const { return hdr.numKeys; }
     inline bool isBlob() const { return hdr.leafFlag == NodeBlob; }
     inline bool isMetadata() const { return hdr.leafFlag == NodeMeta; }
@@ -230,6 +226,8 @@ public:
 class jhtree_decl CJHTreeNode : public CNodeBase
 {
 protected:
+    size32_t keyLen = 0;
+    size32_t keyCompareLen = 0;
     size32_t keyRecLen;
     char *keyBuf;
 
@@ -237,6 +235,7 @@ protected:
     unsigned __int64 firstSequence;
     size32_t expandedSize;
 
+    inline size32_t getKeyLen() const { return keyLen; }
     static char *expandKeys(void *src,size32_t &retsize);
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
@@ -250,7 +249,9 @@ public:
 // reading methods
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
-    virtual bool getValueAt(unsigned int num, char *key) const;
+    virtual bool getKeyAt(unsigned int num, char *key) const;         // Retrieve keyed fields
+    virtual bool getValueAt(unsigned int num, char *key) const;       // Retrieve full record
+    virtual bool isValueAt(unsigned int num) const;
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -259,6 +260,7 @@ public:
     inline offset_t getLeftSib() const { return hdr.leftSib; }
     unsigned __int64 getSequence(unsigned int num) const;
     size32_t getNodeSize() const;
+    void dump(FILE *out, int length, unsigned rowCount, bool raw) const;
 };
 
 class CJHVarTreeNode : public CJHTreeNode 
@@ -269,7 +271,8 @@ public:
     CJHVarTreeNode();
     ~CJHVarTreeNode();
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
-    virtual bool getValueAt(unsigned int num, char *key) const;
+    virtual bool getKeyAt(unsigned int num, char *key) const;         // Retrieve keyed fields
+    virtual bool getValueAt(unsigned int num, char *key) const;       // Retrieve full record
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -281,7 +284,8 @@ class CJHRowCompressedNode : public CJHTreeNode
     static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
 public:
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
-    virtual bool getValueAt(unsigned int num, char *key) const;
+    virtual bool getKeyAt(unsigned int num, char *key) const;         // Retrieve keyed fields
+    virtual bool getValueAt(unsigned int num, char *key) const;       // Retrieve full record
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
@@ -291,7 +295,6 @@ class CJHTreeBlobNode : public CJHTreeNode
 public:
     CJHTreeBlobNode ();
     ~CJHTreeBlobNode ();
-    virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
@@ -304,7 +307,6 @@ public:
 class CJHTreeMetadataNode : public CJHTreeNode
 {
 public:
-    virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
@@ -315,7 +317,6 @@ public:
 class CJHTreeBloomTableNode : public CJHTreeNode
 {
 public:
-    virtual bool getValueAt(unsigned int num, char *key) const {throwUnexpected();}
     virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
@@ -349,6 +350,7 @@ public:
 class jhtree_decl CWriteNode : public CWriteNodeBase
 {
 private:
+    unsigned keyLen = 0;
     char *lastKeyValue;
     unsigned __int64 lastSequence;
 
