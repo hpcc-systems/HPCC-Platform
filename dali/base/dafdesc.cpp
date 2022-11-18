@@ -3675,6 +3675,56 @@ private:
     AccessMode modes = AccessMode::none;
 };
 
+class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
+{
+public:
+    CStorageApiInfo(IPropertyTree * _xml) : xml(_xml)
+    {
+        if (!xml) // shouldn't happen
+            throw makeStringException(MSGAUD_programmer, -1, "Invalid call: CStorageApiInfo(nullptr)");
+    }
+    virtual const char * getStorageType() const override
+    {
+        return xml->queryProp("@type");
+    }
+    virtual const char * queryStorageApiAccount(unsigned stripeNumber) const override
+    {
+        const char *account = queryContainer(stripeNumber)->queryProp("@account");
+        if (isEmptyString(account))
+            account = xml->queryProp("@account");
+        return account;
+    }
+    virtual const char * queryStorageContainerName(unsigned stripeNumber) const override
+    {
+        return queryContainer(stripeNumber)->queryProp("@name");
+    }
+    virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const override
+    {
+        const char * secretName = queryContainer(stripeNumber)->queryProp("@secret");
+        if (isEmptyString(secretName))
+        {
+            secretName = xml->queryProp("@secret");
+            if (isEmptyString(secretName))
+                return token.clear();  // return empty string if no secret name is specified
+        }
+        getSecretValue(token, "storage", secretName, "token", false);
+        return token.trimRight();
+    }
+
+private:
+    IPropertyTree * queryContainer(unsigned stripeNumber) const
+    {
+        if (stripeNumber==0) // stripeNumber==0 when not striped -> use first item in 'containers' list
+            stripeNumber++;
+        VStringBuffer path("containers[%u]", stripeNumber);
+        IPropertyTree *container = xml->queryPropTree(path.str());
+        if (!container)
+            throw makeStringExceptionV(-1, "No container provided: path %s", path.str());
+        return container;
+    }
+    Linked<IPropertyTree> xml;
+};
+
 class CStoragePlaneInfo : public CInterfaceOf<IStoragePlane>
 {
 public:
@@ -3726,7 +3776,7 @@ public:
     {
         IPropertyTree *apiInfo = xml->getPropTree("storageapi");
         if (apiInfo)
-            return createStorageApiInfo(apiInfo);
+            return new CStorageApiInfo(xml);
         return nullptr;
     }
 private:
