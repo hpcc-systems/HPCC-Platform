@@ -209,9 +209,9 @@ function useFluentStoreGrid({
         refreshTable();
     }, [refreshTable]);
 
-    React.useEffect(() => {
+    useDeepEffect(() => {
         setSorted(sort);
-    }, [sort]);
+    }, [], [sort]);
 
     const fluentColumns: IColumn[] = React.useMemo(() => {
         return columnsAdapter(memoizedColumns, sorted);
