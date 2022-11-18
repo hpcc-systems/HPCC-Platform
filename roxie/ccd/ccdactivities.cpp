@@ -2895,7 +2895,7 @@ public:
                 tlk->reset(resent);
                 resent = false;
                 {
-                    TransformCallbackAssociation associate(callback, tlk); // want to destroy this before we advance to next key...
+                    TransformCallbackAssociation associate(callback, tlk, &logctx); // want to destroy this before we advance to next key...
                     while (!aborted && (rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true)))
                     {
                         rawSeek = NULL;  // only want to do the seek first time we look for a particular seek value
@@ -3163,7 +3163,7 @@ public:
                 tlk->reset(resent);
                 resent = false;
 
-                TransformCallbackAssociation associate(callback, tlk);
+                TransformCallbackAssociation associate(callback, tlk, &logctx);
                 while (!aborted && tlk->lookup(true))
                 {
                     keyprocessed++;
@@ -3311,7 +3311,7 @@ public:
                 tlk->reset(false);
                 if (countHelper->hasFilter())
                 {
-                    callback.setManager(tlk);
+                    callback.setManager(tlk, &logctx);
                     while (!aborted && (count < choosenLimit) && tlk->lookup(true))
                     {
                         keyprocessed++;
@@ -3323,7 +3323,7 @@ public:
                             limitExceeded(true);
                         callback.finishedRow();
                     }
-                    callback.setManager(NULL);
+                    callback.setManager(nullptr, nullptr);
                 }
                 else
                 {
@@ -3432,7 +3432,7 @@ public:
             {
                 createSegmentMonitors();
                 tlk->reset(false);
-                callback.setManager(tlk);
+                callback.setManager(tlk, &logctx);
                 while (!aborted && tlk->lookup(true))
                 {
                     keyprocessed++;
@@ -3440,7 +3440,7 @@ public:
                     aggregateHelper->processRow(rowBuilder, tlk->queryKeyBuffer());
                     callback.finishedRow();
                 }
-                callback.setManager(NULL);
+                callback.setManager(nullptr, nullptr);
             }
             inputsDone++;
         }
@@ -3555,7 +3555,7 @@ public:
                 {
                     createSegmentMonitors();
                     tlk->reset(false);
-                    callback.setManager(tlk);
+                    callback.setManager(tlk, &logctx);
                     while (!aborted && tlk->lookup(true))
                     {
                         if (groupSegCount && !translators->queryTranslator(lastPartNo.fileNo))
@@ -3578,7 +3578,7 @@ public:
                             callback.finishedRow();
                         }
                     }
-                    callback.setManager(NULL);
+                    callback.setManager(NULL, nullptr);
                 }
                 inputsDone++;
             }
@@ -4335,7 +4335,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                 {
                     candidateCount++;
                     indexRecordsRead++;
-                    KLBlobProviderAdapter adapter(tlk);
+                    KLBlobProviderAdapter adapter(tlk, &logctx);
                     const byte *indexRow = tlk->queryKeyBuffer();
                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
                     offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
@@ -4371,7 +4371,7 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         }
                         else
                         {
-                            KLBlobProviderAdapter adapter(tlk);
+                            KLBlobProviderAdapter adapter(tlk, &logctx);
                             totalSize = helper->extractJoinFields(rowBuilder, indexRow, &adapter);
                             rowBuilder.writeToOutput(totalSize, fpos, jg, lastPartNo.partNo);
                         }

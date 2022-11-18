@@ -545,9 +545,9 @@ public:
         keyCursor->deserializeCursorPos(mb, stats);
     }
 
-    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize)
+    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx)
     {
-        const byte *ret = keyCursor->loadBlob(blobid, blobsize);
+        const byte *ret = keyCursor->loadBlob(blobid, blobsize, ctx);
         activeBlobs.append(ret);
         return ret;
     }
@@ -1250,7 +1250,7 @@ void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool 
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 {
-    Owned<CJHTreeNode> node = loadNode(pos);
+    Owned<CJHTreeNode> node = loadNode(nullptr, nullptr, pos);
     ::dumpNode(out, node, keySize(), count, isRaw);
 }
 
@@ -1280,23 +1280,52 @@ bool CKeyIndex::hasPayload()
     return keyHdr->hasPayload();
 }
 
-CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos)
+CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx)
 {
-    CriticalBlock b(blobCacheCrit);
-    if (nodepos != cachedBlobNodePos)
+    Owned<CJHTreeBlobNode> match;
+    cycle_t readCycles = 0;
+    cycle_t fetchCycles = 0;
     {
-        cachedBlobNode.setown(QUERYINTERFACE(loadNode(nodepos), CJHTreeBlobNode)); // note - don't use the cache
-        cachedBlobNodePos = nodepos;
+        CriticalBlock b(blobCacheCrit);
+        if (nodepos != cachedBlobNodePos)
+        {
+
+            CCycleTimer blobLoadTimer;
+            Owned<CJHTreeNode> node = loadNode(&fetchCycles, nullptr, nodepos); // note - don't use the cache
+            assertex(node->isBlob());
+            cachedBlobNode.setown(static_cast<CJHTreeBlobNode *>(node.getClear()));
+            cachedBlobNodePos = nodepos;
+            readCycles = blobLoadTimer.elapsedCycles();
+        }
+        match.set(cachedBlobNode);
     }
-    return cachedBlobNode.getLink();
+
+    if (ctx)
+    {
+        if (readCycles != 0)
+        {
+            ctx->noteStatistic(StNumBlobCacheAdds, 1);
+            ctx->noteStatistic(StCycleBlobLoadCycles, readCycles);
+            ctx->noteStatistic(StCycleBlobReadCycles, fetchCycles);
+            if (fetchCycles >= fetchThresholdCycles)
+            {
+                ctx->noteStatistic(StNumBlobDiskFetches, 1);
+                ctx->noteStatistic(StCycleBlobFetchCycles, fetchCycles);
+            }
+        }
+        else
+            ctx->noteStatistic(StNumBlobCacheHits, 1);
+    }
+
+    return match.getClear();
 }
 
-const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize)
+const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, IContextLogger *ctx)
 {
     offset_t nodepos = blobid & I64C(0xffffffffffff);
     size32_t offset = (size32_t) ((blobid & I64C(0xffff000000000000)) >> 44);
 
-    Owned<CJHTreeBlobNode> blobNode = getBlobNode(nodepos);
+    Owned<CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx);
     size32_t sizeRemaining = blobNode->getTotalBlobSize(offset);
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);
@@ -1309,7 +1338,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize)
         finger += gotHere;
         if (!sizeRemaining)
             break;
-        blobNode.setown(getBlobNode(blobNode->getRightSib()));
+        blobNode.setown(getBlobNode(blobNode->getRightSib(), ctx));
         offset = 0;
     }
     return ret;
@@ -1330,7 +1359,7 @@ void CKeyIndex::loadBloomFilters()
 
     while (bloomAddr)
     {
-        Owned<CJHTreeNode> node = loadNode(bloomAddr);
+        Owned<CJHTreeNode> node = loadNode(nullptr, nullptr, bloomAddr);
         assertex(node->isBloom());
         CJHTreeBloomTableNode &bloomNode = *static_cast<CJHTreeBloomTableNode *>(node.get());
         bloomAddr = bloomNode.get8();
@@ -1345,7 +1374,7 @@ void CKeyIndex::loadBloomFilters()
             offset_t next = node->getRightSib();
             if (!next)
                 break;
-            node.setown(loadNode(next));
+            node.setown(loadNode(nullptr, nullptr, next));
             assertex(node->isBloom());
         }
         assertex(bloomTable.length()==bloomTableSize);
@@ -1375,7 +1404,7 @@ IPropertyTree * CKeyIndex::getMetadata()
     StringBuffer xml;
     while(nodepos)
     {
-        node.setown(QUERYINTERFACE(loadNode(nodepos), CJHTreeMetadataNode));
+        node.setown(QUERYINTERFACE(loadNode(nullptr, nullptr, nodepos), CJHTreeMetadataNode));
         node->get(xml);
         nodepos = node->getRightSib();
     }
@@ -1812,9 +1841,9 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats
     }
 }
 
-const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize)
+const byte *CKeyCursor::loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx)
 {
-    return key.loadBlob(blobid, blobsize);
+    return key.loadBlob(blobid, blobsize, ctx);
 }
 
 bool CKeyCursor::lookup(bool exact, KeyStatsCollector &stats)
@@ -2479,14 +2508,14 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
 
     // No benefit in caching the following, especially since they will evict useful pages
     if ((type == NodeMeta) || (type == NodeBloom))
-        return keyIndex->loadNode(pos);
+        return keyIndex->loadNode(nullptr, nullptr, pos);
 
     //NOTE: TLK leaf nodes are currently cached along with branches, not with leaves.  It might be better if this was a separate cache.
     CacheType cacheType = isTLK ? CacheBranch : (CacheType)type;
 
     // check cacheEnabled[cacheType] avoid the critical section (and testing the flag within the critical section)
     if (unlikely(!cacheEnabled[cacheType]))
-        return keyIndex->loadNode(pos);
+        return keyIndex->loadNode(nullptr, nullptr, pos);
 
     //Legacy cache access:
     //  Lock, unlock.  Load the page.  Lock, check if it has been added, otherwise add.
@@ -2513,7 +2542,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
         Owned<CJHTreeNode> node;
         {
             CriticalUnblock block(cacheLock);
-            node.setown(keyIndex->loadNode(pos));  // NOTE - don't want cache locked while we load!
+            node.setown(keyIndex->loadNode(nullptr, nullptr, pos));  // NOTE - don't want cache locked while we load!
             node->noteReady();
         }
 
@@ -3427,7 +3456,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         memcpy(&blobid, key->queryKeyBuffer()+10, sizeof(blobid));
         ASSERT(blobid != 0);
         size32_t blobsize;
-        const byte *blob = key->loadBlob(blobid, blobsize);
+        const byte *blob = key->loadBlob(blobid, blobsize, nullptr);
         ASSERT(blob != NULL);
         ASSERT(blobsize == size);
         byte seed = size-100000;

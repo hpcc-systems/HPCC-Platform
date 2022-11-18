@@ -1317,7 +1317,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                         joinGroup->setAtMostLimitHit(); // also clears existing rows
                         break;
                     }
-                    KLBlobProviderAdapter adapter(keyManager);
+                    IContextLogger * ctxLogger = nullptr;
+                    KLBlobProviderAdapter adapter(keyManager, ctxLogger);
                     byte const * keyRow = keyManager->queryKeyBuffer();
                     size_t fposOffset = keyManager->queryRowSize() - sizeof(offset_t);
                     offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);

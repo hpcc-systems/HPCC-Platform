@@ -23570,7 +23570,7 @@ public:
                             {
                                 //block for TransformCallbackAssociation
                                 {
-                                    TransformCallbackAssociation associate(callback, tlk);
+                                    TransformCallbackAssociation associate(callback, tlk, this);
                                     if (thisKey->isTopLevelKey())
                                     {
                                         if (thisKey->isFullySorted())
@@ -23832,7 +23832,7 @@ public:
         }
         virtual const void *getNext(int length)
         {
-            TransformCallbackAssociation associate(owner.callback, tlk);
+            TransformCallbackAssociation associate(owner.callback, tlk, &owner);
             while (tlk->lookup(true))
             {
                 keyedCount++;
@@ -24125,7 +24125,7 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
 
     void onEOF()
     {
-        callback.setManager(NULL);
+        callback.setManager(nullptr, nullptr);
         eof = true;
         tlk.clear();
     }
@@ -24299,7 +24299,7 @@ public:
                     ctx->queryProbeManager()->setNodeProperty(this, "filter", out.str());
             }
             tlk->reset();
-            callback.setManager(tlk);
+            callback.setManager(tlk, this);
 
             keyedLimit = indexHelper.getKeyedLimit();
             if (keyedLimit != (unsigned __int64) -1)
@@ -26147,7 +26147,7 @@ public:
                                 {
                                     candidateCount++;
                                     indexRecordsRead++;
-                                    KLBlobProviderAdapter adapter(tlk);
+                                    KLBlobProviderAdapter adapter(tlk, this);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
                                     offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
@@ -26999,7 +26999,7 @@ public:
                                 {
                                     candidateCount++;
                                     indexRecordsRead++;
-                                    KLBlobProviderAdapter adapter(tlk);
+                                    KLBlobProviderAdapter adapter(tlk, this);
                                     const byte *indexRow = tlk->queryKeyBuffer();
                                     size_t fposOffset = tlk->queryRowSize() - sizeof(offset_t);
                                     offset_t fpos = rtlReadBigUInt8(indexRow + fposOffset);
@@ -27008,7 +27008,7 @@ public:
                                         RtlDynamicRowBuilder rb(joinFieldsAllocator, true); 
                                         CPrefixedRowBuilder pb(KEYEDJOIN_RECORD_SIZE(0), rb);
                                         accepted++;
-                                        KLBlobProviderAdapter adapter(tlk);
+                                        KLBlobProviderAdapter adapter(tlk, this);
                                         helper.extractJoinFields(pb, indexRow, &adapter);
                                         KeyedJoinHeader *rec = (KeyedJoinHeader *) rb.getUnfinalizedClear(); // lack of finalize ok as unserialized data here.
                                         rec->fpos = fpos;
