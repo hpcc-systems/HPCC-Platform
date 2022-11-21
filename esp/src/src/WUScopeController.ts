@@ -786,7 +786,7 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
     }
 }
 
-export type GraphData2 = IGraphData2<any, any, any>
+export type GraphData2 = IGraphData2;
 export type ISubgraph = any;
 export type IVertex = any;
 export type IEdge = any;
@@ -1077,7 +1077,7 @@ export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex
 
     scopeItem(_: string): ScopeSubgraph | ScopeVertex | ScopeEdge | undefined {
         const widget = this.item(_);
-        return widget ? this.rItem(widget.id) : undefined;
+        return widget ? this.rItem("" + widget.id) : undefined;
     }
 
     item(_: string): ISubgraph | IVertex | IEdge {

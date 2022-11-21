@@ -340,7 +340,7 @@ export class GraphTree7Widget {
                 this._graph.widget().centerOnItem(item);
             } else {
                 const item = this._graph.controller().item(this.found[this.foundIndex]);
-                this._graph.widget().centerOnItem(item.id);
+                this._graph.widget().centerOnItem("" + item.id);
             }
         }
         this.refreshActionState();
@@ -782,7 +782,7 @@ GraphTree7Widget.prototype._syncSelectionFrom = debounce(function (this: GraphTr
                     .map(item => item._.Id);
             } else {
                 selectedGlobalIDs = this._graph.widget().selection()
-                    .map(w => (this._graph.controller() as WUScopeController8).rItem(w.id))
+                    .map(w => (this._graph.controller() as WUScopeController8).rItem("" + w.id))
                     .filter(item => !!item)
                     .map(item => item._.Id)
                     ;
