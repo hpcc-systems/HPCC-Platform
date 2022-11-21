@@ -475,8 +475,6 @@ interface IStorageApiInfo : implements IInterface
     virtual const char * queryStorageContainerName(unsigned stripeNumber) const = 0;
     virtual StringBuffer & getSASToken(unsigned stripeNumber, StringBuffer & token) const = 0;
 };
-extern jlib_decl IStorageApiInfo * createStorageApiInfo(IPropertyTree *xml);
-
 enum class ApiCopyStatus { NotStarted, Pending, Success, Failed, Aborted };
 interface IAPICopyClientOp : implements IInterface
 {
