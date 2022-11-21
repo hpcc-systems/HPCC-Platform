@@ -664,7 +664,8 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
   else
   {
     StringBuffer out;
-    Owned<IPropertyTree> pSelectedComponents = getInstances(&m_pConstEnvironment->getPTree(), compName, compType, ipAddr, true);
+    Owned<IPropertyTree> envPTree = &m_pConstEnvironment->getPTree();
+    Owned<IPropertyTree> pSelectedComponents = getInstances(envPTree, compName, compType, ipAddr, true);
     Owned<IPropertyTreeIterator> it = pSelectedComponents->getElements("*");
 
     ForEach(*it)
