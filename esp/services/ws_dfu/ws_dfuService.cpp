@@ -46,6 +46,7 @@
 #include "nbcd.hpp"
 #include "thorcommon.hpp"
 #include "jstats.h"
+#include "thorfile.hpp"
 
 #include "jstring.hpp"
 #include "exception_util.hpp"
@@ -374,20 +375,21 @@ bool CWsDfuEx::onDFUInfo(IEspContext &context, IEspDFUInfoRequest &req, IEspDFUI
             userdesc->set(username.str(), context.queryPassword(), context.querySignature());
         }
 
+        bool forceIndexInfo = req.getForceIndexInfo();
         if (req.getUpdateDescription())
         {
             double version = context.getClientVersion();
             if (version < 1.38)
                 doGetFileDetails(context, userdesc.get(), req.getFileName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail(), forceIndexInfo);
             else
                 doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), req.getFileDesc(),
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail(), forceIndexInfo);
         }
         else
         {
             doGetFileDetails(context, userdesc.get(), req.getName(), req.getCluster(), req.getQuerySet(), req.getQuery(), NULL,
-                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail());
+                    req.getIncludeJsonTypeInfo(), req.getIncludeBinTypeInfo(), req.getProtect(), req.getRestrict(), resp.updateFileDetail(), forceIndexInfo);
         }
     }
     catch(IException* e)
@@ -2183,7 +2185,7 @@ void CWsDfuEx::queryFieldNames(IEspContext &context, const char *fileName, const
 
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, const char *name, const char *cluster,
     const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo,
-    CDFUChangeProtection protect, CDFUChangeRestriction changeRestriction, IEspDFUFileDetail &FileDetails)
+    CDFUChangeProtection protect, CDFUChangeRestriction changeRestriction, IEspDFUFileDetail &FileDetails, bool forceIndexInfo)
 {
     if (!name || !*name)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
@@ -2678,6 +2680,35 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         {
             FileDetails.setAccessCost(accessCost);
             FileDetails.setAtRestCost(atRestCost);
+        }
+    }
+    if (version >= 1.65)
+    {
+        if (isFileKey(df))
+        {
+            DerivedIndexInformation info;
+            if (calculateDerivedIndexInformation(info, df, forceIndexInfo))
+            {
+                IEspDFUIndexInfo & extended = FileDetails.updateExtendedIndexInfo();
+                extended.setIsLeafCountEstimated(!info.knownLeafCount);
+                extended.setNumLeafNodes(info.numLeafNodes);
+                if (info.knownLeafCount)
+                    extended.setNumBlobNodes(info.numBlobNodes);
+                extended.setNumBranchNodes(info.numBranchNodes);
+                extended.setSizeDiskLeaves(info.sizeDiskLeaves);
+                if (info.knownLeafCount)
+                    extended.setSizeDiskBlobs(info.sizeDiskBlobs);
+                extended.setSizeDiskBranches(info.sizeDiskBranches);
+                if (info.sizeOriginalData)
+                    extended.setSizeOriginalData(info.sizeOriginalData);
+                extended.setSizeOriginalBranches(info.sizeOriginalBranches);
+                extended.setSizeMemoryLeaves(info.sizeMemoryLeaves);
+                extended.setSizeMemoryBranches(info.sizeMemoryBranches);
+                extended.setBranchCompressionPercent(info.getBranchCompression()*100);
+                double dataCompression = info.getDataCompression();
+                if (dataCompression != 0)
+                    extended.setDataCompressionPercent(dataCompression*100);
+            }
         }
     }
     PROGLOG("doGetFileDetails: %s done", name);
