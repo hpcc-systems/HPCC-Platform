@@ -52,7 +52,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     bool defaultNoSeek = false;
     unsigned __int64 totalCount;
 
-    size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
+    size32_t maxDiskRecordSize, lastRowSize, firstRowSize, maxRecordSizeSeen;
     unsigned __int64 duplicateKeyCount;
     unsigned __int64 numLeafNodes = 0;
     unsigned __int64 numBranchNodes = 0;
@@ -85,6 +85,7 @@ public:
         helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
         init();
         maxDiskRecordSize = 0;
+        maxRecordSizeSeen = 0;
         active = false;
         isLocal = false;
         buildTlk = true;
@@ -154,6 +155,7 @@ public:
         }
         else
             maxDiskRecordSize = diskSize->getFixedSize() - fileposSize;
+        maxRecordSizeSeen = 0;
         reportOverflow = false;
     }
     void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable, bool isTlk)
@@ -190,7 +192,7 @@ public:
         Owned<IFileIOStream> out = createBufferedIOStream(builderIFileIO, 0x100000);
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
-
+        maxRecordSizeSeen = 0;
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
     void buildUserMetadata(Owned<IPropertyTree> & metadata)
@@ -227,7 +229,7 @@ public:
         try
         {
             if (builder)
-                builder->finish(metadata, &crc);
+                builder->finish(metadata, &crc, maxRecordSizeSeen);
         }
         catch (IException *_e)
         {
@@ -533,6 +535,8 @@ public:
                             {
                                 CNodeInfo &info = tlkRows.item(idx);
                                 builder->processKeyData((char *)info.value, info.pos, info.size);
+                                if (info.size > maxRecordSizeSeen)
+                                    maxRecordSizeSeen = info.size;
                             }
                             close(*tlkDesc, tlkCrc);
                         }
@@ -651,6 +655,8 @@ public:
             reportOverflow = false;
         }
         builder->processKeyData((const char *)lastRow.get(), fpos, lastRowSize);
+        if (lastRowSize > maxRecordSizeSeen)
+            maxRecordSizeSeen = lastRowSize;
         processed++;
         totalCount++;
         if (singlePartKey && !fewcapwarned && totalCount>(FEWWARNCAP*0x100000))

@@ -152,6 +152,7 @@ public:
     virtual void write(IFileIOStream *, CRC32 *crc) override;
 
     unsigned int getMaxKeyLength();
+    void setMaxKeyLength(uint32_t max) { hdr.length = max; };
     bool isVariable();
     inline unsigned int getNodeKeyLength() 
     {
