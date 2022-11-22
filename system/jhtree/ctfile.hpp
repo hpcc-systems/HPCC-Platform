@@ -249,9 +249,9 @@ public:
 // reading methods
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
-    virtual bool getKeyAt(unsigned int num, char *key) const;         // Retrieve keyed fields
-    virtual bool getValueAt(unsigned int num, char *key) const;       // Retrieve full record
-    virtual bool isValueAt(unsigned int num) const;
+    inline bool isKeyAt(unsigned int num) { return (num < hdr.numKeys); }
+    virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -271,8 +271,8 @@ public:
     CJHVarTreeNode();
     ~CJHVarTreeNode();
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
-    virtual bool getKeyAt(unsigned int num, char *key) const;         // Retrieve keyed fields
-    virtual bool getValueAt(unsigned int num, char *key) const;       // Retrieve full record
+    virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
@@ -284,8 +284,8 @@ class CJHRowCompressedNode : public CJHTreeNode
     static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
 public:
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
-    virtual bool getKeyAt(unsigned int num, char *key) const;         // Retrieve keyed fields
-    virtual bool getValueAt(unsigned int num, char *key) const;       // Retrieve full record
+    virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };

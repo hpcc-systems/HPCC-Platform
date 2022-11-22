@@ -199,8 +199,7 @@ class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>
 protected:
     CKeyIndex &key;
     const IIndexFilterList *filter;
-    char *keyedBuffer = nullptr;
-    char *fullBuffer = nullptr;
+    char *recordBuffer = nullptr;
     Owned<CJHTreeNode> node;
     unsigned int nodeKey;
     
@@ -236,31 +235,32 @@ public:
 protected:
     CKeyCursor(const CKeyCursor &from);
 
-    // Internal searching functions - use/update keyedBuffer
-    bool _last(KeyStatsCollector &stats);
-    bool _gtEqual(KeyStatsCollector &stats);
-    bool _ltEqual(KeyStatsCollector &stats);
+    // Internal searching functions - set current node/nodekey/matched values
+    bool _last(KeyStatsCollector &stats);        // Updates node/nodekey
+    bool _gtEqual(KeyStatsCollector &stats);     // Reads recordBuffer, updates node/nodekey 
+    bool _ltEqual(KeyStatsCollector &stats);     // Reads recordBuffer, updates node/nodekey 
+    bool _next(KeyStatsCollector &stats);        // Updates node/nodekey 
+    // if _lookup returns true, recordBuffer will contain keyed portion of result
     bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStatsCollector &stats);
-    bool _next(KeyStatsCollector &stats);
 
 
     void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats);
 
     inline void setLow(unsigned segNo)
     {
-        filter->setLow(segNo, keyedBuffer);
+        filter->setLow(segNo, recordBuffer);
     }
     inline unsigned setLowAfter(size32_t offset)
     {
-        return filter->setLowAfter(offset, keyedBuffer);
+        return filter->setLowAfter(offset, recordBuffer);
     }
     inline bool incrementKey(unsigned segno) const
     {
-        return filter->incrementKey(segno, keyedBuffer);
+        return filter->incrementKey(segno, recordBuffer);
     }
     inline void endRange(unsigned segno)
     {
-        filter->endRange(segno, keyedBuffer);
+        filter->endRange(segno, recordBuffer);
     }
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override
     {

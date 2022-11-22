@@ -285,7 +285,6 @@ public:
             if(keyCursor->next(stats))
             {
                 const byte *buff = keyCursor->queryRecordBuffer();
-                size32_t offset = keyCursor->getSize() - sizeof(offset_t);
                 offset_t fpos = keyCursor->getFPos();
                 crc.tally(keyCursor->getSize(), buff);
                 crc.tally(sizeof(fpos), &fpos);
