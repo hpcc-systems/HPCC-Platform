@@ -2616,11 +2616,17 @@ public:
         if (globals->hasProp("@httpGlobalIdHeader"))
             setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
-    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
+    virtual void CTXLOG(const char *format, ...) const override  __attribute__((format(printf,2,3))) 
     {
-        StringBuffer ss;
-        ss.valist_appendf(format, args);
-        LOG(MCdebugProgress, thorJob, "%s", ss.str());
+        va_list args;
+        va_start(args, format);
+        CTXLOGva(MCdebugProgress, thorJob, NoLogMsgCode, format, args);
+        va_end(args);
+    }
+
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
+    {
+        VALOG(cat, job, code, format, args);
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {

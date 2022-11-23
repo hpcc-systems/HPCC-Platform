@@ -1322,9 +1322,9 @@ public:
         logctx.gatherStats(merged);
     }
 
-    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override
     {
-        logctx.CTXLOGa(category, prefix, text);
+        logctx.CTXLOGa(category, cat, job, code, prefix, text);
     }
 
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const

@@ -1779,6 +1779,7 @@ public:
                             const char *target, unsigned idx, unsigned &memused, unsigned &agentsReplyLen, unsigned &agentsDuplicates, unsigned &agentsResends, StringAttr &statsWuid)
     {
         RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx, msg);
+        LogContextScope ls(roxieMsgCtx->logctx);
         IQueryFactory *f = roxieMsgCtx->queryQueryFactory();
         Owned<IRoxieServerContext> ctx = f->createContext(msg, protocol, flags, *roxieMsgCtx->logctx, xmlReadFlags, target);
         if (!(flags & HPCC_PROTOCOL_NATIVE))

@@ -61,12 +61,12 @@ interface IRoxieContextLogger : extends IContextLogger
 {
     // Override base interface with versions that add prefix
     // We could consider moving some or all of these down into IContextLogger
-    virtual void CTXLOGva(const char *format, va_list args) const  __attribute__((format(printf,2,0)))
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
     {
         StringBuffer text, prefix;
         getLogPrefix(prefix);
         text.valist_appendf(format, args);
-        CTXLOGa(LOG_TRACING, prefix.str(), text.str());
+        CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
     }
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const  __attribute__((format(printf,5,0)))
     {
@@ -77,7 +77,7 @@ interface IRoxieContextLogger : extends IContextLogger
 
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const = 0;
     virtual bool isIntercepted() const = 0;
-    virtual void CTXLOGa(TracingCategory category, const char *prefix, const char *text) const = 0;
+    virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const = 0;
     void CTXLOGae(IException *E, const char *file, unsigned line, const char *prefix, const char *format, ...) const __attribute__((format(printf, 6, 7)));
     virtual void CTXLOGaeva(IException *E, const char *file, unsigned line, const char *prefix, const char *format, va_list args) const = 0;
     virtual void CTXLOGl(LogItem *) const = 0;

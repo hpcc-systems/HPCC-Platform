@@ -97,6 +97,7 @@ private:
 
 protected:
     StringAttr cthreadname;
+    const IContextLogger *logctx = nullptr;
     TraceFlags traceFlags = TraceFlags::Standard;
 public:
 #ifndef _WIN32
@@ -173,7 +174,7 @@ class jlib_decl CThreadedPersistent
     std::atomic_uint state;
     bool halt;
     enum ThreadStates { s_ready, s_running, s_joining };
-
+    const IContextLogger *logctx = nullptr;
     TraceFlags traceFlags = TraceFlags::Standard;
     void threadmain();
 public:
