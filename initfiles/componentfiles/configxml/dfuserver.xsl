@@ -79,7 +79,11 @@
             <xsl:attribute name="transferBufferSize">
                <xsl:value-of select="@transferBufferSize"/>
             </xsl:attribute> 
-            
+
+            <xsl:attribute name="useFtSlave">
+               <xsl:value-of select="@useFtSlave"/>
+            </xsl:attribute>
+
             <xsl:copy-of select="/Environment/Software/Directories"/>  
 
             <!--
