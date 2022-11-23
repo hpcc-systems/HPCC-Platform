@@ -57,14 +57,13 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
         setShowForm(false);
     }, [setShowForm]);
 
-    const doSubmit = React.useCallback(() => {
+    const doSubmit = React.useCallback((data) => {
         const uploadFiles = (folderPath, selection) => {
             const formData = new FormData();
             selection.forEach(file => {
                 formData.append("uploadedfiles[]", file);
             });
-            const uploadUrl = "/FileSpray/UploadFile.json?" +
-                "upload_&rawxml_=1&NetAddress=" + machine + "&OS=" + os + "&Path=" + folderPath;
+            const uploadUrl = `/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=${machine}&OS=${os}&Path=${folderPath}&DropZoneName=${data.dropzone}`;
 
             setSubmitDisabled(true);
 
@@ -97,6 +96,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                     const fileNames = selection.map(file => file["name"]);
                     FileSpray.FileList({
                         request: {
+                            DropZoneName: data.dropzone,
                             Netaddr: machine,
                             Path: folderPath
                         }
