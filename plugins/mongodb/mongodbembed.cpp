@@ -900,7 +900,7 @@ namespace mongodbembed
         const char *connectionOptions = "";
 
         unsigned port = 0;
-        unsigned batchSize = 0;
+        unsigned batchSize = 100;
         bool useSSL = false;
         StringBuffer connectionString;
 
