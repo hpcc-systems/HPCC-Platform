@@ -131,6 +131,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_ADDRESS_SANITIZER "Use address sanitizer to spot leaks" OFF)
 #########################################################
 
+  if (WIN32)
+    set(ASAN_LEAK_SUPPRESS_PREFIX "")
+  else()
+    set(ASAN_LEAK_SUPPRESS_PREFIX "ASAN_OPTIONS=detect_leaks=0")
+  endif()
+
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
 
      MACRO(SET_PLUGIN_PACKAGE plugin)
