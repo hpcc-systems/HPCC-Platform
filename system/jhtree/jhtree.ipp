@@ -199,10 +199,12 @@ class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>
 protected:
     CKeyIndex &key;
     const IIndexFilterList *filter;
-    char *keyBuffer = nullptr;
+    char *keyedBuffer = nullptr;
+    char *fullBuffer = nullptr;
     Owned<CJHTreeNode> node;
     unsigned int nodeKey;
-
+    
+    mutable bool fullBufferValid = false;
     bool eof=false;
     bool matched=false; //MORE - this should probably be renamed. It's tracking state from one call of lookup to the next.
     bool logExcessiveSeeks = false;
@@ -210,17 +212,17 @@ public:
     CKeyCursor(CKeyIndex &_key, const IIndexFilterList *filter, bool _logExcessiveSeeks);
     ~CKeyCursor();
 
-    virtual bool next(char *dst, KeyStatsCollector &stats) override;
     virtual const char *queryName() const override;
     virtual size32_t getSize();
     virtual size32_t getKeyedSize() const;
-    virtual offset_t getFPos(); 
+    virtual offset_t getFPos() const;
     virtual void serializeCursorPos(MemoryBuffer &mb);
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
     virtual void reset();
     virtual bool lookup(bool exact, KeyStatsCollector &stats) override;
+    virtual bool next(KeyStatsCollector &stats) override;
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) override;
     virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) override;
     virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) override;
@@ -229,31 +231,36 @@ public:
     virtual unsigned __int64 checkCount(unsigned __int64 max, KeyStatsCollector &stats) override;
     virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) override;
     virtual bool nextRange(unsigned groupSegCount) override;
-    virtual const byte *queryKeyBuffer() const override;
+    virtual const byte *queryRecordBuffer() const override;
+    virtual const byte *queryKeyedBuffer() const override;
 protected:
     CKeyCursor(const CKeyCursor &from);
 
-    bool last(char *dst, KeyStatsCollector &stats);
-    bool gtEqual(const char *src, char *dst, KeyStatsCollector &stats);
-    bool ltEqual(const char *src, KeyStatsCollector &stats);
+    // Internal searching functions - use/update keyedBuffer
+    bool _last(KeyStatsCollector &stats);
+    bool _gtEqual(KeyStatsCollector &stats);
+    bool _ltEqual(KeyStatsCollector &stats);
     bool _lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStatsCollector &stats);
-    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, size32_t recSize, KeyStatsCollector &stats);
+    bool _next(KeyStatsCollector &stats);
+
+
+    void reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeyStatsCollector &stats);
 
     inline void setLow(unsigned segNo)
     {
-        filter->setLow(segNo, keyBuffer);
+        filter->setLow(segNo, keyedBuffer);
     }
     inline unsigned setLowAfter(size32_t offset)
     {
-        return filter->setLowAfter(offset, keyBuffer);
+        return filter->setLowAfter(offset, keyedBuffer);
     }
     inline bool incrementKey(unsigned segno) const
     {
-        return filter->incrementKey(segno, keyBuffer);
+        return filter->incrementKey(segno, keyedBuffer);
     }
     inline void endRange(unsigned segno)
     {
-        filter->endRange(segno, keyBuffer);
+        filter->endRange(segno, keyedBuffer);
     }
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override
     {

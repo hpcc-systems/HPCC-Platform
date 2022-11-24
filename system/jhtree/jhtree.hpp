@@ -59,17 +59,17 @@ public:
 
 interface jhtree_decl IKeyCursor : public IInterface
 {
-    virtual bool next(char *dst, KeyStatsCollector &stats) = 0; // MORE - remove
     virtual const char *queryName() const = 0;
     virtual size32_t getSize() = 0;  // Size of current row
     virtual size32_t getKeyedSize() const = 0;  // Size of keyed fields
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats) = 0;
     virtual unsigned __int64 getSequence() = 0;
+    virtual offset_t getFPos() const = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void reset() = 0;
     virtual bool lookup(bool exact, KeyStatsCollector &stats) = 0;
-
+    virtual bool next(KeyStatsCollector &stats) = 0;
     virtual bool lookupSkip(const void *seek, size32_t seekOffset, size32_t seeklen, KeyStatsCollector &stats) = 0;
     virtual bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen) = 0;
     virtual IKeyCursor *fixSortSegs(unsigned sortFieldOffset) = 0;
@@ -78,7 +78,8 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual unsigned __int64 checkCount(unsigned __int64 max, KeyStatsCollector &stats) = 0;
     virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) = 0;
     virtual bool nextRange(unsigned groupSegCount) = 0;
-    virtual const byte *queryKeyBuffer() const = 0;
+    virtual const byte *queryRecordBuffer() const = 0;
+    virtual const byte *queryKeyedBuffer() const = 0;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
 };
 
@@ -264,7 +265,8 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
 
     virtual const byte *queryKeyBuffer() = 0; //if using RLT: fpos is the translated value, so correct in a normal row
     virtual unsigned __int64 querySequence() = 0;
-    virtual size32_t queryRowSize() = 0;     // Size of current row as returned by queryKeyBuffer()
+    virtual offset_t queryFPos() const = 0;   // filepos from current row as returned by queryKeyBuffer()
+    virtual size32_t queryRowSize() = 0;      // Size of current row as returned by queryKeyBuffer()
 
     virtual bool lookup(bool exact) = 0;
     virtual unsigned __int64 getCount() = 0;
@@ -296,10 +298,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
 
 inline offset_t extractFpos(IKeyManager * manager)
 {
-    byte const * keyRow = manager->queryKeyBuffer();
-    size32_t rowSize = manager->queryRowSize();
-    size32_t offset = rowSize - sizeof(offset_t);
-    return rtlReadBigUInt8(keyRow + offset);
+    return manager->queryFPos();
 }
 
 class RtlRecord;
