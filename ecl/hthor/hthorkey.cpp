@@ -4183,7 +4183,7 @@ protected:
             else
             {
                 unsigned fileposSize = idx->hasSpecialFileposition() && !hasTrailingFileposition(eclKeySize.queryTypeInfo()) ? sizeof(offset_t) : 0;
-                if(idx->keySize() != eclKeySize.getFixedSize() + fileposSize)
+                if(idx->keySize() != eclKeySize.getFixedSize() + fileposSize && !idx->isTopLevelKey())
                     throw MakeStringException(1002, "Key size mismatch on key %s: key file indicates record size should be %u, but ECL declaration was %u", f->queryLogicalName(), idx->keySize(), eclKeySize.getFixedSize() + fileposSize);
             }
         }
