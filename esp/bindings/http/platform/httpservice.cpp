@@ -720,6 +720,9 @@ static bool checkHttpPathStaysWithinBounds(const char *path)
 {
     if (!path || !*path)
         return true;
+    //The path that follows /esp/files should be relative, not absolute - reject immediately if it is.
+    if (isAbsolutePath(path))
+        return false;
     int depth = 0;
     StringArray nodes;
     nodes.appendList(path, "/");
@@ -750,7 +753,7 @@ int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, co
 
         if (!checkHttpPathStaysWithinBounds(urlpath))
         {
-            DBGLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
+            AERRLOG("Get File %s: attempted access outside of %s", urlpath, basedir.str());
             response->setStatus(HTTP_STATUS_NOT_FOUND);
             response->send();
             return 0;
