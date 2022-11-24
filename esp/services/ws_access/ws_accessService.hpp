@@ -78,7 +78,7 @@ class Cws_accessEx : public Cws_access
         const char* rType, const char* rTitle, IEspDnStruct* dn);
     bool permissionAddInputOnResource(IEspContext &context, CLdapSecManager *secmgr, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
     bool permissionAddInputOnAccount(IEspContext &context, CLdapSecManager *secmgr, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
-    bool getNewFileScopePermissions(CLdapSecManager* secmgr, const char* name, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
+    bool getNewFileScopeNames(CLdapSecManager* secmgr, const char* name, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
     bool setNewFileScopePermissions(CLdapSecManager* secmgr, IEspDnStruct* req, StringBuffer& existingResource, StringArray& newResources);
     bool permissionsReset(CLdapSecManager* ldapsecmgr, const char* basedn, const char* rtype, const char* prefix,
         const char* resourceName, ACT_TYPE accountType, const char* accountName,
