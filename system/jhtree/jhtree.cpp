@@ -3375,6 +3375,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
 
         char keybuf[18];
         memset(keybuf, '0', 18);
+        uint32_t maxRecordSizeSeen = 0;
         for (unsigned count = 0; count < 10000; count++)
         {
             unsigned datasize = 10;
@@ -3399,6 +3400,8 @@ class IKeyManagerTest : public CppUnit::TestFixture
                 if (count==48 || count==49)
                     builder->processKeyData(keybuf, count*10, datasize);
             }
+            if (datasize > maxRecordSizeSeen)
+                maxRecordSizeSeen = datasize;
             unsigned idx = 9;
             for (;;)
             {
@@ -3411,7 +3414,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                 }
             }
         }
-        builder->finish(nullptr, nullptr);
+        builder->finish(nullptr, nullptr, maxRecordSizeSeen);
         out->flush();
     }
 

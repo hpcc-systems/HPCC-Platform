@@ -142,10 +142,15 @@ int main(int argc, const char **argv)
     {
         try
         {
-            Owned <IKeyIndex> index;
             const char * keyName = files.item(idx);
+            if (!isIndexFile(keyName))
+            {
+                printf("%s does not appear to be an index file\n", keyName);
+                continue;
+            }
+            Owned <IKeyIndex> index;
             index.setown(createKeyIndex(keyName, 0, false));
-            size32_t key_size = index->keySize();  // NOTE - in variable size case, this is 32767
+            size32_t key_size = index->keySize();  // NOTE - in variable size case, this may be 32767 + sizeof(offset_t)
             size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();
             if (optFullHeader)
@@ -275,6 +280,8 @@ int main(int argc, const char **argv)
                             const RtlFieldInfo *field = inrec.queryOriginalField(idx);
                             if (field->type->getType() == type_blob)
                             {
+                                if (index->isTopLevelKey())
+                                    continue;  // blob IDs in TLK are not valid
                                 // See above - blob field in source needs special treatment
                                 field = new RtlFieldStrInfo(field->name, field->xpath, field->type->queryChildType());
                                 deleteFields.append(field);

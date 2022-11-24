@@ -1212,6 +1212,7 @@ void CHThorIndexWriteActivity::execute()
                 return builder->createBlob(size, (const char *) ptr);
             }
         } bc(builder);
+        size32_t maxRecordSizeSeen = 0;
         for (;;)
         {
             OwnedConstRoxieRow nextrec(input->nextRow());
@@ -1227,7 +1228,9 @@ void CHThorIndexWriteActivity::execute()
                 RtlStaticRowBuilder rowBuilder(rowBuffer, maxDiskRecordSize);
                 size32_t thisSize = helper.transform(rowBuilder, nextrec, &bc, fpos);
                 builder->processKeyData(rowBuffer, fpos, thisSize);
-                uncompressedSize += (thisSize + 8); // Fileposition is always stored.....
+                uncompressedSize += (thisSize + sizeof(offset_t)); // Fileposition is always stored.....
+                if (thisSize > maxRecordSizeSeen)
+                    maxRecordSizeSeen = thisSize;
             }
             catch(IException * e)
             {
@@ -1242,7 +1245,7 @@ void CHThorIndexWriteActivity::execute()
             }
             reccount++;
         }
-        builder->finish(metadata, &fileCrc);
+        builder->finish(metadata, &fileCrc, maxRecordSizeSeen);
         duplicateKeyCount = builder->getDuplicateCount();
         cummulativeDuplicateKeyCount += duplicateKeyCount;
         numLeafNodes = builder->getNumLeafNodes();

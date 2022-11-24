@@ -431,13 +431,15 @@ public:
     ~CKeyWriter()
     {
         if (keyBuilder)
-            keyBuilder->finish(nullptr, nullptr);
+            keyBuilder->finish(nullptr, nullptr, maxRecordSizeSeen);
     }
 
     void put(RowBuffer & buffer)
     {
         buffer.tally(crc);
         buffer.putBuilder(keyBuilder, reccount++);
+        if (buffer.rowSize() > maxRecordSizeSeen)
+            maxRecordSizeSeen = buffer.rowSize();
     }
 
     void putNode(CNodeInfo & info)
@@ -445,6 +447,8 @@ public:
         crc.tally(rowsize, info.value);
         crc.tally(sizeof(info.pos), &(info.pos));
         keyBuilder->processKeyData(reinterpret_cast<char *>(info.value), info.pos, info.size);
+        if (info.size > maxRecordSizeSeen)
+            maxRecordSizeSeen = info.size;
     }
 
     unsigned __int64 queryCount()
@@ -470,6 +474,7 @@ private:
     CRC32 crc;
     size32_t keyedsize = 0;
     size32_t rowsize = 0;
+    size32_t maxRecordSizeSeen = 0;
     unsigned __int64 reccount = 0;
 };
 

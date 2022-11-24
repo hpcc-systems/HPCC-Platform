@@ -384,8 +384,10 @@ protected:
         }
     }
 
-    void finish(IPropertyTree * metadata, unsigned * fileCrc)
+    void finish(IPropertyTree * metadata, unsigned * fileCrc, size32_t maxRecordSizeSeen)
     {
+        if (maxRecordSizeSeen)
+            keyHdr->setMaxKeyLength(maxRecordSizeSeen);
         if (activeBlobNode && (keyHdr->getKeyType() & TRAILING_HEADER_ONLY))
         {
             pendingNodes.append(*activeBlobNode);
