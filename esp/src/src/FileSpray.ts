@@ -235,6 +235,7 @@ class LandingZonesStore extends ESPRequest.Store {
                 parent
             }));
             return store.query({
+                DropZoneName: parent.DropZone.Name,
                 Netaddr: parent.NetAddress,
                 Path: parent.fullPath,
                 Mask: "",

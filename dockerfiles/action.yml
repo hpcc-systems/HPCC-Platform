@@ -55,6 +55,18 @@ inputs:
   ln_registry:
     description: 'The docker image registry to log in to for ln image pushes'
     required: false
+  sign_modules:
+    description: 'Flag to turn on ECL std library and module signing'
+    required: false
+  signing_secret:
+    description: 'The key used for signing'
+    required: false
+  signing_keyid:
+    description: 'Name of key used for signing in gpg'
+    required: false
+  signing_passphrase:
+    description: 'The passphrase for the secret key in gpg'
+    required: false
 outputs:
   tag:
     description: 'Is the tag, which was pushed'

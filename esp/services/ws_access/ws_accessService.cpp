@@ -298,7 +298,9 @@ void Cws_accessEx::setBasedns(IEspContext &context)
     return;
 }
 
-bool Cws_accessEx::getNewFileScopePermissions(CLdapSecManager* secmgr, const char* name, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
+//Parse a filescope "name" spec (fs1::fs2::fs3) and populate the "newResources" array with each sub filespec (fs1, fs1::fs2, fs1::fs2::fs3).
+//If any of the sub filespecs exist, return the deepest one as "existingResource", and remove it from the "newResources" array
+bool Cws_accessEx::getNewFileScopeNames(CLdapSecManager* secmgr, const char* name, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
 {
     if (!secmgr)
         return false;
@@ -350,6 +352,7 @@ bool Cws_accessEx::getNewFileScopePermissions(CLdapSecManager* secmgr, const cha
         StringBuffer namebuf(newResources.item(0));
         try
         {
+            //Check to see if filescope already exists
             IArrayOf<CPermission> permissions;
             secmgr->getPermissionsArray(basednReq->getBasedn(), str2type(basednReq->getRtype()), namebuf.str(), permissions);
             if (!permissions.ordinality())
@@ -363,7 +366,7 @@ bool Cws_accessEx::getNewFileScopePermissions(CLdapSecManager* secmgr, const cha
             break;
         }
 
-        existingResource.clear().append(namebuf);
+        existingResource.clear().append(namebuf);//remember deepest scope that already exists
         newResources.remove(0);
     }
 
@@ -1932,7 +1935,9 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
         StringArray newResources;
         if(str2type(basednReq->getRtype()) == RT_FILE_SCOPE)
         {
-            getNewFileScopePermissions(secmgr, req.getName(), basednReq, lastResource, newResources);
+            //Build newResources array of each filescope subscopes (fs1, fs1::fs2, fs1::fs2::fs3 ...),
+            //and isolate deepest one (lastResource) that already exists
+            getNewFileScopeNames(secmgr, req.getName(), basednReq, lastResource, newResources);
         }
 
         SecResourceType rtype = str2type(basednReq->getRtype());

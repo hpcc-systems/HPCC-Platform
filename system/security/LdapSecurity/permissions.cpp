@@ -1247,6 +1247,11 @@ bool PermissionProcessor::getPermissionsArray(CSecurityDescriptor *sd, IArrayOf<
 
 CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* initialsd, CPermissionAction& action)
 {
+#ifdef _DEBUG
+    DBGLOG("changePermission- Action:%s, BaseDN:%s, ResType:%d, ResName:%s, AcctName:%s, AcctType:%d, Allows:%d, Denies:%d",
+        action.m_action.str(), action.m_basedn.str(), action.m_rtype, action.m_rname.str(), action.m_account_name.str(),
+        action.m_account_type, action.m_allows, action.m_denies);
+#endif
     const char* initial_buf = initialsd->getDescriptor().toByteArray();
     PSECURITY_DESCRIPTOR pisd = (PSECURITY_DESCRIPTOR)initial_buf;
 
@@ -1312,6 +1317,7 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
 #endif
     }
 
+    //Remove all existing ACE from ACL, if they exist
     bool done = false;
     while(!done)
     {
@@ -1322,18 +1328,20 @@ CSecurityDescriptor* PermissionProcessor::changePermission(CSecurityDescriptor* 
         unsigned iAce;
 
         done = true;
-        for(iAce = 0; iAce < ASizeInfo.AceCount; iAce++)
+        for(iAce = 0; iAce < ASizeInfo.AceCount; iAce++)//For all ACE entries in the ACL
         {
-            GetAce(pdacl, iAce, (void**)&pAce);
+            GetAce(pdacl, iAce, (void**)&pAce);         //Get indexed ACE entry from ACL
             PSID cursid = (PSID)&(pAce->SidStart);
 
-            if(EqualSid(cursid, act_psid))
+            if(EqualSid(cursid, act_psid))              //Check for ACE to be replaced
             {
+#ifdef _DEBUG
                 if(stricmp(action.m_action.str(), "add") == 0)
-                    throw MakeStringException(-1, "Permission for account %s already exists", action.m_account_name.str());
-                DeleteAce(pdacl, iAce);
+                    DBGLOG("Permission for account %s already exists", action.m_account_name.str());
+#endif
+                DeleteAce(pdacl, iAce);                 //Delete existing ACE
                 if(iAce < ASizeInfo.AceCount - 1)
-                    done = false;
+                    done = false;                       //continue until all ACE within ACL processed
                 break;
             }
         }

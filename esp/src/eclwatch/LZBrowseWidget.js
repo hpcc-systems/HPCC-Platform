@@ -256,6 +256,7 @@ define([
                 var target = context.dropZoneTargetSelect.get("row");
                 FileSpray.FileList({
                     request: {
+                        DropZoneName: target.value,
                         Netaddr: target.machine.Netaddress,
                         Path: context.getUploadPath()
                     }
@@ -299,7 +300,8 @@ define([
 
         _onUploadSubmit: function (event) {
             var target = this.dropZoneTargetSelect.get("row");
-            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + target.machine.Netaddress + "&OS=" + target.machine.OS + "&Path=" + this.getUploadPath());
+            var uploadUrl = `/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=${target.machine.Netaddress}&OS=${target.machine.OS}&Path=${this.getUploadPath()}&DropZoneName=${target.value}`;
+            this.uploader.set("uploadUrl", uploadUrl);
             this.uploader.upload();
         },
 
@@ -313,7 +315,7 @@ define([
             arrayUtil.forEach(this.landingZonesGrid.getSelected(), function (item, idx) {
                 var downloadIframeName = "downloadIframe_" + item.calculatedID;
                 var frame = iframe.create(downloadIframeName);
-                var url = ESPRequest.getBaseURL("FileSpray") + "/DownloadFile?Name=" + encodeURIComponent(item.name) + "&NetAddress=" + item.NetAddress + "&Path=" + encodeURIComponent(item.fullFolderPath) + "&OS=" + item.OS;
+                var url = `${ESPRequest.getBaseURL("FileSpray")}/DownloadFile?Name=${encodeURIComponent(item.name)}&NetAddress=${item.NetAddress}&Path=${encodeURIComponent(item.fullFolderPath)}&OS=${item.OS}&DropZoneName=${item.DropZone.Name}`;
                 iframe.setSrc(frame, url, true);
             });
         },
@@ -331,6 +333,7 @@ define([
                     } else {
                         FileSpray.DeleteDropZoneFile({
                             request: {
+                                DropZoneName: item.DropZone.Name,
                                 NetAddress: item.NetAddress,
                                 Path: item.fullFolderPath,
                                 OS: item.OS,
