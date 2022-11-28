@@ -2728,6 +2728,19 @@ static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,String
     return prot;
 }
 
+bool hasTLK(IDistributedFile *f)
+{
+    if (!isFileKey(f))
+        return false;
+
+    unsigned np = f->numParts();
+    if (np <= 1)
+        return false;
+
+    return isPartTLK(&f->queryPart(np-1));
+}
+
+
 /**
  * A template class which implements the common methods of an IDistributedFile interface.
  * The actual interface (extended from IDistributedFile) is provided as a template argument.
@@ -3484,6 +3497,10 @@ protected:
         unsigned np = numParts();
         if (0 == np)
             return false;
+
+        // Do not include the TLK in the skew calculation
+        if (hasTLK(this))
+            np--;
 
         offset_t maxPartSz = 0, minPartSz = (offset_t)-1, totalPartSz = 0;
 
