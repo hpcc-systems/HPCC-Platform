@@ -100,7 +100,7 @@ public:
     virtual const byte * lookupBlob(unsigned __int64 id) override
     {
         size32_t blobSize;
-        return manager->loadBlob(id, blobSize);
+        return manager->loadBlob(id, blobSize, nullptr);
     }
 private:
     Linked<IKeyManager> manager;

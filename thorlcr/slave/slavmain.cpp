@@ -693,7 +693,8 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                     reply.setFlag(gf_limitatmost);
                     break;
                 }
-                KLBlobProviderAdapter adapter(keyManager);
+                IContextLogger * ctxLogger = nullptr;
+                KLBlobProviderAdapter adapter(keyManager, ctxLogger);
                 byte const * keyRow = keyManager->queryKeyBuffer();
                 size_t fposOffset = keyManager->queryRowSize() - sizeof(offset_t);
                 offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);

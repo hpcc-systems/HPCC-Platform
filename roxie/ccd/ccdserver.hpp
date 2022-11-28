@@ -305,14 +305,15 @@ public:
     { 
         size32_t dummy; 
         cleanupRequired = true;
-        return (byte *) keyManager->loadBlob(id, dummy); 
+        return (byte *) keyManager->loadBlob(id, dummy, ctx); 
     }
 
 public:
-    inline void setManager(IKeyManager * _manager)
+    inline void setManager(IKeyManager * _manager, IContextLogger * _ctx)
     {
         finishedRow();
         keyManager = _manager;
+        ctx = _ctx;
     }
     inline void finishedRow()
     {
@@ -325,6 +326,7 @@ public:
 
 protected:
     IKeyManager * keyManager;
+    IContextLogger * ctx = nullptr;
     bool cleanupRequired;
 };
 
@@ -332,13 +334,13 @@ protected:
 class TransformCallbackAssociation
 {
 public:
-    TransformCallbackAssociation(CIndexTransformCallback & _callback, IKeyManager * manager) : callback(_callback)
+    TransformCallbackAssociation(CIndexTransformCallback & _callback, IKeyManager * manager, IContextLogger * ctx) : callback(_callback)
     {
-        callback.setManager(manager);
+        callback.setManager(manager, ctx);
     }
     ~TransformCallbackAssociation()
     {
-        callback.setManager(NULL);
+        callback.setManager(nullptr, nullptr);
     }
 private:
     CIndexTransformCallback & callback;

@@ -85,14 +85,15 @@ public:
     virtual const byte * lookupBlob(unsigned __int64 id) override
     { 
         size32_t dummy; 
-        return (byte *) keyManager->loadBlob(id, dummy); 
+        return (byte *) keyManager->loadBlob(id, dummy, ctx); 
     }
 
 public:
-    void setManager(IKeyManager * _manager)
+    void setManager(IKeyManager * _manager, IContextLogger * _ctx)
     {
         finishedRow();
         keyManager = _manager;
+        ctx = _ctx;
     }
 
     void finishedRow()
@@ -102,7 +103,8 @@ public:
     }
 
 protected:
-    IKeyManager * keyManager;
+    IKeyManager * keyManager = nullptr;
+    IContextLogger * ctx = nullptr;
 };
 
 
@@ -615,12 +617,12 @@ void CHThorIndexReadActivityBase::initPart()
     assertex(!keyIndex->isTopLevelKey());
     klManager.setown(createLocalKeyManager(eclKeySize.queryRecordAccessor(true), keyIndex, NULL, helper.hasNewSegmentMonitors(), false));
     initManager(klManager, false);
-    callback.setManager(klManager);
+    callback.setManager(klManager, nullptr);
 }
 
 void CHThorIndexReadActivityBase::killPart()
 {
-    callback.setManager(NULL);
+    callback.setManager(nullptr, nullptr);
     if (klManager)
     {
         seeks += klManager->querySeeks();
@@ -893,7 +895,7 @@ bool CHThorIndexReadActivity::nextPart()
         klManager.setown(createKeyMerger(eclKeySize.queryRecordAccessor(true), keyIndexCache, seekGEOffset, NULL, helper.hasNewSegmentMonitors(), false));
         keyIndexCache.clear();
         initManager(klManager, false);
-        callback.setManager(klManager);
+        callback.setManager(klManager, nullptr);
         return true;
     }
     else if (seekGEOffset || localSortKey)
@@ -4061,7 +4063,8 @@ public:
                 agent.queryCodeContext()->queryDebugContext()->checkBreakpoint(DebugStateLimit, NULL, static_cast<IActivityBase *>(this));
             return true;
         }
-        KLBlobProviderAdapter adapter(manager);
+        IContextLogger * ctx = nullptr;
+        KLBlobProviderAdapter adapter(manager, ctx);
         byte const * rhs = manager->queryKeyBuffer();
         if(indexReadMatch(jg->queryLeft(), rhs, &adapter))
         {
