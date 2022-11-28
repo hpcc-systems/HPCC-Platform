@@ -75,6 +75,9 @@ data:
       dfuQueues:
 {{- include "hpcc.generateConfigDfuQueues" . | indent 6}}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
+{{- if eq .me.application "eclwatch" }}
+ {{- include "hpcc.generateWarnings" (dict "root" .root) | nindent 6 }}
+{{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
@@ -83,8 +86,6 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $application := .application | default "eclwatch" -}}
-
-
 {{- $authtype := .auth | default "none" -}}
 {{- $noAuthSecretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
 {{- $secretsCategories := ternary (append $noAuthSecretsCategories "authn") $noAuthSecretsCategories  (eq $authtype "ldap") -}}
