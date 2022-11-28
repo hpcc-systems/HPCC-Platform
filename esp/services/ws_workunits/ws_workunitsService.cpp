@@ -4179,16 +4179,18 @@ bool CWsWorkunitsEx::onWUDetails(IEspContext &context, IEspWUDetailsRequest &req
     try
     {
         StringBuffer wuid(req.getWUID());
-        WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
-
         PROGLOG("WUDetails: %s", wuid.str());
 
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
-        if(!cw)
-            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
-        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
-
+        Owned<IConstWorkUnit> cw;
+        if(!wuid.trim().isEmpty())
+        {
+            WsWuHelpers::checkAndTrimWorkunit("WUDetails", wuid);
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+            cw.setown(factory->openWorkUnit(wuid.str()));
+            if(!cw)
+                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+            ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+        }
         WUDetails wuDetails(cw, wuid);
         wuDetails.processRequest(req, resp);
     }
