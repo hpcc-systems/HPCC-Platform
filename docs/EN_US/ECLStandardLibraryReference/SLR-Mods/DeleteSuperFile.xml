@@ -10,8 +10,8 @@
       <primary>File.DeleteSuperFile</primary>
     </indexterm><indexterm>
       <primary>DeleteSuperFile</primary>
-    </indexterm>(</emphasis> <emphasis> superfile </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>, subdeleteflag </emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis> superName </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, deletesub </emphasis> <emphasis
   role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -23,17 +23,17 @@
 
       <tbody>
         <row>
-          <entry><emphasis>superfile</emphasis></entry>
+          <entry><emphasis>superName</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
           superfile.</entry>
         </row>
 
         <row>
-          <entry><emphasis>subdeleteflag</emphasis></entry>
+          <entry><emphasis>deletesub</emphasis></entry>
 
-          <entry>A boolean value indicating whether to delete the sub-files.
-          If omitted, the default is FALSE. <emphasis role="bold">This option
+          <entry>A boolean value indicating whether to delete the subfiles. If
+          omitted, the default is FALSE. <emphasis role="bold">This option
           should not be used if the superfile contains any foreign file or
           foreign superfile.</emphasis></entry>
         </row>
@@ -48,7 +48,7 @@
   </informaltable>
 
   <para>The <emphasis role="bold">DeleteSuperFile </emphasis>function deletes
-  the <emphasis>superfile</emphasis>.</para>
+  the <emphasis>superName</emphasis> superfile.</para>
 
   <para>This function is not included in a superfile transaction.</para>
 
