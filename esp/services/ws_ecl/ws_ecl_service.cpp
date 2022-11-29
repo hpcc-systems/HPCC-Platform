@@ -227,7 +227,7 @@ void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap)
         if (isEmptyString(target) || isEmptyString(service.queryProp("@name"))) //bad config?
             continue;
 
-        Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(service, false, true, nullptr, (unsigned) -1);
+        Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(service, false, true, nullptr, 0);
         connMap.setValue(target, sf.get());
     }
 }
