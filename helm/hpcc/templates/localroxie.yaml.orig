@@ -69,10 +69,10 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
 <<<<<<< HEAD
-        helmVersion: 8.8.29-closedown0
+        helmVersion: 8.8.30-rc1
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $roxie.name) | indent 8 }}
 =======
-        helmVersion: 8.8.29-closedown0
+        helmVersion: 8.8.30-rc1
 >>>>>>> origin/candidate-8.6.x
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
