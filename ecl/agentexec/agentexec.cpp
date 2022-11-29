@@ -265,7 +265,8 @@ public:
             }
             else
             {
-                VStringBuffer exec("%s --workunit=%s --daliServers=%s", processName.get(), wuid.str(), dali.str());
+                bool useValgrind = compConfig->getPropBool("@valgrind", false);
+                VStringBuffer exec("%s%s --workunit=%s --daliServers=%s", useValgrind ? "valgrind " : "", processName.get(), wuid.str(), dali.str());
                 if (compConfig->hasProp("@config"))
                 {
                     exec.append(" --config=");

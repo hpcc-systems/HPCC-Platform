@@ -1485,8 +1485,7 @@ CKeyCursor::CKeyCursor(CKeyIndex &_key, const IIndexFilterList *_filter, bool _l
     : key(OLINK(_key)), filter(_filter), logExcessiveSeeks(_logExcessiveSeeks)
 {
     nodeKey = 0;
-    keyedBuffer = (char *) malloc(key.keyedSize());
-    fullBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
+    recordBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
 }
 
 CKeyCursor::CKeyCursor(const CKeyCursor &from)
@@ -1495,9 +1494,8 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
     nodeKey = from.nodeKey;
     node.set(from.node);
     unsigned keySize = key.keySize();
-    keyedBuffer = (char *) malloc(key.keyedSize());
-    memcpy(keyedBuffer, from.keyedBuffer, key.keyedSize());
-    fullBuffer = (char *) malloc(key.keySize());  // MORE - would be nice to know real max - is it stored in metadata?
+    recordBuffer = (char *) malloc(keySize);  // MORE - would be nice to know real max - is it stored in metadata?
+    memcpy(recordBuffer, from.recordBuffer, key.keyedSize());  // Just make keyed portion valid initially
     fullBufferValid = false;
     eof = from.eof;
     matched = from.matched;
@@ -1507,8 +1505,7 @@ CKeyCursor::CKeyCursor(const CKeyCursor &from)
 CKeyCursor::~CKeyCursor()
 {
     key.Release();
-    free(keyedBuffer);
-    free(fullBuffer);
+    free(recordBuffer);
 }
 
 void CKeyCursor::reset()
@@ -1522,7 +1519,7 @@ void CKeyCursor::reset()
 
 bool CKeyCursor::next(KeyStatsCollector &stats)
 {
-    return _next(stats);
+    return _next(stats) && node && node->getKeyAt(nodeKey, recordBuffer);
 }
 
 bool CKeyCursor::_next(KeyStatsCollector &stats)
@@ -1532,12 +1529,12 @@ bool CKeyCursor::_next(KeyStatsCollector &stats)
     {
         node.setown(key.locateFirstNode(stats));
         nodeKey = 0;
-        return node && node->getKeyAt(nodeKey, keyedBuffer);
+        return node && node->isKeyAt(nodeKey);
     }
     else
     {
         key.keyScans++;
-        if (!node->getKeyAt( ++nodeKey, keyedBuffer))
+        if (!node->isKeyAt(++nodeKey))
         {
             offset_t rsib = node->getRightSib();
             NodeType type = node->getNodeType();
@@ -1548,7 +1545,7 @@ bool CKeyCursor::_next(KeyStatsCollector &stats)
                 if (node != NULL)
                 {
                     nodeKey = 0;
-                    return node->getKeyAt(0, keyedBuffer);
+                    return node->isKeyAt(0);
                 }
             }
             return false;
@@ -1573,15 +1570,15 @@ const byte *CKeyCursor::queryRecordBuffer() const
     assertex(node);
     if (!fullBufferValid)
     {
-        node->getValueAt(nodeKey, fullBuffer);
+        node->fetchPayload(nodeKey, recordBuffer);
         fullBufferValid = true;
     }
-    return (const byte *) fullBuffer;
+    return (const byte *) recordBuffer;
 }
 
 const byte *CKeyCursor::queryKeyedBuffer() const
 {
-    return (const byte *) keyedBuffer;
+    return (const byte *) recordBuffer;
 }
 
 size32_t CKeyCursor::getSize()
@@ -1629,15 +1626,12 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
         unsigned numKeys = node->getNumKeys();
         if (nodeKey < numKeys-1)
         {   
-            int rc = node->compareValueAt(keyedBuffer, ++nodeKey);
+            int rc = node->compareValueAt(recordBuffer, ++nodeKey);
             if (rc <= 0)
-            {
-                node->getKeyAt(nodeKey, keyedBuffer);
                 return true; 
-            }
             if (nodeKey < numKeys-1)
             {
-                rc = node->compareValueAt(keyedBuffer, numKeys-1);
+                rc = node->compareValueAt(recordBuffer, numKeys-1);
                 if (rc <= 0)
                     lwm = nodeKey+1;
             }
@@ -1656,7 +1650,7 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
         while ((int)a<b)
         {
             int i = a+(b-a)/2;
-            int rc = node->compareValueAt(keyedBuffer, i);
+            int rc = node->compareValueAt(recordBuffer, i);
             if (rc>0)
                 a = i+1;
             else
@@ -1673,10 +1667,7 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
                 nodeKey = 0;
             }
             if (node)
-            {
-                node->getKeyAt(nodeKey, keyedBuffer);
                 return true; 
-            }
             else
                 return false;
         }
@@ -1711,7 +1702,7 @@ bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
         unsigned numKeys = node->getNumKeys();
         if (nodeKey < numKeys-1)
         {   
-            int rc = node->compareValueAt(keyedBuffer, ++nodeKey);
+            int rc = node->compareValueAt(recordBuffer, ++nodeKey);
             if (rc < 0)
             {
                 --nodeKey;
@@ -1719,7 +1710,7 @@ bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
             }
             if (nodeKey < numKeys-1)
             {
-                rc = node->compareValueAt(keyedBuffer, numKeys-1);
+                rc = node->compareValueAt(recordBuffer, numKeys-1);
                 if (rc < 0)
                     lwm = nodeKey;
             }
@@ -1738,7 +1729,7 @@ bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
         while ((int)a<b)
         {
             int i = a+(b+1-a)/2;
-            int rc = node->compareValueAt(keyedBuffer, i-1);
+            int rc = node->compareValueAt(recordBuffer, i-1);
             if (rc>=0)
                 a = i;
             else
@@ -1813,8 +1804,8 @@ void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats
         if (nodeAddress)
         {
             node.setown(key.getNode(nodeAddress, NodeLeaf, stats.ctx));
-            if (node && keyedBuffer)
-                node->getKeyAt(nodeKey, keyedBuffer);
+            if (node && recordBuffer)
+                node->getKeyAt(nodeKey, recordBuffer);
         }
     }
 }
@@ -1856,8 +1847,10 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
         }
         if (!eof)
         {
+            assertex(node);
+            verifyex(node->getKeyAt(nodeKey, recordBuffer));
             unsigned i = 0;
-            matched = filter->matchesBuffer(keyedBuffer, lastSeg, i);
+            matched = filter->matchesBuffer(recordBuffer, lastSeg, i);
             if (matched)
             {
                 ret = true;
@@ -1867,7 +1860,7 @@ bool CKeyCursor::_lookup(bool exact, unsigned lastSeg, bool unfiltered, KeyStats
             if (linuxYield)
                 sched_yield();
 #endif
-            eof = !filter->incrementKey(i, keyedBuffer);
+            eof = !filter->incrementKey(i, recordBuffer);
             if (!exact)
             {
                 ret = true;
@@ -1898,13 +1891,13 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
         unsigned i;
         for (i = 0; i < key.keySize(); i++)
         {
-            unsigned char c = ((unsigned char *) keyedBuffer)[i];
+            unsigned char c = ((unsigned char *) recordBuffer)[i];
             recstr.appendf("%c", isprint(c) ? c : '.');
         }
         recstr.append ("    ");
         for (i = 0; i < key.keySize(); i++)
         {
-            recstr.appendf("%02x ", ((unsigned char *) keyedBuffer)[i]);
+            recstr.appendf("%02x ", ((unsigned char *) recordBuffer)[i]);
         }
         DBGLOG("SKIP: Got skips=%02d seeks=%02d scans=%02d : %s", stats.skips, stats.seeks, stats.scans, recstr.str());
     }
@@ -1999,7 +1992,7 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeySt
     bool printHex = false;
     for (i = 0; i < key.keySize(); i++)
     {
-        unsigned char c = ((unsigned char *) keyedBuffer)[i];
+        unsigned char c = ((unsigned char *) recordBuffer)[i];
         if (isprint(c))
             recstr.append(c);
         else
@@ -2013,7 +2006,7 @@ void CKeyCursor::reportExcessiveSeeks(unsigned numSeeks, unsigned lastSeg, KeySt
         recstr.append ("\n");
         for (i = 0; i < key.keySize(); i++)
         {
-            recstr.appendf("%02x ", ((unsigned char *) keyedBuffer)[i]);
+            recstr.appendf("%02x ", ((unsigned char *) recordBuffer)[i]);
         }
     }
     recstr.append ("\nusing filter:\n");
@@ -2036,12 +2029,12 @@ bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen
     const byte *seek = (const byte *) _seek;
     while (seeklen)
     {
-        int c = *seek - (byte) (keyedBuffer[seekOffset]);
+        int c = *seek - (byte) (recordBuffer[seekOffset]);
         if (c < 0)
             return false;
         else if (c>0)
         {
-            memcpy(keyedBuffer+seekOffset, seek, seeklen);
+            memcpy(recordBuffer+seekOffset, seek, seeklen);
             break;
         }
         seek++;
@@ -2051,7 +2044,7 @@ bool CKeyCursor::skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen
     if (!seeklen) return false;
 
     unsigned j = setLowAfter(seekOffset + seeklen);
-    bool canmatch = filter->matchesBuffer(keyedBuffer, filter->lastRealSeg(), j);
+    bool canmatch = filter->matchesBuffer(recordBuffer, filter->lastRealSeg(), j);
     if (!canmatch)
         eof = !incrementKey(j);
     matched = false;
@@ -2066,7 +2059,7 @@ IKeyCursor * CKeyCursor::fixSortSegs(unsigned sortFieldOffset)
 CPartialKeyCursor::CPartialKeyCursor(const CKeyCursor &from, unsigned sortFieldOffset)
 : CKeyCursor(from)
 {
-    filter = filter->fixSortSegs( keyedBuffer, sortFieldOffset);
+    filter = filter->fixSortSegs( recordBuffer, sortFieldOffset);
 }
 
 CPartialKeyCursor::~CPartialKeyCursor()
