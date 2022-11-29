@@ -52,7 +52,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     bool defaultNoSeek = false;
     unsigned __int64 totalCount;
 
-    size32_t maxDiskRecordSize, lastRowSize, firstRowSize, maxRecordSizeSeen;
+    size32_t lastRowSize, firstRowSize, maxRecordSizeSeen, keyedSize;
     unsigned __int64 duplicateKeyCount;
     unsigned __int64 numLeafNodes = 0;
     unsigned __int64 numBranchNodes = 0;
@@ -72,6 +72,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
         sizeSignalled = false;
         totalCount = 0;
         lastRowSize = firstRowSize = 0;
+        keyedSize = 0;
         replicateDone = 0;
         fewcapwarned = false;
         needFirstRow = true;
@@ -84,7 +85,6 @@ public:
     {
         helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
         init();
-        maxDiskRecordSize = 0;
         maxRecordSizeSeen = 0;
         active = false;
         isLocal = false;
@@ -141,28 +141,44 @@ public:
                 }
             }
         }
-
-        IOutputMetaData * diskSize = helper->queryDiskRecordSize();
-        //Need to adjust the size if the last field is used in the special fileposition location.
-        size32_t fileposSize = hasTrailingFileposition(diskSize->queryTypeInfo()) ? sizeof(offset_t) : 0;
-        assertex(!(diskSize->getMetaFlags() & MDFneedserializedisk));
-        if (diskSize->isVariableSize())
-        {
-            if (TIWmaxlength & helper->getFlags())
-                maxDiskRecordSize = helper->getMaxKeySize();
-            else
-                maxDiskRecordSize = KEYBUILD_MAXLENGTH; //Current default behaviour, could be improved in the future
-        }
-        else
-            maxDiskRecordSize = diskSize->getFixedSize() - fileposSize;
-        maxRecordSizeSeen = 0;
         reportOverflow = false;
     }
-    void open(IPartDescriptor &partDesc, bool isTopLevel, bool isVariable, bool isTlk)
+    void open(IPartDescriptor &partDesc, bool isTlk)
     {
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
         bool compress=false;
+        bool isVariable = false;
+        unsigned maxDiskRecordSize;
+        IOutputMetaData * diskSize = helper->queryDiskRecordSize();
+        //Need to adjust the size if the last field is used in the special fileposition location.
+        size32_t fileposSize = hasTrailingFileposition(diskSize->queryTypeInfo()) ? sizeof(offset_t) : 0;
+        assertex(!(diskSize->getMetaFlags() & MDFneedserializedisk));
+        keyedSize = helper->getKeyedSize();
+        if (keyedSize == (unsigned) -1)
+        {
+            // For some reason, if there is no payload, getKeyedSize returns -1
+            const RtlRecord &indexRecord = diskSize->queryRecordAccessor(true);
+            keyedSize = indexRecord.getFixedOffset(indexRecord.getNumKeyedFields());
+        }
+        if (isTlk)
+        {
+            // The TLK only needs to store keyed fields, and can thus be a fixed-size index 
+            // even though the main index parts are variable size
+            maxDiskRecordSize = keyedSize;
+        }
+        else if (diskSize->isVariableSize())
+        {
+            if (TIWmaxlength & helper->getFlags())
+                maxDiskRecordSize = helper->getMaxKeySize();
+            else
+                maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Note that this gets overwritten later with actual maximum length
+            isVariable = true;
+        }
+        else
+            maxDiskRecordSize = diskSize->getFixedSize() - fileposSize;
+        maxRecordSizeSeen = 0;
+
         ActPrintLog("INDEXWRITE: created fixed output stream %s", partFname.str());
         bool needsSeek = true;
         unsigned flags = COL_PREFIX;
@@ -193,7 +209,7 @@ public:
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
         maxRecordSizeSeen = 0;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, !isTlk, isTlk));
     }
     void buildUserMetadata(Owned<IPropertyTree> & metadata)
     {
@@ -330,7 +346,7 @@ public:
             {
                 try
                 {
-                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
+                    open(*partDesc, false);
                     for (;;)
                     {
                         OwnedConstThorRow row = inputStream->ungroupedNextRow();
@@ -420,7 +436,7 @@ public:
                     StringBuffer partFname;
                     getPartFilename(*partDesc, 0, partFname);
                     ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: process: handling fname : %s", partFname.str());
-                    open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
+                    open(*partDesc, false);
 
                     BooleanOnOff tf(receiving);
                     if (!refactor || !active)
@@ -469,22 +485,22 @@ public:
                         if (processed & THORDATALINK_COUNT_MASK)
                         {
                             if (enableTlkPart0)
-                                tlkRows.append(* new CNodeInfo(0, firstRow.get(), firstRowSize, totalCount));
-                            tlkRows.append(* new CNodeInfo(1, lastRow.get(), lastRowSize, totalCount));
+                                tlkRows.append(* new CNodeInfo(0, firstRow.get(), keyedSize, totalCount));
+                            tlkRows.append(* new CNodeInfo(1, lastRow.get(), keyedSize, totalCount));
                         }
                         else if (isLocal)
                         {
                             // if a local key TLK (including PARTITION keys), need an entry per part
                             if (enableTlkPart0)
-                                tlkRows.append(* new CNodeInfo(0, dummyRow.get(), dummyRow.length(), totalCount));
-                            tlkRows.append(* new CNodeInfo(1, dummyRow.get(), dummyRow.length(), totalCount));
+                                tlkRows.append(* new CNodeInfo(0, dummyRow.get(), keyedSize, totalCount));
+                            tlkRows.append(* new CNodeInfo(1, dummyRow.get(), keyedSize, totalCount));
                         }
                     }
                     else
                     {
                         if (processed & THORDATALINK_COUNT_MASK)
                         {
-                            CNodeInfo row(queryJobChannel().queryMyRank(), lastRow.get(), lastRowSize, totalCount);
+                            CNodeInfo row(queryJobChannel().queryMyRank(), lastRow.get(), keyedSize, totalCount);
                             row.serialize(msg);
                         }
                         queryJobChannel().queryJobComm().send(msg, 1, mpTag);
@@ -514,7 +530,7 @@ public:
                             else if (isLocal)
                             {
                                 // if a local key TLK (including PARTITION keys), need an entry per part
-                                CNodeInfo *ni = new CNodeInfo(sender, dummyRow.get(), dummyRow.length(), totalCount);
+                                CNodeInfo *ni = new CNodeInfo(sender, dummyRow.get(), keyedSize, totalCount);
                                 tlkRows.append(*ni);
                             }
                         }
@@ -525,7 +541,7 @@ public:
                         ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: creating toplevel key file : %s", path.str());
                         try
                         {
-                            open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize(), true);
+                            open(*tlkDesc, true);
                             if (!isLocal && tlkRows.length())
                             {
                                 CNodeInfo &lastNode = tlkRows.item(tlkRows.length()-1);
