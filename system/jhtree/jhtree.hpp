@@ -66,7 +66,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats) = 0;
     virtual unsigned __int64 getSequence() = 0;
     virtual offset_t getFPos() const = 0;
-    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
+    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
     virtual void reset() = 0;
     virtual bool lookup(bool exact, KeyStatsCollector &stats) = 0;
     virtual bool next(KeyStatsCollector &stats) = 0;
@@ -281,7 +281,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned queryScans() const = 0;
     virtual unsigned querySkips() const = 0;
     virtual unsigned queryWildSeeks() const = 0;
-    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
+    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx) = 0;
     virtual void releaseBlobs() = 0;
     virtual void resetCounts() = 0;
 
@@ -310,14 +310,15 @@ extern jhtree_decl IKeyManager *createSingleKeyMerger(const RtlRecord &_recInfo,
 class KLBlobProviderAdapter : implements IBlobProvider
 {
     IKeyManager *klManager;
+    IContextLogger *ctx;
 public:
-    KLBlobProviderAdapter(IKeyManager *_klManager) : klManager(_klManager) {};
+    KLBlobProviderAdapter(IKeyManager *_klManager, IContextLogger *_ctx) : klManager(_klManager), ctx(_ctx) {};
     ~KLBlobProviderAdapter() 
     {
         if (klManager)
             klManager->releaseBlobs(); 
     }
-    virtual const byte * lookupBlob(unsigned __int64 id) { size32_t dummy; return klManager->loadBlob(id, dummy); }
+    virtual const byte * lookupBlob(unsigned __int64 id) { size32_t dummy; return klManager->loadBlob(id, dummy, ctx); }
 };
 
 extern jhtree_decl bool isCompressedIndex(const char *filename);

@@ -34,7 +34,9 @@
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
   <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
   </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
+  <emphasis>noSplit</emphasis><emphasis role="bold">], </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
+  role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayXML<indexterm>
@@ -66,11 +68,13 @@
   role="bold">] , </emphasis><emphasis role="bold">[</emphasis>
   <emphasis>dfuServerQueue</emphasis><emphasis role="bold">] ,
   </emphasis><emphasis role="bold">[</emphasis>
-  <emphasis>noSplit</emphasis><emphasis role="bold">])</emphasis></para>
+  <emphasis>noSplit</emphasis><emphasis role="bold">], </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>noCommon</emphasis> <emphasis
+  role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="130.5 pt" />
 
       <colspec />
 
@@ -206,6 +210,17 @@
           <entry>Optional. A boolean TRUE or FALSE flag indicating to not
           split a file part to multiple target parts. Default is
           FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>noCommon</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag for "commoning up" of
+          pull or push processes on same host. Set to FALSE to "common up" the
+          operation on same host. Default can be set in configuration. Use
+          <link linkend="GetNoCommonDefault">GetNoCommonDefault</link> to
+          retrieve default setting. The value of this parameter can have a
+          significant impact on performance.</entry>
         </row>
 
         <row>

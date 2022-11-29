@@ -873,6 +873,8 @@ inline bool isPartTLK(IPropertyTree &pt) { const char *kind = pt.queryProp("@kin
 inline bool isPartTLK(IDistributedFilePart *p) { return isPartTLK(p->queryAttributes()); }
 inline bool isPartTLK(IPartDescriptor *p) { return isPartTLK(p->queryProperties()); }
 
+da_decl bool hasTLK(IDistributedFile *f);
+
 inline const char *queryFileKind(IPropertyTree &pt) { return pt.queryProp("@kind"); }
 inline const char *queryFileKind(IDistributedFile *f) { return queryFileKind(f->queryAttributes()); }
 inline const char *queryFileKind(IFileDescriptor *f) { return queryFileKind(f->queryProperties()); }

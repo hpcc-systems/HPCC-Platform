@@ -116,7 +116,8 @@ protected:
             if (!keyManager)
                 throw MakeActivityException(&activity, 0, "Callback attempting to read blob with no key manager - index being read remotely?");
             needsBlobCleaning = true;
-            return (byte *) keyManager->loadBlob(id, dummy); 
+            IContextLogger * ctxLogger = nullptr;
+            return (byte *) keyManager->loadBlob(id, dummy, ctxLogger); 
         }
         void prepareManager(IKeyManager *_keyManager)
         {

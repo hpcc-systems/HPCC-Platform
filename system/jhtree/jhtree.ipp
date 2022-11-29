@@ -79,8 +79,6 @@ interface INodeLoader
     virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) = 0;
     virtual CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
     virtual CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
-
-    inline CJHTreeNode *loadNode(offset_t offset) { return loadNode(nullptr, nullptr, offset); }
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -110,8 +108,7 @@ protected:
     CJHTreeNode *loadNode(CJHTreeNode * ret, char *nodeData, offset_t pos, bool needsCopy);
     CJHTreeNode *loadNode(char *nodeData, offset_t pos, bool needsCopy);
     CJHTreeNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
-    CJHTreeBlobNode *getBlobNode(offset_t nodepos);
-
+    CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
@@ -140,7 +137,7 @@ public:
     virtual IKeyIndex *queryPart(unsigned idx) { return idx ? NULL : this; }
     virtual unsigned queryScans() { return keyScans; }
     virtual unsigned querySeeks() { return keySeeks; }
-    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
+    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
     virtual offset_t queryBlobHead() { return keyHdr->getHdrStruct()->blobHead; }
     virtual void resetCounts() { keyScans.store(0); keySeeks.store(0); }
     virtual offset_t queryLatestGetNodeOffset() const { return latestGetNodeOffset; }
@@ -218,7 +215,7 @@ public:
     virtual void serializeCursorPos(MemoryBuffer &mb);
     virtual void deserializeCursorPos(MemoryBuffer &mb, KeyStatsCollector &stats);
     virtual unsigned __int64 getSequence(); 
-    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
+    virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize, IContextLogger *ctx);
     virtual void reset();
     virtual bool lookup(bool exact, KeyStatsCollector &stats) override;
     virtual bool next(KeyStatsCollector &stats) override;

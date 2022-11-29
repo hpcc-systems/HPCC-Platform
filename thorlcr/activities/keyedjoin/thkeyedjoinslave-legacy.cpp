@@ -1359,7 +1359,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                             ++candidateCount;
                             if (candidateCount > owner.atMost)
                                 break;
-                            KLBlobProviderAdapter adapter(partManager);
+                            IContextLogger * ctxLogger = nullptr;
+                            KLBlobProviderAdapter adapter(partManager, ctxLogger);
                             byte const * keyRow = partManager->queryKeyBuffer();
                             size_t fposOffset = partManager->queryRowSize() - sizeof(offset_t);
                             offset_t fpos = rtlReadBigUInt8(keyRow + fposOffset);
