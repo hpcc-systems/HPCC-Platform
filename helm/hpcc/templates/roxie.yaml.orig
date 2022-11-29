@@ -116,7 +116,7 @@ spec:
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 8 }}
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
-        helmVersion: 8.8.27-closedown0
+        helmVersion: 8.8.29-closedown0
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel"  $.Values.global.metrics | nindent 8}}
 {{- end }}
@@ -177,10 +177,10 @@ metadata:
   name: {{ $commonCtx.toponame | quote }}
   labels:
 <<<<<<< HEAD
-    helmVersion: 8.8.27-closedown0
+    helmVersion: 8.8.29-closedown0
     {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "topology-server" "name" "roxie" "instance" $commonCtx.toponame) | indent 4 }}
 =======
-    helmVersion: 8.8.27-closedown0
+    helmVersion: 8.8.29-closedown0
 >>>>>>> origin/candidate-8.6.x
 spec:
   ports:
@@ -241,10 +241,10 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
 <<<<<<< HEAD
-        helmVersion: 8.8.27-closedown0
+        helmVersion: 8.8.29-closedown0
         {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "roxie-server" "name" "roxie" "instance" $servername) | indent 8 }}
 =======
-        helmVersion: 8.8.27-closedown0
+        helmVersion: 8.8.29-closedown0
 >>>>>>> origin/candidate-8.6.x
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
@@ -346,7 +346,7 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
-        helmVersion: 8.8.27-closedown0
+        helmVersion: 8.8.29-closedown0
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
 {{- end }}
