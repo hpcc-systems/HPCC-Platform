@@ -117,10 +117,10 @@ spec:
         accessDali: "yes"
         app: {{ $application }}
 <<<<<<< HEAD
-        helmVersion: 8.8.27-closedown0
+        helmVersion: 8.8.28-rc1
         {{- include "hpcc.addStandardLabels" (dict "root" $ "name" $application "component" "esp" "instance" .name) | indent 8 }}
 =======
-        helmVersion: 8.8.27-closedown0
+        helmVersion: 8.8.28-rc1
 >>>>>>> origin/candidate-8.6.x
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
