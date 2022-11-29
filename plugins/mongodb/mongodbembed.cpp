@@ -862,10 +862,8 @@ namespace mongodbembed
     /**
      * @brief Configures a mongocxx::instance and allows for multiple threads to use it for making connections.
      * 
-     * @param uri Configures the connection with a mongocxx::uri. It has the username, password, cluster string, 
-     * and the port number to use for connecting.
      */
-    static void configure(mongocxx::uri uri) 
+    static void configure() 
     {
         class noop_logger : public mongocxx::logger 
         {
@@ -877,7 +875,7 @@ namespace mongodbembed
 
         auto instance = bsoncxx::stdx::make_unique<mongocxx::instance>(bsoncxx::stdx::make_unique<noop_logger>());
 
-        MongoDBConnection::instance().configure(std::move(instance), bsoncxx::stdx::make_unique<mongocxx::pool>(std::move(uri)));
+        MongoDBConnection::instance().configure(std::move(instance));
     }
 
     /**
@@ -901,7 +899,6 @@ namespace mongodbembed
 
         unsigned port = 0;
         unsigned batchSize = 100;
-        bool useSSL = false;
         StringBuffer connectionString;
 
         StringArray inputOptions;
@@ -964,12 +961,13 @@ namespace mongodbembed
         }
         else
         {
-            failx("A Server or Port must be suppplied in order to connect to MongoDB. Use the server() or port() option to specify the connection type. More information can be found in the README.md file on the plugin github page.");
+            failx("A Server or Port must be supplied in order to connect to MongoDB. Use the server() or port() option to specify the connection type. More information can be found in the README.md file on the plugin github page.");
         }
-        std::shared_ptr<MongoDBQuery> ptr(new MongoDBQuery(databaseName, collectionName, batchSize));
+        std::shared_ptr<MongoDBQuery> ptr(new MongoDBQuery(databaseName, collectionName, connectionString, batchSize));
         query = ptr;
 
-        std::call_once(CONNECTION_CACHE_INIT_FLAG, configure, mongocxx::uri{connectionString.str()});
+        std::call_once(CONNECTION_CACHE_INIT_FLAG, configure);
+        m_oMDBConnection->instance().create_connection(connectionString.str()); 
     }
 
     /**
@@ -1828,7 +1826,7 @@ namespace mongodbembed
         else 
         {
             // Get a MongoDB instance from the connection object
-            auto conn = m_oMDBConnection->instance().get_connection();
+            auto conn = m_oMDBConnection->instance().get_connection(query->uri());
             mongocxx::database db = (*conn)[query->database()];
             mongocxx::collection coll = db[query->collection()];
 

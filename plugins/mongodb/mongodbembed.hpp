@@ -197,12 +197,9 @@ namespace mongodbembed
          * @param database MongoDB database to connect to.
          * @param collection MongoDB collection to connect to.
          */
-        MongoDBQuery(const char *database, const char *collection, std::int32_t _batchSize) 
-        {
-            databaseName = database;
-            collectionName = collection;
-            batchSize = _batchSize;
-        }
+        MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize) 
+            : databaseName(database), collectionName(collection), connectionString(_connectionString), batchSize(_batchSize)
+        {}
 
         /**
          * @brief Set the Embed object and remove leading characters.
@@ -299,6 +296,11 @@ namespace mongodbembed
             return batchSize;
         }
 
+        const char * uri()
+        {
+            return connectionString.str();
+        }
+
     protected:
         std::string databaseName;                      //! Local copy of database name.
         std::string collectionName;                    //! Local copy of collection name.
@@ -308,6 +310,7 @@ namespace mongodbembed
         const char* cursor = nullptr;                  //! Pointer for keeping track of parsing the embedded script.
         StringArray result_rows;                       //! Local copy of result rows.
         std::int32_t batchSize;                        //! Batch Size for result rows.
+        StringBuffer connectionString;                 //! Pointer to connection string for hashing.
     };
 
     /**
@@ -338,13 +341,16 @@ namespace mongodbembed
      */
     class MongoDBConnection 
     {
+    private:
+        typedef std::map<hash64_t, std::shared_ptr<mongocxx::client>> ObjMap;
+        
     public:
         /**
          * @brief Creates a static reference to a MongoDB instance that is alive
          * for the entire time MongoDBEmbedFunctionContext is used.
          * 
-         * @return MongoDBConnection& A reference to a MongoDB instance used for
-         * connecting to a database.
+         * @return MongoDBConnection& A reference to a MongoDBConnection
+         * instance used for connecting to a database.
          */
         static MongoDBConnection& instance() 
         {
@@ -359,33 +365,49 @@ namespace mongodbembed
          * 
          * @param instance The instance object that is to be kept alive for multiple
          * threads to have access to.
-         * @param pool The pool object that has the information about which database
-         * and collection to connect to.
          */
-        void configure(std::unique_ptr<mongocxx::instance> && instance, std::unique_ptr<mongocxx::pool> && pool) 
+        void configure(std::unique_ptr<mongocxx::instance> && instance) 
         {
             _instance = std::move(instance);
-            _pool = std::move(pool);
         }
 
-        using connection = mongocxx::pool::entry;
+        /**
+         * @brief Creates a client object using the specified connections string. The client is
+         * added to the map of active connections.
+         * 
+         * @param connectionString The connection string for constructing the client object.
+         */
+        void create_connection(const char *connectionString) 
+        {
+            auto client_ptr = std::make_shared<mongocxx::client>(mongocxx::client{mongocxx::uri{connectionString}});
+
+            // Use a hash of the connection string as the key to finding
+            // any connection objects
+            hash64_t key = rtlHash64VStr(connectionString, 0); 
+
+            clientConnections[key] = client_ptr;
+        }
 
         /**
-         * @brief Acquires a client from the pool. The calling thread will block until a
-         * connection is available.
+         * @brief Acquires a mongocxx client from the connections map.
          * 
-         * @return connection returns mongocxx::pool::entry
+         * @param connectionString A string holding the connection parameters.
+         * 
+         * @return A shared pointer to the mongocxx:client object for connecting to the database.
          */
-        connection get_connection() 
+        std::shared_ptr<mongocxx::client> get_connection(const char *connectionString)
         {
-            return _pool->acquire();
+            // Get key for client object
+            hash64_t key = rtlHash64VStr(connectionString, 0);
+
+            return clientConnections[key];
         }
 
     private:
         MongoDBConnection() = default;
 
         std::unique_ptr<mongocxx::instance> _instance = nullptr;
-        std::unique_ptr<mongocxx::pool> _pool = nullptr;
+        ObjMap clientConnections;
     };
 
     /**
@@ -543,7 +565,7 @@ namespace mongodbembed
         {
             auto cmd = std::string(query->cmd());
 
-            auto conn = m_oMDBConnection->instance().get_connection();
+            auto conn = m_oMDBConnection->instance().get_connection(query->uri());
             mongocxx::database db = (*conn)[query->database()];
             mongocxx::collection coll = db[query->collection()];
 
