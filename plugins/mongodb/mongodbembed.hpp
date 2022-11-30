@@ -196,6 +196,8 @@ namespace mongodbembed
          * 
          * @param database MongoDB database to connect to.
          * @param collection MongoDB collection to connect to.
+         * @param _connectionString Connection string for creating the mongocxx::uri.
+         * @param _batchSize The number of documents MongoDB should return per batch.
          */
         MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize) 
             : databaseName(database), collectionName(collection), connectionString(_connectionString), batchSize(_batchSize)
@@ -296,6 +298,12 @@ namespace mongodbembed
             return batchSize;
         }
 
+        /**
+         * @brief Returns a const char pointer to the connection string for
+         * creating the uri.
+         * 
+         * @return The connection string as a const char pointer.
+         */
         const char * uri()
         {
             return connectionString.str();
@@ -310,7 +318,7 @@ namespace mongodbembed
         const char* cursor = nullptr;                  //! Pointer for keeping track of parsing the embedded script.
         StringArray result_rows;                       //! Local copy of result rows.
         std::int32_t batchSize;                        //! Batch Size for result rows.
-        StringBuffer connectionString;                 //! Pointer to connection string for hashing.
+        StringBuffer connectionString;                 //! Pointer to connection string for hashing and creating the uri.
     };
 
     /**
@@ -330,7 +338,7 @@ namespace mongodbembed
         Linked<IEngineRowAllocator> m_resultAllocator;      //!< Pointer to allocator used when building result rows.
         bool m_shouldRead;                                  //!< If true, we should continue trying to read more messages.
         __int64 m_currentRow;                               //!< Current result row.
-        std::shared_ptr<MongoDBQuery> m_query;                              //!< Pointer to MongoDBQuery object.
+        std::shared_ptr<MongoDBQuery> m_query;              //!< Pointer to MongoDBQuery object.
     };
 
     /**
@@ -359,9 +367,8 @@ namespace mongodbembed
         }
 
         /**
-         * @brief Configures the MongoDB instance and sets up the MongoDB pool. It 
-         * should only be called once because only one instance object is allowed at
-         * a time.
+         * @brief Configures the MongoDB instance for the client objects to use for connections. It 
+         * should only be called once because only one instance object is allowed per program.
          * 
          * @param instance The instance object that is to be kept alive for multiple
          * threads to have access to.
@@ -406,8 +413,8 @@ namespace mongodbembed
     private:
         MongoDBConnection() = default;
 
-        std::unique_ptr<mongocxx::instance> _instance = nullptr;
-        ObjMap clientConnections;
+        std::unique_ptr<mongocxx::instance> _instance = nullptr;        //!< Unique pointer to the single mongocxx::instance for the program.
+        ObjMap clientConnections;                                       //!< Hashmap of MongoDB client connections.
     };
 
     /**
@@ -559,7 +566,7 @@ namespace mongodbembed
         /**
          * @brief Binds all the rows of the dataset to bson documents and adds them to an array for calling insert many.
          * 
-         * @param m_oMDBConnection Connection object for getting acces to the MongoDB instance.
+         * @param m_oMDBConnection Connection object for getting acces to the mongocxx::instance object.
          */
         void executeAll(MongoDBConnection * m_oMDBConnection)
         {

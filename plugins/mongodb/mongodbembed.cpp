@@ -860,8 +860,8 @@ namespace mongodbembed
     }
 
     /**
-     * @brief Configures a mongocxx::instance and allows for multiple threads to use it for making connections.
-     * 
+     * @brief Configures a mongocxx::instance allowing for multiple threads to use it for making connections.
+     * The instance is accessed through the MongoDBConnection class.
      */
     static void configure() 
     {
@@ -890,17 +890,18 @@ namespace mongodbembed
     MongoDBEmbedFunctionContext::MongoDBEmbedFunctionContext(const IContextLogger &_logctx, const char *options, unsigned _flags)
     : logctx(_logctx), m_NextRow(), m_nextParam(0), m_numParams(0), m_scriptFlags(_flags)
     {
+        // User options
         const char *server = "";
         const char *user = "";
         const char *password = "";
         const char *databaseName = "";
         const char *collectionName = "";
         const char *connectionOptions = "";
-
         unsigned port = 0;
         unsigned batchSize = 100;
         StringBuffer connectionString;
 
+        // Iterate over the options from the user
         StringArray inputOptions;
         inputOptions.appendList(options, ",");
         ForEachItemIn(idx, inputOptions) 
