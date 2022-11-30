@@ -237,7 +237,7 @@ unsigned countLevels(int f, KeyHdr &h, offset_t firstnode)
     {
         NodeHdr &nodeHdr = *(NodeHdr *) nodeData;
         swap(nodeHdr);
-        if (!nodeHdr.leafFlag)
+        if (nodeHdr.nodeType==NodeBranch)
         {
             unsigned __int64 fpos = *(unsigned __int64 *) (nodeData + sizeof(nodeHdr));
             _WINREV(fpos);
@@ -289,7 +289,7 @@ void checkLevel(int f, KeyHdr &h, unsigned &level, offset_t firstnode)
                 noteError(thisnode, "CRC error on key node (keyBytes==%x)\n", nodeHdr.keyBytes );
             }
         }
-        if (nodeHdr.leafFlag)
+        if (nodeHdr.nodeType==NodeLeaf)
         {
             if (skipLeafLevel)
             {
@@ -309,6 +309,7 @@ void checkLevel(int f, KeyHdr &h, unsigned &level, offset_t firstnode)
         }
         else 
         {
+            assertex(nodeHdr.nodeType==NodeBranch);
             unsigned nodeKeyLength = h.nodeKeyLength;
             if (nodeKeyLength==(unsigned)-1)
                 nodeKeyLength = h.length;

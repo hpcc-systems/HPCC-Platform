@@ -75,10 +75,9 @@ enum request { LTE, GTE };
 // INodeLoader impl.
 interface INodeLoader
 {
-    virtual CJHTreeNode * createNode(NodeType type) = 0;
-    virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) = 0;
-    virtual CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
-    virtual CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) = 0;
+    virtual const CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -93,22 +92,21 @@ protected:
     unsigned iD;
     StringAttr name;
     CriticalSection blobCacheCrit;
-    Owned<CJHTreeBlobNode> cachedBlobNode;
+    Owned<const CJHTreeBlobNode> cachedBlobNode;
     CIArrayOf<IndexBloomFilter> bloomFilters;
     offset_t cachedBlobNodePos;
 
     CKeyHdr *keyHdr;
     CNodeCache *cache;
-    CJHTreeNode *rootNode;
+    const CJHTreeNode *rootNode;
     RelaxedAtomic<unsigned> keySeeks;
     RelaxedAtomic<unsigned> keyScans;
     offset_t latestGetNodeOffset;
 
-    using INodeLoader::loadNode;
-    CJHTreeNode *loadNode(CJHTreeNode * ret, char *nodeData, offset_t pos, bool needsCopy);
-    CJHTreeNode *loadNode(char *nodeData, offset_t pos, bool needsCopy);
-    CJHTreeNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
-    CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
+    CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy);
+    CJHTreeNode *_createNode(const NodeHdr &hdr) const;
+    const CJHTreeNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
+    const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
@@ -153,10 +151,9 @@ public:
     virtual bool prewarmPage(offset_t page, NodeType type);
  
  // INodeLoader impl.
-    virtual CJHTreeNode * createNode(NodeType type) final;
-    virtual CJHTreeNode * loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) = 0;
-    CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
-    CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override = 0;  // Must be implemented in derived classes
+    virtual const CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) override;
+    virtual const CJHTreeNode *locateLastNode(KeyStatsCollector &stats) override;
 
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
@@ -171,7 +168,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -187,7 +184,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t offset) override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
@@ -197,7 +194,7 @@ protected:
     CKeyIndex &key;
     const IIndexFilterList *filter;
     char *recordBuffer = nullptr;
-    Owned<CJHTreeNode> node;
+    Owned<const CJHTreeNode> node;
     unsigned int nodeKey;
     
     mutable bool fullBufferValid = false;
