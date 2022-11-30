@@ -32,6 +32,12 @@ class IndexWriteActivityMaster : public CMasterActivity
     rowcount_t recordsProcessed;
     unsigned __int64 duplicateKeyCount = 0;
     unsigned __int64 cummulativeDuplicateKeyCount = 0;
+    unsigned __int64 numLeafNodes = 0;
+    unsigned __int64 numBlobNodes = 0;
+    unsigned __int64 numBranchNodes = 0;
+    offset_t compressedFileSize = 0;
+    offset_t uncompressedSize = 0;
+    offset_t originalBlobSize = 0;
     Owned<IFileDescriptor> fileDesc;
     bool buildTlk, isLocal, singlePartKey;
     StringArray clusters;
@@ -252,6 +258,24 @@ public:
             props.setPropInt64("@recordCount", recordsProcessed);
             props.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
             props.setProp("@kind", "key");
+            props.setPropInt64("@size", uncompressedSize);
+            props.setPropInt64("@compressedSize", compressedFileSize);
+            props.setPropInt64("@numLeafNodes", numLeafNodes);
+            props.setPropInt64("@numBranchNodes", numBranchNodes);
+            props.setPropInt64("@numBlobNodes", numBlobNodes);
+            if (numBlobNodes)
+                props.setPropInt64("@originalBlobSize", originalBlobSize);
+
+            Owned<IPropertyTree> metadata;
+            buildUserMetadata(metadata, *helper);
+            unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+            props.setPropInt64("@nodeSize", nodeSize);
+
+            size32_t keyedSize = helper->getKeyedSize();
+            if (keyedSize == (size32_t)-1)
+                keyedSize = helper->queryDiskRecordSize()->getFixedSize();
+            props.setPropInt64("@keyedSize", keyedSize);
+
             if (0 != (helper->getFlags() & TIWexpires))
                 setExpiryTime(props, helper->getExpiryDays());
             if (TIWupdate & helper->getFlags())
@@ -294,22 +318,51 @@ public:
             unsigned __int64 slaveDuplicateKeyCount;
             mb.read(r);
             mb.read(slaveDuplicateKeyCount);
+
             recordsProcessed += r;
             duplicateKeyCount += slaveDuplicateKeyCount;
+
             if (!singlePartKey || 0 == slaveIdx)
             {
                 IPartDescriptor *partDesc = fileDesc->queryPart(slaveIdx);
                 offset_t size;
                 mb.read(size);
                 CDateTime modifiedTime(mb);
+
                 IPropertyTree &props = partDesc->queryProperties();
-                props.setPropInt64("@size", size);
+                props.setPropInt64("@compressedSize", size);
                 props.setPropInt64("@recordCount", r);
+
                 StringBuffer dateStr;
                 props.setProp("@modified", modifiedTime.getString(dateStr).str());
                 unsigned crc;
                 mb.read(crc);
                 props.setPropInt64("@fileCrc", crc);
+
+                unsigned __int64 slaveNumLeafNodes;
+                unsigned __int64 slaveNumBlobNodes;
+                unsigned __int64 slaveNumBranchNodes;
+                offset_t slaveOffsetBranches;
+                offset_t slaveUncompressedSize;
+                offset_t slaveOriginalBlobSize;
+                mb.read(slaveNumLeafNodes);
+                mb.read(slaveNumBlobNodes);
+                mb.read(slaveNumBranchNodes);
+                mb.read(slaveOffsetBranches);
+                mb.read(slaveUncompressedSize);
+                mb.read(slaveOriginalBlobSize);
+
+                compressedFileSize += size;
+                numLeafNodes += slaveNumLeafNodes;
+                numBlobNodes += slaveNumBlobNodes;
+                numBranchNodes += slaveNumBranchNodes;
+                uncompressedSize += slaveUncompressedSize;
+                originalBlobSize += slaveOriginalBlobSize;
+
+                props.setPropInt64("@size", slaveUncompressedSize);
+                props.setPropInt64("@offsetBranches", slaveOffsetBranches);
+
+                //Read details for the TLK if it has been generated
                 if (!singlePartKey && 0 == slaveIdx && buildTlk)
                 {
                     IPartDescriptor *partDesc = fileDesc->queryPart(fileDesc->numParts()-1);

@@ -394,7 +394,6 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     stat_type numDiskWrites = 0;
     cost_type diskAccessCost = 0;
     void close();
-    void buildUserMetadata(Owned<IPropertyTree> & metadata);
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata);
     virtual void updateProgress(IStatisticGatherer &progress) const override
     {

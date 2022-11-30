@@ -1158,6 +1158,7 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 numBlobNodes = 0;
     unsigned __int64 numBranchNodes = 0;
     offset_t originalBlobSize = 0;
+    unsigned nodeSize = 0;
 
     file.setown(createIFile(filename.get()));
     {
@@ -1183,9 +1184,9 @@ void CHThorIndexWriteActivity::execute()
         if (isVariable)
             flags |= HTREE_VARSIZE;
         Owned<IPropertyTree> metadata;
-        buildUserMetadata(metadata);
+        buildUserMetadata(metadata, helper);
         buildLayoutMetadata(metadata);
-        unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+        nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
         if (metadata->getPropBool("_noSeek", defaultNoSeek))
         {
             flags |= TRAILING_HEADER_ONLY;
@@ -1339,6 +1340,12 @@ void CHThorIndexWriteActivity::execute()
     if (numBlobNodes)
         properties.setPropInt64("@originalBlobSize", originalBlobSize);
 
+    size32_t keyedSize = helper.getKeyedSize();
+    if (keyedSize == (size32_t)-1)
+        keyedSize = helper.queryDiskRecordSize()->getFixedSize();
+    properties.setPropInt64("@keyedSize", keyedSize);
+    properties.setPropInt("@nodeSize", nodeSize);
+
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)
         properties.setProp("ECL", rececl);
@@ -1413,32 +1420,6 @@ void CHThorIndexWriteActivity::execute()
             result->setResultStatus(ResultStatusCalculated);
             result->setResultLogicalName(lfn.str());
         }
-    }
-}
-
-void CHThorIndexWriteActivity::buildUserMetadata(Owned<IPropertyTree> & metadata)
-{
-    size32_t nameLen;
-    char * nameBuff;
-    size32_t valueLen;
-    char * valueBuff;
-    unsigned idx = 0;
-    while(helper.getIndexMeta(nameLen, nameBuff, valueLen, valueBuff, idx++))
-    {
-        StringBuffer name(nameLen, nameBuff);
-        StringBuffer value(valueLen, valueBuff);
-        if(*nameBuff == '_' && !checkReservedMetadataName(name))
-        {
-            OwnedRoxieString fname(helper.getFileName());
-            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
-        }
-        if(!validateXMLTag(name.str()))
-        {
-            OwnedRoxieString fname(helper.getFileName());
-            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
-        }
-        if(!metadata) metadata.setown(createPTree("metadata"));
-        metadata->setProp(name.str(), value.str());
     }
 }
 
