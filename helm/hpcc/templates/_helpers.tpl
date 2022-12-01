@@ -2058,11 +2058,11 @@ spec:
 {{- end -}}
 {{- end -}}
 
-{{- define "hpcc.generateWarnings" -}}
 {{/*
 Generate a list of warnings
 Pass in dict with root
 */}}
+{{- define "hpcc.generateWarnings" -}}
 {{- $ctx := dict "warnings" list "root" .root -}}
 {{- include "hpcc.getWarnings" $ctx -}}
 {{- if $ctx.warnings }}
@@ -2075,14 +2075,26 @@ warnings:
 {{- end -}}
 {{- end -}}
 
-{{- define "hpcc.printWarnings" -}}
 {{/*
 Print warnings
 Pass in dict with root
 */}}
+{{- define "hpcc.printWarnings" -}}
 {{- $ctx := dict "warnings" list "root" .root -}}
 {{- include "hpcc.getWarnings" $ctx -}}
 {{- range $warning := $ctx.warnings }}
  {{ printf "**** %s: %s ****" (upper $warning.severity) $warning.msg }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns true if resources exist
+Pass in dict with resources object
+*/}}
+{{- define "hpcc.hasResources" -}}
+{{- if .resources -}}
+ {{- if and .resources.cpu .resources.memory -}}
+  true
+ {{- end -}}
 {{- end -}}
 {{- end -}}
