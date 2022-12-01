@@ -12,6 +12,17 @@
             "platform": "@VCPKG_APR@"
         },
         {
+            "name": "arrow",
+            "default-features": false,
+            "features": [
+                "acero",
+                "dataset",
+                "filesystem",
+                "parquet"
+            ],
+            "platform": "@VCPKG_PARQUETEMBED@"
+        },
+        {
             "name": "aws-sdk-cpp",
             "default-features": false,
             "features": [
