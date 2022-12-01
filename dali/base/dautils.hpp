@@ -94,6 +94,7 @@ public:
     void setExternal(const char *location,const char *path);
     void setExternal(const SocketEndpoint &dafsip,const char *path);
     void setExternal(const RemoteFilename &rfn);
+    void setPlaneExternal(const char *planeName,const char *path);
     bool isExternal() const { return external; }
     bool isExternalPlane() const;
     bool isRemote() const;
