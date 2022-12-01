@@ -29,21 +29,6 @@
 
 //=========================================================================================
 
-IClientWsPackageProcess *getWsPackageSoapService(const char *server, const char *port, const char *username, const char *password)
-{
-    if(server == NULL)
-        throw MakeStringException(-1, "Server url not specified");
-
-    VStringBuffer url("http://%s:%s/WsPackageProcess", server, port);
-
-    IClientWsPackageProcess *packageProcessClient = createWsPackageProcessClient();
-    packageProcessClient->addServiceUrl(url.str());
-    packageProcessClient->setUsernameToken(username, password, NULL);
-
-    return packageProcessClient;
-}
-
-
 class EclCmdPackageActivate : public EclCmdCommon
 {
 public:
@@ -938,7 +923,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
+        Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientValidatePackageRequest> request = packageProcessClient->createValidatePackageRequest();
         setRpcOptions(request->rpc());
 
@@ -1161,7 +1146,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
+        Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
         Owned<IClientGetQueryFileMappingRequest> request = packageProcessClient->createGetQueryFileMappingRequest();
         setRpcOptions(request->rpc());
 
