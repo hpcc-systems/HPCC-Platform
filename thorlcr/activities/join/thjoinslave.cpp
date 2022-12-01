@@ -63,7 +63,7 @@ class JoinSlaveActivity : public CSlaveActivity, implements ILookAheadStopNotify
 
     Owned<IJoinHelper> joinhelper;
     rowcount_t lhsProgressCount = 0, rhsProgressCount = 0;
-    CriticalSection joinHelperCrit;
+    mutable CriticalSection joinHelperCrit;
     IHThorJoinBaseArg *helper;
     IHThorJoinArg *helperjn;
     IHThorDenormalizeArg *helperdn;
@@ -458,7 +458,7 @@ public:
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
 
-            mergeStats(stats, iLoaderL, spillStatistics);
+            mergeStats(inactiveStats, iLoaderL, spillStatistics);
         }
         IEngineRowStream *rightInputStream = queryInputStream(1);
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
@@ -479,7 +479,7 @@ public:
             rightStream.setown(iLoaderR->load(rightInputStream, abortSoon));
             stopRightInput();
 
-            mergeStats(stats, iLoaderR, spillStatistics);
+            mergeStats(inactiveStats, iLoaderR, spillStatistics);
         }
     }
     bool doglobaljoin()
@@ -587,7 +587,7 @@ public:
         else
             sorter->Gather(secondaryRowIf, secondaryInputStream, secondaryCompare, nullptr, nullptr, nullptr, nullptr, partitionRow, noSortOtherSide(), isUnstable(), abortSoon, nullptr);
 
-        mergeStats(stats, sorter, spillStatistics);
+        mergeStats(inactiveStats, sorter, spillStatistics);
         //MORE: Stats from spilling the primaryStream??
         partitionRow.clear();
         stopOtherInput();
@@ -613,26 +613,24 @@ public:
         }
         return true;
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
-        {
-            bool isSelfJoin = (TAKselfjoin == container.getKind() || TAKselfjoinlight != container.getKind());
+        PARENT::gatherActiveStats(activeStats);
+        bool isSelfJoin = (TAKselfjoin == container.getKind() || TAKselfjoinlight != container.getKind());
 
-            CriticalBlock b(joinHelperCrit);
-            if (!joinhelper) // bit odd, but will leave as was for now.
-            {
-                stats.setStatistic(StNumLeftRows, lhsProgressCount);
-                if (!isSelfJoin)
-                    stats.setStatistic(StNumRightRows, rhsProgressCount);
-            }
-            else
-            {
-                stats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
-                if (!isSelfJoin)
-                    stats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
-            }
+        CriticalBlock b(joinHelperCrit);
+        if (!joinhelper) // bit odd, but will leave as was for now.
+        {
+            activeStats.setStatistic(StNumLeftRows, lhsProgressCount);
+            if (!isSelfJoin)
+                activeStats.setStatistic(StNumRightRows, rhsProgressCount);
         }
-        PARENT::serializeStats(mb);
+        else
+        {
+            activeStats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
+            if (!isSelfJoin)
+                activeStats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
+        }
     }
 };
 

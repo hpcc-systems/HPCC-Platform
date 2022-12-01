@@ -76,6 +76,7 @@ protected:
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
     Owned<IFileIO> lazyIFileIO;
+    mutable CriticalSection ioStatsCS;
     unsigned fileTableStart = NotFound;
 
     template<class StatProvider>
@@ -376,9 +377,10 @@ public:
     }
     void updateStats()
     {
+        // NB: updateStats() should always be called whilst ioStatsCS is held.
         if (lazyIFileIO)
         {
-            mergeStats(stats, lazyIFileIO);
+            mergeStats(inactiveStats, lazyIFileIO);
             if (currentPart<partDescs.ordinality())
                 mergeFileStats(&partDescs.item(currentPart), lazyIFileIO);
         }
@@ -387,9 +389,12 @@ public:
     {
         if (currentManager)
         {
-            updateStats();
             resetManager(currentManager);
             currentManager = nullptr;
+
+            CriticalBlock b(ioStatsCS);
+            updateStats();
+            lazyIFileIO.clear();
         }
         IKeyManager *keyManager = nullptr;
         currentInput.setown(getNextInput(keyManager, currentPart, true));
@@ -444,7 +449,7 @@ public:
         while (true)
         {
             {
-                CCaptureIndexStats<IIndexLookup> scoped(stats, *currentInput);
+                CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *currentInput);
                 ret = currentInput->nextKey();
                 if (ret)
                     break;
@@ -564,7 +569,7 @@ public:
                 break;
             if (keyManager)
                 prepareManager(keyManager);
-            CCaptureIndexStats<IIndexLookup> scoped(stats, *indexInput);
+            CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *indexInput);
             if (hard) // checkCount checks hard key count only.
                 count += indexInput->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
             else
@@ -725,9 +730,18 @@ public:
             currentManager = nullptr;
         }
     }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
+    {
+        PARENT::gatherActiveStats(activeStats);
+        {
+            CriticalBlock b(ioStatsCS);
+            if (lazyIFileIO)
+                mergeStats(activeStats, lazyIFileIO);
+        }
+        activeStats.setStatistic(StNumRowsProcessed, progress);
+    }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
-        stats.setStatistic(StNumRowsProcessed, progress);
         PARENT::serializeStats(mb);
         mb.append((unsigned)fileStats.size());
         for (auto &stats: fileStats)
@@ -735,7 +749,11 @@ public:
     }
     virtual void done() override
     {
-        updateStats();
+        {
+            CriticalBlock b(ioStatsCS);
+            updateStats();
+            lazyIFileIO.clear();
+        }
         PARENT::done();
     }
 };
@@ -760,7 +778,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
         auto onScopeExitFunc = [&]()
         {
             if (postFiltered > 0)
-                stats.mergeStatistic(StNumPostFiltered, postFiltered);
+                inactiveStats.mergeStatistic(StNumPostFiltered, postFiltered);
         };
         COnScopeExit scoped(onScopeExitFunc);
         RtlDynamicRowBuilder ret(allocator);
@@ -815,7 +833,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
             helper->mapOutputToInput(tempBuilder, seek, numFields); // NOTE - weird interface to mapOutputToInput means that it STARTS writing at seekGEOffset...
             rawSeek = (byte *)temp;
         }
-        CCaptureIndexStats<IKeyManager> scoped(stats, *currentManager);
+        CCaptureIndexStats<IKeyManager> scoped(inactiveStats, *currentManager);
         if (!currentManager->lookupSkip(rawSeek, seekGEOffset, seekSize))
             return NULL;
         const byte *row = currentManager->queryKeyBuffer();
@@ -836,7 +854,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase
         auto onScopeExitFunc = [&]()
         {
             if (postFiltered > 0)
-                stats.mergeStatistic(StNumPostFiltered, postFiltered);
+                inactiveStats.mergeStatistic(StNumPostFiltered, postFiltered);
         };
         COnScopeExit scoped(onScopeExitFunc);
         RtlDynamicRowBuilder ret(allocator);
@@ -1137,7 +1155,7 @@ public:
                     if (keyManager)
                         prepareManager(keyManager);
 
-                    CCaptureIndexStats<IIndexLookup> scoped(stats, *indexInput);
+                    CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *indexInput);
                     while (true)
                     {
                         const void *key = indexInput->nextKey();
@@ -1296,7 +1314,7 @@ public:
                         if (keyManager)
                             prepareManager(keyManager);
 
-                        CCaptureIndexStats<IIndexLookup> scoped(stats, *indexInput);
+                        CCaptureIndexStats<IIndexLookup> scoped(inactiveStats, *indexInput);
                         while (true)
                         {
                             const void *key = indexInput->nextKey();

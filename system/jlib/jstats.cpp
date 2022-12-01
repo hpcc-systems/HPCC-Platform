@@ -2354,6 +2354,24 @@ void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction merg
 
 //--------------------------------------------------------------------------------------------------------------------
 
+CRuntimeStatisticCollection::CRuntimeStatisticCollection(const CRuntimeStatisticCollection & _other) : mapping(_other.mapping)
+#ifdef _DEBUG
+, ignoreUnknown(_other.ignoreUnknown)
+#endif
+{
+    unsigned num = mapping.numStatistics();
+    values = new CRuntimeStatistic[num+1];
+    for (unsigned i=0; i <= num; i++)
+        values[i].set(_other.values[i].get());
+
+    CNestedRuntimeStatisticMap *otherNested = _other.queryNested();
+    if (otherNested)
+    {
+        nested = createNested();
+        queryNested()->set(*otherNested, 0);
+    }
+}
+
 CRuntimeStatisticCollection::~CRuntimeStatisticCollection()
 {
     delete [] values;

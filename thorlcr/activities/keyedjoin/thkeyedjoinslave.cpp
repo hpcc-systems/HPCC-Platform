@@ -1288,9 +1288,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             unsigned __int64 startWildSeeks = keyManager->queryWildSeeks();
             auto onScopeExitFunc = [&]()
             {
-                activity.stats.sumStatistic(StNumIndexSeeks, keyManager->querySeeks()-startSeeks);
-                activity.stats.sumStatistic(StNumIndexScans, keyManager->queryScans()-startScans);
-                activity.stats.sumStatistic(StNumIndexWildSeeks, keyManager->queryWildSeeks()-startWildSeeks);
+                activity.inactiveStats.sumStatistic(StNumIndexSeeks, keyManager->querySeeks()-startSeeks);
+                activity.inactiveStats.sumStatistic(StNumIndexScans, keyManager->queryScans()-startScans);
+                activity.inactiveStats.sumStatistic(StNumIndexWildSeeks, keyManager->queryWildSeeks()-startWildSeeks);
             };
             COnScopeExit scoped(onScopeExitFunc);
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
@@ -1760,9 +1760,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 }
                 unsigned __int64 seeks, scans, wildseeks;
                 mb.read(seeks).read(scans).read(wildseeks);
-                activity.stats.sumStatistic(StNumIndexSeeks, seeks);
-                activity.stats.sumStatistic(StNumIndexScans, scans);
-                activity.stats.sumStatistic(StNumIndexWildSeeks, wildseeks);
+                activity.inactiveStats.sumStatistic(StNumIndexSeeks, seeks);
+                activity.inactiveStats.sumStatistic(StNumIndexScans, scans);
+                activity.inactiveStats.sumStatistic(StNumIndexWildSeeks, wildseeks);
                 if (received == numRows)
                     break;
             }
@@ -1821,9 +1821,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             unsigned __int64 diskSeeks = 0;
             auto onScopeExitFunc = [&]()
             {
-                activity.stats.mergeStatistic(StNumDiskAccepted, diskAccepted);
-                activity.stats.mergeStatistic(StNumDiskRejected, diskRejected);
-                activity.stats.mergeStatistic(StNumDiskSeeks, diskSeeks);
+                activity.inactiveStats.mergeStatistic(StNumDiskAccepted, diskAccepted);
+                activity.inactiveStats.mergeStatistic(StNumDiskRejected, diskRejected);
+                activity.inactiveStats.mergeStatistic(StNumDiskSeeks, diskSeeks);
             };
             COnScopeExit scoped(onScopeExitFunc);
             for (unsigned r=0; r<processing.ordinality() && !stopped; r++)
@@ -1997,7 +1997,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             unsigned __int64 diskSeeks = 0;
             auto onScopeExitFunc = [&]()
             {
-                activity.stats.mergeStatistic(StNumDiskSeeks, diskSeeks);
+                activity.inactiveStats.mergeStatistic(StNumDiskSeeks, diskSeeks);
             };
             COnScopeExit scoped(onScopeExitFunc);
 
@@ -2075,8 +2075,8 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     unsigned rejected = 0;
                     mb.read(accepted);
                     mb.read(rejected);
-                    activity.stats.mergeStatistic(StNumDiskAccepted, accepted);
-                    activity.stats.mergeStatistic(StNumDiskRejected, rejected);
+                    activity.inactiveStats.mergeStatistic(StNumDiskAccepted, accepted);
+                    activity.inactiveStats.mergeStatistic(StNumDiskRejected, rejected);
                 }
                 if (received == numRows)
                     break;
@@ -2648,7 +2648,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         auto onScopeExitFunc = [&]()
         {
-            stats.mergeStatistic(StNumPreFiltered, preFiltered);
+            inactiveStats.mergeStatistic(StNumPreFiltered, preFiltered);
         };
         COnScopeExit scoped(onScopeExitFunc);
         do

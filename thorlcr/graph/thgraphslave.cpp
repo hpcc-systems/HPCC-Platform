@@ -571,30 +571,20 @@ void CSlaveActivity::serializeStats(MemoryBuffer &mb)
     // and updates the activity's 'stats'.
     // The callback fetches the current state of the activity's stats, called within a critical section ('statsCs'),
     // which the activity should use to protect any objects it uses whilst stats are being collected.
-    if (someInactiveStats)
+
+    CRuntimeStatisticCollection serializedStats(inactiveStats);
+
     {
-        CRuntimeStatisticCollection activeStats(inactiveStats);
-        {
-            CriticalBlock block(statsCs);
-            gatherActiveStats(activeStats);
-        }
-        stats.set(activeStats);
-    }
-    else
-    {
-        const StatisticsMapping &statsMapping = stats.queryMapping();
-        CRuntimeStatisticCollection activeStats(statsMapping);
-        {
-            CriticalBlock block(statsCs);
-            gatherActiveStats(activeStats);
-        }
-        stats.set(activeStats);
+        CriticalBlock block(statsCs);
+        gatherActiveStats(serializedStats);
     }
 
+    queryCodeContext()->gatherStats(serializedStats);
+
     // JCS->GH - should these be serialized as cycles, and a different mapping used on master?
-    stats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
-    stats.setStatistic(StTimeBlocked, (unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
-    stats.serialize(mb);
+    serializedStats.setStatistic(StTimeLocalExecute, (unsigned __int64)cycle_to_nanosec(queryLocalCycles()));
+    serializedStats.setStatistic(StTimeBlocked, (unsigned __int64)cycle_to_nanosec(queryBlockedCycles()));
+    serializedStats.serialize(mb);
     ForEachItemIn(i, outputs)
     {
         IThorDataLink *output = queryOutput(i);

@@ -70,16 +70,15 @@ public:
         if (0 == iLoader->numRows())
             eoi = true;
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
-        setStats(stats, iLoader, spillStatistics);
-        PARENT::serializeStats(mb);
+        PARENT::gatherActiveStats(activeStats);
+        if (hasStarted())
+            setStats(activeStats, iLoader, spillStatistics);
     }
     virtual void stop() override
     {
         out.clear();
-        if (hasStarted())
-            setStats(stats, iLoader, spillStatistics);
         PARENT::stop();
     }
     CATCH_NEXTROW()
