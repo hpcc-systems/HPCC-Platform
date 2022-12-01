@@ -563,6 +563,54 @@ char *CJHTreeNode::expandKeys(void *src,size32_t &retsize)
     return outkeys;
 }
 
+int CJHTreeNode::locateGE(const char * search, unsigned minIndex) const
+{
+#ifdef TIME_NODE_SEARCH
+    CCycleTimer timer;
+#endif
+    unsigned int a = minIndex;
+    int b = getNumKeys();
+    // first search for first GTE entry (result in b(<),a(>=))
+    while ((int)a<b)
+    {
+        int i = a+(b-a)/2;
+        int rc = compareValueAt(search, i);
+        if (rc>0)
+            a = i+1;
+        else
+            b = i;
+    }
+
+#ifdef TIME_NODE_SEARCH
+    unsigned __int64 elapsed = timer.elapsedCycles();
+    if (isBranch())
+        branchSearchCycles += elapsed;
+    else
+        leafSearchCycles += elapsed;
+#endif
+    return a;
+}
+
+
+int CJHTreeNode::locateGT(const char * search, unsigned minIndex) const
+{
+    unsigned int a = minIndex;
+    int b = getNumKeys();
+    // Locate first record greater than src
+    while ((int)a<b)
+    {
+        //MORE: Note sure why the index is subtly different to the GTE version
+        //I suspect no good reason, and may mess up cache locality.
+        int i = a+(b+1-a)/2;
+        int rc = compareValueAt(search, i-1);
+        if (rc>=0)
+            a = i;
+        else
+            b = i-1;
+    }
+    return a;
+}
+
 size32_t CJHTreeNode::getNodeSize() const
 {
     return keyHdr->getNodeSize();

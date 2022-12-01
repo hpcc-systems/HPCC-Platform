@@ -1686,18 +1686,8 @@ bool CKeyCursor::_gtEqual(KeyStatsCollector &stats)
     }
     for (;;)
     {
-        unsigned int a = lwm;
-        int b = node->getNumKeys();
         // first search for first GTE entry (result in b(<),a(>=))
-        while ((int)a<b)
-        {
-            int i = a+(b-a)/2;
-            int rc = node->compareValueAt(recordBuffer, i);
-            if (rc>0)
-                a = i+1;
-            else
-                b = i;
-        }
+        unsigned int a = node->locateGE(recordBuffer, lwm);
         if (node->isLeaf())
         {
             if (a<node->getNumKeys())
@@ -1765,18 +1755,8 @@ bool CKeyCursor::_ltEqual(KeyStatsCollector &stats)
     }
     for (;;)
     {
-        unsigned int a = lwm;
-        int b = node->getNumKeys();
         // Locate first record greater than src
-        while ((int)a<b)
-        {
-            int i = a+(b+1-a)/2;
-            int rc = node->compareValueAt(recordBuffer, i-1);
-            if (rc>=0)
-                a = i;
-            else
-                b = i-1;
-        }
+        unsigned int a = node->locateGT(recordBuffer, lwm);
         if (node->isLeaf())
         {
             // record we want is the one before first record greater than src.
