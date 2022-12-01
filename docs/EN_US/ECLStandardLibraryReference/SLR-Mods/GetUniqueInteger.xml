@@ -41,7 +41,7 @@
   </informaltable>
 
   <para>The <emphasis role="bold">GetUniqueInteger </emphasis>function returns
-  a number that is unique across all the slave nodes of the specified
+  a number that is unique across all the worker nodes of the specified
   <emphasis>dali</emphasis>.</para>
 
   <para>Example:</para>

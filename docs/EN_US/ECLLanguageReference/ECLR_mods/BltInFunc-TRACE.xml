@@ -22,7 +22,7 @@
           <row>
             <entry><emphasis>attrname</emphasis></entry>
 
-            <entry>Optional. The name for the expression. </entry>
+            <entry>Optional. The name for the expression.</entry>
           </row>
 
           <row>
@@ -42,7 +42,7 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">TRACE </emphasis>expression defines tracing
-  to log files (Thor slave logs, hThor logs, or Roxie logs). </para>
+  to log files (Thor worker logs, hThor logs, or Roxie logs).</para>
 
   <para>You can add TRACE to your code at interesting junctures without any
   impact on performance. Later, if you need to investigate behavior, you can

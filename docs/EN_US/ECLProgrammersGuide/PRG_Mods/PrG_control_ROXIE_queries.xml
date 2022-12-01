@@ -39,14 +39,14 @@
             <row>
               <entry><emphasis role="bold">Thor</emphasis></entry>
 
-              <entry>Graphs execute on multiple slave nodes in
+              <entry>Graphs execute on multiple worker nodes in
               parallel.</entry>
             </row>
 
             <row>
               <entry></entry>
 
-              <entry>Index/disk reads are done locally by each slave
+              <entry>Index/disk reads are done locally by each worker
               node.</entry>
             </row>
 
