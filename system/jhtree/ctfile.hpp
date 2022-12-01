@@ -100,7 +100,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 firstLeaf; /* fpos of first leaf node 110x */
 };
 
-enum NodeType : char
+enum NodeType : byte
 {
     NodeBranch = 0,
     NodeLeaf = 1,
@@ -111,24 +111,29 @@ enum NodeType : char
     NodeNone = 127,
 };
 
+enum CompressionType : byte
+{
+    LegacyCompression = 0,    // Keys built prior to 8.12.x will always have 0 here
+    // Additional compression formats can be added here...
+};
+
 //#pragma pack(1)
 #pragma pack(push,1)
 struct jhtree_decl NodeHdr
 {
-    __int64    rightSib;
-    __int64    leftSib;
+    __int64 rightSib;
+    __int64 leftSib;
     unsigned short   numKeys;
     unsigned short   keyBytes;
-    unsigned    crc32;
-    char    unusedMemNumber;
-    char    leafFlag;
+    unsigned crc32;
+    CompressionType subType;
+    NodeType nodeType;
 
     bool isValid(unsigned nodeSize)
     {
         return 
             (rightSib % nodeSize == 0) &&
             (leftSib % nodeSize == 0) &&
-            (unusedMemNumber==0) &&
             (keyBytes < nodeSize);
     }
 };
@@ -199,8 +204,6 @@ protected:
     CKeyHdr *keyHdr;
     byte keyType;
     bool isVariable;
-    std::atomic<bool> ready{false}; // is this node ready for use?  Can be checked outside a critsec, but only set within one.
-
 private:
     offset_t fpos;
 
@@ -208,15 +211,12 @@ public:
     virtual void write(IFileIOStream *, CRC32 *crc) { throwUnexpected(); }
     inline offset_t getFpos() const { assertex(fpos); return fpos; }
     inline size32_t getNumKeys() const { return hdr.numKeys; }
-    inline bool isBlob() const { return hdr.leafFlag == NodeBlob; }
-    inline bool isMetadata() const { return hdr.leafFlag == NodeMeta; }
-    inline bool isBloom() const { return hdr.leafFlag == NodeBloom; }
-    inline bool isLeaf() const { return hdr.leafFlag != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
-    inline NodeType getNodeType() const { return (NodeType)hdr.leafFlag; }
+    inline bool isBlob() const { return hdr.nodeType == NodeBlob; }
+    inline bool isMetadata() const { return hdr.nodeType == NodeMeta; }
+    inline bool isBloom() const { return hdr.nodeType == NodeBloom; }
+    inline bool isLeaf() const { return hdr.nodeType != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
+    inline NodeType getNodeType() const { return hdr.nodeType; }
     const char * getNodeTypeName() const;
-
-    inline bool isReady() const { return ready; }
-    inline void noteReady() { ready = true; }
 public:
     CNodeBase();
     void load(CKeyHdr *keyHdr, offset_t fpos);
@@ -244,12 +244,12 @@ public:
     CJHTreeNode();
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     ~CJHTreeNode();
-    size32_t getMemSize() { return expandedSize; }
+    size32_t getMemSize() const { return sizeof(CJHTreeNode)+expandedSize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
 
 // reading methods
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
-    inline bool isKeyAt(unsigned int num) { return (num < hdr.numKeys); }
+    inline bool isKeyAt(unsigned int num) const { return (num < hdr.numKeys); }
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
     virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
@@ -300,8 +300,8 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
     virtual void dump() {throwUnexpected();}
 
-    size32_t getTotalBlobSize(unsigned offset);
-    size32_t getBlobData(unsigned offset, void *dst);
+    size32_t getTotalBlobSize(unsigned offset) const;
+    size32_t getBlobData(unsigned offset, void *dst) const;
 };
 
 class CJHTreeMetadataNode : public CJHTreeNode
@@ -311,7 +311,7 @@ public:
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
     virtual void dump() {throwUnexpected();}
-    void get(StringBuffer & out);
+    void get(StringBuffer & out) const;
 };
 
 class CJHTreeBloomTableNode : public CJHTreeNode
@@ -321,7 +321,7 @@ public:
     virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
     virtual void dump() {throwUnexpected();}
-    void get(MemoryBuffer & out);
+    void get(MemoryBuffer & out) const;
     __int64 get8();
     unsigned get4();
 private:

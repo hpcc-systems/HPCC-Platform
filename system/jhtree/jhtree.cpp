@@ -606,12 +606,45 @@ public:
     bool operator==(const CKeyIdAndPos &other) { return keyId == other.keyId && pos == other.pos; }
 };
 
-class CNodeMapping : public HTMapping<CJHTreeNode, CKeyIdAndPos>
+class CNodeCacheEntry : public CInterface
+{
+private:
+    std::atomic<const CJHTreeNode *> node = nullptr;
+public:
+    ~CNodeCacheEntry()
+    {
+        ::Release(node.load());
+    }
+    inline bool isReady() const
+    {
+        return node != nullptr;
+    }
+    inline const CJHTreeNode &queryNode() const
+    {
+        assert(isReady());
+        return *node;
+    }
+    inline const CJHTreeNode *getNode() const
+    {
+        assert(isReady());
+        return ::LINK(node.load());
+    }
+    inline void noteReady(const CJHTreeNode *_node)
+    {
+        node = _node;
+    }
+};
+
+class CNodeMapping : public HTMapping<CNodeCacheEntry, CKeyIdAndPos>
 {
 public:
-    CNodeMapping(CKeyIdAndPos &fp, CJHTreeNode &et) : HTMapping<CJHTreeNode, CKeyIdAndPos>(et, fp) { }
+    CNodeMapping(CKeyIdAndPos &fp, CNodeCacheEntry &et) : HTMapping<CNodeCacheEntry, CKeyIdAndPos>(et, fp) { }
     ~CNodeMapping() { this->et.Release(); }
-    CJHTreeNode &query() { return queryElement(); }
+    const CJHTreeNode &queryNode()
+    {
+        return queryElement().queryNode();
+    }
+    CNodeCacheEntry &query() { return queryElement(); }
 
 //The following pointers are used to maintain the position in the LRU cache
     CNodeMapping * prev = nullptr;
@@ -619,8 +652,7 @@ public:
 };
 
 typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
-#define FIXED_NODE_OVERHEAD (sizeof(CJHTreeNode))
-class CNodeMRUCache : public CMRUCacheOf<CKeyIdAndPos, CJHTreeNode, CNodeMapping, CNodeTable>
+class CNodeMRUCache : public CMRUCacheOf<CKeyIdAndPos, CNodeCacheEntry, CNodeMapping, CNodeTable>
 {
     std::atomic<size32_t> sizeInMem{0};
     size32_t memLimit = 0;
@@ -653,15 +685,10 @@ public:
         if (((size32_t)-1) == memLimit) return false;
         return sizeInMem > memLimit;
     }
-    virtual void elementAdded(CNodeMapping *mapping)
-    {
-        CJHTreeNode &node = mapping->queryElement();
-        sizeInMem += (FIXED_NODE_OVERHEAD+node.getMemSize());
-    }
     virtual void elementRemoved(CNodeMapping *mapping)
     {
-        CJHTreeNode &node = mapping->queryElement();
-        sizeInMem -= (FIXED_NODE_OVERHEAD+node.getMemSize());
+        const CJHTreeNode &node = mapping->queryNode();
+        sizeInMem -= node.getMemSize();
     }
     void reportEntries(ICacheInfoRecorder &cacheInfo)
     {
@@ -670,14 +697,16 @@ public:
         {
             CNodeMapping &mapping = iter->query();
             const CKeyIdAndPos &key = mapping.queryFindValue();
-            const CJHTreeNode &node = mapping.queryElement();
-            if (node.isReady())
+            const CNodeCacheEntry &entry = mapping.queryElement();
+            if (entry.isReady())
+            {
+                const CJHTreeNode &node = mapping.queryNode();
                 cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeSize(), node.getNodeType());
+            }
         }
     }
-    void noteReady(CJHTreeNode &node)
+    void noteReady(const CJHTreeNode &node)
     {
-        //On the previous call node.getMemSize() will have returned 0 if it has not been loaded
         sizeInMem += node.getMemSize();
     }
     void traceState(StringBuffer & out)
@@ -707,7 +736,6 @@ private:
     mutable CriticalSection lock[CacheMax];
     CNodeMRUCache cache[CacheMax];
     bool cacheEnabled[CacheMax] = { false, false, false };
-    bool legacyMode = false;
 public:
     CNodeCache(size32_t maxNodeMem, size32_t maxLeaveMem, size32_t maxBlobMem)
     {
@@ -716,7 +744,7 @@ public:
         setBlobCacheMem(maxBlobMem);
         // note that each index caches the last blob it unpacked so that sequential blobfetches are still ok
     }
-    CJHTreeNode *getNode(INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
+    const CJHTreeNode *getNode(INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
     void getCacheInfo(ICacheInfoRecorder &cacheInfo);
 
 
@@ -731,10 +759,6 @@ public:
     inline size32_t setBlobCacheMem(size32_t newSize)
     {
         return setCacheMem(newSize, CacheBlob);
-    }
-    inline void setLegacyLocking(bool _value)
-    {
-        legacyMode = _value;
     }
     void clear()
     {
@@ -1005,7 +1029,7 @@ CKeyIndex::CKeyIndex(unsigned _iD, const char *_name) : name(_name)
     cache = queryNodeCache(); // use one node cache for all key indexes;
     cache->Link();
     keyHdr = NULL;
-    rootNode = NULL;
+    rootNode = nullptr;
     cachedBlobNodePos = 0;
     keySeeks.store(0);
     keyScans.store(0);
@@ -1038,7 +1062,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
         // indexes benefit too.
         if (rootNode && isTopLevelKey() && !rootNode->isLeaf() && rootNode->getNumKeys()==1)
         {
-            Owned<CJHTreeNode> oldRoot = rootNode;
+            Owned<const CJHTreeNode> oldRoot = rootNode;
             rootPos = rootNode->getFPosAt(0);
             rootNode = nodeCache->getNode(this, iD, rootPos, NodeLeaf, NULL, isTLK);
         }
@@ -1079,7 +1103,7 @@ CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_na
     init(hdr, isTLK);
 }
 
-CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t pos)
+const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos)
 {
     nodesLoaded++;
     if (pos + keyHdr->getNodeSize() > io->fileSize())
@@ -1091,9 +1115,7 @@ CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode
         throw E;
     }
     char *nodeData = (char *) (io->base() + pos);
-    if (optNode)
-        return CKeyIndex::loadNode(optNode, nodeData, pos, false);
-    return CKeyIndex::loadNode(nodeData, pos, false);
+    return CKeyIndex::_loadNode(nodeData, pos, false);
 }
 
 CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK)
@@ -1118,7 +1140,7 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     init(hdr, isTLK);
 }
 
-CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, CJHTreeNode * optNode, offset_t pos)
+const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos)
 {
     nodesLoaded++;
     unsigned nodeSize = keyHdr->getNodeSize();
@@ -1136,14 +1158,12 @@ CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, CJHTreeNode * optNod
     }
     if (fetchCycles)
         *fetchCycles = fetchTimer.elapsedCycles();
-    if (optNode)
-        return CKeyIndex::loadNode(optNode, nodeData, pos, true);
-    return CKeyIndex::loadNode(nodeData, pos, true);
+    return CKeyIndex::_loadNode(nodeData, pos, true);
 }
 
-CJHTreeNode *CKeyIndex::createNode(NodeType type)
+CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
 {
-    switch(type)
+    switch(nodeHdr.nodeType)
     {
     case NodeBranch:
         return new CJHTreeNode();
@@ -1165,20 +1185,13 @@ CJHTreeNode *CKeyIndex::createNode(NodeType type)
     }
 }
 
-CJHTreeNode *CKeyIndex::loadNode(char *nodeData, offset_t pos, bool needsCopy)
-{
-    char leafFlag = ((NodeHdr *) nodeData)->leafFlag;
-    Owned<CJHTreeNode> ret = createNode((NodeType)leafFlag);
-    loadNode(ret, nodeData, pos, needsCopy);
-    return ret.getClear();
-}
-
-CJHTreeNode * CKeyIndex::loadNode(CJHTreeNode * ret, char *nodeData, offset_t pos, bool needsCopy)
+CJHTreeNode *CKeyIndex::_loadNode(char *nodeData, offset_t pos, bool needsCopy)
 {
     try
     {
+        Owned<CJHTreeNode> ret = _createNode(*(NodeHdr *) nodeData);
         ret->load(keyHdr, nodeData, pos, needsCopy);
-        return ret;
+        return ret.getClear();
     }
     catch (IException *E)
     {
@@ -1219,17 +1232,17 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
     return new CKeyCursor(*this, filter, logExcessiveSeeks);
 }
 
-CJHTreeNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx)
+const CJHTreeNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx)
 { 
     latestGetNodeOffset = offset;
-    CJHTreeNode *node = cache->getNode(this, iD, offset, type, ctx, isTopLevelKey());
+    const CJHTreeNode *node = cache->getNode(this, iD, offset, type, ctx, isTopLevelKey());
     assertex(!node || type == node->getNodeType());
     return node;
 }
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
 {
-    Owned<CJHTreeNode> node = loadNode(nullptr, nullptr, pos);
+    Owned<const CJHTreeNode> node = loadNode(nullptr, pos);
     node->dump(out, keySize(), count, isRaw);
 }
 
@@ -1259,9 +1272,9 @@ bool CKeyIndex::hasPayload()
     return keyHdr->hasPayload();
 }
 
-CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx)
+const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx)
 {
-    Owned<CJHTreeBlobNode> match;
+    Owned<const CJHTreeBlobNode> match;
     cycle_t readCycles = 0;
     cycle_t fetchCycles = 0;
     {
@@ -1270,9 +1283,9 @@ CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *ctx)
         {
 
             CCycleTimer blobLoadTimer;
-            Owned<CJHTreeNode> node = loadNode(&fetchCycles, nullptr, nodepos); // note - don't use the cache
+            Owned<const CJHTreeNode> node = loadNode(&fetchCycles, nodepos); // note - don't use the cache
             assertex(node->isBlob());
-            cachedBlobNode.setown(static_cast<CJHTreeBlobNode *>(node.getClear()));
+            cachedBlobNode.setown(static_cast<const CJHTreeBlobNode *>(node.getClear()));
             cachedBlobNodePos = nodepos;
             readCycles = blobLoadTimer.elapsedCycles();
         }
@@ -1304,7 +1317,7 @@ const byte *CKeyIndex::loadBlob(unsigned __int64 blobid, size32_t &blobSize, ICo
     offset_t nodepos = blobid & I64C(0xffffffffffff);
     size32_t offset = (size32_t) ((blobid & I64C(0xffff000000000000)) >> 44);
 
-    Owned<CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx);
+    Owned<const CJHTreeBlobNode> blobNode = getBlobNode(nodepos, ctx);
     size32_t sizeRemaining = blobNode->getTotalBlobSize(offset);
     blobSize = sizeRemaining;
     byte *ret = (byte *) malloc(sizeRemaining);
@@ -1338,9 +1351,9 @@ void CKeyIndex::loadBloomFilters()
 
     while (bloomAddr)
     {
-        Owned<CJHTreeNode> node = loadNode(nullptr, nullptr, bloomAddr);
+        Owned<const CJHTreeNode> node = loadNode(nullptr, bloomAddr);
         assertex(node->isBloom());
-        CJHTreeBloomTableNode &bloomNode = *static_cast<CJHTreeBloomTableNode *>(node.get());
+        CJHTreeBloomTableNode &bloomNode = *(CJHTreeBloomTableNode *)node.get();
         bloomAddr = bloomNode.get8();
         unsigned numHashes = bloomNode.get4();
         __uint64 fields =  bloomNode.get8();
@@ -1349,11 +1362,11 @@ void CKeyIndex::loadBloomFilters()
         bloomTable.ensureCapacity(bloomTableSize);
         for (;;)
         {
-            static_cast<CJHTreeBloomTableNode *>(node.get())->get(bloomTable);
+            static_cast<const CJHTreeBloomTableNode *>(node.get())->get(bloomTable);
             offset_t next = node->getRightSib();
             if (!next)
                 break;
-            node.setown(loadNode(nullptr, nullptr, next));
+            node.setown(loadNode(nullptr, next));
             assertex(node->isBloom());
         }
         assertex(bloomTable.length()==bloomTableSize);
@@ -1379,11 +1392,11 @@ IPropertyTree * CKeyIndex::getMetadata()
     offset_t nodepos = queryMetadataHead();
     if(!nodepos)
         return NULL;
-    Owned<CJHTreeMetadataNode> node;
+    Owned<const CJHTreeMetadataNode> node;
     StringBuffer xml;
     while(nodepos)
     {
-        node.setown(QUERYINTERFACE(loadNode(nullptr, nullptr, nodepos), CJHTreeMetadataNode));
+        node.setown(QUERYINTERFACE(loadNode(nullptr, nodepos), const CJHTreeMetadataNode));
         node->get(xml);
         nodepos = node->getRightSib();
     }
@@ -1406,7 +1419,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
 {
     try
     {
-        Owned<CJHTreeNode> page = getNode(offset, type, nullptr);
+        Owned<const CJHTreeNode> page = getNode(offset, type, nullptr);
         return page != nullptr;
     }
     catch(IException *E)
@@ -1416,7 +1429,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
     return false;
 }
 
-CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
+const CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
 {
     keySeeks++;
     stats.seeks++;
@@ -1433,11 +1446,11 @@ CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     if (keyHdr->getNumRecords() == 0)
         return nullptr;
 
-    CJHTreeNode * cur = LINK(rootNode);
+    const CJHTreeNode * cur = LINK(rootNode);
     unsigned depth = 0;
     while (!cur->isLeaf())
     {
-        CJHTreeNode * prev = cur;
+        const CJHTreeNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
         cur = getNode(cur->getFPosAt(0), type, stats.ctx);
@@ -1447,17 +1460,17 @@ CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     return cur;
 }
 
-CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
+const CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
 {
     keySeeks++;
     stats.seeks++;
 
-    CJHTreeNode * cur = LINK(rootNode);
+    const CJHTreeNode * cur = LINK(rootNode);
     unsigned depth = 0;
     //First find the last leaf node pointed to by the higher level index
     while (!cur->isLeaf())
     {
-        CJHTreeNode * prev = cur;
+        const CJHTreeNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
         cur = getNode(cur->nextNodeFpos(), type, stats.ctx);
@@ -1470,7 +1483,7 @@ CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
     //Now walk the lead node siblings until there are no more.
     for (;;)
     {
-        CJHTreeNode * last = cur;
+        const CJHTreeNode * last = cur;
         cur = getNode(cur->nextNodeFpos(), NodeLeaf, stats.ctx);
         if (!cur)
             return last;
@@ -2454,11 +2467,6 @@ extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize)
     return queryNodeCache()->setBlobCacheMem(cacheSize);
 }
 
-extern jhtree_decl void setLegacyNodeCache(bool _value)
-{
-    return queryNodeCache()->setLegacyLocking(_value);
-}
-
 void setNodeFetchThresholdNs(__uint64 thresholdNs)
 {
     fetchThresholdCycles = nanosec_to_cycle(thresholdNs);
@@ -2499,7 +2507,7 @@ constexpr RelaxedAtomic<unsigned> * dupMetric[CacheMax] = { &nodeCacheDups, &lea
 constexpr unsigned numLoadCritSects = 64;
 static CriticalSection loadCs[numLoadCritSects];
 
-CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
+const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
     // Also one cache per key would surely be faster, and could still use a global total
@@ -2508,150 +2516,110 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
 
     // No benefit in caching the following, especially since they will evict useful pages
     if ((type == NodeMeta) || (type == NodeBloom))
-        return keyIndex->loadNode(nullptr, nullptr, pos);
+        return keyIndex->loadNode(nullptr, pos);
 
     //NOTE: TLK leaf nodes are currently cached along with branches, not with leaves.  It might be better if this was a separate cache.
     CacheType cacheType = isTLK ? CacheBranch : (CacheType)type;
 
     // check cacheEnabled[cacheType] avoid the critical section (and testing the flag within the critical section)
     if (unlikely(!cacheEnabled[cacheType]))
-        return keyIndex->loadNode(nullptr, nullptr, pos);
+        return keyIndex->loadNode(nullptr, pos);
 
-    //Legacy cache access:
+    //Previously, this was implemented as:
     //  Lock, unlock.  Load the page.  Lock, check if it has been added, otherwise add.
-    //New code:
+    //Now, it is coded as:
     //  Lock, add if missing, unlock.  Lock a page-dependent-cr load() release lock.
     //There will be the same number of critical section locks, but loading a page will contend on a different lock - so it should reduce contention.
     //There will be a limit on the number of nodes concurrently being loaded from memory with the new code, where it was unlimited before, but
     //nodes will only be loaded once.
     CKeyIdAndPos key(iD, pos);
     CriticalSection & cacheLock = lock[cacheType];
-    if (legacyMode)
+    Owned<CNodeCacheEntry> ownedCacheEntry; // ensure node gets cleaned up if it fails to load
+    bool alreadyExists = true;
     {
+        CNodeCacheEntry * cacheEntry;
         CriticalBlock block(cacheLock);
-        CJHTreeNode *cacheNode = cache[cacheType].query(key);
-        if (likely(cacheNode))
+
+        cacheEntry = cache[cacheType].query(key);
+        if (unlikely(!cacheEntry))
         {
-            cacheHits++;
-            if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
-            (*hitMetric[cacheType])++;
-            return LINK(cacheNode);
+            cacheEntry = new CNodeCacheEntry;
+            cache[cacheType].replace(key, *cacheEntry);
+            alreadyExists = false;
         }
 
-        //Ensure node gets cleaned up (noteStatistic() can throw an exception if a worker has been aborted...)
-        Owned<CJHTreeNode> node;
-        {
-            CriticalUnblock block(cacheLock);
-            node.setown(keyIndex->loadNode(nullptr, nullptr, pos));  // NOTE - don't want cache locked while we load!
-            node->noteReady();
-        }
-
-        cacheAdds++;
-        cacheNode = cache[cacheType].query(key); // check if added to cache while we were reading
-        if (cacheNode)
-        {
-            cacheHits++;
-            if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
-            (*hitMetric[cacheType])++;
-            (*dupMetric[cacheType])++;
-            return LINK(cacheNode);
-        }
-        if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
-        (*addMetric[cacheType])++;
-        cache[cacheType].replace(key, *LINK(node));
-        return node.getClear();
+        //same as ownedcacheEntry.set(cacheEntry), but avoids a null check or two
+        cacheEntry->Link();
+        ownedCacheEntry.setown(cacheEntry);
     }
-    else
+
+    //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
+    //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache
+    //note: noteStatistic() can throw an exception if a worker has been aborted...
+    try
     {
-        Owned<CJHTreeNode> ownedNode; // ensure node gets cleaned up if it fails to load
-        bool alreadyExists = true;
+        //Move the atomic increments out of the critical section - they can be relatively expensive
+        if (likely(alreadyExists))
         {
-            CJHTreeNode * node;
-            CriticalBlock block(cacheLock);
-
-            node = cache[cacheType].query(key);
-            if (unlikely(!node))
-            {
-                node = keyIndex->createNode(type);
-                assertex(node->getMemSize() == 0);   // check the reported size is 0 so that the updated size is correct
-                cache[cacheType].replace(key, *node);
-                alreadyExists = false;
-            }
-
-            //same as ownedNode.set(node), but avoids a null check or two
-            node->Link();
-            ownedNode.setown(node);
+            cacheHits++;
+            if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
+            (*hitMetric[cacheType])++;
+        }
+        else
+        {
+            cacheAdds++;
+            if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
+            (*addMetric[cacheType])++;
         }
 
-        //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
-        //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache
-        //note: noteStatistic() can throw an exception if a worker has been aborted...
-        try
+        //The common case is that this flag has already been set (by a previous add).
+        if (likely(ownedCacheEntry->isReady()))
+            return ownedCacheEntry->getNode();
+
+        //Shame that the hash code is recalculated - it might be possible to remove this.
+        unsigned hashcode = hashc(reinterpret_cast<const byte *>(&key), sizeof(key), 0x811C9DC5);
+        unsigned whichCs = hashcode % numLoadCritSects;
+
+        cycle_t startCycles = get_cycles_now();
+        cycle_t fetchCycles = 0;
+        //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
+        //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
+        //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
         {
-            //Move the atomic increments out of the critical section - they can be relatively expensive
-            if (likely(alreadyExists))
+            CriticalBlock loadBlock(loadCs[whichCs]);
+            if (!ownedCacheEntry->isReady())
             {
-                cacheHits++;
-                if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
-                (*hitMetric[cacheType])++;
+                const CJHTreeNode *node = keyIndex->loadNode(&fetchCycles, pos);
+
+                //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
+                cache[cacheType].noteReady(*node);
+                ownedCacheEntry->noteReady(node);
             }
             else
-            {
-                cacheAdds++;
-                if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
-                (*addMetric[cacheType])++;
-            }
-
-            //The common case is that this flag has already been set (by a previous add).
-            if (likely(ownedNode->isReady()))
-                return ownedNode.getClear();
-
-            //Shame that the hash code is recalculated - it might be possible to remove this.
-            unsigned hashcode = hashc(reinterpret_cast<const byte *>(&key), sizeof(key), 0x811C9DC5);
-            unsigned whichCs = hashcode % numLoadCritSects;
-
-            cycle_t startCycles = get_cycles_now();
-            cycle_t fetchCycles = 0;
-            //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
-            //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
-            //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
-            {
-                CriticalBlock loadBlock(loadCs[whichCs]);
-                if (!ownedNode->isReady())
-                {
-                    keyIndex->loadNode(&fetchCycles, ownedNode, pos);
-
-                    //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
-                    cache[cacheType].noteReady(*ownedNode);
-                    ownedNode->noteReady();
-                }
-                else
-                    (*dupMetric[cacheType])++; // Would have previously loaded the page twice
-            }
-            if (ctx)
-            {
-                ctx->noteStatistic(loadStatId[cacheType], get_cycles_now() - startCycles);
-                ctx->noteStatistic(readStatId[cacheType], fetchCycles);
-                if (fetchCycles >= fetchThresholdCycles)
-                {
-                    ctx->noteStatistic(fetchStatId[cacheType], 1);
-                    ctx->noteStatistic(fetchTimeId[cacheType], fetchCycles);
-                }
-            }
-
-            return ownedNode.getClear();
+                (*dupMetric[cacheType])++;
         }
-        catch (...)
+        if (ctx)
         {
-            //Ensure any partially constructed nodes are removed from the cache
-            if (!ownedNode->isReady())
+            ctx->noteStatistic(loadStatId[cacheType], get_cycles_now() - startCycles);
+            ctx->noteStatistic(readStatId[cacheType], fetchCycles);
+            if (fetchCycles >= fetchThresholdCycles)
             {
-                CriticalBlock block(cacheLock);
-                if (!ownedNode->isReady())
-                    cache[cacheType].remove(key);
+                ctx->noteStatistic(fetchStatId[cacheType], 1);
+                ctx->noteStatistic(fetchTimeId[cacheType], fetchCycles);
             }
-            throw;
         }
+        return ownedCacheEntry->getNode();
+    }
+    catch (...)
+    {
+        //Ensure any partially constructed nodes are removed from the cache
+        if (!ownedCacheEntry->isReady())
+        {
+            CriticalBlock block(cacheLock);
+            if (!ownedCacheEntry->isReady())
+                cache[cacheType].remove(key);
+        }
+        throw;
     }
 }
 

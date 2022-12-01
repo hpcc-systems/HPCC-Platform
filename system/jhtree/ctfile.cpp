@@ -92,8 +92,8 @@ inline void SwapBigEndian(NodeHdr &hdr)
     _WINREV(hdr.numKeys);
     _WINREV(hdr.keyBytes);
     _WINREV(hdr.crc32);
-//   _WINREV(hdr.memNumber);
-//   _WINREV(hdr.leafFlag);
+//   _WINREV(hdr.subType);
+//   _WINREV(hdr.nodeType);
 }
 
 extern bool isCompressedIndex(const char *filename)
@@ -249,7 +249,7 @@ CNodeBase::~CNodeBase()
 
 const char *CNodeBase::getNodeTypeName() const
 {
-    switch ( (NodeType)hdr.leafFlag)
+    switch (hdr.nodeType)
     {
     case NodeBranch: return "NodeBranch";
     case NodeLeaf: return "NodeLeaf";
@@ -303,7 +303,7 @@ void CWriteNodeBase::write(IFileIOStream *out, CRC32 *crc)
 CWriteNode::CWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeaf) : CWriteNodeBase(_fpos, _keyHdr)
 {
     keyLen = keyHdr->getMaxKeyLength();
-    hdr.leafFlag = isLeaf ? NodeLeaf : NodeBranch;
+    hdr.nodeType = isLeaf ? NodeLeaf : NodeBranch;
     if (!isLeaf)
     {
         keyLen = keyHdr->getNodeKeyLength();
@@ -410,7 +410,7 @@ size32_t CWriteNode::compressValue(const char *keyData, size32_t size, char *res
 
 CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = NodeBlob;
+    hdr.nodeType = NodeBlob;
     lzwcomp.openBlob(keyPtr, maxBytes);
 }
 
@@ -444,7 +444,7 @@ unsigned __int64 CBlobWriteNode::add(const char * &data, size32_t &size)
 
 CMetadataWriteNode::CMetadataWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = NodeMeta;
+    hdr.nodeType = NodeMeta;
 }
 
 size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
@@ -461,7 +461,7 @@ size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
 
 CBloomFilterWriteNode::CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = NodeBloom;
+    hdr.nodeType = NodeBloom;
 }
 
 size32_t CBloomFilterWriteNode::set(const byte * &data, size32_t &size)
@@ -576,7 +576,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
     __int64 maxsib = keyHdr->getHdrStruct()->phyrec;
     if (!hdr.isValid(keyHdr->getNodeSize()))
     {
-        PROGLOG("hdr.leafFlag=%d",(int)hdr.leafFlag);
+        PROGLOG("hdr.nodeType=%d",(int)hdr.nodeType);
         PROGLOG("hdr.rightSib=%" I64F "d",hdr.rightSib);
         PROGLOG("hdr.leftSib=%" I64F "d",hdr.leftSib);
         PROGLOG("maxsib=%" I64F "d",maxsib);
@@ -585,7 +585,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         PrintStackReport();
         throw MakeStringException(0, "Htree: Corrupt key node detected");
     }
-    if (hdr.leafFlag == NodeBranch)
+    if (hdr.nodeType == NodeBranch)
         keyLen = keyHdr->getNodeKeyLength();
     keyRecLen = keyLen + sizeof(offset_t);
     char *keys = ((char *) node) + sizeof(hdr);
@@ -595,7 +595,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         if (hdr.crc32 != crc)
             throw MakeStringException(0, "CRC error on key node");
     }
-    if (hdr.leafFlag==NodeLeaf)
+    if (hdr.nodeType==NodeLeaf)
     {
         firstSequence = *(unsigned __int64 *) keys;
         keys += sizeof(unsigned __int64);
@@ -1012,7 +1012,7 @@ offset_t CJHVarTreeNode::getFPosAt(unsigned int num) const
 void CJHRowCompressedNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
-    assertex(hdr.leafFlag==NodeLeaf);
+    assertex(hdr.nodeType==NodeLeaf);
     char *keys = ((char *) rawData) + sizeof(hdr)+sizeof(firstSequence);
     assertex(IRandRowExpander::isRand(keys));
     rowexp.setown(createRandRDiffExpander());
@@ -1078,7 +1078,7 @@ CJHTreeBlobNode::~CJHTreeBlobNode()
 {
 }
 
-size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset)
+size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
 {
     assertex(offset < expandedSize);
     unsigned datalen;
@@ -1087,7 +1087,7 @@ size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset)
     return datalen;
 }
 
-size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst)
+size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst) const
 {
     unsigned sizeHere = getTotalBlobSize(offset);
     offset += sizeof(unsigned);
@@ -1097,12 +1097,12 @@ size32_t CJHTreeBlobNode::getBlobData(unsigned offset, void *dst)
     return sizeHere;
 }
 
-void CJHTreeMetadataNode::get(StringBuffer & out)
+void CJHTreeMetadataNode::get(StringBuffer & out) const
 {
     out.append(expandedSize, keyBuf);
 }
 
-void CJHTreeBloomTableNode::get(MemoryBuffer & out)
+void CJHTreeBloomTableNode::get(MemoryBuffer & out) const
 {
     out.append(expandedSize-read, keyBuf + read);
 }
