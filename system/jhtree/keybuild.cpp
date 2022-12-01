@@ -82,7 +82,7 @@ protected:
     unsigned levels;
     offset_t nextPos;
     offset_t offsetBranches = 0;
-    Owned<CKeyHdr> keyHdr;
+    Owned<CWriteKeyHdr> keyHdr;
     CWriteNode *prevLeafNode;
     NodeInfoArray leafInfo;
     Linked<IFileIOStream> out;
@@ -114,7 +114,7 @@ public:
           isTLK(_isTLK)
     {
         sequence = _startSequence;
-        keyHdr.setown(new CKeyHdr());
+        keyHdr.setown(new CWriteKeyHdr());
         keyValueSize = rawSize;
         keyedSize = _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
 
@@ -248,7 +248,7 @@ protected:
         }
     }
 
-    void writeNode(CWritableKeyNode *node, offset_t _nodePos)
+    void writeNode(IWritableNode *node, offset_t _nodePos)
     {
         unsigned nodeSize = keyHdr->getNodeSize();
         if (doCrc)
