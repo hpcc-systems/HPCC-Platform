@@ -229,11 +229,11 @@ protected:
     size32_t keyLen = 0;
     size32_t keyCompareLen = 0;
     size32_t keyRecLen;
+    size32_t expandedSize;
     char *keyBuf;
 
     void unpack(const void *node, bool needCopy);
     unsigned __int64 firstSequence;
-    size32_t expandedSize;
 
     inline size32_t getKeyLen() const { return keyLen; }
     static char *expandKeys(void *src,size32_t &retsize);
@@ -242,19 +242,22 @@ protected:
 
 public:
     CJHTreeNode();
-    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     ~CJHTreeNode();
-    size32_t getMemSize() const { return sizeof(CJHTreeNode)+expandedSize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
-
-// reading methods
-    offset_t prevNodeFpos() const;
-    offset_t nextNodeFpos() const ;
     inline bool isKeyAt(unsigned int num) const { return (num < hdr.numKeys); }
+//These are the key functions that need to be implemented for a node that can be searched
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
-    virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
+    virtual bool fetchPayload(unsigned int num, char *dest) const;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
+
+    virtual int locateGE(const char * search, unsigned minIndex) const;
+    virtual int locateGT(const char * search, unsigned minIndex) const;
+// reading methods
+    size32_t getMemSize() const { return sizeof(CJHTreeNode)+expandedSize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
+    offset_t prevNodeFpos() const;
+    offset_t nextNodeFpos() const ;
     bool contains(const char *src) const;
     inline offset_t getRightSib() const { return hdr.rightSib; }
     inline offset_t getLeftSib() const { return hdr.leftSib; }
