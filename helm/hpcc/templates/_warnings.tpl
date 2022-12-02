@@ -126,4 +126,16 @@ Pass in dict with root and warnings
    {{- $_ := set $warning "msg" (printf "Default cost parameters are being used for the storage %s: %s" ((len $ctx.planesWithDefaultCosts)|plural "plane" "planes") ($ctx.planesWithDefaultCosts|toStrings)) -}}
    {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- /* Report if thor numWorkers is prime */ -}}
+ {{- range $thor := .root.Values.thor -}}
+  {{- $numWorkers := (int $thor.numWorkers) | default 1 | int -}}
+  {{- if gt $numWorkers 2 -}}
+   {{- $isPrime := include "hpcc.isPrime" $numWorkers -}}
+   {{- if $isPrime -}}
+    {{ $warning := dict "source" "helm" "severity" "warning" -}}
+    {{- $_ := set $warning "msg" (printf "Thor has prime number of workers (numWorkers %d)" $numWorkers ) -}}
+    {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
 {{- end -}}

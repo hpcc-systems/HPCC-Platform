@@ -2098,3 +2098,29 @@ Pass in dict with resources object
  {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Returns true if the input number is prime
+Pass in a positive number to check
+*/}}
+{{- define "hpcc.isPrime" -}}
+ {{- /* 2 3 are primes.  Also, treat 1 as prime */ -}}
+ {{- if lt . 4 -}}
+  true
+ {{- else -}}
+  {{- $hasFactor := false -}}
+  {{- $inNumber := . -}}
+  {{- range $num := untilStep 2 (int (div $inNumber 2)) 1 -}}
+   {{- if gt (mul $num $num) $inNumber -}}
+    {{- break -}}
+   {{- end -}}
+   {{- if eq (mod $inNumber $num) 0 -}}
+    {{- $hasFactor = true }}
+    {{- break -}}
+   {{- end -}}
+  {{- end -}}
+  {{- if eq $hasFactor false -}}
+   true
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
