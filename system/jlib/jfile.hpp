@@ -774,8 +774,14 @@ jlib_decl IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback);
 
 //---- Storage plane related functions ----------------------------------------------------
 
+interface IPropertyTree;
+interface IPropertyTreeIterator;
 extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
 extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
 extern jlib_decl IPropertyTree * getRemoteStorage(const char * name);
+extern jlib_decl IPropertyTreeIterator * getPlanesIterator(const char * category, const char *name);
+
+extern jlib_decl IFileIO *createBlockedIO(IFileIO *base, size32_t blockSize);
+extern jlib_decl size32_t getBlockedFileIOSize(const char *planeName, size32_t defaultSize=0);
 
 #endif

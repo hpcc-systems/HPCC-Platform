@@ -308,7 +308,14 @@ public:
 
                 // local key handling
 
-                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadActivityStatistics));
+                size32_t blockedSize = 0;
+                if (!helper->hasSegmentMonitors()) // unfiltered
+                {
+                    StringBuffer planeName;
+                    part.queryOwner().getClusterLabel(0, planeName);
+                    blockedSize = getBlockedFileIOSize(planeName);
+                }
+                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadActivityStatistics, blockedSize));
 
                 RemoteFilename rfn;
                 part.getFilename(0, rfn);

@@ -360,6 +360,7 @@ public:
         msg.append(THOR_VERSION_MAJOR).append(THOR_VERSION_MINOR);
         processGroup->serialize(msg);
         globals->serialize(msg);
+        getGlobalConfigSP()->serialize(msg);
         msg.append(masterSlaveMpTag);
         msg.append(kjServiceMpTag);
         if (!queryNodeComm().send(msg, RANK_ALL_OTHER, MPTAG_THORREGISTRATION, MP_ASYNC_SEND))
