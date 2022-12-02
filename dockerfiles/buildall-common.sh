@@ -89,7 +89,7 @@ if [[ "${SIGN_MODULES}" != "OFF" ]] ; then
     echo "Signing Passphrase required to sign modules"
     exit 1
   fi
-  KEY_COMMAND="${SECRET_KEY} ${SECRET_PASSPHRASE} --build-arg SIGNING_MODULES=ON --build-arg SIGNING_KEYID=${SIGNING_KEYID}" 
+  KEY_COMMAND="${SECRET_KEY} ${SECRET_PASSPHRASE} --build-arg SIGN_MODULES=ON --build-arg SIGNING_KEYID=${SIGNING_KEYID}" 
 fi
 
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then

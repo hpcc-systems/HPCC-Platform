@@ -71,7 +71,7 @@ RUN mkdir build
 WORKDIR /hpcc-dev/build
 
 ARG SIGN_MODULES=OFF
-RUN --mount=type=secret,id=key,uid=10000 if [[ "${SIGN_MODULES}" != "OFF" ]] ; \
+RUN --mount=type=secret,id=key,uid=10000 if [ "${SIGN_MODULES}" != "OFF" ] ; \
     then \
         gpg --batch --import /run/secrets/key && gpg --list-secret-keys ; \
     else \
