@@ -285,7 +285,11 @@ public:
                         if (isCompressed && !isKey)
                             current.setown(createCompressedFileReader(f));
                         else
+                        {
                             current.setown(f->open(IFOread));
+                            if (blockedFileIO)
+                                current.setown(createBlockedIO(current.getClear()));
+                        }
                         if (current)
                         {
                             if (doTrace(traceRoxieFiles))

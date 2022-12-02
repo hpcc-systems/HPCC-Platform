@@ -7484,3 +7484,95 @@ IAPICopyClient * createApiCopyClient(IStorageApiInfo * source, IStorageApiInfo *
     }
     return nullptr;
 }
+
+class CBlockFileIO : public CInterfaceOf<IFileIO>
+{
+private:
+    Owned <IFileIO> io;
+    offset_t fileSize = 0;
+    static size32_t blockSize;
+    static thread_local byte *buffer;
+    static thread_local offset_t lastReadPos;
+    static thread_local size32_t lastReadLen;
+    static thread_local CBlockFileIO *lastReadCaller;
+    static bool onThreadTerm(bool isPooled);
+public:
+    CBlockFileIO(IFileIO *_io) : io(_io), fileSize(_io->size()) {}
+    ~CBlockFileIO();
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
+    virtual offset_t size() override { return fileSize; }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override { throwUnexpected(); }
+    virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) override { throwUnexpected(); }
+    virtual void setSize(offset_t size) override { throwUnexpected(); }
+    virtual void flush() override { throwUnexpected(); }
+    virtual void close() override { io->close(); }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override { return io->getStatistic(kind); }
+
+    inline static void setBlockSize(size32_t _blockSize) { blockSize = _blockSize; }
+};
+
+size32_t CBlockFileIO::blockSize = 64*1024;
+thread_local byte *CBlockFileIO::buffer = nullptr;
+thread_local offset_t CBlockFileIO::lastReadPos = 0;
+thread_local size32_t CBlockFileIO::lastReadLen = 0;
+thread_local CBlockFileIO *CBlockFileIO::lastReadCaller = nullptr;
+
+CBlockFileIO::~CBlockFileIO()
+{
+    lastReadCaller = nullptr;
+}
+
+bool CBlockFileIO::onThreadTerm(bool isPooled)
+{
+    free(buffer);
+    buffer = nullptr;
+    return false;
+}
+size32_t CBlockFileIO::read(offset_t pos, size32_t len, void *data)
+{
+    if (len > blockSize || pos+len > fileSize || len==0)
+        return io->read(pos, len, data);
+    if (!buffer)
+    {
+        buffer = (byte *) malloc(blockSize);
+        addThreadTermFunc(onThreadTerm);
+    }
+    size32_t totalCopied = 0;
+    while (len)
+    {
+        offset_t readPos = (pos / blockSize) * blockSize;
+        size32_t readLen;
+        if (readPos + blockSize <= fileSize)
+            readLen = blockSize;
+        else
+            readLen = fileSize - readPos;
+        if (readPos != lastReadPos || readLen != lastReadLen || this!=lastReadCaller)
+        {
+            size32_t read = io->read(readPos, readLen, buffer); // MORE - skip this if the data is there from last time
+            assertex(read == readLen);
+            lastReadPos = readPos;
+            lastReadLen = readLen;
+            lastReadCaller = this;
+        }
+        size32_t copyNow;
+        if (pos+len <= readPos+readLen)
+            copyNow = len;
+        else
+            copyNow = readPos+readLen-pos;
+        memcpy(data, buffer + pos-readPos, copyNow);
+        len -= copyNow;
+        pos += copyNow;
+        totalCopied += copyNow;
+    }
+    return totalCopied;
+}
+
+extern jlib_decl void setBlockedIOBlockSize(size32_t blockSize)
+{
+    CBlockFileIO::setBlockSize(blockSize);
+}
+
+extern IFileIO *createBlockedIO(IFileIO *base)
+{
+    return new CBlockFileIO(base);
+}

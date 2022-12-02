@@ -776,4 +776,7 @@ extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
 extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
 extern jlib_decl IPropertyTree * getRemoteStorage(const char * name);
 
+extern jlib_decl void setBlockedIOBlockSize(size32_t blockSize);
+extern jlib_decl IFileIO *createBlockedIO(IFileIO *base);
+
 #endif
