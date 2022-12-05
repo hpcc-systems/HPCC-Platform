@@ -100,6 +100,7 @@ bool mergeAgentStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
 bool oneShotRoxie = false;
+bool blockedFileIO = false;
 
 unsigned udpMulticastBufferSize = 262142;
 #ifndef _CONTAINERIZED
@@ -1123,6 +1124,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, lockMemory, totalMemoryLimit, 0, NULL, NULL);
         roxiemem::setMemoryOptions(topology);
 
+        blockedFileIO = topology->getPropBool("@useBlockedFileIO", false);
+        if (blockedFileIO)
+        {
+            size32_t blockedFileIOSize = topology->getPropInt("@blockedFileIOSize", 0);
+            if (blockedFileIOSize)
+                setBlockedIOBlockSize(blockedFileIOSize);
+        }
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceActivityCharacteristics = topology->getPropBool("@traceActivityCharacteristics", traceActivityCharacteristics);
         actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
