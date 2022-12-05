@@ -534,7 +534,7 @@ public:
 template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const char *service, const char *urlTail)
 {
     if(cmd.optServer.isEmpty())
-        throw MakeStringException(-1, "Server IP not specified");
+        throw MakeStringException(-1, "Server address not specified");
 
     EclCmdURL url(service, cmd.optServer, cmd.optPort, cmd.optSSL, urlTail);
     client->addServiceUrl(url.str());
