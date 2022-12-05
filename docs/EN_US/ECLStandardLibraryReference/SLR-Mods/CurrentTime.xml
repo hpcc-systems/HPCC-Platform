@@ -42,6 +42,9 @@
   local to the cluster computing the time, if FALSE then the UTC is
   returned.</para>
 
+  <para>On containerized systems, servers are usually set to UTC making local
+  time and UTC identical.</para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT STD;
