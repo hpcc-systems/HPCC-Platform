@@ -1028,6 +1028,7 @@ CPTValue::CPTValue(size32_t size, const void *data, bool binary, bool raw, bool 
                 set(newSize, newData);
             }
             free(newData);
+            newData = NULL;
             compressor->Release();  
         }
         catch (...)
