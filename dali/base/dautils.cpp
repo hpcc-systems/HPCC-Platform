@@ -1003,19 +1003,8 @@ IPropertyTree *CDfsLogicalFileName::createSuperTree() const
     return ret;
 }
 
-
-void CDfsLogicalFileName::setExternal(const char *location,const char *path)
+static void convertPosixPathToLfn(StringBuffer &str,const char *path)
 {
-    if (!path||!*path)
-        return;
-    if (isPathSepChar(path[0])&&(path[0]==path[1])) {
-        RemoteFilename rfn;
-        rfn.setRemotePath(path);
-        setExternal(rfn);  // overrides ip
-        return;
-    }
-    StringBuffer str(EXTERNAL_SCOPE "::");
-    str.append(location);
     if ((path[1]==':')&&(path[2]=='\\')) {
         str.append("::").append(path[0]).append('$');
         path+=2;
@@ -1054,6 +1043,33 @@ void CDfsLogicalFileName::setExternal(const char *location,const char *path)
             path++;
         }
     }
+}
+
+void CDfsLogicalFileName::setPlaneExternal(const char *plane,const char *path)
+{
+    if (isEmptyString(path))
+        return;
+    if (isPathSepChar(path[0])&&(path[0]==path[1]))
+        throw makeStringExceptionV(-1,"Invalid path %s.",path);
+    StringBuffer str(PLANE_SCOPE "::");
+    str.append(plane);
+    convertPosixPathToLfn(str,path);
+    set(str.str());
+}
+
+void CDfsLogicalFileName::setExternal(const char *location,const char *path)
+{
+    if (isEmptyString(path))
+        return;
+    if (isPathSepChar(path[0])&&(path[0]==path[1])) {
+        RemoteFilename rfn;
+        rfn.setRemotePath(path);
+        setExternal(rfn);  // overrides ip
+        return;
+    }
+    StringBuffer str(EXTERNAL_SCOPE "::");
+    str.append(location);
+    convertPosixPathToLfn(str,path);
     set(str.str());
 }
 
