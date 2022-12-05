@@ -7538,6 +7538,7 @@ size32_t CBlockFileIO::read(offset_t pos, size32_t len, void *data)
         addThreadTermFunc(onThreadTerm);
     }
     size32_t totalCopied = 0;
+    char *dest = (char *) data;
     while (len)
     {
         offset_t readPos = (pos / blockSize) * blockSize;
@@ -7548,7 +7549,7 @@ size32_t CBlockFileIO::read(offset_t pos, size32_t len, void *data)
             readLen = fileSize - readPos;
         if (readPos != lastReadPos || readLen != lastReadLen || this!=lastReadCaller)
         {
-            size32_t read = io->read(readPos, readLen, buffer); // MORE - skip this if the data is there from last time
+            size32_t read = io->read(readPos, readLen, buffer);
             assertex(read == readLen);
             lastReadPos = readPos;
             lastReadLen = readLen;
@@ -7559,9 +7560,10 @@ size32_t CBlockFileIO::read(offset_t pos, size32_t len, void *data)
             copyNow = len;
         else
             copyNow = readPos+readLen-pos;
-        memcpy(data, buffer + pos-readPos, copyNow);
+        memcpy(dest, buffer + pos-readPos, copyNow);
         len -= copyNow;
         pos += copyNow;
+        dest += copyNow;
         totalCopied += copyNow;
     }
     return totalCopied;
