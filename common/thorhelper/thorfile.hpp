@@ -29,6 +29,7 @@
 THORHELPER_API void setExpiryTime(IPropertyTree & properties, unsigned expireDays);
 THORHELPER_API IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitReadArg * wuRead);
 THORHELPER_API void setRtlFormat(IPropertyTree & properties, IOutputMetaData * meta);
+THORHELPER_API void buildUserMetadata(Owned<IPropertyTree> & metadata, IHThorIndexWriteArg & helper);
 
 class THORHELPER_API DerivedIndexInformation
 {

@@ -57,6 +57,10 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     unsigned __int64 numLeafNodes = 0;
     unsigned __int64 numBranchNodes = 0;
     unsigned __int64 numBlobNodes = 0;
+    offset_t offsetBranches = 0;
+    offset_t uncompressedSize = 0;
+    offset_t originalBlobSize = 0;
+
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
@@ -174,7 +178,7 @@ public:
             flags |= HTREE_VARSIZE;
         if (isTlk)
             flags |= HTREE_TOPLEVEL_KEY;
-        buildUserMetadata(metadata);                
+        buildUserMetadata(metadata, *helper);
         buildLayoutMetadata(metadata);
         // NOTE - if you add any more flags here, be sure to update checkReservedMetadataName
         unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
@@ -193,25 +197,6 @@ public:
 
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, helper, !isTlk, isTlk));
     }
-    void buildUserMetadata(Owned<IPropertyTree> & metadata)
-    {
-        size32_t nameLen;
-        char * nameBuff;
-        size32_t valueLen;
-        char * valueBuff;
-        unsigned idx = 0;
-        while(helper->getIndexMeta(nameLen, nameBuff, valueLen, valueBuff, idx++))
-        {
-            StringBuffer name(nameLen, nameBuff);
-            StringBuffer value(valueLen, valueBuff);
-            if(*nameBuff == '_' && !checkReservedMetadataName(name))
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), logicalFilename.get());
-            if(!validateXMLTag(name.str()))
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), logicalFilename.get());
-            if(!metadata) metadata.setown(createPTree("metadata"));
-            metadata->setProp(name.str(), value.str());
-        }
-    }
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
         if(!metadata) metadata.setown(createPTree("metadata"));
@@ -219,7 +204,7 @@ public:
 
         setRtlFormat(*metadata, helper->queryDiskRecordSize());
     }
-    void close(IPartDescriptor &partDesc, unsigned &crc)
+    void close(IPartDescriptor &partDesc, unsigned &crc, bool isTLK)
     {
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
@@ -227,7 +212,17 @@ public:
         try
         {
             if (builder)
+            {
                 builder->finish(metadata, &crc);
+                if (!isTLK)
+                {
+                    duplicateKeyCount = builder->getDuplicateCount();
+                    numLeafNodes = builder->getNumLeafNodes();
+                    numBranchNodes = builder->getNumBranchNodes();
+                    numBlobNodes = builder->getNumBlobNodes();
+                    offsetBranches = builder->getOffsetBranches();
+                }
+            }
         }
         catch (IException *_e)
         {
@@ -272,6 +267,7 @@ public:
     }
     virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
     {
+        originalBlobSize += size;
         return builder->createBlob(size, (const char *) ptr);
     }
     virtual void process() override
@@ -373,14 +369,10 @@ public:
                 }
                 catch (CATCHALL)
                 {
-                    close(*partDesc, partCrc);
+                    close(*partDesc, partCrc, false);
                     throw;
                 }
-                duplicateKeyCount = builder->getDuplicateCount();
-                numLeafNodes = builder->getNumLeafNodes();
-                numBranchNodes = builder->getNumBranchNodes();
-                numBlobNodes = builder->getNumBlobNodes();
-                close(*partDesc, partCrc);
+                close(*partDesc, partCrc, false);
                 stop();
             }
             else
@@ -433,14 +425,10 @@ public:
                 }
                 catch (CATCHALL)
                 {
-                    close(*partDesc, partCrc);
+                    close(*partDesc, partCrc, false);
                     throw;
                 }
-                duplicateKeyCount = builder->getDuplicateCount();
-                numLeafNodes = builder->getNumLeafNodes();
-                numBranchNodes = builder->getNumBranchNodes();
-                numBlobNodes = builder->getNumBlobNodes();
-                close(*partDesc, partCrc);
+                close(*partDesc, partCrc, false);
                 stop();
 
                 ActPrintLog("INDEXWRITE: Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
@@ -534,12 +522,12 @@ public:
                                 CNodeInfo &info = tlkRows.item(idx);
                                 builder->processKeyData((char *)info.value, info.pos, info.size);
                             }
-                            close(*tlkDesc, tlkCrc);
+                            close(*tlkDesc, tlkCrc, true);
                         }
                         catch (CATCHALL)
                         {
                             abortSoon = true;
-                            close(*tlkDesc, tlkCrc);
+                            close(*tlkDesc, tlkCrc, true);
                             removeFiles(*partDesc);
                             throw;
                         }
@@ -616,6 +604,14 @@ public:
             ifile->getTime(&createTime, &modifiedTime, &accessedTime);
             modifiedTime.serialize(mb);
             mb.append(partCrc);
+
+            mb.append(numLeafNodes);
+            mb.append(numBlobNodes);
+            mb.append(numBranchNodes);
+            mb.append(offsetBranches);
+            mb.append(uncompressedSize);
+            mb.append(originalBlobSize);
+
             if (!singlePartKey && firstNode() && buildTlk)
             {
                 mb.append(tlkCrc);
@@ -637,6 +633,8 @@ public:
         RtlDynamicRowBuilder lastRowBuilder(outRowAllocator);
         lastRowSize = helper->transform(lastRowBuilder, row, this, fpos);
         lastRow.setown(lastRowBuilder.finalizeRowClear(lastRowSize));
+        uncompressedSize += (lastRowSize + 8); // Fileposition is always stored.....
+
         // NB: result of transform is serialized
         if (enableTlkPart0 && needFirstRow)
         {

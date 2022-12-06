@@ -30,6 +30,9 @@
 #include "thorcommon.ipp"
 #include "jhtree.hpp"
 
+#include "keybuild.hpp"
+#include "roxiemem.hpp"
+
 void setExpiryTime(IPropertyTree & properties, unsigned expireDays)
 {
     properties.setPropInt("@expireDays", expireDays);
@@ -101,8 +104,6 @@ IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitR
 {
     return new DiskWorkUnitReadArg(filename, wuRead);
 }
-
-
 
 //-----------------------------------------------------------------------------
 
@@ -361,4 +362,35 @@ void mergeDerivedInformation(DerivedIndexInformation & result, const DerivedInde
         result.sizeMemoryLeaves += other.sizeMemoryLeaves;
     else
         result.sizeMemoryLeaves = 0;
+}
+
+//-----------------------------------------------------------------------------
+
+void buildUserMetadata(Owned<IPropertyTree> & metadata, IHThorIndexWriteArg & helper)
+{
+    size32_t nameLen;
+    char * nameBuff;
+    size32_t valueLen;
+    char * valueBuff;
+    unsigned idx = 0;
+    while (helper.getIndexMeta(nameLen, nameBuff, valueLen, valueBuff, idx++))
+    {
+        StringBuffer name(nameLen, nameBuff);
+        StringBuffer value(valueLen, valueBuff);
+        rtlFree(nameBuff);
+        rtlFree(valueBuff);
+        if(*name == '_' && !checkReservedMetadataName(name))
+        {
+            roxiemem::OwnedRoxieString fname(helper.getFileName());
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+        }
+        if(!validateXMLTag(name.str()))
+        {
+            roxiemem::OwnedRoxieString fname(helper.getFileName());
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+        }
+        if(!metadata)
+            metadata.setown(createPTree("metadata", ipt_fast));
+        metadata->setProp(name.str(), value.str());
+    }
 }

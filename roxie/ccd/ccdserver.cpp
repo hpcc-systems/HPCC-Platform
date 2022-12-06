@@ -12410,6 +12410,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
     offset_t originalBlobSize = 0;
+    unsigned nodeSize = 0;
 
     void updateWorkUnitResult()
     {
@@ -12475,35 +12476,6 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             }
             else
                 throw MakeStringException(99, "Cannot write index file %s, file already exists (missing OVERWRITE attribute?)", filename.str());
-        }
-    }
-
-    void buildUserMetadata(Owned<IPropertyTree> & metadata)
-    {
-        size32_t nameLen;
-        char * nameBuff;
-        size32_t valueLen;
-        char * valueBuff;
-        unsigned idx = 0;
-        while(helper.getIndexMeta(nameLen, nameBuff, valueLen, valueBuff, idx++))
-        {
-            StringBuffer name(nameLen, nameBuff);
-            StringBuffer value(valueLen, valueBuff);
-            rtlFree(nameBuff);
-            rtlFree(valueBuff);
-            if(*name == '_' && !checkReservedMetadataName(name))
-            {
-                OwnedRoxieString fname(helper.getFileName());
-                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
-            }
-            if(!validateXMLTag(name.str()))
-            {
-                OwnedRoxieString fname(helper.getFileName());
-                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
-            }
-            if(!metadata)
-                metadata.setown(createPTree("metadata", ipt_fast));
-            metadata->setProp(name.str(), value.str());
         }
     }
 
@@ -12580,9 +12552,9 @@ public:
             if (isVariable)
                 flags |= HTREE_VARSIZE;
             Owned<IPropertyTree> metadata;
-            buildUserMetadata(metadata);
+            buildUserMetadata(metadata, helper);
             buildLayoutMetadata(metadata);
-            unsigned nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
+            nodeSize = metadata->getPropInt("_nodeSize", NODESIZE);
             if (metadata->getPropBool("_noSeek", ctx->queryOptions().noSeekBuildIndex))
             {
                 flags |= TRAILING_HEADER_ONLY;
@@ -12726,6 +12698,12 @@ public:
         properties.setPropInt64("@numBlobNodes", numBlobNodes);
         if (numBlobNodes)
             properties.setPropInt64("@originalBlobSize", originalBlobSize);
+
+        size32_t keyedSize = helper.getKeyedSize();
+        if (keyedSize == (size32_t)-1)
+            keyedSize = helper.queryDiskRecordSize()->getFixedSize();
+        properties.setPropInt64("@keyedSize", keyedSize);
+        properties.setPropInt("@nodeSize", nodeSize);
 
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)
