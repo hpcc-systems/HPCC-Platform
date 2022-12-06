@@ -22,6 +22,7 @@ import { Result } from "./Result";
 import { Queries } from "./Queries";
 
 import "react-reflex/styles.css";
+import { IndexFileSummary } from "./IndexFileSummary";
 
 interface FileDetailsProps {
     cluster?: string;
@@ -50,11 +51,11 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/files/${cluster}/${logicalFile}/${evt.props.itemKey}`)}>
             <PivotItem headerText={nlsHPCC.Summary} itemKey="summary" style={pivotItemStyle(size)}>
-                {file?.isSuperfile !== undefined
-                    ? file.isSuperfile
+                {file?.ContentType === "key"
+                    ? <IndexFileSummary cluster={cluster} logicalFile={logicalFile} />
+                    : file?.isSuperfile
                         ? <SuperFileSummary cluster={cluster} logicalFile={logicalFile} />
                         : <LogicalFileSummary cluster={cluster} logicalFile={logicalFile} />
-                    : <></>
                 }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Contents} itemKey="contents" style={pivotItemStyle(size, 0)}>
