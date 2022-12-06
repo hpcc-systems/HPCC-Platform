@@ -61,7 +61,7 @@ inline void setCanAccessDirectly(RemoteFilename & file)
 
 #endif
 
-#define DEFAULT_MAX_CONNECTIONS 800
+#define DEFAULT_MAX_TRANSFERS 800
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
 #define RESPONSE_TIME_TIMEOUT           (60 * 60 * 1000)
@@ -200,6 +200,10 @@ FileTransferThread::FileTransferThread(FileSprayer & _sprayer, byte _action, con
     calcCRC = _calcCRC;
     action = _action;
     ep.set(_ep);
+    if (isContainerized())
+        url.set(sprayer.sprayServiceHost);
+    else
+        ep.getUrlStr(url);
 //  progressInfo = _progressInfo;
     sem = NULL;
     ok = false;
@@ -246,8 +250,6 @@ void FileTransferThread::logIfRunning(StringBuffer &list)
 {
     if (started && !allDone && !error)
     {
-        StringBuffer url;
-        ep.getUrlStr(url);
         DBGLOG("Still waiting for slave %s", url.str());
         if (list.length())
             list.append(',');
@@ -309,7 +311,7 @@ void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
     msg.append(sprayer.calcInputCRC());
     msg.append(calcCRC);
     serialize(partition, msg);
-    msg.append(sprayer.numParallelSlaves());
+    msg.append(sprayer.numConcurrentTransfers);
     msg.append(sprayer.slaveUpdateFrequency);
     msg.append(sprayer.replicate); // NB: controls whether FtSlave copies source timestamp
     msg.append(sprayer.mirroring);
@@ -341,34 +343,22 @@ void FileTransferThread::prepareCmd(MemoryBuffer &msg, unsigned version)
         progress.item(i3).serializeExtra(msg, 2);
 }
 
-bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
+bool FileTransferThread::launchFtSlaveCmd()
 {
-    SocketEndpoint connectEP(ep);
-
-    // in containerized mode, redirect to dafilesrv service or local (if useFtSlave=true)
-    Owned<IPropertyTree> serviceTree;
-    if (isContainerized())
-    {
-        if (sprayer.useFtSlave)
-        {
-            //In containerized world all ftslave processes are executed locally, so make sure we try and connect to a local instance
-            connectEP.set("localhost");
-        }
-        else
-        {
-            serviceTree.setown(sprayer.getSprayService());
-            connectEP.set(serviceTree->queryProp("@name"), serviceTree->getPropInt("@port"));
-        }
-    }
-    StringBuffer url;
-    ep.getUrlStr(url);
-
     Owned<ISocket> socket;
     MemoryBuffer msg;
     msg.setEndian(__BIG_ENDIAN);
+    SocketEndpoint connectEP;
     if (sprayer.useFtSlave)
     {
         StringBuffer tmp;
+        if (isContainerized())
+        {
+            //In containerized world all ftslave processes are executed locally
+            connectEP.set("localhost");
+        }
+        else
+            connectEP.set(ep);
         socket.setown(spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), connectEP, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid));
         if (!socket)
             throwError1(DFTERR_FailedStartSlave, url.str());
@@ -379,8 +369,11 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
     }
     else
     {
-        if (!isContainerized())
+        if (isContainerized())
+            connectEP.set(sprayer.sprayServiceHost);
+        else
         {
+            connectEP.set(ep);
             setDafsEndpointPort(connectEP);
             if (connectEP.isNull())
                 return false;
@@ -393,7 +386,7 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
         {
             try
             {
-                socket.setown(connectDafs(connectEP, 60000, serviceTree));
+                socket.setown(connectDafs(connectEP, 60000, sprayer.sprayServiceConfig));
                 if (socket)
                     break;
             }
@@ -453,9 +446,6 @@ bool FileTransferThread::launchFtSlaveCmd(const SocketEndpoint &ep)
 
 bool FileTransferThread::performTransfer()
 {
-    StringBuffer url;
-    ep.getUrlStr(url);
-
     LOG(MCdebugProgress, job, "Transferring part %s [%p]", url.str(), this);
     started = true;
     allDone = true;
@@ -497,7 +487,7 @@ bool FileTransferThread::performTransfer()
     }
 
     LOG(MCdebugProgressDetail, job, "Start generate part %s [%p]", url.str(), this);
-    bool ok = launchFtSlaveCmd(ep);
+    bool ok = launchFtSlaveCmd();
     LOG(MCdebugProgressDetail, job, "Stopped generate part %s [%p]", url.str(), this);
 
     allDone = true;
@@ -509,7 +499,7 @@ void FileTransferThread::setErrorOwn(IException * e)
 {
     error.setown(e);
     if (error)
-        sprayer.setError(ep, error);
+        sprayer.setError(url, error);
 }
 
 bool FileTransferThread::transferAndSignal()
@@ -1160,7 +1150,7 @@ void FileSprayer::calculateSplitPrefixPartition(const char * splitPrefix)
 
     AsyncExtractBlobInfo extractor(splitPrefix, *this);
     unsigned numSources = sources.ordinality();
-    extractor.For(numSources, numParallelConnections(numSources), true, false);
+    extractor.For(numSources, numPartitionThreads(numSources), true, false);
 
     ForEachItemIn(idx, sources)
     {
@@ -1293,13 +1283,13 @@ void FileSprayer::calculateSprayPartition()
     }
 
     unsigned numProcessors = partitioners.ordinality();
-    unsigned maxConnections = numParallelConnections(numProcessors);
+    unsigned numThreads = numPartitionThreads(numProcessors);
 
     //Throttle maximum number of concurrent transfers by starting n threads, and
     //then waiting for one to complete before going on to the next
     Semaphore sem;
     unsigned goIndex;
-    for (goIndex=0; goIndex < maxConnections; goIndex++)
+    for (goIndex=0; goIndex < numThreads; goIndex++)
         partitioners.item(goIndex).calcPartitions(&sem);
 
     for (; goIndex<numProcessors; goIndex++)
@@ -1308,7 +1298,7 @@ void FileSprayer::calculateSprayPartition()
         partitioners.item(goIndex).calcPartitions(&sem);
     }
 
-    for (unsigned waitCount=0; waitCount < maxConnections;waitCount++)
+    for (unsigned waitCount=0; waitCount < numThreads; waitCount++)
         sem.wait();
 
     ForEachItemIn(idx2, partitioners)
@@ -2483,62 +2473,62 @@ bool FileSprayer::needToCalcOutput()
     return !usePullOperation() || options->getPropBool(ANverify);
 }
 
-unsigned FileSprayer::numParallelConnections(unsigned limit)
+unsigned FileSprayer::numPartitionThreads(unsigned limit)
 {
     unsigned maxConnections = options->getPropInt(ANmaxConnections, limit);
-    if ((maxConnections == 0) || (maxConnections > limit)) maxConnections = limit;
+    if ((maxConnections == 0) || (maxConnections > limit))
+        maxConnections = limit;
     return maxConnections;
 }
 
-unsigned FileSprayer::numParallelSlaves()
+void FileSprayer::calcNumConcurrentTransfers()
 {
-    unsigned numPullers = transferSlaves.ordinality();  // == number of targets
-    unsigned maxConnections = DEFAULT_MAX_CONNECTIONS;
+    unsigned failure = options->getPropInt("@fail", 0);
+    if (failure)
+    {
+        numConcurrentTransfers = 1;
+        return;
+    }
+
+    unsigned numTransferParts = transferSlaves.ordinality();  // == number of target or source parts (depending on whether pulling or pushing)
+    numConcurrentTransfers = DEFAULT_MAX_TRANSFERS;
     unsigned connectOption = options->getPropInt(ANmaxConnections, 0);
-#ifdef _DEBUG
-    LOG(MCdebugInfo, job, "In numParallelSlaves():");
-    LOG(MCdebugInfo, job, "    numPullers:%u", numPullers);
-    LOG(MCdebugInfo, job, "    maxConnections:%u", maxConnections);
-    LOG(MCdebugInfo, job, "    connectOption:%u", connectOption);
-#endif
     if (connectOption)
-        maxConnections = connectOption;
-    else if (mirroring && (maxConnections * 3 < numPullers))
-        maxConnections = numPullers/3;
-    if (maxConnections > numPullers) maxConnections = numPullers;
-    LOG(MCdebugInfo, job, "  maxConnections:%u (final)", maxConnections);
-    return maxConnections;
+        numConcurrentTransfers = connectOption;
+    else if (mirroring && (numConcurrentTransfers * 3 < numTransferParts))
+        numConcurrentTransfers = numTransferParts/3;
+    if (numConcurrentTransfers > numTransferParts)
+        numConcurrentTransfers = numTransferParts;
+    LOG(MCdebugInfo, job, "numTransferParts: %u, numConcurrentTransfers: %u", numTransferParts, numConcurrentTransfers);
 }
 
 void FileSprayer::performTransfer()
 {
     //MORE: Allow this to be configured by an option.
     slaveUpdateFrequency = minSlaveUpdateFrequency;
-    if (numParallelSlaves() < 5)
+    calcNumConcurrentTransfers();
+    if (numConcurrentTransfers < 5)
         slaveUpdateFrequency = maxSlaveUpdateFrequency;
 
     unsigned numSlaves = transferSlaves.ordinality();
-    unsigned maxConnections = numParallelSlaves();
-    unsigned failure = options->getPropInt("@fail", 0);
-    if (failure) maxConnections = 1;
 
     calibrateProgress();
     numSlavesCompleted = 0;
-    if (maxConnections > 1)
+    if (numConcurrentTransfers > 1)
         shuffle(transferSlaves);
 
     if (progressReport)
         progressReport->setRange(getSizeReadAlready(), sizeToBeRead, transferSlaves.ordinality());
 
 
-    LOG(MCdebugInfo, job, "Begin to transfer parts (%d threads)\n", maxConnections);
+    LOG(MCdebugInfo, job, "Begin to transfer parts (%d threads)\n", numConcurrentTransfers);
 
     //Throttle maximum number of concurrent transfers by starting n threads, and
     //then waiting for one to complete before going on to the next
     lastProgressTick = msTick();
     Semaphore sem;
     unsigned goIndex;
-    for (goIndex=0; goIndex<maxConnections; goIndex++)
+    for (goIndex=0; goIndex<numConcurrentTransfers; goIndex++)
         transferSlaves.item(goIndex).go(sem);
 
     //MORE: Should abort early if we get an error on one of the transfers...
@@ -2550,7 +2540,7 @@ void FileSprayer::performTransfer()
         transferSlaves.item(goIndex).go(sem);
     }
 
-    for (unsigned waitCount=0; waitCount<maxConnections;waitCount++)
+    for (unsigned waitCount=0; waitCount<numConcurrentTransfers;waitCount++)
     {
         waitForTransferSem(sem);
         numSlavesCompleted++;
@@ -2810,14 +2800,13 @@ void FileSprayer::setCopyCompressedRaw()
 }
 
 
-void FileSprayer::setError(const SocketEndpoint & ep, IException * e)
+void FileSprayer::setError(const char *host, IException * e)
 {
     CriticalBlock lock(errorCS);
     if (!error)
     {
-        StringBuffer url;
-        ep.getUrlStr(url);
-        error.setown(MakeStringException(e->errorCode(), "%s", e->errorMessage(url.append(": ")).str()));
+        VStringBuffer errMsg("%s: ", host);
+        error.setown(MakeStringException(e->errorCode(), "%s", e->errorMessage(errMsg).str()));
     }
 }
 
@@ -3281,6 +3270,21 @@ void FileSprayer::spray()
         allowRecovery = false;
     }
 
+    // in containerized mode, redirect to dafilesrv service or local (if useFtSlave=true)
+    if (isContainerized())
+    {
+        if (useFtSlave)
+        {
+            //In containerized world all ftslave processes are executed locally, so make sure we try and connect to a local instance
+            sprayServiceHost.set("localhost");
+        }
+        else
+        {
+            // use dafilesrv service for spray commands
+            sprayServiceConfig.setown(getSprayService());
+            sprayServiceHost.clear().append(sprayServiceConfig->queryProp("@name")).append(':').append(sprayServiceConfig->getPropInt("@port"));
+        }
+    }
 
     gatherFileSizes(true);
     if (!replicate||copySource) // NB: When copySource=true, analyseFileHeaders mainly just sets srcFormat.type

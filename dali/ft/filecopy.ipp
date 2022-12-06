@@ -62,7 +62,7 @@ public:
     void logIfRunning(StringBuffer &list);
     void setErrorOwn(IException * e);
     void prepareCmd(MemoryBuffer &mb, unsigned version);
-    bool launchFtSlaveCmd(const SocketEndpoint &_ep);
+    bool launchFtSlaveCmd();
 
     virtual int run();
     virtual bool abortRequested() { return isAborting(); }
@@ -82,6 +82,7 @@ protected:
 protected:
     FileSprayer &               sprayer;
     SocketEndpoint              ep;
+    StringBuffer                url;
     PartitionPointArray         partition;
     OutputProgressArray         progress;
     Semaphore *                 sem;
@@ -206,8 +207,7 @@ public:
     virtual void spray();
 
     void updateProgress(const OutputProgress & newProgress);
-    unsigned numParallelSlaves();
-    void setError(const SocketEndpoint & ep, IException * e);
+    void setError(const char *host, IException * e);
     bool canLocateSlaveForNode(const IpAddress &ip) const;
     void checkSourceTarget(IFileDescriptor * file);
     void setOperation(dfu_operation op);
@@ -230,6 +230,7 @@ protected:
     bool calcCRC();
     bool calcInputCRC();
     unsigned __int64 calcSizeReadAlready();
+    void calcNumConcurrentTransfers();
     void calculateOne2OnePartition();
     void calculateMany2OnePartition();
     void calculateNoSplitPartition();
@@ -258,7 +259,7 @@ protected:
     void locateJsonHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength);
     void locateContentHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength);
     bool needToCalcOutput();
-    unsigned numParallelConnections(unsigned limit);
+    unsigned numPartitionThreads(unsigned limit);
     void performTransfer();
     void pullParts();
     void pushWholeParts();
@@ -364,7 +365,10 @@ protected:
     dfu_operation           operation = dfu_unknown;
     CAbortRequestCallback   fileSprayerAbortChecker;
     unsigned slaveUpdateFrequency = minSlaveUpdateFrequency;
+    unsigned                numConcurrentTransfers = 0;
     StringAttr              sprayServiceName;
+    StringBuffer            sprayServiceHost;
+    Owned<IPropertyTree>    sprayServiceConfig;
 };
 
 
