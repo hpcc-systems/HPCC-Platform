@@ -204,7 +204,7 @@ private:
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
         const char *querySet, const char *query, const char *description, bool includeJsonTypeInfo, bool includeBinTypeInfo,
-        CDFUChangeProtection protect, CDFUChangeRestriction changeRestriction, IEspDFUFileDetail& FileDetails);
+        CDFUChangeProtection protect, CDFUChangeRestriction changeRestriction, IEspDFUFileDetail& FileDetails, bool forceIndexInfo);
     bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, const char * interval, unsigned& yearFrom,
         unsigned& monthFrom, unsigned& dayFrom, unsigned& yearTo, unsigned& monthTo, unsigned& dayTo);
     bool setSpaceItemByScope(IArrayOf<IEspSpaceItem>& SpaceItems64, const char*scopeName, const char*logicalName, __int64 size);

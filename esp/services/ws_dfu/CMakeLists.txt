@@ -109,6 +109,7 @@ target_link_libraries ( ws_dfu
          roxiecommlib 
          wsdfuaccess
          pkgfiles
+         thorhelper
     )
 
 if (NOT CONTAINERIZED)

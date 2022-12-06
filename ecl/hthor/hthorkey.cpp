@@ -26,54 +26,14 @@
 #include "roxiedebug.hpp"
 #include "thorcommon.hpp"
 #include "rtldynfield.hpp"
+#include "thorfile.hpp"
 
 #define MAX_FETCH_LOOKAHEAD 1000
-#define MAX_FILE_READ_FAIL_COUNT 3
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::OwnedRoxieString;
-
-static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
-{
-    unsigned failcount = 0;
-    unsigned numCopies = keyFile.numCopies();
-    assertex(numCopies);
-    Owned<IException> exc;
-    for (unsigned copy=0; copy < numCopies && failcount < MAX_FILE_READ_FAIL_COUNT; copy++)
-    {
-        RemoteFilename rfn;
-        try
-        {
-            OwnedIFile ifile = createIFile(keyFile.getFilename(rfn,copy));
-            offset_t thissize = ifile->size();
-            if (thissize != (offset_t)-1)
-            {
-                StringBuffer remotePath;
-                rfn.getPath(remotePath);
-                unsigned crc = 0;
-                keyFile.getCrc(crc);
-                return createKeyIndex(remotePath.str(), crc, false);
-            }
-        }
-        catch (IException *E)
-        {
-            EXCLOG(E, "While opening index file");
-            if (exc)
-                E->Release();
-            else
-                exc.setown(E);
-            failcount++;
-        }
-    }
-    if (exc)
-        throw exc.getClear();
-    StringBuffer url;
-    RemoteFilename rfn;
-    keyFile.getFilename(rfn).getRemotePath(url);
-    throw MakeStringException(1001, "Could not open key file at %s%s", url.str(), (numCopies > 1) ? " or any alternate location." : ".");
-}
 
 class TransformCallback : public CInterface, implements IThorIndexCallback 
 {

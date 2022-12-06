@@ -1351,6 +1351,25 @@ offset_t CKeyIndex::queryMetadataHead()
     return ret;
 }
 
+offset_t CKeyIndex::queryFirstBranchOffset()
+{
+    unsigned branchDepth = getBranchDepth();
+    if (branchDepth == 0) // Only a single leaf - return 0
+        return 0;
+    if (branchDepth == 1) // a single branch node - return the offset of the node
+        return keyHdr->getRootFPos();
+
+    Linked<CJHTreeNode> cur = rootNode;
+    for (unsigned nextBranch = 2; ; nextBranch++)
+    {
+        offset_t branchOffset = cur->getFPosAt(0);
+        if (nextBranch == branchDepth)
+            return branchOffset;
+        IContextLogger * ctx = nullptr;
+        cur.setown(getNode(branchOffset, NodeBranch, ctx));
+    }
+}
+
 void CKeyIndex::loadBloomFilters()
 {
     offset_t bloomAddr = keyHdr->getHdrStruct()->bloomHead;
@@ -2397,6 +2416,7 @@ public:
         }
         realKey->mergeStats(stats);
     }
+    virtual offset_t queryFirstBranchOffset() override { return checkOpen().queryFirstBranchOffset(); }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK)
