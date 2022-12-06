@@ -50,6 +50,7 @@
     "@numLeafNodes"
     "@offset",
     "@offsetBranches",
+    "@originalBlobSize",
     "@partmask",
     "@persistent",
     "@prevenqueuedt",

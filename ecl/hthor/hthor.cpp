@@ -1157,6 +1157,7 @@ void CHThorIndexWriteActivity::execute()
     unsigned __int64 numLeafNodes = 0;
     unsigned __int64 numBlobNodes = 0;
     unsigned __int64 numBranchNodes = 0;
+    offset_t originalBlobSize = 0;
 
     file.setown(createIFile(filename.get()));
     {
@@ -1205,12 +1206,15 @@ void CHThorIndexWriteActivity::execute()
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;
+            offset_t totalSize = 0;
         public:
             BcWrapper(IKeyBuilder *_builder) : builder(_builder) {}
             virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
             {
+                totalSize += size;
                 return builder->createBlob(size, (const char *) ptr);
             }
+            offset_t queryTotalSize() const { return totalSize; }
         } bc(builder);
         for (;;)
         {
@@ -1248,6 +1252,7 @@ void CHThorIndexWriteActivity::execute()
         numLeafNodes = builder->getNumLeafNodes();
         numBranchNodes = builder->getNumBranchNodes();
         numBlobNodes = builder->getNumBlobNodes();
+        originalBlobSize = bc.queryTotalSize();
 
         totalLeafNodes += numLeafNodes;
         totalBranchNodes += numBranchNodes;
@@ -1298,7 +1303,7 @@ void CHThorIndexWriteActivity::execute()
         desc->addCluster(mygroupname.str(),mygrp, partmap);
         attrs.set(&desc->queryPart(0)->queryProperties());
     }
-    attrs->setPropInt64("@size", uncompressedSize);
+    attrs->setPropInt64("@size", uncompressedSize + originalBlobSize);
     attrs->setPropInt64("@compressedSize", indexFileSize);
     attrs->setPropInt64("@recordCount", reccount);
     attrs->setPropInt64("@offsetBranches", offsetBranches);
@@ -1320,7 +1325,7 @@ void CHThorIndexWriteActivity::execute()
     // properties of the logical file
     IPropertyTree & properties = desc->queryProperties();
     properties.setProp("@kind", "key");
-    properties.setPropInt64("@size", uncompressedSize);
+    properties.setPropInt64("@size", uncompressedSize + originalBlobSize);
     properties.setPropInt64("@compressedSize", indexFileSize);
     properties.setPropInt64("@recordCount", reccount);
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
@@ -1331,6 +1336,8 @@ void CHThorIndexWriteActivity::execute()
     properties.setPropInt64("@numLeafNodes", numLeafNodes);
     properties.setPropInt64("@numBranchNodes", numBranchNodes);
     properties.setPropInt64("@numBlobNodes", numBlobNodes);
+    if (numBlobNodes)
+        properties.setPropInt64("@originalBlobSize", originalBlobSize);
 
     char const * rececl = helper.queryRecordECL();
     if(rececl && *rececl)

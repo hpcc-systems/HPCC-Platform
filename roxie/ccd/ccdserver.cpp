@@ -12409,6 +12409,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
     unsigned __int64 numBranchNodes = 0;
     offset_t offsetBranches = 0;
     offset_t uncompressedSize = 0;
+    offset_t originalBlobSize = 0;
 
     void updateWorkUnitResult()
     {
@@ -12597,12 +12598,15 @@ public:
             class BcWrapper : implements IBlobCreator
             {
                 IKeyBuilder *builder;
+                offset_t totalSize = 0;
             public:
                 BcWrapper(IKeyBuilder *_builder) : builder(_builder) {}
                 virtual unsigned __int64 createBlob(size32_t size, const void * ptr)
                 {
+                    totalSize += size;
                     return builder->createBlob(size, (const char *) ptr);
                 }
+                offset_t queryTotalSize() const { return totalSize; }
             } bc(builder);
 
             // Loop thru the results
@@ -12632,6 +12636,8 @@ public:
             numBranchNodes = builder->getNumBranchNodes();
             numBlobNodes = builder->getNumBlobNodes();
             offsetBranches = builder->getOffsetBranches();
+            originalBlobSize = bc.queryTotalSize();
+
             noteStatistic(StNumLeafCacheAdds, numLeafNodes);
             noteStatistic(StNumNodeCacheAdds, numBranchNodes);
             noteStatistic(StNumBlobCacheAdds, numBlobNodes);
@@ -12668,6 +12674,7 @@ public:
         numBranchNodes = 0;
         offsetBranches = 0;
         uncompressedSize = 0;
+        originalBlobSize = 0;
         noteStatistic(StNumDuplicateKeys, cummulativeDuplicateKeyCount);
         writer.clear();
     }
@@ -12688,7 +12695,7 @@ public:
             attrs.setown(createPTree("Part", ipt_fast));  // clusterHandler is going to set attributes
         else
             attrs.set(&desc->queryPart(0)->queryProperties());
-        attrs->setPropInt64("@size", uncompressedSize);
+        attrs->setPropInt64("@size", uncompressedSize + originalBlobSize);
         attrs->setPropInt64("@compressedSize", compressedFileSize);
         attrs->setPropInt64("@recordCount", reccount);
         attrs->setPropInt64("@offsetBranches", offsetBranches);
@@ -12710,13 +12717,15 @@ public:
         // properties of the logical file
         IPropertyTree & properties = desc->queryProperties();
         properties.setProp("@kind", "key");
-        properties.setPropInt64("@size", uncompressedSize);
+        properties.setPropInt64("@size", uncompressedSize + originalBlobSize);
         properties.setPropInt64("@compressedSize", compressedFileSize);
         properties.setPropInt64("@recordCount", reccount);
         properties.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
         properties.setPropInt64("@numLeafNodes", numLeafNodes);
         properties.setPropInt64("@numBranchNodes", numBranchNodes);
         properties.setPropInt64("@numBlobNodes", numBlobNodes);
+        if (numBlobNodes)
+            properties.setPropInt64("@originalBlobSize", originalBlobSize);
 
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
         if (workUnit)
