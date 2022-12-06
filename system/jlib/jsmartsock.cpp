@@ -302,7 +302,7 @@ void CSmartSocketFactory::shuffleEndpoints()
 }
 
 
-SmartSocketEndpoint *CSmartSocketFactory::nextSmartEndpoint()
+SmartSocketEndpoint *CSmartSocketFactory::nextSmartEndpoint(bool validate)
 {
     SmartSocketEndpoint *ss=sockArray.item(nextEndpointIndex);
     if (retry)
@@ -318,31 +318,33 @@ SmartSocketEndpoint *CSmartSocketFactory::nextSmartEndpoint()
     }
     ++nextEndpointIndex %= sockArray.ordinality();
 
+    if (validate)
+    {
+        synchronized block(lock);
+        ss->checkHost(dnsInterval);
+    }
     return ss;
 }
 
 SocketEndpoint& CSmartSocketFactory::nextEndpoint()
 {
-    SmartSocketEndpoint *ss=nextSmartEndpoint();
+    SmartSocketEndpoint *ss=nextSmartEndpoint(true);
     if (!ss)
         throw createSmartSocketException(0, "smartsocket failed to get nextEndpoint");
+
     return (ss->ep);
 }
 
 ISocket *CSmartSocketFactory::connect_sock(unsigned timeoutms, SmartSocketEndpoint *&ss, SocketEndpoint &ep)
 {
-    ss = nextSmartEndpoint();
+    ss = nextSmartEndpoint(true);
     if (!ss)
         throw createSmartSocketException(0, "smartsocket failed to get nextEndpoint");
 
     ISocket *sock = nullptr;
     try 
     {
-        {
-            synchronized block(lock);
-            ss->checkHost(dnsInterval);
-            ep = ss->ep;
-        }
+        ep = ss->ep;
         if (timeoutms)
             sock = ISocket::connect_timeout(ep, timeoutms);
         else
@@ -460,7 +462,7 @@ void CSmartSocketFactory::setStatus(SocketEndpoint &ep, bool status)
 
 StringBuffer & CSmartSocketFactory::getUrlStr(StringBuffer &url, bool useHostName)
 {
-    SmartSocketEndpoint * sep = nextSmartEndpoint();
+    SmartSocketEndpoint * sep = nextSmartEndpoint(false);
     if (sep)
     {
         SocketEndpoint ep;
