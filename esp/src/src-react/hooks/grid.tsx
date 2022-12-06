@@ -120,7 +120,7 @@ function columnsAdapter(columns: DojoColumns, sorted?: QuerySortItem): IColumn[]
                 key,
                 name: column.label ?? key,
                 fieldName: column.field ?? key,
-                minWidth: column.width,
+                minWidth: column.width ?? 70,
                 maxWidth: column.width,
                 isResizable: true,
                 isSorted: key == attr,
@@ -159,6 +159,7 @@ const gridStyles = (height: number): Partial<IDetailsListStyles> => {
             height,
             minHeight: height,
             maxHeight: height,
+            selectors: { ".ms-DetailsHeader-cellName": { fontSize: "13.5px" } }
         },
         headerWrapper: {
             position: "sticky",
