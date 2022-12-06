@@ -472,6 +472,247 @@ static void strTokenizeFunction(xmlXPathParserContextPtr ctxt, int nargs)
     xmlFree(delimiters);
 }
 
+static void deprecatedEncryptString(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toEncrypt = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    StringBuffer encrypted;
+    try
+    {
+        encrypt(encrypted, (const char*)toEncrypt);
+    }
+    catch (IException* e)
+    {
+        e->Release();
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+    }
+    catch (...)
+    {
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+    }
+    if (!xmlXPathCheckError(ctxt))
+        xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)encrypted.str()));
+    xmlFree(toEncrypt);
+}
+
+static void deprecatedDecryptString(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toDecrypt = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    StringBuffer decrypted;
+    try
+    {
+        decrypt(decrypted, (const char*)toDecrypt);
+    }
+    catch (IException* e)
+    {
+        e->Release();
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+    }
+    catch (...)
+    {
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+    }
+    if (!xmlXPathCheckError(ctxt))
+        xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)decrypted.str()));
+    xmlFree(toDecrypt);
+}
+
+static void encodeBase64String(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (0 == nargs || nargs > 2)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toEncode = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+    bool lineBreaks = false;
+    if (2 == nargs)
+    {
+        lineBreaks = xmlXPathPopBoolean(ctxt);
+        if (xmlXPathCheckError(ctxt))
+        {
+            xmlFree(toEncode);
+            return;
+        }
+    }
+
+    StringBuffer encoded;
+    JBASE64_Encode((const char*)toEncode, long(strlen((const char*)toEncode)), encoded, lineBreaks);
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)encoded.str()));
+    xmlFree(toEncode);
+}
+
+static void decodeBase64String(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toDecode = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    StringBuffer decoded;
+    JBASE64_Decode((const char*)toDecode, decoded);
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)decoded.str()));
+    xmlFree(toDecode);
+}
+
+static void escapeXmlCharacters(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toEncode = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    StringBuffer encoded;
+    encodeXML((const char*)toEncode, encoded);
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)encoded.str()));
+    xmlFree(toEncode);
+}
+
+static void unescapeXmlCharacters(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toDecode = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+
+    StringBuffer decoded;
+    decodeXML((const char*)toDecode, decoded);
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)decoded.str()));
+    xmlFree(toDecode);
+}
+
+static void compressString(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toCompress = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+
+    size32_t len = size32_t(strlen((const char *)toCompress)) + 1;
+    MemoryBuffer compressed;
+    compressToBuffer(compressed, len, (void *)toCompress);
+    StringBuffer encoded;
+    JBASE64_Encode((void*)compressed.bufferBase(), compressed.length(), encoded, false);
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)encoded.str()));
+
+    xmlFree(toCompress);
+}
+
+static void decompressString(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *toDecode = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    if (isEmptyString((const char*)toDecode))
+    {
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+        return;
+    }
+
+    MemoryBuffer toDecompress;
+    JBASE64_Decode((const char *)toDecode, toDecompress);
+    if (!toDecompress.length())
+    {
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+        return;
+    }
+
+    try
+    {
+        MemoryBuffer decompressed;
+        decompressToBuffer(decompressed, toDecompress);
+        xmlXPathReturnString(ctxt, xmlStrdup(decompressed.bytes()));
+    }
+    catch (IException* e)
+    {
+        e->Release();
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+    }
+    catch (...)
+    {
+        xmlXPathSetError(ctxt, XPATH_EXPR_ERROR);
+    }
+
+    xmlFree(toDecode);
+}
+
+static void toXmlString(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlNodeSetPtr toSerialize = xmlXPathPopNodeSet(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+
+    StringBuffer xml;
+    for (int i = 0; i < toSerialize->nodeNr; i++)
+    {
+        xmlNodePtr node = toSerialize->nodeTab[i];
+        if (!node)
+            continue;
+        xmlOutputBufferPtr xmlOut = xmlAllocOutputBuffer(nullptr);
+        xmlNodeDumpOutput(xmlOut, node->doc, node, 0, 1, nullptr);
+        xmlOutputBufferFlush(xmlOut);
+        xmlBufPtr buf = (xmlOut->conv != nullptr) ? xmlOut->conv : xmlOut->buffer;
+        if (xmlBufUse(buf))
+            xml.append(xmlBufUse(buf), (const char *)xmlBufContent(buf));
+        xmlOutputBufferClose(xmlOut);
+    }
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar *)xml.str()));
+
+    xmlXPathFreeNodeSet(toSerialize);
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -485,6 +726,15 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "getLogOption", (void *)getLogOptionFunction);
     xpathContext->registerFunction(uri, "logOptionExists", (void *)logOptionExistsFunction);
     xpathContext->registerFunction(uri, "tokenize", (void *)strTokenizeFunction);
+    xpathContext->registerFunction(uri, "deprecatedEncryptString", (void *)deprecatedEncryptString);
+    xpathContext->registerFunction(uri, "deprecatedDecryptString", (void *)deprecatedDecryptString);
+    xpathContext->registerFunction(uri, "encodeBase64String", (void *)encodeBase64String);
+    xpathContext->registerFunction(uri, "decodeBase64String", (void *)decodeBase64String);
+    xpathContext->registerFunction(uri, "escapeXmlCharacters", (void *)escapeXmlCharacters);
+    xpathContext->registerFunction(uri, "unescapeXmlCharacters", (void *)unescapeXmlCharacters);
+    xpathContext->registerFunction(uri, "compressString", (void *)compressString);
+    xpathContext->registerFunction(uri, "decompressString", (void *)decompressString);
+    xpathContext->registerFunction(uri, "toXmlString", (void *)toXmlString);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)
