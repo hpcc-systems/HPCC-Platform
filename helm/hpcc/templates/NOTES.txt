@@ -60,3 +60,13 @@ This chart has defined the following HPCC components:
   {{- end }}
  {{- end -}}
 {{- end }}
+
+{{- /* Ensure numWorkersPerPod is a factor of numWorkers */ -}}
+{{- range $thor := .Values.thor -}}
+ {{- $numWorkers := $thor.numWorkers | default 1 | int -}}
+ {{- $numWorkersPerPod := $thor.numWorkersPerPod | default 1 | int -}}
+ {{- if ne (mod $numWorkers $numWorkersPerPod) 0 -}}
+  {{- required ( printf "numWorkersPerPod(%d) is not a factor of numWorkers(%d) for Thor component '%s'" $numWorkersPerPod $numWorkers $thor.name ) nil -}}
+ {{- end -}}
+{{- end -}}
+
