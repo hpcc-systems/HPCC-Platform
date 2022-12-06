@@ -101,7 +101,7 @@ public:
     void testTypes()
     {
         VStringBuffer resultJSON("{\"emptystr\":\"\",\"nullstr\":\"\",\"int\":%i,\"uint\":%u,\"uint64\":%" I64F "u,\"querytimer\":42,\"updatetimernew\":23,\"bool\":1}", INT_MAX, UINT_MAX, ULLONG_MAX );
-        VStringBuffer resultText("emptystr;nullstr;int=%i;uint=%u;uint64=%" I64F "u;querytimer=42ms;updatetimernew=23ms;bool=1;", INT_MAX, UINT_MAX, ULLONG_MAX );
+        VStringBuffer resultText("emptystr;nullstr;int=%i;uint=%u;uint64=%" I64F "u;querytimer=42;updatetimernew=23;bool=1;", INT_MAX, UINT_MAX, ULLONG_MAX );
         const char* testName="testTypes";
         Owned<CTxSummary> tx = new CTxSummary();
 
@@ -124,6 +124,11 @@ public:
 
         // Cumulative Timer
         CumulativeTimer* t = tx->queryTimer("querytimer", LogMin, TXSUMMARY_GRP_ENTERPRISE);
+        if (!t)
+        {
+            fprintf(stdout, "\nTest (testTypes): expected cumulative time 'querytimer'\n");
+            CPPUNIT_ASSERT(false);
+        }
         t->add(23);
         tx->updateTimer("querytimer", 19, LogMin, TXSUMMARY_GRP_ENTERPRISE);
         tx->updateTimer("updatetimernew", 23, LogMin, TXSUMMARY_GRP_ENTERPRISE);
@@ -188,17 +193,7 @@ public:
         if(result)
             throw MakeStringException(100, "Failed Test (%s) - allowed malformed key with empty path part: (bread..baker)", testName);
 
-        CumulativeTimer* timer = nullptr;
-        try
-        {
-            // expected exception thrown because "app" is not a timer
-            timer = tx->queryTimer("app", LogMin, TXSUMMARY_GRP_ENTERPRISE);
-        }
-        catch(IException* e)
-        {
-            e->Release();
-        }
-
+        CumulativeTimer* timer = tx->queryTimer("app", LogMin, TXSUMMARY_GRP_ENTERPRISE);
         if(timer)
             throw MakeStringException(100, "Failed Test (%s) - string entry mistaken for CumulativeTimer", testName);
     }
@@ -266,10 +261,10 @@ public:
         constexpr const char* resultOps1JsonMin = R"!!({"dev-str":"q","dev-int":1,"dev-uint":2,"dev-uint64":3,"dev-timer":19,"dev-bool":0})!!";
         constexpr const char* resultOps2JsonMax = R"!!({"ops-str":"q","ops-int":1,"ops-uint":2,"ops-uint64":3,"ops-timer":23,"ops-bool":0,"max-only":1})!!";
         constexpr const char* resultOps2JsonMin = R"!!({"ops-str":"q","ops-int":1,"ops-uint":2,"ops-uint64":3,"ops-timer":23,"ops-bool":0})!!";
-        constexpr const char* resultOps1TextMax = R"!!(dev-str=q;dev-int=1;dev-uint=2;dev-uint64=3;dev-timer=19ms;dev-bool=0;max-only=1;)!!";
-        constexpr const char* resultOps1TextMin = R"!!(dev-str=q;dev-int=1;dev-uint=2;dev-uint64=3;dev-timer=19ms;dev-bool=0;)!!";
-        constexpr const char* resultOps2TextMax = R"!!(ops-str=q;ops-int=1;ops-uint=2;ops-uint64=3;ops-timer=23ms;ops-bool=0;max-only=1;)!!";
-        constexpr const char* resultOps2TextMin = R"!!(ops-str=q;ops-int=1;ops-uint=2;ops-uint64=3;ops-timer=23ms;ops-bool=0;)!!";
+        constexpr const char* resultOps1TextMax = R"!!(dev-str=q;dev-int=1;dev-uint=2;dev-uint64=3;dev-timer=19;dev-bool=0;max-only=1;)!!";
+        constexpr const char* resultOps1TextMin = R"!!(dev-str=q;dev-int=1;dev-uint=2;dev-uint64=3;dev-timer=19;dev-bool=0;)!!";
+        constexpr const char* resultOps2TextMax = R"!!(ops-str=q;ops-int=1;ops-uint=2;ops-uint64=3;ops-timer=23;ops-bool=0;max-only=1;)!!";
+        constexpr const char* resultOps2TextMin = R"!!(ops-str=q;ops-int=1;ops-uint=2;ops-uint64=3;ops-timer=23;ops-bool=0;)!!";
         const char* testName="testFilter";
 
         Owned<CTxSummary> tx = new CTxSummary();
@@ -295,6 +290,11 @@ public:
         // Cumulative Timer
         // create with a call to query, then update
         CumulativeTimer* t = tx->queryTimer("dev-timer", LogMin, TXSUMMARY_GRP_CORE);
+        if (!t)
+        {
+            fprintf(stdout, "\nTest (testFilter): expected cumulative time 'dev-timer'\n");
+            CPPUNIT_ASSERT(false);
+        }
         tx->updateTimer("dev-timer", 19, LogMin, TXSUMMARY_GRP_CORE);
         // create with a call to update
         tx->updateTimer("ops-timer", 23, LogMin, TXSUMMARY_GRP_ENTERPRISE);

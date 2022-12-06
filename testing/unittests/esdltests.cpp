@@ -21,12 +21,15 @@
 #include "xpathprocessor.hpp"
 #include "esdl_script.hpp"
 #include "wsexcept.hpp"
+#include "txsummary.hpp"
 
 #include <stdio.h>
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
 #include "eclrtl.hpp"
 #include "rtlformat.hpp"
+
+#include "nlohmann/json.hpp"
 
 // =============================================================== URI parser
 
@@ -307,6 +310,7 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testScriptContext);
         CPPUNIT_TEST(testTargetElement);
         CPPUNIT_TEST(testStringFunctions);
+        CPPUNIT_TEST(testTxSummary);
       //The following require setup, uncomment for development testing for now:
       //CPPUNIT_TEST(testMysql);
       //CPPUNIT_TEST(testCallFunctions); //requires a particular roxie query
@@ -1820,6 +1824,164 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       if (!result)
         fprintf(stdout, "\nTest(StringFunctions-%s) failed\n", test);
       return result;
+    }
+
+    void testTxSummary()
+    {
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+          <root>
+            <Request>
+            </Request>
+          </root>
+        )!!";
+
+        static constexpr const char * levelsScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Request">
+          <es:tx-summary-value name="level-default" select="''"/>
+          <es:tx-summary-value name="level-min" select="''" level="min"/>
+          <es:tx-summary-value name="level-normal" select="''" level="normal"/>
+          <es:tx-summary-value name="level-max" select="''" level="max"/>
+          <es:tx-summary-value name="level-1" select="''" level="1"/>
+          <es:tx-summary-value name="level-2" select="''" level="2"/>
+          <es:tx-summary-value name="level-3" select="''" level="3"/>
+          <es:tx-summary-value name="level-4" select="''" level="4"/>
+          <es:tx-summary-value name="level-5" select="''" level="5"/>
+          <es:tx-summary-value name="level-6" select="''" level="6"/>
+          <es:tx-summary-value name="level-7" select="''" level="7"/>
+          <es:tx-summary-value name="level-8" select="''" level="8"/>
+          <es:tx-summary-value name="level-9" select="''" level="9"/>
+          <es:tx-summary-value name="level-10" select="''" level="10"/>
+          <es:set-value target="level-default" select="getTxSummary('json')"/>
+          <es:set-value target="level-min" select="getTxSummary('json', 'min')"/>
+          <es:set-value target="level-normal" select="getTxSummary('json', 'normal')"/>
+          <es:set-value target="level-max" select="getTxSummary('json', 'max')"/>
+          <es:set-value target="level-1" select="getTxSummary('json', 1)"/>
+          <es:set-value target="level-2" select="getTxSummary('json', 2)"/>
+          <es:set-value target="level-3" select="getTxSummary('json', 3)"/>
+          <es:set-value target="level-4" select="getTxSummary('json', 4)"/>
+          <es:set-value target="level-5" select="getTxSummary('json', 5)"/>
+          <es:set-value target="level-6" select="getTxSummary('json', 6)"/>
+          <es:set-value target="level-7" select="getTxSummary('json', 7)"/>
+          <es:set-value target="level-8" select="getTxSummary('json', 8)"/>
+          <es:set-value target="level-9" select="getTxSummary('json', 9)"/>
+          <es:set-value target="level-10" select="getTxSummary('json', 10)"/>
+        </es:CustomRequestTransform>
+        )!!";
+        static const char* levelsResult1 = R"!!!({"level-default": "", "level-min": "", "level-1": ""})!!!";
+        static const char* levelsResult2 = R"!!!({"level-default": "", "level-min": "", "level-1": "", "level-2": ""})!!!";
+        static const char* levelsResult3 = R"!!!({"level-default": "", "level-min": "", "level-1": "", "level-2": "", "level-3": ""})!!!";
+        static const char* levelsResult4 = R"!!!({"level-default": "", "level-min": "", "level-1": "", "level-2": "", "level-3": "", "level-4": ""})!!!";
+        static const char* levelsResult5 = R"!!!({"level-default": "", "level-min": "", "level-normal": "", "level-1": "", "level-2": "", "level-3": "", "level-4": "", "level-5": ""})!!!";
+        static const char* levelsResult6 = R"!!!({"level-default": "", "level-min": "", "level-normal": "", "level-1": "", "level-2": "", "level-3": "", "level-4": "", "level-5": "", "level-6": ""})!!!";
+        static const char* levelsResult7 = R"!!!({"level-default": "", "level-min": "", "level-normal": "", "level-1": "", "level-2": "", "level-3": "", "level-4": "", "level-5": "", "level-6": "", "level-7": ""})!!!";
+        static const char* levelsResult8 = R"!!!({"level-default": "", "level-min": "", "level-normal": "", "level-1": "", "level-2": "", "level-3": "", "level-4": "", "level-5": "", "level-6": "", "level-7": "", "level-8": ""})!!!";
+        static const char* levelsResult9 = R"!!!({"level-default": "", "level-min": "", "level-normal": "", "level-1": "", "level-2": "", "level-3": "", "level-4": "", "level-5": "", "level-6": "", "level-7": "", "level-8": "", "level-9": ""})!!!";
+        static const char* levelsResult10 = R"!!!({"level-default": "", "level-min": "", "level-normal": "", "level-max": "", "level-1": "", "level-2": "", "level-3": "", "level-4": "", "level-5": "", "level-6": "", "level-7": "", "level-8": "", "level-9": "", "level-10": ""})!!!";
+        static constexpr const char * typesScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Request">
+          <es:tx-summary-value name="type-default" select="'0'"/>
+          <es:tx-summary-value name="type-text" select="'0'" type="text"/>
+          <es:tx-summary-value name="type-signed-min" select="'-9223372036854775808'" type="signed"/>
+          <es:tx-summary-value name="type-signed-max" select="'9223372036854775807'" type="signed"/>
+          <es:tx-summary-value name="type-unsigned-min" select="'0'" type="unsigned"/>
+          <es:tx-summary-value name="type-unsigned-max" select="'18446744073709551615'" type="unsigned"/>
+          <es:tx-summary-value name="type-decimal-min" select="'-1.79769e+308'" type="decimal"/>
+          <es:tx-summary-value name="type-decimal-max" select="'1.79769e+308'" type="decimal"/>
+          <es:set-value target="types-all" select="getTxSummary('json')"/>
+        </es:CustomRequestTransform>
+        )!!";
+        static const char* typesResultAll = R"!!!({"type-default": "0", "type-text": "0", "type-signed-min": -9223372036854775808, "type-signed-max": 9223372036854775807, "type-unsigned-min": 0, "type-unsigned-max": 18446744073709551615, "type-decimal-min": -1.79769e+308, "type-decimal-max": 1.79769e+308})!!!";
+        static constexpr const char * timersScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Request">
+          <es:tx-summary-timer name="scalar-default">
+            <es:delay millis="2"/>
+          </es:tx-summary-timer>
+          <es:tx-summary-timer name="scalar-append" mode="append">
+            <es:delay millis="2"/>
+          </es:tx-summary-timer>
+          <es:tx-summary-timer name="scalar-set" mode="set">
+            <es:delay/>
+          </es:tx-summary-timer>
+          <es:tx-summary-timer name="accumulating" mode="accumulate">
+            <es:delay millis="5"/>
+          </es:tx-summary-timer>
+          <es:tx-summary-timer name="accumulating" mode="accumulate">
+            <es:delay millis="10"/>
+          </es:tx-summary-timer>
+          <es:set-value target="timers-all" select="getTxSummary('json')"/>
+        </es:CustomRequestTransform>
+        )!!";
+        static const char* timersResultAll = R"!!!({"scalar-default": 2, "scalar-append": 2, "scalar-set": 1, "accumulating": 15})!!!";
+
+        try {
+          Owned<IEspContext> ctx = createEspContext(nullptr);
+          CTxSummary* txSummary = ctx->queryTxSummary();
+          Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr);
+          scriptContext->setTestMode(true);
+          scriptContext->setTraceToStdout(true);
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
+          scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
+          scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, input);
+
+          txSummary->clear();
+          runTransform(scriptContext, levelsScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 1", 0);
+          compareTxSummary(scriptContext, "level", "default", levelsResult1, true);
+          compareTxSummary(scriptContext, "level", "min", levelsResult1, true);
+          compareTxSummary(scriptContext, "level", "normal", levelsResult5, true);
+          compareTxSummary(scriptContext, "level", "max", levelsResult10, true);
+          compareTxSummary(scriptContext, "level", "1", levelsResult1, true);
+          compareTxSummary(scriptContext, "level", "2", levelsResult2, true);
+          compareTxSummary(scriptContext, "level", "3", levelsResult3, true);
+          compareTxSummary(scriptContext, "level", "4", levelsResult4, true);
+          compareTxSummary(scriptContext, "level", "5", levelsResult5, true);
+          compareTxSummary(scriptContext, "level", "6", levelsResult6, true);
+          compareTxSummary(scriptContext, "level", "7", levelsResult7, true);
+          compareTxSummary(scriptContext, "level", "8", levelsResult8, true);
+          compareTxSummary(scriptContext, "level", "9", levelsResult9, true);
+          compareTxSummary(scriptContext, "level", "10", levelsResult10, true);
+
+          txSummary->clear();
+          runTransform(scriptContext, typesScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 2", 0);
+          compareTxSummary(scriptContext, "types", "all", typesResultAll, true);
+
+          txSummary->clear();
+          runTransform(scriptContext, timersScript, ESDLScriptCtxSection_ESDLRequest, "TxSummary", "TxSummary 3", 0);
+          compareTxSummary(scriptContext, "timers", "all", timersResultAll, false);
+        }
+        catch (IException *E)
+        {
+          StringBuffer m;
+          fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "TxSummary", E->errorCode(), E->errorMessage(m).str());
+          E->Release();
+          CPPUNIT_ASSERT(false);
+        }
+    }
+    void compareTxSummary(IEsdlScriptContext* scriptContext, const char* prefix, const char* test, const char* expectedText, bool exact)
+    {
+      using namespace nlohmann;
+      StringBuffer actualText;
+      scriptContext->getXPathString(VStringBuffer("TxSummary/root/Request/%s-%s", prefix, test), actualText);
+      json expected = json::parse(expectedText);
+      json actual = json::parse(actualText.str());
+      if (expected != actual)
+      {
+        // Timer values are not guaranteed. The delay operation ensures a minimum elapsed time
+        // but cannot guarantee a maximum. While object equality is preferred, ensuring that at
+        // least the expected times passed are is necessarily sufficient.
+        bool closeEnough = !exact && expected.size() == actual.size();
+        for (json::iterator it = expected.begin(); closeEnough && it != expected.end(); ++it)
+        {
+          if (!actual.contains(it.key()))
+            closeEnough = false;
+          else if (actual[it.key()] < it.value())
+            closeEnough = false;
+        }
+        if (!closeEnough)
+        {
+          fprintf(stdout, "\nTest(TxSummary-%s-%s)\n    expected: '%s'\n    actual: '%s'\n", prefix, test, expectedText, actualText.str());
+          CPPUNIT_ASSERT(false);
+        }
+        fprintf(stdout, "\nTxSummary-%s-%s) '%s' close enough to '%s'\n", prefix, test, actualText.str(), expectedText);
+      }
     }
 
     void testHTTPPostXml()
