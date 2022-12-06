@@ -7,12 +7,15 @@ LOGANALYTICS_WORKSPACE_NAME=
 # For example: admin=MyName email=my.email@mycompany.com environment=myenv justification=testing
 TAGS=
 
-# The Azure resource group associated with the target AKS cluster
+# The Azure resource group associated with the LogAnalytics workspace
 LOGANALYTICS_RESOURCE_GROUP=
 
 # Name of the AKS cluster hosting HPCC components to be monitored and associated with the newly
 # created Azure LogAnalytics workspace
 AKS_CLUSTER_NAME=
+
+# The Azure resource group associated with the target AKS cluster
+AKS_RESOURCE_GROUP=
 
 # The Azure subscription
 AZURE_SUBSCRIPTION=

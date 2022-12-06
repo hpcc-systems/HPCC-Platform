@@ -19,7 +19,13 @@ then
    echo "Missing AKS_CLUSTER_NAME environment variable - this should be set to the AKS cluster to be monitored via newly created LogAnalytics workspace"
    exit 1
 fi
- 
+
+if [[ -z "$AKS_RESOURCE_GROUP" ]]
+then
+   echo "Missing AKS_RESOURCE_GROUP environment variable - this should be set to the AKS cluster Resource group"
+   exit 1
+fi
+
 if [[ -n "$AZURE_SUBSCRIPTION" ]]
 then
    echo "Setting subscription to '$AZURE_SUBSCRIPTION'..."
@@ -54,10 +60,10 @@ else
 fi
 
 echo "Enabling workspace on target AKS cluster '$AKS_CLUSTER_NAME'..."
-az aks enable-addons -g $LOGANALYTICS_RESOURCE_GROUP -n $AKS_CLUSTER_NAME -a monitoring --workspace-resource-id $wsid
+az aks enable-addons -g $AKS_RESOURCE_GROUP -n $AKS_CLUSTER_NAME -a monitoring --workspace-resource-id $wsid
 if [[ $? -ne 0 ]]
 then
-  echo "Could not enable target log-analytics workspace '${LOGANALYTICS_RESOURCE_GROUP}'!"
+  echo "Could not enable monitoring on ${AKS_RESOURCE_GROUP}/${AKS_CLUSTER_NAME} targeting workspace '${wsid}'!"
   exit 1
 else
   echo "Success, workspace id: '$wsid' enabled on AKS $AKS_CLUSTER_NAME"
