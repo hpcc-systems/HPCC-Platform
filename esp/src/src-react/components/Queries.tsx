@@ -92,13 +92,13 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         filename: "roxiequeries",
         columns: {
             col1: {
-                width: 27,
+                width: 16,
                 selectorType: "checkbox"
             },
             Suspended: {
                 headerIcon: "Pause",
                 headerTooltip: nlsHPCC.Suspended,
-                width: 25,
+                width: 16,
                 sortable: false,
                 formatter: React.useCallback(function (suspended) {
                     if (suspended === true) {
@@ -110,7 +110,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             ErrorCount: {
                 headerIcon: "Warning",
                 headerTooltip: nlsHPCC.ErrorWarnings,
-                width: 25,
+                width: 16,
                 sortable: false,
                 formatter: React.useCallback(function (error) {
                     if (error > 0) {
@@ -122,7 +122,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             MixedNodeStates: {
                 headerIcon: "Error",
                 headerTooltip: nlsHPCC.MixedNodeStates,
-                width: 25,
+                width: 16,
                 sortable: false,
                 formatter: React.useCallback(function (mixed) {
                     if (mixed === true) {
@@ -134,7 +134,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             Activated: {
                 headerIcon: "SkypeCircleCheck",
                 headerTooltip: nlsHPCC.Active,
-                width: 25,
+                width: 16,
                 formatter: React.useCallback(function (activated) {
                     if (activated === true) {
                         return <Icon iconName="SkypeCircleCheck" />;
@@ -144,7 +144,6 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             },
             Id: {
                 label: nlsHPCC.ID,
-                width: 380,
                 formatter: React.useCallback(function (Id, row) {
                     return <Link href={`#/queries/${row.QuerySetId}/${Id}`} >{Id}</Link>;
                 }, [])
@@ -156,35 +155,17 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                     return priority === undefined ? "" : priority;
                 }, [])
             },
-            Name: {
-                label: nlsHPCC.Name
-            },
-            QuerySetId: {
-                width: 140,
-                label: nlsHPCC.Target,
-                sortable: true
-            },
+            Name: { label: nlsHPCC.Name },
+            QuerySetId: { label: nlsHPCC.Target, sortable: true },
             Wuid: {
-                width: 160,
-                label: nlsHPCC.WUID,
+                label: nlsHPCC.WUID, width: 100,
                 formatter: React.useCallback(function (Wuid, idx) {
                     return <Link href={`#/workunits/${Wuid}`}>{Wuid}</Link>;
                 }, [])
             },
-            Dll: {
-                width: 180,
-                label: nlsHPCC.Dll
-            },
-            PublishedBy: {
-                width: 100,
-                label: nlsHPCC.PublishedBy,
-                sortable: false
-            },
-            Status: {
-                width: 100,
-                label: nlsHPCC.Status,
-                sortable: false
-            }
+            Dll: { label: nlsHPCC.Dll },
+            PublishedBy: { label: nlsHPCC.PublishedBy, sortable: false },
+            Status: { label: nlsHPCC.Status, sortable: false }
         }
     });
 

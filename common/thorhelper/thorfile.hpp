@@ -24,9 +24,38 @@
  #define THORHELPER_API DECL_IMPORT
 #endif
 #include "eclhelper.hpp"
+#include "dadfs.hpp"
 
 THORHELPER_API void setExpiryTime(IPropertyTree & properties, unsigned expireDays);
 THORHELPER_API IHThorDiskReadArg * createWorkUnitReadArg(const char * filename, IHThorWorkunitReadArg * wuRead);
 THORHELPER_API void setRtlFormat(IPropertyTree & properties, IOutputMetaData * meta);
+THORHELPER_API void buildUserMetadata(Owned<IPropertyTree> & metadata, IHThorIndexWriteArg & helper);
+
+class THORHELPER_API DerivedIndexInformation
+{
+public:
+    double getBranchCompression() const { return sizeOriginalBranches ? (double)sizeDiskBranches / sizeOriginalBranches : 0.0; }
+    double getDataCompression() const { return sizeOriginalData ? (double)(sizeDiskLeaves + sizeDiskBlobs) / sizeOriginalData : 0.0; }
+
+public:
+    offset_t numLeafNodes = 0;
+    offset_t numBlobNodes = 0;
+    offset_t numBranchNodes = 0;
+    offset_t sizeDiskLeaves = 0;
+    offset_t sizeDiskBlobs = 0;
+    offset_t sizeDiskBranches = 0;
+    offset_t sizeOriginalData = 0;
+    offset_t sizeOriginalBranches = 0;
+    offset_t sizeMemoryLeaves = 0;
+    offset_t sizeMemoryBranches = 0;
+    bool knownLeafCount = false;
+};
+
+interface IKeyIndex;
+THORHELPER_API bool checkIndexMetaInformation(IDistributedFile * file, bool force);
+THORHELPER_API bool calculateDerivedIndexInformation(DerivedIndexInformation & result, IDistributedFile * file, bool force);
+THORHELPER_API void mergeDerivedInformation(DerivedIndexInformation & result, const DerivedIndexInformation & other);
+THORHELPER_API IKeyIndex *openKeyFile(IDistributedFilePart & keyFile);
+
 
 #endif

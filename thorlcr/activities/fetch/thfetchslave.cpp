@@ -262,13 +262,16 @@ public:
         }
         return NULL;
     }
-    virtual void getFileStats(CRuntimeStatisticCollection & stats, std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned fileTableStart) override
+    virtual void getStats(CRuntimeStatisticCollection & stats) const override
     {
         for (unsigned f=0; f<files; f++)
         {
             IFileIO *file = fPosMultiPartTable[f].file;
             mergeStats(stats, file);
         }
+    }
+    virtual void getFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & fileStats, unsigned fileTableStart) const override
+    {
         if(!fileStats.empty())
         {
             ISuperFileDescriptor *super = parts.item(0).queryOwner().querySuperFileDescriptor();
@@ -308,7 +311,7 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
 protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
     Owned<IFetchStream> fetchStream;
-    CriticalSection fetchStreamCS;
+    mutable CriticalSection fetchStreamCS;
     IHThorFetchBaseArg *fetchBaseHelper;
     unsigned files = 0;
     CPartDescriptorArray parts;
@@ -566,12 +569,19 @@ public:
             return fpos;
         }
     }
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
+    {
+        PARENT::gatherActiveStats(activeStats);
+        CriticalBlock b(fetchStreamCS);
+        if (fetchStream)
+            fetchStream->getStats(activeStats);
+    }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
         {
             CriticalBlock b(fetchStreamCS);
             if (fetchStream)
-                fetchStream->getFileStats(stats, fileStats, fileTableStart);
+                fetchStream->getFileStats(fileStats, fileTableStart);
         }
         PARENT::serializeStats(mb);
         mb.append((unsigned)fileStats.size());

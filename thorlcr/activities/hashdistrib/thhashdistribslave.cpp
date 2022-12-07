@@ -3843,7 +3843,7 @@ class HashJoinSlaveActivity : public CSlaveActivity, implements IStopInput
     bool eof;
     Owned<IRowStream> strmL;
     Owned<IRowStream> strmR;
-    CriticalSection joinHelperCrit;
+    mutable CriticalSection joinHelperCrit;
     CriticalSection stopsect;
     rowcount_t lhsProgressCount;
     rowcount_t rhsProgressCount;
@@ -3994,22 +3994,20 @@ public:
         info.canStall = true;
         info.unknownRowsOutput = true;
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
+        PARENT::gatherActiveStats(activeStats);
+        CriticalBlock b(joinHelperCrit);
+        if (!joinhelper) // bit odd, but will leave as was for now.
         {
-            CriticalBlock b(joinHelperCrit);
-            if (!joinhelper) // bit odd, but will leave as was for now.
-            {
-                stats.setStatistic(StNumLeftRows, lhsProgressCount);
-                stats.setStatistic(StNumRightRows, rhsProgressCount);
-            }
-            else
-            {
-                stats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
-                stats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
-            }
-        }    
-        PARENT::serializeStats(mb);
+            activeStats.setStatistic(StNumLeftRows, lhsProgressCount);
+            activeStats.setStatistic(StNumRightRows, rhsProgressCount);
+        }
+        else
+        {
+            activeStats.setStatistic(StNumLeftRows, joinhelper->getLhsProgress());
+            activeStats.setStatistic(StNumRightRows, joinhelper->getRhsProgress());
+        }
     }
 };
 #ifdef _MSC_VER

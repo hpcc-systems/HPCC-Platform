@@ -47,6 +47,53 @@
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
 
+bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
+{
+    Owned<IPropertyTree> planeGroup;
+    if (plane->hasProp("@hostGroup"))
+        planeGroup.setown(getHostGroup(plane->queryProp("@hostGroup"), true));
+    else
+    {
+        if (!plane->hasProp("hosts"))
+            return false;
+        planeGroup.set(plane); // plane itself holds 'hosts'
+    }
+    Owned<IPropertyTreeIterator> hostsIter = planeGroup->getElements("hosts");
+    SocketEndpoint hostEp;
+    if (ipMatch)
+        hostEp.set(host);
+    ForEach (*hostsIter)
+    {
+        const char *planeHost = hostsIter->query().queryProp(nullptr);
+        if (ipMatch)
+        {
+            SocketEndpoint planeHostEp(planeHost);
+            if (planeHostEp.ipequals(hostEp))
+                return true;
+        }
+        else if (streq(planeHost, host))
+            return true;
+    }
+    return false;
+}
+
+bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
+{
+    Owned<IPropertyTree> hostGroup;
+    if (plane->hasProp("@hostGroup"))
+        hostGroup.setown(getHostGroup(plane->queryProp("@hostGroup"), true));
+    else if (plane->hasProp("hosts"))
+        hostGroup.set(plane); // the plane holds the "hosts"
+    else
+        return false;
+
+    if (which >= hostGroup->getCount("hosts"))
+        throw makeStringException(0, "getPlaneHost: index out of range");
+    VStringBuffer xpath("hosts[%u]", which+1); // which is 0 based
+    host.append(hostGroup->queryProp(xpath));
+    return true;
+}
+
 constexpr const char * lz_plane_path = "storage/planes[@category='lz']";
 
 IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
@@ -1003,19 +1050,8 @@ IPropertyTree *CDfsLogicalFileName::createSuperTree() const
     return ret;
 }
 
-
-void CDfsLogicalFileName::setExternal(const char *location,const char *path)
+static void convertPosixPathToLfn(StringBuffer &str,const char *path)
 {
-    if (!path||!*path)
-        return;
-    if (isPathSepChar(path[0])&&(path[0]==path[1])) {
-        RemoteFilename rfn;
-        rfn.setRemotePath(path);
-        setExternal(rfn);  // overrides ip
-        return;
-    }
-    StringBuffer str(EXTERNAL_SCOPE "::");
-    str.append(location);
     if ((path[1]==':')&&(path[2]=='\\')) {
         str.append("::").append(path[0]).append('$');
         path+=2;
@@ -1054,6 +1090,33 @@ void CDfsLogicalFileName::setExternal(const char *location,const char *path)
             path++;
         }
     }
+}
+
+void CDfsLogicalFileName::setPlaneExternal(const char *plane,const char *path)
+{
+    if (isEmptyString(path))
+        return;
+    if (isPathSepChar(path[0])&&(path[0]==path[1]))
+        throw makeStringExceptionV(-1,"Invalid path %s.",path);
+    StringBuffer str(PLANE_SCOPE "::");
+    str.append(plane);
+    convertPosixPathToLfn(str,path);
+    set(str.str());
+}
+
+void CDfsLogicalFileName::setExternal(const char *location,const char *path)
+{
+    if (isEmptyString(path))
+        return;
+    if (isPathSepChar(path[0])&&(path[0]==path[1])) {
+        RemoteFilename rfn;
+        rfn.setRemotePath(path);
+        setExternal(rfn);  // overrides ip
+        return;
+    }
+    StringBuffer str(EXTERNAL_SCOPE "::");
+    str.append(location);
+    convertPosixPathToLfn(str,path);
     set(str.str());
 }
 

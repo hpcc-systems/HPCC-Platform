@@ -119,6 +119,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual bool needsRowBuffer() const = 0;
     virtual bool prewarmPage(offset_t offset, NodeType type) = 0;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
+    virtual offset_t queryFirstBranchOffset() = 0;
 };
 
 interface IKeyArray : extends IInterface

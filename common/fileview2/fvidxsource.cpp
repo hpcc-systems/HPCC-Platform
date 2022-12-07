@@ -28,45 +28,7 @@
 #include "dasess.hpp"
 #include "rtlrecord.hpp"
 #include "rtldynfield.hpp"
-
-#define MAX_FILE_READ_FAIL_COUNT 3
-
-//cloned from hthor - a candidate for commoning up.
-static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
-{
-    unsigned failcount = 0;
-    unsigned numCopies = keyFile->numCopies();
-    assertex(numCopies);
-    for (unsigned copy=0; copy < numCopies && failcount < MAX_FILE_READ_FAIL_COUNT; copy++)
-    {
-        RemoteFilename rfn;
-        try
-        {
-            OwnedIFile ifile = createIFile(keyFile->getFilename(rfn,copy));
-            unsigned __int64 thissize = ifile->size();
-            if (thissize != -1)
-            {
-                StringBuffer remotePath;
-                rfn.getPath(remotePath);
-                unsigned crc = 0;
-                keyFile->getCrc(crc);
-                return createKeyIndex(remotePath.str(), crc, false);
-            }
-        }
-        catch (IException *E)
-        {
-            EXCLOG(E, "While opening index file");
-            E->Release();
-            failcount++;
-        }
-    }
-    RemoteFilename rfn;
-    StringBuffer url;
-    keyFile->getFilename(rfn).getRemotePath(url);
-    throw MakeStringException(1001, "Could not open key file at %s%s", url.str(), (numCopies > 1) ? " or any alternate location." : ".");
-}
-
-//---------------------------------------------------------------------------
+#include "thorfile.hpp"
 
 #define MIN_CACHED_ROWS         150
 #define MAX_CACHED_ROWS         200
@@ -245,7 +207,7 @@ IKeyIndex * IndexDataSource::queryTLK()
     if (!cachedTLK)
     {
         Owned<IDistributedFilePart> kf = df->getPart(numParts-1);
-        cachedTLK.setown(openKeyFile(kf));
+        cachedTLK.setown(openKeyFile(*kf));
     }
     return cachedTLK;
 }
@@ -269,7 +231,7 @@ __int64 IndexDataSource::numRows(bool force)
         else
         {
             Owned<IDistributedFilePart> kf = df->getPart(matchingParts.item(i));
-            curPart.setown(openKeyFile(kf));
+            curPart.setown(openKeyFile(*kf));
             if (!curPart)
             {
                 total = UNKNOWN_NUM_ROWS;
@@ -332,7 +294,7 @@ bool IndexDataSource::getNextRow(MemoryBuffer & out, bool extractRow)
             else
             {
                 Owned<IDistributedFilePart> kf = df->getPart(matchingParts.item(curPartIndex));
-                curPart.setown(openKeyFile(kf));
+                curPart.setown(openKeyFile(*kf));
                 if (!curPart)
                     return false;
             }

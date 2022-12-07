@@ -94,7 +94,7 @@ public:
 
     ISmartSocket *connectNextAvailableSocket();
 
-    SmartSocketEndpoint *nextSmartEndpoint();
+    SmartSocketEndpoint *nextSmartEndpoint(bool validate);
     SocketEndpoint& nextEndpoint();
 
     virtual void stop();

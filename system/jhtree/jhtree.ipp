@@ -149,7 +149,8 @@ public:
     virtual bool hasSpecialFileposition() const;
     virtual bool needsRowBuffer() const;
     virtual bool prewarmPage(offset_t page, NodeType type);
- 
+    virtual offset_t queryFirstBranchOffset() override;
+
  // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override = 0;  // Must be implemented in derived classes
     virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) override;

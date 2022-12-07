@@ -130,7 +130,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         filename: "logicalfiles",
         columns: {
             col1: {
-                width: 27,
+                width: 16,
                 disabled: React.useCallback(function (item) {
                     return item ? item.__hpcc_isDir : true;
                 }, []),
@@ -139,7 +139,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             IsProtected: {
                 headerIcon: "LockSolid",
                 headerTooltip: nlsHPCC.Protected,
-                width: 25,
+                width: 16,
                 sortable: false,
                 formatter: React.useCallback(function (_protected) {
                     if (_protected === true) {
@@ -151,7 +151,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             IsCompressed: {
                 headerIcon: "ZipFolder",
                 headerTooltip: nlsHPCC.Compressed,
-                width: 25,
+                width: 16,
                 sortable: false,
                 formatter: React.useCallback(function (compressed) {
                     if (compressed === true) {
@@ -161,7 +161,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 }, [])
             },
             __hpcc_displayName: {
-                label: nlsHPCC.LogicalName, width: 600,
+                label: nlsHPCC.LogicalName,
                 formatter: React.useCallback(function (name, row) {
                     if (row.__hpcc_isDir) {
                         return name;
@@ -174,26 +174,26 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     </>;
                 }, []),
             },
-            Owner: { label: nlsHPCC.Owner, width: 75 },
-            SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
-            Description: { label: nlsHPCC.Description, width: 150 },
-            NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
+            Owner: { label: nlsHPCC.Owner },
+            SuperOwners: { label: nlsHPCC.SuperOwner },
+            Description: { label: nlsHPCC.Description },
+            NodeGroup: { label: nlsHPCC.Cluster },
             RecordCount: {
-                label: nlsHPCC.Records, width: 85,
+                label: nlsHPCC.Records,
                 renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
                 }, []),
             },
             IntSize: {
-                label: nlsHPCC.Size, width: 100,
+                label: nlsHPCC.Size,
                 renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.convertedSize(value);
                 }, []),
             },
             Parts: {
-                label: nlsHPCC.Parts, width: 60,
+                label: nlsHPCC.Parts, width: 40,
                 renderCell: React.useCallback(function (object, value, node, options) {
                     domClass.add(node, "justify-right");
                     node.innerText = Utility.valueCleanUp(value);
@@ -205,15 +205,15 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             MaxSkew: {
                 label: nlsHPCC.MaxSkew, width: 60, formatter: React.useCallback((value, row) => value ?? "", [])
             },
-            Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 },
+            Modified: { label: nlsHPCC.ModifiedUTCGMT },
             AtRestCost: {
-                label: nlsHPCC.FileCostAtRest, width: 100,
+                label: nlsHPCC.FileCostAtRest,
                 formatter: React.useCallback(function (cost, row) {
                     return `${formatCost(cost)}`;
                 }, [])
             },
             AccessCost: {
-                label: nlsHPCC.FileAccessCost, width: 100,
+                label: nlsHPCC.FileAccessCost,
                 formatter: React.useCallback(function (cost, row) {
                     return `${formatCost(cost)}`;
                 }, [])

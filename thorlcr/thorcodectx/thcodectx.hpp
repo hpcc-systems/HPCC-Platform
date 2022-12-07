@@ -47,6 +47,7 @@ protected:
 public:
     CThorCodeContextBase(CJobChannel &jobChannel, ILoadedDllEntry &_querySo, IUserDescriptor &_userDesc);
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<ICodeContextExt>) // This is strangely required by visual studio to ensure Release() is resolved
+    virtual void gatherStats(CRuntimeStatisticCollection &mergedStats) const override { throwUnexpected(); }
 
 // ICodeContext
     virtual const char *loadResource(unsigned id) override;

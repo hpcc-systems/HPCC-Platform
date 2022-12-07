@@ -290,6 +290,9 @@ private:
     void debugPrintout()
     {
         DBGLOG("@@LDAP CONFIG--------------");
+        StringBuffer sb;
+        getLdapHost(sb);
+        DBGLOG("LDAP host = %s", sb.str());
         DBGLOG("m_adminGroupDN = %s", m_adminGroupDN.str());
         DBGLOG("m_protocol = %s", m_protocol.str());
         DBGLOG("m_basedn = %s", m_basedn.str());
@@ -4565,8 +4568,7 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            DBGLOG("error deleting %s: %s", dn.str(), ldap_err2string(rc));
-            //throw MakeStringException(-1, "error deleting %s: %s", dn.str(), ldap_err2string(rc));
+            throw MakeStringException(-1, "Error deleting %s: %s", dn.str(), ldap_err2string(rc));
         }
         
     }

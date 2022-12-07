@@ -25,6 +25,7 @@
 #include "rtlformat.hpp"
 #include "jsecrets.hpp"
 #include "esdl_script.hpp"
+#include "txsummary.hpp"
 
 #include <fxpp/FragmentedXmlPullParser.hpp>
 using namespace xpp;
@@ -471,8 +472,37 @@ public:
 
         m_server.setown(compileOptionalXpath(stag.getValue("server")));
         m_user.setown(compileOptionalXpath(stag.getValue("user")));
-        m_password.setown(compileOptionalXpath(stag.getValue("password")));
         m_database.setown(compileOptionalXpath(stag.getValue("database")));
+
+        /*
+         * Use of secrets for database connection information is the recommended best practice. Use
+         * of an inline plaintext password is the worst option, with use of an easily decrypted
+         * inline password only slightly less risky.
+         *
+         * An encrypted password literal takes precedence over a password XPath. A decrypted value
+         * is converted into an XPath, allowing its use in place of a password XPath.
+         */
+        const char* encryptedPassword = stag.getValue("encrypted-password");
+        if (!isEmptyString(encryptedPassword))
+        {
+            try
+            {
+                StringBuffer tmp;
+                decrypt(tmp, encryptedPassword);
+                m_password.setown(compileOptionalXpath(VStringBuffer("'%s'", tmp.str())));
+            }
+            catch (IException* e)
+            {
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, "invalid encrypted-password", m_traceName, !m_ignoreCodingErrors);
+                e->Release();
+            }
+            catch (...)
+            {
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, "invalid encrypted-password", m_traceName, !m_ignoreCodingErrors);
+            }
+        }
+        else
+            m_password.setown(compileOptionalXpath(stag.getValue("password")));
 
         //script can set any MYSQL options using an attribute with the same name as the option enum, for example
         //    MYSQL_SET_CHARSET_NAME="'latin1'" or MYSQL_SET_CHARSET_NAME="$charset"
@@ -2310,6 +2340,316 @@ public:
     }
 };
 
+/**
+ * @brief Helper structure used by both tx-summary-value and tx-summary-timer.
+ *
+ * There is common data used by both operations. Because one operation is childless and the other
+ * allows children, they cannot have a common base class. Instead each contains an instance of this
+ * structure to provide common handling of the common data.
+ */
+struct TxSummaryCoreInfo
+{
+    StringAttr m_name;
+    unsigned   m_level = LogMin;
+    unsigned   m_groups = TXSUMMARY_GRP_ENTERPRISE;
+
+    TxSummaryCoreInfo(StartTag& stag, const char* tagname, const char* traceName, bool ignoreCodingErrors)
+    {
+        m_name.set(stag.getValue("name"));
+        if (m_name.isEmpty())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, tagname, "without name", traceName, !ignoreCodingErrors);
+        const char* level = stag.getValue("level");
+        if (!isEmptyString(level))
+        {
+            if (strieq(level, "min"))
+                m_level = LogMin;
+            else if (strieq(level, "normal"))
+                m_level = LogNormal;
+            else if (strieq(level, "max"))
+                m_level = LogMax;
+            else if (TokenDeserializer().deserialize(level, m_level) != Deserialization_SUCCESS || m_level < LogMin || m_level > LogMax)
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, tagname, "invalid level", traceName, !ignoreCodingErrors);
+        }
+        const char* coreGroup = stag.getValue("core_group");
+        if (!isEmptyString(coreGroup) && strToBool(coreGroup))
+            m_groups |= TXSUMMARY_GRP_CORE;
+    }
+};
+
+static TokenDeserializer s_deserializer;
+
+class CEsdlTransformOperationTxSummaryValue : public CEsdlTransformOperationWithoutChildren
+{
+protected:
+    enum Type { Text, Signed, Unsigned, Decimal };
+    enum Mode { Append, Set };
+    TxSummaryCoreInfo     m_info;
+    Owned<ICompiledXpath> m_value;
+    Type                  m_type = Text;
+    Mode                  m_mode = Append;
+
+public:
+    CEsdlTransformOperationTxSummaryValue(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix)
+        : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+        , m_info(stag, m_tagname, m_traceName, m_ignoreCodingErrors)
+    {
+        m_value.setown(compileOptionalXpath(stag.getValue("select")));
+        if (!m_value)
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without select", m_traceName, !m_ignoreCodingErrors);
+        const char* type = stag.getValue("type");
+        if (!isEmptyString(type))
+        {
+            if (strieq(type, "signed"))
+                m_type = Signed;
+            else if (strieq(type, "unsigned"))
+                m_type = Unsigned;
+            else if (strieq(type, "decimal"))
+                m_type = Decimal;
+            else if (!strieq(type, "text"))
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, "invalid type", m_traceName, !m_ignoreCodingErrors);
+        }
+        const char* mode = stag.getValue("mode");
+        if (!isEmptyString(mode))
+        {
+            if (strieq(mode, "set"))
+                m_mode = Set;
+            else if (!strieq(mode, "append"))
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, VStringBuffer("invalid mode '%s'", mode), m_traceName, !m_ignoreCodingErrors);
+        }
+    }
+
+    virtual ~CEsdlTransformOperationTxSummaryValue()
+    {
+    }
+
+    void injectText(const char* value, CTxSummary* txSummary) const
+    {
+        switch (m_mode)
+        {
+        case Append:
+            if (!txSummary->append(m_info.m_name, value, m_info.m_level, m_info.m_groups))
+                UWARNLOG("script operation %s did not append '%s=%s' [text]; name is malformed or is in use", m_tagname.str(), m_info.m_name.str(), value);
+            break;
+        case Set:
+            if (!txSummary->set(m_info.m_name, value, m_info.m_level, m_info.m_groups))
+                UWARNLOG("script operation %s did not set '%s=%s' [text]; name is malformed or identifies a cumulative timer", m_tagname.str(), m_info.m_name.str(), value);
+            break;
+        default:
+            break;
+        }
+    }
+    void injectSigned(const char* rawValue, CTxSummary* txSummary) const
+    {
+        signed long long sll;
+        if (s_deserializer.deserialize(rawValue, sll) == Deserialization_SUCCESS)
+        {
+            switch (m_mode)
+            {
+            case Append:
+                if (!txSummary->append(m_info.m_name, sll, m_info.m_level, m_info.m_groups))
+                    UWARNLOG("script operation %s did not append '%s=%s' [signed]; name is malformed or is in use", m_tagname.str(), m_info.m_name.str(), rawValue);
+                break;
+            case Set:
+                if (!txSummary->set(m_info.m_name, sll, m_info.m_level, m_info.m_groups))
+                    UWARNLOG("script operation %s did not set '%s=%s' [signed]; name is malformed or identifies a cumulative timer", m_tagname.str(), m_info.m_name.str(), rawValue);
+                break;
+            default:
+                break;
+            }
+        }
+        else
+            UWARNLOG("script operation %s did not set '%s=%s'; not a signed integer", m_tagname.str(), m_info.m_name.str(), rawValue);
+    }
+    void injectUnsigned(const char* rawValue, CTxSummary* txSummary) const
+    {
+        unsigned long long ull;
+        if (s_deserializer.deserialize(rawValue, ull) == Deserialization_SUCCESS)
+        {
+            switch (m_mode)
+            {
+            case Append:
+                if (!txSummary->append(m_info.m_name, ull, m_info.m_level, m_info.m_groups))
+                    UWARNLOG("script operation %s did not append '%s=%s' [unsigned]; name is malformed or is in use", m_tagname.str(), m_info.m_name.str(), rawValue);
+                break;
+            case Set:
+                if (!txSummary->set(m_info.m_name, ull, m_info.m_level, m_info.m_groups))
+                    UWARNLOG("script operation %s did not set '%s=%s' [unsigned]; name is malformed or identifies a cumulative timer", m_tagname.str(), m_info.m_name.str(), rawValue);
+                break;
+            default:
+                break;
+            }
+        }
+        else
+            UWARNLOG("script operation %s did not set '%s=%s'; not an unsigned integer", m_tagname.str(), m_info.m_name.str(), rawValue);
+    }
+    void injectDecimal(const char* rawValue, CTxSummary* txSummary) const
+    {
+        double d;
+        if (s_deserializer.deserialize(rawValue, d) == Deserialization_SUCCESS)
+        {
+            switch (m_mode)
+            {
+            case Append:
+                if (!txSummary->append(m_info.m_name, d, m_info.m_level, m_info.m_groups))
+                    UWARNLOG("script operation %s did not append '%s=%s' [decimal]; name is malformed or is in use", m_tagname.str(), m_info.m_name.str(), rawValue);
+                break;
+            case Set:
+                if (!txSummary->set(m_info.m_name, d, m_info.m_level, m_info.m_groups))
+                    UWARNLOG("script operation %s did not set '%s=%s' [decimal]; name is malformed or identifies a cumulative timer", m_tagname.str(), m_info.m_name.str(), rawValue);
+                break;
+            default:
+                break;
+            }
+        }
+        else
+            UWARNLOG("script operation %s did not set '%s=%s'; not decimal", m_tagname.str(), m_info.m_name.str(), rawValue);
+    }
+    void injectValue(const char* rawValue, CTxSummary* txSummary)
+    {
+        switch (m_type)
+        {
+        case Text:
+            injectText(rawValue, txSummary);
+            break;
+        case Signed:
+            injectSigned(rawValue, txSummary);
+            break;
+        case Unsigned:
+            injectUnsigned(rawValue, txSummary);
+            break;
+        case Decimal:
+            injectDecimal(rawValue, txSummary);
+            break;
+        default:
+            break;
+        }
+    }
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        IEspContext* espCtx = scriptContext->queryEspContext();
+        CTxSummary* txSummary = (espCtx ? espCtx->queryTxSummary() : nullptr);
+        if (!txSummary)
+            return true;
+        OptionalCriticalBlock block(crit);
+
+        if (m_value)
+        {
+            StringBuffer value;
+            sourceContext->evaluateAsString(m_value, value);
+            injectValue(value, txSummary);
+        }
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">%s> %s(%s)", m_traceName.str(), m_tagname.str(), m_info.m_name.str());
+    #endif
+    }
+};
+
+class CEsdlTransformOperationTxSummaryTimer : public CEsdlTransformOperationWithChildren
+{
+protected:
+    enum Mode { Append, Set, Accumulate };
+    TxSummaryCoreInfo m_info;
+    Mode              m_mode = Append;
+
+public:
+    CEsdlTransformOperationTxSummaryTimer(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix, IEsdlFunctionRegister* functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
+        , m_info(stag, m_tagname, m_traceName, m_ignoreCodingErrors)
+    {
+        const char* mode = stag.getValue("mode");
+        if (!isEmptyString(mode))
+        {
+            if (strieq(mode, "set"))
+                m_mode = Set;
+            else if (strieq(mode, "accumulate"))
+                m_mode = Accumulate;
+            else if (!strieq(mode, "append"))
+                esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, VStringBuffer("invalid mode '%s'", mode), m_traceName, !m_ignoreCodingErrors);
+        }
+    }
+
+    virtual ~CEsdlTransformOperationTxSummaryTimer()
+    {
+    }
+
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        IEspContext* espCtx = scriptContext->queryEspContext();
+        CTxSummary* txSummary = (espCtx ? espCtx->queryTxSummary() : nullptr);
+        if (!txSummary)
+            return true;
+        StringBuffer value;
+        OptionalCriticalBlock block(crit);
+        CTimeMon timer;
+        processChildren(scriptContext, targetContext, sourceContext);
+        unsigned delta = timer.elapsed();
+        switch (m_mode)
+        {
+        case Append:
+            if (!txSummary->append(m_info.m_name, delta, m_info.m_level, m_info.m_groups))
+                UWARNLOG("script operation %s did not append '%s=%u'; name is malformed or is in use", m_tagname.str(), m_info.m_name.str(), delta);
+            break;
+        case Set:
+            if (!txSummary->set(m_info.m_name, delta, m_info.m_level, m_info.m_groups))
+                UWARNLOG("script operation %s did not set '%s=%u'; name is malformed or identifies a cumulative timer", m_tagname.str(), m_info.m_name.str(), delta);
+            break;
+        case Accumulate:
+            if (!txSummary->updateTimer(m_info.m_name, delta, m_info.m_level, m_info.m_groups))
+                UWARNLOG("script operation %s did not add %ums to cumulative timer '%s'; name is malformed or identifies a scalar value", m_tagname.str(), delta,  m_info.m_name.str());
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s %s >>>>", m_traceName.str(), m_tagname.str(), m_info.m_name.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+class CEsdlTransformOperationDelay : public CEsdlTransformOperationWithoutChildren
+{
+protected:
+    unsigned m_millis = 1;
+public:
+    CEsdlTransformOperationDelay(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix)
+        : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        const char* millis = stag.getValue("millis");
+        if (!isEmptyString(millis) && s_deserializer.deserialize(millis, m_millis) != Deserialization_SUCCESS)
+            esdlOperationError(ESDL_SCRIPT_InvalidOperationAttr, m_tagname, "invalid millis", m_traceName, !m_ignoreCodingErrors);
+    }
+
+    virtual ~CEsdlTransformOperationDelay()
+    {
+    }
+
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        OptionalCriticalBlock block(crit);
+        MilliSleep(m_millis);
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">%s> %s", m_traceName.str(), m_tagname.str());
+    #endif
+    }
+};
+
 IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors, IEsdlFunctionRegister *functionRegister, bool canDeclareFunctions)
 {
     StartTag stag;
@@ -2389,6 +2729,12 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
         return new CEsdlTransformOperationSynchronize(xpp, stag, prefix, functionRegister);
     if (streq(op, "script"))
         return new CEsdlTransformOperationScript(xpp, stag, prefix, functionRegister);
+    if (streq(op, "tx-summary-value"))
+        return new CEsdlTransformOperationTxSummaryValue(xpp, stag, prefix);
+    if (streq(op, "tx-summary-timer"))
+        return new CEsdlTransformOperationTxSummaryTimer(xpp, stag, prefix, functionRegister);
+    if (streq(op, "delay"))
+        return new CEsdlTransformOperationDelay(xpp, stag, prefix);
     return nullptr;
 }
 

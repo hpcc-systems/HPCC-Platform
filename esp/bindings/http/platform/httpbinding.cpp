@@ -46,6 +46,7 @@
 #include "daclient.hpp"
 #include "workunit.hpp"
 #include "cumulativetimer.hpp"
+#include <memory>
 
 #define FILE_UPLOAD     "FileUploadAccess"
 #define DEFAULT_HTTP_PORT 80
@@ -878,8 +879,13 @@ bool EspHttpBinding::doAuth(IEspContext* ctx)
 {
     if(m_authtype.length() == 0 || stricmp(m_authtype.str(), "Basic") == 0)
     {
-        CumulativeTimer* timer = ctx->queryTraceSummaryCumulativeTimer(LogNormal, "custom_fields.basicAuthTime", TXSUMMARY_GRP_ENTERPRISE);
-        CumulativeTimer::Scope authScope(timer);
+        static const char* timerName = "custom_fields.basicAuthTime";
+        CumulativeTimer* timer = ctx->queryTraceSummaryCumulativeTimer(LogNormal, timerName, TXSUMMARY_GRP_ENTERPRISE);
+        std::unique_ptr<CumulativeTimer::Scope> authScope;
+        if (timer)
+            authScope.reset(new CumulativeTimer::Scope(timer));
+        else
+            IWARNLOG("'%s' is an invalid cumulative timer name; check for duplicate use", timerName);
 
         ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.authStart", TXSUMMARY_GRP_ENTERPRISE);
         bool result = basicAuth(ctx);

@@ -120,10 +120,10 @@ public:
         CSlaveActivity::processDone(mb);
         ((CSlaveGraph *)queryContainer().queryLoopGraph()->queryGraph())->serializeDone(mb);
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
-        stats.setStatistic(StNumIterations, loopCounter);
-        PARENT::serializeStats(mb);
+        PARENT::gatherActiveStats(activeStats);
+        activeStats.setStatistic(StNumIterations, loopCounter);
     }
 };
 

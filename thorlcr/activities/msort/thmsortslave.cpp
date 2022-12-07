@@ -172,7 +172,6 @@ public:
             CriticalBlock block(statsCs);
             // fold the outgoing 'sorter' stats into inactiveStats, which will be merged during CSlaveActivity::serializeStats
             mergeStats(inactiveStats, sorter, spillStatistics);
-            someInactiveStats = true;
             sorter.setown(CreateThorSorter(this, server, &queryJobChannel().queryJobComm(), mpTagRPC));
         }
     }
@@ -188,6 +187,7 @@ public:
     // NB: always called within statsCs crit
     virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
+        PARENT::gatherActiveStats(activeStats);
         mergeStats(activeStats, sorter, spillStatistics);
     }
     CATCH_NEXTROW()

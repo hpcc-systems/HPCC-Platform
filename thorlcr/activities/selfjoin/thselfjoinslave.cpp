@@ -46,7 +46,7 @@ private:
     ISortKeySerializer * keyserializer;
     mptag_t mpTagRPC;
     Owned<IJoinHelper> joinhelper;
-    CriticalSection joinHelperCrit;
+    mutable CriticalSection joinHelperCrit;
     Owned<IBarrier> barrier;
     SocketEndpoint server;
 
@@ -61,7 +61,7 @@ private:
         ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: Performing local self-join");
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> rs = iLoader->load(inputStream, abortSoon);
-        mergeStats(stats, iLoader, spillStatistics);  // Not sure of the best policy if rs spills later on.
+        mergeStats(inactiveStats, iLoader, spillStatistics);  // Not sure of the best policy if rs spills later on.
         PARENT::stopInput(0);
         return rs.getClear();
     }
@@ -227,15 +227,13 @@ public:
         info.buffersInput = true; 
         info.unknownRowsOutput = true;
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
-        {
-            CriticalBlock b(joinHelperCrit);
-            rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
-            stats.setStatistic(StNumLeftRows, p);
-            mergeStats(stats, sorter, spillStatistics);    // No danger of a race with reset() because that never replaces a valid sorter
-        }
-        CSlaveActivity::serializeStats(mb);
+        PARENT::gatherActiveStats(activeStats);
+        CriticalBlock b(joinHelperCrit);
+        rowcount_t p = joinhelper?joinhelper->getLhsProgress():0;
+        activeStats.setStatistic(StNumLeftRows, p);
+        mergeStats(activeStats, sorter, spillStatistics);    // No danger of a race with reset() because that never replaces a valid sorter
     }
 };
 

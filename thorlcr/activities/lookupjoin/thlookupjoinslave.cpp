@@ -1727,7 +1727,6 @@ protected:
     using PARENT::queryInput;
     using PARENT::rhsRowLock;
     using PARENT::hasStarted;
-    using PARENT::stats;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -2952,15 +2951,15 @@ public:
             overflowWriteStream->putRow(rhsInRowsTemp.getClear(r));
         return true;
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
+        PARENT::gatherActiveStats(activeStats);
         if (isSmart())
         {
             if (isGlobal())
-                stats.setStatistic(StNumSmartJoinDegradedToLocal, aggregateFailoversToLocal); // NB: is going to be same for all slaves.
-            stats.setStatistic(StNumSmartJoinSlavesDegradedToStd, aggregateFailoversToStandard);
+                activeStats.setStatistic(StNumSmartJoinDegradedToLocal, aggregateFailoversToLocal); // NB: is going to be same for all slaves.
+            activeStats.setStatistic(StNumSmartJoinSlavesDegradedToStd, aggregateFailoversToStandard);
         }
-        PARENT::serializeStats(mb);
     }
 };
 

@@ -36,12 +36,14 @@
     "@isLibrary",
     "@isScalar",
     "@jobName",
+    "@keyedSize",
     "@libCount",
     "@localValue",
     "@mapFlags",
     "@maxActivity",
     "@minActivity",
     "@modified",
+    "@nodeSize"
     "@numclusters",
     "@numparts",
     "@numsubfiles",
@@ -50,6 +52,7 @@
     "@numLeafNodes"
     "@offset",
     "@offsetBranches",
+    "@originalBlobSize",
     "@partmask",
     "@persistent",
     "@prevenqueuedt",
