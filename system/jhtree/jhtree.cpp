@@ -701,7 +701,7 @@ public:
             if (entry.isReady())
             {
                 const CJHTreeNode &node = mapping.queryNode();
-                cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeSize(), node.getNodeType());
+                cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeDiskSize(), node.getNodeType());
             }
         }
     }
@@ -1052,7 +1052,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
 
         //The root node is currently a branch - but it may change - so check the branch depth for this index
         NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
-        rootNode = nodeCache->getNode(this, iD, rootPos, type, NULL, isTLK);
+        rootNode = (CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, type, NULL, isTLK);
 
         // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
         // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
@@ -1062,9 +1062,9 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
         // indexes benefit too.
         if (rootNode && isTopLevelKey() && !rootNode->isLeaf() && rootNode->getNumKeys()==1)
         {
-            Owned<const CJHTreeNode> oldRoot = rootNode;
+            Owned<const CJHSearchNode> oldRoot = rootNode;
             rootPos = rootNode->getFPosAt(0);
-            rootNode = nodeCache->getNode(this, iD, rootPos, NodeLeaf, NULL, isTLK);
+            rootNode = (CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, NodeLeaf, NULL, isTLK);
         }
         loadBloomFilters();
     }
@@ -1166,14 +1166,14 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
     switch(nodeHdr.nodeType)
     {
     case NodeBranch:
-        return new CJHTreeNode();
+        return new CJHSearchNode();
     case NodeLeaf:
         if (keyHdr->isVariable())
             return new CJHVarTreeNode();
         else if (keyHdr->isRowCompressed())
             return new CJHRowCompressedNode();
         else
-            return new CJHTreeNode();
+            return new CJHSearchNode();
     case NodeBlob:
         return new CJHTreeBlobNode();
     case NodeMeta:
@@ -1232,12 +1232,12 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
     return new CKeyCursor(*this, filter, logExcessiveSeeks);
 }
 
-const CJHTreeNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx)
+const CJHSearchNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx)
 { 
     latestGetNodeOffset = offset;
     const CJHTreeNode *node = cache->getNode(this, iD, offset, type, ctx, isTopLevelKey());
     assertex(!node || type == node->getNodeType());
-    return node;
+    return (const CJHSearchNode *) node;
 }
 
 void CKeyIndex::dumpNode(FILE *out, offset_t pos, unsigned count, bool isRaw)
@@ -1429,7 +1429,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
     return false;
 }
 
-const CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
+const CJHSearchNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
 {
     keySeeks++;
     stats.seeks++;
@@ -1446,7 +1446,7 @@ const CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     if (keyHdr->getNumRecords() == 0)
         return nullptr;
 
-    const CJHTreeNode * cur = LINK(rootNode);
+    const CJHSearchNode * cur = LINK(rootNode);
     unsigned depth = 0;
     while (!cur->isLeaf())
     {
@@ -1460,17 +1460,17 @@ const CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     return cur;
 }
 
-const CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
+const CJHSearchNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
 {
     keySeeks++;
     stats.seeks++;
 
-    const CJHTreeNode * cur = LINK(rootNode);
+    const CJHSearchNode * cur = LINK(rootNode);
     unsigned depth = 0;
     //First find the last leaf node pointed to by the higher level index
     while (!cur->isLeaf())
     {
-        const CJHTreeNode * prev = cur;
+        const CJHSearchNode * prev = cur;
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
         cur = getNode(cur->nextNodeFpos(), type, stats.ctx);
@@ -1480,10 +1480,10 @@ const CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
         prev->Release();
     }
 
-    //Now walk the lead node siblings until there are no more.
+    //Now walk the leaf node siblings until there are no more.
     for (;;)
     {
-        const CJHTreeNode * last = cur;
+        const CJHSearchNode * last = cur;
         cur = getNode(cur->nextNodeFpos(), NodeLeaf, stats.ctx);
         if (!cur)
             return last;

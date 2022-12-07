@@ -76,8 +76,8 @@ enum request { LTE, GTE };
 interface INodeLoader
 {
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) = 0;
-    virtual const CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
-    virtual const CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -98,14 +98,14 @@ protected:
 
     CKeyHdr *keyHdr;
     CNodeCache *cache;
-    const CJHTreeNode *rootNode;
+    const CJHSearchNode *rootNode;
     RelaxedAtomic<unsigned> keySeeks;
     RelaxedAtomic<unsigned> keyScans;
     offset_t latestGetNodeOffset;
 
     CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy);
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
-    const CJHTreeNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
+    const CJHSearchNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
     const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name);
@@ -152,8 +152,8 @@ public:
  
  // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override = 0;  // Must be implemented in derived classes
-    virtual const CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) override;
-    virtual const CJHTreeNode *locateLastNode(KeyStatsCollector &stats) override;
+    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) override;
+    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) override;
 
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
@@ -194,7 +194,7 @@ protected:
     CKeyIndex &key;
     const IIndexFilterList *filter;
     char *recordBuffer = nullptr;
-    Owned<const CJHTreeNode> node;
+    Owned<const CJHSearchNode> node;
     unsigned int nodeKey;
     
     mutable bool fullBufferValid = false;

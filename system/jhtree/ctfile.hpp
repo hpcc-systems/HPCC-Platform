@@ -140,21 +140,19 @@ struct jhtree_decl NodeHdr
 //#pragma pack(4)
 #pragma pack(pop)
 
-class CWritableKeyNode : public CInterface
+interface IWritableNode
 {
-public:
     virtual void write(IFileIOStream *, CRC32 *crc) = 0;
 };
 
-class jhtree_decl CKeyHdr : public CWritableKeyNode
+class jhtree_decl CKeyHdr : public CInterface
 {
-private:
+protected:
     KeyHdr hdr;
 public:
     CKeyHdr();
 
     void load(KeyHdr &_hdr);
-    virtual void write(IFileIOStream *, CRC32 *crc) override;
 
     unsigned int getMaxKeyLength();  // MORE - is this correctly named? Is it the max record length?
     void setMaxKeyLength(uint32_t max) { hdr.length = max; };
@@ -197,83 +195,103 @@ public:
     }
 };
 
-class jhtree_decl CNodeBase : public CWritableKeyNode
+class CWriteKeyHdr : public CKeyHdr, implements IWritableNode
+{
+public:
+    virtual void write(IFileIOStream *, CRC32 *crc) override;
+};
+
+// Data structures representing nodes in an index (other than the header)
+
+class jhtree_decl CNodeBase : public CInterface
 {
 protected:
     NodeHdr hdr;
     CKeyHdr *keyHdr;
-    byte keyType;
-    bool isVariable;
 private:
     offset_t fpos;
 
 public:
-    virtual void write(IFileIOStream *, CRC32 *crc) { throwUnexpected(); }
     inline offset_t getFpos() const { assertex(fpos); return fpos; }
-    inline size32_t getNumKeys() const { return hdr.numKeys; }
     inline bool isBlob() const { return hdr.nodeType == NodeBlob; }
     inline bool isMetadata() const { return hdr.nodeType == NodeMeta; }
     inline bool isBloom() const { return hdr.nodeType == NodeBloom; }
     inline bool isLeaf() const { return hdr.nodeType != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
     inline NodeType getNodeType() const { return hdr.nodeType; }
+    inline size32_t getNodeDiskSize() const { return keyHdr->getNodeSize(); }  // Retrieve size of node on disk
     const char * getNodeTypeName() const;
 public:
     CNodeBase();
-    void load(CKeyHdr *keyHdr, offset_t fpos);
     ~CNodeBase();
+    void init(CKeyHdr *keyHdr, offset_t fpos);
 };
 
 class jhtree_decl CJHTreeNode : public CNodeBase
 {
 protected:
-    size32_t keyLen = 0;
-    size32_t keyCompareLen = 0;
-    size32_t keyRecLen;
-    size32_t expandedSize;
-    char *keyBuf;
+    size32_t expandedSize = 0;
+    char *keyBuf = nullptr;
 
-    void unpack(const void *node, bool needCopy);
-    unsigned __int64 firstSequence;
-
-    inline size32_t getKeyLen() const { return keyLen; }
-    static char *expandKeys(void *src,size32_t &retsize);
+    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
+    static char *expandKeys(const void *src,size32_t &retsize);  // MORE - should rename
     static void releaseMem(void *togo, size32_t size);
     static void *allocMem(size32_t size);
 
 public:
-    CJHTreeNode();
     ~CJHTreeNode();
+// reading methods
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
+    size32_t getMemSize() const { return sizeof(CJHTreeNode)+expandedSize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
+    inline offset_t getRightSib() const { return hdr.rightSib; }
+    inline offset_t getLeftSib() const { return hdr.leftSib; }
+
+    virtual void dump(FILE *out, int length, unsigned rowCount, bool raw) const;
+};
+
+class CJHSearchNode : public CJHTreeNode
+{
+protected:
+    size32_t keyLen = 0;
+    size32_t keyCompareLen = 0;
+    size32_t keyRecLen = 0;
+
+    unsigned __int64 firstSequence = 0;
+
+    inline size32_t getKeyLen() const { return keyLen; }
+    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
+
+public:
     inline bool isKeyAt(unsigned int num) const { return (num < hdr.numKeys); }
 //These are the key functions that need to be implemented for a node that can be searched
-    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
+    inline size32_t getNumKeys() const { return hdr.numKeys; }
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
     virtual bool fetchPayload(unsigned int num, char *dest) const;     // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
     virtual offset_t getFPosAt(unsigned int num) const;
+    unsigned __int64 getSequence(unsigned int num) const;
     virtual int compareValueAt(const char *src, unsigned int index) const;
 
     virtual int locateGE(const char * search, unsigned minIndex) const;
     virtual int locateGT(const char * search, unsigned minIndex) const;
-// reading methods
-    size32_t getMemSize() const { return sizeof(CJHTreeNode)+expandedSize; } // MORE - would be more accurate to make this virtual if we want to track all memory used by this node's info
+
+// Loading etc
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
+    virtual void dump(FILE *out, int length, unsigned rowCount, bool raw) const override;
+
+// Misc - should be reviewed and probably killed
     offset_t prevNodeFpos() const;
     offset_t nextNodeFpos() const ;
-    bool contains(const char *src) const;
-    inline offset_t getRightSib() const { return hdr.rightSib; }
-    inline offset_t getLeftSib() const { return hdr.leftSib; }
-    unsigned __int64 getSequence(unsigned int num) const;
-    size32_t getNodeSize() const;
-    void dump(FILE *out, int length, unsigned rowCount, bool raw) const;
+
 };
 
-class CJHVarTreeNode : public CJHTreeNode 
+class CJHVarTreeNode : public CJHSearchNode 
 {
     const char **recArray;
 
 public:
     CJHVarTreeNode();
     ~CJHVarTreeNode();
-    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy);
+    virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     virtual bool getKeyAt(unsigned int num, char *dest) const;         // Retrieve keyed fields
     virtual bool fetchPayload(unsigned int num, char *dest) const;       // Retrieve payload fields. Note destination is assumed to already contain keyed fields
     virtual size32_t getSizeAt(unsigned int num) const;
@@ -281,7 +299,7 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const;
 };
 
-class CJHRowCompressedNode : public CJHTreeNode
+class CJHRowCompressedNode : public CJHSearchNode
 {
     Owned<IRandRowExpander> rowexp;  // expander for rand rowdiff
     static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
@@ -295,35 +313,31 @@ public:
 
 class CJHTreeBlobNode : public CJHTreeNode
 {
+protected:
+    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
 public:
     CJHTreeBlobNode ();
     ~CJHTreeBlobNode ();
-    virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
-    virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
-    virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
-    virtual void dump() {throwUnexpected();}
 
     size32_t getTotalBlobSize(unsigned offset) const;
     size32_t getBlobData(unsigned offset, void *dst) const;
 };
 
-class CJHTreeMetadataNode : public CJHTreeNode
+class CJHTreeRawDataNode : public CJHTreeNode
+{
+protected:
+    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
+};
+
+class CJHTreeMetadataNode : public CJHTreeRawDataNode
 {
 public:
-    virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
-    virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
-    virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
-    virtual void dump() {throwUnexpected();}
     void get(StringBuffer & out) const;
 };
 
-class CJHTreeBloomTableNode : public CJHTreeNode
+class CJHTreeBloomTableNode : public CJHTreeRawDataNode
 {
 public:
-    virtual offset_t getFPosAt(unsigned int num) const {throwUnexpected();}
-    virtual size32_t getSizeAt(unsigned int num) const {throwUnexpected();}
-    virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
-    virtual void dump() {throwUnexpected();}
     void get(MemoryBuffer & out) const;
     __int64 get8();
     unsigned get4();
@@ -331,7 +345,7 @@ private:
     unsigned read = 0;
 };
 
-class jhtree_decl CWriteNodeBase : public CNodeBase
+class jhtree_decl CWriteNodeBase : public CNodeBase, implements IWritableNode
 {
 protected:
     char *nodeBuf;
