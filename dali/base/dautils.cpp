@@ -47,6 +47,53 @@
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
 
+bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
+{
+    Owned<IPropertyTree> planeGroup;
+    if (plane->hasProp("@hostGroup"))
+        planeGroup.setown(getHostGroup(plane->queryProp("@hostGroup"), true));
+    else
+    {
+        if (!plane->hasProp("hosts"))
+            return false;
+        planeGroup.set(plane); // plane itself holds 'hosts'
+    }
+    Owned<IPropertyTreeIterator> hostsIter = planeGroup->getElements("hosts");
+    SocketEndpoint hostEp;
+    if (ipMatch)
+        hostEp.set(host);
+    ForEach (*hostsIter)
+    {
+        const char *planeHost = hostsIter->query().queryProp(nullptr);
+        if (ipMatch)
+        {
+            SocketEndpoint planeHostEp(planeHost);
+            if (planeHostEp.ipequals(hostEp))
+                return true;
+        }
+        else if (streq(planeHost, host))
+            return true;
+    }
+    return false;
+}
+
+bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
+{
+    Owned<IPropertyTree> hostGroup;
+    if (plane->hasProp("@hostGroup"))
+        hostGroup.setown(getHostGroup(plane->queryProp("@hostGroup"), true));
+    else if (plane->hasProp("hosts"))
+        hostGroup.set(plane); // the plane holds the "hosts"
+    else
+        return false;
+
+    if (which >= hostGroup->getCount("hosts"))
+        throw makeStringException(0, "getPlaneHost: index out of range");
+    VStringBuffer xpath("hosts[%u]", which+1); // which is 0 based
+    host.append(hostGroup->queryProp(xpath));
+    return true;
+}
+
 constexpr const char * lz_plane_path = "storage/planes[@category='lz']";
 
 IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)

@@ -1833,29 +1833,12 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
 
 static StringBuffer &getDropZoneHost(const char *planeName, IPropertyTree *plane, StringBuffer &host)
 {
-    if (plane->hasProp("hosts"))
+    if (!host.isEmpty())
     {
-        if (!host.isEmpty())
-        {
-            // Already have host. Just need to check that the ip is valid for storage plane.
-            bool ipAddressMatches = false;
-            Owned<IPropertyTreeIterator> hostIter = plane->getElements("hosts");
-            ForEach (*hostIter)
-            {
-                const char *knownIP = hostIter->query().queryProp(nullptr);
-                if (streq(knownIP, host))
-                {
-                    ipAddressMatches=true;
-                    break;
-                }
-            }
-            if (!ipAddressMatches)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "host %s is not valid storage plane %s", host.str(), planeName);
-        }
-        else
-            host.set(plane->queryProp("hosts[1]"));
+        if (!isHostInPlane(plane, host, true))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "host %s is not valid storage plane %s", host.str(), planeName);
     }
-    else
+    else if (!getPlaneHost(host, plane, 0))
         host.set("localhost"); // storage plane will be mounted when not using hosts
     return host;
 }
@@ -2496,20 +2479,14 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             {
                 if (destip.isEmpty())
                     throw MakeStringException(ECLWATCH_INVALID_INPUT, "Neither destination storage plane or destination IP specified.");
-                SocketEndpoint destEp(destip);
                 Owned<IPropertyTreeIterator> planesIter = getDropZonePlanesIterator();
                 ForEach(*planesIter)
                 {
                     IPropertyTree &lzPlane = planesIter->query();
-                    Owned<IPropertyTreeIterator> hostsIter = lzPlane.getElements("hosts");
-                    ForEach(*hostsIter)
+                    if (isHostInPlane(&lzPlane, destip, true))
                     {
-                        SocketEndpoint planeEp(hostsIter->query().queryProp(nullptr));
-                        if (planeEp.ipequals(destEp))
-                        {
-                            destPlane = lzPlane.queryProp("@name");
-                            break;
-                        }
+                        destPlane = lzPlane.queryProp("@name");
+                        break;
                     }
                 }
                 if (isEmptyString(destPlane))
