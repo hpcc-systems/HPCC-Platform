@@ -1042,6 +1042,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
         hdr.ktype |= HTREE_TOPLEVEL_KEY; // Once upon a time, thor did not set
     else if (hdr.ktype & HTREE_TOPLEVEL_KEY)
         isTLK = true;
+    assertex((hdr.ktype & COL_PREFIX) != 0);   // We have not generated a key without COL_PREFIX set for over 20 years
 
     keyHdr = new CKeyHdr();
     try

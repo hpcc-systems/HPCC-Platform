@@ -345,17 +345,9 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
         const void *data;
         int size;
 
-        if (keyType & COL_PREFIX)
-        {
-            char *result = (char *) alloca(insize+1);  // Gets bigger if no leading common!
-            size = compressValue((const char *) indata, insize, result);
-            data = result;
-        }
-        else
-        {
-            size = insize;
-            data = indata;
-        }
+        char *result = (char *) alloca(insize+1);  // Gets bigger if no leading common!
+        size = compressValue((const char *) indata, insize, result);
+        data = result;
 
         int bytes = sizeof(pos) + size;
         if (keyHdr->isVariable())
@@ -662,106 +654,98 @@ void CJHSearchNode::unpack(const void *node, bool needCopy)
     }
     else
     {
-        if (keyType & COL_PREFIX)
+        if (hdr.numKeys) 
         {
-            if (hdr.numKeys) 
-            {
-                bool handleVariable = keyHdr->isVariable() && isLeaf();
-                KEYRECSIZE_T workRecLen;
-                MemoryBuffer keyBufMb;
-                const char *source = keys;
-                char *target;
-                // do first row
+            bool handleVariable = keyHdr->isVariable() && isLeaf();
+            KEYRECSIZE_T workRecLen;
+            MemoryBuffer keyBufMb;
+            const char *source = keys;
+            char *target;
+            // do first row
+            if (handleVariable) {
+                memcpy(&workRecLen, source, sizeof(workRecLen));
+                _WINREV(workRecLen);
+                size32_t tmpSz = sizeof(workRecLen) + sizeof(offset_t);
+                target = (char *)keyBufMb.reserve(tmpSz+workRecLen);
+                memcpy(target, source, tmpSz);
+                source += tmpSz;
+                target += tmpSz;
+            }
+            else {
+                target = (char *)keyBufMb.reserveTruncate(hdr.numKeys * keyRecLen);
+                workRecLen = keyRecLen - sizeof(offset_t);
+                memcpy(target, source, sizeof(offset_t));
+                source += sizeof(offset_t);
+                target += sizeof(offset_t);
+            }
+
+            // this is where next row gets data from
+            const char *prev, *next = NULL;
+            unsigned prevOffset = 0;
+            if (handleVariable)
+                prevOffset = target-((char *)keyBufMb.bufferBase());
+            else
+                next = target;
+
+            unsigned char pack1 = *source++;
+            assert(0==pack1); // 1st time will be always be 0
+            KEYRECSIZE_T left = workRecLen;
+            while (left--) {
+                *target = *source;
+                source++;
+                target++;
+            }
+            // do subsequent rows
+            for (int i = 1; i < hdr.numKeys; i++) {
                 if (handleVariable) {
                     memcpy(&workRecLen, source, sizeof(workRecLen));
                     _WINREV(workRecLen);
-                    size32_t tmpSz = sizeof(workRecLen) + sizeof(offset_t);
-                    target = (char *)keyBufMb.reserve(tmpSz+workRecLen);
+                    target = (char *)keyBufMb.reserve(sizeof(workRecLen)+sizeof(offset_t)+workRecLen);
+                    size32_t tmpSz = sizeof(workRecLen)+sizeof(offset_t);
                     memcpy(target, source, tmpSz);
-                    source += tmpSz;
                     target += tmpSz;
+                    source += tmpSz;
                 }
-                else {
-                    target = (char *)keyBufMb.reserveTruncate(hdr.numKeys * keyRecLen);
-                    workRecLen = keyRecLen - sizeof(offset_t);
+                else
+                {
                     memcpy(target, source, sizeof(offset_t));
                     source += sizeof(offset_t);
                     target += sizeof(offset_t);
                 }
-
-                // this is where next row gets data from
-                const char *prev, *next = NULL;
-                unsigned prevOffset = 0;
-                if (handleVariable)
+                pack1 = *source++;
+                assert(pack1<=workRecLen);            
+                if (handleVariable) {
+                    prev = ((char *)keyBufMb.bufferBase())+prevOffset;
+                    // for next
                     prevOffset = target-((char *)keyBufMb.bufferBase());
-                else
+                }
+                else {
+                    prev = next;
                     next = target;
-
-                unsigned char pack1 = *source++;
-                assert(0==pack1); // 1st time will be always be 0
-                KEYRECSIZE_T left = workRecLen;
+                }
+                left = workRecLen - pack1;
+                while (pack1--) {
+                    *target = *prev;
+                    prev++;
+                    target++;
+                }
                 while (left--) {
                     *target = *source;
                     source++;
                     target++;
                 }
-                // do subsequent rows
-                for (int i = 1; i < hdr.numKeys; i++) {
-                    if (handleVariable) {
-                        memcpy(&workRecLen, source, sizeof(workRecLen));
-                        _WINREV(workRecLen);
-                        target = (char *)keyBufMb.reserve(sizeof(workRecLen)+sizeof(offset_t)+workRecLen);
-                        size32_t tmpSz = sizeof(workRecLen)+sizeof(offset_t);
-                        memcpy(target, source, tmpSz);
-                        target += tmpSz;
-                        source += tmpSz;
-                    }
-                    else
-                    {
-                        memcpy(target, source, sizeof(offset_t));
-                        source += sizeof(offset_t);
-                        target += sizeof(offset_t);
-                    }
-                    pack1 = *source++;
-                    assert(pack1<=workRecLen);            
-                    if (handleVariable) {
-                        prev = ((char *)keyBufMb.bufferBase())+prevOffset;
-                        // for next
-                        prevOffset = target-((char *)keyBufMb.bufferBase());
-                    }
-                    else {
-                        prev = next;
-                        next = target;
-                    }
-                    left = workRecLen - pack1;
-                    while (pack1--) {
-                        *target = *prev;
-                        prev++;
-                        target++;
-                    }
-                    while (left--) {
-                        *target = *source;
-                        source++;
-                        target++;
-                    }
-                }
-                expandedSize = keyBufMb.length();
-                keyBuf = (char *)keyBufMb.detach();
-                assertex(keyBuf);
             }
-            else {
-                keyBuf = NULL;
-                expandedSize = 0;
-            }
+            expandedSize = keyBufMb.length();
+            keyBuf = (char *)keyBufMb.detach();
+            assertex(keyBuf);
         }
-        else
-        {
-            expandedSize = hdr.keyBytes + sizeof( __int64 );  // MORE - why is the +sizeof() there? Doesn't matter as this code cannot be hit, since we always set COL_PREFIX
-            keyBuf = (char *) allocMem(expandedSize);
-            memcpy(keyBuf, keys, hdr.keyBytes + sizeof( __int64 ));
+        else {
+            keyBuf = NULL;
+            expandedSize = 0;
         }
     }
 }
+
 
 offset_t CJHSearchNode::prevNodeFpos() const
 {
