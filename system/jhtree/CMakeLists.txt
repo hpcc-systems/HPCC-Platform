@@ -54,6 +54,7 @@ include_directories (
          ./../../rtl/include
          ./../../system/include 
          ./../../system/jlib 
+         ./../../system/security/zcrypt
          ./../../testing/unittests
     )
 
@@ -63,6 +64,7 @@ HPCC_ADD_LIBRARY( jhtree SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS jhtree RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( jhtree 
          eclrtl
+         zcrypt
          jlib
          ${CPPUNIT_LIBRARIES}
     )

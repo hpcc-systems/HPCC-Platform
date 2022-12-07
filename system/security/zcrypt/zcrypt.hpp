@@ -96,6 +96,8 @@ typedef unsigned char byte;
 enum class ZlibCompressionType {GZIP, ZLIB_DEFLATE, DEFLATE};
 
 ZCRYPT_API void zlib_deflate(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel, ZlibCompressionType zltype);
+ZCRYPT_API bool zlib_inflate(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput, ZlibCompressionType zltype, bool inflateException);
+
 ZCRYPT_API void gzip(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputSize, int compressionLevel=GZ_DEFAULT_COMPRESSION);
 
 ZCRYPT_API void httpInflate(const byte* compressed, unsigned int comprLen, StringBuffer& sOutput, bool use_gzip);

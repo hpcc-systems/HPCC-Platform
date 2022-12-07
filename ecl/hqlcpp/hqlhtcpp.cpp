@@ -10672,8 +10672,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     if (expr->hasAttribute(maxLengthAtom))   flags.append("|TIWmaxlength");
     if (compressAttr)
     {
-        if (compressAttr->hasAttribute(rowAtom))   flags.append("|TIWrowcompress");
-        if (!compressAttr->hasAttribute(lzwAtom))  flags.append("|TIWnolzwcompress");
+        if (!compressAttr->queryChild(0)->isAttribute())
+        {
+            flags.append("|TIWcompressdefined|TIWnolzwcompress");
+            doBuildVarStringFunction(instance->startctx, "queryCompression", compressAttr->queryChild(0));
+        }
+        else if (compressAttr->hasAttribute(rowAtom))
+            flags.append("|TIWrowcompress|TIWnolzwcompress");
+        else if (compressAttr->hasAttribute(firstAtom))
+            flags.append("|TIWnolzwcompress");
+        else if (compressAttr->hasAttribute(lzwAtom))
+        {} // Nothing needed
+        else
+            throwUnexpected();
     }
     if (widthExpr) flags.append("|TIWhaswidth");
     if (expr->hasAttribute(restrictedAtom)) flags.append("|TIWrestricted");

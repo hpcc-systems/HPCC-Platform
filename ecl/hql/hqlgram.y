@@ -3074,6 +3074,8 @@ buildFlag
     | COMPRESSED '(' compressMode ')'
                         {
                             $$.setExpr(createExprAttribute(compressedAtom, $3.getExpr()));
+                            // if (!$$.queryExpr()->queryChild(0)->isAttribute())
+                            //    $$.setExpr(createComma($$.getExpr(), createExprAttribute(filepositionAtom, createConstant(false))));
                             $$.setPosition($1);
                         }
     | DEDUP
@@ -3427,6 +3429,8 @@ indexFlag
     | COMPRESSED '(' compressMode ')'
                         {
                             $$.setExpr(createExprAttribute(compressedAtom, $3.getExpr()));
+                            // if (!$$.queryExpr()->queryChild(0)->isAttribute())
+                            //    $$.setExpr(createComma($$.getExpr(), createExprAttribute(filepositionAtom, createConstant(false))));
                             $$.setPosition($1);
                         }
     | DYNAMIC
@@ -3466,6 +3470,11 @@ compressMode
                         {
                             $$.setExpr(createAttribute(rowAtom));
                             $$.setPosition($1);
+                        }
+    | constExpression
+                        {
+                            parser->normalizeExpression($1, type_string, true, false);
+                            $$.inherit($1);
                         }
     ;
 

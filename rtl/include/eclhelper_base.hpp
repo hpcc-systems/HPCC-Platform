@@ -71,6 +71,7 @@ public:
     virtual ICompare * queryCompare() override;
     virtual const IBloomBuilderInfo * const *queryBloomInfo() const override;
     virtual __uint64 getPartitionFieldMask() const override;
+    virtual const char * queryCompression() override;
 };
 
 class ECLRTL_API CBloomBuilderInfo : public IBloomBuilderInfo

@@ -63,6 +63,7 @@ idx3 := INDEX(d, iRec, prefix + 'test3.idx');
 idx4 := INDEX(d, iRec, prefix + 'test4.idx');
 idx5 := INDEX(d, iRec, {d}, prefix + 'test5.idx');
 idx6 := INDEX(d, iRec, prefix + 'test6.idx');
+idx7 := INDEX(d, iRec, prefix + 'test7.idx');
 
 thornodes := MAX(CHOOSEN(tmp, 1), thorlib.nodes()) : global;  // Force it to calculate nodes() on thor not hthor
 
@@ -79,5 +80,15 @@ OUTPUT((unsigned)(COUNT(idx4(key<>2))/thornodes)),
 BUILDINDEX(idx5, COMPRESSED(FIRST), OVERWRITE),
 OUTPUT((unsigned)(COUNT(idx5(key<>2))/thornodes)),
 BUILDINDEX(idx6, COMPRESSED(ROW), OVERWRITE),
-OUTPUT((unsigned)(COUNT(idx6(key<>2))/thornodes))
+OUTPUT((unsigned)(COUNT(idx6(key<>2))/thornodes)),
+BUILDINDEX(idx7, COMPRESSED('POC'), OVERWRITE),
+OUTPUT((unsigned)(COUNT(idx7(key<>2))/thornodes)),
+OUTPUT(CHOOSEN(idx, 10)),
+OUTPUT(CHOOSEN(idx2, 10)),
+OUTPUT(CHOOSEN(idx3, 10)),
+OUTPUT(CHOOSEN(idx4, 10)),
+OUTPUT(CHOOSEN(idx5, 10), { key, v, filepos }),
+OUTPUT(CHOOSEN(idx6, 10)),
+OUTPUT(CHOOSEN(d, 10), { key, v, filepos }),
+OUTPUT(CHOOSEN(idx7, 10))
 );

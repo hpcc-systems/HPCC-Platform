@@ -2929,6 +2929,7 @@ public:
                     }
 
                     assertex(actual);
+                    bool forceTranslation = actualUnknown && !thisFormatCrc && projectedFormatCrc != expectedFormatCrc;
                     if ((thisFormatCrc != prevFormatCrc) || (idx == 0))  // Check if same translation as last subfile
                     {
                         translator.clear();
@@ -2943,7 +2944,7 @@ public:
                             if (doTrace(traceRoxieFiles))
                                 DBGLOG("In query %s: Assume no translation required for file %s, crc's match", queryName, subname);
                         }
-                        else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL)
+                        else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL && !forceTranslation)
                         {
                             if (thisFormatCrc)
                                 throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s (disk format not serialized)", subname);
