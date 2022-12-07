@@ -29,7 +29,7 @@
 
 #define TRAILING_HEADER_ONLY  0x01 // Leading header not updated - use trailing one
 #define HTREE_TOPLEVEL_KEY  0x02
-#define COL_PREFIX          0x04
+#define COL_PREFIX          0x04    // Leading common commpression flag - always set
 #define HTREE_QUICK_COMPRESSED 0x08 // See QUICK_COMPRESSED_KEY below
 #define HTREE_VARSIZE       0x10
 #define HTREE_FULLSORT_KEY  0x20
