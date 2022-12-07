@@ -2,7 +2,7 @@
 
 The MongoDB plugin allows an ECL user to embed MongoDB function calls into their code and run it
 on the HPCC Platform. The plugin supports inserting a dataset into a database using `insert_many`, and can 
-build ECL datasets from MongoDB result documents using the `find`, `update`, `delete`, `aggregate`, and `runCommand` methods.
+build ECL datasets from MongoDB result documents returned by the `find`, `update`, `delete`, `aggregate`, and `runCommand` methods.
 
 The embedded script that gets passed to the plugin can be used to create complex documents to support almost every
 MongoDB command. 
