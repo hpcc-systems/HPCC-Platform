@@ -241,7 +241,7 @@ public:
             builder.clear();
             if (builderIFileIO)
             {
-                mergeStats(stats, builderIFileIO, diskWriteRemoteStatistics);
+                mergeStats(inactiveStats, builderIFileIO, diskWriteRemoteStatistics);
                 builderIFileIO->close();
                 builderIFileIO.clear();
             }
@@ -666,13 +666,13 @@ public:
             ActPrintLog("finished input %" RCPF "d", finalcount);
         }
     }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
-        stats.setStatistic(StPerReplicated, replicateDone);
-        stats.setStatistic(StNumLeafCacheAdds, numLeafNodes);
-        stats.setStatistic(StNumNodeCacheAdds, numBranchNodes);
-        stats.setStatistic(StNumBlobCacheAdds, numBlobNodes);
-        PARENT::serializeStats(mb);
+        PARENT::gatherActiveStats(activeStats);
+        activeStats.setStatistic(StPerReplicated, replicateDone);
+        activeStats.setStatistic(StNumLeafCacheAdds, numLeafNodes);
+        activeStats.setStatistic(StNumNodeCacheAdds, numBranchNodes);
+        activeStats.setStatistic(StNumBlobCacheAdds, numBlobNodes);
     }
 
 // ICopyFileProgress

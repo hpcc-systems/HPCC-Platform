@@ -828,7 +828,7 @@ void CGraphElementBase::createActivity()
     if (activity)
         return;
     activity.setown(factory());
-    activityCodeContext.setStats(&activity->queryStats());
+    activityCodeContext.setStats(activity->queryStatsMapping());
     if (isSink())
         owner->addActiveSink(*this);
 }
@@ -3211,8 +3211,8 @@ IThorResource &queryThor()
 //
 //
 
-CActivityBase::CActivityBase(CGraphElementBase *_container, const StatisticsMapping &statsMapping)
-    : container(*_container), timeActivities(_container->queryJob().queryTimeActivities()), stats(statsMapping)
+CActivityBase::CActivityBase(CGraphElementBase *_container, const StatisticsMapping &_statsMapping)
+    : container(*_container), timeActivities(_container->queryJob().queryTimeActivities()), statsMapping(_statsMapping)
 {
     mpTag = TAG_NULL;
     abortSoon = receiving = cancelledReceive = initialized = reInit = false;

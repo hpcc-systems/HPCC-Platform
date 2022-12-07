@@ -102,6 +102,7 @@ public:
 // IThorSlaveActivity
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData);
     virtual void kill();
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const;
     virtual void serializeStats(MemoryBuffer &mb);
 friend class CDiskPartHandlerBase;
 };
@@ -136,7 +137,6 @@ public:
     CDiskWriteSlaveActivityBase(CGraphElementBase *container);
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData);
     virtual void abort();
-    virtual void serializeStats(MemoryBuffer &mb);
 
 // ICopyFileProgress
     virtual CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize);

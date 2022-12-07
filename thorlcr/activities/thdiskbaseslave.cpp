@@ -315,17 +315,19 @@ IThorRowInterfaces * CDiskReadSlaveActivityBase::queryProjectedDiskRowInterfaces
     return projectedDiskRowIf;
 }
 
+
+void CDiskReadSlaveActivityBase::gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
+{
+    PARENT::gatherActiveStats(activeStats);
+    if (partHandler)
+        partHandler->gatherStats(activeStats);
+}
+
 void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
     PARENT::serializeStats(mb);
     if (partDescs.ordinality())
     {
-        CRuntimeStatisticCollection activePartStats(diskReadPartStatistics);
-        if (partHandler)
-        {
-            partHandler->gatherStats(activePartStats);
-            stats.set(activePartStats); // replace disk read stats
-        }
         mb.append((unsigned)fileStats.size());
         for (auto &stats: fileStats)
             stats->serialize(mb);
@@ -549,16 +551,12 @@ void CDiskWriteSlaveActivityBase::abort()
         cancelReceiveMsg(queryJobChannel().queryMyRank()-1, mpTag);
 }
 
-void CDiskWriteSlaveActivityBase::serializeStats(MemoryBuffer &mb)
-{
-    stats.setStatistic(StPerReplicated, replicateDone);
-    PARENT::serializeStats(mb);
-}
-
 // NB: always called within statsCs crit
 void CDiskWriteSlaveActivityBase::gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
 {
+    PARENT::gatherActiveStats(activeStats);
     mergeStats(activeStats, outputIO, diskWriteRemoteStatistics);
+    activeStats.setStatistic(StPerReplicated, replicateDone);
 }
 
 

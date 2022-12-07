@@ -182,11 +182,11 @@ public:
         calcMetaInfoSize(info, queryInput(0));
     }
     virtual bool isGrouped() const override{ return true; }
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
-        stats.setStatistic(StNumGroups, numGroups);
-        stats.setStatistic(StNumGroupMax, numGroupMax);
-        PARENT::serializeStats(mb);
+        PARENT::gatherActiveStats(activeStats);
+        activeStats.setStatistic(StNumGroups, numGroups);
+        activeStats.setStatistic(StNumGroupMax, numGroupMax);
     }
 };
 

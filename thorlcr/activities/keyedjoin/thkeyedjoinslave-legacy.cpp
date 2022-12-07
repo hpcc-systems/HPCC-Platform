@@ -2421,18 +2421,17 @@ public:
         info.unknownRowsOutput = true;
     }
 
-    virtual void serializeStats(MemoryBuffer &mb) override
+    virtual void gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
     {
+        PARENT::gatherActiveStats(activeStats);
         constexpr StatisticKind mapping[] = { StNumIndexSeeks, StNumIndexScans, StNumIndexAccepted, StNumPostFiltered, StNumPreFiltered, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected };
         ForEachItemIn(s, _statsArr)
         {
             unsigned __int64 v = _statsArr.item(s);
             if (0 == v)
                 continue;
-            stats.setStatistic(mapping[s], v);
+            activeStats.setStatistic(mapping[s], v);
         }
-
-        CSlaveActivity::serializeStats(mb);
     }
 
 friend class CKeyedFetchHandler;

@@ -38,6 +38,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <memory>
 
 #include "jlib.hpp"
 #include "jarray.hpp"
@@ -115,6 +116,7 @@ interface ICodeContextExt : extends ICodeContext
 {
     virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) = 0;
     virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) = 0;
+    virtual void gatherStats(CRuntimeStatisticCollection &mergedStats) const = 0;
 };
 
 interface IBackup;
@@ -292,7 +294,7 @@ class CActivityCodeContext : implements ICodeContextExt
     ICodeContextExt *ctx = nullptr;
     CGraphBase *containerGraph = nullptr;
     CGraphBase *parent = nullptr;
-    CRuntimeStatisticCollection *stats = nullptr;
+    std::unique_ptr<CRuntimeStatisticCollection> stats;
     mutable CriticalSection contextCrit;
     std::unordered_map<std::string, Owned<ISectionTimer>> functionTimers;
 
@@ -304,7 +306,12 @@ public:
         containerGraph = _containerGraph;
         ctx = _ctx;
     }
-    void setStats(CRuntimeStatisticCollection *_stats) { stats = _stats; }
+    void setStats(const StatisticsMapping &mapping)
+    {
+        dbgassertex(!stats);
+        stats.reset(new CRuntimeStatisticCollection(mapping));
+    }
+    virtual void gatherStats(CRuntimeStatisticCollection &mergedStats) const override { mergedStats.merge(*stats); }
     virtual const char *loadResource(unsigned id) { return ctx->loadResource(id); }
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { ctx->setResultBool(name, sequence, value); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { ctx->setResultData(name, sequence, len, data); }
@@ -1092,12 +1099,12 @@ protected:
     bool timeActivities; // purely for access efficiency
     bool receiving, cancelledReceive, initialized, reInit;
     Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
-    CRuntimeStatisticCollection stats;
+    const StatisticsMapping &statsMapping;
 
 public:
     CActivityBase(CGraphElementBase *container, const StatisticsMapping &statsMapping);
     ~CActivityBase();
-    CRuntimeStatisticCollection &queryStats() { return stats; }
+    const StatisticsMapping &queryStatsMapping() const { return statsMapping; }
     inline activity_id queryId() const { return container.queryId(); }
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
