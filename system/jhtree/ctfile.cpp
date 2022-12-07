@@ -296,11 +296,11 @@ void CWriteNodeBase::write(IFileIOStream *out, CRC32 *crc)
 
 //=========================================================================================================
 
-CWriteNode::CWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeaf) : CWriteNodeBase(_fpos, _keyHdr)
+CWriteNode::CWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) : CWriteNodeBase(_fpos, _keyHdr)
 {
     keyLen = keyHdr->getMaxKeyLength();
-    hdr.nodeType = isLeaf ? NodeLeaf : NodeBranch;
-    if (!isLeaf)
+    hdr.nodeType = isLeafNode ? NodeLeaf : NodeBranch;
+    if (!isLeafNode)
     {
         keyLen = keyHdr->getNodeKeyLength();
     }
@@ -548,6 +548,34 @@ char *CJHTreeNode::expandKeys(const void *src,size32_t &retsize)
     return outkeys;
 }
 
+void CJHTreeNode::unpack(const void *node, bool needCopy)
+{
+    assertex(!keyBuf && (expandedSize == 0));
+    memcpy(&hdr, node, sizeof(hdr));
+    SwapBigEndian(hdr);
+    __int64 maxsib = keyHdr->getHdrStruct()->phyrec;
+    if (!hdr.isValid(keyHdr->getNodeSize()))
+    {
+        PROGLOG("hdr.nodeType=%d",(int)hdr.nodeType);
+        PROGLOG("hdr.rightSib=%" I64F "d",hdr.rightSib);
+        PROGLOG("hdr.leftSib=%" I64F "d",hdr.leftSib);
+        PROGLOG("maxsib=%" I64F "d",maxsib);
+        PROGLOG("nodeSize=%d", keyHdr->getNodeSize());
+        PROGLOG("keyBytes=%d",(int)hdr.keyBytes);
+        PrintStackReport();
+        throw MakeStringException(0, "Htree: Corrupt key node detected");
+    }
+    const char *data = ((const char *) node) + sizeof(hdr);
+    if (hdr.crc32)
+    {
+        unsigned crc = crc32(data, hdr.keyBytes, 0);
+        if (hdr.crc32 != crc)
+            throw MakeStringException(0, "CRC error on key node");
+    }
+}
+
+//------------------------------
+
 void CJHSearchNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     keyLen = _keyHdr->getMaxKeyLength();
@@ -602,32 +630,6 @@ int CJHSearchNode::locateGT(const char * search, unsigned minIndex) const
             b = i-1;
     }
     return a;
-}
-
-void CJHTreeNode::unpack(const void *node, bool needCopy)
-{
-    assertex(!keyBuf && (expandedSize == 0));
-    memcpy(&hdr, node, sizeof(hdr));
-    SwapBigEndian(hdr);
-    __int64 maxsib = keyHdr->getHdrStruct()->phyrec;
-    if (!hdr.isValid(keyHdr->getNodeSize()))
-    {
-        PROGLOG("hdr.nodeType=%d",(int)hdr.nodeType);
-        PROGLOG("hdr.rightSib=%" I64F "d",hdr.rightSib);
-        PROGLOG("hdr.leftSib=%" I64F "d",hdr.leftSib);
-        PROGLOG("maxsib=%" I64F "d",maxsib);
-        PROGLOG("nodeSize=%d", keyHdr->getNodeSize());
-        PROGLOG("keyBytes=%d",(int)hdr.keyBytes);
-        PrintStackReport();
-        throw MakeStringException(0, "Htree: Corrupt key node detected");
-    }
-    const char *data = ((const char *) node) + sizeof(hdr);
-    if (hdr.crc32)
-    {
-        unsigned crc = crc32(data, hdr.keyBytes, 0);
-        if (hdr.crc32 != crc)
-            throw MakeStringException(0, "CRC error on key node");
-    }
 }
 
 void CJHSearchNode::unpack(const void *node, bool needCopy)
