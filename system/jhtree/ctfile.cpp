@@ -284,7 +284,7 @@ void CWriteNodeBase::writeHdr()
 
 void CWriteNodeBase::write(IFileIOStream *out, CRC32 *crc)
 {
-    if (isLeaf() && (keyHdr->getKeyType() & HTREE_COMPRESSED_KEY))
+    if (isBlob() || (isLeaf() && (keyHdr->getKeyType() & HTREE_COMPRESSED_KEY)))
         lzwcomp.close();
     assertex(hdr.keyBytes<=maxBytes);
     writeHdr();
@@ -756,7 +756,7 @@ void CJHSearchNode::unpack(const void *node, bool needCopy)
         }
         else
         {
-            expandedSize = hdr.keyBytes + sizeof( __int64 );  // MORE - why is the +sizeof() there?
+            expandedSize = hdr.keyBytes + sizeof( __int64 );  // MORE - why is the +sizeof() there? Doesn't matter as this code cannot be hit, since we always set COL_PREFIX
             keyBuf = (char *) allocMem(expandedSize);
             memcpy(keyBuf, keys, hdr.keyBytes + sizeof( __int64 ));
         }
@@ -1111,20 +1111,8 @@ void CJHTreeBlobNode::unpack(const void *nodeData, bool needCopy)
     CJHTreeNode::unpack(nodeData, needCopy);
     const byte *data = ((const byte *) nodeData) + sizeof(hdr);
     char keyType = keyHdr->getKeyType();
-    if (keyType & HTREE_COMPRESSED_KEY)
-    {
-        expandedSize = keyHdr->getNodeSize();
-        keyBuf = expandKeys(data, expandedSize);
-    }
-    else
-    {
-        // Do blobs work on indexes that are not compressed - looking at old code I'm not sure they do
-        assertex(!(keyType & COL_PREFIX));
-        expandedSize = hdr.keyBytes + sizeof( __int64 );  // MORE - why is the +sizeof() there?
-        keyBuf = (char *) allocMem(expandedSize);
-        memcpy(keyBuf, data, hdr.keyBytes + sizeof( __int64 ));
-
-    }
+    expandedSize = keyHdr->getNodeSize();
+    keyBuf = expandKeys(data, expandedSize);
 }
 
 size32_t CJHTreeBlobNode::getTotalBlobSize(unsigned offset) const
