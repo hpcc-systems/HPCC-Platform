@@ -744,6 +744,9 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
     }
 
     StringArray &checkPlanes = req.getCheckPlanes();
+    if (isContainerized() && (checkPlanes.length() == 0))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Storage planes must be specified for a containerized system");
+
     if (!req.getGetFileDetails())
     {
         StringArray unusedFiles;
