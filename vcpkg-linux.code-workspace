@@ -5,13 +5,14 @@
 		}
 	],
 	"settings": {
-		"cmake.generator": "Unix Makefiles",
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
 			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
-			"-DSUPPRESS_REMBED=ON"
+			"-DSUPPRESS_REMBED=ON",
+			"-DUSE_AWS=ON",
+			"-DUSE_JAVA=ON"
 		],
 		"editor.formatOnSave": false
 	},

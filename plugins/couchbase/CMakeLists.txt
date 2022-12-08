@@ -26,45 +26,8 @@ project(couchbaseembed)
 
 IF ( COUCHBASEEMBED )
 
-    if(APPLE)
-        set(LIBCOUCHBASE_LIB ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so)
-        set(LIBCOUCHBASE_LIB_SONAME ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2)
-        set(LIBCOUCHBASE_LIB_REAL ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2.0.59)
-    else()
-        set(LIBCOUCHBASE_LIB ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so)
-        set(LIBCOUCHBASE_LIB_SONAME ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2)
-        set(LIBCOUCHBASE_LIB_REAL ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build/lib/libcouchbase.so.2.0.59)
-    endif()
-
-    set(SSL_INC "")
-    if (OPENSSL_INCLUDE_DIR)
-       set (SSL_INC "-DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
-    endif()
-
-    set(SSL_LIB "")
-    if (OPENSSL_LIBRARIES)
-       set (SSL_LIB "-DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}")
-    endif()
-
-    set(SSL2_LIB "")
-    if (OPENSSL_SSL_LIBRARY)
-       set (SSL2_LIB "-DOPENSSL_SSL_LIBRARY=${OPENSSL_SSL_LIBRARY}")
-    endif()
-
-    set(CYP_LIB "")
-    if (OPENSSL_CRYPTO_LIBRARY)
-       set (CYP_LIB "-DOPENSSL_CRYPTO_LIBRARY=${OPENSSL_CRYPTO_LIBRARY}")
-    endif()
-
-    add_custom_command(
-        OUTPUT ${LIBCOUCHBASE_LIB}
-        COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build
-        COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/libcouchbase-build && ${CMAKE_COMMAND} ${SSL2_LIB} ${SSL_INC} ${CYP_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/libcouchbase && ${CMAKE_MAKE_PROGRAM}
-        COMMENT Building libcouchbase for import)
-    add_custom_target(libcouchbase-build ALL DEPENDS ${LIBCOUCHBASE_LIB})
-    add_library(libcouchbase SHARED IMPORTED)
-    set_property(TARGET libcouchbase PROPERTY IMPORTED_LOCATION ${LIBCOUCHBASE_LIB})
-    add_dependencies(libcouchbase libcouchbase-build)
+    find_path(LIBCOUCHBASE_CXX_INCLUDE_DIRS "libcouchbase/couchbase++.h")
+    find_library(LIBCOUCHBASE_LIB NAMES couchbase)
 
     set(
         SRCS
@@ -72,9 +35,7 @@ IF ( COUCHBASEEMBED )
         )
 
     INCLUDE_DIRECTORIES (
-        ${PROJECT_SOURCE_DIR}/libcouchbase/include
-        ${PROJECT_BINARY_DIR}/libcouchbase-build/generated
-        ${PROJECT_SOURCE_DIR}/libcouchbase-cxx/include
+        ${LIBCOUCHBASE_CXX_INCLUDE_DIRS}
         ${HPCC_SOURCE_DIR}/esp/platform #for token serialize/deserialize
         ${HPCC_SOURCE_DIR}/system/include
         ${HPCC_SOURCE_DIR}/rtl/eclrtl
@@ -90,22 +51,12 @@ IF ( COUCHBASEEMBED )
     install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libcouchbase-build/lib\")")
     install(
         TARGETS couchbaseembed
-        DESTINATION plugins)
-
-    install(
-        FILES ${LIBCOUCHBASE_LIB_REAL}
-        DESTINATION ${LIB_DIR}
-        PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-        COMPONENT Runtime)
-
-    install(
-        FILES ${LIBCOUCHBASE_LIB} ${LIBCOUCHBASE_LIB_SONAME}
-        DESTINATION ${LIB_DIR}
-        COMPONENT Runtime)
+        DESTINATION plugins
+        CALC_DEPS)
 
     target_link_libraries(
         couchbaseembed
-        libcouchbase
+        ${LIBCOUCHBASE_LIB}
         eclrtl
         jlib)
 endif()

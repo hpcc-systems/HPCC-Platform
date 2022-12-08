@@ -125,7 +125,7 @@ target_link_libraries ( thorhelper
     )
 
 if (USE_NUMA)
- target_link_libraries ( thorhelper numa )
+ target_link_libraries ( thorhelper ${NUMA_LIBRARIES} )
 endif ()
 
 if (USE_TBB)

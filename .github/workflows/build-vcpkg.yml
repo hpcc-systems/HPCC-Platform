@@ -112,17 +112,44 @@ jobs:
         shell: "bash"
         run: |
           sudo apt-get update -y
-          sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
-            zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
-            libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
-            default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config uuid-dev libtool autotools-dev automake \
-            libssl-dev xmlstarlet libncurses-dev
+          sudo apt-get install -yq --no-install-recommends \
+          apt-transport-https \
+          autoconf \
+          autoconf-archive \
+          automake \
+          autotools-dev \
+          binutils-dev \
+          bison \
+          build-essential \
+          ca-certificates \
+          curl \
+          dirmngr \
+          flex \
+          git \
+          gnupg \
+          groff-base \
+          libtool \
+          pkg-config \
+          software-properties-common \
+          tar \
+          unzip \
+          uuid-dev \
+          zip
+
+      - name: Ubuntu Mono Dependencies
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        shell: "bash"
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update -y
+          sudo apt-get -yq install -f mono-complete
 
       - name: OSX Dependencies
         if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform && contains(matrix.os, 'macos') }}
         shell: "bash"
         run: |
-          brew install bison flex pkg-config automake libtool cmake openjdk@11
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
 
       - name: "Setup NuGet credentials"
         if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
