@@ -67,14 +67,17 @@
 #
 #########################################################
 
-cmake_minimum_required(VERSION 3.24.0)
+cmake_minimum_required(VERSION 3.22.1)
 
 set(HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 include(${HPCC_SOURCE_DIR}/version.cmake)
+
+set(VCPKG_FILES_DIR "${CMAKE_BINARY_DIR}" CACHE STRING "Folder for vcpkg download, build and installed files")
 set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
 set(VCPKG_OVERLAY_PORTS ${HPCC_SOURCE_DIR}/vcpkg/overlays)
-set(VCPKG_INSTALL_OPTIONS "--downloads-root=${CMAKE_BINARY_DIR}/vcpkg_downloads;--x-buildtrees-root=${CMAKE_BINARY_DIR}/vcpkg_buildtrees;--x-packages-root=${CMAKE_BINARY_DIR}/vcpkg_packages")
+set(VCPKG_INSTALLED_DIR "${VCPKG_FILES_DIR}/vcpkg_installed")
+set(VCPKG_INSTALL_OPTIONS "--downloads-root=${VCPKG_FILES_DIR}/vcpkg_downloads;--x-buildtrees-root=${VCPKG_FILES_DIR}/vcpkg_buildtrees;--x-packages-root=${VCPKG_FILES_DIR}/vcpkg_packages")
 set(VCPKG_VERBOSE OFF)
 file(REMOVE ${HPCC_SOURCE_DIR}/vcpkg/vcpkg)
 if(APPLE OR WIN32)
@@ -211,7 +214,7 @@ endif()
 HPCC_ADD_SUBDIRECTORY(docs "PLATFORM")
 if (NOT VCPKG_APPLOCAL_DEPS)
     if(APPLE OR WIN32)
-        HPCC_ADD_SUBDIRECTORY(lib2)
+        # HPCC_ADD_SUBDIRECTORY(lib2)
     endif(APPLE OR WIN32)
 endif()
 
@@ -305,6 +308,14 @@ if(TOP_LEVEL_PROJECT)
         set(CPACK_STRIP_FILES TRUE)
     endif()
 
+    if (NOT CPACK_STRIP_FILES) 
+        set(packageStrippedLabel "_with_symbols")
+    endif()
+
+    if (CONTAINERIZED) 
+        set(packageContainerizedLabel "_k8s")
+    endif()
+
     if(UNIX AND NOT APPLE)
         execute_process(
             COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/distrocheck.sh
@@ -326,11 +337,11 @@ if(TOP_LEVEL_PROJECT)
         message("-- distro uses ${packageManagement}, revision is ${packageRevisionArch}")
 
         if("${packageManagement}" STREQUAL "DEB")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
         elseif("${packageManagement}" STREQUAL "RPM")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
         else()
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}")
         endif()
     endif ()
 
@@ -398,7 +409,7 @@ endif()
 #set( CPACK_DEB_PACKAGE_COMPONENT ON )
 
 if(TOP_LEVEL_PROJECT)
-    if(UNIX)
+    if (UNIX AND NOT APPLE)
         if("${packageManagement}" STREQUAL "DEB")
             set(CPACK_GENERATOR "${packageManagement}")
             message("-- Will build DEB package")
@@ -451,7 +462,7 @@ if(TOP_LEVEL_PROJECT)
         else()
             message("WARNING: Unsupported package ${packageManagement}.")
         endif ()
-    endif(UNIX)
+    endif(UNIX AND NOT APPLE)
 
     if(PLUGIN)
         if("${packageManagement}" STREQUAL "RPM")
@@ -470,17 +481,19 @@ if(TOP_LEVEL_PROJECT)
         endif()
     endif()
 
-    if(UNIX)
+    if(UNIX AND NOT APPLE)
         set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
-    endif(UNIX)
+    endif(UNIX AND NOT APPLE)
 
     if(PLATFORM OR PLUGIN)
         set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PACKAGE_FILE_NAME_PREFIX}")
     else()
+        if (APPLE)
+            set(CPACK_GENERATOR "productbuild")
+        endif ()
         if(APPLE OR WIN32)
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}")
         endif()
-        set(CPACK_MONOLITHIC_INSTALL TRUE)
         file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
             "HPCC Systems® - Client Tools\r"
             "===========================\r\r"
@@ -489,6 +502,7 @@ if(TOP_LEVEL_PROJECT)
         set(CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}")
         set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems® Client Tools.")
         if(WIN32)
+            set(CPACK_MONOLITHIC_INSTALL TRUE)
             if("${SIGN_DIRECTORY}" STREQUAL "")
                 set(SIGN_DIRECTORY "${HPCC_SOURCE_DIR}/../sign")
             endif()

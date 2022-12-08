@@ -1244,7 +1244,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
       foreach(target IN LISTS parsed_targets)
         install(CODE "set(_arg1 \"\$<TARGET_FILE:${target}>\")")
-        install(CODE "set(vcpkg_installed \"${CMAKE_BINARY_DIR}/vcpkg_installed\")")
+        install(CODE "set(vcpkg_installed \"${VCPKG_FILES_DIR}/vcpkg_installed\")")
         install(CODE [[
             file(GET_RUNTIME_DEPENDENCIES
                 RESOLVED_DEPENDENCIES_VAR _r_deps
