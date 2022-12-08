@@ -81,6 +81,12 @@ if(APPLE OR WIN32)
     set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON)
 endif()
 
+if (UNIX)
+    file(REMOVE ${HPCC_SOURCE_DIR}/vcpkg/vcpkg)
+else()
+    file(REMOVE ${HPCC_SOURCE_DIR}/vcpkg/vcpkg.exe)
+endif()
+
 project(hpccsystems-platform LANGUAGES C CXX
     VERSION ${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.${HPCC_SEQUENCE}
 )
