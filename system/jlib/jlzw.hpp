@@ -35,6 +35,8 @@ interface jlib_decl ICompressor : public IInterface
     virtual size32_t buflen()=0;
     virtual void   startblock()=0;                      // row based must call startblock/commitblock
     virtual void   commitblock()=0;
+
+    virtual bool adjustLimit(size32_t newLimit) = 0;    // adjust the maximum size of a fixed size output buffer
 };
 
 interface jlib_decl IExpander : public IInterface
