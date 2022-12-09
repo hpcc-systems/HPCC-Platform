@@ -216,7 +216,7 @@ public:
     inline bool isBlob() const { return hdr.nodeType == NodeBlob; }
     inline bool isMetadata() const { return hdr.nodeType == NodeMeta; }
     inline bool isBloom() const { return hdr.nodeType == NodeBloom; }
-    inline bool isLeaf() const { return hdr.nodeType != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
+    inline bool isLeaf() const { return hdr.nodeType == NodeLeaf; }
     inline NodeType getNodeType() const { return hdr.nodeType; }
     inline size32_t getNodeDiskSize() const { return keyHdr->getNodeSize(); }  // Retrieve size of node on disk
     const char * getNodeTypeName() const;
@@ -258,7 +258,7 @@ protected:
     unsigned __int64 firstSequence = 0;
 
     inline size32_t getKeyLen() const { return keyLen; }
-    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
+    virtual void unpack(const void *node, bool needCopy) override;  // MORE - should move into virtual load()...
 
 public:
     inline bool isKeyAt(unsigned int num) const { return (num < hdr.numKeys); }
@@ -314,7 +314,7 @@ public:
 class CJHTreeBlobNode : public CJHTreeNode
 {
 protected:
-    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
+    virtual void unpack(const void *node, bool needCopy) override;  // MORE - should move into virtual load()...
 public:
     CJHTreeBlobNode ();
     ~CJHTreeBlobNode ();
@@ -326,7 +326,7 @@ public:
 class CJHTreeRawDataNode : public CJHTreeNode
 {
 protected:
-    virtual void unpack(const void *node, bool needCopy);  // MORE - should move into virtual load()...
+    virtual void unpack(const void *node, bool needCopy) override;  // MORE - should move into virtual load()...
 };
 
 class CJHTreeMetadataNode : public CJHTreeRawDataNode
@@ -372,7 +372,7 @@ private:
     unsigned __int64 lastSequence;
 
 public:
-    CWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeaf);
+    CWriteNode(offset_t fpos, CKeyHdr *keyHdr, bool isLeafNode);
     ~CWriteNode();
 
     size32_t compressValue(const char *keyData, size32_t size, char *result);
