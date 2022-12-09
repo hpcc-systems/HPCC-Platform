@@ -1,10 +1,9 @@
 ARG VCPKG_REF=latest
 FROM hpccbuilds/vcpkg-ubuntu-22.04:$VCPKG_REF
 
-# RUN yum install -y \
-#     java-11-openjdk-devel \
-#     python3-devel 
-# 
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    default-jdk \
+    python3-dev 
 
 WORKDIR /hpcc-dev
 
@@ -35,9 +34,10 @@ ENV CMAKE_OPTIONS="\
     -DCPACK_STRIP_FILES=ON \
     "
 
+ENV VCPKG_BINARY_SOURCES="clear;files,/hpcc-dev/vcpkg_cache,readwrite"
+
 ENTRYPOINT ["/bin/bash", "--login", "-c", \
     "mkdir -p ${BUILD_FOLDER} && \
-    cp -R /hpcc-dev/build/* $BUILD_FOLDER && \
     cmake -S ${SOURCE_FOLDER} -B ${BUILD_FOLDER} ${CMAKE_OPTIONS} && \
     cmake --build ${BUILD_FOLDER} --target package -- -j" \
     ]

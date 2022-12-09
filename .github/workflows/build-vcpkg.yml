@@ -69,7 +69,7 @@ jobs:
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON "-DSUPPRESS_MEMCACHED=ON -DSUPPRESS_COUCHBASEEMBED=ON -DWSSQL_SERVICE=OFF -DUSE_AZURE=OFF'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON "-DSUPPRESS_MEMCACHED=ON -DSUPPRESS_COUCHBASEEMBED=ON -DWSSQL_SERVICE=OFF -DUSE_AZURE=OFF'
             cmake_build_options: "--config Release -j2 -- -m"
             event_name: "pull_request"
           - os: "windows-2022"

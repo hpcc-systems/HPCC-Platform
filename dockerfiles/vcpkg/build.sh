@@ -40,10 +40,10 @@ function doBuild() {
 }
 
 doBuild ubuntu-22.04
-doBuild ubuntu-20.04
-doBuild ubuntu-18.04
-doBuild centos-8
-doBuild centos-7
+# doBuild ubuntu-20.04
+# doBuild ubuntu-18.04
+# doBuild centos-8
+# doBuild centos-7
 
 # docker build --progress plain --pull --rm -f "$SCRIPT_DIR/core.dockerfile" \
 #     -t $DOCKER_USERNAME/core:$GITHUB_REF \
