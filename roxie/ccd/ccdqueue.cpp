@@ -3437,8 +3437,6 @@ IPacketDiscarder *createPacketDiscarder()
 // My gut feeling is that knowing what channels are responding is useful so should reply on every unsuspended channel, 
 // and that the delay caused by queuing system is an interesting part of what we want to measure (though nice to know minimum possible too)
 
-unsigned pingInterval = 60;
-
 class PingTimer : public Thread
 {
     bool aborted;
