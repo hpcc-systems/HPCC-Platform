@@ -829,6 +829,7 @@ EXPORT boolean SuperFileExists(varstring superName) :=
  * Deletes the superfile.
  *
  * @param superName     The logical name of the superfile.
+ * @param deletesub     Whether to delete subfiles. Default is FALSE.
  *
  * @see FileExists
  */
