@@ -31,16 +31,6 @@ jobs:
   build:
     strategy:
       matrix:
-        os:
-          [
-            "ubuntu-18.04",
-            "ubuntu-20.04",
-            "ubuntu-22.04",
-            "windows-2019",
-            "windows-2022",
-            "macos-11",
-            "macos-12",
-          ]
         include:
           - os: "ubuntu-18.04"
             triplet: "x64-linux"
@@ -233,14 +223,6 @@ jobs:
   build-docker:
     strategy:
       matrix:
-        os:
-          [
-            "ubuntu-22.04",
-            "ubuntu-20.04",
-            "ubuntu-18.04",
-            "centos-8",
-            "centos-7",
-          ]
         include:
           - os: "ubuntu-22.04"
             event_name: "pull_request, push, schedule"
@@ -268,7 +250,7 @@ jobs:
         if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         uses: actions/checkout@v3
         with:
-          submodules: "recursive"
+          submodules: recursive
 
       - name: Calculate vars
         if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
