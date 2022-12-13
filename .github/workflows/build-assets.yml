@@ -34,9 +34,6 @@ jobs:
         id: vars
         run: |
           echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
-          cd vcpkg
-          echo "vcpkg_sha_short=$(git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
-          echo "cmake_options=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON" >> $GITHUB_OUTPUT
 
       - uses: AButler/upload-release-assets@v2.0
         with:
