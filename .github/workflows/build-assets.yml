@@ -24,25 +24,25 @@ jobs:
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DCPACK_THREADS=0 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCPACK_THREADS=0 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "macos-11"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCPACK_THREADS=0 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
             cmake_build_options: "--parallel $(nproc)"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCPACK_THREADS=0 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
             cmake_build_options: "--parallel $(nproc)"
       fail-fast: false
 
@@ -151,38 +151,21 @@ jobs:
           cd build
           cmake .. -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
 
-      - name: "Remove vcpkg build files"
-        working-directory: ./vcpkg
-        shell: "bash"
-        run: |
-          rm -rf ./buildtrees
-          rm -rf ./downloads
-
-      - name: "Build HPCC-Platform"
+      - name: Bundle
         working-directory: ./build
         shell: "bash"
         run: |
-          cmake --build . ${{ matrix.cmake_build_options }}
-
-      - name: "Build HPCC-Platform"
-        working-directory: ./build
-        shell: "bash"
-        run: |
-          cmake --build . ${{ matrix.cmake_build_options }}
-
-      - name: Bundle Package  
-        shell: "bash"
-        run: |
-          cmake --build . --target package ${{ matrix.cmake_build_options }}
+          cmake --build . ${{ matrix.cmake_build_options }} --target package 
 
       - name: Attach build artifacts
         uses: actions/upload-artifact@v3
         with:
+          name: clienttools-${{ matrix.os }}
           path: |
-            /hpcc-dev/HPCC-Platform/build/*.exe
-            /hpcc-dev/HPCC-Platform/build/*.msi
-            /hpcc-dev/HPCC-Platform/build/*.dmg
-            /hpcc-dev/HPCC-Platform/build/*.pkg
+            ./build/*.exe
+            ./build/*.msi
+            ./build/*.dmg
+            ./build/*.pkg
             
   build-docker:
     strategy:
@@ -279,6 +262,7 @@ jobs:
       - name: Attach build artifacts
         uses: actions/upload-artifact@v3
         with:
+          name: platform-${{ matrix.os }}
           path: |
-            /hpcc-dev/HPCC-Platform/build/*.deb
-            /hpcc-dev/HPCC-Platform/build/*.rpm
+            ./build/*.deb
+            ./build/*.rpm
