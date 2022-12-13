@@ -103,6 +103,7 @@ IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
         xpath.appendf("[@name='%s']", name);
     return getGlobalConfigSP()->getElements(xpath);
 }
+
 IPropertyTree * getDropZonePlane(const char * name)
 {
     if (isEmptyString(name))
@@ -110,6 +111,29 @@ IPropertyTree * getDropZonePlane(const char * name)
     StringBuffer xpath(lz_plane_path);
     xpath.appendf("[@name='%s']", name);
     return getGlobalConfigSP()->getPropTree(xpath);
+}
+
+IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch)
+{
+    if (streq(host, "localhost"))
+        host = nullptr;
+    Owned<IPropertyTreeIterator> iter = getDropZonePlanesIterator();
+    ForEach(*iter)
+    {
+        IPropertyTree & plane = iter->query();
+        if (host)
+        {
+            if (!isHostInPlane(&plane, host, ipMatch))
+                continue;
+        }
+        else if (plane.hasProp("@hostGroup") || plane.hasProp("hosts"))
+            continue;
+
+        //Match path
+        if (startsWith(path, plane.queryProp("@prefix")))
+            return LINK(&plane);
+    }
+    return nullptr;
 }
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
