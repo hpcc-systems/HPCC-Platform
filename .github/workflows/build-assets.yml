@@ -64,11 +64,11 @@ jobs:
     name: "Build Client Tools"
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Echo GitHub context
-        shell: "bash"
-        run: |
-          echo "GitHub context variables:"
-          echo "${{ toJSON(github) }}"
+      # - name: Echo GitHub context
+      #   shell: "bash"
+      #   run: |
+      #     echo "GitHub context variables:"
+      #     echo "${{ toJSON(github) }}"
     
       - name: Display build summary
         working-directory: .
