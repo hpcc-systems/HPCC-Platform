@@ -9,12 +9,6 @@ on:
     tags:
       - "*"
 
-  workflow_dispatch:
-    inputs:
-      git_ref:
-        description: 'The git ref to use when checking out the code (e.g. a branch or tag name)'
-        required: true
-
 jobs:
   release:
     name:  Publish Release
@@ -145,16 +139,8 @@ jobs:
 
       - name: Check out source code (tag)
         uses: actions/checkout@v3
-        if: github.event_name == 'tag'
         with:
           ref: ${{ github.ref }}
-          submodules: recursive
-
-      - name: Check out source code (workflow_dispatch)
-        uses: actions/checkout@v3
-        if: github.event_name != 'tag'
-        with:
-          ref: ${{ github.event.inputs.ref }}
           submodules: recursive
 
       - name: "vcpkg Bootstrap"
@@ -179,7 +165,7 @@ jobs:
 
       - uses: AButler/upload-release-assets@v2.0
         with:
-          files: 'build/*.exe;build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz'
+          files: 'build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz;build/*.exe'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           release-tag: ${{ steps.vars.outputs.branch_name }}
 
@@ -208,16 +194,8 @@ jobs:
 
       - name: Check out source code (tag)
         uses: actions/checkout@v3
-        if: github.event_name == 'tag'
         with:
           ref: ${{ github.ref }}
-          submodules: recursive
-
-      - name: Check out source code (workflow_dispatch)
-        uses: actions/checkout@v3
-        if: github.event_name != 'tag'
-        with:
-          ref: ${{ github.event.inputs.ref }}
           submodules: recursive
 
       - name: Calculate vars
