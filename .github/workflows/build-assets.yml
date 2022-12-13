@@ -31,7 +31,7 @@ jobs:
           prerelease: ${{ contains(github.ref, 'rc') }}
 
   build:
-    needs: create_release
+    needs: release
     strategy:
       matrix:
         include:
@@ -184,7 +184,7 @@ jobs:
           release-tag: ${{ steps.vars.outputs.branch_name }}
 
   build-docker:
-    needs: create_release
+    needs: release
     strategy:
       matrix:
         os:
