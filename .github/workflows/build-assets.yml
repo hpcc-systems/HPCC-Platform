@@ -16,6 +16,20 @@ on:
         required: true
 
 jobs:
+#   release:
+#     name:  Publish Release
+#     runs-on: ubuntu-latest
+#     steps:
+#       - id: create_release
+#         uses: actions/create-release@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           tag_name: ${{ github.ref }}
+#           release_name: Release ${{ github.ref }}
+#           draft: false
+#           prerelease: ${{ contains(github.ref, "rc") }}
+
   build:
     strategy:
       matrix:
@@ -24,13 +38,13 @@ jobs:
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
+            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DOPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DOPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "macos-11"
             triplet: "x64-osx"
@@ -157,16 +171,13 @@ jobs:
         run: |
           cmake --build . ${{ matrix.cmake_build_options }} --target package 
 
-      - name: Attach build artifacts
-        uses: actions/upload-artifact@v3
+      - uses: AButler/upload-release-assets@v2.0
         with:
-          name: clienttools-${{ matrix.os }}
-          path: |
-            ./build/*.exe
-            ./build/*.msi
-            ./build/*.dmg
-            ./build/*.pkg
-            
+          files: 'build/*.exe;build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ github.ref }}
+
+
   build-docker:
     strategy:
       matrix:
@@ -259,10 +270,8 @@ jobs:
           docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON -DCPACK_STRIP_FILES=ON"
           docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
 
-      - name: Attach build artifacts
-        uses: actions/upload-artifact@v3
+      - uses: AButler/upload-release-assets@v2.0
         with:
-          name: platform-${{ matrix.os }}
-          path: |
-            ./build/*.deb
-            ./build/*.rpm
+          files: 'build/*.deb;build/*.rpm'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ github.ref }}
