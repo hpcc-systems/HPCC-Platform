@@ -35,11 +35,18 @@ jobs:
         run: |
           echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
+      - name: Check out source code (tag)
+        uses: actions/checkout@v3
+        if: github.event_name == 'tag'
+        with:
+          ref: ${{ github.ref }}
+
       - uses: AButler/upload-release-assets@v2.0
         with:
           files: 'README.md'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           release-tag: ${{ steps.vars.outputs.branch_name }}
+
   build:
     strategy:
       matrix:
