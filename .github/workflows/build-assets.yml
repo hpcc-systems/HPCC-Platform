@@ -128,7 +128,8 @@ jobs:
       - name: More Info
         shell: "bash"
         run: |
-          echo "${{ needs.release.outputs.id }}"
+          echo "${{ toJSON(needs) }}"
+          echo "${{ steps.vars.outputs.branch_name }}"
 
       - uses: AButler/upload-release-assets@v2.0
         with:
