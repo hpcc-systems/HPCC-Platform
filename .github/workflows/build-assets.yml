@@ -125,13 +125,18 @@ jobs:
       #   run: |
       #     cmake --build . ${{ matrix.cmake_build_options }} --target package 
 
+      - name: More Info
+        shell: "bash"
+        run: |
+          echo "${{ needs.release.outputs.id }}"
+
       - name: Upload Release Assets
         id: upload-release-assets
         uses: dwenegar/upload-release-assets@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          release_id: ${{ steps.vars.outputs.branch_name }}
+          release_id: ${{ needs.release.outputs.id }}
           assets_path: esp/src/*.json
 
   # build-docker:
