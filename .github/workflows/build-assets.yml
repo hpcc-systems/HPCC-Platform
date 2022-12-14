@@ -65,6 +65,11 @@ jobs:
         run: |
           echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
+      - name: Check out source code (tag)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
       - name: mkdir
         shell: "bash"
         run: |
