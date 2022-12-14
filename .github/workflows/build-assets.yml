@@ -125,12 +125,14 @@ jobs:
       #   run: |
       #     cmake --build . ${{ matrix.cmake_build_options }} --target package 
 
-      - uses: Xotl/cool-github-releases@v1
+      - name: Upload Release Assets
+        id: upload-release-assets
+        uses: dwenegar/upload-release-assets@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          mode: update
-          tag_name: ${{ steps.vars.outputs.branch_name }}
-          assets: esp/src/*.json;vcpkg/*.txt
-          github_token: ${{ github.token }}
+          release_id: ${{ needs.release.create_release.outputs.id }}
+          assets_path: esp/src/*.json
 
   # build-docker:
   #   needs: release
