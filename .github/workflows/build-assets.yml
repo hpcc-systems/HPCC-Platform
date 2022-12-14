@@ -65,19 +65,21 @@ jobs:
         run: |
           echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
-      - name: CMake Gen
+      - name: mkdir
         shell: "bash"
         run: |
           mkdir build
-          cd build
+
+      - name: CMake Gen
+        shell: "bash"
+        working-directory: build
+        run: |
           cmake ..
 
       - name: CMake Build
         shell: "bash"
         working-directory: build
         run: |
-          mkdir build
-          cd build
           cmake ..
 
       - name: CMake Package
