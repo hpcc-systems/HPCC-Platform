@@ -73,6 +73,7 @@ jobs:
 
       - name: Calculate vars
         id: vars
+        shell: "bash"
         run: |
           echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
