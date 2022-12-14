@@ -104,24 +104,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: "windows-2019"
-            triplet: "x64-windows"
-            mono: ""
-            sudo: ""
-            cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
-            cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "windows-2022"
             triplet: "x64-windows"
             mono: ""
             sudo: ""
             cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-          - os: "macos-11"
-            triplet: "x64-osx"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
-            cmake_build_options: "--parallel $(nproc)"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
