@@ -236,6 +236,7 @@ private:
 
     StringBuffer schemeHostPort;
     StringBuffer path;
+    StringBuffer vaultNamespace;
     StringBuffer username;
     StringBuffer password;
     StringAttr name;
@@ -258,6 +259,10 @@ public:
             splitUrlSchemeHostPort(url.str(), username, password, schemeHostPort, path);
         name.set(vault->queryProp("@name"));
         kind = getSecretType(vault->queryProp("@kind"));
+
+        vaultNamespace.set(vault->queryProp("@namespace"));
+        if (vaultNamespace.length())
+            addPathSepChar(vaultNamespace, '/');
 
         //set up vault client auth [appRole, clientToken (aka "token from the sky"), or kubernetes auth]
         appRoleId.set(vault->queryProp("@appRoleId"));
@@ -380,7 +385,10 @@ public:
         httplib::Client cli(schemeHostPort.str());
         if (username.length() && password.length())
             cli.set_basic_auth(username, password);
-        httplib::Result res = cli.Post("/v1/auth/kubernetes/login", json, "application/json");
+        httplib::Headers headers;
+        if (vaultNamespace.length())
+            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+        httplib::Result res = cli.Post("/v1/auth/kubernetes/login", headers, json, "application/json");
         processClientTokenResponse(res);
     }
     //if we tried to use our token and it returned access denied it could be that we need to login again, or
@@ -405,7 +413,10 @@ public:
         httplib::Client cli(schemeHostPort.str());
         if (username.length() && password.length())
             cli.set_basic_auth(username, password);
-        httplib::Result res = cli.Post("/v1/auth/approle/login", json, "application/json");
+        httplib::Headers headers;
+        if (vaultNamespace.length())
+            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+        httplib::Result res = cli.Post("/v1/auth/approle/login", headers, json, "application/json");
         processClientTokenResponse(res);
     }
     void checkAuthentication(bool permissionDenied)
