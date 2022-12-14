@@ -128,7 +128,7 @@ jobs:
 
       - uses: AButler/upload-release-assets@v2.0
         with:
-          files: esp/src/*.json
+          files: 'build/*.exe;build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           release-tag: ${{ steps.vars.outputs.branch_name }}
           
