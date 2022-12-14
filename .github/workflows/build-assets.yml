@@ -131,7 +131,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          release_id: ${{ needs.release.create_release.outputs.id }}
+          release_id: ${{ steps.vars.outputs.branch_name }}
           assets_path: esp/src/*.json
 
   # build-docker:
