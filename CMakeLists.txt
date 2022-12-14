@@ -226,44 +226,46 @@ endif(APPLE)
 ## CPack install and packaging setup.
 ###
 if(APPLE)
-    set(CPACK_GENERATOR "productbuild")
+    if(TOP_LEVEL_PROJECT)
+        set(CPACK_GENERATOR "productbuild")
 
-    set(VER_SEPARATOR "-")
-    if("${stagever}" MATCHES "^rc[0-9]+$")
-        set(VER_SEPARATOR "~")
+        set(VER_SEPARATOR "-")
+        if("${stagever}" MATCHES "^rc[0-9]+$")
+            set(VER_SEPARATOR "~")
+        endif()
+
+        if(PLUGIN)
+            set(CPACK_PACKAGE_NAME "hpccsystems-plugin-${pluginname}")
+            set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-plugin-${pluginname}")
+        elseif(PLATFORM)
+            set(CPACK_PACKAGE_NAME "hpccsystems-platform")
+            set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-platform-${projname}")
+        else()
+            set(CPACK_PACKAGE_NAME "hpccsystems-clienttools-${majorver}.${minorver}")
+            set(PACKAGE_FILE_NAME_PREFIX  "hpccsystems-clienttools-${projname}")
+        endif()
+
+        if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
+            set(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-${CUSTOM_PACKAGE_SUFFIX}")
+            set(PACKAGE_FILE_NAME_PREFIX "${PACKAGE_FILE_NAME_PREFIX}-${CUSTOM_PACKAGE_SUFFIX}")
+        endif()
+
+        set(CPACK_PACKAGE_VERSION_MAJOR ${majorver})
+        set(CPACK_PACKAGE_VERSION_MINOR ${minorver})
+        set(CPACK_PACKAGE_VERSION_PATCH ${point}${VER_SEPARATOR}${stagever})
+        set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+        set(CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>")
+        set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
+        set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
+        set(CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}")
+        set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems® Client Tools.")
+
+        file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
+        "HPCC Systems® - Client Tools\r"
+        "===========================\r\r"
+        "This installer will install the HPCC Systems® Client Tools.")
+        set(CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt")
     endif()
-
-    if(PLUGIN)
-        set(CPACK_PACKAGE_NAME "hpccsystems-plugin-${pluginname}")
-        set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-plugin-${pluginname}")
-    elseif(PLATFORM)
-        set(CPACK_PACKAGE_NAME "hpccsystems-platform")
-        set(PACKAGE_FILE_NAME_PREFIX "hpccsystems-platform-${projname}")
-    else()
-        set(CPACK_PACKAGE_NAME "hpccsystems-clienttools-${majorver}.${minorver}")
-        set(PACKAGE_FILE_NAME_PREFIX  "hpccsystems-clienttools-${projname}")
-    endif()
-
-    if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
-        set(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-${CUSTOM_PACKAGE_SUFFIX}")
-        set(PACKAGE_FILE_NAME_PREFIX "${PACKAGE_FILE_NAME_PREFIX}-${CUSTOM_PACKAGE_SUFFIX}")
-    endif()
-
-    set(CPACK_PACKAGE_VERSION_MAJOR ${majorver})
-    set(CPACK_PACKAGE_VERSION_MINOR ${minorver})
-    set(CPACK_PACKAGE_VERSION_PATCH ${point}${VER_SEPARATOR}${stagever})
-    set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
-    set(CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>")
-    set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
-    set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
-    set(CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}")
-    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems® Client Tools.")
-
-    file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
-    "HPCC Systems® - Client Tools\r"
-    "===========================\r\r"
-    "This installer will install the HPCC Systems® Client Tools.")
-    set(CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt")
 elseif(APPLE)
     if ( WIN32 )
         set ( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE )
