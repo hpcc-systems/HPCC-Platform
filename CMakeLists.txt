@@ -14,7 +14,7 @@ set(CPACK_PACKAGE_VERSION "1.0.0")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "HelloWorld")
 
 if (APPLE)
-    set(CPACK_GENERATOR "DragNDrop;productbuild;Bundle")
+    set(CPACK_GENERATOR "DragNDrop;productbuild")
 elseif (LINUX)
     set(CPACK_GENERATOR "DEB")
 elseif (WIN32)

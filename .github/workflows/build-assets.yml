@@ -93,6 +93,12 @@ jobs:
         run: |
           cmake --build . --target package
 
+      - uses: AButler/upload-release-assets@v2.0
+        with:
+          files: 'build/*.exe;build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ steps.vars.outputs.branch_name }}
+
   # build:
   #   needs: release
   #   strategy:
