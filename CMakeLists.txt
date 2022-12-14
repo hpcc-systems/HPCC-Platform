@@ -281,98 +281,107 @@ if(TOP_LEVEL_PROJECT)
     set(CPACK_PACKAGE_VERSION_PATCH ${point}${VER_SEPARATOR}${stagever})
     set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
     set(CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>")
-    set(CPACK_SOURCE_GENERATOR TGZ)
 
-    set(CPACK_RPM_PACKAGE_VERSION "${version}")
-    set(CPACK_RPM_PACKAGE_RELEASE "${stagever}")
-    set(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems®")
-    set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
-    set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
+    if (APPLE)
+        set(CPACK_GENERATOR "productbuild")
+        file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
+        "HPCC Systems® - Client Tools\r"
+        "===========================\r\r"
+        "This installer will install the HPCC Systems® Client Tools.")
+        set(CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt")
+    else (APPLE)
+        set(CPACK_SOURCE_GENERATOR TGZ)
 
-    if(WIN32)
-        set(CPACK_PACKAGE_VENDOR "HPCC Systems")
-        if(${ARCH64BIT} EQUAL 1)
-            set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
-        else(${ARCH64BIT} EQUAL 1)
-            set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
-        endif(${ARCH64BIT} EQUAL 1)
-    else(WIN32)
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
-        if("${CPACK_RPM_PACKAGE_ARCHITECTURE}" STREQUAL "i686")
-            set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+        set(CPACK_RPM_PACKAGE_VERSION "${version}")
+        set(CPACK_RPM_PACKAGE_RELEASE "${stagever}")
+        set(CPACK_RPM_PACKAGE_VENDOR "HPCC Systems®")
+        set(CPACK_PACKAGE_VENDOR "HPCC Systems®")
+        set(CPACK_PACKAGE_VENDOR_WITHOUT_TRADEMARK "HPCC Systems")
+        if(WIN32)
+            set(CPACK_PACKAGE_VENDOR "HPCC Systems")
+            if(${ARCH64BIT} EQUAL 1)
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+            else(${ARCH64BIT} EQUAL 1)
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+            endif(${ARCH64BIT} EQUAL 1)
+        else(WIN32)
+            set(CPACK_RPM_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+            if("${CPACK_RPM_PACKAGE_ARCHITECTURE}" STREQUAL "i686")
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+            endif()
+        endif(WIN32)
+
+        set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
+        if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+            set(CPACK_STRIP_FILES TRUE)
         endif()
-    endif(WIN32)
 
-    set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
-    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CPACK_STRIP_FILES TRUE)
-    endif()
-
-    if (NOT CPACK_STRIP_FILES) 
-        set(packageStrippedLabel "_with_symbols")
-    endif()
-
-    if (CONTAINERIZED) 
-        set(packageContainerizedLabel "_k8s")
-    endif()
-
-    if(UNIX AND NOT APPLE)
-        execute_process(
-            COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/distrocheck.sh
-            OUTPUT_VARIABLE packageManagement
-            ERROR_VARIABLE  packageManagement
-            )
-        execute_process(
-            COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/getpackagerevisionarch.sh
-            OUTPUT_VARIABLE packageRevisionArch
-            ERROR_VARIABLE  packageRevisionArch
-            )
-        execute_process(
-            COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/getpackagerevisionarch.sh --noarch
-            OUTPUT_VARIABLE packageRevision
-            ERROR_VARIABLE  packageRevision
-            )
-
-        message("-- Auto Detecting Packaging type")
-        message("-- distro uses ${packageManagement}, revision is ${packageRevisionArch}")
-
-        if("${packageManagement}" STREQUAL "DEB")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
-        elseif("${packageManagement}" STREQUAL "RPM")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
-        else()
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}")
-
+        if (NOT CPACK_STRIP_FILES) 
+            set(packageStrippedLabel "_with_symbols")
         endif()
-    endif ()
 
-    message("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
-    set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}")
-    set(CPACK_SOURCE_GENERATOR TGZ)
-    set(CPACK_SOURCE_IGNORE_FILES
-        "~$"
-        "\\\\.cvsignore$"
-        "^${PROJECT_SOURCE_DIR}.*/CVS/"
-        "^${PROJECT_SOURCE_DIR}.*/.svn/"
-        "^${PROJECT_SOURCE_DIR}.*/.git/"
-        "^${PROJECT_SOURCE_DIR}/ln/"
-        "^${PROJECT_SOURCE_DIR}/externals/"
-        "^${PROJECT_SOURCE_DIR}.*/*.mk$"
-        "^${PROJECT_SOURCE_DIR}/makefile$"
-        "^${PROJECT_SOURCE_DIR}/make.common$"
-        "^${PROJECT_SOURCE_DIR}/make.post$"
-        "^${PROJECT_SOURCE_DIR}/build$"
-        "^${PROJECT_SOURCE_DIR}/buildall$"
-        "^${PROJECT_SOURCE_DIR}/lastbuilds$"
-        "^${PROJECT_SOURCE_DIR}/imerge$"
-        "^${PROJECT_SOURCE_DIR}/tmerge$"
-        "^${PROJECT_SOURCE_DIR}/tmerge.bat$"
-        "^${PROJECT_SOURCE_DIR}/tag$"
-        "^${PROJECT_SOURCE_DIR}/tag_build$"
-        "^${PROJECT_SOURCE_DIR}/old_tag$"
-        "^${PROJECT_SOURCE_DIR}/ecl/regress/"
-    "^${PROJECT_SOURCE_DIR}/testing/"
-        )
+        if (CONTAINERIZED) 
+            set(packageContainerizedLabel "_k8s")
+        endif()
+
+        if(UNIX AND NOT APPLE)
+            execute_process(
+                COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/distrocheck.sh
+                OUTPUT_VARIABLE packageManagement
+                ERROR_VARIABLE  packageManagement
+                )
+            execute_process(
+                COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/getpackagerevisionarch.sh
+                OUTPUT_VARIABLE packageRevisionArch
+                ERROR_VARIABLE  packageRevisionArch
+                )
+            execute_process(
+                COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/getpackagerevisionarch.sh --noarch
+                OUTPUT_VARIABLE packageRevision
+                ERROR_VARIABLE  packageRevision
+                )
+
+            message("-- Auto Detecting Packaging type")
+            message("-- distro uses ${packageManagement}, revision is ${packageRevisionArch}")
+
+            if("${packageManagement}" STREQUAL "DEB")
+                set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
+            elseif("${packageManagement}" STREQUAL "RPM")
+                set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}${packageStrippedLabel}${packageContainerizedLabel}")
+            else()
+                set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}${packageStrippedLabel}${packageContainerizedLabel}")
+
+            endif()
+        endif ()
+
+        message("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
+        set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}")
+        set(CPACK_SOURCE_GENERATOR TGZ)
+        set(CPACK_SOURCE_IGNORE_FILES
+            "~$"
+            "\\\\.cvsignore$"
+            "^${PROJECT_SOURCE_DIR}.*/CVS/"
+            "^${PROJECT_SOURCE_DIR}.*/.svn/"
+            "^${PROJECT_SOURCE_DIR}.*/.git/"
+            "^${PROJECT_SOURCE_DIR}/ln/"
+            "^${PROJECT_SOURCE_DIR}/externals/"
+            "^${PROJECT_SOURCE_DIR}.*/*.mk$"
+            "^${PROJECT_SOURCE_DIR}/makefile$"
+            "^${PROJECT_SOURCE_DIR}/make.common$"
+            "^${PROJECT_SOURCE_DIR}/make.post$"
+            "^${PROJECT_SOURCE_DIR}/build$"
+            "^${PROJECT_SOURCE_DIR}/buildall$"
+            "^${PROJECT_SOURCE_DIR}/lastbuilds$"
+            "^${PROJECT_SOURCE_DIR}/imerge$"
+            "^${PROJECT_SOURCE_DIR}/tmerge$"
+            "^${PROJECT_SOURCE_DIR}/tmerge.bat$"
+            "^${PROJECT_SOURCE_DIR}/tag$"
+            "^${PROJECT_SOURCE_DIR}/tag_build$"
+            "^${PROJECT_SOURCE_DIR}/old_tag$"
+            "^${PROJECT_SOURCE_DIR}/ecl/regress/"
+        "^${PROJECT_SOURCE_DIR}/testing/"
+            )
+    endif (APPLE)
 endif(TOP_LEVEL_PROJECT)
 
 ###
