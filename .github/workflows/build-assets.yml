@@ -130,15 +130,12 @@ jobs:
         run: |
           echo "${{ needs.release.outputs.id }}"
 
-      - name: Upload Release Assets
-        id: upload-release-assets
-        uses: dwenegar/upload-release-assets@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: AButler/upload-release-assets@v2.0
         with:
-          release_id: ${{ needs.release.outputs.id }}
-          assets_path: esp/src/*.json
-
+          files: esp/src/*.json
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          release-tag: ${{ steps.vars.outputs.branch_name }}
+          
   # build-docker:
   #   needs: release
   #   strategy:
