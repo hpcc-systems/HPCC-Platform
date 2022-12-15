@@ -48,68 +48,12 @@ Pass in dict with root and warnings
  {{- end -}}
  {{- /* Warn if any of the planes are ephemeral */ -}}
  {{- if (ne (len $match.ephemeral) 0) -}}
-  {{ $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
   {{- $_ := set $warning "msg" (printf "The configuration contains ephemeral planes: %s" (print (uniq $match.ephemeral)) )  -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
- {{- /* Warn if resources not defined for any cost component or default cpuRate being used */ -}}
- {{- if eq .root.Values.global.cost.perCpu 0.0565000000001 -}}
-  {{- $_ := set $ctx "usingDefaultCpuCost" "true" -}}
- {{- end -}}
- {{- $_ := set $ctx "missingResources" list -}}
- {{- $_ := set $ctx "defaultCpuRateComponents" list -}}
- {{- range $component := .root.Values.eclagent -}}
-  {{- if not $component.disabled -}}
-   {{- $hasResources := include "hpcc.hasResources" (dict "resources" $component.resources) -}}
-   {{- if not $hasResources -}}
-    {{- $_ := set $ctx "missingResources" (append $ctx.missingResources $component.name) -}}
-   {{- end -}}
-   {{- if and $ctx.usingDefaultCpuCost (not $component.cost) -}}
-    {{- $_ := set $ctx "defaultCpuRateComponents" (append $ctx.defaultCpuRateComponents $component.name) -}}
-   {{- end -}}
-  {{- end -}}
- {{- end -}}
- {{- range $component := .root.Values.eclccserver -}}
-  {{- if not $component.disabled -}}
-   {{- $hasResources := include "hpcc.hasResources" (dict "resources" $component.resources) -}}
-   {{- if not $hasResources -}}
-    {{- $_ := set $ctx "missingResources" (append $ctx.missingResources $component.name) -}}
-   {{- end -}}
-   {{- if and $ctx.usingDefaultCpuCost (not $component.cost) -}}
-    {{- $_ := set $ctx "defaultCpuRateComponents" (append $ctx.defaultCpuRateComponents $component.name) -}}
-   {{- end -}}
-  {{- end -}}
- {{- end -}}
- {{- range $component := .root.Values.thor -}}
-  {{- if not $component.disabled -}}
-   {{- $hasResources1 := include "hpcc.hasResources" (dict "resources" $component.managerResources) -}}
-   {{- $hasResources2 := include "hpcc.hasResources" (dict "resources" $component.workerResources) -}}
-   {{- $hasResources3 := include "hpcc.hasResources" (dict "resources" $component.eclAgentResources) -}}
-   {{- if or (not $hasResources1) (or (not $hasResources2 ) (not $hasResources3)) -}}
-    {{- $_ := set $ctx "missingResources" (append $ctx.missingResources $component.name) -}}
-   {{- end -}}
-   {{- if and $ctx.usingDefaultCpuCost (not $component.cost) -}}
-    {{- $_ := set $ctx "defaultCpuRateComponents" (append $ctx.defaultCpuRateComponents $component.name) -}}
-   {{- end -}}
-  {{- end -}}
- {{- end -}}
- {{- if $ctx.missingResources -}}
-  {{- $warning := dict "source" "helm" "severity" "warning" -}}
-  {{- $_ := set $warning "msg" (printf "Cost calculation requires resources to be provided for %s: %s" ((len $ctx.missingResources)| plural "component" "components") ($ctx.missingResources|toStrings)) -}}
-  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
- {{- end -}}
- {{- if $ctx.defaultCpuRateComponents -}}
-  {{ $warning := dict "source" "helm" "severity" "warning" -}}
-  {{- $_ := set $warning "msg" (printf "Default cpu cost rate is being used for %s: %s" ((len $ctx.defaultCpuRateComponents)| plural "component" "components") ($ctx.defaultCpuRateComponents|toStrings)) -}}
-  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
- {{- end -}}
- {{- /* Warn if any storage planes uses defaults cost values */ -}}
- {{- with (.root.Values.global.cost) -}}
-  {{- if and (eq .storageWrites 0.0500000000001) (and (eq .storageAtRest 0.0208000000001) (eq .storageReads 0.00400000000001)) -}}
-   {{- $_ := set $ctx "usingDefaultStorageCosts" "true" -}}
-  {{- end -}}
- {{- end -}}
- {{- if $ctx.usingDefaultStorageCosts -}}
+ {{- /* Warn if any storage planes uses default cost values */ -}}
+ {{- if or (eq .root.Values.global.cost.storageWrites 0.0500000000001) (or (eq .root.Values.global.cost.storageAtRest 0.0208000000001) (eq .root.Values.global.cost.storageReads 0.00400000000001)) -}}
   {{- $_ := set $ctx "planesWithDefaultCosts" list -}}
   {{- range $storagePlane := .root.Values.storage.planes -}}
    {{- if not $storagePlane.disabled -}}
@@ -120,10 +64,64 @@ Pass in dict with root and warnings
     {{- end -}}
    {{- end -}}
   {{- end -}}
- {{- end -}}
- {{- if $ctx.planesWithDefaultCosts -}}
+  {{- if $ctx.planesWithDefaultCosts -}}
    {{- $warning := dict "source" "helm" "severity" "warning" -}}
    {{- $_ := set $warning "msg" (printf "Default cost parameters are being used for the storage %s: %s" ((len $ctx.planesWithDefaultCosts)|plural "plane" "planes") ($ctx.planesWithDefaultCosts|toStrings)) -}}
    {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+  {{- end -}}
+ {{- end -}}
+ {{- /* Warn when resources not provided, default cpu rate used and components requiring resources for cost calcs */ -}}
+ {{- if eq .root.Values.global.cost.perCpu 0.0565000000001 -}}
+  {{- $_ := set $ctx "usingDefaultCpuCost" "true" -}}
+ {{- end -}}
+ {{- $_ := set $ctx "missingResources" list -}}
+ {{- $_ := set $ctx "missingResourcesForCosts" list -}}
+ {{- $_ := set $ctx "defaultCpuRateComponents" list -}}
+ {{- $_ := set $ctx "components" (pick .root.Values "dafilesrv" "dali" "sasha" "dfuserver" "eclagent" "eclccserver" "esp" "roxie" "thor" "eclscheduler") -}}
+ {{- if (.root.Values.sasha.disabled|default false) -}}
+  {{- $_ := set $ctx "components" (omit $ctx.components "sasha") -}}
+ {{- end -}}
+ {{- range $cname, $ctypes := $ctx.components -}}
+  {{- range $id, $component := $ctypes -}}
+   {{- if not $component.disabled -}}
+    {{- $hasResources := "" -}}
+    {{- if eq $cname "thor" -}}
+     {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.managerResources) -}}
+     {{- $hasResources = (eq $hasResources "true") | ternary (include "hpcc.hasResources" (dict "resources" $component.workerResources)) $hasResources -}}
+     {{- $hasResources = (eq $hasResources "true") | ternary (include "hpcc.hasResources" (dict "resources" $component.eclAgentResources)) $hasResources -}}
+    {{- else -}}
+     {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.resources) -}}
+    {{- end -}}
+    {{- if not $hasResources -}}
+     {{- $_ := set $ctx "missingResources" (append $ctx.missingResources ($component.name | default $id)) -}}
+    {{- end -}}
+    {{- /* Checks related to components that are used for cost reporting */ -}}
+    {{- /* (n.b. cpuRate ignored for components other than thor, eclagent and eclccserver)*/ -}}
+    {{- if has $cname (list "thor" "eclagent" "eclccserver") -}}
+     {{- if and $ctx.usingDefaultCpuCost (not $component.cost) -}}
+      {{- $_ := set $ctx "defaultCpuRateComponents" (append $ctx.defaultCpuRateComponents $component.name) -}}
+     {{- end -}}
+     {{- /* Components that are used for cost reporting require resources: warn if resources missing*/ -}}
+     {{- if not $hasResources -}}
+      {{- $_ := set $ctx "missingResourcesForCosts" (append $ctx.missingResourcesForCosts ($component.name | default $id)) -}}
+     {{- end -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{- if $ctx.missingResources -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "Resources are missing for %s: %s" ((len $ctx.missingResources)| plural "component" "components") ($ctx.missingResources|toStrings)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- if $ctx.missingResourcesForCosts -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "Cost calculation requires resources to be provided for %s: %s" ((len $ctx.missingResourcesForCosts)| plural "component" "components") ($ctx.missingResourcesForCosts|toStrings)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- if $ctx.defaultCpuRateComponents -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "Default cpu cost rate is being used for %s: %s" ((len $ctx.defaultCpuRateComponents)| plural "component" "components") ($ctx.defaultCpuRateComponents|toStrings)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
 {{- end -}}
