@@ -10,7 +10,6 @@ on:
       - "*"
 
 jobs:
- 
   release:
     name:  Publish Release
     runs-on: ubuntu-latest
@@ -25,80 +24,6 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref, 'rc') }}
 
-  # cpack_test:
-  #   needs: release
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - os: "windows-2019"
-  #           triplet: "x64-windows"
-  #           mono: ""
-  #           sudo: ""
-  #           cmake_config_options: '-G "Visual Studio 16 2019" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
-  #           cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-  #         - os: "windows-2022"
-  #           triplet: "x64-windows"
-  #           mono: ""
-  #           sudo: ""
-  #           cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
-  #           cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
-  #         - os: "macos-11"
-  #           triplet: "x64-osx"
-  #           mono: "mono"
-  #           sudo: "sudo"
-  #           cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
-  #           cmake_build_options: "--parallel $(nproc)"
-  #         - os: "macos-12"
-  #           triplet: "x64-osx"
-  #           mono: "mono"
-  #           sudo: "sudo"
-  #           cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
-  #           cmake_build_options: "--parallel $(nproc)"
-  #     fail-fast: false
-
-  #   name: "Build Client Tools"
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Calculate vars
-  #       id: vars
-  #       shell: "bash"
-  #       run: |
-  #         echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
-
-  #     - name: Check out source code (tag)
-  #       uses: actions/checkout@v3
-  #       with:
-  #         ref: ${{ github.ref }}
-
-  #     - name: mkdir
-  #       shell: "bash"
-  #       run: |
-  #         mkdir build
-
-  #     - name: CMake Gen
-  #       shell: "bash"
-  #       working-directory: build
-  #       run: |
-  #         cmake ..
-
-  #     - name: CMake Build
-  #       shell: "bash"
-  #       working-directory: build
-  #       run: |
-  #         cmake ..
-
-  #     - name: CMake Package
-  #       shell: "bash"
-  #       working-directory: build
-  #       run: |
-  #         cmake --build . --target package
-
-  #     - uses: AButler/upload-release-assets@v2.0
-  #       with:
-  #         files: 'build/*.exe;build/*.msi;build/*.dmg;build/*.pkg;build/*.tar.gz'
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
-  #         release-tag: ${{ steps.vars.outputs.branch_name }}
-
   build:
     needs: release
     strategy:
@@ -108,25 +33,19 @@ jobs:
             triplet: "x64-windows"
             mono: ""
             sudo: ""
-            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
+            cmake_config_options: '-G "Visual Studio 17 2022" -T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF -DUSE_LIBMEMCACHED=OFF -DUSE_OPENLDAP=OFF -DUSE_CASSANDRA=OFF -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DINCLUDE_PLUGINS=OFF -DUSE_JAVA=OFF"
             cmake_build_options: "--parallel $(nproc)"
       fail-fast: false
 
     name: "Build Client Tools"
     runs-on: ${{ matrix.os }}
     steps:
-      # - name: Echo GitHub context
-      #   shell: "bash"
-      #   run: |
-      #     echo "GitHub context variables:"
-      #     echo "${{ toJSON(github) }}"
-    
       - name: Display build summary
         working-directory: .
         shell: "bash"
@@ -181,7 +100,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
+          cmake .. ${{ matrix.cmake_config_options }}
 
       - name: Bundle
         working-directory: ./build
