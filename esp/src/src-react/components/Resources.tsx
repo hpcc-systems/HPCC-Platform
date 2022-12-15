@@ -41,7 +41,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             DisplayPath: {
                 label: nlsHPCC.Name, sortable: true,
                 formatter: React.useCallback(function (url, row) {
-                    return <Link href={`#/iframe?src=${encodeURIComponent(`/WsWorkunits/${row.URL}`)}`}>{url}</Link>;
+                    return <Link href={`#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}`}>{url}</Link>;
                 }, [])
             }
         }
@@ -58,10 +58,10 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/iframe?src=${encodeURIComponent(`/WsWorkunits/${selection[0].URL}`)}`;
+                    window.location.href = `#/iframe?src=${encodeURIComponent(`WsWorkunits/${selection[0].URL}`)}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/iframe?src=${encodeURIComponent(`/WsWorkunits/${selection[i].URL}`)}`, "_blank");
+                        window.open(`#/iframe?src=${encodeURIComponent(`WsWorkunits/${selection[i].URL}`)}`, "_blank");
                     }
                 }
             }
@@ -70,10 +70,10 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             key: "content", text: nlsHPCC.Content, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/text?src=${encodeURIComponent(`/WsWorkunits/${selection[0].URL}`)}`;
+                    window.location.href = `#/text?src=${encodeURIComponent(`WsWorkunits/${selection[0].URL}`)}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/text?src=${encodeURIComponent(`/WsWorkunits/${selection[i].URL}`)}`, "_blank");
+                        window.open(`#/text?src=${encodeURIComponent(`WsWorkunits/${selection[i].URL}`)}`, "_blank");
                     }
                 }
             }
