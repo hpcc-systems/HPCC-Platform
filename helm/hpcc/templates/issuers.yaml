@@ -21,10 +21,80 @@
 ##############################################################################
 
 */}}
-{{- define "hpcc.issuers" -}}
-{{- if (hasKey .me "spec") -}} {{- /* no spec means we are referencing an external issuer and don't need to instantiate our own */ -}}
-{{- $issuerEnabled := (hasKey .me "enabled" | ternary .me.enabled true) -}}
-{{- if $issuerEnabled }}
+
+{{/*
+Use cert-manager to create a public certificate and private key for use with TLS
+There are separate certificate issuers for local and public certificates
+by default public certificates are self-signed and local certificates are signed
+by our own certificate authority.  A CA certificate is also provided to the pod
+so that we can recognize the signature of our own CA.
+NB: if optional 'issuer' passed in use it, otherwise base on visibility and
+use "public" or "local"
+*/}}
+
+
+{{/*
+Some issuers, such as letsencrypt, have limitations on the number of resources that can
+be created. When using wildcards we can share a common certificate across all users
+of that issuer.
+
+This is initially intended for non-prod use of letsencrypt for our public issuer.
+All public services should use the same cert, greatly minimizing the letsencrypt
+resources except in prod.
+*/}}
+{{- define "hpcc.addWildIssuerCertificate" -}}
+ {{- $namespace := .root.Release.Namespace -}}
+ {{- $issuerKeyName := .issuerKeyName -}}
+ {{- $issuer := .me -}}
+ {{- if $issuer.wildcard -}}
+  {{- if ne $issuerKeyName "public" -}}
+   {{- $_ := fail (printf "Issuer %s - wildcard currently only supported for public issuer." $issuerKeyName) -}}
+  {{- end -}}
+  {{- if not $issuer.domain -}}
+   {{- $_ := fail (printf "Issuer %s - setting wildcard requires configuring a domain." $issuerKeyName) -}}
+  {{- end }}
+  {{- $spiffe := (hasKey $issuer "spiffe" | ternary $issuer.spiffe (ne "public" $issuerKeyName)) }}
+  {{- if $spiffe -}}
+   {{- $_ := fail (printf "Issuer %s - setting wildcard not supported with spiffe setting enabled." $issuerKeyName) -}}
+  {{- end }}
+  {{- $clientUsage := (hasKey $issuer "clientUsage" | ternary $issuer.clientUsage (ne "public" $issuerKeyName)) -}}
+  {{- if $clientUsage -}}
+   {{- $_ := fail (printf "Issuer %s - setting wildcard not supported with clientUsage setting enabled." $issuerKeyName) -}}
+  {{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $issuerKeyName }}-wild-cert
+  namespace: {{ $namespace }}
+spec:
+  secretName: {{ $issuerKeyName }}-wild-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+    - HPCC Systems
+  commonName: {{ (printf "*.%s" $issuer.domain) | trunc 64 | quote }}
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - server auth
+  dnsNames:
+  - {{ (printf "*.%s" $issuer.domain) | quote }}
+  issuerRef:
+    name: {{ $issuer.name }}
+    kind: {{ $issuer.kind }}
+    group: cert-manager.io
+---
+ {{- end -}}
+{{- end -}}
+
+{{- define "hpcc.addIssuer" -}}
+ {{- $issuerEnabled := (hasKey .me "enabled" | ternary .me.enabled true) -}}
+ {{- if $issuerEnabled }}
+  {{- if (hasKey .me "spec") -}} {{- /* no spec means we are referencing an external issuer and don't need to instantiate our own */ -}}
 apiVersion: cert-manager.io/v1
 kind: {{ .me.kind | default "Issuer" }}
 metadata:
@@ -32,20 +102,21 @@ metadata:
   namespace: {{ .root.Release.Namespace | default "default" }}
    {{- if .me.spec }}
 spec:
-  {{- if not .root.Values.global.noResourceValidation -}}
-  {{- if .me.spec.ca }}
-   {{- if .me.spec.ca.secretName }}
-    {{- if not (lookup "v1" "Secret" .root.Release.Namespace .me.spec.ca.secretName) }}
-      {{- $_ := fail (printf "\n\nUsing a local certificate authority requires a CA certificate stored in the secret named '%s'. To disable mTLS security set \"certificates.enabled=false\". To bypass this validation check set \"global.noResourceValidation=true\". \n" .me.spec.ca.secretName ) -}}
+    {{- if not .root.Values.global.noResourceValidation -}}
+     {{- if .me.spec.ca }}
+      {{- if .me.spec.ca.secretName }}
+       {{- if not (lookup "v1" "Secret" .root.Release.Namespace .me.spec.ca.secretName) }}
+        {{- $_ := fail (printf "\n\nUsing a local certificate authority requires a CA certificate stored in the secret named '%s'. To disable mTLS security set \"certificates.enabled=false\". To bypass this validation check set \"global.noResourceValidation=true\". \n" .me.spec.ca.secretName ) -}}
+       {{- end }}
+      {{- end }}
+     {{- end }}
     {{- end }}
+{{ toYaml .me.spec | indent 2 }}
+---
    {{- end }}
   {{- end }}
-  {{- end }}
-{{ toYaml .me.spec | indent 2 }}
-
+  {{ include "hpcc.addWildIssuerCertificate" (dict "root" .root "issuerKeyName" .issuerKeyName "me" .me ) }}
  {{- end }}
-{{- end }}
-{{- end }}
 {{- end }}
 
 {{- template "hpcc.ensureNoResourceValidationFlag" ( dict "root" $ ) }}
@@ -58,8 +129,7 @@ spec:
    {{- end -}}
   {{- end -}}
   {{- range $k, $v := .Values.certificates.issuers }}
-{{- include "hpcc.issuers" (dict "root" $ "me" $v ) }}
----
+{{- include "hpcc.addIssuer" (dict "root" $ "issuerKeyName" $k "me" $v ) }}
   {{- end }}
  {{- end }}
 {{- end }}
