@@ -2765,6 +2765,10 @@
         "storeName": {
           "description" : "Name of container housing mapped HPCC log column",
           "type": "string"
+        },
+        "keyColumn": {
+          "description" : "Name of join key column",
+          "type": "string"
         }
       }
     },
