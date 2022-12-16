@@ -306,7 +306,7 @@ if(TOP_LEVEL_PROJECT)
     endif()
 
     if (NOT CPACK_STRIP_FILES) 
-        set(packageStrippedLabel "_with_symbols")
+        set(packageStrippedLabel "_withsymbols")
     endif()
 
     if(UNIX AND NOT APPLE)
