@@ -1244,7 +1244,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
       foreach(target IN LISTS parsed_targets)
         install(CODE "set(_arg1 \"\$<TARGET_FILE:${target}>\")")
-        install(CODE "set(vcpkg_installed \"${CMAKE_BINARY_DIR}/vcpkg_installed\")")
+        if (WIN32)
+          install(CODE "set(vcpkg_installed \"${CMAKE_BINARY_DIR}\")")
+          install(CODE "set(destination \"bin\")")
+        else (WIN32)
+          install(CODE "set(vcpkg_installed \"${VCPKG_FILES_DIR}/vcpkg_installed\")")
+          install(CODE "set(destination \"lib\")")
+        endif (WIN32)
         install(CODE [[
             file(GET_RUNTIME_DEPENDENCIES
                 RESOLVED_DEPENDENCIES_VAR _r_deps
@@ -1254,7 +1260,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             foreach(_file ${_r_deps})
               string(FIND "${_file}" "${vcpkg_installed}" found)
               if ("${found}" EQUAL 0)
-                file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FOLLOW_SYMLINK_CHAIN FILES "${_file}")
+                file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/${destination}" TYPE SHARED_LIBRARY FOLLOW_SYMLINK_CHAIN FILES "${_file}")
               endif()
             endforeach()
           ]])
