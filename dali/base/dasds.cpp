@@ -4832,7 +4832,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
     catch (DALI_CATCHALL)
     {
         IException *e = MakeStringException(0, "Unknown exception - loading store file : %s", storeFilename);
-        LOG(MCdisaster, unknownJob, e, "");
+        LOG(MCoperatorDisaster, unknownJob, e, "");
         if (!logErrorsOnly)
             throw;
         e->Release();
@@ -8673,7 +8673,7 @@ bool CCovenSDSManager::fireException(IException *e)
         {
             if (handled)
             {
-                LOG(MCdisaster, unknownJob, e, "FATAL, too many exceptions");
+                LOG(MCoperatorDisaster, unknownJob, e, "FATAL, too many exceptions");
                 return false; // did not successfully handle.
             }
             IERRLOG(e, "Exception while restarting or shutting down");

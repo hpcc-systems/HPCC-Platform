@@ -58,7 +58,7 @@ PrometheusMetricSink::PrometheusMetricSink(const char *name, const IPropertyTree
                 else
                     msg.append(" - ").append("encountered unknown error!");
 
-                LOG(MCinternalError, "PrometheusMetricsService: %s", msg.str());
+                LOG(MCdebugError, "PrometheusMetricsService: %s", msg.str());
             }
 
             VStringBuffer respmessage(PROMETHEUS_METRICS_HTTP_ERROR, msg.str(), req.path.c_str(), res.status);
@@ -92,7 +92,7 @@ const char * PrometheusMetricSink::mapHPCCMetricTypeToPrometheusStr(MetricType t
     case hpccMetrics::METRICS_GAUGE:
         return "gauge";
     default:
-        LOG(MCinternalWarning, "Encountered unknown metric - cannot map to Prometheus metric!");
+        LOG(MCdebugWarning, "Encountered unknown metric - cannot map to Prometheus metric!");
         return nullptr;
     }
 }

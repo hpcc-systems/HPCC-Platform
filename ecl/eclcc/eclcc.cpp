@@ -1003,7 +1003,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
 void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver & errs)
 {
     double complexity = getECLcomplexity(query, &errs, wu, optTargetClusterType);
-    LOG(MCstats, unknownJob, "Complexity = %g", complexity);
+    LOG(MCoperatorProgress, unknownJob, "Complexity = %g", complexity);
 }
 
 //=========================================================================================
