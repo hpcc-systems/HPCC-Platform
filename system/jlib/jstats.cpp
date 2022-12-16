@@ -933,6 +933,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(LeafFetch) },
     { TIMESTAT(BlobFetch) },
     { CYCLESTAT(BlobFetch) },
+    { SIZESTAT(PeakSpill) },
 };
 
 
@@ -2129,6 +2130,54 @@ stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCol
     return aggregator.getTotal();
 }
 
+class StatAggregatorMax : implements IStatisticVisitor
+{
+public:
+    StatAggregatorMax(StatisticKind _kind) : kind(_kind) {}
+
+    virtual bool visitScope(const IStatisticCollection & cur)
+    {
+        switch (cur.queryScopeType())
+        {
+        //If there is a match for the stat in any of these containers, then avoid any child scopes
+        case SSTglobal:
+        case SSTgraph:
+        case SSTsubgraph:
+        case SSTsection:
+        case SSTchildgraph:
+        case SSTworkflow:
+        {
+            stat_type value;
+            if (cur.getStatistic(kind, value))
+            {
+                if (value>max)
+                    max = value;
+                return false;
+            }
+            return true;
+        }
+        //Default is store the max value for this scope and children => recurse.  E.g. activity and any child activities.
+        default:
+            stat_type value = cur.queryStatistic(kind);
+            if (value>max)
+                max = value;
+            return true;
+        }
+    }
+    stat_type getMax() const { return max; }
+private:
+    stat_type total = 0;
+    stat_type max = 0;
+    StatisticKind kind;
+};
+
+
+stat_type aggregateStatisticMax(StatisticKind kind, IStatisticCollection * statsCollection)
+{
+    StatAggregatorMax aggregator(kind);
+    statsCollection->visit(aggregator);
+    return aggregator.getMax();
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 void serializeStatisticCollection(MemoryBuffer & out, IStatisticCollection * collection)

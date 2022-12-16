@@ -1980,6 +1980,14 @@ void EclAgent::doProcess()
         const cost_type diskAccessCost = aggregateDiskAccessCost(w, nullptr);
         if (diskAccessCost)
             w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostFileAccess, NULL, diskAccessCost, 1, 0, StatsMergeReplace);
+
+        stat_type totalSizeSpill = 0, peakSizeSpill = 0;
+        gatherSpillSize(w, nullptr, totalSizeSpill, peakSizeSpill);
+        if (totalSizeSpill)
+        {
+            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StSizePeakSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeReplace);
+            w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StSizeSpillFile, nullptr, totalSizeSpill, 1, 0, StatsMergeReplace);
+        }
         addTimings(w);
 
         switch (w->getState())
@@ -2528,6 +2536,13 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     const cost_type diskAccessCost = aggregateDiskAccessCost(wu, scope);
     if (diskAccessCost)
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostFileAccess, NULL, diskAccessCost, 1, 0, StatsMergeReplace);
+    stat_type totalSizeSpill = 0, peakSizeSpill = 0;
+    gatherSpillSize(wu, scope, totalSizeSpill, peakSizeSpill);
+    if (totalSizeSpill)
+    {
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StSizePeakSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeReplace);
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StSizeSpillFile, nullptr, totalSizeSpill, 1, 0, StatsMergeReplace);
+    }
 }
 
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)

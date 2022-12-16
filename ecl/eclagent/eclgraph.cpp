@@ -901,6 +901,14 @@ void EclSubGraph::updateProgress()
             const cost_type costDiskAccess = aggregateStatistic(StCostFileAccess, statsCollection) ;
             if (costDiskAccess)
                 lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
+
+            const stat_type totalSizeSpill = aggregateStatistic(StSizeSpillFile, statsCollection);
+            if (totalSizeSpill)
+            {
+                const stat_type peakSpill = aggregateStatisticMax(StSizePeakSpill, statsCollection);
+                lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StSizeSpillFile, nullptr, totalSizeSpill, 1, 0, StatsMergeReplace);
+                lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StSizePeakSpill, nullptr, peakSpill, 1, 0, StatsMergeReplace);
+            }
         }
     }
 }
@@ -1281,6 +1289,13 @@ void EclGraph::execute(const byte * parentExtract)
             const cost_type costDiskAccess = aggregateDiskAccessCost(wu, scope);
             if (costDiskAccess)
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
+            stat_type totalSizeSpill = 0, peakSizeSpill = 0;
+            gatherSpillSize(wu, scope, totalSizeSpill, peakSizeSpill);
+            if (totalSizeSpill)
+            {
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StSizePeakSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeReplace);
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StSizeSpillFile, nullptr, totalSizeSpill, 1, 0, StatsMergeReplace);
+            }
         }
 
         if (agent->queryRemoteWorkunit())

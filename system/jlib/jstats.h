@@ -927,5 +927,6 @@ public:
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 extern jlib_decl stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection);
+extern jlib_decl stat_type aggregateStatisticMax(StatisticKind kind, IStatisticCollection * statsCollection);
 
 #endif

@@ -2906,6 +2906,9 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
         iter.setown(getIterator()); // Local child graphs still send progress, but aren't connected in master
     else
         iter.setown(getConnectedIterator());
+
+    stat_type spillSize = 0;
+    stat_type peakSpillSize = 0;
     ForEach (*iter)
     {
         CMasterGraphElement &container = (CMasterGraphElement &)iter->query();
@@ -2924,8 +2927,16 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
 
             StatsActivityScope scope(stats, id);
             activity->getActivityStats(stats);
+
+            stat_type tSpillSize = 0, tPeakSpillSize = 0;
+            activity->getStatisticSumAndMax(StSizeSpillFile, tSpillSize, tPeakSpillSize);
+            spillSize += tSpillSize;
+            if (tPeakSpillSize > peakSpillSize)
+                peakSpillSize = tPeakSpillSize;
         }
     }
+    stats.updateStatistic(StSizeSpillFile, spillSize, StatsMergeReplace);
+    stats.updateStatistic(StSizePeakSpill, peakSpillSize, StatsMergeMax);
 }
 
 cost_type CMasterGraph::getDiskAccessCost()

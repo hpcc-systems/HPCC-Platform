@@ -269,6 +269,7 @@ enum StatisticKind
     StCycleLeafFetchCycles,
     StTimeBlobFetch,
     StCycleBlobFetchCycles,
+    StSizePeakSpill,
     StMax,
 
     //For any quantity there is potentially the following variants.

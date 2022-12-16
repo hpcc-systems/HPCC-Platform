@@ -2695,6 +2695,39 @@ cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
     }
     return totalCost;
 }
+
+void gatherSpillSize(const IConstWorkUnit * wu, const char *scope, stat_type & totalSizeSpill, stat_type & peakSizeSpill)
+{
+    WuScopeFilter filter;
+    if (!isEmptyString(scope))
+        filter.addScope(scope);
+    else
+        filter.addScope("");
+    filter.setIncludeNesting(2);
+    filter.addSource("global");
+    filter.addSource("statistics");
+    filter.addOutputStatistic(StSizeSpillFile);
+    filter.addOutputStatistic(StSizePeakSpill);
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    for (it->first(); it->isValid(); )
+    {
+        stat_type value = 0;
+        if (it->getStat(StSizeSpillFile, value))
+        {
+            totalSizeSpill += value;
+            it->getStat(StSizePeakSpill, value);
+            if (value>peakSizeSpill)
+                peakSizeSpill = value;
+            it->nextSibling();
+        }
+        else
+        {
+            it->next();
+        }
+    }
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 

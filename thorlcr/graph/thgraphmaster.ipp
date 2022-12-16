@@ -73,6 +73,18 @@ public:
             total += nodeStats[n]->getValue(index);
         return total;
     }
+    void getStatisticSumAndMax(StatisticKind kind, stat_type & total, stat_type & max)
+    {
+        unsigned index = mapping.getIndex(kind);
+        for (unsigned n=0; n < nodeStats.size(); n++) // NB: size is = queryClusterWidth()
+        {
+            stat_type val = nodeStats[n]->getValue(index);
+            total += val;
+            if (val>max)
+                max = val;
+        }
+    }
+
 };
 
 class graphmaster_decl CThorEdgeCollection : public CThorStatsCollection
@@ -280,6 +292,7 @@ public:
     virtual void done();
     virtual void kill();
     virtual cost_type getDiskAccessCost() const { return diskAccessCost; }
+    virtual void getStatisticSumAndMax(StatisticKind kind, stat_type & total, stat_type & max) { statsCollection.getStatisticSumAndMax(kind, total, max); }
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

@@ -1096,6 +1096,13 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 
+        stat_type totalSizeSpill = 0, peakSizeSpill = 0;
+        gatherSpillSize(wu, graphScope, totalSizeSpill, peakSizeSpill);
+        if (totalSizeSpill)
+        {
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StSizePeakSpill, nullptr, peakSizeSpill, 1, 0, StatsMergeReplace);
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StSizeSpillFile, nullptr, totalSizeSpill, 1, 0, StatsMergeReplace);
+        }
         removeJob(*job);
     }
     catch (IException *e)
