@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - "master"
+      - "newbuild"
       - "candidate-*"
       - "!candidate-7.10.*"
       - "!candidate-7.8.*"
