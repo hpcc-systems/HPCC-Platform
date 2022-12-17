@@ -51,7 +51,7 @@ IF(MONGODBEMBED)
 
         install(
             TARGETS mongodbembed
-            DESTINATION plugins)
+            DESTINATION plugins CALC_DEPS)
 
         install(
             FILES ${LIBMONGOCXX_LIB_REAL}
@@ -73,8 +73,7 @@ IF(MONGODBEMBED)
         install(
             FILES ${LIBBSONCXX_LIB} ${LIBBSONCXX_LIB_ABI}
             DESTINATION ${LIB_DIR}
-            COMPONENT Runtime
-            CALC_DEPS)
+            COMPONENT Runtime)
 
         target_link_libraries(
             mongodbembed
