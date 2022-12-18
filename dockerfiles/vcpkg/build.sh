@@ -31,19 +31,22 @@ function doBuild() {
         --build-arg VCPKG_REF=$VCPKG_REF \
         "$SCRIPT_DIR/." 
 
-    docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform build-$1:$GITHUB_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 \${CMAKE_OPTIONS}"
+    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
+        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCONTAINERIZED=OFF -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON"
 
-    # docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform build-$1:$GITHUB_REF \
-    #     "cmake --build \${BUILD_FOLDER} --parallel $(nproc)"
+    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
+        "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc)"
+
+    docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
+        "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc) --target package"
 
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached --entrypoint /bin/bash build-ubuntu-22.04:latest
 }
 
-doBuild ubuntu-22.04 
-doBuild ubuntu-20.04
-doBuild ubuntu-18.04
-doBuild centos-8
+# doBuild ubuntu-22.04 
+# doBuild ubuntu-20.04
+# doBuild ubuntu-18.04
+# doBuild centos-8
 doBuild centos-7
 
 # docker build --progress plain --pull --rm -f "$SCRIPT_DIR/core.dockerfile" \
