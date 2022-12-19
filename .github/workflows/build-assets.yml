@@ -132,11 +132,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Echo GitHub context
-        run: |
-          echo "GitHub context variables:"
-          echo "${{ toJSON(github) }}"
-
       - name: Check out source code (tag)
         uses: actions/checkout@v3
         with:
@@ -180,25 +175,25 @@ jobs:
 
       - name: Bundle Regular Package
         run: |
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }}"
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
 
       - name: Bundle Stripped Package
         run: |
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCPACK_STRIP_FILES=ON"
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
 
       - name: Bundle containerized packages
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: |
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON"
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
 
       - name: Bundle containerized stripped packages
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: |
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON -DCPACK_STRIP_FILES=ON"
-          docker run --rm -v "$(pwd)":/hpcc-dev/HPCC-Platform ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DCONTAINERIZED=ON -DCPACK_STRIP_FILES=ON"
+          docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached ${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package"
 
       - uses: AButler/upload-release-assets@v2.0
         with:
