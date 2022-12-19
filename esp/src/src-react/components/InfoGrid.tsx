@@ -8,24 +8,16 @@ import { useWorkunitExceptions } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 
 function extractGraphInfo(msg) {
-    const retVal: { graphID?: string, subgraphID?: string, activityID?: string, activityName?: string } = {};
-    const parts = msg.split("Graph graph");
-    if (parts.length > 1) {
-        const parts1 = parts[1].split("[");
-        if (parts1.length > 1) {
-            retVal.graphID = "graph" + parts1[0];
-            parts1.shift();
-            const parts2 = parts1.join("[").split("], ");
-            retVal.subgraphID = parts2[0];
-            if (parts2.length > 1) {
-                const parts3 = parts2[1].split("[");
-                retVal.activityName = parts3[0];
-                if (parts3.length > 1) {
-                    const parts4 = parts3[1].split("]");
-                    retVal.activityID = parts4[0];
-                }
-            }
-        }
+    const regex = /^([a-zA-Z0-9 :]+: )(graph graph(\d+)\[(\d+)\], )(([a-zA-Z]+)\[(\d+)\]: )?(.*)$/gmi;
+    const matches = [...msg.matchAll(regex)];
+    const retVal: { prefix?: string, graphID?: string, subgraphID?: string, activityID?: string, activityName?: string, message?: string } = {};
+    if (matches.length > 0) {
+        retVal.prefix = matches[0][1];
+        retVal.graphID = matches[0][3];
+        retVal.subgraphID = matches[0][4];
+        retVal.activityName = matches[0][6];
+        retVal.activityID = matches[0][7];
+        retVal.message = matches[0][8];
     }
     return retVal;
 }
@@ -84,12 +76,12 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
                 sortable: false,
                 formatter: React.useCallback(function (Message, idx) {
                     const info = extractGraphInfo(Message);
-                    if (info.graphID && info.subgraphID && info.activityID) {
-                        const txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
-                        return <Link href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>;
-                    } else if (info.graphID && info.subgraphID) {
-                        const txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
-                        return <Link href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>;
+                    if (info.graphID && info.subgraphID) {
+                        let txt = `Graph ${info.graphID}[${info.subgraphID}]`;
+                        if (info.activityName && info.activityID) {
+                            txt = `Graph ${info.graphID}[${info.subgraphID}], ${info.activityName} [${info.activityID}]`;
+                        }
+                        return <><span>{info?.prefix}<Link style={{ marginRight: 3 }} href={`#/workunits/${wuid}/metrics/sg${info.subgraphID}`}>{txt}</Link>{info?.message}</span></>;
                     } else {
                         Message = Utility.xmlEncode2(Message);
                     }
