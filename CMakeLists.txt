@@ -303,6 +303,10 @@ if(TOP_LEVEL_PROJECT)
         set(CPACK_STRIP_FILES TRUE)
     endif()
 
+    if (CONTAINERIZED) 
+        set(packageContainerizedLabel "_k8s")
+    endif()
+    
     if(UNIX AND NOT APPLE)
         execute_process(
             COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/distrocheck.sh
@@ -324,11 +328,11 @@ if(TOP_LEVEL_PROJECT)
         message("-- distro uses ${packageManagement}, revision is ${packageRevisionArch}")
 
         if("${packageManagement}" STREQUAL "DEB")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}${packageRevisionArch}${packageContainerizedLabel}")
         elseif("${packageManagement}" STREQUAL "RPM")
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}-${stagever}.${packageRevisionArch}${packageContainerizedLabel}")
         else()
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${CPACK_RPM_PACKAGE_VERSION}_${stagever}${CPACK_SYSTEM_NAME}${packageContainerizedLabel}")
         endif()
     endif ()
 
@@ -481,7 +485,7 @@ if(TOP_LEVEL_PROJECT)
             set(CPACK_GENERATOR "productbuild")
         endif ()
         if(APPLE OR WIN32)
-            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
+            set(CPACK_PACKAGE_FILE_NAME "${PACKAGE_FILE_NAME_PREFIX}_${version}-${stagever}${CPACK_SYSTEM_NAME}${packageContainerizedLabel}")
         endif()
         file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
             "HPCC Systems® - Client Tools\r"
