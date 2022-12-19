@@ -1204,7 +1204,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       list(REMOVE_ITEM ARGS "CALC_DEPS")
     endif()
 
-   _install(${ARGS})
+    _install(${ARGS})
 
     if(ARGV0 STREQUAL "TARGETS" AND CALC_DEPS)
 
