@@ -8630,6 +8630,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
 static CriticalSection configCS;
 static Owned<IPropertyTree> componentConfiguration;
 static Owned<IPropertyTree> globalConfiguration;
+static StringBuffer componentName;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -8665,6 +8666,12 @@ Owned<IPropertyTree> getComponentConfigSP()
 Owned<IPropertyTree> getGlobalConfigSP()
 {
     return getGlobalConfig();
+}
+
+const char * queryComponentName()
+{
+    //componentName is thread safe, since initialised when config is first loaded, and not modified afterwards
+    return componentName.str();
 }
 
 jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const std::string> ignoreOptions)
@@ -8735,6 +8742,8 @@ public:
                  */
                 componentConfiguration.setown(std::get<1>(result));
                 globalConfiguration.setown(std::get<2>(result));
+                if (!componentName)
+                    componentConfiguration->getProp("@name", componentName);
 
                 /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
                    However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
