@@ -25,7 +25,7 @@ if (NOT JLIB_ONLY)
    HPCC_ADD_SUBDIRECTORY (security)
    HPCC_ADD_SUBDIRECTORY (xmllib)
    HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
-   
+
    if (USE_AERON)
       project (aeron_include)
       SET(CMAKE_UNITY_BUILD FALSE)

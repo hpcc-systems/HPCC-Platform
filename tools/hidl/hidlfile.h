@@ -23,5 +23,5 @@ public:
     HIDLfile();
     ~HIDLfile();
 
-    Open();
+    void Open();
 };

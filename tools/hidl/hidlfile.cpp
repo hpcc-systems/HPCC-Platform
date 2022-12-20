@@ -25,6 +25,6 @@ HIDLfile::~HIDLfile()
 {
 }
 
-HIDLfile::Open()
+void HIDLfile::Open()
 {
 }
