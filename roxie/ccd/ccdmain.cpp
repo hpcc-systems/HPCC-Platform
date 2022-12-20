@@ -103,7 +103,7 @@ bool oneShotRoxie = false;
 
 unsigned udpMulticastBufferSize = 262142;
 #ifndef _CONTAINERIZED
-bool roxieMulticastEnabled = true;
+bool roxieMulticastEnabled = false;
 #else
 unsigned myChannel;
 #endif
@@ -1013,7 +1013,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", udpFlowSocketsSize);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", udpLocalWriteSocketSize);
 #ifndef _CONTAINERIZED
-        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
+        roxieMulticastEnabled = topology->getPropBool("@roxieIsMulticastEnabled", false) && !useAeron;   // enable use of multicast for sending requests to agents
 #endif
 
         udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
