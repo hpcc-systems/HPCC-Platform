@@ -329,6 +329,7 @@ interface IStoragePlaneAlias: extends IInterface
 {
     virtual AccessMode queryModes() const = 0;
     virtual const char *queryPrefix() const = 0 ;
+    virtual bool isAccessible() const = 0;
 };
 
 //I'm not sure if this should be used in place of an IGroup, probably as system gradually changes
@@ -342,6 +343,7 @@ interface IStoragePlane: extends IInterface
     virtual bool queryDirPerPart() const = 0;
     virtual IStoragePlaneAlias *getAliasMatch(AccessMode desiredModes) const = 0;
     virtual IStorageApiInfo *getStorageApiInfo() = 0;
+    virtual bool isAccessible() const = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set

@@ -327,6 +327,7 @@ jlib_decl IPropertyTree * getGlobalConfig();
 jlib_decl IPropertyTree * getComponentConfig();
 jlib_decl Owned<IPropertyTree> getGlobalConfigSP(); // get smart pointer
 jlib_decl Owned<IPropertyTree> getComponentConfigSP(); // get smart pointer
+jlib_decl const char * queryComponentName();
 
 // ConfigUpdateFunc calls are made in a mutex, but after new confis are swapped in
 typedef std::function<void (const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)> ConfigUpdateFunc;

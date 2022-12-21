@@ -524,6 +524,7 @@
             "forcePermissions": {
               "type": "boolean"
             },
+            "components": {},
             "prefix": {},
             "subPath": {},
             "secret": {},
@@ -630,6 +631,11 @@
           },
           "additionalProperties": false,
           "required": [ "type", "containers" ]
+        },
+        "components": {
+          "description": "If specified, only mount the storage plane in the specified components",
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     },
@@ -659,6 +665,7 @@
             "hosts": {},
             "umask": {},
             "numMounts": {},
+            "components": {},
             "cost": {}
           },
           "additionalProperties": false,

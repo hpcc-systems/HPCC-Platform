@@ -154,7 +154,7 @@ spec:
   {{- include "hpcc.addConfigMapVolume" . | nindent 6 -}}
  {{- end -}}
 {{- end -}}
-{{- include "hpcc.addVolumes" (dict "root" $ "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes "includeCategories" $tmpDaliScope.aggregatePlaneCategories) | indent 6 }}
+{{- include "hpcc.addVolumes" (dict "root" $ "me" $dali "includeNames" $tmpDaliScope.aggregateSashaNamedPlanes "includeCategories" $tmpDaliScope.aggregatePlaneCategories) | indent 6 }}
 {{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dali" "external" false) | indent 6 }}
 ---

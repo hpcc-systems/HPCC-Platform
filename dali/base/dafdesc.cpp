@@ -3655,6 +3655,25 @@ bool getDefaultSpillPlane(StringBuffer &ret)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+static bool isAccessible(const IPropertyTree * xml)
+{
+    //Unusual to have components specified, so short-cicuit the common case
+    if (!xml->hasProp("components"))
+        return true;
+
+    const char * thisComponentName = queryComponentName();
+    if (!thisComponentName)
+        return false;
+
+    Owned<IPropertyTreeIterator> component = xml->getElements("components");
+    ForEach(*component)
+    {
+        if (strsame(component->query().queryProp(nullptr), thisComponentName))
+            return true;
+    }
+    return false;
+}
+
 class CStoragePlaneAlias : public CInterfaceOf<IStoragePlaneAlias>
 {
 public:
@@ -3666,13 +3685,16 @@ public:
             const char *modeStr = modeIter->query().queryProp(nullptr);
             modes |= getAccessModeFromString(modeStr);
         }
+        accessible = ::isAccessible(xml);
     }
     virtual AccessMode queryModes() const override { return modes; }
     virtual const char *queryPrefix() const override { return xml->queryProp("@prefix"); }
+    virtual bool isAccessible() const override { return accessible; }
 
 private:
     Linked<IPropertyTree> xml;
     AccessMode modes = AccessMode::none;
+    bool accessible = false;
 };
 
 class CStorageApiInfo : public CInterfaceOf<IStorageApiInfo>
@@ -3756,6 +3778,10 @@ public:
         IStoragePlaneAlias *bestMatch = nullptr;
         for (const auto & alias : aliases)
         {
+            // Some aliases are only mounted in a restricted set of components (to avoid limits on the number of connections)
+            if (!alias->isAccessible())
+                continue;
+
             AccessMode aliasModes = alias->queryModes();
             unsigned match = static_cast<unsigned>(aliasModes & desiredModes);
             unsigned score = 0;
@@ -3779,6 +3805,12 @@ public:
             return new CStorageApiInfo(xml);
         return nullptr;
     }
+
+    virtual bool isAccessible() const override
+    {
+        return ::isAccessible(xml);
+    }
+
 private:
     Linked<IPropertyTree> xml;
     std::vector<Owned<IStoragePlaneAlias>> aliases;
