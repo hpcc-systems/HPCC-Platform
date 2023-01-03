@@ -5575,7 +5575,12 @@ void EspServInfo::write_esp_binding_ipp()
     outf("\tC%sSoapBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL, http_soap_log_level level=hsl_none);\n", name_);
 
     outs("\tvirtual void init_strings();\n");
-    outs("\tvirtual void init_metrics();\n");
+    if (executionProfilingEnabled)
+    {
+        outf("#ifdef ESP_SERVICE_%s\n", name_);
+        outs("\tvirtual void init_metrics();\n");
+        outf("#endif\n");
+    }
     outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
 
     //method ==> processRequest
@@ -5676,17 +5681,28 @@ void EspServInfo::write_esp_binding_ipp()
 
     //
     // Create scaled histogram metric member variables enabled methods
-    outf("#ifdef ESP_SERVICE\n");
+    // Only output the ifdef if needed
+    bool needIfDef = true;
     for (mthi = methods; mthi != NULL; mthi = mthi->next)
     {
         if (mthi->isExecutionProfilingEnabled())
         {
+            if (needIfDef)
+            {
+                outf("#ifdef ESP_SERVICE_%s\n", name_);
+                needIfDef = false;
+            }
             outs("\tstd::shared_ptr<hpccMetrics::ScaledHistogramMetric> ");
-            outs(mthi->getExecutionProfilingMetricName());
+            outs(mthi->getExecutionProfilingMetricVariableName());
             outs(";\n");
         }
     }
-    outf("#endif\n");
+
+    // If false, then ifdef was output, close it
+    if (!needIfDef)
+    {
+        outf("#endif\n");
+    }
 
     outs("};\n\n");
 }
@@ -5709,11 +5725,23 @@ void EspServInfo::write_esp_binding()
     StrBuffer servicefeatureurl;
     getMetaStringValue(servicefeatureurl,FEATEACCESSATTRIBUTE);
 
-    outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapBinding(NULL, NULL, NULL, level)\n{\n\tinit_strings();\n\tinit_metrics();\n\tsetWsdlVersion(%s);", name_, name_, wsdlVer.str());
-    outf("\n}\n");
+    outf("\nC%sSoapBinding::C%sSoapBinding(http_soap_log_level level):CHttpSoapBinding(NULL, NULL, NULL, level)\n", name_, name_);
+    outf("{\n");
+    outf("\tinit_strings();\n");
+    outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
+    outf("}\n");
 
-    outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n{\n\tinit_strings(); \n\tinit_metrics(); \n\tsetWsdlVersion(%s);\n", name_, name_, wsdlVer.str());
-    outf("\n}\n");
+    outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n", name_, name_);
+    outf("{\n");
+    outf("\tinit_strings();\n");
+    if (executionProfilingEnabled)
+    {
+        outf("#ifdef ESP_SERVICE_%s\n", name_);
+        outf("\tinit_metrics();\n");
+        outf("#endif\n");
+    }
+    outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
+    outf("}\n");
 
     outf("\nvoid C%sSoapBinding::init_strings()\n", name_);
     outs("{\n");
@@ -5757,26 +5785,26 @@ void EspServInfo::write_esp_binding()
             serviceCacheGroupID.set(name_);
         outf("\tsetCacheGroupID(nullptr, \"%s\");\n", serviceCacheGroupID.str());
     }
-
     outs("}\n");
 
     //
     // Create init_metrics for execution profiling
-    outf("\nvoid C%sSoapBinding::init_metrics()\n", name_);
-    outs("{\n");
-
-    outf("#ifdef ESP_SERVICE\n");
-
-    // For each method with execution profiling enabled, add code to initialize the histogram metric
-    for (mthi=methods; mthi!=NULL; mthi=mthi->next)
+    if (executionProfilingEnabled)
     {
-        if (mthi->isExecutionProfilingEnabled())
-        {
-            outf("\t%s = registerProfilingMetric(\"%s\", \"\", \"%s\");\n", mthi->getExecutionProfilingMetricName(), mthi->getName(), mthi->getExecutionProfilingOptions().c_str());
+        outf("#ifdef ESP_SERVICE_%s\n", name_);
+        outf("\nvoid C%sSoapBinding::init_metrics()\n", name_);
+        outs("{\n");
+
+        // For each method with execution profiling enabled, add code to initialize the histogram metric
+        for (mthi = methods; mthi != NULL; mthi = mthi->next) {
+            if (mthi->isExecutionProfilingEnabled()) {
+                outf("\t%s = registerServiceMethodProfilingMetric(queryProcessName(), \"%s\", \"%s\", \"\", \"%s\");\n",
+                     mthi->getExecutionProfilingMetricVariableName(), name_, mthi->getName(), mthi->getExecutionProfilingOptions().c_str());
+            }
         }
+        outs("}\n");
+        outf("#endif\n");
     }
-    outf("#endif\n");
-    outs("}\n");
 
     outf("\nint C%sSoapBinding::processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response)\n", name_);
     outs("{\n");
@@ -5816,8 +5844,8 @@ void EspServInfo::write_esp_binding()
         // metrics
         if (mthi->isExecutionProfilingEnabled())
         {
-            outf("#ifdef ESP_SERVICE\n");
-            outf("\t\thpccMetrics::HistogramExecutionTimer timer(%s);\n", mthi->getExecutionProfilingMetricName());
+            outf("#ifdef ESP_SERVICE_%s\n", name_);
+            outf("\t\thpccMetrics::HistogramExecutionTimer timer(%s);\n", mthi->getExecutionProfilingMetricVariableName());
             outf("#endif\n");
         }
 
@@ -6307,8 +6335,8 @@ void EspServInfo::write_esp_binding()
 
             if (mthi->isExecutionProfilingEnabled())
             {
-                outf("#ifdef ESP_SERVICE\n");
-                outf("\t\t\thpccMetrics::HistogramExecutionTimer timer(%s);\n", mthi->getExecutionProfilingMetricName());
+                outf("#ifdef ESP_SERVICE_%s\n", name_);
+                outf("\t\t\thpccMetrics::HistogramExecutionTimer timer(%s);\n", mthi->getExecutionProfilingMetricVariableName());
                 outf("#endif\n");
             }
 
@@ -6358,8 +6386,8 @@ void EspServInfo::write_esp_binding()
 
             if (mthi->isExecutionProfilingEnabled())
             {
-                outf("#ifdef ESP_SERVICE\n");
-                outf("\t\t\thpccMetrics::HistogramExecutionTimer timer(%s);\n", mthi->getExecutionProfilingMetricName());
+                outf("#ifdef ESP_SERVICE_%s\n", name_);
+                outf("\t\t\thpccMetrics::HistogramExecutionTimer timer(%s);\n", mthi->getExecutionProfilingMetricVariableName());
                 outf("#endif\n");
             }
 
@@ -7170,6 +7198,19 @@ void HIDLcompiler::processExecutionProfiling()
 }
 
 
+bool HIDLcompiler::isProcessExecutionEnabled()
+{
+    EspServInfo *si;
+    for (si=servs;si;si=si->next)
+    {
+        if (si->executionProfilingEnabled)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void HIDLcompiler::write_esp()
 {
     //create the *.esp file
@@ -7182,15 +7223,10 @@ void HIDLcompiler::write_esp()
     outf("#include \"%s_esp.ipp\"\n", packagename);
 
     // If any defined service has execution profiling enabled, add the required includes
-    EspServInfo *si;
-    for (si=servs;si;si=si->next)
+    if (isProcessExecutionEnabled())
     {
-        if (si->executionProfilingEnabled)
-        {
-            outs("#include \"espcommon.hpp\"\n");
-            outs("#include \"jmetrics.hpp\"\n");
-            break;
-        }
+        outs("#include \"espcommon.hpp\"\n");
+        outs("#include \"jmetrics.hpp\"\n");
     }
 
     outs("\n");
@@ -7207,6 +7243,7 @@ void HIDLcompiler::write_esp()
         mi->write_esp();
     }
 
+    EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
         si->write_esp_binding();
@@ -7254,15 +7291,9 @@ void HIDLcompiler::write_esp_ex_ipp()
     outs("\n\n");
 
     // metrics execution profiling requires the memory header
-    EspServInfo *si;
-    for (si=servs;si;si=si->next)
+    if (isProcessExecutionEnabled())
     {
-        if (si->executionProfilingEnabled)
-        {
-            outs("#include <memory>\n");
-            outs("\n\n");
-            break;
-        }
+        outs("#include <memory>\n");
     }
 
     outf("namespace %s\n{\n\n", packagename);
@@ -7273,6 +7304,7 @@ void HIDLcompiler::write_esp_ex_ipp()
         mi->write_esp_ipp();
     }
 
+    EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
         si->write_esp_service_ipp();
