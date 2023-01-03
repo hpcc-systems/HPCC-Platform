@@ -267,6 +267,11 @@ interface IRoxieQueryPacket : extends IInterface
     virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
 
     virtual ISerializedRoxieQueryPacket *serialize() const = 0;
+
+    virtual void noteTimeSent() = 0;
+    virtual void setAcknowledged() = 0;
+    virtual bool isAcknowledged() const = 0;
+    virtual bool resendNeeded(unsigned timeout, unsigned now) const = 0;
 };
 
 interface IQueryDll;
@@ -300,6 +305,7 @@ extern IPropertyTree *topology;
 extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
+extern bool acknowledgeAllRequests;
 extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
