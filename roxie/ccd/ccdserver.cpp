@@ -4070,10 +4070,12 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         }
     }
 
-    void retryPending()
+    void retryPending(unsigned timeout)
     {
         CriticalBlock b(pendingCrit);
         checkDelayed();
+        if (timeout && doTrace(traceRoxiePackets))
+            DBGLOG("Checking %d pending packets for ack status", pending.ordinality());
         ForEachItemIn(idx, pending)
         {
             IRoxieServerQueryPacket &p = pending.item(idx);
@@ -4082,6 +4084,12 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 IRoxieQueryPacket *i = p.queryPacket();
                 if (i)
                 {
+                    if (timeout)
+                    {
+                        if (!i->resendNeeded(timeout))
+                            continue;
+                        activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", timeout);
+                }
                     if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
@@ -5135,11 +5143,12 @@ public:
                         break;
 
                     case ROXIE_ALIVE:
-                        if (ctxTraceLevel > 4)
+                        if (doTrace(traceRoxiePackets))
                         {
                             StringBuffer s;
                             activity.queryLogCtx().CTXLOG("ROXIE_ALIVE: %s", header.toString(s).str());
                         }
+                        op->setAcknowledged();
                         op->queryHeader().noteAlive(header.retries & ROXIE_RETRIES_MASK);
                         // Leave it on pending queue in original location
                         break;
@@ -5210,11 +5219,15 @@ public:
             else
             {
                 unsigned timeNow = msTick();
-                if (!anyActivity && !localAgent && (timeNow-lastActivity >= timeout))
+                if (acknowledgeAllRequests)
+                {
+                    retryPending(checkInterval);
+                }
+                else if (!anyActivity && !localAgent && (timeNow-lastActivity >= checkInterval))
                 {
                     lastActivity = timeNow;
-                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout);
-                    retryPending();
+                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", checkInterval);
+                    retryPending(0);
                 }
             }
         }
