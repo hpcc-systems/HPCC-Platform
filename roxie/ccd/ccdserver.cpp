@@ -5213,10 +5213,11 @@ public:
             else
             {
                 unsigned timeNow = msTick();
-                if (!anyActivity && !localAgent && (timeNow-lastActivity >= timeout))
+                if (!anyActivity && !localAgent && (timeNow-lastActivity >= checkInterval))
                 {
+                    if (timeNow-lastActivity >= timeout/2)
+                        activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout/2);
                     lastActivity = timeNow;
-                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout);
                     retryPending();
                 }
             }
