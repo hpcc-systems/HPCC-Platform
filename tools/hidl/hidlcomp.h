@@ -926,7 +926,7 @@ private:
     char                *request_;
     char                *response_;
     ProcInfo            *proc_;
-    bool                executionProfilingEnabled;
+    bool                executionProfilingEnabled = false;
     std::string         executionProfilingOptions;
     std::string         executionProfilingHistogramVariableName;
 
@@ -939,7 +939,6 @@ public:
         proc_=NULL;
         tags=NULL;
         next=NULL;
-        executionProfilingEnabled = false;
     }
 
     EspMethodInfo(ProcInfo *procInfo)
