@@ -1017,7 +1017,7 @@ public:
         validateProfileExecutionOptions(executionProfilingOptions);
     }
 
-    const char *getExecutionProfilingMetricName() const
+    const char *getExecutionProfilingMetricVariableName() const
     {
         return executionProfilingHistogramVariableName.c_str();
     }
@@ -1185,6 +1185,9 @@ private:
     char        *base_;
     bool needsXslt;
 
+public:
+    bool executionProfilingEnabled = false;
+
 
 public:
     EspServInfo(const char *name)
@@ -1313,6 +1316,8 @@ public:
 
     void processExecutionProfiling();
 
+    bool isProcessExcutionEnabled();
+
     const char *getPackageName(){return packagename;}
     char *       filename;
 
@@ -1335,7 +1340,6 @@ public:
     EspMessageInfo *msgs;
     EspServInfo *servs;
     IncludeInfo *includes;
-    bool executionProfilingEnabled = false;
 };
 
 

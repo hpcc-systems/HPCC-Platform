@@ -13,6 +13,7 @@
 
 #include "jmetrics.hpp"
 #include "jlog.hpp"
+#include <regex>
 
 using namespace hpccMetrics;
 
@@ -138,35 +139,49 @@ bool MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
     bool rc = false;
     std::unique_lock<std::mutex> lock(metricVectorMutex);
     std::string name = pMetric->queryName();
-    auto metaData = pMetric->queryMetaData();
-    for (auto &metaDataIt: metaData)
-    {
-        name.append(".").append(metaDataIt.value);
-    }
+    std::regex pattern("^[A-Za-z][A-Za-z0-9.]*[^.]$");
 
-    auto it = metrics.find(name);
-    if (it == metrics.end())
+    // Ensure metric name follows naming convention
+    if (std::regex_match (name,pattern))
     {
-        metrics.insert({name, pMetric});
-        rc = true;
-    }
-    else
-    {
-        // If there is a match only report an error if the metric has not been destroyed in the meantime
-        auto match = it->second.lock();
-        if (match)
+        auto metaData = pMetric->queryMetaData();
+        for (auto &metaDataIt: metaData)
         {
-#ifdef _DEBUG
-            throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
-#else
-            OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
-#endif
+            name.append(".").append(metaDataIt.value);
+        }
+
+        auto it = metrics.find(name);
+        if (it == metrics.end())
+        {
+            metrics.insert({name, pMetric});
+            rc = true;
         }
         else
         {
-            rc = true;  // old metric no longer present, so it's considered unique
+            // If there is a match only report an error if the metric has not been destroyed in the meantime
+            auto match = it->second.lock();
+            if (match)
+            {
+#ifdef _DEBUG
+                throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
+#else
+                OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
+#endif
+            }
+            else
+            {
+                rc = true;  // old metric no longer present, so it's considered unique
+            }
+            it->second = pMetric;
         }
-        it->second = pMetric;
+    }
+    else
+    {
+#ifdef _DEBUG
+        throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add metric with invalid name ('%s')", name.c_str());
+#else
+        OERRLOG("addMetric - Metric name is not valid '%s', metric not added", name.c_str());
+#endif
     }
     return rc;
 }

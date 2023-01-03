@@ -66,6 +66,7 @@ public:
     ~MetricFrameworkTests() = default;
 
     CPPUNIT_TEST_SUITE(MetricFrameworkTests);
+        CPPUNIT_TEST(Test_valid_and_invalid_metric_names);
         CPPUNIT_TEST(Test_counter_metric_increments_properly);
         CPPUNIT_TEST(Test_gauge_metric_updates_properly);
         CPPUNIT_TEST(Test_custom_metric);
@@ -79,10 +80,51 @@ public:
 
 protected:
 
+    void Test_valid_and_invalid_metric_names()
+    {
+        std::vector<std::string> invalid_names = {
+            {".startswithperiod"},
+            {"endswithperiod."},
+            {"9startswithnumber"},
+            {"has_underscore"},
+            {"has&^%$#@!-~`+=|[]{}?/<>,_specialcharacters"}
+        };
+
+        for (const auto &badName: invalid_names)
+        {
+            std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>(badName.c_str(), "description", SMeasureCount);
+            bool added = false;
+            try
+            {
+                added = frameworkTestManager.addMetric(pCounter);
+            }
+            catch (IException *e)
+            {
+                added = false;
+                e->Release();
+            }
+            CPPUNIT_ASSERT(!added);
+        }
+
+        std::vector<std::string> valid_names = {
+            {"noperiod"},
+            {"has.period"},
+            {"has99numbers"},
+            {"has.99.numbers.and.periods"},
+            {"has.CaPiToL.LeTtErS"}
+        };
+
+        for (const auto &goodName: valid_names)
+        {
+            std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>(goodName.c_str(), "description", SMeasureCount);
+            bool added = frameworkTestManager.addMetric(pCounter);
+            CPPUNIT_ASSERT(added);
+        }
+    }
 
     void Test_counter_metric_increments_properly()
     {
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("testcounter", "description", SMeasureCount);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounter->queryValue()));
         int expectedValue = 0;
 
@@ -111,7 +153,7 @@ protected:
 
     void Test_gauge_metric_updates_properly()
     {
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge", "description", SMeasureCount);
         int gaugeValue = pGauge->queryValue();
         CPPUNIT_ASSERT_EQUAL(0, gaugeValue);
 
@@ -136,7 +178,7 @@ protected:
     void Test_custom_metric()
     {
         int customCounter = 0;
-        std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("custom-counter", "description", METRICS_COUNTER, customCounter, SMeasureCount);
+        std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("customcounter", "description", METRICS_COUNTER, customCounter, SMeasureCount);
         int customCounterValue = pCustomCounter->queryValue();
         CPPUNIT_ASSERT_EQUAL(0, customCounterValue);
 
@@ -158,8 +200,8 @@ protected:
     void Test_manager_manages_metrics_properly()
     {
         int numAdded;
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("testcounter", "description", SMeasureCount);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge", "description", SMeasureCount);
         frameworkTestManager.addMetric(pCounter);
         frameworkTestManager.addMetric(pGauge);
         numAdded = 2;
@@ -173,7 +215,7 @@ protected:
 
         //
         // Add a metric while reporting is enabled and make sure it is returned
-        std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("test-newcounter", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("testnewcounter", "description", SMeasureCount);
         frameworkTestManager.addMetric(pNewCounter);
         numAdded++;
 
@@ -194,7 +236,7 @@ protected:
 
     void Test_scoped_updater_classes()
     {
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("testgauge", "description", SMeasureCount);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
 
         //
@@ -275,8 +317,8 @@ protected:
 
         //
         // Delete a metric and try to add a like named metric to ensure it does not report an existing metric
-        std::shared_ptr<CounterMetric> pCounter5 = std::make_shared<CounterMetric>("dup-requests.queued", "description", SMeasureCount);
-        std::shared_ptr<CounterMetric> pCounter6 = std::make_shared<CounterMetric>("dup-requests.queued", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter5 = std::make_shared<CounterMetric>("duprequests.queued", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter6 = std::make_shared<CounterMetric>("duprequests.queued", "description", SMeasureCount);
         frameworkTestManager.addMetric(pCounter5);
         pCounter5.reset();
         success = false;
