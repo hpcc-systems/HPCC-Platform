@@ -580,6 +580,14 @@ protected:
     unsigned ctxTraceLevel;
     mutable CRuntimeStatisticCollection stats;
     unsigned channel;
+
+    // Variables for detecting excessive repeated logging
+    mutable unsigned suppressed = 0;
+    unsigned minLogInterval = 1000;
+    mutable unsigned lastLogTime = 0;
+    mutable StringBuffer lastText;
+    mutable const char *lastFormat = nullptr;
+
 public: // Not very clean but I don't care
     bool intercept;
     bool blind;
@@ -630,9 +638,26 @@ public:
     virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
     {
         StringBuffer text, prefix;
-        getLogPrefix(prefix);
         text.valist_appendf(format, args);
+        unsigned now = msTick();
+        CriticalBlock b(crit);
+        if (format == lastFormat && now-lastLogTime < minLogInterval && strsame(text, lastText))
+        {
+            suppressed++;
+            return;
+        }
+        getLogPrefix(prefix);
+        if (suppressed)
+        {
+            if (suppressed > 1)
+                lastText.appendf(" (repeated %u times)", suppressed);
+            CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), lastText);
+        }            
         CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
+        suppressed = 0;
+        lastFormat = format;
+        lastLogTime = now;
+        text.swapWith(lastText);
     }
 
     virtual void CTXLOGa(TracingCategory category, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *prefix, const char *text) const override

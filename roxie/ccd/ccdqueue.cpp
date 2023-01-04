@@ -2427,10 +2427,11 @@ public:
                 logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
                 break;
             default:
-                logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
+                if (doTrace(traceRoxiePackets))
+                    logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
                 break; 
             case 0:
-                if (logctx.queryTraceLevel() > 8)
+                if (doTrace(traceRoxiePackets, TraceFlags::Detailed))
                     logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
                 break;
             }

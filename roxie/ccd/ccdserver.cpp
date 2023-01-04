@@ -1316,6 +1316,38 @@ public:
             merged.mergeStatistic(StEnumActivityCharacteristics, (unsigned) cachedSourceCharacteristics.load());
     }
 
+    mutable unsigned lastLogTime = 0;
+    mutable unsigned minLogInterval = 10000;
+    mutable StringBuffer lastLogText;
+    mutable const char *lastLogFormat = nullptr;
+    mutable unsigned logSuppressed = 0;
+    mutable CriticalSection logCrit;
+
+    virtual void CTXLOGva(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code, const char *format, va_list args) const override  __attribute__((format(printf,5,0))) 
+    {
+        StringBuffer text, prefix;
+        text.valist_appendf(format, args);
+        unsigned now = msTick();
+        CriticalBlock b(logCrit);
+        if (format == lastLogFormat && now-lastLogTime < minLogInterval && strsame(text, lastLogText))
+        {
+            logSuppressed++;
+            return;
+        }
+        getLogPrefix(prefix);
+        if (logSuppressed)
+        {
+            if (logSuppressed > 1)
+                lastLogText.appendf(" (repeated %u times)", logSuppressed);
+            CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), lastLogText);
+        }            
+        CTXLOGa(LOG_TRACING, cat, job, code, prefix.str(), text.str());
+        logSuppressed = 0;
+        lastLogFormat = format;
+        lastLogTime = now;
+        text.swapWith(lastLogText);
+    }
+
     virtual StringBuffer &getLogPrefix(StringBuffer &ret) const
     {
         if (ctx)
@@ -4075,7 +4107,9 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         CriticalBlock b(pendingCrit);
         checkDelayed();
         if (timeout && doTrace(traceRoxiePackets))
-            DBGLOG("Checking %d pending packets for ack status", pending.ordinality());
+        {
+            activity.queryLogCtx().CTXLOG("Checking %d pending packets for ack status", pending.ordinality());
+        }
         ForEachItemIn(idx, pending)
         {
             IRoxieServerQueryPacket &p = pending.item(idx);
