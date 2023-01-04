@@ -186,6 +186,7 @@
    <xsl:template name="bindAuthentication">
    <xsl:param name="authMethod"/>
    <xsl:param name="bindingNode"/>
+      <xsl:copy-of select="$bindingNode/cors"/>
       <xsl:choose>
          <xsl:when test="$authMethod='basic'">
             <Authenticate type="Basic" method="UserDefined">

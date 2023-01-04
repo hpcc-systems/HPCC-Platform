@@ -576,6 +576,9 @@ vaults:
   {{- range $vault := . }}
     - name: {{ $vault.name }}
       kind: {{ $vault.kind }}
+    {{- if $vault.namespace }}
+      namespace: {{ $vault.namespace }}
+    {{- end }}
       url: {{ $vault.url }}
     {{- if index $vault "client-secret" }}
       client-secret: {{ index $vault "client-secret" }}
