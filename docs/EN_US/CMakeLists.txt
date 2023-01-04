@@ -18,9 +18,10 @@
 #  This CMakeLists intended to be used in docs/EN
 #    Refactored for internationalization
 ###
-# Last Mod GP 7/2021
+# Last Mod GP 12/2022
 #  Removed HPCC in a VM
 #  Removed Monitoring  
+#  Removed ECLWatch  
 ####################
 #
 # Doc dirs to include.
@@ -81,7 +82,7 @@ add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(JDBC-driver)
 add_subdirectory(RoxieReference)
 add_subdirectory(ECLScheduler)
-add_subdirectory(ECLWatch)
+#add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
 add_subdirectory(WsSQLUG)
 add_subdirectory(PortalHTML)
