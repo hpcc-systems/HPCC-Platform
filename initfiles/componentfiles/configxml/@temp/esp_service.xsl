@@ -164,6 +164,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
         <xsl:param name="bindingNode"/>
         <xsl:param name="authMethod"/>
         <xsl:param name="service"/>
+        <xsl:copy-of select="$bindingNode/cors"/>
         <xsl:choose>
             <!--xsl:when test="$authMethod='basic' or $service='WsAttributes'"--> <!--#37316-->
             <xsl:when test="$authMethod='basic'">

@@ -856,7 +856,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <xsl:param name="bindingNode"/>
         <xsl:param name="authMethod"/>
         <xsl:param name="service"/>
-
+        <xsl:copy-of select="$bindingNode/cors"/>
         <xsl:choose>
       <xsl:when test="$authMethod='basic'">
          <Authenticate type="Basic" method="UserDefined">
