@@ -81,7 +81,7 @@ void FileMetricSink::writeMeasurementToFile(const std::shared_ptr<IMetric> &pMet
         size_t countBucketValues = values.size();
         __uint64 cumulative = 0;
 
-        for (int i=0; i < countBucketValues - 1; ++i)
+        for (size_t i=0; i < countBucketValues - 1; ++i)
         {
             cumulative += values[i];
             fprintf(fhandle, "name=%s, bucket le %" I64F "d=%" I64F "d\n", name.c_str(), limits[i], cumulative);
