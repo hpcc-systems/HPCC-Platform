@@ -104,20 +104,24 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         }
         return [];
     }, [options, required]);
-
     const [selectedItem, setSelectedItem] = React.useState<IDropdownOption>();
-    React.useEffect(() => {
-        setSelectedItem(selOptions?.find(row => row.key === selectedKey) ?? selOptions[0]);
-    }, [selectedKey, selOptions]);
+    const [selectedIdx, setSelectedIdx] = React.useState<number>();
 
-    const controlledChange = React.useCallback((event: React.FormEvent<HTMLDivElement>, item: IDropdownOption, idx: number): void => {
+    React.useEffect(() => {
+        const item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
         setSelectedItem(item);
-        onChange(event, item, idx);
-    }, [onChange]);
+        setSelectedIdx(selOptions.indexOf(selectedItem));
+    }, [selectedKey, selOptions, onChange, selectedItem]);
+
+    React.useEffect(() => {
+        if (selectedItem !== undefined) {
+            onChange(undefined, selectedItem, selectedIdx);
+        }
+    }, [onChange, selectedItem, selectedIdx]);
 
     return options === undefined ?
         <DropdownBase label={label} options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
-        <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={controlledChange} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+        <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
 };
 
 const autoSelectDropdown = (selectedKey?: string, required?: boolean) => selectedKey === undefined && !required;
@@ -353,7 +357,7 @@ export interface TargetDropzoneTextFieldProps extends Omit<AsyncDropdownProps, "
 
 export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneTextFieldProps> = (props) => {
 
-    const [targetDropzones, setTargetDropzones] = React.useState<IDropdownOption[]>();
+    const [targetDropzones, setTargetDropzones] = React.useState<IDropdownOption[] | undefined>();
 
     React.useEffect(() => {
         TpDropZoneQuery({}).then(({ TpDropZoneQueryResponse }) => {
@@ -363,7 +367,7 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
                     text: row.Name,
                     path: row.Path
                 };
-            }) || []);
+            }));
         }).catch(err => logger.error(err));
     }, []);
 
@@ -376,7 +380,7 @@ export interface TargetServerTextFieldProps extends Omit<AsyncDropdownProps, "op
 
 export const TargetServerTextField: React.FunctionComponent<TargetServerTextFieldProps> = (props) => {
 
-    const [targetServers, setTargetServers] = React.useState<IDropdownOption[]>();
+    const [targetServers, setTargetServers] = React.useState<IDropdownOption[] | undefined>();
 
     React.useEffect(() => {
         TpDropZoneQuery({ Name: "" }).then(response => {
@@ -387,7 +391,7 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
                     text: n.Netaddress,
                     OS: n.OS
                 };
-            }) || []);
+            }));
         }).catch(err => logger.error(err));
     }, [props.selectedKey, props.dropzone]);
 

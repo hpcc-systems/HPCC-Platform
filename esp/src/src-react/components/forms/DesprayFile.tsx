@@ -1,11 +1,16 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
+import { FileSpray, FileSprayService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import * as FileSpray from "src/FileSpray";
 import { MessageBox } from "../../layouts/MessageBox";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "./Fields";
 import * as FormStyles from "./landing-zone/styles";
+
+const logger = scopedLogger("src-react/components/forms/DesprayFile.tsx");
+
+const myFileSprayService = new FileSprayService({ baseUrl: "" });
 
 interface DesprayFileFormValues {
     destGroup: string;
@@ -71,26 +76,26 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                             ...data,
                             destPath: [data.destPath, data.sourceLogicalName].join(pathSep),
                             sourceLogicalName: logicalFiles[0]
-                        };
-                        FileSpray.Despray({ request: request }).then(response => {
+                        } as FileSpray.Despray;
+                        myFileSprayService.Despray(request).then(response => {
                             closeForm();
                             reset(defaultValues);
                             if (refreshGrid) refreshGrid(true);
-                        });
+                        }).catch(err => logger.error(err));
                     } else {
+                        const requests = [];
                         logicalFiles.forEach((logicalFile, idx) => {
                             const request = {
                                 ...data,
                                 sourceLogicalName: logicalFile,
                                 destPath: [data.destPath, data.targetName[idx].name].join(pathSep),
-                            };
-                            const requests = [];
-                            requests.push(FileSpray.Despray({ request: request }));
-                            Promise.all(requests).then(_ => {
-                                closeForm();
-                                if (refreshGrid) refreshGrid(true);
-                            });
+                            } as FileSpray.Despray;
+                            requests.push(myFileSprayService.Despray(request));
                         });
+                        Promise.all(requests).then(_ => {
+                            closeForm();
+                            if (refreshGrid) refreshGrid(true);
+                        }).catch(err => logger.error(err));
                     }
                 }
             },
