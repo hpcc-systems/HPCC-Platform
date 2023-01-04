@@ -331,7 +331,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
                 key: row.Name || "unknown",
                 text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
                 type: row.Type,
-                queriesOnly: row.QueriesOnly
+                queriesOnly: row.QueriesOnly || false
             };
         }) || [];
         setOptions(options);

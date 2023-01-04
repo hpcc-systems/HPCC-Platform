@@ -121,6 +121,9 @@ const playgroundStyles = mergeStyleSets({
             display: "flex",
             marginLeft: "18px"
         },
+        ".is-disabled .ms-Label": {
+            paddingRight: "12px"
+        },
         ".ms-TextField-errorMessage": {
             display: "none"
         }
@@ -277,17 +280,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
             {showSubmitBtn ? (
                 <PrimaryButton text={nlsHPCC.Submit} onClick={submitWU} />
             ) : (
-                <div className={playgroundStyles.publishWrapper}>
-                    <PrimaryButton text={nlsHPCC.Publish} onClick={publishWU} />
-                    <TextField
-                        label={nlsHPCC.Name}
-                        name="jobName"
-                        componentRef={queryNameRef}
-                        required
-                        errorMessage={queryNameErrorMsg}
-                        onChange={(evt, value) => setQueryName(value)}
-                    />
-                </div>
+                <PrimaryButton text={nlsHPCC.Publish} onClick={publishWU} />
             )}
             <TargetClusterTextField
                 key="target-cluster"
@@ -305,6 +298,17 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                     setCluster(selectedCluster);
                 }, [setCluster])}
             />
+            <div className={playgroundStyles.publishWrapper}>
+                <TextField
+                    label={nlsHPCC.Name}
+                    name="jobName"
+                    disabled={showSubmitBtn}
+                    componentRef={queryNameRef}
+                    required={!showSubmitBtn}
+                    errorMessage={queryNameErrorMsg}
+                    onChange={(evt, value) => setQueryName(value)}
+                />
+            </div>
             <div className={playgroundStyles.outputButtons}>
                 <IconButton
                     iconProps={warningIcon}
