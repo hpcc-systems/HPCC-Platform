@@ -79,6 +79,7 @@ class CWriteIntercept : public CSimpleInterface
     offset_t overflowsize;
     size32_t fixedsize;
     offset_t lastofs;
+    bool compressedOverflowFile = false;
 
     // JCSMORE - writeidxofs is a NOP for fixed size records by the looks of it (at least if serializer writes fixed sizes)
     // bit weird if always true, would look a lot clearer if explictly tested for var length case.
@@ -157,11 +158,19 @@ class CWriteIntercept : public CSimpleInterface
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
         CFileOwningStream(CWriteIntercept *_parent, offset_t _startOffset, rowcount_t _max) : parent(_parent), startOffset(_startOffset), max(_max)
         {
-            stream.setown(createRowStreamEx(parent->dataFile, parent->rowIf, startOffset, (offset_t)-1, max));
+            if (parent->compressedOverflowFile)
+            {
+                Owned<ICompressedFileIO> iFileIO = createCompressedFileReader(parent->dataFile);
+                assertex(iFileIO);
+                stream.setown(createRowStreamEx(iFileIO, parent->rowIf, startOffset, (offset_t)-1, max));
+            }
+            else
+                stream.setown(createRowStreamEx(parent->dataFile, parent->rowIf, startOffset, (offset_t)-1, max));
         }
         virtual const void *nextRow() { return stream->nextRow(); }
         virtual void stop() { stream->stop(); }
     };
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -187,7 +196,24 @@ public:
         StringBuffer tempname;
         GetTempFilePath(tempname,"srtmrg");
         dataFile.setown(createIFile(tempname.str()));
-        Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf);
+
+        unsigned rwFlags = DEFAULT_RWFLAGS;
+        if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true) && activity.getOptBool(THOROPT_COMPRESS_SORTOVERFLOW, true))
+        {
+            StringBuffer compType;
+            activity.getOpt(THOROPT_COMPRESS_SPILL_TYPE, compType);
+            unsigned spillCompInfo = 0x0;
+            setCompFlag(compType, spillCompInfo);
+            if (spillCompInfo)
+            {
+                rwFlags |= rw_compress;
+                rwFlags |= spillCompInfo;
+                compressedOverflowFile = true;
+                ActPrintLog(&activity, "Creating compressed merged overflow file");
+            }
+        }
+
+        Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf, rwFlags);
 
         bool overflowed = false;
         ActPrintLog(&activity, "Local Overflow Merge start");
@@ -262,6 +288,11 @@ public:
         if (!dataFileIO)
         {
             dataFileIO.setown(dataFile->open(IFOread));
+            if (compressedOverflowFile)
+            {
+                dataFileIO.setown(createCompressedFileReader(dataFileIO));
+                assertex(dataFileIO);
+            }
             dataFileStream.setown(createFileSerialStream(dataFileIO));
             dataFileDeserializerSource.setStream(dataFileStream);
         }
