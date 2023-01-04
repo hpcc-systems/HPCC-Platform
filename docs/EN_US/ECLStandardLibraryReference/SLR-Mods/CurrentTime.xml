@@ -39,8 +39,11 @@
 
   <para>The <emphasis role="bold">CurrentTime</emphasis> function returns the
   current time. If the in_local_time parameter is TRUE the returned value is
-  local to the cluster computing the time, if FALSE then the UTC is
-  returned.</para>
+  local to the cluster computing the time, if FALSE then the UTC is returned.
+  </para>
+
+  <para>On containerized systems, servers are usually set to UTC making local
+  time and UTC identical.</para>
 
   <para>Example:</para>
 
