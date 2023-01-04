@@ -639,8 +639,8 @@ public:
     {
         if (translator)
         {
-            assertex(_ptr==buf.toByteArray());
-            _ptr = deserializeSource.queryRow();
+            if (_ptr==buf.toByteArray())
+                _ptr = deserializeSource.queryRow();
         }
         return baseMap.ptrToFilePosition(_ptr);
     }
@@ -649,8 +649,8 @@ public:
     {
         if (translator)
         {
-            assertex(_ptr==buf.toByteArray());
-            _ptr = deserializeSource.queryRow();
+            if (_ptr==buf.toByteArray())
+                _ptr = deserializeSource.queryRow();
         }
         return baseMap.ptrToLocalFilePosition(_ptr);
     }
