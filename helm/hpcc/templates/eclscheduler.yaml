@@ -65,9 +65,9 @@ spec:
         accessDali: "yes"
         accessEsp: "no"
 <<<<<<< HEAD
-        helmVersion: 8.8.31-closedown0
+        helmVersion: 8.8.32-rc1
 =======
-        helmVersion: 8.8.31-closedown0
+        helmVersion: 8.8.32-rc1
 >>>>>>> origin/candidate-8.6.x
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
