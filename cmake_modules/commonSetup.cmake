@@ -61,7 +61,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_OPENSSLV3 "Configure use of OpenSSL Version 3 or newer" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_AZURE "Configure use of azure" ON)
-  option(USE_H3 "Configure use of Uber H3 geospatial indexing" ON)
   option(USE_NLP "Configure use of NLP++ engine" ON)
   option(USE_GIT "Configure use of GIT (Hooks)" ON)
   if (WIN32)
@@ -161,19 +160,21 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   
     # Plugin options
     set(PLUGINS_LIST
-    REMBED
-    V8EMBED
-    MEMCACHED
-    REDIS
-    SQS
-    MYSQLEMBED
-    JAVAEMBED
-    SQLITE3EMBED
-    KAFKA
-    COUCHBASEEMBED
-    SPARK
-    ECLBLAS
-    MONGODBEMBED
+        CASSANDRAEMBED
+        COUCHBASEEMBED
+        ECLBLAS
+        H3
+        JAVAEMBED
+        KAFKA
+        MEMCACHED
+        MONGODBEMBED
+        MYSQLEMBED
+        REDIS
+        REMBED
+        SPARK
+        SQLITE3EMBED
+        SQS
+        V8EMBED
     EXAMPLEPLUGIN)
     foreach(plugin ${PLUGINS_LIST})
         option(${plugin} "Create a package with ONLY the ${plugin} plugin" OFF)
