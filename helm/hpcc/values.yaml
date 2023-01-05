@@ -352,6 +352,10 @@ vaults:
   eclUser:
     ## Category for vaults accessible via ecl code.  These are vaults that users can access directly.  Be cautious
     ## about what vaults you add to this category as they are easily accessed by ECL code.
+    #- name: ecl-user-vault
+    #  url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/ecluser/${secret}
+    #  kind: kv-v2
+    #  namespace: mynamespace # for use with enterprise vaults segmented by namespaces
 
   esp:
 
@@ -363,6 +367,7 @@ vaults:
     # - name: codesign-private-keys
     #  url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/codeSign/${secret}
     #  kind: kv-v2
+    #  namespace: mynamespace # for use with enterprise vaults segmented by namespaces
   ## The keys for verifying signed code may be imported from the vault.
   ## vault kv put secret/codeVerify/gpg-public-key-1 public=@<public_key_file1>
   ## vault kv put secret/codeVerify/gpg-public-key-2 public=@<public_key_file2>
@@ -370,6 +375,7 @@ vaults:
     # - name: codesign-public-keys
     #  url: http://${env.VAULT_SERVICE_HOST}:${env.VAULT_SERVICE_PORT}/v1/secret/data/codeVerify/${secret}
     #  kind: kv-v2
+    #  namespace: mynamespace # for use with enterprise vaults segmented by namespaces
 
 bundles: []
 ## Specifying bundles here will cause the indicated bundles to be downloaded and installed automatically

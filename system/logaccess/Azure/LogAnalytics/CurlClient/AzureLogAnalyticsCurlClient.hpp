@@ -45,6 +45,7 @@ private:
 
     StringBuffer m_componentsSearchColName;
     StringBuffer m_componentsIndexSearchPattern;
+    StringBuffer m_componentsTimestampField;
 
     StringBuffer m_audienceSearchColName;
     StringBuffer m_audienceIndexSearchPattern;
@@ -63,15 +64,17 @@ private:
     StringBuffer m_aadClientID;
     StringBuffer m_aadClientSecret;
 
+    StringBuffer m_componentsLookupKeyColumn;
+
 public:
     AzureLogAnalyticsCurlClient(IPropertyTree & logAccessPluginConfig);
 
-    void getMinReturnColumns(StringBuffer & columns);
-    void getDefaultReturnColumns(StringBuffer & columns);
-    void getAllColumns(StringBuffer & columns);
-    void searchMetaData(StringBuffer & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, unsigned size = defaultEntryLimit, offset_t from = defaultEntryStart);
+    void getMinReturnColumns(StringBuffer & columns, bool & includeComponentName);
+    void getDefaultReturnColumns(StringBuffer & columns, bool & includeComponentName);
+    void searchMetaData(StringBuffer & search, const LogAccessReturnColsMode retcolmode, const  StringArray & selectcols, bool & includeComponentName, unsigned size = defaultEntryLimit, offset_t from = defaultEntryStart);
     void populateKQLQueryString(StringBuffer & queryString, StringBuffer& queryIndex, const LogAccessConditions & options);
     void populateKQLQueryString(StringBuffer & queryString, StringBuffer& queryIndex, const ILogAccessFilter * filter);
+    void declareContainerIndexJoinTable(StringBuffer & queryString, const LogAccessConditions & options);
     static void azureLogAnalyticsTimestampQueryRangeString(StringBuffer & range, const char * timestampfield, std::time_t from, std::time_t to);
     static unsigned processHitsJsonResp(IPropertyTreeIterator * lines, IPropertyTreeIterator * columns, StringBuffer & returnbuf, LogAccessLogFormat format, bool wrapped, bool reportHeader);
     static bool processSearchJsonResp(LogQueryResultDetails & resultDetails, const std::string & retrievedDocument, StringBuffer & returnbuf, LogAccessLogFormat format, bool reportHeader);

@@ -635,10 +635,15 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
         {
             if (prepared)
                 return true;
+
             ForEachItemIn(i, inputs)
             {
-                if (!queryInput(i)->prepareContext(parentExtractSz, parentExtract, false, false, async, true))
-                    return false;
+                CGraphElementBase *input = queryInput(i);
+                if (input)
+                {
+                    if (!input->prepareContext(parentExtractSz, parentExtract, false, false, async, true))
+                        return false;
+                }
             }
         }
         else
@@ -763,17 +768,22 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             }
             if (checkDependencies && ((unsigned)-1 != whichBranch))
             {
-                if (inputs.queryItem(whichBranch))
+                CGraphElementBase *whichInput = queryInput(whichBranch);
+                if (whichInput)
                 {
-                    if (!queryInput(whichBranch)->prepareContext(parentExtractSz, parentExtract, true, false, async, connectOnly))
+                    if (!whichInput->prepareContext(parentExtractSz, parentExtract, true, false, async, connectOnly))
                         return false;
                 }
                 ForEachItemIn(i, inputs)
                 {
                     if (i != whichBranch)
                     {
-                        if (!queryInput(i)->prepareContext(parentExtractSz, parentExtract, false, false, async, true))
-                            return false;
+                        CGraphElementBase *input = queryInput(i);
+                        if (input)
+                        {
+                            if (!input->prepareContext(parentExtractSz, parentExtract, false, false, async, true))
+                                return false;
+                        }
                     }
                 }
             }
@@ -781,8 +791,12 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
             {
                 ForEachItemIn(i, inputs)
                 {
-                    if (!queryInput(i)->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async, connectOnly))
-                        return false;
+                    CGraphElementBase *input = queryInput(i);
+                    if (input)
+                    {
+                        if (!input->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async, connectOnly))
+                            return false;
+                    }
                 }
             }
         }

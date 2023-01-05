@@ -27,12 +27,12 @@ data:
 {{- $_ := set $commonCtx "certificatesEnabled" (($.Values.certificates | default dict).enabled) -}}
 {{- if $commonCtx.certificatesEnabled -}}
  {{- $externalCert := ne (include "hpcc.isVisibilityPublic" $commonCtx) "" -}}
- {{- $issuerName := ternary "public" "local" $externalCert -}}
- {{- $issuer := get $.Values.certificates.issuers $issuerName -}}
+ {{- $issuerKeyName := ternary "public" "local" $externalCert -}}
+ {{- $issuer := get $.Values.certificates.issuers $issuerKeyName -}}
  {{- if $issuer }}
   {{- $_ := set $commonCtx "exposure" (ternary "public" "local" $externalCert) -}}
  {{ else }}
-  {{- $_ := fail (printf "dafilesrv - unable to locate issuer '%s'" $issuerName) -}}
+  {{- $_ := fail (printf "dafilesrv - unable to locate issuer '%s'" $issuerKeyName) -}}
  {{ end }}
 {{ end }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global")) }}

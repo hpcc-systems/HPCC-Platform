@@ -1485,6 +1485,7 @@ const char *CharValue::generateCPP(StringBuffer &out, CompilerType compiler)
         case '\r': out.append("'\\r'"); break;
         case '\t': out.append("'\\t'"); break;
         case '\'': out.append("'\\''"); break;
+        case '\\': out.append("'\\\\'"); break;
         default:
             if ((val >= ' ') && (val <= 126))
                 out.append('\'').append(val).append('\'');

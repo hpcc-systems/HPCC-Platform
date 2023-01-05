@@ -35,13 +35,16 @@ static constexpr const char * defaultHPCCLogProcIDCol      = "hpcc_log_procid";
 static constexpr const char * defaultHPCCLogThreadIDCol    = "hpcc_log_threadid";
 static constexpr const char * defaultHPCCLogMessageCol     = "hpcc_log_message";
 static constexpr const char * defaultHPCCLogJobIDCol       = "hpcc_log_jobid";
-static constexpr const char * defaultHPCCLogComponentCol   = "kubernetes_container_name";
+static constexpr const char * defaultHPCCLogComponentCol   = "hpcc_log_component";
 static constexpr const char * defaultHPCCLogTypeCol        = "hpcc_log_class";
 static constexpr const char * defaultHPCCLogAudCol         = "hpcc_log_audience";
+static constexpr const char * defaultHPCCLogComponentTSCol = "TimeGenerated";
 
 static constexpr const char * logMapIndexPatternAtt = "@storeName";
 static constexpr const char * logMapSearchColAtt = "@searchColumn";
 static constexpr const char * logMapTimeStampColAtt = "@timeStampColumn";
+static constexpr const char * logMapKeyColAtt = "@keyColumn";
+
 
 static constexpr std::size_t  defaultMaxRecordsPerFetch = 100;
 
@@ -342,6 +345,12 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
                 m_componentsIndexSearchPattern = logMap.queryProp(logMapIndexPatternAtt);
             if (logMap.hasProp(logMapSearchColAtt))
                 m_componentsSearchColName = logMap.queryProp(logMapSearchColAtt);
+            if (logMap.hasProp(logMapKeyColAtt))
+                m_componentsLookupKeyColumn = logMap.queryProp(logMapKeyColAtt);
+            if (logMap.hasProp(logMapTimeStampColAtt))
+                m_componentsTimestampField = logMap.queryProp(logMapTimeStampColAtt);
+            else
+                m_componentsTimestampField = defaultHPCCLogComponentTSCol;
         }
         else if (streq(logMapType, "class"))
         {
@@ -378,23 +387,20 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
     }
 }
 
-void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns)
+void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns, bool & includeComponentName)
 {
-    //timestamp, source component, message
-    columns.appendf("\n| project %s, %s, %s", m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol);
+    includeComponentName = false;
+    //timestamp, message - Note: omponent information in default ALA format is expensive and therefore avoided
+    columns.appendf("\n| project %s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
 }
 
-void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns)
+void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns, bool & includeComponentName)
 {
-    //timestamp, source component, all hpcc.log fields
-    columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s, %s",
-    m_globalIndexTimestampField.str(), m_componentsSearchColName.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
+    includeComponentName = false;
+    //timestamp, class, audience, jobid, seq, threadid - Note: component information in default ALA format is expensive and therefore avoided
+    columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s",
+    m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
     m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
-}
-
-void AzureLogAnalyticsCurlClient::getAllColumns(StringBuffer & columns)
-{
-    columns.append("");
 }
 
 bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName)
@@ -418,26 +424,37 @@ bool generateHPCCLogColumnstAllColumns(StringBuffer & kql, const char * colName)
     return true;
 }
 
-void AzureLogAnalyticsCurlClient::searchMetaData(StringBuffer & search, const LogAccessReturnColsMode retcolmode, const StringArray & selectcols, unsigned size, offset_t from)
+void AzureLogAnalyticsCurlClient::searchMetaData(StringBuffer & search, const LogAccessReturnColsMode retcolmode, const StringArray & selectcols, bool & includeComponentName, unsigned size, offset_t from)
 {
     switch (retcolmode)
     {
-    // in KQL, no project ALL supported
-    //case RETURNCOLS_MODE_all:
-    //    getAllColumns(search);
-    //    break;
+    case RETURNCOLS_MODE_all:
+        // in KQL, no project ALL supported
+        includeComponentName = true;
+        break;
     case RETURNCOLS_MODE_min:
-        getMinReturnColumns(search);
+        getMinReturnColumns(search, includeComponentName);
         break;
     case RETURNCOLS_MODE_default:
-        getDefaultReturnColumns(search);
+        getDefaultReturnColumns(search, includeComponentName);
         break;
     case RETURNCOLS_MODE_custom:
     {
         if (selectcols.length() > 0)
         {
+            includeComponentName = false;
             search.append("\n| project ");
             selectcols.getString(search, ",");
+
+            //determine if componentname field included or not
+            if (!isEmptyString(m_componentsSearchColName))
+            {
+                if (selectcols.contains(defaultHPCCLogComponentCol))
+                {
+                    includeComponentName = true;
+                    break;
+                }
+            }
         }
         else
         {
@@ -470,7 +487,7 @@ void AzureLogAnalyticsCurlClient::azureLogAnalyticsTimestampQueryRangeString(Str
     range.setf("%s >= unixtime_milliseconds_todatetime(%s)", timeStampField, std::to_string(from*1000).c_str());
     if (to != -1) //aka 'to' has been initialized
     {
-        range.setf(" and %s < unixtime_milliseconds_todatetime(%s) \n", timeStampField, std::to_string(to*1000).c_str());
+        range.setf(" and %s < unixtime_milliseconds_todatetime(%s)", timeStampField, std::to_string(to*1000).c_str());
     }
 }
 
@@ -483,7 +500,7 @@ void throwIfMultiIndexDetected(const char * currentIndex, const char * proposedI
 void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryString, StringBuffer & queryIndex, const ILogAccessFilter * filter)
 {
     if (filter == nullptr)
-        throw makeStringExceptionV(-1, "%s: Null filter detected while creating Elastic Stack query string", COMPONENT_NAME);
+        throw makeStringExceptionV(-1, "%s: Null filter detected while creating Azure KQL query string", COMPONENT_NAME);
 
     StringBuffer queryValue;
     std::string queryField = m_globalSearchColName.str();
@@ -621,6 +638,19 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
     queryString.append(" ").append(queryField.c_str()).append(" =~ '").append(queryValue.str()).append("'");
 }
 
+void AzureLogAnalyticsCurlClient::declareContainerIndexJoinTable(StringBuffer & queryString, const LogAccessConditions & options)
+{
+    const LogAccessTimeRange & trange = options.getTimeRange();
+
+    StringBuffer range;
+    azureLogAnalyticsTimestampQueryRangeString(range, m_componentsTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
+
+    queryString.append("let ").append(m_componentsIndexSearchPattern).append("Table = ").append(m_componentsIndexSearchPattern);
+    queryString.append("\n| where ").append(range.str());
+    queryString.append("\n| extend ").append(defaultHPCCLogComponentCol).append(" = extract(\"k8s_([0-9A-Za-z-]+)\", 1, ").append(m_componentsSearchColName).append(", typeof(string))");
+    queryString.append("\n| project ").append(defaultHPCCLogComponentCol).append(", ").append(m_componentsLookupKeyColumn).append(";\n");
+}
+
 void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryString, StringBuffer & queryIndex, const LogAccessConditions & options)
 {
     try
@@ -631,6 +661,13 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
 
         //Forced to format log structure in query until a proper log ingest rule is created
         queryIndex.set(m_globalIndexSearchPattern.str());
+
+        StringBuffer searchColumns;
+        bool includeComponentName = false;
+        searchMetaData(searchColumns, options.getReturnColsMode(), options.getLogFieldNames(), includeComponentName, options.getLimit(), options.getStartFrom());
+        if (includeComponentName)
+            declareContainerIndexJoinTable(queryString, options);
+
         queryString.append(queryIndex);
         generateHPCCLogColumnstAllColumns(queryString, m_globalSearchColName.str()); 
 
@@ -648,8 +685,10 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         StringBuffer range;
         azureLogAnalyticsTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
         queryString.append("\n| where ").append(range.str());
+        if (includeComponentName)
+            queryString.append("\n| join kind=innerunique ").append(m_componentsIndexSearchPattern).append("Table on ").append(m_componentsLookupKeyColumn);
 
-        searchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
+        queryString.append(searchColumns);
 
         DBGLOG("%s: Search string '%s'", COMPONENT_NAME, queryString.str());
     }

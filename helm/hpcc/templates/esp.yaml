@@ -38,23 +38,23 @@ data:
 {{- include "hpcc.generateMetricsConfig" . | indent 6 }}
 {{- if and .root.Values.certificates .root.Values.certificates.enabled }}
  {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" .root "visibility" .me.service.visibility)) "") -}}
- {{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" .me )) -}}
- {{- $issuerName := ternary $externalIssuerName "local" $externalCert -}}
+ {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" .me )) -}}
+ {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
  {{- if not (hasKey .me "tls" )}}
-      tls: {{ include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName) }}
+      tls: {{ include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName) }}
  {{- end }}
       tls_config:
  {{- if $externalCert }}
-        certificate: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}/tls.crt
-        privatekey: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}/tls.key
+        certificate: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/tls.crt
+        privatekey: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/tls.key
    {{- if (hasKey .me "remoteClients" )}}
         verify:
           enable: true
           address_match: false
           accept_selfsigned: false
-          trusted_peers: [ {{ include "hpcc.getTrustedPeerString" (dict "root" .root "remoteClients" .me.remoteClients "instance" .me.name "component" .me.application "visibility" .me.service.visibility) }} ]
+          trusted_peers: [ {{ include "hpcc.getTrustedPeerString" (dict "root" .root "remoteClients" .me.remoteClients "instance" .me.name "component" .me.application "visibility" .me.service.visibility) | quote }} ]
           ca_certificates:
-            path: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}/ca.crt
+            path: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}/ca.crt
    {{- end }}
  {{- else }}
         certificate: /opt/HPCCSystems/secrets/certificates/local/tls.crt
@@ -98,7 +98,7 @@ data:
 {{- else -}}
  {{- $_ := set $commonCtx "externalCert" false -}}
 {{- end -}}
-{{- $signingEnabled := eq (include "hpcc.isIssuerEnabled" (dict "root" $ "issuer" "signing")) "true" -}}
+{{- $signingEnabled := eq (include "hpcc.isIssuerEnabled" (dict "root" $ "issuerKeyName" "signing")) "true" -}}
 {{- $generateSigningCert := and ($signingEnabled) (eq $application "eclwatch") -}}
 {{- $signingCertGenerator := and ($signingEnabled) (has $application (list "eclwatch" "eclservices")) | ternary "eclwatch" "" -}}
 apiVersion: apps/v1
@@ -163,7 +163,7 @@ spec:
  {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "external" false) | nindent 8 }}
 {{- end }}
 {{- if $signingCertGenerator }}
- {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuer" "signing") | nindent 8 }}
+ {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuerKeyName" "signing") | nindent 8 }}
 {{- end }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
@@ -174,7 +174,7 @@ spec:
  {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "external" false) | nindent 6 }}
 {{- end }}
 {{- if $signingCertGenerator }}
- {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuer" "signing") | nindent 6 }}
+ {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuerKeyName" "signing") | nindent 6 }}
 {{- end }}
 ---
 kind: ConfigMap
@@ -199,7 +199,7 @@ kind: ConfigMap
  {{- include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "external" false) }}
 {{- end }}
 {{- if $generateSigningCert }}
- {{- include "hpcc.addCertificate" (dict "root" $ "name" "global" "component" $application "issuer" "signing") }}
+ {{- include "hpcc.addCertificate" (dict "root" $ "name" "global" "component" $application "issuerKeyName" "signing") }}
 {{- end }}
 
 {{- $instance := .name -}}

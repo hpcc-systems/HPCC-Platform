@@ -812,6 +812,10 @@
         "appRoleSecret": {
           "description": "name of the secret that will contain the 'secret-id' used with Hashicorp appRole authentication",
           "type": "string"
+        },
+        "namespace": {
+          "description": "the namespace to use when authenticating with, and accessing the vault",
+          "type": "string"
         }
       },
       "required": [ "name", "url" ],
@@ -2771,6 +2775,10 @@
         },
         "storeName": {
           "description" : "Name of container housing mapped HPCC log column",
+          "type": "string"
+        },
+        "keyColumn": {
+          "description" : "Name of join key column",
           "type": "string"
         }
       }

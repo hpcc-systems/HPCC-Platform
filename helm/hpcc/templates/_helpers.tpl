@@ -155,7 +155,7 @@ Returns true if the given certificate issuer is enabled, otherwise false
 {{- $certificates := (.root.Values.certificates | default dict) -}}
 {{- if $certificates.enabled -}}
   {{- $issuers := ($certificates.issuers | default dict) -}}
-  {{- $issuer := get $issuers .issuer -}}
+  {{- $issuer := get $issuers .issuerKeyName -}}
   {{- if $issuer -}}
     {{- (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
   {{- else -}}
@@ -171,7 +171,7 @@ Returns true if mtls should be enabled, otherwise false
 */}}
 {{- define "hpcc.isMtlsEnabled" -}}
 {{- $security := .root.Values.security | default dict -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" "local")) "true" -}}
   {{- (hasKey $security "mtls" | ternary $security.mtls true) -}}
 {{- else -}}
 false
@@ -580,6 +580,9 @@ vaults:
   {{- range $vault := . }}
     - name: {{ $vault.name }}
       kind: {{ $vault.kind }}
+    {{- if $vault.namespace }}
+      namespace: {{ $vault.namespace }}
+    {{- end }}
       url: {{ $vault.url }}
     {{- if index $vault "client-secret" }}
       client-secret: {{ index $vault "client-secret" }}
@@ -930,20 +933,20 @@ Generate service entries for TLS
     {{- if and ($externalService) (hasKey .component "certificate") }}
   tls: true
     {{- else }}
-      {{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
-      {{- $issuerName := ternary $externalIssuerName "local" $externalService }}
+      {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+      {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalService }}
       {{- $certificates := (.root.Values.certificates | default dict) -}}
       {{- if not $certificates.enabled }}
   tls: false
       {{- else -}}
         {{- $issuers := ($certificates.issuers | default dict) -}}
-        {{- $issuer := get $issuers $issuerName -}}
+        {{- $issuer := get $issuers $issuerKeyName -}}
         {{- if not $issuer }}
   tls: false
         {{- else -}}
           {{- $issuerSpec := ($issuer.spec | default dict) }}
   tls: {{ (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
-  issuer: {{ $issuerName }}
+  issuer: {{ $issuerKeyName }}
   selfSigned: {{ (hasKey $issuerSpec "selfSigned") }}
   caCert: {{ (not (hasKey $issuerSpec "selfSigned")) }}
         {{- end -}}
@@ -1502,32 +1505,51 @@ NB: if optional 'issuer' passed in use it, otherwise base on visibility and
 use "public" or "local" 
 */}}
 {{- define "hpcc.addCertificate" }}
-{{- if (.root.Values.certificates | default dict).enabled -}}
-{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
-{{- $issuerName := .issuer | default (ternary $externalIssuerName "local" $externalCert) -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
-{{- if $issuer -}}
-{{- $namespace := .root.Release.Namespace -}}
-{{- $service := (.service | default dict) -}}
-{{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
-{{- $name := .name }}
-
+ {{- if (.root.Values.certificates | default dict).enabled -}}
+  {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+  {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+  {{- $issuerKeyName := .issuerKeyName | default (ternary $externalIssuerKeyName "local" $externalCert) -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
+   {{- if $issuer -}}
+    {{- $namespace := .root.Release.Namespace -}}
+    {{- $clientUsage := (hasKey $issuer "clientUsage" | ternary $issuer.clientUsage (ne "public" $issuerKeyName)) -}}
+    {{- $spiffe := (hasKey $issuer "spiffe" | ternary $issuer.spiffe (ne "public" $issuerKeyName)) }}
+    {{- $service := (.service | default dict) -}}
+    {{- $wildcard := (hasKey $issuer "wildcard" | ternary $issuer.wildcard false) -}}
+    {{- /* Having a service specific domain overrules wildcard. We can consider wildcard at the service level later */ -}}
+    {{- if and $wildcard (not $service.domain) -}}
+     {{- /* Issuer wildcard certifiacte should already be generated */ -}}
+     {{- if ne $issuerKeyName "public" -}}
+      {{- $_ := fail (printf "Issuer %s - wildcard currently only supported for public issuer." $issuerKeyName) -}}
+     {{- end -}}
+     {{- if not $issuer.domain -}}
+      {{- $_ := fail (printf "Issuer %s - setting wildcard requires configuring a domain." $issuerKeyName) -}}
+     {{- end }}
+     {{- if $spiffe -}}
+      {{- $_ := fail (printf "Issuer %s - setting wildcard not supported with spiffe setting enabled." $issuerKeyName) -}}
+     {{- end }}
+     {{- if $clientUsage -}}
+      {{- $_ := fail (printf "Issuer %s - setting wildcard not supported with clientUsage setting enabled." $issuerKeyName) -}}
+     {{- end }}
+    {{- else -}}
+     {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
+     {{- $name := .name -}}
+     # spiffe and clientUsage default is off for public issuer to simplify use of letsencrypt, etc.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ .component }}-{{ $issuerName }}-{{ $name }}-cert
+  name: {{ .component }}-{{ $issuerKeyName }}-{{ $name }}-cert
   namespace: {{ $namespace }}
 spec:
   # Secret names are always required.
-  secretName: {{ .component }}-{{ $issuerName }}-{{ $name }}-tls
+  secretName: {{ .component }}-{{ $issuerKeyName }}-{{ $name }}-tls
   duration: 2160h # 90d
   renewBefore: 360h # 15d
   subject:
     organizations:
     - HPCC Systems
-  commonName: {{ trunc 64 (printf "%s.%s" $name $domain) }}
+  commonName: {{ (trunc 64 (printf "%s.%s" $name $domain)) | quote }}
   isCA: false
   privateKey:
     algorithm: RSA
@@ -1535,30 +1557,34 @@ spec:
     size: 2048
   usages:
     - server auth
+     {{- if $clientUsage }}
     - client auth
+     {{- end }}
   dnsNames:
- {{- /* if servicename is passed we simply create a service entry of that name */ -}}
- {{- if .servicename }}
+     {{- /* if servicename is passed we simply create a service entry of that name */ -}}
+     {{- if .servicename }}
   - {{ .servicename }}.{{ $domain }}
- {{- /* if service parameter is passed in we are using the component config as a service config entry */ -}}
- {{- else if .service -}}
-   {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
-   {{- if eq $public $externalCert }}
+      {{- /* if service parameter is passed in we are using the component config as a service config entry */ -}}
+     {{- else if .service -}}
+      {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
+      {{- if eq $public $externalCert }}
   - {{ $name }}.{{ $domain }}
-   {{- end }}
- {{- /* if services parameter is passed the component has an array of services to configure */ -}}
- {{- else if .services -}}
-  {{- range $service := .services }}
-   {{- $external := and (hasKey $service "external") $service.external -}}
-   {{- if eq $external $externalCert }}
+      {{- end }}
+     {{- /* if services parameter is passed the component has an array of services to configure */ -}}
+     {{- else if .services -}}
+      {{- range $service := .services }}
+       {{- $external := and (hasKey $service "external") $service.external -}}
+       {{- if eq $external $externalCert }}
   - {{ $service.name }}.{{ $domain }}
-   {{- end }}
-  {{- end }}
- {{- else if not $externalCert }}
+       {{- end }}
+      {{- end }}
+     {{- else if not $externalCert }}
   - "{{ $name }}.{{ $domain }}"
- {{- end }}
+     {{- end }}
+     {{- if $spiffe }}
   uris:
   - spiffe://hpcc.{{ $domain }}/{{ .component }}/{{ $name }}
+     {{- end }}
   # Issuer references are always required.
   issuerRef:
     name: {{ $issuer.name }}
@@ -1566,10 +1592,11 @@ spec:
     kind: {{ $issuer.kind }}
     group: cert-manager.io
 ---
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
 
 {{/*
 Builds the commonName for a client certificate.  Used in creation of both certificate and access control list.
@@ -1578,18 +1605,18 @@ Builds the commonName for a client certificate.  Used in creation of both certif
 {{- define "hpcc.getClientCommonName" -}}
  {{- if (.root.Values.certificates | default dict).enabled -}}
   {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-  {{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
-  {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-   {{- $_ := fail (printf "Issuer '%s' for client certificates not enabled." $issuerName) -}}
+  {{- $issuerKeyName := .issuerKeyName | default (ternary "remote" "local" $externalCert) -}}
+  {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $_ := fail (printf "Issuer '%s' for client certificates not enabled." $issuerKeyName) -}}
   {{- else -}}
-   {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
    {{- if not $issuer -}}
-    {{- $_ := fail (printf "Issuer '%s' for client certificates not found." $issuerName) -}}
+    {{- $_ := fail (printf "Issuer '%s' for client certificates not found." $issuerKeyName) -}}
    {{- else -}}
     {{- $namespace := .root.Release.Namespace -}}
     {{- $service := (.service | default dict) -}}
     {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
-    {{- trunc 64 (printf "%s@%s.%s" .client .instance $domain) }}
+    {{- (trunc 64 (printf "%s@%s.%s" .client .instance $domain)) -}}
    {{- end -}}
   {{- end -}}
  {{- end -}}
@@ -1600,16 +1627,16 @@ Turns an array of remoteClients into a | delimited string to be used for the tru
   Pass in root, remoteClients, instance (myeclwatch), component (eclwatch), visibility
 */}}
 {{- define "hpcc.getTrustedPeerString" -}}
- {{- if not .remoteClients -}}
+ {{- if not (hasKey . "remoteClients") -}}
   anyone
  {{- else -}}
   {{/* Turn remoteClients array into one single array element which is a | delimited string */}}
   {{- $instance := .instance -}}
   {{- $component := .component -}}
   {{- $visibility := .visibility -}}
-  {{- $root := .root }}
+  {{- $root := .root -}}
   {{- range $remoteClient := .remoteClients -}}
-   {{- include "hpcc.getClientCommonName" (dict "root" $root "client" $remoteClient.name "instance" $instance "component" $component "visibility" $visibility) -}}|
+   {{- include "hpcc.getClientCommonName" (dict "root" $root "client" $remoteClient.name "instance" $instance "component" $component "visibility" $visibility "issuerKeyName" "remote") -}}|
   {{- end -}}
  {{- end -}}
 {{- end }}
@@ -1629,14 +1656,14 @@ Pass in root, client (name), organization (optional), instance (myeclwatch), com
 {{- define "hpcc.addClientCertificate" }}
  {{- if (.root.Values.certificates | default dict).enabled -}}
   {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-  {{- $issuerName := .issuer | default (ternary "remote" "local" $externalCert) -}}
-  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-   {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
+  {{- $issuerKeyName := .issuerKeyName | default (ternary "remote" "local" $externalCert) -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
    {{- if not $issuer -}}
-    {{- $_ := fail (printf "Issuer %s for client certificates not found." $issuerName) -}}
+    {{- $_ := fail (printf "Issuer %s for client certificates not found." $issuerKeyName) -}}
    {{- else -}}
     {{- if not $issuer.enabled -}}
-     {{- $_ := fail (printf "Issuer %s for client certificates not enabled." $issuerName) -}}
+     {{- $_ := fail (printf "Issuer %s for client certificates not enabled." $issuerKeyName) -}}
     {{- end }}
     {{- $namespace := .root.Release.Namespace -}}
     {{- $service := (.service | default dict) -}}
@@ -1652,11 +1679,11 @@ Pass in root, client (name), organization (optional), instance (myeclwatch), com
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: client-{{ $issuerName }}-{{ $component }}-{{ $instance }}-{{ $client }}-cert
+  name: client-{{ $issuerKeyName }}-{{ $component }}-{{ $instance }}-{{ $client }}-cert
   namespace: {{ $namespace }}
 spec:
   # Secret names are always required.
-  secretName: client-{{ $issuerName }}-{{ $component }}-{{ $instance }}-{{ $client }}-tls
+  secretName: client-{{ $issuerKeyName }}-{{ $component }}-{{ $instance }}-{{ $client }}-tls
   duration: 2160h # 90d
   renewBefore: 360h # 15d
   subject:
@@ -1666,7 +1693,7 @@ spec:
     {{- else }}
     - HPCC Client
     {{- end }}
-  commonName: {{ include "hpcc.getClientCommonName" . }}
+  commonName: {{ (include "hpcc.getClientCommonName" .) | quote }}
   isCA: false
   privateKey:
     algorithm: RSA
@@ -1694,7 +1721,7 @@ Key is in pem format and the private key would need to be extracted.
 */}}
 {{- define "hpcc.addUDPCertificate" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" "local")) "true" -}}
 {{- $issuer := .root.Values.certificates.issuers.local -}}
 {{- $namespace := .root.Release.Namespace -}}
 {{- $name := .name -}}
@@ -1743,22 +1770,33 @@ NB: if optional 'issuer' passed in use it, otherwise base on visibility and
 use "public" or "local" 
 */}}
 {{- define "hpcc.addCertificateVolumeMount" -}}
-{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
-{{- $issuerName := .issuer | default (ternary $externalIssuerName "local" $externalCert) -}}
-{{- /*
+ {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+ {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+ {{- $issuerKeyName := .issuerKeyName | default (ternary $externalIssuerKeyName "local" $externalCert) -}}
+ {{- /*
     A .certificate parameter means the user explicitly configured a certificate to use
     otherwise check if certificate generation is enabled
-*/ -}}
-{{- if .certificate -}}
-- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
-  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}
-{{- else if (.root.Values.certificates | default dict).enabled -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
-  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}
-{{- end }}
-{{- end -}}
+ */ -}}
+ {{- if .certificate -}}
+- name: certificate-{{ .component }}-{{ $issuerKeyName }}-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}
+ {{- else if (.root.Values.certificates | default dict).enabled -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
+   {{- if not $issuer -}}
+    {{- $_ := fail (printf "Issuer %s for certificate not found." $issuerKeyName) -}}
+   {{- else -}}
+    {{- $wildcard := (hasKey $issuer "wildcard" | ternary $issuer.wildcard false) }}
+    {{- if $wildcard }}
+- name: certificate-{{ $issuerKeyName }}-wild
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}
+    {{- else }}
+- name: certificate-{{ .component }}-{{ $issuerKeyName }}-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerKeyName }}
+    {{- end }}
+   {{- end }}
+  {{- end -}}
+ {{- end -}}
 {{- end -}}
 
 {{/*
@@ -1767,24 +1805,36 @@ NB: if optional 'issuer' passed in use it, otherwise base on visibility and
 use "public" or "local" 
 */}}
 {{- define "hpcc.addCertificateVolume" -}}
-{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $externalIssuerName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
-{{- $issuerName := .issuer | default (ternary $externalIssuerName "local" $externalCert) -}}
-{{- /*
-    A .certificate parameter means the user explicitly configured a certificate to use
-    otherwise check if certificate generation is enabled
-*/ -}}
-{{- if .certificate -}}
-- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
+ {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+ {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+ {{- $issuerKeyName := .issuerKeyName | default (ternary $externalIssuerKeyName "local" $externalCert) -}}
+ {{- /*
+     A .certificate parameter means the user explicitly configured a certificate to use
+     otherwise check if certificate generation is enabled
+ */ -}}
+ {{- if .certificate -}}
+- name: certificate-{{ .component }}-{{ $issuerKeyName }}-{{ .name }}
   secret:
     secretName: {{ .certificate }}
-{{- else if (.root.Values.certificates | default dict).enabled -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
-- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
+ {{- else if (.root.Values.certificates | default dict).enabled -}}
+  {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
+   {{- $issuer := get .root.Values.certificates.issuers $issuerKeyName -}}
+   {{- if not $issuer -}}
+    {{- $_ := fail (printf "Issuer %s for certificate not found." $issuerKeyName) -}}
+   {{- else -}}
+    {{- $wildcard := (hasKey $issuer "wildcard" | ternary $issuer.wildcard false) }}
+    {{- if $wildcard }}
+- name: certificate-{{ $issuerKeyName }}-wild
   secret:
-    secretName: {{ .component }}-{{ $issuerName }}-{{ .name }}-tls
-{{- end -}}
-{{- end -}}
+    secretName: {{ $issuerKeyName }}-wild-tls
+    {{- else }}
+- name: certificate-{{ .component }}-{{ $issuerKeyName }}-{{ .name }}
+  secret:
+    secretName: {{ .component }}-{{ $issuerKeyName }}-{{ .name }}-tls
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
 {{- end -}}
 
 {{/*
@@ -1792,7 +1842,7 @@ Add the certificate volume mount for a roxie udp key
 */}}
 {{- define "hpcc.addUDPCertificateVolumeMount" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" "local")) "true" -}}
 - name: certificate-{{ .component }}-udp-{{ .name }}
   mountPath: /opt/HPCCSystems/secrets/certificates/udp
 {{- end -}}
@@ -1804,7 +1854,7 @@ Add a secret volume for a roxie udp key
 */}}
 {{- define "hpcc.addUDPCertificateVolume" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
-{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" "local")) "true" -}}
 - name: certificate-{{ .component }}-udp-{{ .name }}
   secret:
     secretName: {{ .component }}-udp-{{ .name }}-dtls
