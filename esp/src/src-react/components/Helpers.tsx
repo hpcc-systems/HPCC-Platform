@@ -27,7 +27,7 @@ function getURL(item: HelperRow, option) {
         "PID": encodeURIComponent(item.Orig?.PID ?? ""),
         "ProcessName": encodeURIComponent(item.Orig?.ProcessName ?? ""),
         "SlaveNumber": encodeURIComponent(item.Orig?.SlaveNumber ?? ""),
-        "Type": encodeURIComponent(item.Orig?.Type ?? ""),
+        "Type": encodeURIComponent(item.Type ?? ""),
         "Wuid": encodeURIComponent(item.workunit.Wuid),
     };
 
@@ -52,7 +52,7 @@ function getURL(item: HelperRow, option) {
             params = `/WUFile/${item.Type}?Wuid=${uriEncodedParams.Wuid}&Process=${uriEncodedParams.PID}&Name=${uriEncodedParams.Name}&Type=${uriEncodedParams.Type}`;
             break;
         case "ThorSlaveLog":
-            params = `/WUFile?Wuid=${uriEncodedParams.Wuid}&Process=${uriEncodedParams.ProcessName}&ClusterGroup=${uriEncodedParams.ProcessName}&LogDate=${uriEncodedParams.LogDate}&SlaveNumber=${uriEncodedParams.SlaveNumber}&Type=${uriEncodedParams.Type}`;
+            params = `/WUFile?Wuid=${uriEncodedParams.Wuid}&Type=${uriEncodedParams.Type}&Process=${uriEncodedParams.ProcessName}&ClusterGroup=${uriEncodedParams.ProcessName}&LogDate=${uriEncodedParams.LogDate}&SlaveNumber=${uriEncodedParams.SlaveNumber}`;
             break;
         case "Archive Query":
             params = `/WUFile/ArchiveQuery?Wuid=${uriEncodedParams.Wuid}&Name=ArchiveQuery&Type=ArchiveQuery`;
@@ -135,7 +135,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 formatter: React.useCallback(function (Type, row) {
                     const target = getTarget(row.id, row);
                     if (target) {
-                        return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?mode=${encodeURIComponent(target.sourceMode)}&src=${encodeURIComponent(target.url)}`}>{Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</Link>;
+                        const linkText = Type.replace("Slave", "Worker") + (row?.Description ? " (" + row.Description + ")" : "");
+                        return <Link href={`#/workunits/${row?.workunit?.Wuid}/helpers/${row.Type}?mode=${encodeURIComponent(target.sourceMode)}&src=${encodeURIComponent(target.url)}`}>{linkText}</Link>;
                     }
                     return Type;
                 }, [])

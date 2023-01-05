@@ -271,7 +271,7 @@ function mapThorLogInfo(workunit: Workunit, thorLogInfo: WUInfo.ThorLogInfo[] = 
             retVal.push({
                 id: "T:" + i + "_" + j,
                 Type: "ThorSlaveLog",
-                Description: thorLogInfo[i].ClusterGroup + "." + thorLogInfo[i].LogDate + ".log (slave " + (j + 1) + " of " + thorLogInfo[i].NumberSlaves + ")",
+                Description: thorLogInfo[i].ClusterGroup + "." + thorLogInfo[i].LogDate + ".log (worker " + (j + 1) + " of " + thorLogInfo[i].NumberSlaves + ")",
                 Orig: {
                     SlaveNumber: j + 1,
                     ...thorLogInfo[i]
