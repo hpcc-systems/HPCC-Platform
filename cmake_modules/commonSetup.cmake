@@ -61,7 +61,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_OPENSSLV3 "Configure use of OpenSSL Version 3 or newer" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_AZURE "Configure use of azure" ON)
-  option(USE_NLP "Configure use of NLP++ engine" ON)
   option(USE_GIT "Configure use of GIT (Hooks)" ON)
   if (WIN32)
     option(USE_AERON "Include the Aeron message protocol" OFF)
@@ -169,6 +168,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         MEMCACHED
         MONGODBEMBED
         MYSQLEMBED
+        NLP
         REDIS
         REMBED
         SPARK
