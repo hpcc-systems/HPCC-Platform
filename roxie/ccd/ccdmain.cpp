@@ -823,7 +823,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         directoryTree.clear();
 
         // Tracing feature flags
-        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceRoxieActiveQueries));
+        TraceFlags traceLevelFlag = traceLevel ? TraceFlags::Standard : TraceFlags::None;
+        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceLevelFlag | traceRoxieActiveQueries));
 
         //Logging stuff
 #ifndef _CONTAINERIZED
