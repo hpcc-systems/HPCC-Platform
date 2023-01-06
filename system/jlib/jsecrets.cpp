@@ -478,6 +478,8 @@ public:
         httplib::Headers headers = {
             { "X-Vault-Token", clientToken.str() }
         };
+        if (vaultNamespace.length())
+            headers.emplace("X-Vault-Namespace", vaultNamespace.str());
 
         httplib::Result res = cli.Get(location, headers);
         if (res)
@@ -490,8 +492,12 @@ public:
                 return true;
             }
             else if (res->status == 403)
-                 //try again forcing relogin.  Just in case the token was invalidated (for example max usage count exceeded).
-                return requestSecretAtLocation(rkind, content, location, secret, version, true);
+            {
+                 //try again forcing relogin, but only once.  Just in case the token was invalidated but hasn't passed expiration time (for example max usage count exceeded).
+                if (permissionDenied==false)
+                    return requestSecretAtLocation(rkind, content, location, secret, version, true);
+                OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
+            }
             else
             {
                 OERRLOG("Vault %s error accessing secret %s.%s [%d](%d) - response: %s", name.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
