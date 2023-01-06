@@ -132,6 +132,8 @@ interface IFile :extends IInterface
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)=0;
 };
 
+extern jlib_decl void setRenameRetries(unsigned numRetries);
+
 struct CDirectoryEntry: public CInterface
 { // for cloning IDirectoryIterator iterator
 public:
