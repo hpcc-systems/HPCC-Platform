@@ -989,7 +989,7 @@ void CEnvGen::cloudConfiguration(IPropertyTree * config, const char* cloud)
    if (!stricmp(cloud, "aws"))
    {
        createUpdateTask("modify", config, "sw:espsmc@enableSystemUseRewrite=true|false");
-       createUpdateTask("modify", config, "sw:roxie@roxieMulticastEnabled=false");
+       createUpdateTask("modify", config, "sw:roxie@roxieIsMulticastEnabled=false");
    }
 }
 

@@ -125,7 +125,7 @@
                 preloadOnceData="true"
                 reloadRetriesFailed="true"
                 remoteFilesExpire="3600000"
-                roxieMulticastEnabled="true"
+                roxieIsMulticastEnabled="false"
                 serverThreads="30"
                 simpleLocalKeyedJoins="true"
                 siteCertificate=""

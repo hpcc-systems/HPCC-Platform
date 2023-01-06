@@ -1075,7 +1075,7 @@
     </xs:attribute>
   </xs:attributeGroup>
   <xs:attributeGroup name="UDP">
-    <xs:attribute name="roxieMulticastEnabled" type="xs:boolean" use="optional" default="true">
+    <xs:attribute name="roxieIsMulticastEnabled" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Controls whether multicast is used to communicate between nodes</tooltip>

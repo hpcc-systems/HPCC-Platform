@@ -299,8 +299,8 @@
                 </xs:attributeGroup>
 
                 <xs:attributeGroup name="udp" hpcc:groupByName="UDP">
-                    <xs:attribute name="roxieMulticastEnabled" type="xs:boolean"
-                                  hpcc:displayName="Enable Roxie Multicast" hpcc:presetValue="true"
+                    <xs:attribute name="roxieIsMulticastEnabled" type="xs:boolean"
+                                  hpcc:displayName="Enable Roxie Multicast" hpcc:presetValue="false"
                                   hpcc:tooltip="Controls whether multicast is used to communicate between nodes"/>
                     <xs:attribute name="udpFlowSocketsSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Flow Socket Size (bytes)" hpcc:presetValue="131071"
