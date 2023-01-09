@@ -42,6 +42,7 @@
 #include "tokenserialization.hpp"
 #include "rtlfield.hpp"
 #include "roxiemem.hpp"
+#include <mutex>
 
 namespace mongodbembed
 {
@@ -196,11 +197,14 @@ namespace mongodbembed
          * 
          * @param database MongoDB database to connect to.
          * @param collection MongoDB collection to connect to.
+         * @param _connectionString Connection string for creating the mongocxx::uri.
+         * @param _batchSize The number of documents MongoDB should return per batch.
          */
-        MongoDBQuery(const char *database, const char *collection, std::int32_t _batchSize) 
+        MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize) 
         {
             databaseName = database;
             collectionName = collection;
+            connectionString = _connectionString;
             batchSize = _batchSize;
         }
 
@@ -227,6 +231,7 @@ namespace mongodbembed
             embeddedScript = end + 1; // Save embedded script as what is after the parenthesis
             if(embeddedScript.find(";") == std::string::npos) failx("Syntax Error: missing semicolon");
             cursor = embeddedScript.c_str();
+            queryString.set(embeddedScript.c_str());
         }
 
         /**
@@ -299,6 +304,27 @@ namespace mongodbembed
             return batchSize;
         }
 
+        /**
+         * @brief Returns a const char pointer to the connection string for
+         * creating the uri.
+         * 
+         * @return The connection string as a const char pointer.
+         */
+        const char * queryConnectionString()
+        {
+            return connectionString.str();
+        }
+
+        /**
+         * @brief Returns the query string for building the key to the hash.
+         * 
+         * @return const char* Query string for hashing.
+         */
+        const char * queryQueryString()
+        {
+            return queryString.str();
+        }
+
     protected:
         std::string databaseName;                      //! Local copy of database name.
         std::string collectionName;                    //! Local copy of collection name.
@@ -308,6 +334,8 @@ namespace mongodbembed
         const char* cursor = nullptr;                  //! Pointer for keeping track of parsing the embedded script.
         StringArray result_rows;                       //! Local copy of result rows.
         std::int32_t batchSize;                        //! Batch Size for result rows.
+        StringBuffer connectionString;                 //! Pointer to connection string for hashing and creating the uri.
+        StringBuffer queryString;                      //! Pointer to query string for hashing.
     };
 
     /**
@@ -327,7 +355,7 @@ namespace mongodbembed
         Linked<IEngineRowAllocator> m_resultAllocator;      //!< Pointer to allocator used when building result rows.
         bool m_shouldRead;                                  //!< If true, we should continue trying to read more messages.
         __int64 m_currentRow;                               //!< Current result row.
-        std::shared_ptr<MongoDBQuery> m_query;                              //!< Pointer to MongoDBQuery object.
+        std::shared_ptr<MongoDBQuery> m_query;              //!< Pointer to MongoDBQuery object.
     };
 
     /**
@@ -338,54 +366,90 @@ namespace mongodbembed
      */
     class MongoDBConnection 
     {
+    private:
+        typedef std::map<hash64_t, std::shared_ptr<mongocxx::client>> ObjMap;
+        
     public:
         /**
          * @brief Creates a static reference to a MongoDB instance that is alive
          * for the entire time MongoDBEmbedFunctionContext is used.
          * 
-         * @return MongoDBConnection& A reference to a MongoDB instance used for
-         * connecting to a database.
+         * @return MongoDBConnection& A reference to a MongoDBConnection
+         * instance used for connecting to a database.
          */
-        static MongoDBConnection& instance() 
+        static MongoDBConnection& createInstance() 
         {
-            static MongoDBConnection instance;
-            return instance;
+            static MongoDBConnection _instance;
+            return _instance;
         }
 
         /**
-         * @brief Configures the MongoDB instance and sets up the MongoDB pool. It 
-         * should only be called once because only one instance object is allowed at
-         * a time.
+         * @brief Configures the MongoDB instance for the client objects to use for connections. It 
+         * should only be called once because only one instance object is allowed per program.
          * 
          * @param instance The instance object that is to be kept alive for multiple
          * threads to have access to.
-         * @param pool The pool object that has the information about which database
-         * and collection to connect to.
          */
-        void configure(std::unique_ptr<mongocxx::instance> && instance, std::unique_ptr<mongocxx::pool> && pool) 
+        void configure(std::unique_ptr<mongocxx::instance> && _instance) 
         {
-            _instance = std::move(instance);
-            _pool = std::move(pool);
+            instance = std::move(_instance);
         }
 
-        using connection = mongocxx::pool::entry;
+        /**
+         * @brief Creates a client object using the specified connections string. The client is
+         * added to the map of active connections.
+         * Example connectionString for different types of clusters:
+         * Standalone: mongodb+srv://<username>:<password>@cluster0.cgdbjhg.mongodb.net/?retryWrites=true&w=majority
+         * Replica Set: mongodb://<username>:<password>@mongodb0.example.com:27017,mongodb1.example.com:27017/?authSource=admin&replicaSet=myRepl
+         * Sharded: mongodb://<username>:<password>@mongos0.example.com:27017,mongos1.example.com:27017/?authSource=admin
+         * Additional arguments can be passed after the server name/s are added via ?<option0>=<setting0>&<option1>=<setting1>
+         * 
+         * @param connectionString The connection string for constructing the client object.
+         * 
+         * @param queryString A const char * holding the query string for hashing.
+         */
+        void create_connection(const char *connectionString, const char * queryString) 
+        {
+            // Use a hash of the connection string as the key to finding
+            // any connection objects
+            hash64_t key = rtlHash64VStr(queryString, rtlHash64VStr(connectionString, 0));
+
+            std::shared_ptr<mongocxx::client> client_ptr = std::make_shared<mongocxx::client>(mongocxx::client{mongocxx::uri{connectionString}}); 
+
+            {
+                CriticalBlock block(connLock);
+
+                clientConnections[key] = client_ptr;
+            }
+        }
 
         /**
-         * @brief Acquires a client from the pool. The calling thread will block until a
-         * connection is available.
+         * @brief Acquires a mongocxx client from the connections map.
          * 
-         * @return connection returns mongocxx::pool::entry
+         * @param connectionString A const char * holding the connection parameters.
+         * 
+         * @param queryString A const char * holding the query string for hashing.
+         * 
+         * @return A shared pointer to the mongocxx:client object for connecting to the database.
          */
-        connection get_connection() 
+        std::shared_ptr<mongocxx::client> get_connection(const char *connectionString, const char * queryString)
         {
-            return _pool->acquire();
+            // Get key for client object 
+            hash64_t key = rtlHash64VStr(queryString, rtlHash64VStr(connectionString, 0));
+
+            {
+                CriticalBlock block(connLock);
+
+                return clientConnections[key];
+            }
         }
 
     private:
         MongoDBConnection() = default;
 
-        std::unique_ptr<mongocxx::instance> _instance = nullptr;
-        std::unique_ptr<mongocxx::pool> _pool = nullptr;
+        std::unique_ptr<mongocxx::instance> instance = nullptr;        //!< Unique pointer to the single mongocxx::instance for the program.
+        ObjMap clientConnections;                                       //!< Hashmap of MongoDB client connections.
+        CriticalSection connLock;                                       //!< Mutex guarding modifications to the connection map.
     };
 
     /**
@@ -537,13 +601,13 @@ namespace mongodbembed
         /**
          * @brief Binds all the rows of the dataset to bson documents and adds them to an array for calling insert many.
          * 
-         * @param m_oMDBConnection Connection object for getting acces to the MongoDB instance.
+         * @param m_oMDBConnection Connection object for getting acces to the mongocxx::instance object.
          */
         void executeAll(MongoDBConnection * m_oMDBConnection)
         {
             auto cmd = std::string(query->cmd());
 
-            auto conn = m_oMDBConnection->instance().get_connection();
+            auto conn = m_oMDBConnection->createInstance().get_connection(query->queryConnectionString(), query->queryQueryString());
             mongocxx::database db = (*conn)[query->database()];
             mongocxx::collection coll = db[query->collection()];
 
