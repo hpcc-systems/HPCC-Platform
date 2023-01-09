@@ -28,20 +28,20 @@ function doBuild() {
     docker build --progress plain --pull --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         -t build-$1:$GITHUB_REF \
         -t build-$1:latest \
+        --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
         --build-arg VCPKG_REF=$VCPKG_REF \
         "$SCRIPT_DIR/." 
 
     docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
-        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 \${CMAKE_OPTIONS}"
-
+        "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS}"
     docker run --rm --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-$1:$GITHUB_REF \
-        "cmake --build \${BUILD_FOLDER} --parallel $(nproc)"
+        "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc)"
 
 # docker run -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:latest bash
 }
 
-CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON"
-doBuild ubuntu-22.04 
+CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+doBuild ubuntu-22.04
 doBuild ubuntu-20.04
 doBuild ubuntu-18.04
 doBuild centos-8
