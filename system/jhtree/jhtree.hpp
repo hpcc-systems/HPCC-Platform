@@ -164,7 +164,6 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc,
 
 extern jhtree_decl bool isIndexFile(const char *fileName);
 extern jhtree_decl bool isIndexFile(IFile *file);
-extern jhtree_decl void validateKeyFile(const char *keyfile, offset_t nodepos = 0);
 extern jhtree_decl IKeyIndexSet *createKeyIndexSet();
 extern jhtree_decl IKeyArray *createKeyArray();
 extern jhtree_decl StringBuffer &getIndexMetrics(StringBuffer &);

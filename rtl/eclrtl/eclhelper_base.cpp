@@ -42,6 +42,7 @@ unsigned CThorIndexWriteArg::getWidth() { return 0; }
 ICompare * CThorIndexWriteArg::queryCompare() { return NULL; }
 const IBloomBuilderInfo * const *CThorIndexWriteArg::queryBloomInfo() const { return nullptr; }
 __uint64 CThorIndexWriteArg::getPartitionFieldMask() const { return 0; }
+const char * CThorIndexWriteArg::queryCompression() { return nullptr; }
 
 //CBloomBuilderInfo
 __uint64 CBloomBuilderInfo::getBloomFields() const

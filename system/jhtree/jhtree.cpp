@@ -1164,25 +1164,39 @@ const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos)
 
 CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
 {
-    switch(nodeHdr.nodeType)
+    if (nodeHdr.compressionType == LegacyCompression)
     {
-    case NodeBranch:
-        return new CJHSearchNode();
-    case NodeLeaf:
-        if (keyHdr->isVariable())
-            return new CJHVarTreeNode();
-        else if (keyHdr->isRowCompressed())
-            return new CJHRowCompressedNode();
-        else
-            return new CJHSearchNode();
-    case NodeBlob:
-        return new CJHTreeBlobNode();
-    case NodeMeta:
-        return new CJHTreeMetadataNode();
-    case NodeBloom:
-        return new CJHTreeBloomTableNode();
-    default:
-        throwUnexpected();
+        switch(nodeHdr.nodeType)
+        {
+        case NodeBranch:
+            return new CJHLegacySearchNode();
+        case NodeLeaf:
+            if (keyHdr->isVariable())
+                return new CJHVarTreeNode();
+            else if (keyHdr->isRowCompressed())
+                return new CJHRowCompressedNode();
+            else
+                return new CJHLegacySearchNode();
+        case NodeBlob:
+            return new CJHTreeBlobNode();
+        case NodeMeta:
+            return new CJHTreeMetadataNode();
+        case NodeBloom:
+            return new CJHTreeBloomTableNode();
+        default:
+            throwUnexpected();
+        }
+    }
+    else
+    {
+        switch(nodeHdr.compressionType)
+        {
+        case SplitPayload:
+            assertex(nodeHdr.nodeType== NodeLeaf);    // Should only be using the new format for leaf nodes
+            return new CJHSplitSearchNode();
+        default:
+            throwUnexpected();
+        }
     }
 }
 

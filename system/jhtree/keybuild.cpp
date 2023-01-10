@@ -74,6 +74,33 @@ public:
     virtual bool matchesFindParam(const void *et, const void *fp, unsigned) const { return *(offset_t *)((const CRC32HTE *)et)->queryEndParam() == *(offset_t *)fp; }
 };
 
+interface IIndexCompressor : public IInterface
+{
+    virtual const char *queryName() const = 0;
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
+};
+
+class PocIndexCompressor : public CInterfaceOf<IIndexCompressor>
+{
+    virtual const char *queryName() const override { return "POC"; }
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    {
+        if (isLeafNode)
+            return new CPOCWriteNode(_fpos, _keyHdr, isLeafNode);
+        else
+            return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+    }
+};
+
+class LegacyIndexCompressor : public CInterfaceOf<IIndexCompressor>
+{
+    virtual const char *queryName() const override { return "Legacy"; }
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override
+    {
+        return new CLegacyWriteNode(_fpos, _keyHdr, isLeafNode);
+    }
+};
+
 class CKeyBuilder : public CInterfaceOf<IKeyBuilder>
 {
 protected:
@@ -104,6 +131,7 @@ private:
     CIArrayOf<CWriteNodeBase> pendingNodes;
     IArrayOf<IBloomBuilder> bloomBuilders;
     IArrayOf<IRowHasher> rowHashers;
+    Owned<IIndexCompressor> indexCompressor;
     bool enforceOrder = true;
     bool isTLK = false;
 
@@ -152,7 +180,7 @@ public:
         hdr->fposOffset = 0;
         hdr->fileSize = 0;
         hdr->nodeKeyLength = _keyedSize;
-        hdr->version = KEYBUILD_VERSION;
+        hdr->version = 1;
         hdr->blobHead = 0;
         hdr->metadataHead = 0;
         hdr->firstLeaf = 0;
@@ -175,7 +203,20 @@ public:
                     bloomInfo++;
                 }
             }
+            if (_helper->getFlags() & TIWcompressdefined)
+            {
+                const char *compression = _helper->queryCompression();
+                hdr->version = 2;    // Old builds will give a reasonable error message
+                if (strieq(compression, "POC"))
+                {
+                    indexCompressor.setown(new PocIndexCompressor);
+                }
+                else
+                    throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
+            }
         }
+        if (!indexCompressor)
+            indexCompressor.setown(new LegacyIndexCompressor);
     }
 
     ~CKeyBuilder()
@@ -193,7 +234,7 @@ public:
     {
         unsigned int leaf = 0;
         CWriteNode *node = NULL;
-        node = new CWriteNode(nextPos, keyHdr, levels==0);
+        node = indexCompressor->createNode(nextPos, keyHdr, levels==0);
         nextPos += keyHdr->getNodeSize();
         numBranches++;
         while (leaf<thisLevel.ordinality())
@@ -203,7 +244,7 @@ public:
             {
                 flushNode(node, parents);
                 node->Release();
-                node = new CWriteNode(nextPos, keyHdr, levels==0);
+                node = indexCompressor->createNode(nextPos, keyHdr, levels==0);
                 nextPos += keyHdr->getNodeSize();
                 numBranches++;
                 verifyex(node->add(info.pos, info.value, info.size, info.sequence));
@@ -473,7 +514,7 @@ protected:
         if (NULL == activeNode)
         {
             keyHdr->getHdrStruct()->firstLeaf = nextPos;
-            activeNode = new CWriteNode(nextPos, keyHdr, true);
+            activeNode = indexCompressor->createNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
             numLeaves++;
         }
@@ -504,7 +545,7 @@ protected:
 
             flushNode(activeNode, leafInfo);
             activeNode->Release();
-            activeNode = new CWriteNode(nextPos, keyHdr, true);
+            activeNode = indexCompressor->createNode(nextPos, keyHdr, true);
             nextPos += keyHdr->getNodeSize();
             numLeaves++;
             if (!activeNode->add(pos, keyData, recsize, sequence))

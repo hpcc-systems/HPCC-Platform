@@ -1195,6 +1195,7 @@ enum
     TIWhaswidth         = 0x0800,
     TIWexpires          = 0x1000,
     TIWmaxlength        = 0x2000,       // explicit maxlength
+    TIWcompressdefined  = 0x4000,       // compression is defined via string value
     TIWrestricted       = 0x200000,     // value matches the equivalent TDW flag (same value as TDW* caused problems as some index related code uses TDW* flags)
 };
 
@@ -1235,6 +1236,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual unsigned getMaxKeySize() = 0;
     virtual const IBloomBuilderInfo * const *queryBloomInfo() const = 0;
     virtual __uint64 getPartitionFieldMask() const = 0;
+    virtual const char * queryCompression() = 0;
 };
 
 struct IHThorFirstNArg : public IHThorArg

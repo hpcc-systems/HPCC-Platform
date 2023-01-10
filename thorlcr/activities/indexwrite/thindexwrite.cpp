@@ -248,7 +248,7 @@ public:
     virtual void done()
     {
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
-        updateActivityResult(container.queryJob().queryWorkUnit(), helper->getFlags(), helper->getSequence(), fileName, recordsProcessed);
+        updateActivityResult(container.queryJob().queryWorkUnit(), 0, helper->getSequence(), fileName, recordsProcessed);
 
         cummulativeDuplicateKeyCount += duplicateKeyCount;
         // MORE - add in the extra entry somehow
