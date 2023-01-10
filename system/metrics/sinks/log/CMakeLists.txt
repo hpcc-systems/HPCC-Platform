@@ -25,6 +25,7 @@ include_directories(
         ${HPCC_SOURCE_DIR}/system/jlib
 )
 
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 ADD_DEFINITIONS(  -DLOGSINK_EXPORTS )
 HPCC_ADD_LIBRARY( hpccmetrics_logsink SHARED ${srcs} )
 TARGET_LINK_LIBRARIES( hpccmetrics_logsink jlib)

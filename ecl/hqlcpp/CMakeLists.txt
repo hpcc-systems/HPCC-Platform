@@ -128,13 +128,11 @@ IF (NOT WIN32)
   include_directories(${BINUTILS_INCLUDE_DIR})
 ENDIF()
 
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 
-  #implicit-fallthrough is currently disabled because it does not seem to process noreturn attributes on a virtual function correctly (throwStringExceptionV)
-  if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0.0")
-    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0")
-  endif()
+#implicit-fallthrough is currently disabled because it does not seem to process noreturn attributes on a virtual function correctly (throwStringExceptionV)
+if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0.0")
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wimplicit-fallthrough=0")
 endif()
 
 ADD_DEFINITIONS( -DHQLCPP_EXPORTS -D_USRDLL )

@@ -512,6 +512,13 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endif ()
   endif ()
 
+  # Define strict compiler flags
+  if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    SET (STRICT_CXX_FLAGS "-Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
+  else()
+    SET (STRICT_CXX_FLAGS "")
+  endif()
+
   # check for old glibc and add required libs ...
   if (NOT APPLE AND NOT WIN32)
     execute_process(

@@ -30,6 +30,7 @@ include_directories(
         ${HPCC_SOURCE_DIR}/system/httplib
 )
 
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 ADD_DEFINITIONS(  -DPROMETHEUSSINK_EXPORTS )
 HPCC_ADD_LIBRARY( hpccmetrics_prometheussink SHARED ${srcs} )
 TARGET_LINK_LIBRARIES( hpccmetrics_prometheussink

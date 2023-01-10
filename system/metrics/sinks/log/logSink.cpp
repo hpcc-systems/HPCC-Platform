@@ -69,7 +69,7 @@ void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
         size_t countBucketValues = values.size();
         __uint64 cumulative = 0;
 
-        for (int i=0; i < countBucketValues - 1; ++i)
+        for (size_t i=0; i < countBucketValues - 1; ++i)
         {
             cumulative += values[i];
             LOG(MCmetrics, "name=%s, bucket le %" I64F "d=%" I64F "d", name.c_str(), limits[i], cumulative);
