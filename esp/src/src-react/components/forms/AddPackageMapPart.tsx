@@ -37,19 +37,17 @@ const defaultValues: AddPackageMapPartValues = {
 interface AddPackageMapPartProps {
     showForm: boolean;
     setShowForm: (_: boolean) => void;
-    store: any;
     packageMap: string;
     target: string;
-    refreshTable: (_: boolean) => void;
+    refreshData: () => void;
 }
 
 export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> = ({
     showForm,
     setShowForm,
-    store,
     packageMap,
     target,
-    refreshTable,
+    refreshData,
 }) => {
     const { handleSubmit, control, reset } = useForm<AddPackageMapPartValues>({ defaultValues });
 
@@ -66,8 +64,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                     .then(({ AddPartToPackageMapResponse, Exceptions }) => {
                         if (AddPartToPackageMapResponse?.status?.Code === 0) {
                             closeForm();
-                            store.add({ Part: data.PartName });
-                            refreshTable(true);
+                            if (refreshData) refreshData();
                             reset(defaultValues);
                         } else if (Exceptions) {
                             closeForm();
@@ -81,7 +78,7 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
                 logger.error(err);
             }
         )();
-    }, [closeForm, handleSubmit, packageMap, refreshTable, reset, store, target]);
+    }, [closeForm, handleSubmit, packageMap, refreshData, reset, target]);
 
     return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm}
         footer={<>
