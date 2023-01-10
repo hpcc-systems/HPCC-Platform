@@ -9476,7 +9476,6 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
     ICsvParameters * csvInfo = helper.queryCsvParameters();
 
     headerLines = csvInfo->queryHeaderLen();
-    maxDiskSize = csvInfo->queryMaxSize();
     limit = helper.getRowLimit();
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
@@ -9552,9 +9551,8 @@ bool CHThorCsvReadActivity::openNext()
         unsigned lines = headerLines;
         while (lines-- && !inputstream->eos())
         {
-            size32_t numAvailable;
-            const void * next = inputstream->peek(maxDiskSize, numAvailable);
-            inputstream->skip(csvSplitter.splitLine(numAvailable, (const byte *)next));
+            size32_t thisLineLength = csvSplitter.splitLine(inputstream, maxRowSize);
+            inputstream->skip(thisLineLength);
         }
         // only skip header in the first file - since spray doesn't duplicate the header.
         headerLines = 0;        
