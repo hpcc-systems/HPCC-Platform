@@ -130,6 +130,9 @@
              <storage>
               <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
              </storage>
+             <expert>
+              <xsl:copy-of select="/Environment/Software/Global/@*"/>
+             </expert>
             </global>
             <xsl:copy-of select="/Environment/Hardware/NAS"/>
             <xsl:for-each select="ACL">

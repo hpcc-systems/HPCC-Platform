@@ -321,6 +321,9 @@
             }
           }
         },
+        "expert": {
+          "description": "Settings for developers, debugging and testing"
+        },
         "misc": {
           "description": "Miscellaneous settings",
           "oneOf": [

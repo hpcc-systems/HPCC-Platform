@@ -747,6 +747,79 @@ bool CFile::remove()
 #endif
 }
 
+static std::atomic<unsigned> renameRetries{(unsigned)-1}; // initially uninitialized, set on 1st use (in rename)
+
+void setRenameRetries(unsigned numRetries)
+{
+    renameRetries = numRetries;
+}
+
+static unsigned getRenameRetries()
+{
+    unsigned retries;
+    // NB: potentially could be >1 thread here, but that's ok.
+    try
+    {
+        retries = getGlobalConfigSP()->getPropInt("expert/@numRenameRetries");
+    }
+    catch (IException *e) // handle cases where config. not available
+    {
+        EXCLOG(e, "doRename");
+        e->Release();
+        retries = 0;
+    }
+    dbgassertex((unsigned)-1 != retries);
+    setRenameRetries(retries);
+    return retries;
+}
+
+static void doRename(const char *src, const char *dst, const char *callerName)
+{
+    unsigned retriesLeft = renameRetries;
+    unsigned retry = 0;
+    while (true)
+    {
+        if (-1 != ::rename(src, dst))
+            return; // success
+
+        if ((unsigned)-1 == retriesLeft)
+            retriesLeft = getRenameRetries();
+
+        int err = errno; // preserve to use after tracing if exhausted retry attempts
+
+#ifndef _WIN32 // NB: this is primary here to help track down the issue reported in HPCC-28454
+        // why did rename fail? - check that src and path of dst exists (and/or is accessible), and trace it's gid and uid, size and is_dir status.
+        struct stat srcInfo;
+        if (0 != stat(src, &srcInfo))
+            throw makeErrnoExceptionV("%s-doRename - stat SRC(%s)", callerName, src);
+        CDateTime modTime;
+        timetToIDateTime(&modTime, srcInfo.st_mtime);
+        StringBuffer srcModTime;
+        modTime.getString(srcModTime);
+
+        StringBuffer dstPath;
+        splitDirTail(dst, dstPath);
+        struct stat dstInfo;
+        if (0 != stat(dstPath, &dstInfo))
+            throw makeErrnoExceptionV("%s-doRename - stat DST-PATH(%s)", callerName, dstPath.str());
+        timetToIDateTime(&modTime, dstInfo.st_mtime);
+        StringBuffer dstModTime;
+        modTime.getString(dstModTime);
+        DBGLOG("%s-doRename(%s, %s) FAILED (attempt %u)", callerName, src, dst, retry+1);
+        DBGLOG("       src stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)srcInfo.st_uid, (unsigned)srcInfo.st_gid, (offset_t)srcInfo.st_size, boolToStr(S_ISDIR(srcInfo.st_mode)), srcModTime.str());
+        DBGLOG("  dst-path stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)dstInfo.st_uid, (unsigned)dstInfo.st_gid, (offset_t)dstInfo.st_size, boolToStr(S_ISDIR(dstInfo.st_mode)), dstModTime.str());
+#endif
+
+        if (0 == retriesLeft)
+            throw makeErrnoExceptionV(err, "%s(%s, %s)", callerName, src, dst);
+
+        MilliSleep(retry>5 ? 5000 : (100 << retry)); // start at 100ms and double each retry, but cap at 5 seconds
+
+        --retriesLeft;
+        ++retry;
+    }
+}
+
 void CFile::rename(const char *newname)
 {
     // now hopefully newname is just file tail 
@@ -766,8 +839,7 @@ void CFile::rename(const char *newname)
         if (rfn.isLocal())
             dst = rfn.getLocalPath(path.clear()).str();
     }
-    if (-1 == ::rename(filename, dst)) 
-        throw makeErrnoExceptionV("CFile::rename(%s, %s)", filename.get(),dst);
+    doRename(filename, dst, "CFile::rename");
     filename.set(path);
 }
 
@@ -795,9 +867,7 @@ void CFile::move(const char *newname)
         Sleep(retry*100); 
     }
 #else
-    int ret=::rename(filename.get(),newname);
-    if (ret==-1)
-        throw makeErrnoExceptionV("CFile::move(%s, %s)", filename.get(), newname);
+    doRename(filename, newname, "CFile::move");
 #endif
     filename.set(newname);
 }
