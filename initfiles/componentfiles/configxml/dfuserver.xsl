@@ -93,6 +93,9 @@
              <storage>
               <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>
              </storage>
+             <expert>
+              <xsl:copy-of select="/Environment/Software/Global/@*"/>
+             </expert>
             </global>
 
             <SSH>

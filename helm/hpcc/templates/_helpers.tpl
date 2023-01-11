@@ -254,6 +254,10 @@ cost:
 logAccess:
 {{ toYaml .Values.global.logAccess | indent 2 }}
 {{- end }}
+{{- if .Values.global.expert }}
+expert:
+{{ toYaml .Values.global.expert | indent 2 }}
+{{- end }}
 {{- end -}}
 
 {{/*

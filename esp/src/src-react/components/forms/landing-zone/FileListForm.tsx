@@ -1,13 +1,18 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
 import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
+import { FileSprayService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextLinkedField } from "../Fields";
-import * as FileSpray from "src/FileSpray";
 import { joinPath } from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
 import * as FormStyles from "./styles";
+
+const logger = scopedLogger("src-react/components/forms/landing-zone/FileListForm.tsx");
+
+const myFileSprayService = new FileSprayService({ baseUrl: "" });
 
 interface FileListFormValues {
     dropzone: string;
@@ -94,15 +99,12 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                     uploadFiles(folderPath, selection);
                 } else {
                     const fileNames = selection.map(file => file["name"]);
-                    FileSpray.FileList({
-                        request: {
-                            DropZoneName: data.dropzone,
-                            Netaddr: machine,
-                            Path: folderPath
-                        }
-                    }).then(({ FileListResponse }) => {
+                    myFileSprayService.FileList({
+                        Netaddr: machine,
+                        Path: folderPath
+                    }).then((response) => {
                         let fileName = "";
-                        FileListResponse?.files?.PhysicalFileStruct.forEach(file => {
+                        response?.files?.PhysicalFileStruct.forEach(file => {
                             if (fileNames.indexOf(file.name) > -1) {
                                 fileName = file.name;
                                 return;
@@ -113,7 +115,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         } else {
                             alert(nlsHPCC.OverwriteMessage + "\n" + fileNames.join("\n"));
                         }
-                    });
+                    }).catch(err => logger.error(err));
                 }
 
             },
