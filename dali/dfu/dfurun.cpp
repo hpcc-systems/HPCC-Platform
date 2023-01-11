@@ -1285,8 +1285,7 @@ public:
                     // keys default wrap for copy
                     if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
                         destination->setNumPartsOverride(srcFile->numParts());
-#ifdef _CONTAINERIZED
-                    else
+                    else if (isContainerized())
                     {
                         StringBuffer clusterName;
                         destination->getGroupName(0, clusterName);
@@ -1297,7 +1296,6 @@ public:
                                 destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
                         }
                     }
-#endif
 
                     if (options->getSubfileCopy())
                         opttree->setPropBool("@compress",srcFile->isCompressed());
