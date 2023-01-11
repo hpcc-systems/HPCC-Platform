@@ -32,7 +32,6 @@ const modernIndex = {};
     ["#/stub/OPS-DL/ClusterProcessesQuery", "#/processes"],
     ["#/stub/OPS-DL/SystemServersQuery", "#/servers"],
     ["#/stub/OPS-DL/Permissions", "#/security"],
-    ["#/stub/OPS-DL/Monitoring", "#/monitoring"],
     ["#/stub/OPS-DL/DESDL", "#/desdl"],
     ["#/stub/OPS-DL/LogVisualization", "#/topology-bare-metal"],
     ["#/stub/OPS", "#/topology-bare-metal"],

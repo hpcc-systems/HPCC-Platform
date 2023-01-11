@@ -157,7 +157,6 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/processes" },
         { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/servers" },
         { headerText: nlsHPCC.Security + " (L)", itemKey: "/security" },
-        { headerText: nlsHPCC.Monitoring, itemKey: "/monitoring" },
         { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/desdl" },
     ],
 };
