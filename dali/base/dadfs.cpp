@@ -927,29 +927,65 @@ public:
         if (nc<=1)
             return;
         StringBuffer cname;
-        StringArray clustlist;
+        StringArray preferedClusterList;
         if (lfname.getCluster(cname).length())
-            clustlist.append(cname.str());
+            preferedClusterList.append(cname.str());
         unsigned i;
         if (clusters) {
+            // if any clusters listed in the 'clusters'(csv list) are not already present in LFN cluster list (from lfname.getCluster), add them.
+            // NB: lfname.getCluster will only contain any groups if the lfn has been specified as lfn@<cluster>
             for (;;) {
                 const char *s = clusters;
                 while (*s&&(*s!=','))
                     s++;
                 if (s!=clusters) {
                     cname.clear().append(s-clusters,clusters);
-                    for (i=0;i<clustlist.ordinality();i++)
-                        if (strcmp(clustlist.item(i),cname.str())==0)
+                    for (i=0;i<preferedClusterList.ordinality();i++)
+                        if (strcmp(preferedClusterList.item(i),cname.str())==0)
                             break;
-                    if (i==clustlist.ordinality())
-                        clustlist.append(cname.str());
+                    if (i==preferedClusterList.ordinality())
+                        preferedClusterList.append(cname.str());
                 }
                 if (!*s)
                     break;
                 clusters = s+1;
             }
         }
-        if (clustlist.ordinality()==0) {
+
+        unsigned done = 0;
+        StringBuffer clusterLabel;
+        if (isContainerized()) {
+            if (0 != preferedClusterList.ordinality()) {
+                // In containerized mode, only the group (aka plane) names are considered.
+                ForEachItemIn(ci,preferedClusterList) {
+                    const char *cls = preferedClusterList.item(ci);
+                    for (i=done;i<nc;i++) {
+                        IClusterInfo &info=item(i);
+                        if (strisame(info.getClusterLabel(clusterLabel.clear()).str(),cls))
+                            break;
+                    }
+                    if (i<nc) {
+                        // move found IClusterInfo up ('done' is either top or position of last moved item)
+                        if (i) {
+                            Linked<IClusterInfo> tmp = &item(i);
+                            remove(i);
+                            add(*tmp.getClear(),done);
+                        }
+                        done++;
+                        if (done+1>=nc)
+                            break;
+                    }
+                }
+            }
+            return;
+        }
+        // else !isContainerized() ..
+
+        // NB: The below (preferedClusterList empty) will be the common case, because:
+        //  a) LFN's are not routinely specified with @<cluster>
+        //  b) setPreferred is not by default passed a custom perferred 'clusters' list (in fact setDefaultPreferredClusters is not called anywhere)
+        // NB2: In Thor, this ip distance calculation is going to happen on the Thor master in relation to it's IP.
+        if (preferedClusterList.ordinality()==0) {
             // sort by closest to this node
             const IpAddress &myip = queryMyNode()->endpoint();
             unsigned *d=new unsigned[nc];
@@ -968,11 +1004,18 @@ public:
             return;
         }
         Owned<IGroup> firstgrp;
-        unsigned done = 0;
         StringBuffer name;
-        StringBuffer name2;
-        ForEachItemIn(ci,clustlist) {
-            const char *cls = clustlist.item(ci);
+
+        // this manipulates the IClusterInfo order, to promote them, if their group
+        // matches (or are a super or subset or intersection) of their namesake in the group store
+        // Assuming the supplied 'clusters' exist and are not 'GRdisjoint' with the file's cluster group(s),
+        // those IClusterInfo's will be promoted.
+        // e.g. setDefaultPreferredClusters is set to CLUSTERXX, CLUSTERYY, and the file has some of them,
+        // those clusters will be preferred.
+        // NB: If the LFN has cluster(s) (e.g. lfn@mycluster), those will take precedence the preferred clusters
+        // because they will have been added to 'preferedClusterList' 1st (see above)
+        ForEachItemIn(ci,preferedClusterList) {
+            const char *cls = preferedClusterList.item(ci);
             Owned<IGroup> grp = queryNamedGroupStore().lookup(cls);
             if (!grp) {
                 IERRLOG("IDistributedFile::setPreferred - cannot find cluster %s",cls);
@@ -982,13 +1025,15 @@ public:
                 firstgrp.set(grp);
             for (i=done;i<nc;i++) {
                 IClusterInfo &info=item(i);
-                if (stricmp(info.getClusterLabel(name2.clear()).str(),name.str())==0)
+                if (stricmp(info.getClusterLabel(clusterLabel.clear()).str(),name.str())==0) // JCS - name never set?? should probably be 'cls'
                     break;
                 IGroup *grp2 = info.queryGroup();
                 if (grp2&&(grp->compare(grp2)!=GRdisjoint))
                     break;
             }
             if (i<nc) {
+                // true if found a non-disjoint group above
+                // move it above disjoint groups ('done' is either top or position of last non-disjoint group moved)
                 if (i) {
                     Linked<IClusterInfo> tmp = &item(i);
                     remove(i);
@@ -13601,6 +13646,22 @@ bool CDistributedFileDirectory::removePhysicalPartFiles(const char *logicalName,
     return afor.ok;
 }
 
+void configurePreferredPlanes()
+{
+    StringBuffer preferredPlanes;
+    Owned<IPropertyTreeIterator> iter = getComponentConfigSP()->getElements("preferredDataReadPlanes");
+    if (iter->first())
+    {
+        preferredPlanes.append(iter->query().queryProp(nullptr));
+        while (iter->next())
+        {
+            preferredPlanes.append(',');
+            preferredPlanes.append(iter->query().queryProp(nullptr));
+        }
+        queryDistributedFileDirectory().setDefaultPreferredClusters(preferredPlanes);
+        PROGLOG("Preferred read planes: %s", preferredPlanes.str());
+    }
+}
 
 #ifdef _USE_CPPUNIT
 /*

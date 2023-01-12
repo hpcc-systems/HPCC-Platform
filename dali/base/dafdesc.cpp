@@ -2150,6 +2150,12 @@ public:
     {
         UNIMPLEMENTED_X("querySubFiles called from CFileDescriptor!");
     }
+
+    virtual void setFlags(FileDescriptorFlags flags) override
+    {
+        queryProperties().setPropInt("@flags", static_cast<int>(flags));
+        fileFlags = flags;
+    }
 };
 
 class CSuperFileDescriptor:  public CFileDescriptor

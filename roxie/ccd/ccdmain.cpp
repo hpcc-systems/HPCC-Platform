@@ -1323,6 +1323,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         initializeTopology(topoValues, myRoles);
         writeSentinelFile(sentinelFile);
 #endif
+        configurePreferredPlanes();
         createDelayedReleaser();
         CCycleTimer loadPackageTimer;
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
