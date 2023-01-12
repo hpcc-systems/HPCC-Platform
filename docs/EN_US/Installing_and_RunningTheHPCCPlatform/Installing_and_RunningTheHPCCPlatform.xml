@@ -2434,20 +2434,10 @@ add1(10);
         <title>Python</title>
 
         <para>The HPCC Systems platform supports Python3 by default. It
-        includes plugins for both Python2 and Python3, but only one may be
+        includes a plug-in for Python3, and only one version of Python may be
         safely enabled at a time as the Python libraries export the same
-        symbols for both versions. Enabling both may lead to unpredictable
-        results including segmentation faults or undefined symbol
-        errors.</para>
-
-        <para>By default the Python2 plugin is present but disabled, and the
-        Python3 plugin is present and enabled. If you want to use Python2
-        modify your environment.conf file according to the example in the
-        file.</para>
-
-        <para>A cluster updated from an older version may not have the
-        appropriate entries in the environment.conf file to support either
-        version of Python.</para>
+        symbols for different versions. The Python3 plug-in is present and
+        enabled while Python2 is no longer supported.</para>
 
         <para>To enable Python support within the HPCC
         Systems<superscript>®</superscript> Platform:</para>
@@ -2456,10 +2446,6 @@ add1(10);
           <listitem>
             <para>Install Python, if not already installed. Many distributions
             come with Python already installed.</para>
-
-            <para>Python 2.6, 2.7, or Python3 depending on your distribution's
-            default version and to coordinate with the enabled entry in the
-            environment.conf.</para>
           </listitem>
 
           <listitem>
@@ -2508,10 +2494,7 @@ split_words('Once upon a time');
 
         <para>In order for Python to work properly it is important that the
         version of Python and HPCC Systems are set up correctly to support
-        using the installed version of Python. If you see "ld: cannot find
-        --lpy2embed" error then your system is likely set up for Python3.
-        Likewise, if you see "ld: cannot find --lpy3embed" then your system is
-        set up for Python2.</para>
+        using the correct installed version of Python. </para>
 
         <sect3>
           <title>Python Scope Options</title>
