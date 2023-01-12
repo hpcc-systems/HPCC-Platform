@@ -525,6 +525,7 @@ ECLRTL_API size32_t rtlGetPackedSize(const void * _ptr);
 ECLRTL_API __int64 rtlGetPackedSigned(const void * ptr);
 ECLRTL_API void rtlSetPackedSigned(void * ptr, __int64 value);
 ECLRTL_API size32_t rtlGetPackedSizeFromFirst(byte first);
+ECLRTL_API size32_t rtlGetPackedSize(unsigned __int64 value);
 
 ECLRTL_API void rtlReleaseRow(const void * row);
 ECLRTL_API void * rtlLinkRow(const void * row);

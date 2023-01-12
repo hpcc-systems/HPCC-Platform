@@ -18,6 +18,8 @@
 #ifndef CTFILE_HPP
 #define CTFILE_HPP
 
+//#define TIME_NODE_SEARCH
+
 #include "jiface.hpp"
 #include "jhutil.hpp"
 #include "hlzw.h"
@@ -118,6 +120,7 @@ enum CompressionType : byte
     LegacyCompression = 0,    // Keys built prior to 8.12.x will always have 0 here
     // Additional compression formats can be added here...
     SplitPayload = 1,         // A proof-of-concept using separate compression blocks for keyed fields vs payload
+    InplaceCompression = 2,
 };
 
 //#pragma pack(1)
@@ -231,6 +234,7 @@ public:
     inline bool isMetadata() const { return hdr.nodeType == NodeMeta; }
     inline bool isBloom() const { return hdr.nodeType == NodeBloom; }
     inline bool isLeaf() const { return hdr.nodeType == NodeLeaf; }
+    inline bool isBranch() const { return hdr.nodeType == NodeBranch; }
     inline NodeType getNodeType() const { return hdr.nodeType; }
     inline size32_t getNodeDiskSize() const { return keyHdr->getNodeSize(); }  // Retrieve size of node on disk
     const char * getNodeTypeName() const;
@@ -503,6 +507,12 @@ enum KeyExceptionCodes
 };
 interface jhtree_decl IKeyException : extends IException { };
 IKeyException *MakeKeyException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
+
+interface IIndexCompressor : public IInterface
+{
+    virtual const char *queryName() const = 0;
+    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
+};
 
 
 #endif

@@ -29,6 +29,7 @@ set (    SRCS
          hlzw.cpp 
          ctfile.cpp 
          jhtree.cpp 
+         jhinplace.cpp
          jhutil.cpp 
          bloom.cpp
          keybuild.cpp 
@@ -40,6 +41,7 @@ set (    INCLUDES
          ctfile.hpp
          hlzw.h
          jhtree.hpp
+         jhinplace.hpp
          jhutil.hpp
          bloom.hpp
          keybuild.hpp

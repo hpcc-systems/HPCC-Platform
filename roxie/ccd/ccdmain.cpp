@@ -297,6 +297,7 @@ public:
     }
     bool onAbort()
     {
+        logCacheState();
         aborted.signal();
         roxieMetrics.clear();
 #ifdef _DEBUG
@@ -1536,6 +1537,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             }
         }
         DBGLOG("Roxie closing down");
+        logCacheState();
         shuttingDown = true;
         stopTopoThread();
         ::Release(globalPackageSetManager);

@@ -30,8 +30,11 @@ public:
     KeyCompressor() {}
     ~KeyCompressor();
     void open(void *blk,int blksize, bool isVariable, bool rowcompression);
-    void openBlob(void *blk,int blksize);
+
     int writekey(offset_t fPtr,const char *key,unsigned datalength, unsigned __int64 sequence);
+    bool write(const char * data, size32_t datalength);
+
+    void openBlob(void *blk,int blksize);
     unsigned writeBlob(const char *data, unsigned datalength);
     void close();
     bool adjustLimit(size32_t newLimit);
@@ -52,4 +55,3 @@ protected:
 };
 
 #endif
-
