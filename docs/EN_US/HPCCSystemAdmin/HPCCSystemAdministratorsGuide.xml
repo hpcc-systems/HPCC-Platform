@@ -1282,7 +1282,7 @@ skipPythonCleanup=true
 # as the Python libraries export the same symbols for both versions. Enabling both may lead to unpredicatable results
 # including segfaults or undefined symbol errors.
 #
-# If you would prefer to use python 2 and disable python3, change the line below to read
+# If you would prefer to use python2 and disable python3, change the line below to read
 #  additionalPlugins=python2
 #
 # Multiple paths can be specified (separate with :, or ; on Windows).

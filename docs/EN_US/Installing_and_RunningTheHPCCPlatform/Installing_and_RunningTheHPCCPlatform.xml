@@ -2433,11 +2433,8 @@ add1(10);
       <sect2 id="Add_Python_support" role="brk">
         <title>Python</title>
 
-        <para>The HPCC Systems platform supports Python3 by default. It
-        includes a plug-in for Python3, and only one version of Python may be
-        safely enabled at a time as the Python libraries export the same
-        symbols for different versions. The Python3 plug-in is present and
-        enabled while Python2 is no longer supported.</para>
+        <para>The HPCC Systems platform supports Python3 and the Python3
+        plug-in is present and enabled. Python2 is no longer supported.</para>
 
         <para>To enable Python support within the HPCC
         Systems<superscript>®</superscript> Platform:</para>
@@ -2494,7 +2491,7 @@ split_words('Once upon a time');
 
         <para>In order for Python to work properly it is important that the
         version of Python and HPCC Systems are set up correctly to support
-        using the correct installed version of Python. </para>
+        using the correct installed version of Python.</para>
 
         <sect3>
           <title>Python Scope Options</title>
