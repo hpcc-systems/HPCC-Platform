@@ -1350,6 +1350,7 @@ public:
                                 };
                             }
                         }
+                        bool dirPerPart = false;
 #ifdef _CONTAINERIZED
                         StringBuffer clusterName;
                         destination->getGroupName(0, clusterName);
@@ -1358,6 +1359,7 @@ public:
                         {
                             if (plane->hasProp("@defaultSprayParts"))
                                 destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                            dirPerPart = plane->getPropBool("@subDirPerFilePart", true);
                         }
 #endif
                         if (destination->getWrap())
@@ -1452,6 +1454,10 @@ public:
                                 fdesc->queryProperties().setProp("@kind", "key");
                             else if (kind.length()) // JCSMORE may not really need separate "if (iskey)" line above
                                 fdesc->queryProperties().setProp("@kind", kind);
+
+                            if (dirPerPart && fdesc->numParts()>1)
+                                fdesc->setFlags(FileDescriptorFlags::dirperpart);
+
                             if (multiclusterinsert||multiclustermerge)
                                 multifdesc.setown(fdesc.getClear());
                             else
