@@ -438,9 +438,16 @@ void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
         modifiedTime.getString(timeStr);
         props.setProp("@modified", timeStr.str());
         props.setPropInt64("@recordCount", slaveProcessed);
+        totalFileSize += physicalSize;
     }
 }
 
+void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
+{
+    CMasterActivity::getActivityStats(stats);
+    if (0 != (diskHelperBase->getFlags() & TDXtemporary) && totalFileSize)
+        stats.addStatistic(StSizeSpillFile, totalFileSize);
+}
 
 
 /////////////////

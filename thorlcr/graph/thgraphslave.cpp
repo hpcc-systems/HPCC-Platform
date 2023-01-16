@@ -1302,7 +1302,8 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 
 void CSlaveGraph::serializeDone(MemoryBuffer &mb)
 {
-    mb.append(queryGraphId());
+    graph_id gid = queryGraphId();
+    mb.append(gid);
     unsigned cPos = mb.length();
     unsigned count=0;
     mb.append(count);
@@ -1330,6 +1331,17 @@ void CSlaveGraph::serializeDone(MemoryBuffer &mb)
         }
     }
     mb.writeDirect(cPos, sizeof(count), &count);
+
+    if (!owner)
+        queryJob().queryTempHandler()->serializeUsageStats(mb, gid);
+    else
+    {
+        IGraphTempHandler *tempHandler = queryTempHandler(false);
+        if (tempHandler)
+            tempHandler->serializeUsageStats(mb, gid);
+        else
+            IGraphTempHandler::serializeNullUsageStats(mb);
+    }
 }
 
 void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
