@@ -1614,8 +1614,7 @@ protected:
     StringAttr m_label;
     Owned<ICompiledXpath> m_test; //optional, if provided trace only if test evaluates to true
     Owned<ICompiledXpath> m_select;
-    StringAttr m_contentType;
-    Owned<ICompiledXpath> m_skipMask;
+    const LogMsgCategory* m_category = nullptr;
 
 public:
     CEsdlTransformOperationTrace(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
@@ -1630,11 +1629,18 @@ public:
         const char *test = stag.getValue("test");
         if (!isEmptyString(test))
             m_test.setown(compileXpath(test));
-        
-        m_contentType.set(stag.getValue("content_type"));
-        const char* skipMask = stag.getValue("skip_mask");
-        if (!isEmptyString(skipMask))
-            m_skipMask.setown(compileXpath(skipMask));
+
+        const char* msgClass = stag.getValue("class");
+        if (isEmptyString(msgClass) || strieq(msgClass, "information"))
+            m_category = &MCuserInfo;
+        else if (strieq(msgClass, "error"))
+            m_category = &MCuserError;
+        else if (strieq(msgClass, "warning"))
+            m_category = &MCuserWarning;
+        else if (strieq(msgClass, "progress"))
+            m_category = &MCuserProgress;
+        else
+            recordError(ESDL_SCRIPT_InvalidOperationAttr, "invalid message class");
     }
 
     virtual void toDBGLog() override
@@ -1652,26 +1658,20 @@ public:
 
         try
         {
+            if (!m_category)
+                return false;
             if (m_test && !sourceContext->evaluateAsBoolean(m_test))
                 return false;
-            StringBuffer    content;
-            bool            isValue;
-            ITracer& tracer = scriptContext->tracerRef();
-            if (targetContext->selectText(m_select, content, isValue))
+
+            StringBuffer                      text;
+            Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+            if (getText(text, targetContext, sourceContext, masker))
             {
-                Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
-                if (masker && (!m_skipMask || !sourceContext->evaluateAsBoolean(m_skipMask)))
-                {
-                    // Assume for now that all selectText content should be handled by maskContent.
-                    // Values may be serialized node sets.
-                    // TODO: Use maskValue when isValue is true and a value type is set.
-                    char* buffer = const_cast<char*>(content.str());
-                    masker->maskContent(m_contentType.get(), buffer, 0, content.length());
-                }
+                ITracer& tracer = scriptContext->tracerRef();
                 if (m_label.isEmpty())
-                    tracer.log(MCuserInfo, "%s", content.str());
+                    tracer.log(*m_category, "%s", text.str());
                 else
-                    tracer.log(MCuserInfo, "%s %s", m_label.str(), content.str());
+                    tracer.log(*m_category, "%s %s", m_label.str(), text.str());
             }
         }
         catch (IException* e)
@@ -1687,6 +1687,78 @@ public:
             recordError(ESDL_SCRIPT_Error, "unknown exception processing");
         }
         return false;
+    }
+
+    virtual bool getText(StringBuffer& text, IXpathContext* targetContext, IXpathContext* sourceContext, IDataMaskingProfileContext* masker) = 0;
+};
+
+class CEsdlTransformOperationTraceContent : public CEsdlTransformOperationTrace
+{
+protected:
+    StringAttr m_contentType;
+    Owned<ICompiledXpath> m_skipMask;
+
+public:
+    CEsdlTransformOperationTraceContent(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTrace(xpp, stag, prefix)
+    {
+        m_contentType.set(stag.getValue("content_type"));
+        const char* skipMask = stag.getValue("skip_mask");
+        if (!isEmptyString(skipMask))
+            m_skipMask.setown(compileXpath(skipMask));
+    }
+
+    virtual bool getText(StringBuffer& text, IXpathContext* targetContext, IXpathContext* sourceContext, IDataMaskingProfileContext* masker) override
+    {
+        bool isValue = false;
+        if (!targetContext->selectText(m_select, text, isValue) || !masker)
+            return true;
+        if (!m_skipMask || !sourceContext->evaluateAsBoolean(m_skipMask))
+        {
+            char* buffer = const_cast<char*>(text.str());
+            masker->maskContent(m_contentType.get(), buffer, 0, text.length());
+        }
+        return true;
+    }
+};
+
+class CEsdlTransformOperationTraceValue : public CEsdlTransformOperationTrace
+{
+protected:
+    XPathLiteralUnion m_valueType;
+    XPathLiteralUnion m_maskStyle;
+
+public:
+    CEsdlTransformOperationTraceValue(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTrace(xpp, stag, prefix)
+    {
+        m_valueType.setRequired(stag, "value_type", *this);
+        m_maskStyle.setOptional(stag, "mask_style");
+    }
+
+    virtual bool getText(StringBuffer& text, IXpathContext* targetContext, IXpathContext* sourceContext, IDataMaskingProfileContext* masker) override
+    {
+        bool isValue = true;
+        if (!targetContext->selectText(m_select, text, isValue))
+        {
+            if (!isValue)
+            {
+                recordWarning(ESDL_SCRIPT_Warning, VStringBuffer("ambiguous value xpath '%s'", m_select->getXpath()));
+                return false;
+            }
+        }
+        if (text.isEmpty() || !masker)
+            return true;
+
+        StringBuffer vt, ms;
+        m_valueType.get(vt, *sourceContext);
+        if (vt.isEmpty())
+        {
+            recordWarning(ESDL_SCRIPT_Warning, VStringBuffer("empty value_type from '%s'", m_valueType.configValue()));
+            return false;
+        }
+        m_maskStyle.get(ms, *sourceContext);
+        char* buffer = const_cast<char*>(text.str());
+        masker->maskValue(vt, ms, buffer, 0, text.length(), false);
+        return true;
     }
 };
 
@@ -2882,8 +2954,10 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
         return new CEsdlTransformOperationHttpPostXml(xpp, stag, prefix, functionRegister);
     if (streq(op, "mysql"))
         return new CEsdlTransformOperationMySqlCall(xpp, stag, prefix);
-    if (streq(op, "trace"))
-        return new CEsdlTransformOperationTrace(xpp, stag, prefix);
+    if (streq(op, "trace-content") || streq(op, "trace"))
+        return new CEsdlTransformOperationTraceContent(xpp, stag, prefix);
+    if (streq(op, "trace-value"))
+        return new CEsdlTransformOperationTraceValue(xpp, stag, prefix);
     if (streq(op, "call-function"))
         return new CEsdlTransformOperationCallFunction(xpp, stag, prefix, functionRegister);
     if (streq(op, "synchronize"))
