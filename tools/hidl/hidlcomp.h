@@ -1185,6 +1185,9 @@ private:
     char        *base_;
     bool needsXslt;
 
+public:
+    bool executionProfilingEnabled = false;
+
 
 public:
     EspServInfo(const char *name)
@@ -1335,7 +1338,6 @@ public:
     EspMessageInfo *msgs;
     EspServInfo *servs;
     IncludeInfo *includes;
-    bool executionProfilingEnabled = false;
 };
 
 
