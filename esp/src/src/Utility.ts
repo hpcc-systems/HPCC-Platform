@@ -675,9 +675,6 @@ export function resolve(hpccWidget, callback) {
         case "MembersWidget":
             require(["hpcc/MembersWidget"], doLoad);
             break;
-        case "MonitoringWidget":
-            require(["hpcc/MonitoringWidget"], doLoad);
-            break;
         case "PackageMapDetailsWidget":
             require(["hpcc/PackageMapDetailsWidget"], doLoad);
             break;

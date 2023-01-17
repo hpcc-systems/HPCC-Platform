@@ -234,10 +234,6 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["topology-bare-metal"],
-        path: "/monitoring", action: () => import("./components/Monitoring").then(_ => <_.Monitoring />)
-    },
-    {
-        mainNav: ["topology-bare-metal"],
         path: "/desdl",
         children: [
             { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },

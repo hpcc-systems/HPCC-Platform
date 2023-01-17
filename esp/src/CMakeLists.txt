@@ -175,7 +175,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MachineInformationWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MemberOfWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MembersWidget.js
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/MonitoringWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageMapDetailsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageMapPartsWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/PackageMapQueryWidget.js
