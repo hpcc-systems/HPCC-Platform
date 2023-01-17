@@ -2119,6 +2119,12 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         <es:trace-value select="baz" value_type="unrecognized" class="error"/>
         <es:trace-value select="*" value_type="ambiguous"/>
         <es:trace-value select="bar" xpath_value_type="''"/>
+        <es:trace-content select="maskValue(foo, 'restricted')" skip_mask="true()"/>
+        <es:trace-content select="maskValue(bar, 'restricted', 'alternate')" skip_mask="true()"/>
+        <es:trace-content select="maskValue(baz, 'restricted')" skip_mask="true()"/>
+        <es:trace-content select="maskContent(toXmlString(foo))" skip_mask="true()"/>
+        <es:trace-content select="maskContent(toXmlString(foo), 'xml')" skip_mask="true()"/>
+        <es:trace-content select="maskContent(toXmlString(foo), 'json')" skip_mask="true()"/>
       </es:CustomRequestTransform>
       )!!";
       History expected({
@@ -2133,6 +2139,12 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         { MCuserProgress, "baz" },
         { MCuserWarning, "baz" },
         { MCuserError, "baz" },
+        { MCuserInfo, "***" },
+        { MCuserInfo, "+++" },
+        { MCuserInfo, "***" },
+        { MCuserInfo, "<foo>***</foo>" },
+        { MCuserInfo, "<foo>***</foo>" },
+        { MCuserInfo, "<foo>foo</foo>" },
       });
 
       try {

@@ -806,6 +806,90 @@ static void getTxSummary(xmlXPathParserContextPtr ctxt, int nargs)
     xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar*)output.str()));
 }
 
+static void maskValue(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+    Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+
+    if (nargs < 2 || nargs > 3)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    StringBuffer value, valueType, maskStyle;
+    xmlChar* tmp;
+    if (3 <= nargs)
+    {
+        tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        maskStyle.append((const char*)tmp);
+        xmlFree(tmp);
+    }
+
+    tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    valueType.append((const char*)tmp);
+    xmlFree(tmp);
+
+    tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    value.append((const char*)tmp);
+    xmlFree(tmp);
+
+    if (masker)
+        masker->maskValue(valueType, maskStyle, const_cast<char*>(value.str()), 0, value.length(), false);
+
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar*)value.str()));
+}
+
+static void maskContent(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+    Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+
+    if (nargs < 1 || nargs > 2)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    StringBuffer content, contentType;
+    xmlChar* tmp;
+    if (2 <= nargs)
+    {
+        tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        contentType.append((const char*)tmp);
+        xmlFree(tmp);
+    }
+
+    tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    content.append((const char*)tmp);
+    xmlFree(tmp);
+
+    if (masker)
+        masker->maskContent(contentType, const_cast<char*>(content.str()), 0, content.length());
+
+    xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar*)content.str()));
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -829,6 +913,8 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "decompressString", (void *)decompressString);
     xpathContext->registerFunction(uri, "toXmlString", (void *)toXmlString);
     xpathContext->registerFunction(uri, "getTxSummary", (void *)getTxSummary);
+    xpathContext->registerFunction(uri, "maskValue", (void *)maskValue);
+    xpathContext->registerFunction(uri, "maskContent", (void *)maskContent);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)
