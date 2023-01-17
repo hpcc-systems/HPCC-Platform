@@ -254,11 +254,8 @@ jobs:
           file: dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
           context: dockerfiles/vcpkg
           tags: |
-            local/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} 
-            local/build-${{ matrix.os }}:latest
-          cache-from: |
-            local/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }}
-            local/build-${{ matrix.os }}:latest
+            build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} 
+            build-${{ matrix.os }}:latest
           build-args: |
             VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
             BUILD_FOLDER=build-${{ matrix.os }}
@@ -266,7 +263,7 @@ jobs:
       - name: Bundle Regular Package
         if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         run: |
-          docker_label=local/build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }}
+          docker_label=build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }}
           docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
           docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} $docker_label "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package" 
 
