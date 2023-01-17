@@ -42,6 +42,7 @@ protected:
     size32_t outlen = 0;
     size32_t wrmax = 0;
     size32_t dynamicOutSz = 0;
+    size32_t originalMax = 0;
 
     virtual void setinmax() = 0;
     virtual void flushcommitted() = 0;
@@ -74,6 +75,7 @@ public:
         if (max<1024)
             throw MakeStringException(-1,"CFcmpCompressor::open - block size (%d) not large enough", max);
         wrmax = max;
+        originalMax = max;
         if (buf)
         {
             if (bufalloc)

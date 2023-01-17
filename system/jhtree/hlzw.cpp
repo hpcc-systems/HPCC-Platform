@@ -155,6 +155,11 @@ unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
 }
 
 
+bool KeyCompressor::adjustLimit(size32_t newLimit)
+{
+    return comp && comp->adjustLimit(newLimit);
+}
+
 void KeyCompressor::close()
 { // gets called either when write failed or explicitly by client
     if (comp!=NULL) {
