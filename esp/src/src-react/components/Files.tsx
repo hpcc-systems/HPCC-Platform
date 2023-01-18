@@ -1,6 +1,5 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Link } from "@fluentui/react";
-import * as domClass from "dojo/dom-class";
 import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import { formatCost } from "src/Session";
@@ -180,23 +179,20 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             NodeGroup: { label: nlsHPCC.Cluster },
             RecordCount: {
                 label: nlsHPCC.Records,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
+                formatter: React.useCallback(function (value, row) {
+                    return Utility.valueCleanUp(value);
                 }, []),
             },
             IntSize: {
                 label: nlsHPCC.Size,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.convertedSize(value);
+                formatter: React.useCallback(function (value, row) {
+                    return Utility.convertedSize(value);
                 }, []),
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 40,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
+                formatter: React.useCallback(function (value, row) {
+                    return Utility.valueCleanUp(value);
                 }, []),
             },
             MinSkew: {
