@@ -5,9 +5,14 @@ env:
   VCPKG_NUGET_REPOSITORY: "https://github.com/hpcc-systems/vcpkg"
 
 on:
+  push:
+    branches:
+      - "newbuild"
+
   pull_request:
     branches:
       - "master"
+      - "newbuild"
       - "candidate-*"
       - "!candidate-7.10.*"
       - "!candidate-7.8.*"
@@ -17,7 +22,7 @@ on:
       - "!candidate-7.0.*"
       - "!candidate-6.*"
   schedule:
-    - cron:  "0 0 * * *"
+    - cron: "0 0 * * *"
 
 jobs:
   check-skip:
@@ -33,16 +38,6 @@ jobs:
   build:
     strategy:
       matrix:
-        os:
-          [
-            "ubuntu-18.04",
-            "ubuntu-20.04",
-            "ubuntu-22.04",
-            "windows-2019",
-            "windows-2022",
-            "macos-11",
-            "macos-12",
-          ]
         include:
           - os: "ubuntu-18.04"
             triplet: "x64-linux"
@@ -83,14 +78,14 @@ jobs:
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_MEMCACHED=ON -DSUPPRESS_MONGODBEMBED=ON -DUSE_JAVA=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
             event_name: "schedule"
           - os: "macos-12"
             triplet: "x64-osx"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_AZURE=OFF -DWSSQL_SERVICE=OFF -DINCLUDE_PLUGINS=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_MEMCACHED=ON -DSUPPRESS_MONGODBEMBED=ON -DUSE_JAVA=OFF"
             cmake_build_options: "-- -j$(nproc) -k"
             event_name: "pull_request"
       fail-fast: false
@@ -108,24 +103,51 @@ jobs:
           echo "Platform Changed:  ${{ needs.check-skip.outputs.platform }}"
 
       - name: Ubuntu Dependencies
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform && contains(matrix.os, 'ubuntu') }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform && contains(matrix.os, 'ubuntu') }}
         shell: "bash"
         run: |
           sudo apt-get update -y
-          sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
-            zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
-            libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev libevent-dev libatlas-base-dev libblas-dev python3-dev \
-            default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config uuid-dev libtool autotools-dev automake \
-            libssl-dev xmlstarlet libncurses-dev
+          sudo apt-get install -yq --no-install-recommends \
+          apt-transport-https \
+          autoconf \
+          autoconf-archive \
+          automake \
+          autotools-dev \
+          binutils-dev \
+          bison \
+          build-essential \
+          ca-certificates \
+          curl \
+          dirmngr \
+          flex \
+          git \
+          gnupg \
+          groff-base \
+          libtool \
+          pkg-config \
+          software-properties-common \
+          tar \
+          unzip \
+          uuid-dev \
+          zip
 
-      - name: OSX Dependencies
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform && contains(matrix.os, 'macos') }}
+      - name: Ubuntu Mono Dependencies
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
         shell: "bash"
         run: |
-          brew install bison flex pkg-config automake libtool cmake openjdk@11
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb https://download.mono-project.com/repo/ubuntu stable-focal main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+          sudo apt-get update -y
+          sudo apt-get -yq install -f mono-complete
+
+      - name: OSX Dependencies
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform && contains(matrix.os, 'macos') }}
+        shell: "bash"
+        run: |
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
 
       - name: "Setup NuGet credentials"
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         shell: "bash"
         run: |
           ${{ matrix.mono }} `vcpkg fetch nuget | tail -n 1` \
@@ -137,27 +159,27 @@ jobs:
             -password "${{ secrets.GITHUB_TOKEN }}"
 
       - name: "Remove builtin vcpkg"
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ${{ matrix.sudo }} rm -rf "$VCPKG_INSTALLATION_ROOT"
 
       - name: Check out source code
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
       - name: "vcpkg Bootstrap"
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
 
       - name: "Generate HPCC-Platform Build Files"
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         working-directory: .
         shell: "bash"
         run: |
@@ -166,7 +188,7 @@ jobs:
           cmake .. -DSKIP_ECLWATCH=ON -DCONTAINERIZED=OFF -DUSE_OPTIONAL=OFF ${{ matrix.cmake_config_options }}
 
       - name: "Remove vcpkg build files"
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         working-directory: ./vcpkg
         shell: "bash"
         run: |
@@ -174,7 +196,7 @@ jobs:
           rm -rf ./downloads
 
       - name: "Build HPCC-Platform"
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         working-directory: ./build
         shell: "bash"
         run: |
@@ -183,42 +205,65 @@ jobs:
   build-docker:
     strategy:
       matrix:
-        os: ["centos-7", "centos-8"]
         include:
-          - os: "centos-7"
-            docker-folder: "dockerfiles/platform-build-centos-7"
+          - os: "ubuntu-22.04"
             event_name: "pull_request"
-          - os: "centos-8"
-            docker-folder: "dockerfiles/platform-build-centos-8"
+          - os: "ubuntu-20.04"
             event_name: "schedule"
+          - os: "ubuntu-18.04"
+            event_name: "schedule"
+          - os: "centos-8"
+            event_name: "schedule"
+          - os: "centos-7"
+            event_name: "pull_request"
       fail-fast: false
 
-    name: "Build with docker+vcpkg"
+    name: "Build with docker + vcpkg"
     needs: check-skip
     runs-on: ubuntu-22.04
     steps:
+
       - name: Checkout PR
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
-        uses: actions/checkout@v2
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          submodules: recursive
+
+      - name: Calculate vars
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
+        id: vars
+        run: |
+          echo 'mount_platform=source="${{ github.workspace }}",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached' >> $GITHUB_OUTPUT
+          echo 'mount_ln=source="${{ github.workspace }}/LN",target=/hpcc-dev/LN,type=bind,consistency=cached' >> $GITHUB_OUTPUT
+          echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+          cd vcpkg
+          echo "vcpkg_sha_short=$(git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
+          echo "cmake_options=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
         id: buildx
-        uses: docker/setup-buildx-action@v1
-        with:
-          driver: docker
+        uses: docker/setup-buildx-action@v2
 
-      - name: Build ${{ matrix.os }} image
-        if: ${{ github.event_name == matrix.event_name && needs.check-skip.outputs.platform }}
-        uses: docker/build-push-action@v2
+      - name: Create Build Image  
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
+        uses: docker/build-push-action@v3
         with:
-          context: ${{ matrix.docker-folder }}
-          file: ${{ matrix.docker-folder }}/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
+          file: dockerfiles/vcpkg/${{ matrix.os }}.dockerfile
+          context: dockerfiles/vcpkg
+          tags: |
+            build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }} 
+            build-${{ matrix.os }}:latest
           build-args: |
-            BUILD_TAG=${{ github.head_ref }}
-            BUILD_USER=${{ github.actor }}
-            GITHUB_ACTOR=${{ github.actor }}
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-            BUILD_TYPE=Release
-            USE_CPPUNIT=0
+            VCPKG_REF=${{ steps.vars.outputs.vcpkg_sha_short }}
+            BUILD_FOLDER=build-${{ matrix.os }}
+
+      - name: Bundle Regular Package
+        if: ${{ contains(matrix.event_name, github.event_name) && needs.check-skip.outputs.platform }}
+        run: |
+          docker_label=build-${{ matrix.os }}:${{ steps.vars.outputs.branch_name }}
+          docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build ${{ steps.vars.outputs.cmake_options }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount ${{ steps.vars.outputs.mount_platform }} $docker_label "cmake --build /hpcc-dev/HPCC-Platform/build --parallel $(nproc) --target package" 
+

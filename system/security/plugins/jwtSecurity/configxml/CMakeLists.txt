@@ -16,9 +16,9 @@
 
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/jwtsecmgr.xsd"
         DESTINATION componentfiles/configxml
-        COMPONENT RUNTIME)
+        COMPONENT Runtime)
 
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/buildset.xml"
               "${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf"
         DESTINATION componentfiles/configxml/plugins/jwtsecmgr
-        COMPONENT RUNTIME)
+        COMPONENT Runtime)

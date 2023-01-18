@@ -113,7 +113,7 @@ include_directories (
 ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( thorhelper SHARED ${SRCS} )
-install ( TARGETS thorhelper RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( TARGETS thorhelper RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS )
 target_link_libraries ( thorhelper 
          jlib 
          nbcd 
@@ -125,7 +125,7 @@ target_link_libraries ( thorhelper
     )
 
 if (USE_NUMA)
- target_link_libraries ( thorhelper numa )
+ target_link_libraries ( thorhelper ${NUMA_LIBRARIES} )
 endif ()
 
 if (USE_TBB)

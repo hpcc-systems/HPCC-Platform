@@ -36,6 +36,7 @@ on:
   pull_request:
     branches:
       - "master"
+      - "newbuild"
       - "candidate-*"
       - "!candidate-7.6.*"
       - "!candidate-7.4.*"

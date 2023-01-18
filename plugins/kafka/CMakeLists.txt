@@ -66,7 +66,8 @@ if(KAFKA)
         install(
             FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKACPP_LIB}
             DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
+            COMPONENT Runtime
+            CALC_DEPS)
 
         target_link_libraries(kafka
             eclrtl
