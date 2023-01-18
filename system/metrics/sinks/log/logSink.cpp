@@ -53,5 +53,5 @@ void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
     {
         name.append(".").append(unitsStr);
     }
-    LOG(MCmetrics, "name=%s,value=%" I64F "d", name.c_str(), pMetric->queryValue());
+    LOG(MCoperatorMetric, "name=%s,value=%" I64F "d", name.c_str(), pMetric->queryValue());
 }

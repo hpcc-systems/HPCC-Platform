@@ -498,9 +498,9 @@ int main( int argc, const char *argv[]  )
             ULARGE_INTEGER free;
             if (GetDiskFreeSpaceEx("c:\\",&userfree,&total,&free)&&total.QuadPart) {
                 unsigned pc = (unsigned)(free.QuadPart*100/total.QuadPart);
-                LOG(MCdebugProgress, thorJob, "Total disk space = %" I64F "d k", total.QuadPart/1000);
-                LOG(MCdebugProgress, thorJob, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
-                LOG(MCdebugProgress, thorJob, "%d%% disk free\n",pc);
+                LOG(MCdebugInfo, thorJob, "Total disk space = %" I64F "d k", total.QuadPart/1000);
+                LOG(MCdebugInfo, thorJob, "Free  disk space = %" I64F "d k", free.QuadPart/1000);
+                LOG(MCdebugInfo, thorJob, "%d%% disk free\n",pc);
             }
 #endif
      
