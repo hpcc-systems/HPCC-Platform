@@ -25,41 +25,44 @@
 project(redis)
 
 if(REDIS)
-    find_package(hiredis CONFIG REQUIRED)    
+    ADD_PLUGIN(redis)
+    if(MAKE_REDIS)
+        find_package(hiredis CONFIG REQUIRED)    
 
-    set(
-        SRCS
-        redis.hpp
-        redis.cpp)
+        set(
+            SRCS
+            redis.hpp
+            redis.cpp)
 
-    include_directories(
-        ./../../system/include
-        ./../../rtl/eclrtl
-        ./../../rtl/include
-        ./../../common/deftype
-        ./../../system/jlib
-        )
+        include_directories(
+            ./../../system/include
+            ./../../rtl/eclrtl
+            ./../../rtl/include
+            ./../../common/deftype
+            ./../../system/jlib
+            )
 
-    add_definitions(-D_USRDLL -DECL_REDIS_EXPORTS)
+        add_definitions(-D_USRDLL -DECL_REDIS_EXPORTS)
 
-    HPCC_ADD_LIBRARY(redis SHARED ${SRCS})
-    if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
-        message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    elseif(NOT APPLE)
-        set_target_properties(redis PROPERTIES NO_SONAME 1)
+        HPCC_ADD_LIBRARY(redis SHARED ${SRCS})
+        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
+            message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+        elseif(NOT APPLE)
+            set_target_properties(redis PROPERTIES NO_SONAME 1)
+        endif()
+
+        install(
+            TARGETS redis
+            DESTINATION plugins
+            CALC_DEPS)
+
+        target_link_libraries(
+            redis
+            eclrtl
+            jlib
+            hiredis::hiredis
+            )
     endif()
-
-    install(
-        TARGETS redis
-        DESTINATION plugins
-        CALC_DEPS)
-
-    target_link_libraries(
-        redis
-        eclrtl
-        jlib
-        hiredis::hiredis
-        )
 endif()
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)

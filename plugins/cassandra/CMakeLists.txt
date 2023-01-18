@@ -24,64 +24,63 @@
 
 project(cassandraembed)
 
-# There is not yet a standard package for cassandra cpp client
-# When there is (and the distros catch up) we may want to add them as dependencies here
-# until then, we build the required libraries from source
-if(USE_CASSANDRA)
-  find_path(CPP_DRIVER_INCLUDE_DIRS "cassandra.h" REQUIRED)
-  find_library(CPP_DRIVER_LIBRARY NAMES "cassandra" REQUIRED)
-  find_package(libuv CONFIG REQUIRED)
-
+if(CASSANDRAEMBED OR USE_CASSANDRA)
   ADD_PLUGIN(cassandraembed)
+  if(MAKE_CASSANDRAEMBED OR USE_CASSANDRA)
+    find_path(CPP_DRIVER_INCLUDE_DIRS "cassandra.h" REQUIRED)
+    find_library(CPP_DRIVER_LIBRARY NAMES "cassandra" REQUIRED)
+    find_package(libuv CONFIG REQUIRED)
 
-  set(
-    SRCS
-    cassandraembed.cpp
-    cassandrawu.cpp)
+    set(
+      SRCS
+      cassandraembed.cpp
+      cassandrawu.cpp)
 
-  include_directories(
-    ./../../system/include
-    ./../../rtl/eclrtl
-    ./../../roxie/roxiemem
-    ./../../rtl/include
-    ./../../rtl/nbcd
-    ./../../common/deftype
-    ./../../common/workunit
-    ./../../system/jlib
-    ./../../system/security/shared 
-    ./../../system/mp
-    ./../../dali/base
-    ${CPP_DRIVER_INCLUDE_DIRS}
-    )
+    include_directories(
+      ./../../system/include
+      ./../../rtl/eclrtl
+      ./../../roxie/roxiemem
+      ./../../rtl/include
+      ./../../rtl/nbcd
+      ./../../common/deftype
+      ./../../common/workunit
+      ./../../system/jlib
+      ./../../system/security/shared 
+      ./../../system/mp
+      ./../../dali/base
+      ${CPP_DRIVER_INCLUDE_DIRS}
+      )
 
-  add_definitions(-D_USRDLL -DCASSANDRAEMBED_EXPORTS)
+    add_definitions(-D_USRDLL -DCASSANDRAEMBED_EXPORTS)
 
-  HPCC_ADD_LIBRARY(cassandraembed SHARED ${SRCS})
+    HPCC_ADD_LIBRARY(cassandraembed SHARED ${SRCS})
 
-  install(
-    TARGETS cassandraembed
-    DESTINATION plugins
-    COMPONENT Runtime )
-
-  install(
-    TARGETS cassandraembed
-    DESTINATION ${LIB_DIR}
-    COMPONENT Runtime CALC_DEPS)
-
-  target_link_libraries(
-    cassandraembed
-    eclrtl
-    roxiemem
-    dalibase
-    workunit
-    jlib
-    ${CPP_DRIVER_LIBRARY}
-    $<IF:$<TARGET_EXISTS:uv_a>,uv_a,uv>)
-
-  if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
-      FILES ${CMAKE_CURRENT_SOURCE_DIR}/cassandra.ecllib
+      TARGETS cassandraembed
       DESTINATION plugins
-      COMPONENT Runtime)
+      COMPONENT Runtime )
+
+    install(
+      TARGETS cassandraembed
+      DESTINATION ${LIB_DIR}
+      COMPONENT Runtime CALC_DEPS)
+
+    target_link_libraries(
+      cassandraembed
+      eclrtl
+      roxiemem
+      dalibase
+      workunit
+      jlib
+      ${CPP_DRIVER_LIBRARY}
+      $<IF:$<TARGET_EXISTS:uv_a>,uv_a,uv>)
+
   endif()
-endif(USE_CASSANDRA)
+endif()
+
+if(PLATFORM OR CLIENTTOOLS_ONLY)
+  install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/cassandra.ecllib
+    DESTINATION plugins
+    COMPONENT Runtime)
+endif()

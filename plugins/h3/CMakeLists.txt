@@ -24,46 +24,47 @@
 
 project(h3)
 
-if(USE_H3)
+if(H3)
+    ADD_PLUGIN(H3)
+    if(MAKE_H3)
+        find_package(h3 CONFIG REQUIRED)
 
-    find_package(h3 CONFIG REQUIRED)
+        set(SRCS
+            h3.hpp
+            h3.cpp
+            )
 
-    set(SRCS
-        h3.hpp
-        h3.cpp
-        )
+        include_directories(
+            ./../../system/include
+            ./../../rtl/eclrtl
+            ./../../rtl/include
+            ./../../common/deftype
+            ./../../system/jlib
+            )
 
-    include_directories(
-        ./../../system/include
-        ./../../rtl/eclrtl
-        ./../../rtl/include
-        ./../../common/deftype
-        ./../../system/jlib
-        )
+        add_definitions(-D_USRDLL -DECL_H3_EXPORTS)
 
-    add_definitions(-D_USRDLL -DECL_H3_EXPORTS)
+        HPCC_ADD_LIBRARY(h3 SHARED ${SRCS} ${UBER_H3_SOURCE_FILES})
+        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
+            message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+        elseif(NOT APPLE)
+            set_target_properties(h3 PROPERTIES NO_SONAME 1)
+        endif()
 
-    HPCC_ADD_LIBRARY(h3 SHARED ${SRCS} ${UBER_H3_SOURCE_FILES})
-    if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
-        message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-    elseif(NOT APPLE)
-        set_target_properties(h3 PROPERTIES NO_SONAME 1)
+        target_compile_definitions(h3 PUBLIC H3_HAVE_ALLOCA)
+
+        install(
+            TARGETS h3
+            DESTINATION plugins
+            CALC_DEPS)
+
+        target_link_libraries(h3
+            eclrtl
+            jlib
+            h3::h3
+            ${EXAMPLE_PLUGIN_DEP_LIBRARIES})
     endif()
-
-    target_compile_definitions(h3 PUBLIC H3_HAVE_ALLOCA)
-
-    install(
-        TARGETS h3
-        DESTINATION plugins
-        CALC_DEPS)
-
-    target_link_libraries(h3
-        eclrtl
-        jlib
-        h3::h3
-        ${EXAMPLE_PLUGIN_DEP_LIBRARIES})
-
-endif(USE_H3)
+endif()
 
 if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
