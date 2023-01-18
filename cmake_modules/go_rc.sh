@@ -14,6 +14,7 @@ fi
 
 sync_git
 parse_cmake
+
 if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   if (( "$HPCC_POINT" % 2 != 1 )) ; then
     if [ "$HPCC_POINT" = "0" ] ; then
@@ -70,7 +71,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   fi
   doit "git add $VERSIONFILE"
   doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
-  doit "git push $REMOTE"
+  doit "git push $REMOTE $GIT_BRANCH"
   if [ "$GIT_BRANCH" = "master" ]; then
     doit "git checkout candidate-$HPCC_MAJOR.$NEW_MINOR.x"
     update_version_file closedown 0 0 $NEW_MINOR

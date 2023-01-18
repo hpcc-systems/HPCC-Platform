@@ -1,0 +1,36 @@
+#!/usr/bin/python3
+
+import sys
+import re
+
+lines = []
+pushed = []
+inchange = 0
+retcode = 0
+pattern = re.compile(" *version: [0-9]+[.][0-9]+[.][0-9]+-[a-z]*[0-9]+")
+pattern2 = re.compile(" *appVersion: [0-9]+[.][0-9]+[.][0-9]+-[a-z]*[0-9]+")
+pattern3 = re.compile(" *helmVersion: [0-9]+[.][0-9]+[.][0-9]+-[a-z]*[0-9]+")
+with open(sys.argv[1]) as file:
+  lines = file.readlines()
+
+for line in lines:
+  if line.startswith('<<<<<<<'):
+    inchange = 1
+  elif inchange==1 and line.startswith('======='):
+    inchange = 2
+  elif inchange==2 and line.startswith('>>>>>>>'):
+    if len(pushed)==4 and ((pattern.match(pushed[1]) and pattern.match(pushed[3])) or
+      (pattern2.match(pushed[1]) and pattern2.match(pushed[3])) or
+      (pattern3.match(pushed[1]) and pattern3.match(pushed[3]))):
+      line = pushed[1]
+    else:
+      for p in pushed:
+        print (p, end='')
+        retcode = 1
+    inchange = 0
+    pushed = []
+  if inchange==0:
+    print (line, end='')
+  else:
+    pushed.append(line)
+sys.exit(retcode)

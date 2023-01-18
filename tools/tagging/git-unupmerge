@@ -1,0 +1,71 @@
+#!/bin/bash
+
+function extract()
+{
+    local _file=$1
+    local _name=$2
+    local _search=$2
+    local _result=`grep -i "set *( *$_search " $_file | sed -E "s/^.*$_search *\"?//" | sed -E "s/\"? *\)//"`
+    eval "$_name='$_result'"
+}
+
+function parse_cmake()
+{
+    extract $VERSIONFILE HPCC_NAME
+    extract $VERSIONFILE HPCC_PROJECT
+    extract $VERSIONFILE HPCC_MAJOR
+    extract $VERSIONFILE HPCC_MINOR
+    extract $VERSIONFILE HPCC_POINT
+    extract $VERSIONFILE HPCC_MATURITY
+    extract $VERSIONFILE HPCC_SEQUENCE
+
+    if [ -z "$HPCC_NAME" ] ; then
+      if [ "$HPCC_PROJECT" == "community" ] ; then
+        HPCC_NAME="Community Edition"
+      else
+        HPCC_NAME="Enterprise Edition"
+      fi
+    fi
+}
+
+function update_chart_file()
+{
+   local _chart=$1
+   if [ "$HPCC_MATURITY" == "release" ] ; then
+      local _v=${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}-${HPCC_SEQUENCE}
+    else
+      local _v=${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}-${HPCC_MATURITY}${HPCC_SEQUENCE}
+    fi
+   # Update the Chart.yaml file
+    sed -E \
+     -e "s/^version: .*$/version: $_v/" \
+     -e "s/^appVersion: .*$/appVersion: $_v/" \
+     -e "s/helmVersion: .*$/helmVersion: $_v/" \
+     -i.bak $_chart
+    CHART_CHANGED=0
+    diff -y  --suppress-common-lines $_chart $_chart.bak || CHART_CHANGED=1
+    rm -f $_chart.bak
+}
+
+scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
+current=`git branch --show-current`
+for f in version.cmake `find . -name pom.xml -maxdepth 5` ; do
+  if [[ -f $f ]] ; then
+    echo git checkout $current -- $f
+    git checkout $current -- $f
+  fi
+done
+
+if [[ -f 'version.cmake' ]] ; then
+  VERSIONFILE=version.cmake
+  parse_cmake
+fi
+
+for f in `find helm/hpcc -name *.yaml` helm/hpcc/templates/_helpers.tpl ; do
+  if [[ -f $f ]] ; then
+    echo patch versions in $f
+    update_chart_file $f
+    $scriptdir/git-fixversion $f > $f.bak && echo Adding $f && git add $f
+    mv $f.bak $f
+  fi
+done
