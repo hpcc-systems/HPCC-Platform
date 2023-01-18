@@ -1079,6 +1079,8 @@ int main( int argc, const char *argv[]  )
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 #endif
+            configurePreferredPlanes();
+
             // NB: workunit/graphName only set in one-shot mode (if isCloud())
             thorMain(logHandler, workunit, graphName);
             LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());

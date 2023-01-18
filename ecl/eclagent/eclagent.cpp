@@ -575,7 +575,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             abortmonitor->setGuillotineCost(money2cost_type(guillotineCost));
         }
     }
-
+    configurePreferredPlanes();
 }
 
 EclAgent::~EclAgent()
