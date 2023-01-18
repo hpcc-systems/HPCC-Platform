@@ -46,5 +46,5 @@ read -n 1 -s
 for f in $all ; do
    cd $gitroot/$f
    echo "Process $f"
-   $hpccdir/cmake_modules/go_rc.sh $*
+   $hpccdir/cmake_modules/go_rc.sh
 done
