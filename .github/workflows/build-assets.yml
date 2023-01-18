@@ -27,7 +27,7 @@ jobs:
       - name: Release HPCC-Platform
         uses: ncipollo/release-action@v1.12.0
         with:
-          generateReleaseNotes: true
+          generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
       - name: Release LN
         uses: ncipollo/release-action@v1.12.0
@@ -35,7 +35,7 @@ jobs:
           owner: ${{ secrets.LNB_ACTOR }}
           repo: LN
           token: ${{ secrets.LNB_TOKEN }}
-          generateReleaseNotes: true
+          generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
 
 
