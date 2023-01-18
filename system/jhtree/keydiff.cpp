@@ -715,13 +715,13 @@ public:
     void addDiffSize(size32_t sz) { diffSize += sz; }
     void log() const
     {
-        LOG(MCstats, "Matching rows: %u", stats[CKeyDiff::CMD_MATCH-1]);
-        LOG(MCstats, "Rows close to previous old row: %u", stats[CKeyDiff::CMD_DIFF_OLD_PREV-1]);
-        LOG(MCstats, "Rows close to current old row: %u", stats[CKeyDiff::CMD_DIFF_OLD_CURR-1]);
-        LOG(MCstats, "Rows close to previous new row: %u", stats[CKeyDiff::CMD_DIFF_NEW_PREV-1]);
+        LOG(MCoperatorProgress, "Matching rows: %u", stats[CKeyDiff::CMD_MATCH-1]);
+        LOG(MCoperatorProgress, "Rows close to previous old row: %u", stats[CKeyDiff::CMD_DIFF_OLD_PREV-1]);
+        LOG(MCoperatorProgress, "Rows close to current old row: %u", stats[CKeyDiff::CMD_DIFF_OLD_CURR-1]);
+        LOG(MCoperatorProgress, "Rows close to previous new row: %u", stats[CKeyDiff::CMD_DIFF_NEW_PREV-1]);
         unsigned diffNum = stats[CKeyDiff::CMD_DIFF_OLD_PREV-1] + stats[CKeyDiff::CMD_DIFF_OLD_CURR-1] + stats[CKeyDiff::CMD_DIFF_NEW_PREV-1];
         if(diffNum > 0)
-            LOG(MCstats, "Average diff size: %u", ((diffSize + diffNum/2) / diffNum));
+            LOG(MCoperatorProgress, "Average diff size: %u", ((diffSize + diffNum/2) / diffNum));
     }
 
 private:
@@ -1102,8 +1102,8 @@ public:
 
     virtual void logStats() const
     {
-        LOG(MCstats, "Rows in old index: %u", oldInput.queryCount());
-        LOG(MCstats, "Rows in new index: %u", newInput.queryCount());
+        LOG(MCoperatorProgress, "Rows in old index: %u", oldInput.queryCount());
+        LOG(MCoperatorProgress, "Rows in new index: %u", newInput.queryCount());
         keydiff.logStats();
     }
 

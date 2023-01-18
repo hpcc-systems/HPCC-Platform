@@ -2,6 +2,8 @@
 %option nounput
 %option noinput
 %option case-insensitive
+%option noyy_scan_bytes
+%option noyy_scan_string
 %{
 #include "platform.h"
 

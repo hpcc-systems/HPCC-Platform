@@ -51,12 +51,12 @@ protected:
         const LogMsgCategory* catPtr = nullptr;
         switch (flag & ReportCategoryMask)
         {
-        case ReportDisaster:  catPtr = &MCdisaster; break;
+        case ReportDisaster:  catPtr = &MCoperatorDisaster; break;
         case ReportAError:    catPtr = &MCauditError; break;
-        case ReportIError:    catPtr = &MCinternalError; break;
+        case ReportIError:    catPtr = &MCdebugError; break;
         case ReportOError:    catPtr = &MCoperatorError; break;
         case ReportUError:    catPtr = &MCuserError; break;
-        case ReportIWarning:  catPtr = &MCinternalWarning; break;
+        case ReportIWarning:  catPtr = &MCdebugWarning; break;
         case ReportOWarning:  catPtr = &MCoperatorWarning; break;
         case ReportUWarning:  catPtr = &MCuserWarning; break;
         case ReportDProgress: catPtr = &MCdebugProgress; break;
@@ -65,7 +65,6 @@ protected:
         case ReportDInfo:     catPtr = &MCdebugInfo; break;
         case ReportOInfo:     catPtr = &MCoperatorInfo; break;
         case ReportUInfo:     catPtr = &MCuserInfo; break;
-        case ReportStats:     catPtr = &MCstats; break;
         default: return;
         }
         LOG(*catPtr, "%s [%s]: %s", level, component, msg);

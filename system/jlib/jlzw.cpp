@@ -286,6 +286,7 @@ void CLZWCompressor::open(void *buf,size32_t max)
     st_thistime = msTick();
     st_thiswrites=0;
 #endif
+    originalMax = max;
 
     if (buf)
     {
@@ -392,6 +393,18 @@ size32_t CLZWCompressor::write(const void *buf,size32_t buflen)
     }
     inlen += buflen;
     return buflen;
+}
+
+bool CLZWCompressor::adjustLimit(size32_t newLimit)
+{
+    assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+    assertex(inlenblk == COMMITTED);             // not inside a transaction
+    assertex(newLimit <= originalMax);
+
+    if (newLimit < SAFETY_MARGIN + outlen)
+        return false;
+    maxlen = newLimit - SAFETY_MARGIN;
+    return true;
 }
 
 void CLZWCompressor::startblock()
@@ -1272,6 +1285,7 @@ class jlib_decl CRDiffCompressor : public ICompressor, public CInterface
     size32_t outlen;
     size32_t bufalloc;
     size32_t remaining;
+    size32_t originalMax = 0;
     void *outbuf;
     unsigned char *out;
     MemoryBuffer *outBufMb;
@@ -1334,6 +1348,7 @@ public:
 
     void open(void *buf,size32_t max)
     {
+        originalMax = max;
         if (buf)
         {
             if (bufalloc)
@@ -1364,6 +1379,18 @@ public:
             outBufMb->setWritePos(outBufStart+outlen);
             outBufMb = NULL;
         }
+    }
+
+    virtual bool adjustLimit(size32_t newLimit) override
+    {
+        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(transbuf.length() == 0);           // not inside a transaction
+        assertex(newLimit <= originalMax);
+
+        if (newLimit < outlen + maxrecsize)
+            return false;
+        remaining = newLimit - outlen;
+        return true;
     }
 
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
@@ -1545,6 +1572,7 @@ class jlib_decl CRandRDiffCompressor : public ICompressor, public CInterface
     size32_t inlen;
     size32_t bufalloc;
     size32_t max;
+    size32_t originalMax = 0;
     void *outbuf;
     RRDheader *header;
     // assumes a transaction is a record
@@ -1600,6 +1628,7 @@ public:
     void open(void *buf,size32_t _max)
     {
         max = _max;
+        originalMax = max;
         if (buf) {
             if (bufalloc) {
                 free(outbuf);
@@ -1643,6 +1672,18 @@ public:
         unsigned i = header->numrows;
         while (i--)
             header->rowofs[i] += hofs;
+    }
+
+    virtual bool adjustLimit(size32_t newLimit) override
+    {
+        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(rowbuf.length() == 0);             // not inside a transaction
+        assertex(newLimit <= originalMax);
+
+        if (newLimit < header->totsize+sizeof(short)+header->firstrlesize)
+            return false;
+        max = newLimit;
+        return true;
     }
 
     inline size32_t maxcompsize(size32_t s) { return s+((s+254)/255)*2; }
@@ -2531,6 +2572,7 @@ class CAESCompressor : implements ICompressor, public CInterface
     void *outbuf;               // dest
     size32_t outlen;
     size32_t outmax;
+    size32_t originalMax = 0;
     MemoryAttr key;
     MemoryBuffer *outBufMb;
 
@@ -2558,6 +2600,7 @@ public:
     {
         outlen = 0;
         outmax = blksize;
+        originalMax = blksize;
         if (blk)
             outbuf = blk;
         else
@@ -2565,6 +2608,16 @@ public:
         outBufMb = NULL;
         size32_t subsz = blksize-AES_PADDING_SIZE-sizeof(size32_t);
         comp->open(compattr.reserveTruncate(subsz),subsz);
+    }
+
+    virtual bool adjustLimit(size32_t newLimit) override
+    {
+        assertex(newLimit <= originalMax);
+
+        if (!comp->adjustLimit(newLimit-AES_PADDING_SIZE-sizeof(size32_t)))
+            return false;
+        outmax = newLimit;
+        return true;
     }
 
     void close()

@@ -17,17 +17,28 @@
 
 # Base container image that builds all HPCC platform components
 
-ARG BASE_VER=8.6 
+ARG BASE_VER=8.12-rc2
 ARG CR_USER=hpccsystems
 ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
-FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
+FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}-ubuntu-22.04:${BASE_VER}
 
 RUN apt-get update
-RUN apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common
+RUN apt-get install -y dirmngr gnupg apt-transport-https ca-certificates software-properties-common \
+    libcppunit-dev default-jdk python3-dev \
+    bash-completion \
+    expect \
+    git \
+    nano \
+    valgrind \
+    sudo \
+    vim \
+    gdb \
+    software-properties-common \  
+    lsb-release \
+    jq
+
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-RUN apt-add-repository 'deb https://download.mono-project.com/repo/ubuntu stable-focal main'
-RUN apt install -y mono-complete groff-base
 
 RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
@@ -35,11 +46,12 @@ RUN passwd -l hpcc
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.18/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
 
-ENV VCPKG_BINARY_SOURCES="clear;nuget,GitHub,read"
-ENV VCPKG_NUGET_REPOSITORY=https://github.com/hpcc-systems/vcpkg
-
 WORKDIR /hpcc-dev
-RUN chown hpcc:hpcc /hpcc-dev
+RUN mkdir build
+WORKDIR /hpcc-dev/build
+RUN mv ../vcpkg_installed .
+RUN chown -R hpcc:hpcc /hpcc-dev
+WORKDIR /hpcc-dev
 
 # Runs as hpcc to fetch sources and build, to aid debugging containers as user hpcc
 USER hpcc
@@ -57,17 +69,7 @@ WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
 RUN ./bootstrap-vcpkg.sh
 ARG GITHUB_ACTOR=hpcc-systems
 ARG GITHUB_TOKEN=none
-RUN mono `./vcpkg fetch nuget | tail -n 1` \
-    sources add \
-    -name "GitHub" \
-    -source "https://nuget.pkg.github.com/hpcc-systems/index.json" \
-    -storepasswordincleartext \
-    -username "${GITHUB_ACTOR}" \
-    -password "${GITHUB_TOKEN}"
 
-
-WORKDIR /hpcc-dev
-RUN mkdir build
 WORKDIR /hpcc-dev/build
 
 ARG SIGN_MODULES=OFF
@@ -86,7 +88,7 @@ RUN --mount=type=secret,id=passphrase,uid=10000 cmake /hpcc-dev/HPCC-Platform \
     -Wno-dev -DCONTAINERIZED=1 \
     -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DUSE_PYTHON2=0 \
     -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=${USE_CPPUNIT} -DSIGN_MODULES=${SIGN_MODULES} \
-    -DSIGN_MODULES_KEYID=${SIGNING_KEYID} -DSIGN_MODULES_PASSPHRASE=$(cat /run/secrets/passphrase)
+    -DSIGN_MODULES_KEYID=${SIGNING_KEYID} -DSIGN_MODULES_PASSPHRASE=$(cat /run/secrets/passphrase) -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON
 RUN rm -rf ./vcpkg_downloads && rm -rf ./vcpkg_buildtrees && rm -rf ./vcpkg_packages
 
 ARG BUILD_THREADS

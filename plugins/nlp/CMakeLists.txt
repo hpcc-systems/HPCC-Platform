@@ -67,7 +67,8 @@ if(USE_NLP)
 
     install(
         TARGETS nlp
-        DESTINATION plugins)
+        DESTINATION plugins
+        CALC_DEPS)
 
     target_link_libraries(nlp
         eclrtl

@@ -10,6 +10,8 @@ define([
 
     "dijit/registry",
 
+    "src/Utility",
+
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
     "src/Clippy",
@@ -49,7 +51,7 @@ define([
     "hpcc/TableContainer"
 
 ], function (exports, declare, lang, nlsHPCCMod, dom, domAttr, domClass, domForm,
-    registry,
+    registry, Utility,
     _TabContainerWidget, DelayLoadWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileSpray, DataPatternsWidget, Session,
     template) {
 
@@ -462,6 +464,10 @@ define([
                 this.updateInput("RecordSize", oldValue, this.i18n.NoPublishedSize);
             } else if (name === "Cost") {
                 this.updateInput("FormattedCost", oldValue, Session.formatCost(newValue));
+            } else if (name === "MinSkew") {
+                domAttr.set(this.id + "MinSkew", "innerHTML", this.logicalFile.MinSkew ? Math.abs(this.logicalFile.MinSkew) + "%" : "");
+            } else if (name === "MaxSkew") {
+                domAttr.set(this.id + "MaxSkew", "innerHTML", this.logicalFile.MaxSkew ? this.logicalFile.MaxSkew + "%" : "");
             }
         },
 

@@ -675,9 +675,6 @@ export function resolve(hpccWidget, callback) {
         case "MembersWidget":
             require(["hpcc/MembersWidget"], doLoad);
             break;
-        case "MonitoringWidget":
-            require(["hpcc/MonitoringWidget"], doLoad);
-            break;
         case "PackageMapDetailsWidget":
             require(["hpcc/PackageMapDetailsWidget"], doLoad);
             break;
@@ -1059,6 +1056,15 @@ export function deleteCookie(name: string) {
     const expireDate = new Date();
     expireDate.setSeconds(expireDate.getSeconds() + 1);
     document.cookie = `${name}=; domain=${window.location.hostname}; path=/; expires=${expireDate.toUTCString()}`;
+}
+
+const d3FormatDecimal = d3Format(",.2f");
+
+export function formatDecimal(str): string {
+    if (isNaN(str)) {
+        return str;
+    }
+    return d3FormatDecimal(str);
 }
 
 export function formatNum(str): string {

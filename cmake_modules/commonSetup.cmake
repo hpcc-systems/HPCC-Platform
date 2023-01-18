@@ -58,10 +58,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_C11_REGEX "Configure use of c++11 std::regex" ON)
   option(Boost_USE_STATIC_LIBS "Use boost_regex static library for RPM BUILD" OFF)
   option(USE_OPENSSL "Configure use of OpenSSL" ON)
-  option(USE_OPENSSLV3 "Configure use of OpenSSL Version 3 or newer" OFF)
+  option(USE_OPENSSLV3 "Configure use of OpenSSL Version 3 or newer" ON)
   option(USE_ZLIB "Configure use of zlib" ON)
   option(USE_AZURE "Configure use of azure" ON)
-  option(USE_H3 "Configure use of Uber H3 geospatial indexing" ON)
   option(USE_NLP "Configure use of NLP++ engine" ON)
   option(USE_GIT "Configure use of GIT (Hooks)" ON)
   if (WIN32)
@@ -161,19 +160,21 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   
     # Plugin options
     set(PLUGINS_LIST
-    REMBED
-    V8EMBED
-    MEMCACHED
-    REDIS
-    SQS
-    MYSQLEMBED
-    JAVAEMBED
-    SQLITE3EMBED
-    KAFKA
-    COUCHBASEEMBED
-    SPARK
-    ECLBLAS
-    MONGODBEMBED
+        CASSANDRAEMBED
+        COUCHBASEEMBED
+        ECLBLAS
+        H3
+        JAVAEMBED
+        KAFKA
+        MEMCACHED
+        MONGODBEMBED
+        MYSQLEMBED
+        REDIS
+        REMBED
+        SPARK
+        SQLITE3EMBED
+        SQS
+        V8EMBED
     EXAMPLEPLUGIN)
     foreach(plugin ${PLUGINS_LIST})
         option(${plugin} "Create a package with ONLY the ${plugin} plugin" OFF)
@@ -911,7 +912,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
       if(USE_LIBXSLT)
         find_package(LibXslt)
-        if (LIBXSLT_FOUND)
+        if (LibXslt_FOUND)
           add_definitions (-D_USE_LIBXSLT)
         else()
           message(FATAL_ERROR "LIBXSLT requested but package not found")
@@ -1200,5 +1201,79 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       add_dependencies(${module_without_extension}-ecl export-stdlib-pubkey)
     endif()
   ENDMACRO()
+
+  function(install)
+    z_vcpkg_function_arguments(ARGS)
+
+    # Check if the `CALC_DEPS` flag is set
+    set(CALC_DEPS false)
+    if ("${ARGS}" MATCHES "CALC_DEPS")
+      set(CALC_DEPS true)
+      list(REMOVE_ITEM ARGS "CALC_DEPS")
+    endif()
+
+    _install(${ARGS})
+
+    if(ARGV0 STREQUAL "TARGETS" AND CALC_DEPS)
+
+      # Will contain the list of targets
+      set(parsed_targets "")
+
+      # Destination - [RUNTIME] DESTINATION argument overrides this
+      set(destination "bin")
+
+      set(component_param "")
+
+      # Parse arguments given to the install function to find targets and (runtime) destination
+      set(modifier "") # Modifier for the command in the argument
+      set(last_command "") # Last command we found to process
+      foreach(arg IN LISTS ARGS)
+          if(arg MATCHES "^(ARCHIVE|LIBRARY|RUNTIME|OBJECTS|FRAMEWORK|BUNDLE|PRIVATE_HEADER|PUBLIC_HEADER|RESOURCE|INCLUDES)$")
+              set(modifier "${arg}")
+              continue()
+          endif()
+          if(arg MATCHES "^(TARGETS|DESTINATION|PERMISSIONS|CONFIGURATIONS|COMPONENT|NAMELINK_COMPONENT|OPTIONAL|EXCLUDE_FROM_ALL|NAMELINK_ONLY|NAMELINK_SKIP|EXPORT)$")
+              set(last_command "${arg}")
+              continue()
+          endif()
+
+          if(last_command STREQUAL "TARGETS")
+              list(APPEND parsed_targets "${arg}")
+          endif()
+
+          if(last_command STREQUAL "DESTINATION" AND (modifier STREQUAL "" OR modifier STREQUAL "RUNTIME"))
+              set(destination "${arg}")
+          endif()
+
+          if(last_command STREQUAL "COMPONENT")
+              set(component_param "COMPONENT" "${arg}")
+          endif()
+      endforeach()
+
+      foreach(target IN LISTS parsed_targets)
+        install(CODE "set(_arg1 \"\$<TARGET_FILE:${target}>\")")
+        if (WIN32)
+          install(CODE "set(vcpkg_installed \"${CMAKE_BINARY_DIR}\")")
+          install(CODE "set(destination \"bin\")")
+        else (WIN32)
+          install(CODE "set(vcpkg_installed \"${VCPKG_FILES_DIR}/vcpkg_installed\")")
+          install(CODE "set(destination \"lib\")")
+        endif (WIN32)
+        install(CODE [[
+            file(GET_RUNTIME_DEPENDENCIES
+                RESOLVED_DEPENDENCIES_VAR _r_deps
+                UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                LIBRARIES ${_arg1}
+            )
+            foreach(_file ${_r_deps})
+              string(FIND "${_file}" "${vcpkg_installed}" found)
+              if ("${found}" EQUAL 0)
+                file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/${destination}" TYPE SHARED_LIBRARY FOLLOW_SYMLINK_CHAIN FILES "${_file}")
+              endif()
+            endforeach()
+          ]])
+      endforeach()
+    endif()
+  endfunction()
 
 endif ("${COMMONSETUP_DONE}" STREQUAL "")

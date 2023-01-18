@@ -52,7 +52,7 @@ include_directories (
 ADD_DEFINITIONS ( -D_USRDLL -DZCRYPT_EXPORTS )
 
 HPCC_ADD_LIBRARY( zcrypt SHARED ${SRCS} )
-install ( TARGETS zcrypt RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( TARGETS zcrypt RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS )
 target_link_libraries ( zcrypt
          jlib
          ${ZLIB_LIBRARIES} 

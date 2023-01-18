@@ -41,7 +41,7 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( configgen ${SRCS} )
-install ( TARGETS configgen DESTINATION sbin )
+install ( TARGETS configgen DESTINATION sbin CALC_DEPS)
 target_link_libraries ( configgen 
         deploy 
         jlib 

@@ -27,6 +27,10 @@
 #include <fstream>
 #include "Utils.hpp"
 
+#ifdef _MSC_VER
+#undef GetObject
+#endif
+
 //
 // Good online resource for validation of modification templates is https://www.jsonschemavalidator.net/
 // Load the schecma (ModTemplateSchema.json) in the left window and the modification template in the right.

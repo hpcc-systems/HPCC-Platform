@@ -4,8 +4,6 @@
             <div id="${id}StackController" class="left glow" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
             <div id="${id}searchUserMoreComponents" class="searchUserMoreComponents">
                 <div id="${id}plugin_32-32" class="left" style="margin-top:9px;width:32px;height:32px;overflow:hidden"></div>
-                <div id="MonitorStatus" class="None" data-dojo-attach-event="onClick:_onMonitoring"></div>
-                <div id="MonitorStatusSeperator" class="seperator grey"></div>
                 <form id="search-form" onsubmit="return false;">
                     <input id="${id}FindText" data-dojo-props="placeHolder: '${i18n.PlaceholderFindText}', trim: true" data-dojo-type="dijit.form.TextBox" />
                     <button id="${id}Find" type="submit" data-dojo-props="iconClass:'iconFind', showLabel: false" data-dojo-attach-event="onClick:_onFind" data-dojo-type="dijit.form.Button">${i18n.Find}</button>

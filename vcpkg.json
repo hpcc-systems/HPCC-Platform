@@ -26,12 +26,9 @@
         },
         "h3",
         "hiredis",
-        {
-            "name": "icu",
-            "platform": "!linux"
-        },
-        "jwt-cpp",
+        "icu",
         "jsoncpp",
+        "jwt-cpp",
         {
             "name": "libarchive",
             "default-features": false,
@@ -39,11 +36,21 @@
                 "bzip2"
             ]
         },
+        "libcouchbase-cxx",
+        "libevent",
+        "libgit2",
         {
             "name": "libiconv",
             "platform": "osx"
         },
-        "libgit2",
+        {
+            "name": "libmemcached",
+            "platform": "!windows & !osx"
+        },
+        {
+            "name": "libmysql",
+            "platform": "!(windows & x86)"
+        },
         "librdkafka",
         "libuv",
         "libxml2",
@@ -57,12 +64,23 @@
         "mongo-cxx-driver",
         "nlohmann-json",
         {
+            "name": "numactl",
+            "platform": "!windows & !osx"
+        },
+        {
             "name": "openblas",
             "features": [
                 "dynamic-arch",
                 "threads"
             ],
             "platform": "!windows"
+        },
+        {
+            "name": "openblas",
+            "features": [
+                "threads"
+            ],
+            "platform": "windows"
         },
         {
             "name": "openldap",
@@ -74,6 +92,7 @@
             "platform": "windows"
         },
         "rapidjson",
+        "sqlite3",
         "tbb",
         {
             "name": "winflexbison",
