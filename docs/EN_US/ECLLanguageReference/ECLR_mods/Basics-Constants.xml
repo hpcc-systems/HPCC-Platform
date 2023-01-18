@@ -94,7 +94,7 @@ MyString2 := U'abcd\353';    // becomes 'abcdë'
     <para><emphasis role="bold">Unicode string<indexterm>
         <primary>Unicode string</primary>
       </indexterm> constants </emphasis>must begin with a leading "U"
-    character. Characters between the quotes are utf8-encoded and the type of
+    character. Characters between the quotes are utf16-encoded and the type of
     the constant is UNICODE.</para>
 
     <programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'

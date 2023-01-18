@@ -146,20 +146,19 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
     if (!invoke_program(cmd.str(), runcode, false))
         throw makeStringExceptionV(-1,"Error spawning %s", exe);
 #else
-    if (SSHusername.isEmpty())
+    //Run the program directly if it is being run on the local machine - so ssh doesn't need to be running...
+    //Change once we have solved the problems with ssh etc. on windows?
+    if (childEP.isLocal())
     {
-        //Run the program directly if it is being run on the local machine - so ssh doesn't need to be running...
-        //Change once we have solved the problems with ssh etc. on windows?
-        if (childEP.isLocal())
-        {
-            DWORD runcode;
-            if (!invoke_program(cmd.str(), runcode, false))
-                throw makeStringExceptionV(-1,"Error spawning %s", exe);
-        }
-        else
-            throw MakeStringException(-1,"SSH user not specified");
+        DWORD runcode;
+        if (!invoke_program(cmd.str(), runcode, false))
+            throw makeStringExceptionV(-1,"Error spawning %s", exe);
     }
-    else {
+    else
+    {
+        if (SSHusername.isEmpty())
+            throw MakeStringException(-1,"SSH user not specified");
+        
         Owned<IFRunSSH> runssh = createFRunSSH();
         runssh->init(cmd.str(),SSHidentfilename,SSHusername,SSHpasswordenc,SSHtimeout,SSHretries);
         runssh->exec(childEP,NULL,true); // need workdir? TBD

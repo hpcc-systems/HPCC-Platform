@@ -789,25 +789,32 @@ static void doRename(const char *src, const char *dst, const char *callerName)
 
 #ifndef _WIN32 // NB: this is primary here to help track down the issue reported in HPCC-28454
         // why did rename fail? - check that src and path of dst exists (and/or is accessible), and trace it's gid and uid, size and is_dir status.
-        struct stat srcInfo;
-        if (0 != stat(src, &srcInfo))
-            throw makeErrnoExceptionV("%s-doRename - stat SRC(%s)", callerName, src);
+
+        DBGLOG("%s-doRename(%s, %s) FAILED (attempt %u)", callerName, src, dst, retry+1);
+
+        struct stat statInfo;
         CDateTime modTime;
-        timetToIDateTime(&modTime, srcInfo.st_mtime);
-        StringBuffer srcModTime;
-        modTime.getString(srcModTime);
+        StringBuffer modTimeStr;
+        if (0 != stat(src, &statInfo))
+            DBGLOG("src stat[error=%d ('%s')]", errno, strerror(errno));
+        else
+        {
+            timetToIDateTime(&modTime, statInfo.st_mtime);
+            modTime.getString(modTimeStr);
+            DBGLOG("src stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)statInfo.st_uid, (unsigned)statInfo.st_gid, (offset_t)statInfo.st_size, boolToStr(S_ISDIR(statInfo.st_mode)), modTimeStr.str());
+        }
 
         StringBuffer dstPath;
         splitDirTail(dst, dstPath);
-        struct stat dstInfo;
-        if (0 != stat(dstPath, &dstInfo))
-            throw makeErrnoExceptionV("%s-doRename - stat DST-PATH(%s)", callerName, dstPath.str());
-        timetToIDateTime(&modTime, dstInfo.st_mtime);
-        StringBuffer dstModTime;
-        modTime.getString(dstModTime);
-        DBGLOG("%s-doRename(%s, %s) FAILED (attempt %u)", callerName, src, dst, retry+1);
-        DBGLOG("       src stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)srcInfo.st_uid, (unsigned)srcInfo.st_gid, (offset_t)srcInfo.st_size, boolToStr(S_ISDIR(srcInfo.st_mode)), srcModTime.str());
-        DBGLOG("  dst-path stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)dstInfo.st_uid, (unsigned)dstInfo.st_gid, (offset_t)dstInfo.st_size, boolToStr(S_ISDIR(dstInfo.st_mode)), dstModTime.str());
+
+        if (0 != stat(dstPath, &statInfo))
+            DBGLOG("dst-path stat[error (%d) : %s", errno, strerror(errno));
+        else
+        {
+            timetToIDateTime(&modTime, statInfo.st_mtime);
+            modTime.getString(modTimeStr.clear());
+            DBGLOG("dst-path stat[uid=%u, gid=%u, size=%" I64F "u, dir=%s, modtime=%s]", (unsigned)statInfo.st_uid, (unsigned)statInfo.st_gid, (offset_t)statInfo.st_size, boolToStr(S_ISDIR(statInfo.st_mode)), modTimeStr.str());
+        }
 #endif
 
         if (0 == retriesLeft)
@@ -2255,7 +2262,7 @@ void CCheckingFileIO::report(const char * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCinternalError, unknownJob, format, args);
+    VALOG(MCdebugError, unknownJob, format, args);
     va_end(args);
     if (!traced)
     {

@@ -39,21 +39,22 @@ public:
 };
 
 
-class jlib_decl CLZWCompressor : public ICompressor, public CInterface
+class CLZWCompressor final : public ICompressor, public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
 
     CLZWCompressor(bool _supportbigendian);
-    virtual         ~CLZWCompressor();
-    virtual void    open(MemoryBuffer &mb, size32_t initialSize);
-    virtual void    open(void *blk,size32_t blksize);
-    virtual void    close();
-    virtual size32_t    write(const void *buf,size32_t len);
-    virtual void *  bufptr() { return outbuf;}
-    virtual size32_t    buflen() { return outlen;}
-    virtual void    startblock();
-    virtual void    commitblock();
+    virtual ~CLZWCompressor();
+    virtual void open(MemoryBuffer &mb, size32_t initialSize) override;
+    virtual void open(void *blk,size32_t blksize) override;
+    virtual void close() override;
+    virtual size32_t write(const void *buf,size32_t len) override;
+    virtual void * bufptr() override { return outbuf;}
+    virtual size32_t buflen() override { return outlen;}
+    virtual void startblock() override;
+    virtual void commitblock() override;
+    virtual bool adjustLimit(size32_t newLimit) override;
 
 protected:
     void flushbuf();
@@ -64,6 +65,7 @@ protected:
     size32_t inlenblk;
     size32_t outlen;
     size32_t maxlen;
+    size32_t originalMax = 0;
     int curcode;
     size32_t bufalloc;
     void          *outbuf;
@@ -80,7 +82,6 @@ protected:
     unsigned char dictinuse[LZW_HASH_TABLE_SIZE];
     int dictcode[LZW_HASH_TABLE_SIZE];
     bool supportbigendian;
-
 };
 
 

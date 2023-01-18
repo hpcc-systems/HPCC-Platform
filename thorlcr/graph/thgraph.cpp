@@ -2875,8 +2875,7 @@ void CJobBase::startJob()
 
     constexpr unsigned defaultNumRenameRetries = 10;
     unsigned numRenameRetries = getOptInt64("numRenameRetries", getGlobalConfigSP()->getPropInt("expert/@numRenameRetries", defaultNumRenameRetries));
-    if (numRenameRetries)
-        setRenameRetries(numRenameRetries);
+    setRenameRetries(numRenameRetries);
 }
 
 void CJobBase::endJob()

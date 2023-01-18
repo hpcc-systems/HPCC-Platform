@@ -3,6 +3,7 @@ import { Pivot, PivotItem } from "@fluentui/react";
 import { WsDfu } from "@hpcc-js/comms";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
+import { QuerySortItem } from "src/store/Store";
 import { FileParts } from "./FileParts";
 import { useFile, useDefFile } from "../hooks/file";
 import { useUserTheme } from "../hooks/theme";
@@ -27,12 +28,14 @@ interface FileDetailsProps {
     cluster?: string;
     logicalFile: string;
     tab?: string;
+    sort?: QuerySortItem;
 }
 
 export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     cluster,
     logicalFile,
-    tab = "summary"
+    tab = "summary",
+    sort
 }) => {
 
     const { themeV9 } = useUserTheme();
@@ -74,29 +77,29 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             </PivotItem>
             {file?.isSuperfile
                 ? <PivotItem headerText={nlsHPCC.Subfiles} itemKey="subfiles" itemCount={file?.subfiles?.Item.length ?? 0} style={pivotItemStyle(size, 0)}>
-                    <SubFiles cluster={cluster} logicalFile={logicalFile} />
+                    <SubFiles cluster={cluster} logicalFile={logicalFile} sort={sort} />
                 </PivotItem>
                 : <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length ?? 0} style={pivotItemStyle(size, 0)}>
-                    <SuperFiles cluster={cluster} logicalFile={logicalFile} />
+                    <SuperFiles cluster={cluster} logicalFile={logicalFile} sort={sort} />
                 </PivotItem>
             }
             <PivotItem headerText={nlsHPCC.FileParts} itemKey="parts" itemCount={file?.fileParts().length ?? 0} style={pivotItemStyle(size, 0)}>
-                <FileParts cluster={cluster} logicalFile={logicalFile} />
+                <FileParts cluster={cluster} logicalFile={logicalFile} sort={sort} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemKey="queries" style={pivotItemStyle(size, 0)}>
                 <Queries filter={{ FileName: logicalFile }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length ?? 0} headerButtonProps={isDFUWorkunit ? { disabled: true, style: { background: themeV9.colorNeutralBackgroundDisabled, color: themeV9.colorNeutralForegroundDisabled } } : {}} style={pivotItemStyle(size, 0)}>
-                <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} />
+                <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} sort={sort} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="history" style={pivotItemStyle(size, 0)}>
-                <FileHistory cluster={cluster} logicalFile={logicalFile} />
+                <FileHistory cluster={cluster} logicalFile={logicalFile} sort={sort} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Blooms} itemKey="blooms" itemCount={file?.Blooms?.DFUFileBloom?.length} style={pivotItemStyle(size, 0)}>
-                <FileBlooms cluster={cluster} logicalFile={logicalFile} />
+                <FileBlooms cluster={cluster} logicalFile={logicalFile} sort={sort} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ProtectBy} itemKey="protectby" style={pivotItemStyle(size, 0)}>
-                <ProtectedBy cluster={cluster} logicalFile={logicalFile} />
+                <ProtectedBy cluster={cluster} logicalFile={logicalFile} sort={sort} />
             </PivotItem>
         </Pivot>
     }</SizeMe>;

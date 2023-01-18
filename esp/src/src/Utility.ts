@@ -1058,6 +1058,15 @@ export function deleteCookie(name: string) {
     document.cookie = `${name}=; domain=${window.location.hostname}; path=/; expires=${expireDate.toUTCString()}`;
 }
 
+const d3FormatDecimal = d3Format(",.2f");
+
+export function formatDecimal(str): string {
+    if (isNaN(str)) {
+        return str;
+    }
+    return d3FormatDecimal(str);
+}
+
 export function formatNum(str): string {
     if (isNaN(str)) {
         return str;
