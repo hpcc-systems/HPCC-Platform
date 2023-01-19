@@ -24,10 +24,10 @@
 IF (NOT NUMA_FOUND)
   SET (numa_lib "numa")
 
-  FIND_PATH (NUMA_INCLUDE_DIR NAMES numa.h PATHS /usr/include /usr/local/include /usr/share/include)
-  FIND_LIBRARY (NUMA_LIBRARIES NAMES ${numa_lib} PATHS /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 /usr/share)
+  FIND_PATH (NUMA_INCLUDE_DIR NAMES numa.h)
+  FIND_LIBRARY (NUMA_LIBRARIES NAMES ${numa_lib})
 
-  find_package_handle_standard_args(numa DEFAULT_MSG
+  find_package_handle_standard_args(NUMA DEFAULT_MSG
     NUMA_LIBRARIES
     NUMA_INCLUDE_DIR
   )

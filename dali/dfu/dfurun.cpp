@@ -1285,6 +1285,17 @@ public:
                     // keys default wrap for copy
                     if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
                         destination->setNumPartsOverride(srcFile->numParts());
+                    else if (isContainerized())
+                    {
+                        StringBuffer clusterName;
+                        destination->getGroupName(0, clusterName);
+                        Owned<IPropertyTree> plane = getStoragePlane(clusterName);
+                        if (plane)
+                        {
+                            if (plane->hasProp("@defaultSprayParts"))
+                                destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                        }
+                    }
 
                     if (options->getSubfileCopy())
                         opttree->setPropBool("@compress",srcFile->isCompressed());
@@ -1350,16 +1361,20 @@ public:
                                 };
                             }
                         }
-#ifdef _CONTAINERIZED
-                        StringBuffer clusterName;
-                        destination->getGroupName(0, clusterName);
-                        Owned<IPropertyTree> plane = getStoragePlane(clusterName);
-                        if (plane)
+
+                        bool dirPerPart = false;
+                        //MORE: This could be combined with the code that gets defaultSprayParts
+                        if (isContainerized())
                         {
-                            if (plane->hasProp("@defaultSprayParts"))
-                                destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                            StringBuffer clusterName;
+                            destination->getGroupName(0, clusterName);
+                            Owned<IPropertyTree> plane = getStoragePlane(clusterName);
+                            if (plane)
+                            {
+                                dirPerPart = plane->getPropBool("@subDirPerFilePart", true);
+                            }
                         }
-#endif
+
                         if (destination->getWrap())
                         {
                             Owned<IFileDescriptor> fdesc = source?source->getFileDescriptor():NULL;
@@ -1452,6 +1467,10 @@ public:
                                 fdesc->queryProperties().setProp("@kind", "key");
                             else if (kind.length()) // JCSMORE may not really need separate "if (iskey)" line above
                                 fdesc->queryProperties().setProp("@kind", kind);
+
+                            if (dirPerPart && fdesc->numParts()>1)
+                                fdesc->setFlags(FileDescriptorFlags::dirperpart);
+
                             if (multiclusterinsert||multiclustermerge)
                                 multifdesc.setown(fdesc.getClear());
                             else

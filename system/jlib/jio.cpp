@@ -22,7 +22,7 @@
 #include "jfile.hpp"
 #include "jthread.hpp"
 #include "jio.ipp"
-#include "jlzw.ipp"
+#include "jlzw.hpp"
 #include "jmisc.hpp"
 #include <time.h>
 #include <limits.h>

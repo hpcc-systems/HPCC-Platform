@@ -598,7 +598,7 @@ static FASTLZ_INLINE size32_t FASTLZ_DECOMPRESSOR(const void* input, size32_t le
     size32_t trailsize; bytes traildata;    // unexpanded
 */
 
-class jlib_decl CFastLZCompressor : public CFcmpCompressor
+class CFastLZCompressor final : public CFcmpCompressor
 {
     HTAB_T ht;
 
@@ -612,6 +612,21 @@ class jlib_decl CFastLZCompressor : public CFcmpCompressor
             trailing = false;
             inmax -= (fastlzSlack(inmax) + sizeof(size32_t));
         }
+    }
+
+    virtual bool adjustLimit(size32_t newLimit) override
+    {
+        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(inlenblk == COMMITTED);            // not inside a transaction
+        assertex(newLimit <= originalMax);
+
+        //Reject the limit change if it is too small for the data already committed.
+        if (newLimit < inlen + outlen + sizeof(size32_t))
+            return false;
+
+        blksz = newLimit;
+        setinmax();
+        return true;
     }
 
     virtual void flushcommitted()

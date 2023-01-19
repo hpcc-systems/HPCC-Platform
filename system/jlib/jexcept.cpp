@@ -1779,7 +1779,7 @@ const LogMsgCategory & mapToLogMsgCategory(ErrorSeverity severity, MessageAudien
                 case MSGAUD_audit:
                     return MCauditWarning;
                 default:
-                    return MCinternalWarning;
+                    return MCdebugWarning;
             }
         }
         case SeverityFatal:
@@ -1794,7 +1794,7 @@ const LogMsgCategory & mapToLogMsgCategory(ErrorSeverity severity, MessageAudien
                 case MSGAUD_audit:
                     return MCauditError;
                 default:
-                    return MCinternalError;
+                    return MCdebugError;
             }
         }
     }

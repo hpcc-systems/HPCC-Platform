@@ -67,6 +67,7 @@ unsigned numServerThreads = 30;
 unsigned numAgentThreads = 30;
 bool prestartAgentThreads = false;
 unsigned numRequestArrayThreads = 5;
+bool acknowledgeAllRequests = true;
 unsigned headRegionSize;
 unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
@@ -901,6 +902,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             }
         }
 
+        acknowledgeAllRequests = topology->getPropBool("@acknowledgeAllRequests", acknowledgeAllRequests);
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
@@ -1323,6 +1325,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         initializeTopology(topoValues, myRoles);
         writeSentinelFile(sentinelFile);
 #endif
+        configurePreferredPlanes();
         createDelayedReleaser();
         CCycleTimer loadPackageTimer;
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());

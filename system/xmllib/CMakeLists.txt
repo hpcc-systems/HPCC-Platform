@@ -65,7 +65,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DXMLLIB_EXPORTS )
 
 HPCC_ADD_LIBRARY( xmllib SHARED ${SRCS} )
-install ( TARGETS xmllib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( TARGETS xmllib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS)
 target_link_libraries ( xmllib
          ${LIB_LIBRARIES}
          eclrtl

@@ -1,0 +1,198 @@
+[cmake] The package zlib is compatible with built-in CMake targets:
+[cmake] 
+[cmake]     find_package(ZLIB REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE ZLIB::ZLIB)
+[cmake] 
+[cmake] The package openssl is compatible with built-in CMake targets:
+[cmake] 
+[cmake]     find_package(OpenSSL REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+[cmake] 
+[cmake] curl provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(CURL CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE CURL::libcurl)
+[cmake] 
+[cmake] The package aws-sdk-cpp:x64-linux-dynamic provides CMake targets:
+[cmake] 
+[cmake]     When using AWSSDK, AWSSDK_ROOT_DIR must be defined by the user.
+[cmake]     find_package(AWSSDK CONFIG COMPONENTS core dynamodb kinesis s3 REQUIRED)
+[cmake]     target_include_directories(main PRIVATE ${AWSSDK_INCLUDE_DIRS})
+[cmake]     target_link_libraries(main PRIVATE ${AWSSDK_LIBRARIES})
+[cmake]     
+[cmake]     OR
+[cmake]     
+[cmake]     find_package(aws-cpp-sdk-core REQUIRED)
+[cmake]     target_include_directories(main PRIVATE aws-cpp-sdk-core)
+[cmake]     target_link_libraries(main PRIVATE aws-cpp-sdk-core)
+[cmake] 
+[cmake] The package libxml2 is compatible with built-in CMake targets:
+[cmake] 
+[cmake]     find_package(LibXml2 REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE LibXml2::LibXml2)
+[cmake] 
+[cmake] azure-storage-blobs-cpp provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(azure-storage-blobs-cpp CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE Azure::azure-storage-blobs)
+[cmake] 
+[cmake] azure-storage-files-shares-cpp provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(azure-storage-files-shares-cpp CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE Azure::azure-storage-files-shares)
+[cmake] 
+[cmake] The package boost is compatible with built-in CMake targets:
+[cmake] 
+[cmake]     find_package(Boost REQUIRED [COMPONENTS <libs>...])
+[cmake]     target_link_libraries(main PRIVATE Boost::boost Boost::<lib1> Boost::<lib2> ...)
+[cmake] 
+[cmake] libuv provides CMake targets:
+[cmake] 
+[cmake]     find_package(libuv CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE $<IF:$<TARGET_EXISTS:uv_a>,uv_a,uv>)
+[cmake] 
+[cmake] cpr provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(cpr CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE cpr::cpr)
+[cmake] 
+[cmake] jsoncpp provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(jsoncpp CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE jsoncpp_lib jsoncpp_object JsonCpp::JsonCpp)
+[cmake] 
+[cmake] h3 provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(h3 CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE h3::h3)
+[cmake] 
+[cmake] hiredis provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(hiredis CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE hiredis::hiredis)
+[cmake] 
+[cmake] jwt-cpp is header-only and can be used from CMake via:
+[cmake] 
+[cmake]     find_path(JWT_CPP_INCLUDE_DIRS "jwt-cpp/base.h")
+[cmake]     target_include_directories(main PRIVATE ${JWT_CPP_INCLUDE_DIRS})
+[cmake] 
+[cmake] The package libarchive is compatible with the CMake Find Module:
+[cmake] 
+[cmake]     find_package(LibArchive REQUIRED)
+[cmake]     target_include_directories(main PRIVATE ${LibArchive_INCLUDE_DIRS})
+[cmake]     target_link_libraries(main PRIVATE ${LibArchive_LIBRARIES})
+[cmake] 
+[cmake]     find_package(LibArchive REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE LibArchive::LibArchive) # CMake >= 3.17
+[cmake] 
+[cmake] libevent provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(Libevent CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE libevent::core libevent::extra libevent::pthreads)
+[cmake] 
+[cmake] libcouchbase-cxx is header-only and can be used from CMake via:
+[cmake] 
+[cmake]     find_path(LIBCOUCHBASE_CXX_INCLUDE_DIRS "libcouchbase/couchbase++.h")
+[cmake]     target_include_directories(main PRIVATE ${LIBCOUCHBASE_CXX_INCLUDE_DIRS})
+[cmake] 
+[cmake] libgit2 provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(unofficial-git2 CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE unofficial::git2::git2)
+[cmake] 
+[cmake] lz4 provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(lz4 CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE lz4::lz4)
+[cmake] 
+[cmake] The package libmysql provides CMake targets:
+[cmake] 
+[cmake]     find_package(libmysql REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE ${MYSQL_LIBRARIES})
+[cmake] 
+[cmake] The package librdkafka:x64-linux-dynamic provides CMake targets:
+[cmake] 
+[cmake]     find_package(RdKafka CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE RdKafka::rdkafka RdKafka::rdkafka++)
+[cmake] 
+[cmake] The package libxslt is compatible with built-in CMake targets:
+[cmake] 
+[cmake]     # xslt library
+[cmake]     find_package(LibXslt REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE LibXslt::LibXslt)
+[cmake] 
+[cmake]     # exslt library
+[cmake]     find_package(LibXslt REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE LibXslt::LibExslt)
+[cmake] 
+[cmake] In order to use modules, you must set environment variable LIBXSLT_PLUGINS_PATH
+[cmake] at runtime.
+[cmake] 
+[cmake] libyaml provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(yaml CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE yaml)
+[cmake] 
+[cmake] mongo-cxx-driver provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(bsoncxx CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE mongo::bsoncxx_shared)
+[cmake] 
+[cmake]     find_package(mongocxx CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE mongo::mongocxx_shared)
+[cmake] 
+[cmake] The package nlohmann-json provides CMake targets:
+[cmake] 
+[cmake]     find_package(nlohmann_json CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE nlohmann_json::nlohmann_json)
+[cmake] 
+[cmake] The package nlohmann-json can be configured to not provide implicit conversions via a custom triplet file:
+[cmake] 
+[cmake]     set(nlohmann-json_IMPLICIT_CONVERSIONS OFF)
+[cmake] 
+[cmake] For more information, see the docs here:
+[cmake]     
+[cmake]     https://json.nlohmann.me/api/macros/json_use_implicit_conversions/
+[cmake] 
+[cmake] openblas provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(OpenBLAS CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE OpenBLAS::OpenBLAS)
+[cmake] 
+[cmake] The package openldapp can be imported via CMake FindPkgConfig module:
+[cmake] 
+[cmake]     find_package(PkgConfig)
+[cmake]     pkg_check_modules(OPENLDAP REQUIRED IMPORTED_TARGET ldap)
+[cmake]     
+[cmake]     target_link_libraries(main PRIVATE PkgConfig::OPENLDAP)
+[cmake] 
+[cmake] rapidjson provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(RapidJSON CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE rapidjson)
+[cmake] 
+[cmake] sqlite3 provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(unofficial-sqlite3 CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE unofficial::sqlite3::sqlite3)
+[cmake] 
+[cmake] tbb provides CMake targets:
+[cmake] 
+[cmake]     # this is heuristically generated, and may not be correct
+[cmake]     find_package(TBB CONFIG REQUIRED)
+[cmake]     target_link_libraries(main PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)

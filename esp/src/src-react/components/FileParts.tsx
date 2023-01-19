@@ -36,9 +36,19 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
             Id: { label: nlsHPCC.Part, sortable: true, width: 80 },
             Copy: { label: nlsHPCC.Copy, sortable: true, width: 80 },
             Ip: { label: nlsHPCC.IP, sortable: true, width: 80 },
-            Cluster: { label: nlsHPCC.Cluster, sortable: true, width: 480 },
-            PartsizeInt64: { label: nlsHPCC.Size, sortable: true, width: 120 },
-            CompressedSize: { label: nlsHPCC.CompressedSize, sortable: true, width: 120 },
+            Cluster: { label: nlsHPCC.Cluster, sortable: true, width: 280 },
+            PartsizeInt64: {
+                label: nlsHPCC.Size, sortable: true, width: 120,
+                formatter: React.useCallback(function (value, row) {
+                    return formatNum(value);
+                }, []),
+            },
+            CompressedSize: {
+                label: nlsHPCC.CompressedSize, sortable: true, width: 120,
+                formatter: React.useCallback(function (value, row) {
+                    return formatNum(value);
+                }, [])
+            },
         }
     });
 
@@ -50,8 +60,8 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
                 Copy: part.Copy,
                 Ip: part.Ip,
                 Cluster: cluster,
-                PartsizeInt64: formatNum(part.PartSizeInt64),
-                CompressedSize: part.CompressedSize ? formatNum(part.CompressedSize) : ""
+                PartsizeInt64: part.PartSizeInt64,
+                CompressedSize: part.CompressedSize
             };
         }));
     }, [cluster, file]);

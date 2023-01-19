@@ -91,7 +91,11 @@ export const routes: RoutesEx = [
             },
             { path: "/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={undefined} logicalFile={params.Name as string} />) },
             { path: "/:NodeGroup/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} />) },
-            { path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} />) },
+            {
+                path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => import("./components/FileDetails").then(_ => {
+                    return <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} sort={parseSort(ctx.search)} />;
+                })
+            },
         ]
     },
     {
@@ -231,10 +235,6 @@ export const routes: RoutesEx = [
             { path: "/groups/:name/:Tab", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} tab={params.Tab as string} />) },
             { path: "/permissions/:Name/:BaseDn", action: (ctx, params) => import("./components/Security").then(_ => <_.Security tab="permissions" name={params.Name as string} baseDn={params.BaseDn as string} />) },
         ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/monitoring", action: () => import("./components/Monitoring").then(_ => <_.Monitoring />)
     },
     {
         mainNav: ["topology-bare-metal"],

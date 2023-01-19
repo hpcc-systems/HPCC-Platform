@@ -503,6 +503,8 @@ protected:
     unsigned smartStepInfoLength = 0;
     const byte *contextData = nullptr;
     unsigned contextLength = 0;
+    std::atomic<unsigned> timeFirstSent = 0;
+    std::atomic<bool> acknowledged = false;
     
 public:
     IMPLEMENT_IINTERFACE;
@@ -539,6 +541,7 @@ public:
         assertex(lengthRemaining >= 0);
         contextData = finger;
         contextLength = lengthRemaining;
+        noteTimeSent();
     }
 
     virtual RoxiePacketHeader &queryHeader() const
@@ -635,6 +638,29 @@ public:
             mb.append(length, data);
         }
         return createSerializedRoxiePacket(mb);
+    }
+
+    virtual void noteTimeSent() override
+    {
+        acknowledged = false;
+        timeFirstSent = msTick();
+        if (!timeFirstSent)
+            timeFirstSent = 1;
+    }
+
+    virtual void setAcknowledged() override
+    {
+        acknowledged = true;
+    }
+
+    virtual bool isAcknowledged() const override
+    {
+        return acknowledged;
+    }
+
+    virtual bool resendNeeded(unsigned timeout, unsigned now) const override
+    {
+        return timeFirstSent && !acknowledged && now-timeFirstSent > timeout;
     }
 };
 
@@ -2022,6 +2048,7 @@ public:
                 Owned<ISerializedRoxieQueryPacket> serialized = packet->serialize();
                 if (!channelWrite(serialized->queryHeader(), true))
                     DBGLOG("Roxie packet write wrote too little");
+                packet->noteTimeSent();
                 packetsSent++;
             }
             catch (StoppedException *E)
@@ -2412,6 +2439,7 @@ public:
                 StringBuffer s;
                 throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s", maxPacketSize, header.toString(s).str());
             }
+            x->noteTimeSent();
             Owned <ISerializedRoxieQueryPacket> serialized = x->serialize();
             if (!channelWrite(serialized->queryHeader(), true))
                 logctx.CTXLOG("Roxie packet write wrote too little");
@@ -2624,7 +2652,7 @@ public:
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
                 // Unfortunately this is bad news for dropping packets
-            // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
+                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
 
                 Owned<const ITopologyServer> topology = getTopology();
                 const std::vector<unsigned> channels = topology->queryChannels();
@@ -2667,6 +2695,22 @@ public:
 #endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
+                if (acknowledgeAllRequests)
+                {
+#ifdef DEBUG
+                    if (testAgentFailure & 0x1 && !retries)
+                        return;
+#endif
+                    AgentContextLogger logctx(packet);
+                    if (doTrace(traceRoxiePackets))
+                    {
+                        StringBuffer buf;
+                        DBGLOG("Sending ROXIE_ALIVE to acknowledge request %s", header.toString(buf).str());
+                    }
+                    RoxiePacketHeader newHeader(header, ROXIE_ALIVE, mySubchannel);
+                    Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
+                    output->flush();
+                }
                 if (retries)
                 {
                     // MORE - is this fast enough? By the time I am seeing retries I may already be under load. Could move onto a separate thread
@@ -2676,7 +2720,7 @@ public:
 
                     AgentContextLogger logctx(packet);
                     // Send back an out-of-band immediately, to let Roxie server know that channel is still active
-                    if (!(testAgentFailure & 0x800))
+                    if (!(testAgentFailure & 0x800) && !acknowledgeAllRequests)
                     {
                         RoxiePacketHeader newHeader(header, ROXIE_ALIVE, mySubchannel);
                         Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);

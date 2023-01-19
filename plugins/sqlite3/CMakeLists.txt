@@ -25,8 +25,9 @@
 project(sqlite3embed)
 
 if(SQLITE3EMBED)
-    ADD_PLUGIN(sqlite3embed PACKAGES SQLITE3)
+    ADD_PLUGIN(sqlite3embed)
     if(MAKE_SQLITE3EMBED)
+        find_package(unofficial-sqlite3 CONFIG REQUIRED)
         set(
             SRCS
             sqlite3.cpp)
@@ -38,7 +39,7 @@ if(SQLITE3EMBED)
             ./../../rtl/nbcd
             ./../../common/deftype
             ./../../system/jlib
-            ${SQLITE3_INCLUDE_DIR})
+        )
 
         add_definitions(-D_USRDLL -DSQLITE3_EXPORTS)
 
@@ -51,10 +52,13 @@ if(SQLITE3EMBED)
 
         install(
             TARGETS sqlite3embed
-            DESTINATION plugins)
+            DESTINATION plugins
+            CALC_DEPS
+        )
         target_link_libraries(
             sqlite3embed
-            ${SQLITE3_LIBRARIES})
+            unofficial::sqlite3::sqlite3
+        )
         target_link_libraries(
             sqlite3embed
             eclrtl

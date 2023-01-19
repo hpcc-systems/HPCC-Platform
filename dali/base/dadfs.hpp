@@ -887,4 +887,6 @@ extern da_decl double calcFileAccessCost(const char * cluster, __int64 numDiskWr
 constexpr bool defaultPrivilegedUser = true;
 constexpr bool defaultNonPrivilegedUser = false;
 
+extern da_decl void configurePreferredPlanes();
+
 #endif

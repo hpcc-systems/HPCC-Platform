@@ -833,7 +833,7 @@ static void buildRestURL(StringArray& parentTypes, StringArray &path, IXmlType* 
         const char* itemName = type->queryFieldName(0);
         IXmlType*   itemType = type->queryFieldType(0);
         if (!itemName || !itemType)
-            throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
+            throw makeStringExceptionV(-1, "*** Invalid array definition: tag=%s, itemName=%s", tag?tag:"NULL", itemName?itemName:"NULL");
 
         StringBuffer itemURLPath(itemName);
         if (depth>1)

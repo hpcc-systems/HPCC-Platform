@@ -2115,6 +2115,7 @@ spec:
   - Egress
   egress:
 {{ toYaml $lvars.egress | indent 2 }}
+---
 {{- end -}}
 {{- end -}}
 

@@ -4070,10 +4070,20 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
         }
     }
 
-    void retryPending()
+    void retryPending(unsigned timeout)
     {
-        CriticalBlock b(pendingCrit);
         checkDelayed();
+        unsigned now = 0;
+        if (timeout)
+        {
+            if (doTrace(traceRoxiePackets))
+                DBGLOG("Checking %d pending packets for ack status", pending.ordinality());
+            now = msTick();
+            if (now-lastRetryCheck < timeout/4)
+                return;
+            lastRetryCheck = now;
+        }
+        CriticalBlock b(pendingCrit);
         ForEachItemIn(idx, pending)
         {
             IRoxieServerQueryPacket &p = pending.item(idx);
@@ -4082,6 +4092,12 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 IRoxieQueryPacket *i = p.queryPacket();
                 if (i)
                 {
+                    if (timeout)
+                    {
+                        if (!i->resendNeeded(timeout, now))
+                            continue;
+                        activity.queryLogCtx().CTXLOG("Input has not been acknowledged for %u ms - retry required?", timeout);
+                    }
                     if (!i->queryHeader().retry())
                     {
                         StringBuffer s;
@@ -4262,6 +4278,8 @@ public:
     cycle_t unpackerWaitCycles;
     bool timeActivities;
 
+    unsigned lastRetryCheck = 0;
+
 //private:   //vc6 doesn't like this being private yet accessed by nested class...
     const void *getRow(IMessageUnpackCursor *mu) 
     {
@@ -4393,6 +4411,7 @@ public:
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
         timeActivities = defaultTimeActivities;
+        lastRetryCheck = msTick();
     }
 
     ~CRemoteResultAdaptor()
@@ -4916,6 +4935,10 @@ public:
         {
             checkDelayed();
             activity.queryContext()->checkAbort();
+            if (acknowledgeAllRequests && !localAgent)
+            {
+                retryPending(checkInterval);
+            }
             bool anyActivity;
             if (ctxTraceLevel > 5)
                 activity.queryLogCtx().CTXLOG("Calling getNextUnpacker(%d)", checkInterval);
@@ -5135,11 +5158,12 @@ public:
                         break;
 
                     case ROXIE_ALIVE:
-                        if (ctxTraceLevel > 4)
+                        if (doTrace(traceRoxiePackets))
                         {
                             StringBuffer s;
                             activity.queryLogCtx().CTXLOG("ROXIE_ALIVE: %s", header.toString(s).str());
                         }
+                        op->setAcknowledged();
                         op->queryHeader().noteAlive(header.retries & ROXIE_RETRIES_MASK);
                         // Leave it on pending queue in original location
                         break;
@@ -5207,14 +5231,14 @@ public:
                     }
                 }
             }
-            else
+            else if (!anyActivity && !localAgent && !acknowledgeAllRequests)
             {
                 unsigned timeNow = msTick();
-                if (!anyActivity && !localAgent && (timeNow-lastActivity >= timeout))
+                if (timeNow-lastActivity >= checkInterval)
                 {
                     lastActivity = timeNow;
-                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout);
-                    retryPending();
+                    activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", checkInterval);
+                    retryPending(0);
                 }
             }
         }

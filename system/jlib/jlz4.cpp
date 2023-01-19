@@ -27,7 +27,7 @@
     size32_t trailsize; bytes traildata;    // unexpanded
 */
 
-class jlib_decl CLZ4Compressor : public CFcmpCompressor
+class CLZ4Compressor final : public CFcmpCompressor
 {
     bool hc;
 protected:
@@ -46,6 +46,21 @@ protected:
             else
                 inmax = inmax2;
         }
+    }
+
+    virtual bool adjustLimit(size32_t newLimit) override
+    {
+        assertex(bufalloc == 0 && !outBufMb);       // Only supported when a fixed size buffer is provided
+        assertex(inlenblk == COMMITTED);            // not inside a transaction
+        assertex(newLimit <= originalMax);
+
+        //Reject the limit change if it is too small for the data already committed.
+        if (newLimit < inlen + outlen + sizeof(size32_t))
+            return false;
+
+        blksz = newLimit;
+        setinmax();
+        return true;
     }
 
     virtual void flushcommitted() override

@@ -81,7 +81,7 @@ typedef enum
  *    DBGLOG([LogMsgCode,] format,..)          - uses MCdebugInfo                       *
  *                                                                                      *
  * 2) For fatal errors or unrecoverable errors:                                         *
- *    DISLOG([LogMsgCode,] format,..)          - uses MCdisaster                        *
+ *    DISLOG([LogMsgCode,] format,..)          - uses MCoperatorDisaster                        *
  *                                                                                      *
  * 3) For warning messages:                                                             *
  *    (i) Messages for End-users (including ECL coders) should use:                     *
@@ -91,7 +91,7 @@ typedef enum
  *        OWARNLOG([LogMsgCode,] format,..)    - uses MCoperatorWarning                 *
  *                                                                                      *
  *    (iii) Messages for platform developers:                                           *
- *        IWARNLOG([LogMsgCode,] format,..)    - uses MCinternalWarning                 *
+ *        IWARNLOG([LogMsgCode,] format,..)    - uses MCdebugWarning                 *
  *                                                                                      *
  * 4) For error messages:                                                               *
  *    (i) Messages for End-users (including ECL coders) should use:                     *
@@ -101,10 +101,10 @@ typedef enum
  *        OERRLOG([LogMsgCode,] format,..)     - uses MCoperatorError                   *
  *                                                                                      *
  *    (iii) Messages for platform developers:                                           *
- *        IERRLOG([LogMsgCode,] format,..)     - uses MCinternalError                   *
+ *        IERRLOG([LogMsgCode,] format,..)     - uses MCdebugError                   *
  *                                                                                      *
  *    (iv) Messages for audit:                                                          *
- *        AERRLOG([LogMsgCode,] format,..)     - uses MCinternalError                   *
+ *        AERRLOG([LogMsgCode,] format,..)     - uses MCdebugError                   *
  *                                                                                      *
  *                                                                                      *
  * 5) For progress messages:                                                            *
@@ -797,14 +797,14 @@ extern jlib_decl ILogMsgHandler * attachLogMsgMonitorFromPTree(IPropertyTree * t
 extern jlib_decl void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree);            // Takes tree containing many <monitor> elements
 
 // Standard categories and unknown jobInfo
-constexpr LogMsgCategory MCdisaster(MSGAUD_all, MSGCLS_disaster, FatalMsgThreshold);
+constexpr LogMsgCategory MCoperatorDisaster(MSGAUD_operator, MSGCLS_disaster, FatalMsgThreshold);
 constexpr LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error, ErrMsgThreshold);
 constexpr LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error, ErrMsgThreshold);
-constexpr LogMsgCategory MCinternalError(MSGAUD_programmer, MSGCLS_error, ErrMsgThreshold);
+constexpr LogMsgCategory MCdebugError(MSGAUD_programmer, MSGCLS_error, ErrMsgThreshold);
 constexpr LogMsgCategory MCauditError(MSGAUD_audit, MSGCLS_error, ErrMsgThreshold);
 constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning, WarnMsgThreshold);
 constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning, WarnMsgThreshold);
-constexpr LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, WarnMsgThreshold);
+constexpr LogMsgCategory MCdebugWarning(MSGAUD_programmer, MSGCLS_warning, WarnMsgThreshold);
 constexpr LogMsgCategory MCauditWarning(MSGAUD_audit, MSGCLS_warning, WarnMsgThreshold);
 constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress, ProgressMsgThreshold);
 constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
@@ -812,10 +812,8 @@ constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress, Deb
 constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information, InfoMsgThreshold);
 constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information, DebugMsgThreshold);
 constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThreshold);
-constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
-constexpr LogMsgCategory MCmetrics(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
-constexpr LogMsgCategory MCExtraneousInfo(MSGAUD_programmer, MSGCLS_information, ExtraneousMsgThreshold);
+constexpr LogMsgCategory MCoperatorMetric(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
 
 /*
  * Function to determine log level (detail) for exceptions, based on log message class
@@ -967,7 +965,7 @@ inline void DISLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdisaster, unknownJob, format, args);
+    VALOG(MCoperatorDisaster, unknownJob, format, args);
     va_end(args);
 }
 
@@ -997,7 +995,7 @@ inline void IERRLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCinternalError, unknownJob, format, args);
+    VALOG(MCdebugError, unknownJob, format, args);
     va_end(args);
 }
 
@@ -1037,7 +1035,7 @@ inline void IWARNLOG(char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCinternalWarning, unknownJob, format, args);
+    VALOG(MCdebugWarning, unknownJob, format, args);
     va_end(args);
 }
 
@@ -1094,7 +1092,7 @@ inline void DISLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCdisaster, unknownJob, code, format, args);
+    VALOG(MCoperatorDisaster, unknownJob, code, format, args);
     va_end(args);
 }
 
@@ -1121,13 +1119,13 @@ inline void IWARNLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCinternalWarning, unknownJob, code, format, args);
+    VALOG(MCdebugWarning, unknownJob, code, format, args);
     va_end(args);
 }
 
 inline void IWARNLOG(IException *except, const char *prefix=nullptr)
 {
-    LOG(MCinternalWarning, except, prefix);
+    LOG(MCdebugWarning, except, prefix);
 }
 
 inline void UWARNLOG(IException *except, const char *prefix=nullptr)
@@ -1154,7 +1152,7 @@ inline void IERRLOG(LogMsgCode code, char const * format, ...)
 {
     va_list args;
     va_start(args, format);
-    VALOG(MCinternalError, unknownJob, code, format, args);
+    VALOG(MCdebugError, unknownJob, code, format, args);
     va_end(args);
 }
 
@@ -1183,7 +1181,7 @@ inline void DBGLOG(IException *except, const char *prefix=NULL)
 
 inline void IERRLOG(IException *except, const char *prefix=NULL)
 {
-    LOG(MCinternalError, except, prefix);
+    LOG(MCdebugError, except, prefix);
 }
 
 inline void UERRLOG(IException *except, const char *prefix=NULL)
@@ -1198,7 +1196,7 @@ inline void OERRLOG(IException *except, const char *prefix=NULL)
 
 inline void DISLOG(IException *except, const char *prefix=NULL)
 {
-    LOG(MCdisaster, except, prefix);
+    LOG(MCoperatorDisaster, except, prefix);
 }
 
 #define EXCLOG FLLOG
