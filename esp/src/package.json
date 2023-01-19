@@ -84,7 +84,7 @@
     "@typescript-eslint/parser": "5.43.0",
     "copyfiles": "2.4.1",
     "css-loader": "6.7.2",
-    "dojo-webpack-plugin": "3.0.4",
+    "dojo-webpack-plugin": "3.0.5",
     "eslint": "8.27.0",
     "eslint-plugin-eclwatch": "file:./eslint",
     "eslint-plugin-react-hooks": "4.6.0",
