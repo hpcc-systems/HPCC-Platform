@@ -22,7 +22,7 @@ echo "VCPKG_REF: $VCPKG_REF"
 echo "DOCKER_USERNAME: $DOCKER_USERNAME"
 echo "DOCKER_PASSWORD: $DOCKER_PASSWORD"
 
-docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+# docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
 function doBuild() {
     docker build --progress plain --pull --rm -f "$SCRIPT_DIR/$1.dockerfile" \
@@ -41,7 +41,9 @@ function doBuild() {
 }
 
 CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
-doBuild ubuntu-22.04
+
+doBuild amazonlinux
+doBuild ubuntu-22.04 
 doBuild ubuntu-20.04
 doBuild ubuntu-18.04
 doBuild centos-8

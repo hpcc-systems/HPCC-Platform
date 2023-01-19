@@ -1,5 +1,5 @@
 ARG VCPKG_REF=latest
-FROM hpccbuilds/vcpkg-amazonlinux:$VCPKG_REF
+FROM hpccsystems/platform-build-base-amazonlinux:$VCPKG_REF
 
 RUN amazon-linux-extras install java-openjdk11 && yum install -y \
     java-11-openjdk-devel \

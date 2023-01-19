@@ -1,6 +1,5 @@
 ARG VCPKG_REF=latest
-ARG DOCKER_NAMESPACE=hpccbuilds
-FROM ${DOCKER_NAMESPACE}/vcpkg-centos-8:$VCPKG_REF
+FROM hpccsystems/platform-build-base-centos-8:$VCPKG_REF
 
 RUN yum remove -y java-1.* && yum install -y \
     java-11-openjdk-devel \
