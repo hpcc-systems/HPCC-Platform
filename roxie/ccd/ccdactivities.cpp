@@ -652,10 +652,10 @@ public:
 class OptimizedRowBuilder : public ARowBuilder, public CInterface
 {
 public:
-    OptimizedRowBuilder(IEngineRowAllocator * _rowAllocator, const CachedOutputMetaData & _meta, IMessagePacker * _output, IOutputRowSerializer * _serializer)
-        : dynamicBuilder(_rowAllocator, false), meta(_meta), output(_output), serializer(_serializer)
+    OptimizedRowBuilder(IEngineRowAllocator * _rowAllocator, const CachedOutputMetaData & _meta, IMessagePacker * _output, IOutputRowSerializer * _serializer, bool _directDynamic)
+        : dynamicBuilder(_rowAllocator, false), meta(_meta), output(_output), serializer(_serializer), directDynamic(_directDynamic)
     {
-        useDynamic = serializer != NULL || meta.isVariableSize();
+        useDynamic = serializer != NULL || directDynamic || meta.isVariableSize();
     }
     IMPLEMENT_IINTERFACE
 
@@ -721,7 +721,7 @@ public:
                 OwnedConstRoxieRow result = dynamicBuilder.finalizeRowClear(transformedSize);
                 if (serializer)
                     outputSize = serializeRow(serializer, output, result);
-                else
+                else if (!directDynamic)
                 {
                     self = static_cast<byte *>(output->getBuffer(transformedSize, true));
                     memcpy(self, result, transformedSize);
@@ -743,6 +743,7 @@ private:
     IMessagePacker * output;
     IOutputRowSerializer * serializer;
     bool useDynamic;
+    bool directDynamic;
 };
 
 class OptimizedKJRowBuilder : public ARowBuilder, public CInterface
@@ -1093,7 +1094,7 @@ public:
     {
         if (likely(helper->canMatch(src)))
         {
-            OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+            OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
             unsigned transformedSize = helper->transform(rowBuilder, src);
             return rowBuilder.writeToOutput(transformedSize, false);
         }
@@ -1148,7 +1149,7 @@ public:
 
     size32_t doTransform(IMessagePacker * output, unsigned *srcLen, const char **src) const
     {
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
         unsigned transformedSize = helper->transform(rowBuilder, srcLen, src);
         return rowBuilder.writeToOutput(transformedSize, false);
     }
@@ -1192,7 +1193,7 @@ public:
 
     size32_t doTransform(IMessagePacker * output, IXmlToRowTransformer *rowTransformer, IColumnProvider *lastMatch, IThorDiskCallback *callback) const
     {
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
         unsigned transformedSize = rowTransformer->transform(rowBuilder, lastMatch, callback);
         return rowBuilder.writeToOutput(transformedSize, false);
     }
@@ -1598,7 +1599,7 @@ public:
 
     size32_t doNormalizeTransform(IMessagePacker * output) const
     {
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
         unsigned transformedSize = helper->transform(rowBuilder);
         return rowBuilder.writeToOutput(transformedSize, false);
     }
@@ -1931,7 +1932,7 @@ public:
                 {
                     try
                     {
-                        CDummyMessagePacker d;
+                        CDummyMessagePacker d(nullptr, 0);
                         parts.item(i).doProcess(&d);
                         d.flush();
                         parent.processRow(d);
@@ -2121,7 +2122,7 @@ public:
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
     {
-        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer);
+        OptimizedRowBuilder rowBuilder(owner.rowAllocator, owner.meta, output, owner.serializer, false);
         helper->clearAggregate(rowBuilder);
         while (!aborted)
         {
@@ -2870,8 +2871,8 @@ public:
         }
         unsigned __int64 stopAfter = readHelper->getChooseNLimit();
 
-        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+        Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, serializer ? nullptr : meta.queryOriginal(), basefactory->queryId(), logctx);
+        OptimizedRowBuilder rowBuilder(serializer ? rowAllocator : output, meta, output, serializer, serializer==nullptr);
 
         unsigned totalSizeSent = 0;
         unsigned skipped = 0;
@@ -3146,7 +3147,7 @@ public:
         unsigned __int64 stopAfter = normalizeHelper->getChooseNLimit();
 
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
         unsigned totalSizeSent = 0;
         unsigned skipped = 0;
 
@@ -3417,7 +3418,7 @@ public:
         MTIME_SECTION(queryActiveTimer(), "CRoxieIndexAggregateActivity ::process");
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, logctx);
 
-        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+        OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
 
         rowBuilder.ensureRow();
         aggregateHelper->clearAggregate(rowBuilder);
@@ -3748,7 +3749,7 @@ IMessagePacker *CRoxieFetchActivityBase::process()
     unsigned accepted = 0;
     unsigned rejected = 0;
     unsigned __int64 rowLimit = helper->getRowLimit();
-    OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer);
+    OptimizedRowBuilder rowBuilder(rowAllocator, meta, output, serializer, false);
     while (!aborted && inputData < inputLimit)
     {
         checkPartChanged(*(PartNoType *) inputData);

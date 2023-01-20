@@ -1178,9 +1178,9 @@ public:
         static_cast<UdpReceiverEntry &>(receiver).pushData(queue, buffer);
     }
 
-    virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override
+    virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue, const IOutputMetaData *outputMeta, unsigned activityId) override
     {
-        return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[destNode], myIP, getNextMessageSequence(), queue, encrypted);
+        return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[destNode], myIP, getNextMessageSequence(), queue, encrypted, outputMeta, activityId);
     }
 
     virtual bool dataQueued(ruid_t ruid, unsigned msgId, const ServerIdentifier &destNode) override
@@ -1231,19 +1231,22 @@ class CMessagePacker : implements IMessagePacker, public CInterface
     DataBuffer     *part_buffer;
     const unsigned data_buffer_size;
     unsigned data_used;
-    void *mem_buffer;
-    unsigned mem_buffer_size;
+    MemoryBuffer mem_buffer;
     unsigned totalSize;
     bool            packed_request;
     MemoryBuffer    metaInfo;
     bool            last_message_done;
     int             queue_number;
+    const IOutputMetaData *outputMeta = nullptr;
+    unsigned activityId = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
-        : parent(_parent), receiver(_receiver), data_buffer_size(DATA_PAYLOAD - sizeof(UdpPacketHeader) - (_encrypted ? 16 : 0))
+    CMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, 
+                   unsigned _msgSeq, unsigned _queue, bool _encrypted, const IOutputMetaData *_outputMeta, unsigned _activityId)
+        : parent(_parent), receiver(_receiver), data_buffer_size(DATA_PAYLOAD - sizeof(UdpPacketHeader) - (_encrypted ? 16 : 0)),
+          outputMeta(_outputMeta), activityId(_activityId)
 
     {
         queue_number = _queue;
@@ -1262,8 +1265,6 @@ public:
         *(unsigned short *) (&part_buffer->data[sizeof(UdpPacketHeader)]) = headerSize;
         memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+sizeof(unsigned short)], messageHeader, headerSize);
         data_used = headerSize + sizeof(unsigned short);
-        mem_buffer = 0;
-        mem_buffer_size = 0;
         last_message_done = false;
         totalSize = 0;
     }
@@ -1272,9 +1273,27 @@ public:
     {
         if (part_buffer)
             part_buffer->Release();
-        if (mem_buffer) free (mem_buffer);
     }
 
+    unsigned capacity(bool variable)
+    {
+        unsigned len;
+        if (packed_request)
+        {
+            len = data_buffer_size - data_used;
+        }
+        else
+        {
+            len = mem_buffer.capacity();
+        }
+
+        if (variable)
+        {
+            assertex(len > sizeof(RecordLengthType));
+            len -= sizeof(RecordLengthType);
+        }
+        return len;
+    }
     virtual void *getBuffer(unsigned len, bool variable) override
     {
         if (variable)
@@ -1282,17 +1301,9 @@ public:
         if (data_buffer_size < len)
         {
             // Won't fit in one, so allocate temp location
-            if (mem_buffer_size < len)
-            {
-                free(mem_buffer);
-                mem_buffer = checked_malloc(len, ROXIE_MEMORY_ERROR);
-                mem_buffer_size = len;
-            }
             packed_request = false;
-            if (variable)
-                return ((char *) mem_buffer) + sizeof(RecordLengthType);
-            else
-                return mem_buffer;
+            char *ret = (char *) mem_buffer.ensureCapacity(len);
+            return ret + (variable ? sizeof(RecordLengthType) : 0);
         }
 
         if (part_buffer && ((data_buffer_size - data_used) < len))
@@ -1404,13 +1415,85 @@ private:
         package_header.pktSeq++;
     }
 
+// The implementation of IEngineRowAllocator allows us to construct rows directly into the buffer that is going to be used to return them
+// Many of these are never going to be needed, since anything involoving child rows is constructed in a standard row allocator then serialized.
 
+    virtual const byte * * createRowset(unsigned _numItems) override { throwUnexpected(); };
+    virtual const byte * * linkRowset(const byte * * rowset) override { throwUnexpected(); };
+    virtual void releaseRowset(unsigned count, const byte * * rowset) override { throwUnexpected(); };
+    virtual const byte * * appendRowOwn(const byte * * rowset, unsigned newRowCount, void * row) override { throwUnexpected(); };
+    virtual const byte * * reallocRows(const byte * * rowset, unsigned oldRowCount, unsigned newRowCount) override { throwUnexpected(); };
+    virtual void * linkRow(const void * row) override { throwUnexpected(); };
+
+    virtual void * createRow() override { size32_t dummy; return createRow(dummy); };
+    virtual void releaseRow(const void * row) override { };
+
+//Used for dynamically sizing rows.
+    virtual void * createRow(size32_t & allocatedSize) override 
+    {
+        assertex(outputMeta);
+        bool isVariable = !outputMeta->isFixedSize();
+        void *ret = getBuffer(outputMeta->getMinRecordSize(), isVariable);
+        allocatedSize = capacity(isVariable);
+        return ret;
+    };
+    virtual void * createRow(size32_t initialSize, size32_t & allocatedSize) override
+    {
+        assertex(outputMeta);
+        bool isVariable = !outputMeta->isFixedSize();
+        void *ret = getBuffer(initialSize, isVariable);
+        allocatedSize = capacity(isVariable);
+        return ret;
+    }
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) override 
+    {
+        // Should only get called if current capacity insufficient...
+        // This might mean 
+        //   We need to flush this dataBuffer and start a new one...
+        //   We need to flush this dataBuffer and switch to "unpacked" mode
+        //   We are already in unpacked mode and need to realloc the temp buffer bigger
+        assertex(outputMeta);
+        bool isVariable = !outputMeta->isFixedSize();   // If this is NOT true something really weird is happening!
+        void *ret;
+        if (packed_request)
+        {
+            roxiemem::OwnedRoxieRow d(::LINK(part_buffer));  // Ensure that it is not released by the flush...
+            flush(false);
+            ret = getBuffer(newSize, isVariable);
+            memcpy(ret, row, size); 
+        }
+        else
+        {
+            unsigned lenSize = isVariable ? sizeof(RecordLengthType) : 0;
+            ret = (char *) mem_buffer.ensureCapacity(newSize + lenSize) + lenSize;
+        }
+        size = capacity(isVariable);
+        return ret;
+    };
+    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) override 
+    {
+        assertex(outputMeta);
+        LinkRoxieRow(row);
+        putBuffer(row, newSize, !outputMeta->isFixedSize());
+        return row;
+    };
+    virtual IOutputMetaData * queryOutputMeta() override { return const_cast<IOutputMetaData *>(outputMeta); };
+    virtual unsigned queryActivityId() const override { return activityId; };
+    virtual StringBuffer &getId(StringBuffer &idStr) override { return idStr.append(activityId); };
+
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) override { throwUnexpected(); };
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) override { throwUnexpected(); };
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) override { throwUnexpected(); };
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) override { throwUnexpected(); };
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *childtype) override { throwUnexpected(); };
+    virtual void gatherStats(CRuntimeStatisticCollection & stats) override { throwUnexpected(); };
+    virtual void releaseAllRows() override { throwUnexpected(); };
 };
 
 
-extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
+extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted, const IOutputMetaData *_outputMeta, unsigned _activityId)
 {
-    return new CMessagePacker(ruid, msgId, messageHeader, headerSize, _parent, _receiver, _sourceNode, _msgSeq, _queue, _encrypted);
+    return new CMessagePacker(ruid, msgId, messageHeader, headerSize, _parent, _receiver, _sourceNode, _msgSeq, _queue, _encrypted, _outputMeta, _activityId);
 }
 
 IRoxieOutputQueueManager *ROQ = nullptr;

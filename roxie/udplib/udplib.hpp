@@ -22,6 +22,7 @@
 #include "jisem.hpp"
 #include "jsocket.hpp"
 #include "roxiemem.hpp"
+#include "eclhelper.hpp"
 
 #ifdef UDPLIB_EXPORTS
 #define UDPLIB_API DECL_EXPORT
@@ -82,7 +83,7 @@ public:
 
 extern UDPLIB_API ServerIdentifier myNode;
 
-interface IMessagePacker : extends IInterface
+interface IMessagePacker : extends IEngineRowAllocator
 {
     virtual void *getBuffer(unsigned len, bool variable) = 0;
     virtual void putBuffer(const void *buf, unsigned len, bool variable) = 0;
@@ -142,7 +143,7 @@ interface IUdpReceiverEntry
 
 interface ISendManager : extends IInterface 
 {
-    virtual IMessagePacker *createMessagePacker(ruid_t id, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) = 0;
+    virtual IMessagePacker *createMessagePacker(ruid_t id, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue, const IOutputMetaData *outputMeta, unsigned activityId) = 0;
     virtual void writeOwn(IUdpReceiverEntry &receiver, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) = 0;
     virtual bool dataQueued(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) = 0;
     virtual bool abortData(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) = 0;
@@ -173,7 +174,8 @@ interface IRoxieOutputQueueManager : public IInterface
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) = 0;
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) = 0;
-    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &x, bool outOfBand, const IRoxieContextLogger &logctx) = 0;
+    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &x, bool outOfBand, const IOutputMetaData *meta, unsigned activityId, const IRoxieContextLogger &logctx) = 0;
+    inline IMessagePacker *createOutputStream(RoxiePacketHeader &x, bool outOfBand, const IRoxieContextLogger &logctx) { return createOutputStream(x, outOfBand, nullptr, 0, logctx); }
     virtual bool replyPending(RoxiePacketHeader &x) = 0;
     virtual bool abortCompleted(RoxiePacketHeader &x) = 0;
 

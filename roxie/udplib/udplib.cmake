@@ -44,6 +44,7 @@ include_directories (
          ./../../roxie/roxie
          ./../../system/aeron/aeron-client/src/main/cpp 
          ./../../system/aeron/aeron-driver/src/main/c/
+         ./../../rtl/include
     )
 
 HPCC_ADD_LIBRARY( udplib SHARED ${SRCS} )
