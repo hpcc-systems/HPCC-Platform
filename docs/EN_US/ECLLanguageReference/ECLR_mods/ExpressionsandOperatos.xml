@@ -20,7 +20,7 @@
     <para>Standard arithmetic operators<indexterm>
         <primary>arithmetic operators</primary>
       </indexterm> are supported for use in expressions, listed here in their
-    evaluation precedence. </para>
+    evaluation precedence.</para>
 
     <para><variablelist>
         <varlistentry>
@@ -324,7 +324,9 @@
     <para>The Greater Than or Equal operator <emphasis
     role="underline">must</emphasis> have the Greater Than (&gt;) sign first.
     For the expression a &lt;=&gt; b, the Equivalence Comparison operator
-    returns -1 if a&lt;b, 0 if a=b, and 1 if a&gt;b. When STRINGs are compared
-    for equivalence, trailing spaces are ignored.</para>
+    returns -1 if a&lt;b, 0 if a=b, and 1 if a&gt;b. When STRINGs are
+    compared, trailing spaces are generally ignored. Standard library
+    functions, such as Std.Str.Find(), may consider trailing spaces. See the
+    Standard Library Reference for specific details.</para>
   </sect2>
 </sect1>

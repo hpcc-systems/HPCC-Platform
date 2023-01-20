@@ -79,7 +79,8 @@
   specified <emphasis>instance</emphasis> is greater than the number of
   occurrences of the <emphasis>target</emphasis> in the
   <emphasis>source</emphasis>, <emphasis role="bold">Find</emphasis> returns
-  zero (0).</para>
+  zero (0). Trailing spaces are considered to be significant when
+  comparing.</para>
 
   <para>Example:</para>
 
