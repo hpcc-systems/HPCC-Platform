@@ -2246,6 +2246,30 @@ IHqlExpression * applyBinaryFold(IHqlExpression * expr, binaryFoldFunc folder)
     return LINK(expr);
 }
 
+IHqlExpression * foldConcat(IHqlExpression * expr)
+{
+    // MORE - this only works for string, not unicode. And probably 1000 othr reasons why it's a bad idea
+    HqlExprArray concats;
+    unwindChildren(concats, expr);
+    ForEachItemIn(idx, concats)
+    {
+        if (!expr->queryChild(idx)->isConstant())
+            return LINK(expr);
+    }
+    MemoryBuffer result;
+    size32_t destSize = expr->queryType()->getSize();
+    assertex(destSize);  // And not unknown
+    result.ensureCapacity(destSize);
+    ForEachItemIn(idx2, concats)
+    {
+        IValue *v = expr->queryChild(idx2)->queryValue();
+        assertex(v);
+        result.append(v->queryType()->getSize(), (const char *) v->queryValue());
+    }
+    IHqlExpression *ret = createConstant(createStringValue(result.toByteArray(), LINK(expr->queryType())));
+    EclIR::dump_ir(ret);
+    return ret;
+}
 
 static bool isStringOrUnicode(ITypeInfo * type)
 {
@@ -2642,7 +2666,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             return LINK(expr);
         }
     case no_concat:
-        return applyBinaryFold(expr, concatValues);
+        return foldConcat(expr);
     case no_band:
         {
             if (isZero(expr->queryChild(0)) || isZero(expr->queryChild(1)))

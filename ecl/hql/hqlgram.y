@@ -5830,7 +5830,16 @@ expr
                                     type = makeStringType(size, LINK(charset), LINK(collation));
                                 else
                                     type = makeDataType(size);
-                                $$.setExpr(createValue(no_concat, type, $1.getExpr(), $3.getExpr()), $1);
+                                if ($3.queryExpr()->isConstant() && $1.queryExpr()->isConstant() && $1.queryExpr()->getOperator()==no_concat)
+                                {
+                                    HqlExprArray operands;
+                                    unwindChildren(operands, $1.queryExpr());
+                                    operands.append(*$3.getExpr());
+                                    $$.setExpr(createValue(no_concat, type, operands), $1);
+                                    ::Release($1.getExpr());
+                                }
+                                else
+                                    $$.setExpr(createValue(no_concat, type, $1.getExpr(), $3.getExpr()), $1);
                             }
                             else
                             {
