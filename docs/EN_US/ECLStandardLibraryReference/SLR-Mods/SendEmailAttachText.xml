@@ -12,9 +12,9 @@
       <primary>Email.SendEmailAttachText</primary>
     </indexterm> <indexterm>
       <primary>SendEmailAttachText</primary>
-    </indexterm>( </emphasis> <emphasis>sendto, subject, body, attachment,
-  mimietype, filename, server, port, sender</emphasis> <emphasis role="bold">
-  )</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>to, subject, body, attachment,
+      mimetype, filename, mailServer, port, sender, cc, bcc</emphasis>
+    <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,7 +24,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>sendto</emphasis></entry>
+          <entry><emphasis>to</emphasis></entry>
 
           <entry>A null-terminated string containing a comma-delimited list of
           the addresses of the intended recipients. The validity of the
@@ -71,7 +71,7 @@
         </row>
 
         <row>
-          <entry><emphasis>server</emphasis></entry>
+          <entry><emphasis>mailServer</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           mail server. If omitted, defaults to the value in the SMTPserver
@@ -92,6 +92,27 @@
           <entry>Optional. A null-terminated string containing the address of
           the sender. If omitted, defaults to the value in the
           emailSenderAddress environment variable.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cc</emphasis></entry>
+
+        <row>
+          <entry><emphasis>cc</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing a
+          comma-delimited list of the addresses of the intended CC recipients.
+          The validity of the addresses is not checked so it is the
+          programmer's responsibility to ensure they are all valid.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bcc</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing a
+          comma-delimited list of the addresses of the intended BCC recipients.
+          The validity of the addresses is not checked so it is the
+          programmer's responsibility to ensure they are all valid.</entry>
         </row>
       </tbody>
     </tgroup>
