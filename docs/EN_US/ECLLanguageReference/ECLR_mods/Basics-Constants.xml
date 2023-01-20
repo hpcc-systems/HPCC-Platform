@@ -256,7 +256,18 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
         </tgroup>
       </informaltable>Example:</para>
 
-    <para><programlisting>IMPORT STD;
+    <para><programlisting>// Any modules referenced inside the condition must be declared outside of the condition
+// This will avoid syntax errors 
+prod_thor_dali := _Control.IPAddress.prod_thor_dali;
+  #IF(_TARGET_PLATFORM_ in ['thorlcr'])
+    Output('thor');
+    prod_thor_dali;
+  #ELSE
+    Output('not thor');
+  #END
+
+//Second example
+IMPORT STD;
   STRING14 fGetDateTimeString() :=
   #IF(__ECL_VERSION_MAJOR__ &gt; 5) or ((__ECL_VERSION_MAJOR__ = 5) AND (__ECL_VERSION_MINOR__ &gt;= 2))
     STD.Date.SecondsToString(STD.Date.CurrentSeconds(true), '%Y%m%d%H%M%S');
