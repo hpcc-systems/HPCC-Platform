@@ -88,7 +88,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     combineServices = args.all
     suppressDetails = args.summaryonly
-    reportSummary = not args.nosummary or args.summayonly
+    reportSummary = not args.nosummary or args.summaryonly
 
     csv.field_size_limit(0x100000)
     with open(args.filename, encoding='latin1') as csv_file:
