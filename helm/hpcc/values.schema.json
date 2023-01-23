@@ -812,6 +812,10 @@
         "namespace": {
           "description": "the namespace to use when authenticating with, and accessing the vault",
           "type": "string"
+        },
+        "verify_server": {
+          "description": "optional relax server verification for trouble shooting",
+          "type": "boolean"
         }
       },
       "required": [ "name", "url" ],
