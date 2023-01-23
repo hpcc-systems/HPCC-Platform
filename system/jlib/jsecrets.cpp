@@ -256,6 +256,7 @@ private:
     StringBuffer clientToken;
     time_t clientTokenExpiration = 0;
     bool clientTokenRenewable = false;
+    bool verify_server = true;
 
 public:
     CVault(IPropertyTree *vault)
@@ -263,14 +264,24 @@ public:
         cache.setown(createPTree());
         StringBuffer url;
         replaceEnvVariables(url, vault->queryProp("@url"), false);
+        PROGLOG("vault url %s", url.str());
         if (url.length())
             splitUrlSchemeHostPort(url.str(), username, password, schemeHostPort, path);
+
+        if (username.length() || password.length())
+            WARNLOG("vault: unexpected use of basic auth in url, user=%s", username.str());
+
         name.set(vault->queryProp("@name"));
         kind = getSecretType(vault->queryProp("@kind"));
 
         vaultNamespace.set(vault->queryProp("@namespace"));
         if (vaultNamespace.length())
+        {
             addPathSepChar(vaultNamespace, '/');
+            PROGLOG("vault: namespace %s", vaultNamespace.str());
+        }
+        verify_server = vault->getPropBool("@verify_server", true);
+        PROGLOG("Vault: httplib verify_server=%s", boolToStr(verify_server));
 
         //set up vault client auth [appRole, clientToken (aka "token from the sky"), or kubernetes auth]
         appRoleId.set(vault->queryProp("@appRoleId"));
@@ -336,7 +347,9 @@ public:
     void processClientTokenResponse(httplib::Result &res)
     {
         if (!res)
-            vaultAuthError("missing login response");
+            vaultAuthErrorV("missing login response, error %d", res.error());
+        if (res.error()!=0)
+            OERRLOG("JSECRETS login calling HTTPLIB POST returned error %d", res.error());
         if (res->status != 200)
             vaultAuthErrorV("[%d](%d) - response: %s", res->status, res.error(), res->body.c_str());
         const char *json = res->body.c_str();
@@ -363,6 +376,7 @@ public:
     {
         if (clientTokenExpiration==0)
             return false;
+
         double remaining = difftime(clientTokenExpiration, time(nullptr));
         if (remaining <= 0)
         {
@@ -391,6 +405,8 @@ public:
         std::string json;
         json.append("{\"jwt\": \"").append(login_token.str()).append("\", \"role\": \"").append(k8sAuthRole.str()).append("\"}");
         httplib::Client cli(schemeHostPort.str());
+        cli.enable_server_certificate_verification(verify_server);
+
         if (username.length() && password.length())
             cli.set_basic_auth(username, password);
         httplib::Headers headers;
@@ -418,12 +434,16 @@ public:
 
         std::string json;
         json.append("{\"role_id\": \"").append(appRoleId).append("\", \"secret_id\": \"").append(appRoleSecretId).append("\"}");
+
         httplib::Client cli(schemeHostPort.str());
+        cli.enable_server_certificate_verification(verify_server);
+
         if (username.length() && password.length())
             cli.set_basic_auth(username, password);
         httplib::Headers headers;
         if (vaultNamespace.length())
             headers.emplace("X-Vault-Namespace", vaultNamespace.str());
+
         httplib::Result res = cli.Post("/v1/auth/approle/login", headers, json, "application/json");
         processClientTokenResponse(res);
     }
@@ -480,6 +500,8 @@ public:
         checkAuthentication(permissionDenied);
 
         httplib::Client cli(schemeHostPort.str());
+        cli.enable_server_certificate_verification(verify_server);
+
         if (username.length() && password.length())
             cli.set_basic_auth(username.str(), password.str());
 
@@ -490,6 +512,7 @@ public:
             headers.emplace("X-Vault-Namespace", vaultNamespace.str());
 
         httplib::Result res = cli.Get(location, headers);
+
         if (res)
         {
             if (res->status == 200)
@@ -504,15 +527,15 @@ public:
                  //try again forcing relogin, but only once.  Just in case the token was invalidated but hasn't passed expiration time (for example max usage count exceeded).
                 if (permissionDenied==false)
                     return requestSecretAtLocation(rkind, content, location, secret, version, true);
-                OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
+                OERRLOG("Vault %s permission denied accessing secret (check namespace=%s?) %s.%s location %s [%d](%d) - response: %s", name.str(), vaultNamespace.str(), secret, version ? version : "", location ? location : "null", res->status, res.error(), res->body.c_str());
             }
             else
             {
-                OERRLOG("Vault %s error accessing secret %s.%s [%d](%d) - response: %s", name.str(), secret, version ? version : "", res->status, res.error(), res->body.c_str());
+                OERRLOG("Vault %s error accessing secret %s.%s location %s [%d](%d) - response: %s", name.str(), secret, version ? version : "", location ? location : "null", res->status, res.error(), res->body.c_str());
             }
         }
         else
-            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s", name.str(), res.error(), secret, version ? version : "");
+            OERRLOG("Error: Vault %s http error (%d) accessing secret %s.%s location %s", name.str(), res.error(), secret, version ? version : "", location ? location : "null");
         return false;
     }
     bool requestSecret(CVaultKind &rkind, StringBuffer &content, const char *secret, const char *version)
