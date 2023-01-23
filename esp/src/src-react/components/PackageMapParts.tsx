@@ -1,15 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import * as parser from "dojox/xml/parser";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/store/Memory";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { AddPackageMapPart } from "./forms/AddPackageMapPart";
@@ -33,14 +30,12 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
     const [_package, setPackage] = React.useState<any>(undefined);
     const [showAddPartForm, setShowAddPartForm] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-
-    const [showError, setShowError] = React.useState(false);
-    const [errorMessage, setErrorMessage] = React.useState("");
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("Part")));
-    const { Grid, selection, refreshTable, copyButtons } = useGrid({
-        store,
+    const { Grid, selection, copyButtons } = useFluentGrid({
+        data,
+        primaryID: "Part",
         sort: { attribute: "Part", descending: false },
         filename: "packageMapParts",
         columns: {
@@ -48,44 +43,60 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
             Part: {
                 label: nlsHPCC.Parts,
                 formatter: React.useCallback(function (part, row) {
-                    return `<a href="#/packagemaps/${name}/parts/${part}">${part}</a>`;
+                    return <Link href={`#/packagemaps/${name}/parts/${part}`}>{part}</Link>;
                 }, [name])
             },
         }
     });
 
+    const refreshData = React.useCallback(() => {
+        WsPackageMaps.getPackageMapById({ packageMap: name })
+            .then(({ GetPackageMapByIdResponse }) => {
+                const xml = parser.parse(GetPackageMapByIdResponse?.Info);
+                const parts = [...xml.getElementsByTagName("Part")].map(part => {
+                    return {
+                        Part: part.attributes[0].nodeValue
+                    };
+                });
+                setData(parts);
+            })
+            .catch(err => logger.error(err))
+            ;
+    }, [name]);
+
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
+
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToDeleteThisPart,
         onSubmit: React.useCallback(() => {
+            const requests = [];
             selection.forEach((item, idx) => {
-                WsPackageMaps.RemovePartFromPackageMap({
-                    request: {
-                        PackageMap: name.split("::")[1],
-                        Target: _package?.Target,
-                        PartName: item.Part
-                    }
-                })
-                    .then(({ RemovePartFromPackageMapResponse, Exceptions }) => {
-                        if (RemovePartFromPackageMapResponse?.status?.Code === 0) {
-                            store.remove(item.Part);
-                            refreshTable();
-                        } else if (Exceptions?.Exception.length > 0) {
-                            setShowError(true);
-                            setErrorMessage(Exceptions?.Exception[0].Message);
+                requests.push(
+                    WsPackageMaps.RemovePartFromPackageMap({
+                        request: {
+                            PackageMap: name.split("::")[1],
+                            Target: _package?.Target,
+                            PartName: item.Part
                         }
                     })
+                );
+                Promise
+                    .all(requests)
+                    .then(() => refreshData())
                     .catch(err => logger.error(err))
                     ;
             });
-        }, [_package?.Target, name, refreshTable, selection, store])
+        }, [_package?.Target, name, refreshData, selection])
     });
 
     //  Command Bar ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -109,23 +120,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                 }
             }
         },
-    ], [name, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
-
-    React.useEffect(() => {
-        WsPackageMaps.getPackageMapById({ packageMap: name })
-            .then(({ GetPackageMapByIdResponse }) => {
-                const xml = parser.parse(GetPackageMapByIdResponse?.Info);
-                const parts = [...xml.getElementsByTagName("Part")].map(part => {
-                    return {
-                        Part: part.attributes[0].nodeValue
-                    };
-                });
-                store.setData(parts);
-                refreshTable();
-            })
-            .catch(err => logger.error(err))
-            ;
-    }, [store, name, refreshTable]);
+    ], [name, refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     React.useEffect(() => {
         WsPackageMaps.PackageMapQuery({})
@@ -148,11 +143,6 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
     }, [selection]);
 
     return <>
-        {showError &&
-            <MessageBar messageBarType={MessageBarType.error} isMultiline={false} onDismiss={() => setShowError(false)} dismissButtonAriaLabel="Close">
-                {errorMessage}
-            </MessageBar>
-        }
         <SizeMe monitorHeight>{({ size }) =>
             <HolyGrail
                 header={<CommandBar items={buttons} farItems={copyButtons} />}
@@ -162,8 +152,8 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
             />
         }</SizeMe>
         <AddPackageMapPart
-            showForm={showAddPartForm} setShowForm={setShowAddPartForm} store={store}
-            refreshTable={refreshTable} target={_package?.Target} packageMap={_package?.Id.split("::")[1]}
+            showForm={showAddPartForm} setShowForm={setShowAddPartForm}
+            refreshData={refreshData} target={_package?.Target} packageMap={_package?.Id.split("::")[1]}
         />
         <DeleteConfirm />
     </>;
