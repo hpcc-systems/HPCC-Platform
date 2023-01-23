@@ -52,6 +52,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     ADD_DEFINITIONS( -O0 )
     set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp PROPERTIES COMPILE_FLAGS "-Wno-sign-compare -Wno-unused-function -Wno-unneeded-internal-declaration")
     set_source_files_properties(esdlcomp.cpp PROPERTIES COMPILE_FLAGS "-Wno-unused-function")
+    set_source_files_properties(esdlgram.cpp PROPERTIES COMPILE_FLAGS "-Wno-free-nonheap-object")
 endif ()
 
 HPCC_ADD_LIBRARY ( esdlcomp SHARED ${SRCS} )

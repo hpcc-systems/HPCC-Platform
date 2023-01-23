@@ -51,6 +51,11 @@ include_directories (
 set_source_files_properties (${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
 
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
+
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    set_source_files_properties(hidlgram.cpp PROPERTIES COMPILE_FLAGS "-Wno-free-nonheap-object")
+endif ()
+
 ADD_DEFINITIONS( -D_CONSOLE )
 HPCC_ADD_EXECUTABLE ( hidl ${SRCS} )
 #install ( TARGETS hidl RUNTIME DESTINATION ${EXEC_DIR} )
