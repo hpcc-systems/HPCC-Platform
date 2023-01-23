@@ -205,7 +205,14 @@ jobs:
         id: vars
         shell: "bash"
         run: |
-          echo "branch_name=$(echo ${{ github.ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+          community_ref=${{ github.ref }}
+          echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
+          echo "internal_ref=$(echo $community_ref | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+
+      - name: Print vars
+        shell: "bash"
+        run: |
+          echo "${{ toJSON(steps.vars.outputs) }})"
 
       - name: OSX Dependencies
         if: ${{ contains(matrix.os, 'macos') }}
@@ -242,18 +249,13 @@ jobs:
         run: |
           ./vcpkg/bootstrap-vcpkg.sh
 
-      - name: "Generate HPCC-Platform Build Files"
+      - name: CMake Packages
         working-directory: .
         shell: "bash"
         run: |
           mkdir build
           cd build
           cmake .. ${{ matrix.cmake_config_options }}
-
-      - name: Bundle
-        working-directory: ./build
-        shell: "bash"
-        run: |
           cmake --build . ${{ matrix.cmake_build_options }} --target package
 
       - name: Upload Assets
@@ -261,3 +263,36 @@ jobs:
         with:
           allowUpdates: true
           artifacts: "build/*.exe,build/*.msi,build/*.dmg,build/*.pkg,build/*.tar.gz"
+
+      - name: Checkout LN
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository_owner }}/LN
+          ref: ${{ steps.vars.outputs.internal_ref }}
+          path: ${{ github.workspace }}/LN
+          token: ${{ secrets.LNB_TOKEN }}
+
+      - name: CMake LN Packages
+        working-directory: ./build
+        shell: "bash"
+        run: |
+          ${{ matrix.sudo }} rm -f ./CMakeCache.txt
+          ${{ matrix.sudo }} rm -rf ./CMakeFiles
+          cmake -S ../LN ${{ matrix.cmake_config_options }} -DHPCC_SOURCE_DIR=..
+          cmake --build . ${{ matrix.cmake_build_options }} --target package
+
+      - name: Upload LN Assets
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          owner: ${{ secrets.LNB_ACTOR }}
+          repo: LN
+          token: ${{ secrets.LNB_TOKEN }}
+          allowUpdates: true
+          artifacts: "build/*.exe,build/*.msi,build/*.dmg,build/*.pkg,build/*.tar.gz"
+
+      - name: Upload error logs
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}-${{ matrix.package }}-logs
+          path: build/CMakeCache.txt
