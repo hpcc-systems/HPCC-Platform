@@ -1645,11 +1645,16 @@ remote client certificates.
 Adding the following to ESP (Roxie support to be added later)
   remoteClients:
   - name: myRemoteClient
+    organization: myorg #optional
+    secretTemplate:   #optional add annotations to generated secret for tools like kubed config-syncer
+      annotations:
+        kubed.appscode.com/sync: "hpcc=testns"       #sync certificate to matching namespaces
+
 Will generate certificates that can be deployed to the remote client.
 Will cause ESP to require client certificates when a socket connects.
 Will create a TLS based access control list which ESP will check to make sure a connections client certificate is enabled.
 
-Pass in root, client (name), organization (optional), instance (myeclwatch), component (eclwatch), visibility
+Pass in root, client (name), organization (optional), instance (myeclwatch), component (eclwatch), visibility, secretTemplate (optional)
 */}}
 {{- define "hpcc.addClientCertificate" }}
  {{- if (.root.Values.certificates | default dict).enabled -}}
@@ -1670,6 +1675,7 @@ Pass in root, client (name), organization (optional), instance (myeclwatch), com
     {{- $component := .component -}}
     {{- $client := .client -}}
     {{- $organization := .organization -}}
+    {{- $secretTemplate := .secretTemplate -}}
     {{- if not $externalCert -}}
      {{- $_ := fail (printf "Remote certificate defined for non external facing service %s - %s." $component $instance) -}}
     {{- end }}
@@ -1682,6 +1688,10 @@ metadata:
 spec:
   # Secret names are always required.
   secretName: client-{{ $issuerKeyName }}-{{ $component }}-{{ $instance }}-{{ $client }}-tls
+  {{- if $secretTemplate }}
+  secretTemplate:
+{{ toYaml $secretTemplate | indent 4 }}
+  {{- end }}
   duration: 2160h # 90d
   renewBefore: 360h # 15d
   subject:
