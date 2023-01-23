@@ -236,6 +236,9 @@ inline const unsigned char *ASN1_STRING_get0_data(const ASN1_STRING *asn1) {
 #include <brotli/encode.h>
 #endif
 
+#include "platform.h"
+#include "jlog.hpp"
+
 /*
  * Declaration
  */
@@ -4634,7 +4637,11 @@ inline bool ClientImpl::send(const Request &req, Response &res) {
     }
 
     if (!is_alive) {
-      if (!create_and_connect_socket(socket_)) { return false; }
+      if (!create_and_connect_socket(socket_))
+      {
+        OERRLOG("HTTPLIB Error create_and_connect_socket failed");
+        return false;
+      }
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
       // TODO: refactoring
@@ -4647,7 +4654,11 @@ inline bool ClientImpl::send(const Request &req, Response &res) {
           }
         }
 
-        if (!scli.initialize_ssl(socket_)) { return false; }
+        if (!scli.initialize_ssl(socket_))
+        {
+          OERRLOG("HTTPLIB Error initialize_ssl failed");
+          return false;
+        }
       }
 #endif
     }
@@ -4662,7 +4673,11 @@ inline bool ClientImpl::send(const Request &req, Response &res) {
   if (close_connection || !ret) { stop_core(); }
 
   if (!ret) {
-    if (error_ == Error::Success) { error_ = Error::Unknown; }
+    if (error_ == Error::Success)
+    {
+        OERRLOG("HTTPLIB process_socket unknown error");
+        error_ = Error::Unknown;
+    }
   }
 
   return ret;
@@ -5872,6 +5887,7 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
       [&](SSL *ssl) {
         if (server_certificate_verification_) {
           if (!load_certs()) {
+            OERRLOG("HTTPLIB Error loading ssl certs");
             error_ = Error::SSLLoadingCerts;
             return false;
           }
@@ -5879,6 +5895,7 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
         }
 
         if (SSL_connect(ssl) != 1) {
+          OERRLOG("HTTPLIB Error connecting ssl");
           error_ = Error::SSLConnection;
           return false;
         }
@@ -5887,6 +5904,7 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
           verify_result_ = SSL_get_verify_result(ssl);
 
           if (verify_result_ != X509_V_OK) {
+            OERRLOG("HTTPLIB Error verifying server certificate SSL_get_verify_result %ld", verify_result_);
             error_ = Error::SSLServerVerification;
             return false;
           }
@@ -5894,11 +5912,13 @@ inline bool SSLClient::initialize_ssl(Socket &socket) {
           auto server_cert = SSL_get_peer_certificate(ssl);
 
           if (server_cert == nullptr) {
+            OERRLOG("HTTPLIB Error getting server certificate SSL_get_peer_certificate");
             error_ = Error::SSLServerVerification;
             return false;
           }
 
           if (!verify_host(server_cert)) {
+            OERRLOG("HTTPLIB Error self verifying server certificate verify_host");
             X509_free(server_cert);
             error_ = Error::SSLServerVerification;
             return false;
