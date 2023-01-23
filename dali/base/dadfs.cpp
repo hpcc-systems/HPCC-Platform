@@ -1181,6 +1181,7 @@ public:
     SecAccessFlags getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
     SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
     SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
+    SecAccessFlags getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags=0);
     void setDefaultUser(IUserDescriptor *user);
     IUserDescriptor* queryDefaultUser();
 
@@ -11785,9 +11786,7 @@ SecAccessFlags CDistributedFileDirectory::getFilePermissions(const char *lname,I
 {
     CDfsLogicalFileName dlfn;
     dlfn.set(lname);
-    StringBuffer scopes;
-    dlfn.getScopes(scopes);
-    return getScopePermissions(scopes.str(),user,auditflags);
+    return getScopePermissions(dlfn.get(),user,auditflags);
 }
 
 SecAccessFlags CDistributedFileDirectory::getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags)
@@ -11797,9 +11796,7 @@ SecAccessFlags CDistributedFileDirectory::getNodePermissions(const IpAddress &ip
     CDfsLogicalFileName dlfn;
     SocketEndpoint ep(0,ip);
     dlfn.setExternal(ep,"/x");
-    StringBuffer scopes;
-    dlfn.getScopes(scopes,true);
-    return getScopePermissions(scopes.str(),user,auditflags);
+    return getScopePermissions(dlfn.get(),user,auditflags);
 }
 
 SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *fdesc,IUserDescriptor *user,unsigned auditflags)
@@ -11833,9 +11830,7 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
                         localpath.setCharAt(k,'_');
                 CDfsLogicalFileName dlfn;
                 dlfn.setExternal(rfn.queryEndpoint(),localpath.str());
-                StringBuffer scopes;
-                dlfn.getScopes(scopes);
-                SecAccessFlags perm = getScopePermissions(scopes.str(),user,auditflags);
+                SecAccessFlags perm = getScopePermissions(dlfn.get(),user,auditflags);
                 if (perm < retPerms) {
                     retPerms = perm;
                     if (retPerms == SecAccess_None)
@@ -11845,6 +11840,11 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
         }
     }
     return retPerms;
+}
+
+SecAccessFlags CDistributedFileDirectory::getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags)
+{
+    return getScopePermissions(dlfn.get(),user,auditflags);
 }
 
 void CDistributedFileDirectory::setDefaultUser(IUserDescriptor *user)

@@ -155,4 +155,3 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
     }
     return false;
 }
-
