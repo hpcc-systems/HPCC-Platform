@@ -210,11 +210,14 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
     if (!appAuth)
         throw MakeStringException(-1, "Can't find application Auth settings.  To run without security set 'auth: none'");
     IPropertyTree *root_access = appAuth->queryPropTree("root_access");
-    StringAttr required(root_access->queryProp("@required"));
-    StringAttr description(root_access->queryProp("@description"));
-    StringAttr resource(root_access->queryProp("@resource"));
-    VStringBuffer locationXml("<Location path='/' resource='%s' required='%s' description='%s'/>", resource.str(), required.str(), description.str());
-    legacyAuthenticate->addPropTree("Location", createPTreeFromXMLString(locationXml));
+    if (root_access)//root_access (feature map, auth map) not required for simple security managers
+    {
+        StringAttr required(root_access->queryProp("@required"));
+        StringAttr description(root_access->queryProp("@description"));
+        StringAttr resource(root_access->queryProp("@resource"));
+        VStringBuffer locationXml("<Location path='/' resource='%s' required='%s' description='%s'/>", resource.str(), required.str(), description.str());
+        legacyAuthenticate->addPropTree("Location", createPTreeFromXMLString(locationXml));
+    }
 
     VStringBuffer featuresPath("resource_map/%s/Feature", service);
     Owned<IPropertyTreeIterator> features = appAuth->getElements(featuresPath);
