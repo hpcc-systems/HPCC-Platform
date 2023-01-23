@@ -959,6 +959,21 @@ ESPresponse AccountPermissionsResponse
     [min_ver("1.03")] ESParray<ESPstruct GroupAccountPermission, GroupPermission> GroupPermissions;
 };
 
+ESPrequest AccountPermissionsV2Request
+{
+    string ResourceName;
+    string AccountName;
+    bool IsGroup;
+    bool IncludeGroup(false);
+};
+
+ESPresponse AccountPermissionsV2Response
+{
+    ESParray<string> BasednNames;
+    ESParray<ESPstruct AccountPermission, Permission> Permissions;
+    ESParray<ESPstruct GroupAccountPermission, GroupPermission> GroupPermissions;
+};
+
 ESPrequest [nil_remove] FilePermissionRequest
 {
     string FileName;
@@ -991,7 +1006,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
     [http_content("application/octet-stream")] binary Result;
 };
 
-ESPservice [version("1.16"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.17"), auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);
@@ -1034,6 +1049,7 @@ ESPservice [version("1.16"), auth_feature("NONE"), exceptions_inline("./smc_xslt
     ESPmethod [depr_ver("1.14"), client_xslt("/esp/xslt/access_permissionaddinput.xslt")] PermissionAddInput(PermissionAddRequest, PermissionAddResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionchange.xslt")] PermissionAction(PermissionActionRequest, PermissionActionResponse);
     ESPmethod [client_xslt("/esp/xslt/access_accountpermissions.xslt")] AccountPermissions(AccountPermissionsRequest, AccountPermissionsResponse);
+    ESPmethod [min_ver("1.17")] AccountPermissionsV2(AccountPermissionsV2Request, AccountPermissionsV2Response);
     ESPmethod [client_xslt("/esp/xslt/access_filepermission.xslt")] FilePermission(FilePermissionRequest, FilePermissionResponse);
     ESPmethod [depr_ver("1.14"), client_xslt("/esp/xslt/access_permissionresetinput.xslt")] PermissionsResetInput(PermissionsResetInputRequest, PermissionsResetInputResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionsreset.xslt")] PermissionsReset(PermissionsResetRequest, PermissionsResetResponse);
