@@ -50,12 +50,6 @@ jvmoptions=-XX:-UsePerfData
 # In most cases, skipping the cleanup is harmless and avoids these lockups
 skipPythonCleanup=true
 
-# Although HPCC platform includes plugins for both Python2 and Python3, only one may be safely enabled at a time
-# as the Python libraries export the same symbols for both versions. Enabling both may lead to unpredicatable results
-# including segfaults or undefined symbol errors.
-#
-# If you would prefer to use python 2 and disable python3, change the line below to read
-#  additionalPlugins=python2
 #
 # Multiple paths can be specified (separate with :, or ; on Windows).
 # Relative paths are assumed to be relative to ${INSTALL_DIR}/versioned
