@@ -1988,6 +1988,31 @@ protected:
 #pragma warning ( disable: 4355 )
 #endif
 
+static void throwPacketTooLarge(IRoxieQueryPacket *x, unsigned maxPacketSize)
+{
+    StringBuffer t;
+    unsigned traceLength = x->getTraceLength();
+    if (traceLength)
+    {
+        const byte *traceInfo = x->queryTraceInfo();
+        unsigned char loggingFlags = *traceInfo;
+        if (loggingFlags & LOGGING_FLAGSPRESENT) // should always be true.... but this flag is handy to avoid flags byte ever being NULL
+        {
+            traceInfo++;
+            traceLength--;
+            if (loggingFlags & LOGGING_TRACELEVELSET)
+            {
+                traceInfo++;
+                traceLength--;
+            }
+            t.append(traceLength, (const char *) traceInfo);
+        }
+    }
+    throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s (context length %u, continuation length %u, smart step length %u, trace length %u, total length %u",
+                            maxPacketSize, t.str(),
+                            x->getContextLength(), x->getContinuationLength(), x->getSmartStepInfoLength(), x->getTraceLength(), x->queryHeader().packetlength);
+}
+
 class RoxieThrottledPacketSender : public Thread
 {
     TokenBucket &bucket;
@@ -2097,10 +2122,7 @@ public:
             break;
         }
         if (length > maxPacketSize)
-        {
-            StringBuffer s;
-            throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s", maxPacketSize, header.toString(s).str());
-        }
+            throwPacketTooLarge(x, maxPacketSize);
         enqueue(x);
     }
 
@@ -2435,10 +2457,7 @@ public:
                 break;
             }
             if (length > maxPacketSize)
-            {
-                StringBuffer s;
-                throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s", maxPacketSize, header.toString(s).str());
-            }
+                throwPacketTooLarge(x, maxPacketSize);
             x->noteTimeSent();
             Owned <ISerializedRoxieQueryPacket> serialized = x->serialize();
             if (!channelWrite(serialized->queryHeader(), true))

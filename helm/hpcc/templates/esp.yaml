@@ -117,7 +117,11 @@ spec:
         server: {{ .name | quote }}
         accessDali: "yes"
         app: {{ $application }}
+<<<<<<< HEAD
         helmVersion: 8.13.0-trunk0
+=======
+        helmVersion: 8.13.0-trunk0
+>>>>>>> origin/candidate-8.12.x
         {{- include "hpcc.addStandardLabels" (dict "root" $ "name" $application "component" "esp" "instance" .name) | indent 8 }}
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
@@ -205,7 +209,7 @@ kind: ConfigMap
 {{- $instance := .name -}}
 {{- $visibility := .service.visibility -}}
 {{- range $remoteClient := .remoteClients }}
- {{ include "hpcc.addClientCertificate" (dict "root" $ "client" $remoteClient.name "organization" $remoteClient.organization "instance" $instance "component" $application "visibility" $visibility) }}
+ {{ include "hpcc.addClientCertificate" (dict "root" $ "client" $remoteClient.name "organization" $remoteClient.organization "instance" $instance "component" $application "visibility" $visibility "secretTemplate" $remoteClient.secretTemplate) }}
 {{- end }}
 {{- end }}
 {{- end }}

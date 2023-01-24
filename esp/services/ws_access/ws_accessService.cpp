@@ -37,6 +37,22 @@
 #define MAX_RESOURCES_DISPLAY 3000
 static const long MAXXLSTRANSFER = 5000000;
 
+SecResourceType str2RType(const char* str)
+{
+    if (isEmptyString(str))
+        return RT_DEFAULT;
+    else if (strieq(str, "module"))
+        return RT_MODULE;
+    else if (strieq(str, "service"))
+        return RT_SERVICE;
+    else if (strieq(str, "file"))
+        return RT_FILE_SCOPE;
+    else if (strieq(str, "workunit"))
+        return RT_WORKUNIT_SCOPE;
+    else
+        return RT_DEFAULT;
+}
+
 void Cws_accessEx::checkUser(IEspContext& context, CLdapSecManager* secmgr, const char* rtype, const char* rtitle, unsigned int SecAccessFlags)
 {
     if (secmgr == nullptr)
@@ -4003,6 +4019,462 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
         resp.setIsGroup(bGroupAccount);
     }
     catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+//List permissions for a given account in a given BaseDN resource or all BaseDN resources.
+//Revised based on onAccountPermissions() which lists permissions for a given account in all BaseDN resources.
+bool Cws_accessEx::onAccountPermissionsV2(IEspContext &context, IEspAccountPermissionsV2Request &req,
+    IEspAccountPermissionsV2Response &resp)
+{
+    class CAccountsInResource : public CInterface
+    {
+        StringAttr resourceName;
+        StringArray accountNames;
+    public:
+        CAccountsInResource(const char *_resourceName) : resourceName(_resourceName) {}
+
+        inline StringArray &getAccountNames() { return accountNames; };
+        inline void addUniqueAccountName(const char *name) { accountNames.appendUniq(name); };
+        inline bool findAccountName(const char *name) { return accountNames.find(name) != NotFound; }
+    };
+
+    class CAccountsInBaseDN : public CInterface
+    {
+        StringAttr baseDNName;
+        CIArrayOf<CAccountsInResource> accountsInResources;
+    public:
+        CAccountsInBaseDN(const char *_baseDNName) : baseDNName(_baseDNName) {};
+
+        inline const char *getBaseDNName() { return baseDNName.get(); };
+        inline CIArrayOf<CAccountsInResource> &getAccountsInResources() { return accountsInResources; };
+    };
+
+    class CAccountPermissionsHelper : public CSimpleInterface
+    {
+        IEspContext *context = nullptr;
+        CLdapSecManager *secMGR = nullptr;
+
+        StringBuffer accountNameReq;
+        StringAttr baseDNNameReq;
+        bool isGroupAccountReq = false;
+        bool includeGroup = false;
+
+        StringArray groupsAccountBelongsTo;
+        StringAttr moduleBaseDN; //Used by appendAccountPermissionsForCodeGenResource()
+        CIArrayOf<CAccountsInBaseDN> accountsInBaseDNs; //Used by setBaseDNNamesForMissingPermissions().
+        bool hasAuthUsersPerm = false; //May change in appendAccountPermission()
+        bool hasEveryonePerm = false;  //May change in appendAccountPermission()
+        Owned<IEspGroupAccountPermission> authUsersGroupPermission, everyOneGroupPermission;
+        IArrayOf<ISecResource> resourcesInOneBaseDN;
+
+        bool getResourcePermissions(const char *baseDN, SecResourceType rType,
+            const char *resourceName, IArrayOf<CPermission> &permissions)
+        {
+            bool success = true;
+            try
+            {
+                secMGR->getPermissionsArray(baseDN, rType, resourceName, permissions);
+            }
+            catch(IException *e) //exception may be thrown when no permission for the resource
+            {
+                e->Release();
+                success = false;
+            }
+            return success;
+        }
+        void readAccountPermissionsInOneBaseDN(IArrayOf<IEspDnStruct> &allBaseDNs,
+            IEspDnStruct &curBaseDN, IArrayOf<IEspAccountPermission> &accountPermissions, 
+            IArrayOf<IEspGroupAccountPermission> &groupAccountPermissions)
+        {
+            const char *baseDNName = curBaseDN.getName();
+            const char *baseDN = curBaseDN.getBasedn();
+            const char *rTypeStr = curBaseDN.getRtype();
+            SecResourceType rType = str2RType(rTypeStr);
+            Owned<CAccountsInBaseDN> accountsInBaseDN = new CAccountsInBaseDN(baseDNName);
+
+            //Read the resources for the BaseDN Resource.
+            if (secMGR->getResources(rType, baseDN, resourcesInOneBaseDN))
+            {
+                ForEachItemIn(i, resourcesInOneBaseDN)
+                {
+                    ISecResource &r = resourcesInOneBaseDN.item(i);
+                    const char *resourceName = r.getName();
+                    if (isEmptyString(resourceName))
+                        continue;
+ 
+                    //Use the same code as in onAccountPermissions() to skip some RT_MODULE resources.
+                    //The permission codegenerator.cpp is saved as a service permission (not a module permission)
+                    //when it is added for a user.
+                    if ((rType == RT_MODULE) && (strieq(resourceName, "codegenerator.cpp") || strnicmp(resourceName, "repository", 10)))
+                        continue;
+
+                    IArrayOf<CPermission> permissions;
+                    if (getResourcePermissions(baseDN, rType, resourceName, permissions)) //get the permissions for this resource using secMGR->getPermissionsArray()
+                    {
+                        checkAndAppendAccountPermissions(baseDNName, resourceName, permissions, accountPermissions, groupAccountPermissions);
+                        appendAccountsInResources(resourceName, permissions, accountsInBaseDN->getAccountsInResources());
+                    }
+                }
+            }//If failed, log?
+
+            if (rType == RT_WORKUNIT_SCOPE)
+                appendAccountPermissionsForWUScopeResource(baseDNName, baseDN, accountPermissions, groupAccountPermissions);
+            else if ((rType == RT_SERVICE) && !moduleBaseDN.isEmpty())
+                appendAccountPermissionsForCodeGenResource(baseDNName, moduleBaseDN, accountPermissions, groupAccountPermissions);
+
+            resourcesInOneBaseDN.kill(); //Clean it for possible next BaseDN.
+            accountsInBaseDNs.append(*accountsInBaseDN.getClear());
+        }
+        void checkAndAppendAccountPermissions(const char *baseDNName, const char *resourceName,
+            IArrayOf<CPermission> &permissions, IArrayOf<IEspAccountPermission> &accountPermissions,
+            IArrayOf<IEspGroupAccountPermission> &groupAccountPermissions)
+        {
+            ForEachItemIn(i, permissions)
+            {
+                CPermission &perm = permissions.item(i);
+                if (doesPermissionAccountMatchThisAccount(perm))
+                {   //The account in the perm matches with this account. The match means: 1. both accounts
+                    //have the same account name; or 2. this account belongs to a group and the name of the
+                    //group account is the same as the account in the perm. Create an IEspAccountPermission
+                    //using the resourceName and the perm and add it to the permission group where the 
+                    //permission belongs to (accountPermissions, authUsersPermissions, etc).
+                    Owned<IEspAccountPermission> newPermission = createNewAccountPermission(baseDNName, resourceName, perm);
+                    appendAccountPermission(newPermission, perm, accountPermissions, groupAccountPermissions);
+                }
+            }
+        }
+        bool doesPermissionAccountMatchThisAccount(CPermission &perm)
+        {
+            int accountType = perm.getAccount_type();
+            if (isGroupAccountReq && accountType == USER_ACT)
+                return false; //The account in the perm is not a group account.
+
+            const char *actName = perm.getAccount_name();
+            if (isEmptyString(actName))
+                return false;
+
+            //If the accountType matches with isGroupAccountReq, validate the actName.
+            if ((!isGroupAccountReq && (accountType == USER_ACT)) || (isGroupAccountReq && (accountType == GROUP_ACT)))
+                return streq(actName, accountNameReq); //The actName must match with the accountNameReq.
+
+            //Now, there is only one possibility left: isGroupAccountReq = false and accountType = GROUP_ACT.
+            //isGroupAccountReq = false: the AccountPermissionsForResource call is for an individual account.
+            //accountType = GROUP_ACT: the perm is for a group account; actName is the group name.
+            //We need to check whether the individual is a member of this group. 
+            return groupsAccountBelongsTo.find(actName) != NotFound;
+        }
+        IEspAccountPermission *createNewAccountPermission(const char *baseDNName,
+            const char *resourceName, CPermission &perm)
+        {
+            //Use the same code as in onAccountPermissions().
+            Owned<IEspAccountPermission> permission = createAccountPermission();
+            permission->setBasednName(baseDNName);
+            permission->setResourceName(resourceName);
+
+            int allows = perm.getAllows();
+            int denies = perm.getDenies();
+            if((allows & NewSecAccess_Access) == NewSecAccess_Access)
+                permission->setAllow_access(true);
+            if((allows & NewSecAccess_Read) == NewSecAccess_Read)
+                permission->setAllow_read(true);
+            if((allows & NewSecAccess_Write) == NewSecAccess_Write)
+                permission->setAllow_write(true);
+            if((allows & NewSecAccess_Full) == NewSecAccess_Full)
+                permission->setAllow_full(true);
+            if((denies & NewSecAccess_Access) == NewSecAccess_Access)
+                permission->setDeny_access(true);
+            if((denies & NewSecAccess_Read) == NewSecAccess_Read)
+                permission->setDeny_read(true);
+            if((denies & NewSecAccess_Write) == NewSecAccess_Write)
+                permission->setDeny_write(true);
+            if((denies & NewSecAccess_Full) == NewSecAccess_Full)
+                permission->setDeny_full(true);
+            return permission.getClear();
+        }
+        void appendAccountPermission(IEspAccountPermission *permissionToBeAppended,
+            CPermission &perm, IArrayOf<IEspAccountPermission> &accountPermissions, 
+            IArrayOf<IEspGroupAccountPermission> &groupAccountPermissions)
+        {
+            //Use similar logic as in onAccountPermissions().
+            //Append the Account Permission (permissionToBeAppended) to accountPermissions, groupAccountPermissions,
+            //authUsersPermissions, or everyonePermissions.
+            const char *actName = perm.getAccount_name();
+            int accountType = perm.getAccount_type();
+            if ((!isGroupAccountReq && accountType == USER_ACT) || (isGroupAccountReq && accountType == GROUP_ACT))
+            {
+                //Append the Account Permission to accountPermissions if: a. the requested account is not a group account
+                //and this perm is not for a group account; or b. the requested account is a group account and this perm is
+                //for a group account
+                accountPermissions.append(*LINK(permissionToBeAppended));
+                return;
+            }
+
+            if (streq(actName, "Authenticated Users"))
+            {
+                //Append the Account Permission to authUsersPermissions if this perm is for Authenticated Users.
+                IArrayOf<IConstAccountPermission>& authUsersPermissions = authUsersGroupPermission->getPermissions();
+                authUsersPermissions.append(*LINK(permissionToBeAppended));
+                hasAuthUsersPerm = true;
+                return;
+            }
+
+            if (streq(actName, "everyone"))
+            {
+                //Append the Account Permission to everyonePermissions if this perm is for everyone.
+                IArrayOf<IConstAccountPermission>& everyonePermissions = everyOneGroupPermission->getPermissions();
+                everyonePermissions.append(*LINK(permissionToBeAppended));
+                hasEveryonePerm = true;
+                return;
+            }
+
+            ForEachItemIn(i, groupAccountPermissions)
+            {
+                IEspGroupAccountPermission &groupPermission = groupAccountPermissions.item(i);
+                if (!streq(actName, groupPermission.getGroupName()))
+                    continue;
+
+                //This perm is for a group account which is already in the groupPermission.
+                //Append the Account Permission into the groupPermission.
+                IArrayOf<IConstAccountPermission> &permissions = groupPermission.getPermissions();
+                permissions.append(*LINK(permissionToBeAppended));
+                return;
+            }
+
+            //This perm is for a group account which is not in the groupAccountPermissions yet.
+            //Create a groupPermission. Append the Account Permission into the groupPermission.
+            //Append the groupPermission to the groupAccountPermissions.
+            Owned<IEspGroupAccountPermission> groupPermission = createGroupAccountPermissionEx(actName);
+            IArrayOf<IConstAccountPermission> &permissions = groupPermission->getPermissions();
+            permissions.append(*LINK(permissionToBeAppended));
+            groupAccountPermissions.append(*groupPermission.getLink());
+        }
+        IEspGroupAccountPermission *createGroupAccountPermissionEx(const char *accountName)
+        {
+            Owned<IEspGroupAccountPermission> groupPermission = createGroupAccountPermission();
+            groupPermission->setGroupName(accountName);
+            return groupPermission.getClear();
+        }
+        void appendAccountPermissionsForWUScopeResource(const char *baseDNName, const char *baseDN, 
+            IArrayOf<IEspAccountPermission> &accountPermissions, 
+            IArrayOf<IEspGroupAccountPermission> &groupAccountPermissions)
+        {
+            //Use the same code as in onAccountPermissions() to find out the deftBaseDN and deftName.
+            StringBuffer deftBaseDN, deftName;
+            const char *comma = strchr(baseDN, ',');
+            const char *eqsign = strchr(baseDN, '=');
+            if (eqsign != nullptr)
+            {
+                if(comma == nullptr)
+                    deftName.append(eqsign + 1);
+                else
+                {
+                    deftName.append(comma - eqsign - 1, eqsign + 1);
+                    deftBaseDN.append(comma + 1);
+                }
+            }
+
+            //Based on the code in LdapUtils::normalizeDn(), the deftBaseDN can be empty.
+            if (deftName.isEmpty())
+                return;
+
+            IArrayOf<CPermission> permissions;
+            if (getResourcePermissions(deftBaseDN, RT_WORKUNIT_SCOPE, deftName, permissions))
+                checkAndAppendAccountPermissions(baseDNName, deftName, permissions, accountPermissions, groupAccountPermissions);
+        }
+        void getModuleBaseDN(IArrayOf<IEspDnStruct> &allBaseDNs, StringAttr &moduleBaseDN)
+        {
+            //Use the same code as in onAccountPermissions() to find out the moduleBaseDN.
+            ForEachItemIn(i, allBaseDNs)
+            {
+                IEspDnStruct &dn = allBaseDNs.item(i);
+                const char *aName = dn.getName();
+                const char *aBaseDN = dn.getBasedn();
+                const char *aRType = dn.getRtype();
+                const char *aRtitle = dn.getRtitle();
+                if (!isEmptyString(aName) && !isEmptyString(aBaseDN) && !isEmptyString(aRtitle) &&
+                    !isEmptyString(aRType) && strieq(aRType, "module"))
+                {
+                    moduleBaseDN.set(aBaseDN);
+                    break;
+                }
+            }
+        }
+        void appendAccountPermissionsForCodeGenResource(const char *baseDNName, const char *moduleBaseDN,
+            IArrayOf<IEspAccountPermission> &accountPermissions, IArrayOf<IEspGroupAccountPermission> &groupAccountPermissions)
+        {
+            IArrayOf<CPermission> permissions;
+            if (getResourcePermissions(moduleBaseDN, RT_SERVICE, "codegenerator.cpp", permissions))
+                checkAndAppendAccountPermissions(baseDNName, "codegenerator.cpp", permissions, accountPermissions, groupAccountPermissions);
+        }
+        //Collect the names of the accounts which have permissions in the resources of a BaseDN.
+        void appendAccountsInResources(const char *resourceName, IArrayOf<CPermission> &permissions,
+            CIArrayOf<CAccountsInResource> &accountsInResources)
+        {
+            Owned<CAccountsInResource> accountsInResource = new CAccountsInResource(resourceName);
+
+            ForEachItemIn(i, permissions)
+            {
+                CPermission &perm = permissions.item(i);
+                const char *accountName = perm.getAccount_name();
+                int accountType = perm.getAccount_type();
+                if (isEmptyString(accountName))
+                    continue;
+
+                StringBuffer accountNameEx;
+                if (GROUP_ACT == accountType)
+                    accountNameEx.append("G|");
+                accountNameEx.append(accountName);
+                accountsInResource->addUniqueAccountName(accountNameEx);
+            }
+            accountsInResources.append(*accountsInResource.getClear());
+        }
+        //Similar to onAccountPermissions():
+        //For the account stored in the accountNameReq and related group accounts, loop 
+        //through every resources in every BaseDNs. For each BaseDN, if the account is 
+        //not set for one of its resources, add the BaseDN name to a BaseDN list of this 
+        //account. A caller may use the list to enable the Add Permision functions for 
+        //the BaseDN.
+        void setBaseDNNamesForMissingPermissions(IEspAccountPermissionsV2Response &resp,
+            IArrayOf<IEspGroupAccountPermission> &groupAccountPermissions)
+        {
+            StringArray missingPermissionBasednNames;
+            getBaseDNNamesForAccountMissingPermissions(accountNameReq, isGroupAccountReq, missingPermissionBasednNames);
+            if (missingPermissionBasednNames.length() > 0)
+                resp.setBasednNames(missingPermissionBasednNames);
+
+            ForEachItemIn(i, groupAccountPermissions)
+            {
+                IEspGroupAccountPermission &groupPermission = groupAccountPermissions.item(i);
+
+                StringArray basednNames;
+                getBaseDNNamesForAccountMissingPermissions(groupPermission.getGroupName(), 1, basednNames);
+                if (basednNames.length() > 0)
+                    groupPermission.setBasednNames(basednNames);
+            }
+        }
+        //For the account stored in the accountName, loop through every resources in every BaseDNs.
+        //For each BaseDN, if the account is not in one of its resources, add the BaseDN name to the basednNames.
+        void getBaseDNNamesForAccountMissingPermissions(const char *accountName, bool isGroup,
+            StringArray &basednNames)
+        {
+            StringBuffer accountNameEx;
+            if (isGroup)
+                accountNameEx.append("G|");
+            accountNameEx.append(accountName);
+
+            //There may be multiple accounts already in each BaseDN.
+            ForEachItemIn(i, accountsInBaseDNs)
+            { //for accounts in one BaseDN:
+                CAccountsInBaseDN &accountsInBaseDN = accountsInBaseDNs.item(i);
+                //One BaseDN may have multiple resources.
+                CIArrayOf<CAccountsInResource> &accountsInResources = accountsInBaseDN.getAccountsInResources();
+                ForEachItemIn(k, accountsInResources)
+                { //for accounts in one resource winthin BaseDN:
+                    CAccountsInResource &accountsInResource = accountsInResources.item(k);
+                    if (!accountsInResource.findAccountName(accountNameEx))
+                    {
+                        //Not find the account in this resource. Add the BaseDN name to the basednNames.
+                        basednNames.append(accountsInBaseDN.getBaseDNName());
+                        break;
+                    }
+                }
+            }
+        }
+
+    public:
+        CAccountPermissionsHelper(IEspContext *ctx, CLdapSecManager *secmgr) : context(ctx), secMGR(secmgr) { }
+
+        void readReq(IEspAccountPermissionsV2Request &req, const char *accountReq, const char *userID)
+        {
+            baseDNNameReq.set(req.getResourceName());
+
+            isGroupAccountReq = req.getIsGroup();
+            if (!isEmptyString(accountReq))
+                accountNameReq.set(accountReq);
+            else
+            {//send back the permissions for the current user.
+                accountNameReq.set(userID);
+                isGroupAccountReq = false;
+            }
+
+            includeGroup = req.getIncludeGroup();
+            if (!isGroupAccountReq && includeGroup)
+                secMGR->getGroups(accountNameReq, groupsAccountBelongsTo);
+            groupsAccountBelongsTo.append("Authenticated Users");
+            groupsAccountBelongsTo.append("everyone");
+        }
+
+        void getAccountPermissions(IArrayOf<IEspDnStruct> &allBaseDNs, IEspAccountPermissionsV2Response &resp)
+        {
+            //accountPermissions: the permissions for the requested account (accountNameReq). The account
+            //could be a group account or a personal account.
+            //groupAccountPermissions: the permissions for group accounts which are not in the accountPermissions,
+            //the authUsersPermissions and the everyonePermissions.
+            IArrayOf<IEspAccountPermission> accountPermissions;
+            IArrayOf<IEspGroupAccountPermission> groupAccountPermissions;
+
+            //"Authenticated Users" and "Everyone" are default user groups. Create the permission containers for those default groups.
+            //The permission containers for other groups are created in appendAccountPermission() when needed.
+            authUsersGroupPermission.setown(createGroupAccountPermissionEx("Authenticated Users"));
+            everyOneGroupPermission.setown(createGroupAccountPermissionEx("Everyone"));
+
+            getModuleBaseDN(allBaseDNs, moduleBaseDN);
+            ForEachItemIn(i, allBaseDNs)
+            {
+                IEspDnStruct& curBaseDN = allBaseDNs.item(i);
+                if (baseDNNameReq.isEmpty()) //Get account permissions for all BaseDNs.
+                    readAccountPermissionsInOneBaseDN(allBaseDNs, curBaseDN, accountPermissions, groupAccountPermissions);
+                else if (strieq(curBaseDN.getName(), baseDNNameReq.get()))
+                {
+                    readAccountPermissionsInOneBaseDN(allBaseDNs, curBaseDN, accountPermissions, groupAccountPermissions);
+                    break;
+                }
+            }
+
+            if (hasAuthUsersPerm)
+                groupAccountPermissions.append(*authUsersGroupPermission.getLink());
+
+            if (hasEveryonePerm)
+                groupAccountPermissions.append(*everyOneGroupPermission.getLink());
+
+            setBaseDNNamesForMissingPermissions(resp, groupAccountPermissions);
+
+            if (groupAccountPermissions.length() > 0)
+                resp.setGroupPermissions(groupAccountPermissions);
+
+            if (accountPermissions.length() > 0)
+                resp.setPermissions(accountPermissions);
+        }
+    };
+
+    try
+    {
+        CLdapSecManager *secMGR = queryLDAPSecurityManager(context);
+        if (!secMGR)
+            throw makeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+        //Check user and access
+        StringBuffer userID;
+        context.getUserID(userID);
+        if (userID.isEmpty())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Could not get user ID.");
+
+        const char *accountName = req.getAccountName();
+        if (!isEmptyString(accountName) && !streq(accountName, userID.str()))
+            checkUser(context, secMGR);
+
+        //Make sure BaseDN settings loaded
+        setBasedns(context);
+
+        CAccountPermissionsHelper helper(&context, secMGR);
+        helper.readReq(req, accountName, userID);
+        helper.getAccountPermissions(m_basedns, resp);
+    }
+    catch(IException *e)
     {
         FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
     }
