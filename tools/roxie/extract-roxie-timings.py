@@ -85,10 +85,12 @@ if __name__ == "__main__":
     parser.add_argument("--all", "-a", help="Combine all services into a single result", action='store_true')
     parser.add_argument("--nosummary", "-n", help="Avoid including a summary", action='store_true')
     parser.add_argument("--summaryonly", "-s", help="Only generate a summary", action='store_true')
+    parser.add_argument("--ignorecase", "-i", help="Use case-insensitve query names", action='store_true')
     args = parser.parse_args()
     combineServices = args.all
     suppressDetails = args.summaryonly
     reportSummary = not args.nosummary or args.summaryonly
+    ignoreQueryCase = args.ignorecase
 
     csv.field_size_limit(0x100000)
     with open(args.filename, encoding='latin1') as csv_file:
@@ -104,6 +106,9 @@ if __name__ == "__main__":
                 mapping = rowText.split();
 
                 serviceName = completeMatch.group(1)
+                if ignoreQueryCase:
+                    serviceName = serviceName.lower()
+
                 idMatch = idPattern.search(mapping[0])
                 if idMatch:
                     if combineServices:
