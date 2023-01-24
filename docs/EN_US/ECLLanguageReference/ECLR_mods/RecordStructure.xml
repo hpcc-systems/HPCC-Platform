@@ -132,7 +132,8 @@
           records. If the <emphasis>condition</emphasis> expression references
           <emphasis>fields</emphasis> in the RECORD preceding the IFBLOCK,
           those references must use SELF. prepended to the fieldname to
-          disambiguate the reference.</entry>
+          disambiguate the reference. This is only for use in RECORD
+          structures that define files on disk.</entry>
         </row>
 
         <row>
