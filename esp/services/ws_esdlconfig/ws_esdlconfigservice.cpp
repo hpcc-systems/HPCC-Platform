@@ -291,7 +291,7 @@ bool CWsESDLConfigEx::onPublishESDLDefinition(IEspContext &context, IEspPublishE
             userdesc->set(user, password, context.querySignature());
         }
 
-        DBGLOG("CWsESDLConfigEx::onPublishESDLDefinition User=%s",user);
+        DBGLOG("CWsESDLConfigEx::onPublishESDLDefinition User=%s",user ? user : "(null)");
 
         resp.updateStatus().setCode(0);
 

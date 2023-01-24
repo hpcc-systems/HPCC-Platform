@@ -7143,11 +7143,7 @@ void HIDLcompiler::processExecutionProfiling()
     for (si=servs; si; si=si->next)
     {
         StrBuffer serviceProfilingOptions;
-        bool serviceProfileExecutionEnabled = si->getMetaStringValue(serviceProfilingOptions,"profile_execution");
-
-        //
-        // At the HIDL top level, execution profiling is enabled if any service is enabled
-        executionProfilingEnabled |= serviceProfileExecutionEnabled;
+        si->executionProfilingEnabled = si->getMetaStringValue(serviceProfilingOptions,"profile_execution");
 
         //
         // Go through each method and save any profile information to make if faster later when
@@ -7160,8 +7156,8 @@ void HIDLcompiler::processExecutionProfiling()
             // Collect method profile execution values
             StrBuffer methodProfilingOptions;
             bool methodProfileExecutionEnabled = mthi->getMetaStringValue(methodProfilingOptions, "profile_execution");
-            executionProfilingEnabled |= methodProfileExecutionEnabled;   // again, if a method is enabled, set top flag
-            if (serviceProfileExecutionEnabled || methodProfileExecutionEnabled)
+            si->executionProfilingEnabled |= methodProfileExecutionEnabled;   // again, if a method is enabled, set top flag
+            if (si->executionProfilingEnabled || methodProfileExecutionEnabled)
             {
                 if (!mthi->getMetaInt("no_profile_execution"))
                 {
@@ -7185,11 +7181,18 @@ void HIDLcompiler::write_esp()
     outf("#define %s_ESPGEN_INCLUDED\n\n", packagename);
     outf("#include \"%s_esp.ipp\"\n", packagename);
 
-    if (executionProfilingEnabled)
+    // If any defined service has execution profiling enabled, add the required includes
+    EspServInfo *si;
+    for (si=servs;si;si=si->next)
     {
-        outs("#include \"espcommon.hpp\"\n");
-        outs("#include \"jmetrics.hpp\"\n");
+        if (si->executionProfilingEnabled)
+        {
+            outs("#include \"espcommon.hpp\"\n");
+            outs("#include \"jmetrics.hpp\"\n");
+            break;
+        }
     }
+
     outs("\n");
     outs("#ifdef _WIN32\n");
     outs("#include \"edwin.h\"\n");
@@ -7204,7 +7207,6 @@ void HIDLcompiler::write_esp()
         mi->write_esp();
     }
 
-    EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
         si->write_esp_binding();
@@ -7252,10 +7254,15 @@ void HIDLcompiler::write_esp_ex_ipp()
     outs("\n\n");
 
     // metrics execution profiling requires the memory header
-    if (executionProfilingEnabled)
+    EspServInfo *si;
+    for (si=servs;si;si=si->next)
     {
-        outs("#include <memory>\n");
-        outs("\n\n");
+        if (si->executionProfilingEnabled)
+        {
+            outs("#include <memory>\n");
+            outs("\n\n");
+            break;
+        }
     }
 
     outf("namespace %s\n{\n\n", packagename);
@@ -7266,7 +7273,6 @@ void HIDLcompiler::write_esp_ex_ipp()
         mi->write_esp_ipp();
     }
 
-    EspServInfo *si;
     for (si=servs;si;si=si->next)
     {
         si->write_esp_service_ipp();

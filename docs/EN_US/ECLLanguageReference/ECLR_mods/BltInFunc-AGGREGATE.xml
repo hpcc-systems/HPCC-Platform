@@ -15,14 +15,18 @@
       <primary>RIGHT1</primary>
     </indexterm>,RIGHT2<indexterm>
       <primary>RIGHT2</primary>
-    </indexterm>) ] [,</emphasis> <emphasis>groupingfields</emphasis>
-  <emphasis role="bold">] [, LOCAL<indexterm>
+    </indexterm>) |</emphasis> <emphasis>groupingfields</emphasis> <emphasis
+  role="bold">] [, LOCAL<indexterm>
       <primary>LOCAL</primary>
     </indexterm> | FEW<indexterm>
       <primary>FEW</primary>
     </indexterm> | MANY<indexterm>
       <primary>MANY</primary>
-    </indexterm>] [, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] )</emphasis></para>
+    </indexterm>] [, UNORDERED | ORDERED(</emphasis> <emphasis>bool
+  </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [
+  (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [,
+  ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -93,50 +97,70 @@
             <entry>Optional. Indicates that the expression will result in more
             than 10,000 records.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
+            <entry>Optional. Specifies the output record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
+            <entry>Specifies the significance of the output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis>bool</emphasis></entry>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
+            <entry>When False, specifies the output record order is not
+            significant. When True, specifies the default output record
+            order.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
+            <entry>Optional. Specifies the input record order is
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
+            <entry>Optional. Specifies the input record order is not
+            significant.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">PARALLEL</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
+            <entry>Optional. Try to evaluate this activity in
+            parallel.</entry>
           </row>
+
           <row>
             <entry><emphasis>numthreads</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
+            <entry>Optional. Try to evaluate this activity using
+            <emphasis>numthreads</emphasis> threads.</entry>
           </row>
+
           <row>
             <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
+            <entry>Optional. Override the algorithm used for this
+            activity.</entry>
           </row>
+
           <row>
             <entry><emphasis>name</emphasis></entry>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
+            <entry>The algorithm to use for this activity. Must be from the
+            list of supported algorithms for the SORT function's STABLE and
+            UNSTABLE options.</entry>
           </row>
 
           <row>
@@ -159,7 +183,7 @@
   <para>The operation is implicitly local, in that the
   <emphasis>maintransform</emphasis> is called to process records locally on
   each node, and the result records on each node are then merged to produce
-  the global result. </para>
+  the global result.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Aggregate">
     <title>TRANSFORM Function Requirements - AGGREGATE</title>
@@ -216,38 +240,48 @@
     <emphasis>maintransform</emphasis>. If it can't, then the user will need
     to specify one.</para>
 
-    <programlisting>inRecord := RECORD 
+    <programlisting>//Example 1: Produce a list of box contents by concatenating a string: 
+IMPORT Std;
+inRec := RECORD 
+  UNSIGNED box; 
+  STRING text{MAXLENGTH(100)}; 
+END; 
+inds := DATASET([{1,'Fred1'},{1,'Freddy1'},{1,'FredJon1'},
+                 {3,'Fred3'},{3,'Freddy3'},{3,'FredJon3'},
+                 {4,'Fred4'},{4,'Freddy4'},{4,'FredJon4'},
+                 {2,'Freddi'},{2,'Fredrik'}], inRec,DISTRIBUTED);
+outRec := RECORD 
+  UNSIGNED box; 
+  STRING contents{MAXLENGTH(200)}; 
+END; 
+outRec t1(inds l, outRec r) := TRANSFORM 
+  SELF.box := l.box; 
+  SELF.contents:= r.contents +IF(r.contents &lt;&gt; '', ',', '') +l.text +'-' +(Std.System.ThorLib.Node()+1); 
+END; 
+      
+outRec t2(outRec r1, outRec r2) := TRANSFORM 
+  SELF.box := r1.box; 
+  SELF.contents := r1.contents + '::' + r2.contents; 
+END; 
+OUTPUT(AGGREGATE(inds, outRec, t1(LEFT, RIGHT), t2(RIGHT1, RIGHT2), LEFT.box));
+//because there is a "group by" field, this will never call the second TRANSFORM
+//because "group by" puts all grouped recs on a single node
+//and it produces one result rec for each unique "group by" value
+
+OUTPUT(AGGREGATE(inds, outRec, t1(LEFT, RIGHT), t2(RIGHT1, RIGHT2)));
+//without the "group by" field, this calls the second TRANSFORM on a multi-node cluster
+//and the second TRANSFORM produces a single result record after merging the results from 
+//each node
+  
+      
+//Example 2: A PIGMIX style grouping operation:
+inRecord := RECORD 
   UNSIGNED box; 
   STRING text{MAXLENGTH(10)}; 
 END; 
 inTable := DATASET([{1,'Fred'},{1,'Freddy'},
                     {2,'Freddi'},{3,'Fredrik'},{1,'FredJon'}], inRecord);
-      
-//Example 1: Produce a list of box contents by concatenating a string:
-      
-outRecord1 := RECORD 
-  UNSIGNED box; 
-  STRING contents{MAXLENGTH(200)}; 
-END; 
-outRecord1 t1(inRecord l, outRecord1 r) := TRANSFORM 
-  SELF.box := l.box; 
-  SELF.contents := r.contents + IF(r.contents &lt;&gt; '', ',', '') + l.text; 
-END; 
-      
-outRecord1 t2(outRecord1 r1, outRecord1 r2) := TRANSFORM 
-  SELF.box := r1.box; 
-  SELF.contents := r1.contents + ',' + r2.contents; 
-END; 
-OUTPUT(AGGREGATE(inTable, outRecord1, t1(LEFT, RIGHT), t2(RIGHT1, RIGHT2), LEFT.box));
-      
-//This example could eliminate the merge transform if the SELF.contents expression in
-//the t1 TRANSFORM were simpler, like this:
-//     SELF.contents := r.contents + ',' + l.text;
-//which would make the AGGREGATE function like this:
-//   OUTPUT(AGGREGATE(inTable, outRecord1, t1(LEFT, RIGHT), LEFT.box));
 
-      
-//Example 2: A PIGMIX style grouping operation:
 outRecord2 := RECORD 
   UNSIGNED box; 
   DATASET(inRecord) items; 

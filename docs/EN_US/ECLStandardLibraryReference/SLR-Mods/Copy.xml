@@ -164,8 +164,9 @@
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           execute the copy process on the source nodes and push to the targets
-          instead of executing on the targets and pulling from the source. If
-          omitted, the default is FALSE.</entry>
+          instead of executing on the targets and pulling from the source.
+          This option is only valid within the same environment. If omitted,
+          the default is FALSE.</entry>
         </row>
 
         <row>

@@ -110,7 +110,7 @@ OUTPUT(i2);
                 TRANSFORM(RECORDOF(ProgGuide.Accounts),
                           SELF := LEFT));
 ds0 := DISTRIBUTE(bf,RANDOM()) : PERSIST('~PROGGUIDE::PERSIST::TestGroupSort');
-ds1 := DISTRIBUTE(ds,HASH32(personid));
+ds1 := DISTRIBUTE(ds0,HASH32(personid));
 
 // do a global sort
 s1 := SORT(ds0,personid,opendate,-balance);
