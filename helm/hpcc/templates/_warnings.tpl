@@ -139,4 +139,25 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" (printf "Insecure feature enabled in ecl: %s " $ctx.insecureEclFeature) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- /* Warn if TLS not enabled */ -}}
+ {{- $_ := set $ctx "TLSdisabled" list -}}
+ {{- range $espservice := .root.Values.esp -}}
+  {{- if not $espservice.tls -}}
+   {{- if (and ($ctx.root.Values.certificates|default false) $ctx.root.Values.certificates.enabled) -}}
+    {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" $ctx.root "visibility" $espservice.service.visibility)) "") -}}
+    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" $espservice )) -}}
+    {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
+    {{- if ne (include "hpcc.isIssuerEnabled" (dict "root" $ctx.root "issuerKeyName" "local")) "true" -}}
+     {{- $_ := set $ctx "TLSdisabled" (append $ctx.TLSdisabled $espservice.name) -}}
+    {{- end -}}
+   {{- else -}}
+    {{- $_ := set $ctx "TLSdisabled" (append $ctx.TLSdisabled $espservice.name) -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+ {{- if $ctx.TLSdisabled -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "tls disabled for esp services: %s" ($ctx.TLSdisabled|toStrings)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
 {{- end -}}
