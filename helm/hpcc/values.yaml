@@ -23,7 +23,7 @@ global:
 
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
-    detail: 80
+    detail: 60
 
   ## resource settings for stub components
   #stubInstanceResources:
