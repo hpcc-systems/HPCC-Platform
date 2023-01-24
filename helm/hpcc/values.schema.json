@@ -2836,6 +2836,24 @@
           "name": {
             "type": "string",
             "description": "Remote client name"
+          },
+          "organization": {
+            "type": "string",
+            "description": "Remote client organization"
+          },
+          "secretTemplate": {
+            "type": "object",
+            "description": "cert-manager secretTemplate for this remoteClient secret",
+            "properties": {
+              "annotations": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              }
+            }
           }
         }
       }

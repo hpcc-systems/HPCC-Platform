@@ -566,8 +566,12 @@ esp:
 # Add remote clients to generated client certificates and make the ESP require that one of the generated certificates is provided by a client in order to connect
 #   When setting up remote clients make sure that certificates.issuers.remote.enabled is set to true.
 # remoteClients:
-# - name: myclient
-#   organization: mycompany
+# - name: petfoodApplicationProd
+#   organization: petfoodDept
+#   secretTemplate:
+#     annotations:
+#       kubed.appscode.com/sync: "hpccenv=petfoodAppProd" # use kubed config-syncer to replicate certificate to namespace with matching annotation (also supports syncing with separate aks clusters)
+
   service:
     ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
     port: 8888
@@ -651,8 +655,6 @@ esp:
   application: sql2ecl
   auth: none
   replicas: 1
-# remoteClients:
-# - name: sqlclient111
   service:
     visibility: local
     servicePort: 8510
