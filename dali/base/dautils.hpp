@@ -545,6 +545,7 @@ extern da_decl IPropertyTree * getDropZonePlane(const char * name);
 extern da_decl IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch);
 extern da_decl bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch);
 extern da_decl bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which);
+extern da_decl void getPlaneHosts(StringArray &hosts, IPropertyTree *plane);
 extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
 extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
 extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath);

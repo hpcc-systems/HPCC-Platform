@@ -587,6 +587,9 @@ vaults:
     {{- if $vault.namespace }}
       namespace: {{ $vault.namespace }}
     {{- end }}
+    {{- if (hasKey $vault "verify_server") }}
+      verify_server: {{ $vault.verify_server }}
+    {{- end }}
       url: {{ $vault.url }}
     {{- if index $vault "client-secret" }}
       client-secret: {{ index $vault "client-secret" }}

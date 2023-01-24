@@ -354,7 +354,7 @@ export = {
         GetLogicalFilePart: "Logical File Part",
         GetProtectedList: "Protected List",
         GetValue: "Value",
-        GetPart: "Part",
+        GetPart: "Get Part",
         GetSoftwareInformation: "Get Software Information",
         Graph: "Graph",
         Graphs: "Graphs",
