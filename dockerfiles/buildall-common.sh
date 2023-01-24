@@ -20,7 +20,7 @@
 # Build script to create and publish Docker containers corresponding to a GitHub tag
 # This script is normally invoked via GitHub actions, whenever a new tag is pushed
 
-BASE_VER=8.6                                    # The docker hub label for the platform-build-base image. Changes rarely.
+BASE_VER=2022.11.14-rc5                         # The docker hub label for the platform-build-base image. Changes rarely.
 BUILD_TAG=$(git describe --exact-match --tags || true)  # The git tag for the images we are building
 BUILD_LABEL=${BUILD_TAG}                        # The docker hub label for all other components
 BUILD_USER=hpcc-systems                         # The github repo owner

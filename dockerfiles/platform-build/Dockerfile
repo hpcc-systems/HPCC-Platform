@@ -17,7 +17,7 @@
 
 # Base container image that builds all HPCC platform components
 
-ARG BASE_VER=8.12-rc2
+ARG BASE_VER=2022.11.14-rc5
 ARG CR_USER=hpccsystems
 ARG CR_REPO=docker.io
 ARG CR_CONTAINER_NAME=platform-build-base
