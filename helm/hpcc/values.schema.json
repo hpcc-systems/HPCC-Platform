@@ -819,6 +819,10 @@
         "namespace": {
           "description": "the namespace to use when authenticating with, and accessing the vault",
           "type": "string"
+        },
+        "verify_server": {
+          "description": "optional relax server verification for trouble shooting",
+          "type": "boolean"
         }
       },
       "required": [ "name", "url" ],
@@ -2848,6 +2852,24 @@
           "name": {
             "type": "string",
             "description": "Remote client name"
+          },
+          "organization": {
+            "type": "string",
+            "description": "Remote client organization"
+          },
+          "secretTemplate": {
+            "type": "object",
+            "description": "cert-manager secretTemplate for this remoteClient secret",
+            "properties": {
+              "annotations": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              }
+            }
           }
         }
       }

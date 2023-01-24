@@ -17,6 +17,8 @@
 
 # Build container image containing all 3rd-party tools required to build HPCC platform
 
+# DEPRECATED  ---  DEPRECATED  ---  DEPRECATED
+
 FROM ubuntu:20.04 as build
 ENV DEBIAN_FRONTEND=noninteractive
 ARG BASE_VER

@@ -36,7 +36,7 @@ jobs:
       - name: vars
         id: vars
         run: |
-          echo ::set-output name=base_ver::8.6
+          echo ::set-output name=base_ver::2022.11.14-rc5
           # echo ::set-output name=container_registry::ghcr.io
           # echo ::set-output name=cr_user::${{ github.repository_owner }}
           echo ::set-output name=container_registry::docker.io
