@@ -2137,7 +2137,7 @@ static bool getDirectAccessStoragePlanes(StringArray &planes)
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
 #ifdef _CONTAINERIZED
-    const char *myCluster = defaultPlane.str();
+    const char *myCluster = (ROXIE_KEY == fileType) ? defaultIndexBuildPlane.str() : defaultPlane.str();
 #else
     const char *myCluster = roxieName.str();
 #endif

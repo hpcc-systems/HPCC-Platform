@@ -101,7 +101,7 @@ public:
         if (idx == 0)
         {
             StringBuffer defaultCluster;
-            if (getDefaultStoragePlane(defaultCluster))
+            if (getDefaultIndexBuildStoragePlane(defaultCluster))
                 clusters.append(defaultCluster);
         }
 

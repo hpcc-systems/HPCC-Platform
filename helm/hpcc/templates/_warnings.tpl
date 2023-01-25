@@ -33,6 +33,9 @@ Pass in dict with root and warnings
  {{- end -}}
  {{- /* Gather a list of ephemeral and persistant planes */ -}}
  {{- $storage := (.root.Values.storage | default dict) -}}
+ {{- if hasKey $storage "indexBuildPlane" -}}
+  {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $storage.indexBuildPlane "contextPrefix" "indexBuildPlane: ") -}}
+ {{- end -}}
  {{- $match := dict "ephemeral" (list) "persistant" (list) -}}
  {{- $planes := ($storage.planes | default list) -}}
  {{- $searchLabels := list "data" "dali" "sasha" "dll" "lz" -}}
@@ -122,6 +125,18 @@ Pass in dict with root and warnings
  {{- if $ctx.defaultCpuRateComponents -}}
   {{- $warning := dict "source" "helm" "severity" "warning" -}}
   {{- $_ := set $warning "msg" (printf "Default cpu cost rate is being used for %s: %s" ((len $ctx.defaultCpuRateComponents)| plural "component" "components") ($ctx.defaultCpuRateComponents|toStrings)) -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- /* Warn if insecure embed, pipe or extern enabled */ -}}
+ {{- $_ := set $ctx "insecureEclFeature" list -}}
+ {{- range $opt, $value := (pick .root.Values.security.eclSecurity "embedded" "pipe" "extern") -}}
+  {{- if eq $value "allow" -}}
+   {{- $_ := set $ctx "insecureEclFeature" (append $ctx.insecureEclFeature $opt) -}}
+  {{- end -}}
+ {{- end -}}
+ {{- if $ctx.insecureEclFeature -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" (printf "Insecure feature enabled in ecl: %s " $ctx.insecureEclFeature) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
 {{- end -}}
