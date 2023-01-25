@@ -33,6 +33,9 @@ Pass in dict with root and warnings
  {{- end -}}
  {{- /* Gather a list of ephemeral and persistant planes */ -}}
  {{- $storage := (.root.Values.storage | default dict) -}}
+ {{- if hasKey $storage "indexBuildPlane" -}}
+  {{- include "hpcc.checkPlaneExists" (dict "root" .root "planeName" $storage.indexBuildPlane "contextPrefix" "indexBuildPlane: ") -}}
+ {{- end -}}
  {{- $match := dict "ephemeral" (list) "persistant" (list) -}}
  {{- $planes := ($storage.planes | default list) -}}
  {{- $searchLabels := list "data" "dali" "sasha" "dll" "lz" -}}

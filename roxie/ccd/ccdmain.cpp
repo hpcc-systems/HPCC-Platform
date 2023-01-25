@@ -185,6 +185,7 @@ StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
 #ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
+StringBuffer defaultIndexBuildPlane;
 #endif
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
@@ -735,6 +736,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setStatisticsComponentName(SCTroxie, "roxie", true);
 #ifdef _CONTAINERIZED
         getDefaultStoragePlane(defaultPlane);
+        getDefaultIndexBuildStoragePlane(defaultIndexBuildPlane);
 #endif
         installDefaultFileHooks(topology);
 

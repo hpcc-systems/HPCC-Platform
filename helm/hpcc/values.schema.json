@@ -34,6 +34,10 @@
         },
         "remote": {
           "$ref": "#/definitions/remoteStorage"
+        },
+        "indexBuildPlane": {
+          "type": "string",
+          "description": "Default plane for index builds"
         }
       },
       "additionalProperties": false
@@ -1415,6 +1419,10 @@
           "description": "The default storage plane to write data files to",
           "type": "string"
         },
+        "indexBuildPlane": {
+          "description": "The default storage plane to write index files to",
+          "type": "string"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -1492,6 +1500,10 @@
         },
         "spillPlane": {
           "description": "The storage plane to write spill files to",
+          "type": "string"
+        },
+        "indexBuildPlane": {
+          "description": "The default storage plane to write index files to",
           "type": "string"
         },
         "resources": {
@@ -2275,6 +2287,10 @@
         },
         "spillPlane": {
           "description": "The storage plane to write spill files to",
+          "type": "string"
+        },
+        "indexBuildPlane": {
+          "description": "The default storage plane to write index files to",
           "type": "string"
         },
         "annotations": {

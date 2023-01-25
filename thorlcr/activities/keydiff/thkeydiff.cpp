@@ -81,7 +81,7 @@ public:
             throw MakeActivityException(this, 0, "Unsupported: keydiff(%s, %s) - Cannot diff a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), newIndexFile->queryLogicalName(), width, container.queryJob().querySlaves());
 
         StringBuffer defaultCluster;
-        if (getDefaultStoragePlane(defaultCluster))
+        if (getDefaultIndexBuildStoragePlane(defaultCluster))
             clusters.append(defaultCluster);
         IArrayOf<IGroup> groups;
         fillClusterArray(container.queryJob(), outputName, clusters, groups);
