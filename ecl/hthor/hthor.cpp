@@ -351,11 +351,14 @@ private:
     }
 };
 
-ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend)
+ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend, bool isIndex)
 {
     //In the containerized system, the default data plane for this component is in the configuration
     StringBuffer defaultCluster;
-    getDefaultStoragePlane(defaultCluster);
+    if (isIndex)
+        getDefaultIndexBuildStoragePlane(defaultCluster);
+    else
+        getDefaultStoragePlane(defaultCluster);
     Owned<CHThorClusterWriteHandler> clusterHandler;
     unsigned clusterIdx = 0;
     while(true)
@@ -536,7 +539,7 @@ void CHThorDiskWriteActivity::resolve()
                 throw MakeStringException(99, "Could not resolve DFS Logical file %s", lfn.str());
             }
 
-            clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend));
+            clusterHandler.setown(createClusterWriteHandler(agent, NULL, &helper, dfsLogicalName.get(), filename, extend, false));
         }
     }
     else
@@ -1117,7 +1120,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
                 throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
         }
     }
-    clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false));
+    clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false, true));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
     defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", isContainerized());
 }

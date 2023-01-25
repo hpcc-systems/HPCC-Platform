@@ -3659,6 +3659,20 @@ bool getDefaultSpillPlane(StringBuffer &ret)
 #endif
 }
 
+bool getDefaultIndexBuildStoragePlane(StringBuffer &ret)
+{
+#ifdef _CONTAINERIZED
+    if (getComponentConfigSP()->getProp("@indexBuildPlane", ret))
+        return true;
+    else if (getGlobalConfigSP()->getProp("storage/@indexBuildPlane", ret))
+        return true;
+    else
+        return getDefaultStoragePlane(ret);
+#else
+    return false;
+#endif
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 
 static bool isAccessible(const IPropertyTree * xml)

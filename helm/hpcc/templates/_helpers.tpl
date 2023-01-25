@@ -209,6 +209,9 @@ storage:
 {{ toYaml $storage.remote | indent 2 }}
 {{- end }}
   dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
+{{- if hasKey $storage "indexBuildPlane" }}
+  indexBuildPlane: {{ $storage.indexBuildPlane }}
+{{- end }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes }}
@@ -453,12 +456,13 @@ The plane will generate a volume if it matches either an includeLabel or an incl
 
 {{/*
 Check that the data plane name is valid, and report an error if not
-Pass in dict with root, planeName
+Pass in dict with root, planeName and optional contextPrefix
 */}}
 {{- define "hpcc.checkPlaneExists" -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $name := .planeName -}}
+{{- $ctxMsg := .contextPrefix | default "" -}}
 {{- $matched := dict -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled -}}
@@ -468,7 +472,7 @@ Pass in dict with root, planeName
  {{- end -}}
 {{- end -}}
 {{- if not $matched.ok -}}
- {{- $_ := fail (printf "Storage plane %s does not exist" $name) -}}
+ {{- $_ := fail (printf "%sStorage plane %s does not exist" $ctxMsg $name) -}}
 {{- end -}}
 {{- end -}}
 
@@ -640,6 +644,10 @@ Check that the storage and spill planes for a component exist
 {{- if (hasKey .me "spillPlane") }}
  {{- $search := .me.spillPlane -}}
  {{- include "hpcc.checkValidStoragePlane" (dict "search" $search "root" .root "category" "spill" "type" "storage spill" "for" .me.name) -}}
+{{- end }}
+{{- if (hasKey .me "indexBuildPlane") }}
+ {{- $search := .me.indexBuildPlane -}}
+ {{- include "hpcc.checkValidStoragePlane" (dict "search" $search "root" .root "category" "data" "type" "storage data" "for" .me.name) -}}
 {{- end }}
 {{- end -}}
 
