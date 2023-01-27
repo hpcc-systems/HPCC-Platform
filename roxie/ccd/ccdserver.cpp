@@ -12667,8 +12667,8 @@ public:
             attrs.setown(createPTree("Part", ipt_fast));  // clusterHandler is going to set attributes
         else
             attrs.set(&desc->queryPart(0)->queryProperties());
-        attrs->setPropInt64("@size", uncompressedSize + originalBlobSize);
-        attrs->setPropInt64("@compressedSize", compressedFileSize);
+        attrs->setPropInt64("@uncompressedSize", uncompressedSize + originalBlobSize);
+        attrs->setPropInt64("@size", compressedFileSize);
         attrs->setPropInt64("@recordCount", reccount);
         attrs->setPropInt64("@offsetBranches", offsetBranches);
 
@@ -12689,8 +12689,8 @@ public:
         // properties of the logical file
         IPropertyTree & properties = desc->queryProperties();
         properties.setProp("@kind", "key");
-        properties.setPropInt64("@size", uncompressedSize + originalBlobSize);
-        properties.setPropInt64("@compressedSize", compressedFileSize);
+        properties.setPropInt64("@uncompressedSize", uncompressedSize + originalBlobSize);
+        properties.setPropInt64("@size", compressedFileSize);
         properties.setPropInt64("@recordCount", reccount);
         properties.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
         properties.setPropInt64("@numLeafNodes", numLeafNodes);
