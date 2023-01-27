@@ -20,12 +20,6 @@ if(NOT WSSQL_SERVICE)
     set(WSSQL_SERVICE_BLOCK_E "-->")
 endif(NOT WSSQL_SERVICE)
 
-if(NOT SPARK)
-    set(SPARK_ENV_S "<!-- Built with -DSPARK=OFF ")
-    set(SPARK_ENV_F "-->")
-    set(DNG_SPARKTHOR ",sparkthor")
-endif(NOT SPARK)
-
 if(NOT "${CUSTOM_PACKAGE_SUFFIX}" STREQUAL "")
     set(version_file_prefix "${CUSTOM_PACKAGE_SUFFIX}_")
 endif()

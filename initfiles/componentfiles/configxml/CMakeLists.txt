@@ -35,9 +35,6 @@ if("${HPCC_PROJECT_ABBR}" STREQUAL "CC")
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/buildset.xml DESTINATION componentfiles/configxml COMPONENT Runtime)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/spark-defaults.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl @ONLY)
-        
 FOREACH( iFILES
     ${CMAKE_CURRENT_BINARY_DIR}/dropzone.xsd
     ${CMAKE_CURRENT_BINARY_DIR}/eclagent_config.xsd
@@ -104,9 +101,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/daliplugin.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/backupnode.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/backupnode_vars.xsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/sparkThor.xsd
-    ${CMAKE_CURRENT_BINARY_DIR}/sparkThor.xsl
-    ${CMAKE_CURRENT_BINARY_DIR}/spark-defaults.xsl
     ${CMAKE_CURRENT_BINARY_DIR}/toposerver.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/toposerver.xsl
 )
