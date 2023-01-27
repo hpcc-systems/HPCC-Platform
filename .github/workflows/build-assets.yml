@@ -36,6 +36,8 @@ jobs:
       internal_tag: ${{ steps.vars.outputs.internal_tag }}
       community_branch: ${{ steps.vars.outputs.community_branch }}
       cmake_options: ${{ steps.vars.outputs.cmake_options }}
+      mount_ecl_signing_key: ${{ steps.vars.outputs.mount_ecl_signing_key }}
+      load_key: ${{ steps.vars.outputs.load_key }}
     steps:
       - name: Calculate vars
         id: vars
@@ -54,7 +56,9 @@ jobs:
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
           community_base_ref=${{ github.event.base_ref || github.ref }}
           echo "community_branch=$(echo $community_base_ref | cut -d'/' -f3)" >> $GITHUB_OUTPUT
-          echo "cmake_options=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF" >> $GITHUB_OUTPUT
+          echo "cmake_options=-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DSIGN_MODULES=ON" >> $GITHUB_OUTPUT
+          echo 'mount_ecl_signing_key=source="${{ github.workspace }}/private.key",target=/hpcc-dev/private.key,type=bind,consistency=cached' >> $GITHUB_OUTPUT
+          echo 'load_key=gpg --batch --import /hpcc-dev/private.key' >> $GITHUB_OUTPUT
 
       - name: Print vars
         run: |
@@ -154,14 +158,15 @@ jobs:
       - name: CMake Packages
         if: ${{ !matrix.container && !matrix.ln }}
         run: |
+          echo "${{ secrets.SIGNING_SECRET }}" > private.key
           mkdir -p ${{ needs.release.outputs.folder_build }}
           plugins=("CASSANDRAEMBED" "COUCHBASEEMBED" "ECLBLAS" "H3" "JAVAEMBED" "KAFKA" "MEMCACHED" "MYSQLEMBED" "NLP" "REDIS" "SQLITE3EMBED" "SQS" "PLATFORM")
           for plugin in "${plugins[@]}"; do
             sudo rm -f ${{ needs.release.outputs.folder_build }}/CMakeCache.txt
             sudo rm -rf ${{ needs.release.outputs.folder_build }}/CMakeFiles
             docker_label=${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ needs.release.outputs.community_tag }}
-            docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF" 
-            docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+            docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGNING_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGNING_KEYID }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF" 
+            docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
             # docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
             # docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
           done
@@ -169,14 +174,15 @@ jobs:
       - name: CMake Containerized Packages
         if: ${{ matrix.container }}
         run: |
+          echo "${{ secrets.SIGNING_SECRET }}" > private.key
           mkdir -p ${{ needs.release.outputs.folder_build }}
           sudo rm -f ${{ needs.release.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.release.outputs.folder_build }}/CMakeFiles
           docker_label=${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ needs.release.outputs.community_tag }}
-          docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
-          docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-          docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
-          docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+          docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGNING_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGNING_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+          docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.release.outputs.cmake_options }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGNING_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGNING_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
+          docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
       - name: Upload Assets
         uses: ncipollo/release-action@v1.12.0
@@ -188,12 +194,13 @@ jobs:
       - name: CMake LN Packages
         if: ${{ matrix.ln }}
         run: |
+          echo "${{ secrets.SIGNING_SECRET }}" > private.key
           mkdir -p ${{ needs.release.outputs.folder_build }}
           sudo rm -f ${{ needs.release.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.release.outputs.folder_build }}/CMakeFiles
           docker_label=${{ secrets.DOCKER_USERNAME }}/build-${{ matrix.os }}:${{ needs.release.outputs.community_tag }}
-          docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_ln }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.release.outputs.cmake_options }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
-          docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_ln }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+          docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_ln }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.release.outputs.cmake_options }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGNING_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGNING_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount ${{ needs.release.outputs.mount_ecl_signing_key }} --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_ln }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "${{ needs.release.outputs.load_key }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
           # docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_ln }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.release.outputs.cmake_options }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
           # docker run --rm --mount ${{ needs.release.outputs.mount_platform }} --mount ${{ needs.release.outputs.mount_ln }} --mount ${{ needs.release.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
@@ -207,6 +214,10 @@ jobs:
           tag: ${{ needs.release.outputs.internal_tag }}
           allowUpdates: true
           artifacts: "${{ needs.release.outputs.folder_build }}/hpccsystems-platform-internal*.deb,${{ needs.release.outputs.folder_build }}/hpccsystems-platform-internal*.rpm"
+
+      - name: Cleanup Environment
+        if: always()
+        run: rm -f ${{ github.workspace }}/private.key
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
