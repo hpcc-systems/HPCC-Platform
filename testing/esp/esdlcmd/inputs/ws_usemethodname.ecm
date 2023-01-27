@@ -1,0 +1,33 @@
+ESPrequest FooRequest
+{
+  string Bar;
+  string Baz;
+};
+
+ESPresponse FooResponse
+{
+  int Bingo;
+};
+
+ESPrequest FruitRequest
+{
+  string Flavor;
+  string Color;
+};
+
+ESPresponse FruitResponse
+{
+  int Eat;
+};
+
+ESPresponse OrangeResponse
+{
+  bool Peels;
+};
+
+ESPservice[version("1"), use_method_name] WsUseMethodName
+{
+  ESPmethod Unique(FooRequest, FooResponse);
+  ESPmethod Apple(FruitRequest, FruitResponse);
+  ESPmethod Orange(FruitRequest, OrangeResponse);
+};
