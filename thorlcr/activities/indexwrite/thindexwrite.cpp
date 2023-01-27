@@ -258,8 +258,8 @@ public:
             props.setPropInt64("@recordCount", recordsProcessed);
             props.setPropInt64("@duplicateKeyCount", duplicateKeyCount);
             props.setProp("@kind", "key");
-            props.setPropInt64("@size", uncompressedSize);
-            props.setPropInt64("@compressedSize", compressedFileSize);
+            props.setPropInt64("@uncompressedSize", uncompressedSize);
+            props.setPropInt64("@size", compressedFileSize);
             props.setPropInt64("@numLeafNodes", numLeafNodes);
             props.setPropInt64("@numBranchNodes", numBranchNodes);
             props.setPropInt64("@numBlobNodes", numBlobNodes);
@@ -330,7 +330,7 @@ public:
                 CDateTime modifiedTime(mb);
 
                 IPropertyTree &props = partDesc->queryProperties();
-                props.setPropInt64("@compressedSize", size);
+                props.setPropInt64("@size", size);
                 props.setPropInt64("@recordCount", r);
 
                 StringBuffer dateStr;
@@ -359,7 +359,7 @@ public:
                 uncompressedSize += slaveUncompressedSize;
                 originalBlobSize += slaveOriginalBlobSize;
 
-                props.setPropInt64("@size", slaveUncompressedSize);
+                props.setPropInt64("@uncompressedSize", slaveUncompressedSize);
                 props.setPropInt64("@offsetBranches", slaveOffsetBranches);
 
                 //Read details for the TLK if it has been generated

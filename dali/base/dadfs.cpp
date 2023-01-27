@@ -3661,6 +3661,7 @@ public:
 #endif
         offset_t totalsize = 0;
         offset_t totalCompressedSize = 0;
+        offset_t totalUncompressedSize = 0;
         unsigned checkSum = ~0;
         bool useableCheckSum = true;
         MemoryBuffer pmb;
@@ -3683,11 +3684,18 @@ public:
                         totalsize = psz;
                     else
                         totalsize += psz;
+
                     psz = (offset_t)partattr->getPropInt64("@compressedSize", -1);
                     if (psz==(offset_t)-1)
                         totalCompressedSize = psz;
                     else
                         totalCompressedSize += psz;
+
+                    psz = (offset_t)partattr->getPropInt64("@uncompressedSize", -1);
+                    if (psz==(offset_t)-1)
+                        totalUncompressedSize = psz;
+                    else
+                        totalUncompressedSize += psz;
                 }
                 if (useableCheckSum)
                 {
@@ -3704,6 +3712,8 @@ public:
             queryAttributes().setPropInt64("@size", totalsize);
         if ((totalCompressedSize!=(offset_t)-1) && (totalCompressedSize != 0))
             queryAttributes().setPropInt64("@compressedSize", totalCompressedSize);
+        if ((totalUncompressedSize!=(offset_t)-1) && (totalUncompressedSize != 0))
+            queryAttributes().setPropInt64("@uncompressedSize", totalUncompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
         setModified();
@@ -6396,6 +6406,7 @@ public:
         IPropertyTree &attrs = queryAttributes();
         attrs.removeProp("@size");
         attrs.removeProp("@compressedSize");
+        attrs.removeProp("@uncompressedSize");
         attrs.removeProp("@checkSum");
         attrs.removeProp("@recordCount");   // recordCount not currently supported by superfiles
         attrs.removeProp("@formatCrc");     // formatCrc set if all consistant

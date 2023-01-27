@@ -8,6 +8,7 @@
     "@clusterName",
     "@codeVersion",
     "@columnMapping",
+    "@compressedSize",
     "@connected",
     "@created",
     "@creator",
@@ -70,6 +71,7 @@
     "@serverId",
     "@session",
     "@severity",
+    "@size",
     "@source",
     "@stateEx",
     "@status",
@@ -82,6 +84,7 @@
     "@target",
     "@totalThorTime",
     "@transformerEntry",
+    "@uncompressedSize"
     "@waiting",
     "@workunit",
     "@wuidVersion",

@@ -57,7 +57,11 @@ data:
             {{- include "hpcc.addStandardLabels" (dict "root" $ "component" "eclccserver" "name" "eclccserver" "instance" $compileJobName "instanceOf" (printf "%s-job" .me.name)) | indent 12 }}
             accessDali: "yes"
             accessEsp: "yes"
+<<<<<<< HEAD
             helmVersion: 8.12.0-rc3
+=======
+            helmVersion: 8.12.0-rc3
+>>>>>>> origin/candidate-8.10.x
 {{- if hasKey .me "labels" }}
 {{ toYaml .me.labels | indent 12 }}
 {{- end }}
@@ -142,7 +146,11 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
+<<<<<<< HEAD
         helmVersion: 8.12.0-rc3
+=======
+        helmVersion: 8.12.0-rc3
+>>>>>>> origin/candidate-8.10.x
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
