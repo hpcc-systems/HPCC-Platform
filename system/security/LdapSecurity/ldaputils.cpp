@@ -68,6 +68,9 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
 #ifndef HAVE_TLS
         //throw MakeStringException(-1, "openldap client library libldap not compiled with TLS support");
 #endif
+        int reqcert = LDAP_OPT_X_TLS_NEVER;
+        ldap_set_option(NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);   
+
         StringBuffer uri("ldaps://");
         uri.appendf("%s:%d", host, secure_port);
         DBGLOG("connecting to %s", uri.str());
@@ -79,8 +82,24 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
             DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
             return nullptr;
         }
-        int reqcert = LDAP_OPT_X_TLS_NEVER;
-        ldap_set_option(NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
+
+        // Set the LDAP version
+        // int version = LDAP_VERSION1;
+        // int version = LDAP_VERSION2;
+        int version = LDAP_VERSION3;
+        ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+
+        int prot_min = LDAP_OPT_X_TLS_PROTOCOL_SSL2;
+        ldap_set_option(ld, LDAP_OPT_X_TLS_PROTOCOL_MIN, &prot_min);
+
+        // int prot_max = LDAP_OPT_X_TLS_PROTOCOL_SSL2;
+        // int prot_max = LDAP_OPT_X_TLS_PROTOCOL_SSL3;
+        // int prot_max = LDAP_OPT_X_TLS_PROTOCOL_TLS1_0;
+        // int prot_max = LDAP_OPT_X_TLS_PROTOCOL_TLS1_1;
+        // int prot_max = LDAP_OPT_X_TLS_PROTOCOL_TLS1_2;
+        int prot_max = LDAP_OPT_X_TLS_PROTOCOL_TLS1_3;
+        ldap_set_option(ld, LDAP_OPT_X_TLS_PROTOCOL_MAX, &prot_max);
+
 #endif
     }
     else
