@@ -72,6 +72,11 @@ EXPORT TestBase64Codec := MODULE
     /* Test encoder for zero length and full zero data input string. */
     EXPORT TEST34 := ASSERT(Str.DecodeBase64('') = d'');
     EXPORT TEST35 := ASSERT(Str.DecodeBase64(''+x'00000000') = d'');
+
+    /* Test optional inclusion of '\n' in encoding result */
+    EXPORT Test36 := ASSERT(Str.FindCount(Str.EncodeBase64(text), '\n') > 0);
+    EXPORT Test37 := ASSERT(Str.FindCount(Str.EncodeBase64(text, TRUE), '\n') > 0);
+    EXPORT Test38 := ASSERT(Str.FindCount(Str.EncodeBase64(text, FALSE), '\n') = 0);
   END;
 
   EXPORT Main := [EVALUATE(TestConst)]; 
