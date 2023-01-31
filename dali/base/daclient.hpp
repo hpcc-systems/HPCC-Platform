@@ -32,6 +32,8 @@ extern da_decl bool initClientProcess(IGroup *servergrp, DaliClientRole role, un
 extern da_decl bool reinitClientProcess(IGroup *servergrp, DaliClientRole role, const char *clientVersion=NULL, const char *minServerVersion=NULL, unsigned timeout=MP_WAIT_FOREVER); 
 extern da_decl void closedownClientProcess();
 extern da_decl bool daliClientActive();
+extern da_decl void installEnvConfigMonitor();
+extern da_decl void uninstallEnvConfigMonitor();
 
 #define DALI_SERVER_PORT     7070 // default Dali server port
 
