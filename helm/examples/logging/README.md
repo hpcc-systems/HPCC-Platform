@@ -65,11 +65,11 @@ This configuration coincides with the elastic4hpcclogs managed solution found in
 
 As mentioned earlier, the HPCC Systems logs provide a wealth of information which can be used for benchmarking, auditing, debugging, monitoring, etc. The type of information provided in the logs and its format is trivially controlled via standard Helm configuration.
 
-By default, the component logs are not filtered, and contain the following columns:
+By default, the component logs are not filtered, are reported in a space delimited values format, and contain the following columns:
     
     MessageID TargetAudience LogEntryClass JobID DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage
 
-The logs can be filtered by TargetAudience, Category or Detail Level, and the output columns can be configured. Logging configuration settings can be applied at the global, or component level.
+The logs can be filtered by TargetAudience, Category or Detail Level, and the output columns can be configured. The logs are reported in 'table' (space delimited values) format by default, and can be re-configured to XML or JSON format. Logging configuration settings can be applied at the global, or component level.
 
 ### Target Audience Filtering
 
@@ -116,3 +116,45 @@ NB: normally it is expected that the logging stack will keep up and the default 
 The defaults can be configured by setting `<section>`.logging.queueLen and/or `<section>`.logging.queueDrop.
 Setting `<section>`.logging.queueLen to 0, will disabled asynchronous logging, i.e. each log will block until completed.
 Setting `<section>`.logging.queueDrop to a non-zero (N) value will cause N logging entries from the queue to be discarded if the queueLen is reached.
+
+### Log data format configuration
+
+By default, HPCC Systems component logs are reported in the format known as 'table' which consists of space delimited value columns.
+
+    For example:
+    0000CF0F PRG INF 2020-05-12 17:10:34.910     1 10690 "HTTP First Line: GET / HTTP/1.1"
+    0000CF10 PRG INF 2020-05-12 17:10:34.911     1 10690 "GET /, from 10.240.0.4"
+    0000CF11 PRG INF 2020-05-12 17:10:34.911     1 10690 “TxSummary[activeReqs=22; rcv=5ms;total=6ms;]"
+
+The log format can be re-configured to xml or json. To do so, specify the desired format in the logging.format section:
+
+Sample configuration for json format:
+
+      logging:
+        format: json
+
+Sample json formated log output:
+
+    { "MSG": "HTTP connection from 1.1.1.1:52392 on persistent socket", "MID": "593", "AUD": "PRG", "CLS": "INF", "DATE": "2023-02-23", "TIME": "17:42:42.808", "PID": "8", "TID": "117", "JOBID": "UNK" }
+    { "MSG": "HTTP First Line: POST /WsWorkunits/WUQuery.json HTTP/1.1", "MID": "594", "AUD": "PRG", "CLS": "INF", "DATE": "2023-02-23", "TIME": "17:42:42.809", "PID": "8", "TID": "225", "JOBID": "UNK" }
+    { "MSG": "TxSummary[activeReqs=1;auth=NA;contLen=31;rcv=1;handleHttp=9;req=POST wsworkunits.WUQUERY v1.95;total=9;]", "MID": "592", "AUD": "PRG", "CLS": "INF", "DATE": "2023-02-23", "TIME": "17:42:39.277", "PID": "8", "TID": "218", "JOBID": "UNK" }
+
+Sample configuration for xml format:
+
+      logging:
+        format: xml
+
+Sample xml formatted log output:
+
+    <msg MessageID="150" Audience="Programmer" Class="Warning"
+     date="2023-02-23" time="17:47:33.516" PID="8" TID="114"
+     JobID="UNK"
+     text="TxSummary entry with name 'rcv' and suffix 'ms'; suffix is ignored" />
+    <msg MessageID="151" Audience="Programmer" Class="Information"
+     date="2023-02-23" time="17:47:33.516" PID="8" TID="114"
+     JobID="UNK"
+     text="POST /WsWorkunits/WUDetails.json, from 1.1.1.41" />
+    <msg MessageID="152" Audience="User" Class="Progress"
+     date="2023-02-23" time="17:47:33.517" PID="8" TID="114"
+     JobID="UNK"
+     text="WUDetails: W20230223-174728" />

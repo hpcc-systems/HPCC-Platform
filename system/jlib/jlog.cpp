@@ -45,7 +45,7 @@ static ILogMsgManager * theManager = nullptr;
 static PassAllLogMsgFilter * thePassAllFilter = nullptr;
 static PassLocalLogMsgFilter * thePassLocalFilter = nullptr;
 static PassNoneLogMsgFilter * thePassNoneFilter = nullptr;
-static HandleLogMsgHandlerTable * theStderrHandler = nullptr;
+static HandleLogMsgHandler * theStderrHandler = nullptr;
 static CSysLogEventLogger * theSysLogEventLogger = nullptr;
 
 
@@ -485,6 +485,79 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
     return out;
 }
 
+StringBuffer & LogMsg::toStringJSON(StringBuffer & out, unsigned fields) const
+{
+    out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
+    StringBuffer encodedMsg;
+    out.append("{ \"MSG\": \"").append(encodeJSON(encodedMsg, text.str())).append("\"");
+
+    if(fields & MSGFIELD_msgID)
+        out.append(", \"MID\": \"").append(sysInfo.queryMsgID()).append("\"");
+    if(fields & MSGFIELD_audience)
+        out.append(", \"AUD\": \"").append(LogMsgAudienceToFixString(category.queryAudience())).append("\"");
+    if(fields & MSGFIELD_class)
+        out.append(", \"CLS\": \"").append(LogMsgClassToFixString(category.queryClass())).append("\"");
+    if(fields & MSGFIELD_detail)
+        out.append(", \"DET\": \"").append(category.queryDetail()).append("\"");
+    if(fields & MSGFIELD_timeDate)
+    {
+        time_t timeNum = sysInfo.queryTime();
+        char timeString[23];
+        struct tm timeStruct;
+        localtime_r(&timeNum, &timeStruct);
+        if(fields & MSGFIELD_date)
+        {
+            strftime(timeString, 23, ", \"DATE\": \"%Y-%m-%d\"", &timeStruct);
+            out.append(timeString);
+        }
+        if(fields & MSGFIELD_microTime)
+        {
+            out.appendf(", \"TIME\": \"%02d:%02d:%02d.%06d\"", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            out.appendf(", \"TIME\": \"%02d:%02d:%02d.%03d\"", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
+        {
+            out.appendf(", \"TIME\": \"%02d:%02d:%02d\"", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec);
+        }
+    }
+    if(fields & MSGFIELD_process)
+        out.append(", \"PID\": \"").append(sysInfo.queryProcessID()).append("\"");
+    if(fields & MSGFIELD_thread)
+        out.append(", \"TID\": \"").append(sysInfo.queryThreadID()).append("\"");
+    if(fields & MSGFIELD_session)
+    {
+        if(sysInfo.querySessionID() == UnknownSession)
+            out.append(", \"SES\": \"UNK\" ");
+        else
+            out.append(", \"SES\": \"").append(sysInfo.querySessionID()).append("\"");
+    }
+    if(fields & MSGFIELD_node)
+    {
+        out.append(", \"NODE\": \"");
+        sysInfo.queryNode()->getUrlStr(out);
+        out.append("\"");
+    }
+    if(fields & MSGFIELD_job)
+    {
+        out.appendf(", \"JOBID\": \"%s\"", jobInfo.queryJobIDStr());
+    }
+    if(fields & MSGFIELD_user)
+    {
+        if(jobInfo.queryUserID() == UnknownUser)
+            out.append(", \"USER\": \"UNK\" ");
+        else
+            out.append(", \"USER\": \"").append(jobInfo.queryUserID()).append("\"");
+    }
+    if((fields & MSGFIELD_code) && (msgCode != NoLogMsgCode))
+        out.append(", \"CODE\": \"").append(msgCode).append("\"");
+
+    out.append(" }\n");
+    return out;
+}
+
 StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
 {
     if(fields & MSGFIELD_msgID)
@@ -786,6 +859,25 @@ void HandleLogMsgHandlerTable::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
+void HandleLogMsgHandlerJSON::handleMessage(const LogMsg & msg)
+{
+    CriticalBlock block(crit);
+    msg.toStringJSON(curMsgText.clear(), messageFields);
+    fputs(curMsgText.str(), handle);
+}
+
+void HandleLogMsgHandlerJSON::addToPTree(IPropertyTree * tree) const
+{
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
+    if(handle==stderr)
+        handlerTree->setProp("@type", "stderr");
+    else
+        handlerTree->setProp("@type", "mischandle");
+    handlerTree->setPropInt("@fields", messageFields);
+    handlerTree->setProp("@writeJSON", "true");
+    tree->addPropTree("handler", handlerTree);
+}
+
 void HandleLogMsgHandlerXML::handleMessage(const LogMsg & msg)
 {
     CriticalBlock block(crit);
@@ -886,6 +978,31 @@ void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
     handlerTree->setPropInt("@fields", messageFields);
     if(append) handlerTree->setProp("@append", "true");
     if(flushes) handlerTree->setProp("@flushes", "true");
+    tree->addPropTree("handler", handlerTree);
+}
+
+void FileLogMsgHandlerJSON::handleMessage(const LogMsg & msg)
+{
+    CriticalBlock block(crit);
+    msg.toStringJSON(curMsgText.clear(), messageFields);
+    fputs(curMsgText.str(), handle);
+    if(flushes)
+        fflush(handle);
+}
+
+void FileLogMsgHandlerJSON::addToPTree(IPropertyTree * tree) const
+{
+    IPropertyTree * handlerTree = createPTree(ipt_caseInsensitive);
+    handlerTree->setProp("@type", "file");
+    handlerTree->setProp("@filename", filename.get());
+    if(headerText)
+        handlerTree->setProp("@headertext", headerText.get());
+    handlerTree->setPropInt("@fields", messageFields);
+    handlerTree->setProp("@writeJSON", "true");
+    if(append)
+        handlerTree->setProp("@append", "true");
+    if(flushes)
+        handlerTree->setProp("@flushes", "true");
     tree->addPropTree("handler", handlerTree);
 }
 
@@ -1986,18 +2103,32 @@ ILogMsgFilter * getSwitchLogMsgFilterOwn(ILogMsgFilter * switchFilter, ILogMsgFi
     return ret;
 }
 
-ILogMsgHandler * getHandleLogMsgHandler(FILE * handle, unsigned fields, bool writeXML)
+ILogMsgHandler * getHandleLogMsgHandler(FILE * handle, unsigned fields, LogHandlerFormat logFormat)
 {
-    if(writeXML)
+    switch (logFormat)
+    {
+    case LOGFORMAT_xml:
         return new HandleLogMsgHandlerXML(handle, fields);
-    return new HandleLogMsgHandlerTable(handle, fields);
+    case LOGFORMAT_json:
+        return new HandleLogMsgHandlerJSON(handle, fields);
+    case LOGFORMAT_table:
+    default:
+        return new HandleLogMsgHandlerTable(handle, fields);
+    }
 }
 
-ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * headertext, unsigned fields, bool writeXML, bool append, bool flushes)
+ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * headertext, unsigned fields, LogHandlerFormat logFormat, bool append, bool flushes)
 {
-    if(writeXML)
+    switch (logFormat)
+    {
+    case LOGFORMAT_xml:
         return new FileLogMsgHandlerXML(filename, headertext, fields, append, flushes);
-    return new FileLogMsgHandlerTable(filename, headertext, fields, append, flushes);
+    case LOGFORMAT_json:
+        return new FileLogMsgHandlerJSON(filename, headertext, fields, append, flushes);
+    case LOGFORMAT_table:
+    default:
+        return new FileLogMsgHandlerTable(filename, headertext, fields, append, flushes);
+    }
 }
 
 ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields, bool append, bool flushes, const char *initialName, const char *alias, bool daily, long maxLogSize)
@@ -2034,7 +2165,7 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
             fields = logMsgFieldsFromAbbrevs(fstr);
     }
     if(strcmp(type.str(), "stderr")==0)
-        return getHandleLogMsgHandler(stderr, fields, tree->hasProp("@writeXML"));
+        return getHandleLogMsgHandler(stderr, fields, tree->hasProp("@writeXML") ? LOGFORMAT_xml : LOGFORMAT_table);
     else if(strcmp(type.str(), "file")==0)
     {
         StringBuffer filename;
@@ -2043,10 +2174,14 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
         {
             StringBuffer headertext;
             tree->getProp("@headertext", headertext);
-            return getFileLogMsgHandler(filename.str(), headertext.str(), fields, !(tree->hasProp("@writeTable")), tree->hasProp("@append"), tree->hasProp("@flushes"));
+            //JSON format now available, but currently not an option for file bound logs
+            return getFileLogMsgHandler(filename.str(), headertext.str(), fields, !(tree->hasProp("@writeTable")) ? LOGFORMAT_xml : LOGFORMAT_table, tree->hasProp("@append"), tree->hasProp("@flushes"));
         }
         else
-            return getFileLogMsgHandler(filename.str(), 0, fields, !(tree->hasProp("@writeTable")), tree->hasProp("@append"), tree->hasProp("@flushes"));
+        {
+            //JSON format now available, but currently not an option for file bound logs
+            return getFileLogMsgHandler(filename.str(), 0, fields, !(tree->hasProp("@writeTable")) ? LOGFORMAT_xml : LOGFORMAT_table, tree->hasProp("@append"), tree->hasProp("@flushes"));
+        }
     }
     else if(strcmp(type.str(), "binary")==0)
     {
@@ -2058,13 +2193,13 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
     return LINK(theStderrHandler);
 }
 
-ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext, unsigned fields, unsigned audiences, unsigned classes, LogMsgDetail detail, bool writeXML, bool append, bool flushes, bool local)
+ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext, unsigned fields, unsigned audiences, unsigned classes, LogMsgDetail detail, LogHandlerFormat logFormat, bool append, bool flushes, bool local)
 {
 #ifdef FILE_LOG_ENABLES_QUEUEUING
     queryLogMsgManager()->enterQueueingMode();
 #endif
     ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, detail, local);
-    ILogMsgHandler * handler = getFileLogMsgHandler(filename, headertext, fields, writeXML, append, flushes);
+    ILogMsgHandler * handler = getFileLogMsgHandler(filename, headertext, fields, logFormat, append, flushes);
     queryLogMsgManager()->addMonitorOwn(handler, filter);
     return handler;
 }
@@ -2080,10 +2215,10 @@ ILogMsgHandler * attachStandardBinLogMsgMonitor(const char * filename, unsigned 
     return handler;
 }
 
-ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle, unsigned fields, unsigned audiences, unsigned classes, LogMsgDetail detail, bool writeXML, bool local)
+ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle, unsigned fields, unsigned audiences, unsigned classes, LogMsgDetail detail, LogHandlerFormat logFormat, bool local)
 {
     ILogMsgFilter * filter = getCategoryLogMsgFilter(audiences, classes, detail, local);
-    ILogMsgHandler * handler = getHandleLogMsgHandler(handle, fields, writeXML);
+    ILogMsgHandler * handler = getHandleLogMsgHandler(handle, fields, logFormat);
     queryLogMsgManager()->addMonitorOwn(handler, filter);
     return handler;
 }
@@ -2177,6 +2312,7 @@ MODULE_INIT(INIT_PRIORITY_JLOG)
     thePassLocalFilter = new PassLocalLogMsgFilter();
     thePassNoneFilter = new PassNoneLogMsgFilter();
     theStderrHandler = new HandleLogMsgHandlerTable(stderr, MSGFIELD_STANDARD);
+
     theSysLogEventLogger = new CSysLogEventLogger;
     theManager = new CLogMsgManager();
     theManager->resetMonitors();
@@ -2208,6 +2344,7 @@ static constexpr const char * logQueueDropAtt = "@queueDrop";
 static constexpr const char * logDisabledAtt = "@disabled";
 static constexpr const char * useSysLogpAtt ="@enableSysLog";
 static constexpr const char * capturePostMortemAtt ="@postMortem";
+static constexpr const char * logFormatAtt ="@format";
 
 static constexpr unsigned queueLenDefault = 512;
 static constexpr unsigned queueDropDefault = 0; // disabled by default
@@ -2223,6 +2360,32 @@ void setupContainerizedLogMsgHandler()
             removeLog();
             return;
         }
+
+        if (logConfig->hasProp(logFormatAtt))
+        {
+            const char *logFormat = logConfig->queryProp(logFormatAtt);
+            LOG(MCdebugInfo, "JLog: log format configuration detected '%s'!", logFormat);
+
+            bool newFormatDetected = false;
+            if (streq(logFormat, "xml"))
+            {
+                theStderrHandler = new HandleLogMsgHandlerXML(stderr, MSGFIELD_STANDARD);
+                newFormatDetected = true;
+            }
+            else if (streq(logFormat, "json"))
+            {
+                theStderrHandler = new HandleLogMsgHandlerJSON(stderr, MSGFIELD_STANDARD);
+                newFormatDetected = true;
+            }
+            else if (streq(logFormat, "table"))
+                LOG(MCdebugInfo, "JLog: default log format detected: '%s'!", logFormat);
+            else
+                LOG(MCoperatorWarning, "JLog: Invalid log format configuration detected '%s'!", logFormat);
+
+            if (newFormatDetected)
+                theManager->resetMonitors();
+        }
+
         if (logConfig->hasProp(logFieldsAtt))
         {
             //Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
@@ -2239,12 +2402,16 @@ void setupContainerizedLogMsgHandler()
             unsigned msgClasses = MSGCLS_all;
             const char *logClasses = logConfig->queryProp(logMsgClassesAtt);
             if (!isEmptyString(logClasses))
+            {
                 msgClasses = logMsgClassesFromAbbrevs(logClasses);
+            }
 
             unsigned msgAudiences = MSGAUD_all;
             const char *logAudiences = logConfig->queryProp(logMsgAudiencesAtt);
             if (!isEmptyString(logAudiences))
+            {
                 msgAudiences = logMsgAudsFromAbbrevs(logAudiences);
+            }
 
             const bool local = true; // Do not include remote messages from other components
             Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(msgAudiences, msgClasses, logDetail, local);
@@ -2902,7 +3069,7 @@ public:
                 lfs.set(fullFileSpec);
             else
                 lfs.set(logFileSpec.append(extension).str());
-            lmh = getFileLogMsgHandler(lfs.str(), NULL, msgFields, false);
+            lmh = getFileLogMsgHandler(lfs.str(), NULL, msgFields);
         }
         lmh->getLogName(expandedLogSpec);
         queryLogMsgManager()->addMonitorOwn( lmh, getCategoryLogMsgFilter(msgAudiences, msgClasses, maxDetail, local));
