@@ -2777,6 +2777,11 @@ public:
                                { "{~foreign::192.168.16.1::.::.::multi1, ~foreign::192.168.16.2::multi2::.::fname}", "{foreign::192.168.16.1::multi1,foreign::192.168.16.2::multi2::fname}" },
                                { nullptr, nullptr }                             // terminator
                              };
+        const char *scopes[][2] = {
+                               { "~file::127.0.0.1::var::lib::^H^P^C^C^Systems::mydropzone::afile", "file::127.0.0.1::var::lib::^h^p^c^c^systems::mydropzone"},
+                               { "~remote::dfs1::ascope::afile", "remote::dfs1::ascope"},
+                               { nullptr, nullptr }                            // terminator
+        };
         PROGLOG("Checking valid logical filenames");
         unsigned nlfn=0;
         for (;;)
@@ -2816,6 +2821,38 @@ public:
                 const char *result = dlfn.get();
                 if (!streq(result, expected))
                     err.appendf("Logical filename '%s' should have translated to '%s', but result was '%s'.", lfn, expected, result);
+            }
+            catch (IException *e)
+            {
+                err.appendf("Logical filename '%s' failed: ", lfn);
+                e->errorMessage(err);
+                e->Release();
+            }
+            if (err.length())
+            {
+                ERRLOG("%s", err.str());
+                CPPUNIT_FAIL(err.str());
+            }
+        }
+        PROGLOG("Checking getScopes");
+        nlfn = 0;
+        for (;;)
+        {
+            const char **entry = scopes[nlfn++];
+            if (nullptr == entry[0])
+                break;
+            const char *lfn = entry[0];
+            const char *expected = entry[1];
+            PROGLOG("lfn = %s, expect scopes = %s", lfn, expected);
+            CDfsLogicalFileName dlfn;
+            StringBuffer err;
+            try
+            {
+                dlfn.set(lfn);
+                StringBuffer result;
+                dlfn.getScopes(result);
+                if (!streq(result, expected))
+                    err.appendf("Logical filename '%s' scopes should be '%s', but result was '%s'.", lfn, expected, result.str());
             }
             catch (IException *e)
             {
@@ -2917,7 +2954,7 @@ public:
             try
             {
                 ASSERT(internalFile == normalizeExternal(lfn, res, false));
-                normalizeName(lfn, res, false);
+                normalizeName(lfn, res, false, true);
                 PROGLOG("res = '%s'", res.str());
                 ASSERT(fileNameMatch == streq(res.str(), validInternalLfns[nlfn][normalizedFileName]))
             }
