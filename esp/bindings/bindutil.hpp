@@ -41,7 +41,8 @@ public:
     static unsigned int hash (const char *str, unsigned int len);
     static StringBuffer &url_encode(const char* url, StringBuffer& encoded_url);
     static int url_decode(const char* param, StringBuffer& result);
-    static  void SplitURL(const char* url, StringBuffer& Protocol,StringBuffer& Name,StringBuffer& Password,StringBuffer& FQDN, StringBuffer& Port, StringBuffer& Path);
+    static void url_decode(size_t len, const char* url, StringBuffer& result);
+    static void SplitURL(const char* url, StringBuffer& Protocol,StringBuffer& Name,StringBuffer& Password,StringBuffer& FQDN, StringBuffer& Port, StringBuffer& Path);
 };
 
 
