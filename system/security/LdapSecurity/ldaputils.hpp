@@ -37,13 +37,13 @@
 class LdapUtils
 {
 public:
-    static LDAP* LdapInit(const char* protocol, const char* host, int port, int secure_port, bool throwOnError = true);
+    static LDAP* LdapInit(const char* protocol, const char* host, int port, int secure_port, const char * cipherSuite, bool throwOnError = true);
     static int LdapSimpleBind(LDAP* ld, int ldapTimeout, char* userdn, char* password);
     // userdn is required for ldap_simple_bind_s, not really necessary for ldap_bind_s.
     static int LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const char* username, const char* password, const char* userdn, LdapServerType server_type, const char* method="");
     static void bin2str(MemoryBuffer& from, StringBuffer& to);
-    static LDAP* ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, int timeout, int * err);
-    static int getServerInfo(const char* ldapserver, const char * user, const char *pwd, const char* ldapprotocol, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout);
+    static LDAP* ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, int timeout, int * err);
+    static int getServerInfo(const char* ldapserver, const char * user, const char *pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout);
     static void normalizeDn(const char* dn, const char* basedn, StringBuffer& dnbuf);
     static bool containsBasedn(const char* str);
     static void cleanupDn(const char* dn, StringBuffer& dnbuf);

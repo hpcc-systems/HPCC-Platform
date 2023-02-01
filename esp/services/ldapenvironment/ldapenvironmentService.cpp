@@ -79,6 +79,9 @@ void CldapenvironmentEx::init(IPropertyTree *_cfg, const char *_process, const c
 
         xpath.set(prefix).append("serverType");
         cfg->getProp(xpath.str(), serverType);
+
+        xpath.set(prefix).append("cipherSuite");
+        cfg->getProp(xpath.str(), cipherSuite);
     }
 }
 
@@ -473,7 +476,8 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
         VStringBuffer ldapAdminKey( !ldapcredskey.isEmpty() ?   "    ldapAdminSecretKey: %s\n" : "", ldapcredskey.str());
         VStringBuffer ldapAdminVKey(!respVaultID.isEmpty() ?    "    ldapAdminVaultId: %s\n" : "",   respVaultID.str());
         VStringBuffer hpccAdminKey( !hpcccredskey.isEmpty() ?   "    hpccAdminSecretKey: %s\n" : "", hpcccredskey.str());
-        VStringBuffer hpccAdminVKey(!respVaultID.isEmpty() ?   "     hpccAdminVaultId: %s\n" : "",   respVaultID.str());
+        VStringBuffer ldapCipherSuite(!cipherSuite.isEmpty() ?  "    ldapCipherSuite: %s\n" : "",    cipherSuite.str());
+        VStringBuffer hpccAdminVKey(!respVaultID.isEmpty() ?    "    hpccAdminVaultId: %s\n" : "",   respVaultID.str());
 
         VStringBuffer ldapHelm("\n\n"
                                "%s\n"
@@ -484,7 +488,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                "    ldapAddress: %s\n"
                                "    serverType: %s\n"
                                "    adminGroupName: %s\n"
-                               "%s%s%s%s"
+                               "%s%s%s%s%s"
                                "    filesBasedn: %s\n"
                                "    groupsBasedn: %s\n"
                                "    usersBasedn: %s\n"
@@ -494,6 +498,7 @@ bool CldapenvironmentEx::onLDAPCreateEnvironment(IEspContext &context, IEspLDAPC
                                helmSecrets.str(),
                                ldapAddress.str(), serverType.str(),
                                adminGroupName.str(),
+                               ldapCipherSuite.str(),
                                ldapAdminKey.str(), ldapAdminVKey.str(),
                                hpccAdminKey.str(), hpccAdminVKey.str(),
                                respFilesBaseDN.str(), respGroupsBaseDN.str(), respUsersBaseDN.str(), respResourcesBaseDN.str(), respWorkunitsBaseDN.str(), respUsersBaseDN.str());
