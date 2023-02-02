@@ -101,7 +101,6 @@ if [[ -n "$BUILD_LN" ]]; then
   build_image platform-build-ln ${BUILD_LABEL} ${lnBuildTag}
   build_image platform-core-ln ${BUILD_LABEL} ${lnBuildTag} --build-arg BUILD_TAG_OVERRIDE=${HPCC_LONG_TAG}
 elif [[ -z "$BUILD_ML" ]]; then
-  build_image platform-build-base ${BASE_VER}
   build_image platform-build
   build_image platform-core
 else
