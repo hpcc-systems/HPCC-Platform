@@ -1114,7 +1114,11 @@ static void convertPosixPathToLfn(StringBuffer &str,const char *path)
     if (!isSpecialPath(path)) {
         while (*path) {
             if (isPathSepChar(*path))
-                str.append("::");
+            {
+                char next = *(path+1);
+                if (next != '\0' && !isPathSepChar(next))
+                    str.append("::");
+            }
             else {
                 if ((*path=='^')||isupper(*path))
                     str.append('^');
@@ -1245,8 +1249,7 @@ StringBuffer &CDfsLogicalFileName::getScopes(StringBuffer &buf,bool removeforeig
 {
     if (multi)
         DBGLOG("CDfsLogicalFileName::getScopes called on multi-lfn %s",get());
-    // gets leading scopes without trailing ::
-    const char *s =lfn.get();
+    const char *s = lfn.get();
     if (!s||(tailpos<=2))
         return buf;
     size32_t sz = tailpos-2;
