@@ -11792,9 +11792,7 @@ SecAccessFlags CDistributedFileDirectory::getDropZoneScopePermissions(const char
 {
     CDfsLogicalFileName dlfn;
     dlfn.setPlaneExternal(dropZoneName,dropZonePath);
-    StringBuffer scopes;
-    dlfn.getScopes(scopes);
-    return getScopePermissions(scopes,user,auditflags);
+    return getScopePermissions(dlfn.get(),user,auditflags);
 }
 
 void CDistributedFileDirectory::setDefaultUser(IUserDescriptor *user)
