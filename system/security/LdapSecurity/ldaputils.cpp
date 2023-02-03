@@ -30,7 +30,7 @@
 //------------------------------------
 // LdapUtils implementation
 //------------------------------------
-LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int secure_port, bool throwOnError)
+LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int secure_port, const char * cipherSuite, bool throwOnError)
 {
     LDAP* ld = NULL;
     if(stricmp(protocol, "ldaps") == 0)
@@ -68,10 +68,23 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
 #ifndef HAVE_TLS
         //throw MakeStringException(-1, "openldap client library libldap not compiled with TLS support");
 #endif
+        int rc;
+        rc = ldap_set_option(nullptr, LDAP_OPT_X_TLS_CIPHER_SUITE, isEmptyString(cipherSuite) ? nullptr : cipherSuite);
+        if(rc != LDAP_SUCCESS)
+            ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_CIPHER_SUITE) error - %s", ldap_err2string(rc));
+
+        int reqcert = LDAP_OPT_X_TLS_NEVER;
+        rc = ldap_set_option(nullptr, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
+        if(rc != LDAP_SUCCESS)
+            ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_TLS_REQUIRE_CERT) error - %s", ldap_err2string(rc));
+
         StringBuffer uri("ldaps://");
         uri.appendf("%s:%d", host, secure_port);
-        DBGLOG("connecting to %s", uri.str());
-        int rc = LDAP_INIT(&ld, uri.str());
+        if (isEmptyString(cipherSuite))
+            PROGLOG("Connecting to LDAPS Host '%s'", uri.str());
+        else
+            PROGLOG("Connecting to LDAPS Host '%s' with CipherSuite '%s'", uri.str(), cipherSuite);
+        rc = LDAP_INIT(&ld, uri.str());
         if(rc != LDAP_SUCCESS)
         {
             if (throwOnError)
@@ -79,8 +92,6 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
             DBGLOG("ldap_initialize error %s", ldap_err2string(rc));
             return nullptr;
         }
-        int reqcert = LDAP_OPT_X_TLS_NEVER;
-        ldap_set_option(NULL, LDAP_OPT_X_TLS_REQUIRE_CERT, &reqcert);
 #endif
     }
     else
@@ -218,9 +229,9 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
     return rc;
 }
 
-LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, int timeout, int * err)
+LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, int timeout, int * err)
 {
-    LDAP* ld = LdapInit(ldapprotocol, ldapserver, ldapport, ldapport, false);
+    LDAP* ld = LdapInit(ldapprotocol, ldapserver, ldapport, ldapport, cipherSuite, false);
     if (ld == nullptr)
     {
         VStringBuffer uri("%s://%s:%d", ldapprotocol, ldapserver, ldapport);
@@ -236,22 +247,22 @@ LDAP* LdapUtils::ldapInitAndSimpleBind(const char* ldapserver, const char* userD
     return ld;
 }
 
-int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout)
+int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const char* pwd, const char* ldapprotocol, int ldapport, const char * cipherSuite, StringBuffer& domainDN, LdapServerType& stype, const char* domainname, int timeout)
 {
     LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
 
     //First try anonymous bind using selected protocol/port
     int err = -1;
-    LDAP* ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, ldapprotocol, ldapport, timeout, &err);
+    LDAP* ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, ldapprotocol, ldapport, cipherSuite, timeout, &err);
 
     //if that failed, try bind with credentials
     if (nullptr == ld)
     {
-        ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, timeout, &err);
+        ld = ldapInitAndSimpleBind(ldapserver, userDN, pwd, ldapprotocol, ldapport, cipherSuite, timeout, &err);
         if(nullptr == ld  && strieq(ldapprotocol,"ldaps"))
         {
             //if that failed, and was for ldaps, see if we can do anonymous bind using ldap/389
-            ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, "ldap", 389, timeout, &err);
+            ld = ldapInitAndSimpleBind(ldapserver, nullptr, nullptr, "ldap", 389, cipherSuite, timeout, &err);
         }
 
         // for new versions of openldap, version 2.2.*

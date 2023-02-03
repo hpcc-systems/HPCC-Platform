@@ -256,6 +256,7 @@ private:
     int                  m_ldap_secure_port;
     StringBuffer         m_adminGroupDN;//fully qualified DN of the HPCC administrator
     StringBuffer         m_protocol;
+    StringBuffer         m_cipherSuite;
     StringBuffer         m_basedn;
     StringBuffer         m_domain;
     StringBuffer         m_authmethod;
@@ -295,6 +296,7 @@ private:
         DBGLOG("LDAP host = %s", sb.str());
         DBGLOG("m_adminGroupDN = %s", m_adminGroupDN.str());
         DBGLOG("m_protocol = %s", m_protocol.str());
+        DBGLOG("m_cipherSuite = %s", m_cipherSuite.str());
         DBGLOG("m_basedn = %s", m_basedn.str());
         DBGLOG("m_domain = %s", m_domain.str());
         DBGLOG("m_authmethod = %s", m_authmethod.str());
@@ -372,6 +374,8 @@ public:
             m_protocol.append("ldap");
         }
         
+        cfg->getProp(".//@ldapCipherSuite", m_cipherSuite);
+
         StringBuffer portbuf;
         cfg->getProp(".//@ldapPort", portbuf);
         if(portbuf.length() == 0)
@@ -461,7 +465,7 @@ public:
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, dcbuf, m_serverType, ldapDomain, m_timeout);
+                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, m_cipherSuite, dcbuf, m_serverType, ldapDomain, m_timeout);
                 if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
@@ -732,6 +736,10 @@ public:
         return m_protocol.str();
     }
 
+    virtual const char* getCipherSuite()
+    {
+        return m_cipherSuite.str();
+    }
 
     virtual const char* getBasedn()
     {
@@ -916,7 +924,7 @@ private:
         if(!ldapserver || *ldapserver == '\0')
             return -1;
 
-        m_ld = LdapUtils::LdapInit(protocol, ldapserver, m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
+        m_ld = LdapUtils::LdapInit(protocol, ldapserver, m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
         int rc = LDAP_SUCCESS;
         if(m_ldapconfig->sysuserSpecified())
             rc =  LdapUtils::LdapBind(m_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), m_ldapconfig->getSysUser(), m_ldapconfig->getSysUserPassword(), m_ldapconfig->getSysUserDn(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
@@ -1935,7 +1943,7 @@ public:
             {
                 DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
-                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
+                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
@@ -1958,7 +1966,7 @@ public:
                 if(dc.length() > 0)
                 {
                     WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
-                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
+                    LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(), m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     if(rc != LDAP_SUCCESS)
                         ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
@@ -3332,7 +3340,7 @@ public:
         StringBuffer hostbuf;
         m_ldapconfig->getLdapHost(hostbuf);
 
-        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
+        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort(), m_ldapconfig->getCipherSuite());
         int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getLdapTimeout(),m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
         if(rc != LDAP_SUCCESS)
             ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
