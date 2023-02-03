@@ -2837,32 +2837,39 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Only cfg or log file allowed.");
         }
 
-        if (isEmptyString(dropZoneName))
-            dropZoneName = findDropZonePlaneName(sPath, netaddr);
-        SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, sPath, nullptr);
-        if (permission < SecAccess_Read)
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
-                dropZoneName, sPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
-
-        StringArray hosts;
-        if (isEmptyString(netaddr))
+        IArrayOf<IConstPhysicalFileStruct>& files = resp.getFiles();
+        if (isEmptyString(dropZoneName) && validateConfigurationDirectory(nullptr, "log", nullptr, nullptr, sPath))
         {
-            Owned<IPropertyTree> dropZone = getDropZonePlane(dropZoneName);
-            if (!dropZone)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", dropZoneName);
-            getPlaneHosts(hosts, dropZone);
-            if (!hosts.ordinality())
-                hosts.append("localhost");
+            getPhysicalFiles(context, nullptr, netaddr, sPath, fileNameMask, directoryOnly, files);
         }
         else
-            hosts.append(netaddr);
-
-        IArrayOf<IConstPhysicalFileStruct>& files = resp.getFiles();
-        ForEachItemIn(i, hosts)
         {
-            const char* host = hosts.item(i);
-            if (validateDropZonePath(nullptr, host, sPath))
-                getDropZoneFiles(context, dropZoneName, host, sPath, fileNameMask, directoryOnly, files);
+            if (isEmptyString(dropZoneName))
+                dropZoneName = findDropZonePlaneName(sPath, netaddr);
+            SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, sPath, nullptr);
+            if (permission < SecAccess_Read)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
+                    dropZoneName, sPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+
+            StringArray hosts;
+            if (isEmptyString(netaddr))
+            {
+                Owned<IPropertyTree> dropZone = getDropZonePlane(dropZoneName);
+                if (!dropZone)
+                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", dropZoneName);
+                getPlaneHosts(hosts, dropZone);
+                if (!hosts.ordinality())
+                    hosts.append("localhost");
+            }
+            else
+                hosts.append(netaddr);
+
+            ForEachItemIn(i, hosts)
+            {
+                const char* host = hosts.item(i);
+                if (validateDropZonePath(nullptr, host, sPath))
+                    getPhysicalFiles(context, dropZoneName, host, sPath, fileNameMask, directoryOnly, files);
+            }
         }
 
         sPath.replace('\\', '/');//XSLT cannot handle backslashes
@@ -2921,7 +2928,7 @@ bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* drop
     return false;
 }
 
-void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path, const char* server, IArrayOf<IConstPhysicalFileStruct>& files)
+void CFileSprayEx::addPhysicalFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path, const char* server, IArrayOf<IConstPhysicalFileStruct>& files)
 {
     double version = context.getClientVersion();
 
@@ -2978,7 +2985,7 @@ bool CFileSprayEx::searchDropZoneFiles(IEspContext& context, const char* dropZon
         if (!isEmptyString(nameFilter) && !WildMatch(fname, nameFilter, false))
             continue;
 
-        addDropZoneFile(context, di, fname.str(), relDir, server, files);
+        addPhysicalFile(context, di, fname.str(), relDir, server, files);
 
         filesFound++;
         if (filesFound > dropZoneFileSearchMaxFiles)
@@ -3151,7 +3158,7 @@ bool CFileSprayEx::onOpenSave(IEspContext &context, IEspOpenSaveRequest &req, IE
     return true;
 }
 
-void CFileSprayEx::getDropZoneFiles(IEspContext &context, const char *dropZoneName, const char *host, const char *path, const char *fileNameMask, bool directoryOnly, IArrayOf<IConstPhysicalFileStruct> &files)
+void CFileSprayEx::getPhysicalFiles(IEspContext &context, const char *dropZoneName, const char *host, const char *path, const char *fileNameMask, bool directoryOnly, IArrayOf<IConstPhysicalFileStruct> &files)
 {
     SocketEndpoint ep(host);
     RemoteFilename rfn;
@@ -3169,14 +3176,14 @@ void CFileSprayEx::getDropZoneFiles(IEspContext &context, const char *dropZoneNa
         if ((directoryOnly && !di->isDir()) || (!di->isDir() && !isEmptyString(fileNameMask) && !WildMatch(fileName.str(), fileNameMask, true)))
             continue;
 
-        if (di->isDir())
+        if (dropZoneName && di->isDir())
         {
             VStringBuffer fullPath("%s%s", path, fileName.str());
             if (getDropZoneScopePermissions(context, dropZoneName, fullPath, nullptr) < SecAccess_Read)
                 continue;
         }
 
-        addDropZoneFile(context, di, fileName, path, host, files);
+        addPhysicalFile(context, di, fileName, path, host, files);
     }
 }
 
@@ -3288,7 +3295,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         {
             if (!checkDropZoneIPAndPath(context.getClientVersion(), dzName, netAddress, directoryStr))
                 throw makeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone is not found in the environment settings.");
-            getDropZoneFiles(context, dzName, netAddress, directoryStr, nullptr, directoryOnly, files);
+            getPhysicalFiles(context, dzName, netAddress, directoryStr, nullptr, directoryOnly, files);
         }
         else
         {
@@ -3302,7 +3309,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
             {
                 const char* host = servers.item(itr);
                 if (checkDropZoneIPAndPath(context.getClientVersion(), dzName, host, directoryStr))
-                    getDropZoneFiles(context, dzName, host, directoryStr, nullptr, directoryOnly, files);
+                    getPhysicalFiles(context, dzName, host, directoryStr, nullptr, directoryOnly, files);
             }
         }
 

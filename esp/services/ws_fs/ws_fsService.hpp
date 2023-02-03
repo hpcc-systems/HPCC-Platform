@@ -143,7 +143,7 @@ protected:
     void getInfoFromSasha(IEspContext &context, const char *sashaServer, const char* wuid, IEspDFUWorkunit *info);
     bool getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &req, IEspGetDFUWorkunitResponse &resp);
     bool GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &req, IEspGetDFUWorkunitsResponse &resp);
-    void getDropZoneFiles(IEspContext &context, const char *dropZoneName, const char *host, const char *path, const char *fileNameMask, bool directoryOnly, IArrayOf<IConstPhysicalFileStruct> &files);
+    void getPhysicalFiles(IEspContext &context, const char *dropZoneName, const char *host, const char *path, const char *fileNameMask, bool directoryOnly, IArrayOf<IConstPhysicalFileStruct> &files);
     bool ParseLogicalPath(const char * pLogicalPath, StringBuffer &title);
     bool ParseLogicalPath(const char * pLogicalPath, const char *group, const char* cluster, StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder);
     StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
@@ -151,7 +151,7 @@ protected:
     bool getOneDFUWorkunit(IEspContext& context, const char* wuid, IEspGetDFUWorkunitsResponse& resp);
     void getDropZoneInfoByDestPlane(double clientVersion, const char* destGroup, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask, StringBuffer & hostip);
     bool checkDropZoneIPAndPath(double clientVersion, const char* dropZone, const char* netAddr, const char* path);
-    void addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path, const char* server, IArrayOf<IConstPhysicalFileStruct>&files);
+    void addPhysicalFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char* path, const char* server, IArrayOf<IConstPhysicalFileStruct>&files);
     bool searchDropZoneFiles(IEspContext& context, const char* dropZone, const char* server, const char* dir, const char* relDir, const char* nameFilter, IArrayOf<IConstPhysicalFileStruct>& files, unsigned& filesFound);
     void setDFUServerQueueReq(const char* dfuServerQueue, IDFUWorkUnit* wu);
     void setUserAuth(IEspContext &context, IDFUWorkUnit* wu);
