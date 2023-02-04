@@ -55,7 +55,7 @@ if(KAFKA)
 
         install(
             TARGETS kafka
-            DESTINATION plugins)
+            DESTINATION plugins CALC_DEPS)
 
         install(
             FILES ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB_REAL}
@@ -66,8 +66,7 @@ if(KAFKA)
         install(
             FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKACPP_LIB}
             DESTINATION ${LIB_DIR}
-            COMPONENT Runtime
-            CALC_DEPS)
+            COMPONENT Runtime)
 
         target_link_libraries(kafka
             eclrtl
