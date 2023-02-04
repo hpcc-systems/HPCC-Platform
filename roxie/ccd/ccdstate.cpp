@@ -1866,6 +1866,8 @@ private:
                             }
                             if (oldPackageManager && oldPackageManager->matches(xmlHash, isActive))
                             {
+                                //Check for any changes to the queryset
+                                oldPackageManager->reloadIncremental();
                                 if (traceLevel)
                                     DBGLOG("Package map %s, active %s already loaded", packageMapId, isActive ? "true" : "false");
                                 stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, oldPackageManager->getHash());
