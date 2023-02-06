@@ -109,22 +109,29 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
 
     React.useEffect(() => {
         const item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
-        setSelectedItem(item);
-        setSelectedIdx(selOptions.indexOf(selectedItem));
-    }, [selectedKey, selOptions, onChange, selectedItem]);
+        if (item.key === selectedKey) {
+            // do nothing, unless
+            if (!selectedItem) {
+                setSelectedItem(item);
+                setSelectedIdx(selOptions.indexOf(item));
+            }
+        } else {
+            setSelectedItem(item);
+            setSelectedIdx(selOptions.indexOf(item));
+        }
+    }, [selectedKey, selOptions, selectedItem]);
 
     React.useEffect(() => {
+        if (!selectedItem || selectedItem?.key === selectedKey) return;
         if (selectedItem !== undefined) {
             onChange(undefined, selectedItem, selectedIdx);
         }
-    }, [onChange, selectedItem, selectedIdx]);
+    }, [onChange, selectedItem, selectedIdx, selectedKey]);
 
     return options === undefined ?
         <DropdownBase label={label} options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
         <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
 };
-
-const autoSelectDropdown = (selectedKey?: string, required?: boolean) => selectedKey === undefined && !required;
 
 export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
@@ -319,9 +326,8 @@ export interface TargetClusterOption extends IDropdownOption {
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
 
     const [targetClusters, defaultCluster] = useLogicalClusters();
-    const [options, setOptions] = React.useState<IDropdownOption[]>();
-    const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
-    const { excludeRoxie = true, onChange, required, selectedKey } = { ...props };
+    const [options, setOptions] = React.useState<IDropdownOption[] | undefined>();
+    const { excludeRoxie = true } = { ...props };
 
     React.useEffect(() => {
         let clusters = targetClusters;
@@ -330,26 +336,18 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
                 return !(row.Type === "roxie" && row.QueriesOnly === true);
             });
         }
-        const options = clusters?.map(row => {
+        setOptions(clusters?.map(row => {
             return {
                 key: row.Name || "unknown",
                 text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
+                selected: row.Name === defaultCluster?.Name,
                 type: row.Type,
                 queriesOnly: row.QueriesOnly || false
             };
-        }) || [];
-        setOptions(options);
+        }));
+    }, [defaultCluster, excludeRoxie, targetClusters]);
 
-        if (autoSelectDropdown(selectedKey, required)) {
-            const selectedItem = options.filter(row => row.key === defaultCluster?.Name)[0];
-            if (selectedItem) {
-                setDefaultRow(selectedItem);
-                onChange(undefined, selectedItem);
-            }
-        }
-    }, [defaultCluster, excludeRoxie, onChange, required, selectedKey, targetClusters]);
-
-    return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={options} />;
+    return <AsyncDropdown {...props} options={options} />;
 };
 
 export interface TargetDropzoneTextFieldProps extends Omit<AsyncDropdownProps, "options"> {

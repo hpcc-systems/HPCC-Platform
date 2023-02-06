@@ -81,7 +81,11 @@ spec:
         run: {{ $dali.name | quote }}
         server: {{ $dali.name | quote }}
         app: dali
+<<<<<<< HEAD
         helmVersion: 8.10.22-rc1
+=======
+        helmVersion: 8.10.22-rc1
+>>>>>>> origin/candidate-8.10.x
 {{- if hasKey $.Values.global "metrics" }}
  {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
 {{- end }}
