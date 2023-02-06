@@ -287,6 +287,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 label={nlsHPCC.Target}
                 excludeRoxie={false}
                 required={true}
+                selectedKey={cluster}
                 className={playgroundStyles.inlineDropdown}
                 onChange={React.useCallback((evt, option: TargetClusterOption) => {
                     const selectedCluster = option.key.toString();

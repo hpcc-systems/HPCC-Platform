@@ -23,6 +23,7 @@ git clone https://github.com/hpcc-systems/HPCC-JAPIs.git
 git clone https://github.com/hpcc-systems/Spark-HPCC.git
 git clone https://github.com/hpcc-systems/LN.git ln
 git clone https://github.com/hpcc-systems/HPCC-Platform.git hpcc
+git clone https://github.com/hpcc-systems/helm-chart.git
 ```
 
 The following are required for builds prior to 8.12.x

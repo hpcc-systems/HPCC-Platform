@@ -18,7 +18,8 @@ if [[ -z $gitroot ]]; then
    exit 2
 fi
 
-hpccdir=$(dirname -- "$( readlink -f -- '$0'; )")/../..
+scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
+hpccdir=$scriptdir/../..
 gitroot="${gitroot/#\~/$HOME}"
 
 echo Go gold with candidate-$1

@@ -1181,7 +1181,6 @@ public:
     SecAccessFlags getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
     SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
     SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
-    SecAccessFlags getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags=0);
     void setDefaultUser(IUserDescriptor *user);
     IUserDescriptor* queryDefaultUser();
 
@@ -3661,6 +3660,7 @@ public:
 #endif
         offset_t totalsize = 0;
         offset_t totalCompressedSize = 0;
+        offset_t totalUncompressedSize = 0;
         unsigned checkSum = ~0;
         bool useableCheckSum = true;
         MemoryBuffer pmb;
@@ -3683,11 +3683,18 @@ public:
                         totalsize = psz;
                     else
                         totalsize += psz;
+
                     psz = (offset_t)partattr->getPropInt64("@compressedSize", -1);
                     if (psz==(offset_t)-1)
                         totalCompressedSize = psz;
                     else
                         totalCompressedSize += psz;
+
+                    psz = (offset_t)partattr->getPropInt64("@uncompressedSize", -1);
+                    if (psz==(offset_t)-1)
+                        totalUncompressedSize = psz;
+                    else
+                        totalUncompressedSize += psz;
                 }
                 if (useableCheckSum)
                 {
@@ -3704,6 +3711,8 @@ public:
             queryAttributes().setPropInt64("@size", totalsize);
         if ((totalCompressedSize!=(offset_t)-1) && (totalCompressedSize != 0))
             queryAttributes().setPropInt64("@compressedSize", totalCompressedSize);
+        if ((totalUncompressedSize!=(offset_t)-1) && (totalUncompressedSize != 0))
+            queryAttributes().setPropInt64("@uncompressedSize", totalUncompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
         setModified();
@@ -5699,17 +5708,24 @@ protected:
             target.setProp(prop, value);
     }
 
-    IDistributedFilePart &unprotectedQueryPart(unsigned idx)
+    IDistributedFilePart *unprotectedQueryPart(unsigned idx)
     {
-        if (subfiles.ordinality()==1)
-            return subfiles.item(0).queryPart(idx);
+        if (0 == subfiles.ordinality())
+            return nullptr;
+        else if ((1 == subfiles.ordinality()))
+        {
+            if (idx>=subfiles.item(0).numParts())
+                return nullptr;
+            else
+                return &subfiles.item(0).queryPart(idx);
+        }
         if (partscache.ordinality()==0)
             loadParts(partscache,NULL);
         if (idx>=partscache.ordinality())
-            throwUnexpectedX("CDistributedSuperFile::unprotectedQueryPart out of range");
-        return partscache.item(idx);
+            return nullptr;
+        else
+            return &partscache.item(idx);
     }
-
 public:
 
     virtual void checkFormatAttr(IDistributedFile *sub, const char* exprefix="") override
@@ -5946,15 +5962,16 @@ public:
     virtual IDistributedFilePart &queryPart(unsigned idx) override
     {
         CriticalBlock block(sect);
-        return unprotectedQueryPart(idx);
+        IDistributedFilePart *part = unprotectedQueryPart(idx);
+        if (nullptr == part)
+            throwUnexpectedX("CDistributedSuperFile::queryPart out of range");
+        return *part;
     }
 
     virtual IDistributedFilePart* getPart(unsigned idx) override
     {
         CriticalBlock block(sect);
-        if (idx>=partscache.ordinality())
-            return nullptr;
-        return &OLINK(unprotectedQueryPart(idx));
+        return LINK(unprotectedQueryPart(idx));
     }
 
     virtual IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL) override
@@ -6396,6 +6413,7 @@ public:
         IPropertyTree &attrs = queryAttributes();
         attrs.removeProp("@size");
         attrs.removeProp("@compressedSize");
+        attrs.removeProp("@uncompressedSize");
         attrs.removeProp("@checkSum");
         attrs.removeProp("@recordCount");   // recordCount not currently supported by superfiles
         attrs.removeProp("@formatCrc");     // formatCrc set if all consistant
@@ -11827,15 +11845,6 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
         }
     }
     return retPerms;
-}
-
-SecAccessFlags CDistributedFileDirectory::getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags)
-{
-    CDfsLogicalFileName dlfn;
-    dlfn.setPlaneExternal(dropZoneName,dropZonePath);
-    StringBuffer scopes;
-    dlfn.getScopes(scopes);
-    return getScopePermissions(scopes,user,auditflags);
 }
 
 void CDistributedFileDirectory::setDefaultUser(IUserDescriptor *user)

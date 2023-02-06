@@ -22,6 +22,7 @@ fi
 
 scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
+gitroot="${gitroot/#\~/$HOME}"
 
 echo Upmerge changes from candidate-$1 to $2
 

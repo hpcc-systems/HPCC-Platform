@@ -177,6 +177,14 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="ldapCipherSuite" type="xs:string" use="optional" default="">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <required>false</required>
+                        <tooltip>The optional Cipher Suite string to be applied to LDAPS calls.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" use="optional" default="60">
                 <xs:annotation>
                     <xs:appinfo>
