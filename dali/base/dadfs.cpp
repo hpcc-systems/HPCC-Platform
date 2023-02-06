@@ -5709,17 +5709,24 @@ protected:
             target.setProp(prop, value);
     }
 
-    IDistributedFilePart &unprotectedQueryPart(unsigned idx)
+    IDistributedFilePart *unprotectedQueryPart(unsigned idx)
     {
-        if (subfiles.ordinality()==1)
-            return subfiles.item(0).queryPart(idx);
+        if (0 == subfiles.ordinality())
+            return nullptr;
+        else if ((1 == subfiles.ordinality()))
+        {
+            if (idx>=subfiles.item(0).numParts())
+                return nullptr;
+            else
+                return &subfiles.item(0).queryPart(idx);
+        }
         if (partscache.ordinality()==0)
             loadParts(partscache,NULL);
         if (idx>=partscache.ordinality())
-            throwUnexpectedX("CDistributedSuperFile::unprotectedQueryPart out of range");
-        return partscache.item(idx);
+            return nullptr;
+        else
+            return &partscache.item(idx);
     }
-
 public:
 
     virtual void checkFormatAttr(IDistributedFile *sub, const char* exprefix="") override
@@ -5956,15 +5963,16 @@ public:
     virtual IDistributedFilePart &queryPart(unsigned idx) override
     {
         CriticalBlock block(sect);
-        return unprotectedQueryPart(idx);
+        IDistributedFilePart *part = unprotectedQueryPart(idx);
+        if (nullptr == part)
+            throwUnexpectedX("CDistributedSuperFile::queryPart out of range");
+        return *part;
     }
 
     virtual IDistributedFilePart* getPart(unsigned idx) override
     {
         CriticalBlock block(sect);
-        if (idx>=partscache.ordinality())
-            return nullptr;
-        return &OLINK(unprotectedQueryPart(idx));
+        return LINK(unprotectedQueryPart(idx));
     }
 
     virtual IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL) override
