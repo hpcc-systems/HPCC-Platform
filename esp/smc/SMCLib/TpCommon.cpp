@@ -156,22 +156,3 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
     return false;
 }
 
-extern TPWRAPPER_API const char* findDropZonePlaneName(const char* dropZonePath, const char* dropZoneHost)
-{
-    Owned<IPropertyTree> plane = findDropZonePlane(dropZonePath, dropZoneHost, true);
-    if (!plane)
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "findDropZonePlaneName(): DropZone not found for Host %s and Path %s.", dropZoneHost, dropZonePath);
-    return plane->queryProp("@name");
-}
-
-extern TPWRAPPER_API SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
-{
-    if (isEmptyString(dropZonePath))
-        throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDropZoneScopePermissions(): DropZone path must be specified.");
-    if (isEmptyString(dropZoneName))
-        dropZoneName = findDropZonePlaneName(dropZonePath, dropZoneHost);
-
-    Owned<IUserDescriptor> userDesc = createUserDescriptor();
-    userDesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-    return queryDistributedFileDirectory().getDropZoneScopePermissions(dropZoneName, dropZonePath, userDesc);
-}
