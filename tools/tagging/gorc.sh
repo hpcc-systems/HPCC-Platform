@@ -20,6 +20,7 @@ fi
 
 scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
+gitroot="${gitroot/#\~/$HOME}"
 
 echo Create new RC candidate-$1
 

@@ -1310,8 +1310,8 @@ void CHThorIndexWriteActivity::execute()
         desc->addCluster(mygroupname.str(),mygrp, partmap);
         attrs.set(&desc->queryPart(0)->queryProperties());
     }
-    attrs->setPropInt64("@size", uncompressedSize + originalBlobSize);
-    attrs->setPropInt64("@compressedSize", indexFileSize);
+    attrs->setPropInt64("@uncompressedSize", uncompressedSize + originalBlobSize);
+    attrs->setPropInt64("@size", indexFileSize);
     attrs->setPropInt64("@recordCount", reccount);
     attrs->setPropInt64("@offsetBranches", offsetBranches);
 
@@ -1332,8 +1332,8 @@ void CHThorIndexWriteActivity::execute()
     // properties of the logical file
     IPropertyTree & properties = desc->queryProperties();
     properties.setProp("@kind", "key");
-    properties.setPropInt64("@size", uncompressedSize + originalBlobSize);
-    properties.setPropInt64("@compressedSize", indexFileSize);
+    properties.setPropInt64("@uncompressedSize", uncompressedSize + originalBlobSize);
+    properties.setPropInt64("@size", indexFileSize);
     properties.setPropInt64("@recordCount", reccount);
     properties.setProp("@owner", agent.queryWorkUnit()->queryUser());
     properties.setProp("@workunit", agent.queryWorkUnit()->queryWuid());

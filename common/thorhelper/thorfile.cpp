@@ -255,11 +255,7 @@ static void gatherDerivedIndexInformation(DerivedIndexInformation & result, IDis
 
             IPropertyTree & partAttrs = curPart.queryAttributes();
             offset_t branchOffset = partAttrs.getPropInt64("@offsetBranches");
-            offset_t compressedSize = partAttrs.getPropInt64("@compressedSize");
-            offset_t uncompressedSize = partAttrs.getPropInt64("@size");
-            //New builds publish compressed and uncompressed sizes, old builds only publish compressed as @size
-            if (compressedSize == 0)
-                compressedSize = uncompressedSize;
+            offset_t compressedSize = partAttrs.getPropInt64("@size");
 
             if (branchOffset != 0)
             {
@@ -281,11 +277,10 @@ static void gatherDerivedIndexInformation(DerivedIndexInformation & result, IDis
 
     unsigned keyLen = attrs.getPropInt64("@keyedSize");
     result.sizeOriginalBranches = result.numLeafNodes * (keyLen + 8);
-    offset_t compressedSize = attrs.getPropInt64("@compressedSize");
-    offset_t uncompressedSize = attrs.getPropInt64("@size");
-    //size only corresponds to the uncompressed size if both size and compressedSize are filled in.
-    if ((uncompressedSize != 0) && (compressedSize != 0))
-        result.sizeOriginalData = uncompressedSize;
+    offset_t compressedSize = attrs.getPropInt64("@size");
+    //uncompressed size is only known if it is filled in.
+    if (attrs.hasProp("@uncompressedSize"))
+        result.sizeOriginalData = attrs.getPropInt64("@uncompressedSize");
 
     //The following will depend on the compression format - e.g. if compressed searching is implemented
     result.sizeMemoryBranches = result.sizeOriginalBranches;

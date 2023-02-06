@@ -36,6 +36,8 @@
                               hpcc:tooltip="The port of the ldap (Active Directory) server"/>
                 <xs:attribute name="ldapSecurePort" type="xs:nonNegativeInteger" hpcc:displayName="LDAP Secure Port" use="required" hpcc:presetValue="636"
                               hpcc:tooltip="The port of the ldap (Active Directory) server"/>
+                <xs:attribute name="ldapCipherSuite" type="xs:string" hpcc:displayName="LDAPS Cipher Suite" use="optional" hpcc:presetValue=""
+                              hpcc:tooltip="The optional Cipher Suite to be applied to LDAPS connections"/>
                 <xs:attribute name="ldapTimeoutSecs" type="xs:nonNegativeInteger" hpcc:displayName="Timeout (secs)" use="required" hpcc:presetValue="60"
                               hpcc:tooltip="The maximum number of seconds to wait for most LDAP calls"/>
                 <xs:attribute name="cacheTimeout" type="xs:nonNegativeInteger" hpcc:displayName="Cache Timeout (minutes)" hpcc:presetValue="5"

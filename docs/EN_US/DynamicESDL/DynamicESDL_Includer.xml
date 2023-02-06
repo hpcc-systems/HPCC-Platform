@@ -106,8 +106,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>Access to an HPCC Systems Cluster (version 7.0 or later). This can be
-          one running in a Virtual Machine.</para>
+          <para>Access to an HPCC Systems Cluster (version 7.0 or later). This
+          can be one running in a Virtual Machine.</para>
         </listitem>
       </itemizedlist>
 
@@ -134,10 +134,11 @@
 
       <para><emphasis role="bold">dESDL and LDAP Security</emphasis></para>
 
-      <para>If your HPCC Systems platform is configured to use LDAP security, you must
-      ensure any user who will be publishing ESDL Definitions has Access to
-      <emphasis role="bold">ESDL configuration service</emphasis> set to
-      <emphasis role="bold">Allow Full</emphasis>, as shown below.</para>
+      <para>If your HPCC Systems platform is configured to use LDAP security,
+      you must ensure any user who will be publishing ESDL Definitions has
+      Access to <emphasis role="bold">ESDL configuration service</emphasis>
+      set to <emphasis role="bold">Allow Full</emphasis>, as shown
+      below.</para>
 
       <para><graphic fileref="images/desdl-LDAP.jpg" /></para>
 
@@ -227,7 +228,7 @@
       If you wanted to have a custom configuration that is different from this
       generic template, for instance to bind to Port 8020 that will use a
       different LDAP server, you can add another DESDL binding template on
-      port 8020. </para>
+      port 8020.</para>
 
       <orderedlist>
         <listitem>
@@ -676,6 +677,33 @@ OUTPUT(ds_out, NAMED('AddThisResponse')); </programlisting>
             <para>Test the service using the new interface:<programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8003</programlisting></para>
           </listitem>
         </orderedlist></para>
+
+      <para>Additional examples can be found in the following places:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>In the ECL IDE in the <emphasis
+          role="bold">examples/EsdlExample</emphasis> folder</para>
+        </listitem>
+
+        <listitem>
+          <para>In a a folder where Client Tools was installed (<emphasis
+          role="bold">clienttools/examples/EsdlExample</emphasis>)</para>
+        </listitem>
+
+        <listitem>
+          <para>In a a folder on a server where the platform was installed
+          (<emphasis
+          role="bold">opt/HPCCSystems/examples/EsdlExample</emphasis>)</para>
+        </listitem>
+
+        <listitem>
+          <para>In the HPCC Systems HPCC-Platform repository on GitHub:</para>
+
+          <para><emphasis
+          role="bold">(https://github.com/hpcc-systems/HPCC-Platform/tree/master/initfiles/examples/EsdlExample)</emphasis></para>
+        </listitem>
+      </itemizedlist>
     </sect1>
   </chapter>
 

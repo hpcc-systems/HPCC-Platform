@@ -915,6 +915,10 @@
           "type": "string",
           "description": "Description of this Active Directory Server component"
         },
+        "ldapCipherSuite": {
+          "type": "string",
+          "description": "The optional Cipher Suite to be applied to LDAPS connections"
+        },
         "adminGroupName": {
           "type": "string",
           "description": "The Active Directory group containing HPCC Administrators"

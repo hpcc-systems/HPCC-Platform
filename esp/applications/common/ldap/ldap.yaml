@@ -5,6 +5,7 @@ ldap:
   ldapProtocol: ldaps
   ldapPort: 389
   ldapSecurePort: 636
+  ldapCipherSuite: ""
   adminGroupName: HPCCAdmins
   maxConnections: 10
   passwordExpirationWarningDays: 10

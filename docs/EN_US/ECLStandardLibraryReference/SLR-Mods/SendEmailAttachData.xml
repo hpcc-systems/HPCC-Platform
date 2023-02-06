@@ -12,9 +12,9 @@
       <primary>Email.SendEmailAttachData</primary>
     </indexterm> <indexterm>
       <primary>SendEmailAttachData</primary>
-    </indexterm>( </emphasis> <emphasis>sendto, subject, body, attachment,
-  mimietype, filename, server, port, sender</emphasis> <emphasis role="bold">
-  )</emphasis></para>
+    </indexterm>( </emphasis> <emphasis>to, subject, body, attachment,
+  mimietype, filename, mailServer, port, sendercc, bcc,
+  highPriority</emphasis> <emphasis role="bold"> )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -24,7 +24,7 @@
 
       <tbody>
         <row>
-          <entry><emphasis>sendto</emphasis></entry>
+          <entry><emphasis>to</emphasis></entry>
 
           <entry>A null-terminated string containing a comma-delimited list of
           the addresses of the intended recipients. The validity of the
@@ -72,7 +72,7 @@
         </row>
 
         <row>
-          <entry><emphasis>server</emphasis></entry>
+          <entry><emphasis>mailServer</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the name of the
           mail server. If omitted, defaults to the value in the SMTPserver
@@ -93,6 +93,27 @@
           <entry>Optional. A null-terminated string containing the address of
           the sender. If omitted, defaults to the value in the
           emailSenderAddress environment variable.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cc</emphasis></entry>
+
+          <entry>Optional. comma-delimited addresses of carbon-copy
+          recipients. Defaults to an empty string (none).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>bcc</emphasis></entry>
+
+          <entry>Optional. comma-delimited addresses of blind-carbon-copy
+          recipients. Defaults to an empty string (none).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>highPriority</emphasis></entry>
+
+          <entry>Optional. If true, the message is sent with high priority.
+          Defaults to false (normal priority).</entry>
         </row>
       </tbody>
     </tgroup>

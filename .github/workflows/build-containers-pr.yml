@@ -36,7 +36,6 @@ jobs:
       - name: vars
         id: vars
         run: |
-          echo ::set-output name=base_ver::2022.11.14-rc5
           # echo ::set-output name=container_registry::ghcr.io
           # echo ::set-output name=cr_user::${{ github.repository_owner }}
           echo ::set-output name=container_registry::docker.io
@@ -46,7 +45,6 @@ jobs:
           echo ::set-output name=build_user::${{ github.actor }}
           echo ::set-output name=build_type::RelWithDebInfo
           echo ::set-output name=use_cppunit::1
-          echo ::set-output name=platform_build_base::smoketest-platform-build-base
           echo ::set-output name=platform_build::smoketest-platform-build-vcpkg
 
       - name: tracing
@@ -64,9 +62,19 @@ jobs:
           echo "runner.workspace = ${{ runner.workspace }}"
           echo "github.event.pull_request.head.repo.owner.login = ${{ github.event.pull_request.head.repo.owner.login }}"
           echo "build_prbase_label = ${{ steps.vars.outputs.build_prbase_label }}"
+          echo "platform_build = ${{ steps.vars.outputs.platform_build }}"
 
       - name: Checkout PR
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Calculate vcpkg vars
+        id: vcpkg_vars
+        run: |
+          echo "base_ver=$(git submodule status vcpkg | cut -c2-9)" >> $GITHUB_OUTPUT
+
+      - name: tracing (vcpkg_vars)
+        run: |
+          echo "vcpkg_vars.base_ver = ${{ steps.vcpkg_vars.outputs.base_ver }}"
 
       - name: Set up Docker Buildx
         id: buildx
@@ -77,11 +85,8 @@ jobs:
       - name: Check if PR-Base prebuilt
         id: check-images
         run: |
-          build_base_missing=$(docker manifest inspect ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build_base }}:${{ steps.vars.outputs.base_ver }} > /dev/null ; echo $?)
           prbase_missing=$(docker manifest inspect ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_prbase_label }}-${{ github.event.pull_request.base.sha }} > /dev/null ; echo $?)
-          echo build_base_missing=${build_base_missing}
           echo prbase_missing=${prbase_missing}
-          echo ::set-output name=build_base_missing::${build_base_missing}
           if [[ "${prbase_missing}" -eq 1 ]]
           then
             echo "Current PR target branch image cannot be found, using latest"
@@ -96,21 +101,7 @@ jobs:
             echo ::set-output name=platform_prbase_ver::${{ steps.vars.outputs.build_prbase_label }}-${{ github.event.pull_request.base.sha }}
           fi
 
-      # Normal expectation is that the following 2 steps would normally be skipped
-
-      # NB: This is only for the case where the build-base image doesn't already exist.
-      # The build-containers-target-branch.yml action should normally have built/published this image
-      - name: HPCC build-base image
-        if: ${{ steps.check-images.outputs.build_base_missing == '1' && steps.check-images.outputs.prbase_missing == '1' }}
-        uses: docker/build-push-action@v2
-        with:
-          context: dockerfiles/platform-build-base
-          builder: ${{ steps.buildx.outputs.name }}
-          tags: |
-            ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build_base }}:${{ steps.vars.outputs.base_ver }}
-          build-args: |
-            BASE_VER=${{ steps.vars.outputs.base_ver }}
-
+      # Normal expectation is that the following step would normally be skipped
       # NB: This is only for the case where the target branch image doesn't already exist.
       # The build-containers-target-branch.yml action would normally have built/published this image,
       # or they'll be a "latest" which will have been picked up by the check-images step.
@@ -125,10 +116,8 @@ jobs:
             ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_prbase_label }}-${{ steps.vars.outputs.build_prbase_sha }}
             ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_prbase_label }}-latest
           build-args: |
-            CR_USER=${{ steps.vars.outputs.cr_user }}
             CR_REPO=${{ steps.vars.outputs.container_registry }}
-            CR_CONTAINER_NAME=${{ steps.vars.outputs.platform_build_base }}
-            BASE_VER=${{ steps.vars.outputs.base_ver }}
+            BASE_VER=${{ steps.vcpkg_vars.outputs.base_ver }}
             BUILD_USER=${{ github.repository_owner }}
             GITHUB_ACTOR=${{ github.actor }}
             BUILD_TAG=${{ steps.vars.outputs.build_prbase_sha }}

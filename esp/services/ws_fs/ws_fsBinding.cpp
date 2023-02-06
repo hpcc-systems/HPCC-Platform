@@ -393,17 +393,12 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         if (!context.validateFeatureAccess(FILE_SPRAY_URL, SecAccess_Full, false))
             throw MakeStringException(ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Failed to download file. Permission denied.");
 
-        StringBuffer netAddressStr, osStr, pathStr, nameStr, dropZoneName;
+        StringBuffer netAddressStr, osStr, pathStr, nameStr;
         request->getParameter("NetAddress", netAddressStr);
         request->getParameter("OS", osStr);
         request->getParameter("Path", pathStr);
         request->getParameter("Name", nameStr);
-        request->getParameter("DropZoneName", dropZoneName);
 
-        SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, pathStr, netAddressStr);
-        if (permission < SecAccess_Read)
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s %s not allowed for user %s (permission:%s). Read Access Required.",
-                dropZoneName.str(), netAddressStr.str(), pathStr.str(), context.queryUserId(), getSecAccessFlagName(permission));
 #if 0
         StringArray files;
         IProperties* params = request->queryParameters();
@@ -484,16 +479,11 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
 
 int CFileSpraySoapBindingEx::onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* serv, const char* method)
 {
-    StringBuffer netAddress, path, dropZoneName;
+    StringBuffer netAddress, path;
     request->getParameter("NetAddress", netAddress);
     request->getParameter("Path", path);
-    request->getParameter("DropZoneName", dropZoneName);
     if (!validateDropZonePath(nullptr, netAddress, path)) //The path should be the absolute path for the dropzone.
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Landing Zone path %s", path.str());
-    SecAccessFlags permission = getDropZoneScopePermissions(ctx, dropZoneName, path, netAddress);
-    if (permission < SecAccess_Full)
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s %s not allowed for user %s (permission:%s). Full Access Required.",
-            dropZoneName.str(), netAddress.str(), path.str(), ctx.queryUserId(), getSecAccessFlagName(permission));
 
     return EspHttpBinding::onStartUpload(ctx, request, response, serv, method);
 }
