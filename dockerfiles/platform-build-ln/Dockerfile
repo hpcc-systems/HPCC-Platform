@@ -28,7 +28,7 @@ ARG BUILD_USER=hpcc-systems
 RUN echo BUILD_USER is ${BUILD_USER}
 ARG GITHUB_TOKEN
 ARG BUILD_TAG=none
-RUN git clone https://${GITHUB_TOKEN}@github.com/${BUILD_USER}/LN.git && \
+RUN git clone https://oauth2:${GITHUB_TOKEN}@github.com/${BUILD_USER}/LN.git && \
     cd LN && \
     git submodule update --init --recursive
 
