@@ -196,12 +196,12 @@
       # Generated for configuration info. accessed by getGlobalConfig()
       -->
       <global>
-       <storage>
-        <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>  
-       </storage>
-       <expert>
-        <xsl:copy-of select="/Environment/Software/Global/@*"/>
-       </expert>
+        <storage>
+          <xsl:copy-of select="/Environment/Software/RemoteStorage/*"/>  
+        </storage>
+        <expert>
+          <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
+        </expert>
       </global>
       <xsl:copy-of select="/Environment/Hardware/cost"/>
       @XSL_PLUGIN_DEFINITION@

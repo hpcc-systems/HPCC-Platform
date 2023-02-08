@@ -70,6 +70,14 @@
    <EclSchedulerProcess>
       <xsl:apply-templates select="@*[string(.) != '']"/>
       <xsl:copy-of select="/Environment/Software/Directories"/>
+      <!--
+      # Generated for configuration info. accessed by getGlobalConfig()
+      -->
+      <global>
+        <expert>
+          <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
+        </expert>
+      </global>
    </EclSchedulerProcess>
 </xsl:template>
 
