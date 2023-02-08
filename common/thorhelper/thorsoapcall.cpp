@@ -814,7 +814,7 @@ class CWSCHelper : implements IWSCHelper, public CInterface
 private:
     SimpleInterThreadQueueOf<const void, true> outputQ;
     SpinLock outputQLock;
-    CriticalSection toXmlCrit, transformCrit, onfailCrit, timeoutCrit;
+    CriticalSection toXmlCrit, transformCrit, onfailCrit;
     unsigned done;
     Owned<IPropertyTree> xpathHints;
     Linked<ClientCertificate> clientCert;
@@ -825,7 +825,8 @@ private:
     Owned<ISecureSocketContext> customSecureContext;
 
     CTimeMon timeLimitMon;
-    bool complete, timeLimitExceeded;
+    bool complete;
+    std::atomic_bool timeLimitExceeded{false};
     bool customClientCert = false;
     bool localClientCert = false;
     IRoxieAbortMonitor * roxieAbortMonitor;
@@ -1149,8 +1150,15 @@ public:
     {
         if (timeLimitMS != WAIT_FOREVER)
         {
-            CriticalBlock block(timeoutCrit);
-            if (timeLimitExceeded || timeLimitMon.timedout(_remainingMS))
+            //No need to protect with a critical section because it does not matter if more than one thread calls timedout
+            if (timeLimitExceeded)
+            {
+                if (_remainingMS)
+                    *_remainingMS = 0;
+                return true;
+            }
+
+            if (timeLimitMon.timedout(_remainingMS))
             {
                 timeLimitExceeded = true;
                 return true;

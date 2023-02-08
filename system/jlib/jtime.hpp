@@ -177,11 +177,11 @@ public:
     CTimeMon(unsigned _timeout) { reset(_timeout); }
     void reset(unsigned _timeout) { timeout=_timeout; t = msTick(); }
 
-    unsigned elapsed()
+    unsigned elapsed() const
     {
         return msTick()-t;
     }
-    bool timedout(unsigned *remaining=NULL)
+    bool timedout(unsigned *remaining=NULL) const
     {
         if ((int)timeout<0) {       
             if (remaining)
