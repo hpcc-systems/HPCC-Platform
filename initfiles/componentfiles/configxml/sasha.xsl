@@ -82,6 +82,15 @@
             
             <xsl:copy-of select="/Environment/Software/Directories"/>  
 
+            <!--
+            # Generated for configuration info. accessed by getGlobalConfig()
+            -->
+            <global>
+                <expert>
+                    <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
+                </expert>
+            </global>
+
             <xsl:element name="LDS">
                 <xsl:attribute name="rootdir">
                    <xsl:value-of select="@LDSroot"/>
