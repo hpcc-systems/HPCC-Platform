@@ -619,10 +619,9 @@ public:
     {
         return node != nullptr;
     }
-    inline const CJHTreeNode &queryNode() const
+    inline const CJHTreeNode *queryNode() const
     {
-        assert(isReady());
-        return *node;
+        return node;
     }
     inline const CJHTreeNode *getNode() const
     {
@@ -640,7 +639,7 @@ class CNodeMapping : public HTMapping<CNodeCacheEntry, CKeyIdAndPos>
 public:
     CNodeMapping(CKeyIdAndPos &fp, CNodeCacheEntry &et) : HTMapping<CNodeCacheEntry, CKeyIdAndPos>(et, fp) { }
     ~CNodeMapping() { this->et.Release(); }
-    const CJHTreeNode &queryNode()
+    const CJHTreeNode *queryNode()
     {
         return queryElement().queryNode();
     }
@@ -687,8 +686,10 @@ public:
     }
     virtual void elementRemoved(CNodeMapping *mapping)
     {
-        const CJHTreeNode &node = mapping->queryNode();
-        sizeInMem -= node.getMemSize();
+        const CJHTreeNode *node = mapping->queryNode();
+        //Node may be null if there was a failure loading the node from disk for some reason.
+        if (node)
+            sizeInMem -= node->getMemSize();
     }
     void reportEntries(ICacheInfoRecorder &cacheInfo)
     {
@@ -700,8 +701,8 @@ public:
             const CNodeCacheEntry &entry = mapping.queryElement();
             if (entry.isReady())
             {
-                const CJHTreeNode &node = mapping.queryNode();
-                cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeDiskSize(), node.getNodeType());
+                const CJHTreeNode *node = mapping.queryNode();
+                cacheInfo.noteWarm(key.keyId, key.pos, node->getNodeDiskSize(), node->getNodeType());
             }
         }
     }
