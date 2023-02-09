@@ -109,6 +109,7 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
 
     React.useEffect(() => {
         const item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
+        if (!item) return;
         if (item.key === selectedKey) {
             // do nothing, unless
             if (!selectedItem) {
