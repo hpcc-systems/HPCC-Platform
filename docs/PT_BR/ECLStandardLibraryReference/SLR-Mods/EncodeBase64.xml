@@ -11,6 +11,8 @@
     </indexterm><indexterm>
       <primary>EncodeBase64</primary>
     </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, insertLF </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"/></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -25,6 +27,15 @@
 
           <entry>Um valor DATA que contém os dados a serem
           codificados.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>insertLF</emphasis></entry>
+
+          <entry>Opcional. Um parâmetro booleano TRUE/FALSE indicando que
+          quando TRUE uma nova linha será adicionada periodicamente à saída,
+          potencialmente resultando em uma string com múltiplas linhas.
+          Caso omitido, o valor padrão é TRUE.</entry>
         </row>
 
         <row>

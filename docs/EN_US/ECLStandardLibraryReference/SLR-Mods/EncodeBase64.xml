@@ -11,6 +11,8 @@
     </indexterm><indexterm>
       <primary>EncodeBase64</primary>
     </indexterm>(</emphasis> <emphasis>value</emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, insertLF </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis
   role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -24,6 +26,14 @@
           <entry><emphasis>value</emphasis></entry>
 
           <entry>A DATA value containing the data to encode.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>insertLF</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE flag indicating that, when TRUE,
+          causes linefeeds to be inserted periodically in the output, potentially
+          resulting in a multi-line string.  If omitted, the default is TRUE.</entry>
         </row>
 
         <row>

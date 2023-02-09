@@ -5,7 +5,7 @@
 
 externals := 
     SERVICE : fold
-STRING EncodeBase64(const data src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Encode';
+STRING EncodeBase64(const data src, boolean insertLF) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64EncodeV2';
 DATA DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Decode';
     END;
 
@@ -433,10 +433,11 @@ EXPORT DATA FromHexPairs(STRING hex_pairs) := lib_stringlib.StringLib.String2Dat
  *
  *
  * @param value         The binary data array to process.
+ * @param insertLF      If TRUE, linefeeds are inserted periodically; OPTIONAL, defaults to TRUE
  * @return              Base 64 encoded string.
  */
 
-EXPORT STRING EncodeBase64(DATA value) := externals.EncodeBase64(value);
+EXPORT STRING EncodeBase64(DATA value, BOOLEAN insertLF = TRUE) := externals.EncodeBase64(value, insertLF);
 
 /*
  * Decode base64 encoded string to binary data.
