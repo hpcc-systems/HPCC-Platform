@@ -1200,6 +1200,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         #endif
             UdpRequestToSendMsg msg;
             unsigned timeout = 5000;
+            unsigned lastReport = 0;
+            unsigned suppressed = 0;
             while (running)
             {
                 try
@@ -1223,14 +1225,30 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     if (running)
                     {
-                        StringBuffer s;
-                        DBGLOG("UdpReceiver: failed %i %s", flow_port, e->errorMessage(s).str());
+                        unsigned now = msTick();
+                        if (lastReport-now < 60000)
+                            suppressed++;
+                        else
+                        {
+                            StringBuffer s;
+                            DBGLOG("UdpReceiver: failed %u time(s) %i %s", suppressed+1, flow_port, e->errorMessage(s).str());
+                            lastReport = now;
+                            suppressed = 0;
+                        }
                     }
                     e->Release();
                 }
                 catch (...)
                 {
-                    DBGLOG("UdpReceiver: receive_receive_flow::run unknown exception");
+                    unsigned now = msTick();
+                    if (lastReport-now < 60000)
+                        suppressed++;
+                    else
+                    {
+                        DBGLOG("UdpReceiver: receive_receive_flow::run unknown exception (%u failure(s) noted)", suppressed+1);
+                        lastReport = now;
+                        suppressed = 0;
+                    }
                 }
             }
             return 0;
