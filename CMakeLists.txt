@@ -216,6 +216,10 @@ if(APPLE)
     HPCC_ADD_SUBDIRECTORY(package)
 endif(APPLE)
 
+if (NOT CLIENTTOOLS_ONLY)
+    install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include DESTINATION ${COMPONENTFILES_DIR}/cl FILES_MATCHING PATTERN "*")
+endif()
+
 ###
 ## CPack install and packaging setup.
 ###
