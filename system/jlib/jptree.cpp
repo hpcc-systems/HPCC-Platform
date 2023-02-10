@@ -8747,31 +8747,37 @@ public:
 
                 /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
                    However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
-                for (const auto &item: notifyConfigUpdates)
-                {
-                    try
-                    {
-                        item.second(oldComponentConfiguration, oldGlobalConfiguration);
-                    }
-                    catch (IException *e)
-                    {
-                        EXCLOG(e, "CConfigUpdater callback");
-                        e->Release();
-                    }
-                }
-
+                executeCallbacks(oldComponentConfiguration, oldGlobalConfiguration);
                 absoluteConfigFilename.set(std::get<0>(result).c_str());
             }
         };
 
-        fileWatcher.setown(createFileEventWatcher(updateFunc));
+        if (absoluteConfigFilename.length())
+        {
+            fileWatcher.setown(createFileEventWatcher(updateFunc));
 
-        // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
-        StringBuffer path, filename;
-        splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
-        configFilename.set(filename);
-        fileWatcher->add(path, FileWatchEvents::anyChange);
-        fileWatcher->start();
+            // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
+            StringBuffer path, filename;
+            splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
+            configFilename.set(filename);
+            fileWatcher->add(path, FileWatchEvents::anyChange);
+            fileWatcher->start();
+        }
+    }
+    void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
+    {
+        for (const auto &item: notifyConfigUpdates)
+        {
+            try
+            {
+                item.second(oldComponentConfiguration, oldGlobalConfiguration);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "CConfigUpdater callback");
+                e->Release();
+            }
+        }
     }
     unsigned addNotifyFunc(ConfigUpdateFunc notifyFunc)
     {
@@ -8791,12 +8797,10 @@ static Owned<CConfigUpdater> configFileUpdater;
 
 unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
 {
-#ifdef _CONTAINERIZED
     if (!configFileUpdater)
         WARNLOG("installConfigUpdateHook(): configuration updater not installed");
     else
         return configFileUpdater->addNotifyFunc(notifyFunc);
-#endif
     return 0;
 }
 
@@ -8804,7 +8808,6 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
 {
     if (0 == notifyFuncId)
         return;
-#ifdef _CONTAINERIZED
     if (!configFileUpdater)
     {
         WARNLOG("removeConfigUpdateHook(): configuration updater not installed");
@@ -8812,7 +8815,14 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
     }
     if (!configFileUpdater->removeNotifyFunc(notifyFuncId))
         WARNLOG("removeConfigUpdateHook(): notifyFuncId %u not installed", notifyFuncId);
-#endif
+}
+
+void executeConfigUpdaterCallbacks()
+{
+    if (!configFileUpdater)
+        WARNLOG("executeConfigUpdaterCallbacks(): configuration updater not installed");
+    else
+        configFileUpdater->executeCallbacks(componentConfiguration.getLink(), globalConfiguration.getLink());
 }
 #else
 unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
@@ -8821,6 +8831,10 @@ unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
 }
 
 void removeConfigUpdateHook(unsigned notifyFuncId)
+{
+}
+
+void executeConfigUpdaterCallbacks()
 {
 }
 #endif // __linux__
@@ -9012,18 +9026,17 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
      * 
      * NB: most uses of config do not rely on being notified to update state, i.e. most query the config
      * on-demand, which means this mechanism is sufficient to cover most cases.
+     * 
+     * In bare-metal the monitoring mechanism will similarly spot any legacy config file changes, e.g.
+     * that would be refreshed by during a 'service hpcc-init setup'.
+     * Some bare-metal code relies on directly interrogating the environment, for those situations, there is
+     * also a default triggering mechanism (see executeConfigUpdaterCallbacks in daclient.cpp) that will cause any
+     * installed config hooks to be called when an environment change is detected e.g when pushed to Dali)
      */
 
-#if defined(__linux__) && defined(_CONTAINERIZED)
-    /* In bare-metal - there is no auto process/component restart mechanism, so everything would need to be
-     * hooked to ensure state is reflected correctly. Therefore this mechanism is disabled in bare-metal for now.
-     */ 
+#if defined(__linux__)
     if (monitor)
-    {
-        // If modern generated config, track and monitor updates
-        if (std::get<0>(result).length()) // config filename
-            configFileUpdater.setown(new CConfigUpdater(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute));
-    }
+        configFileUpdater.setown(new CConfigUpdater(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute));
 #endif
     return componentConfiguration.getLink();
 }

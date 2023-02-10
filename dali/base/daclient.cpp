@@ -86,6 +86,44 @@ IDaliClient_Exception *createClientException(DaliClientError err, const char *ms
 }
 
 
+// Based on client type, auto-install a SDS subscriber on /Environment that,
+// detects changes and executes the config update hooks (as installed by installConfigUpdateHook)
+// This is to ensure that any [cached] config that is based on environment settings, e.g.
+// the dropzones returned by getDropZonePlanesIterator(), or the queues listened to by eclccserver,
+// are auto-updated based on the hooks.
+static std::atomic<bool> watchEnvHookInstalled{false};
+static Owned<ISDSSubscription> envConfigUpdater;
+static SubscriptionId envConfigUpdaterSubId = 0;
+void installEnvConfigMonitor()
+{
+    bool expected = false;
+    if (watchEnvHookInstalled.compare_exchange_strong(expected, true))
+    {
+        class CEnvConfigUpdater : public CInterfaceOf<ISDSSubscription>
+        {
+        public:
+            // ISDSSubscription impl.
+            virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=nullptr) override
+            {
+                executeConfigUpdaterCallbacks();
+            }
+        };
+
+        envConfigUpdater.setown(new CEnvConfigUpdater);
+        envConfigUpdaterSubId = querySDS().subscribe("/Environment", *envConfigUpdater);
+    }
+}
+
+void uninstallEnvConfigMonitor()
+{
+    if (envConfigUpdaterSubId)
+    {
+        querySDS().unsubscribe(envConfigUpdaterSubId);
+        envConfigUpdaterSubId = 0;
+        envConfigUpdater.clear();
+        watchEnvHookInstalled = false;
+    }
+}
 
 bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout, bool listen)
 {
@@ -102,6 +140,28 @@ bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, 
     initCoven(covengrp,NULL,clientVersion, minServerVersion);
     covengrp->Release();
     queryLogMsgManager()->setSession(myProcessSession());
+
+    if (!isContainerized()) // The Environment is bare-metal only
+    {
+        // auto install environment monitor for server roles
+        // causes any config update hooks (installed by installConfigUpdateHook() to trigger on an env. change)
+        switch (role)
+        {
+            case DCR_ThorMaster:
+            case DCR_EclServer:
+            case DCR_EclAgent:
+            case DCR_SashaServer:
+            case DCR_DfuServer:
+            case DCR_EspServer:
+            case DCR_Roxie:
+            case DCR_AgentExec:
+            case DCR_EclScheduler:
+            case DCR_EclCCServer:
+                installEnvConfigMonitor();
+            default:
+                break;
+        }
+    }
     return true;
 }
 
@@ -125,6 +185,8 @@ void closedownClientProcess()
         c->clientShutdown();
     }
     clearPagedElementsCache(); // has connections
+    if (!isContainerized()) // The Environment is bare-metal only
+        uninstallEnvConfigMonitor();
     closeSDS();
     closeSubscriptionManager();
     stopClientProcess();
