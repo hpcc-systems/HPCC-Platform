@@ -1309,6 +1309,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             started.signal();
             unsigned lastOOOReport = 0;
             unsigned lastPacketsOOO = 0;
+            unsigned lastUnwantedDiscarded = 0;
             unsigned timeout = 5000;
             DataBuffer *b = nullptr;
             while (running) 
@@ -1341,6 +1342,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             StringBuffer s;
                             DBGLOG("UdpReceiver: discarding unwanted resent packet %" SEQF "u %x from %s", hdr.sendSeq, hdr.pktSeq, hdr.node.getTraceText(s).str());
                         }
+                        // We should perhaps track how often this happens, but it's not the same as unwantedDiscarded
                         hdr.node.clear();  // Used to indicate a duplicate that collate thread should discard. We don't discard on this thread as don't want to do anything that requires locks...
                     }
                     else
@@ -1362,6 +1364,11 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         if (now-lastOOOReport > udpStatsReportInterval)
                         {
                             lastOOOReport = now;
+                            if (unwantedDiscarded > lastUnwantedDiscarded)
+                            {
+                                DBGLOG("%u more unwanted packets discarded by this server (%u total)", unwantedDiscarded - lastUnwantedDiscarded, unwantedDiscarded-0);
+                                lastUnwantedDiscarded = unwantedDiscarded;
+                            }
                             if (packetsOOO > lastPacketsOOO)
                             {
                                 DBGLOG("%u more packets received out-of-order by this server (%u total)", packetsOOO-lastPacketsOOO, packetsOOO-0);
@@ -1554,7 +1561,7 @@ public:
                 E->Release();
             }
         }
-        if (udpTraceLevel && isDefault && !isUdpTestMode)
+        if (udpTraceLevel>=5 && isDefault && !isUdpTestMode)
         {
             StringBuffer s;
             DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->node.getTraceText(s).str());
