@@ -326,7 +326,14 @@ void WsWuInfo::sendImportedWorkunitComponentLog(const char* logFile, CHttpRespon
 void WsWuInfo::sendWorkunitComponentLogs(IEspContext* context, CHttpResponse* response, WUComponentLogOptions& options)
 {
     if (!queryRemoteLogAccessor())
-        throw makeStringException(ECLWATCH_LOGACCESS_UNAVAILABLE, "WsWuInfo: Remote Log Access plug-in not available!");
+    {
+        //Called from CWsWorkunitsSoapBindingEx::onGetInstantQuery() where an exception has to be added to
+        //the response directly ('throw makeStringException()' not work).
+        response->setLogAccessErrorMessageContent("WsWuInfo: Remote Log Access plug-in not available!", options.logFormat);
+        response->setStatus(HTTP_STATUS_OK);
+        response->send();
+        return;
+    }
 
     setLogTimeRange(options.logFetchOptions, options.wuLogSearchTimeBuffSecs);
     options.logFetchOptions.setFilter(getJobIDLogAccessFilter(wuid));

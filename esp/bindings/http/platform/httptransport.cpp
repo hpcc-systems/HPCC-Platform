@@ -2942,3 +2942,33 @@ bool CHttpResponse::checkPersistentEligible()
 
     return CHttpMessage::checkPersistentEligible();
 }
+
+void CHttpResponse::setErrorMessageContent(const char* message, ESPSerializationFormat format)
+{
+    StringBuffer resp;
+    switch (format)
+    {
+    case ESPSerializationJSON:
+        appendJSONStringValue(resp.append("{"), "Error", message, true);
+        resp.append("}");
+        break;
+    case ESPSerializationXML:
+        encodeXML(message, resp.append("<Error>"));
+        resp.append("</Error>");
+        break;
+    default:
+        resp.append("Error: ").append(message);
+        break;
+    }
+    setContent(resp);
+}
+
+void CHttpResponse::setLogAccessErrorMessageContent(const char* message, LogAccessLogFormat format)
+{
+    if (format == LOGACCESS_LOGFORMAT_json)
+        setErrorMessageContent(message, ESPSerializationJSON);
+    else if (format == LOGACCESS_LOGFORMAT_xml)
+        setErrorMessageContent(message, ESPSerializationXML);
+    else
+        setErrorMessageContent(message, ESPSerializationANY);
+}

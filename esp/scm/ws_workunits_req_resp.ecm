@@ -904,6 +904,7 @@ ESPresponse [exceptions_inline] WUGetZAPInfoResponse
     string Archive;
     [min_ver("1.73")] string EmailTo;
     [min_ver("1.73")] string EmailFrom;
+    [min_ver("1.96")] string Message;
 };
 
 ESPrequest [nil_remove] WUCreateZAPInfoRequest
