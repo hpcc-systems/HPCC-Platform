@@ -805,6 +805,10 @@ class CPooledThreadWrapper;
 class CThreadPoolBase
 {
 public:
+    CThreadPoolBase()
+    {
+        getThreadLoggingInfo(logctx, traceFlags); // Threads in pool use context that was in force when threadpool was created. This may or may not be a good idea by default!
+    }
     virtual ~CThreadPoolBase() {}
 protected: friend class CPooledThreadWrapper;
     IExceptionHandler *exceptionHandler;
@@ -818,6 +822,8 @@ protected: friend class CPooledThreadWrapper;
     unsigned defaultmax;
     unsigned targetpoolsize;
     unsigned delay;
+    const IContextLogger *logctx = nullptr;
+    TraceFlags traceFlags = TraceFlags::Standard;
     Semaphore availsem;
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
@@ -838,6 +844,8 @@ public:
                          IPooledThread *_thread) // takes ownership of thread
         : Thread(StringBuffer("Member of thread pool: ").append(_parent.poolname).str()), parent(_parent)
     {
+        logctx = parent.logctx;
+        traceFlags = parent.traceFlags;
         thread = _thread;
         handle = _handle;
         runningName.set(_parent.poolname); 
@@ -910,7 +918,6 @@ public:
     void go(void *param)
     {
         thread->init(param);
-        getThreadLoggingInfo(logctx, traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
         cycle();
     }
 

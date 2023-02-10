@@ -34,22 +34,12 @@ RUN apt-get install -y \
   git \
   git-lfs \
   openssh-client \
-  libapr1 \
-  libaprutil1 \
-  libnuma1 \
-  libboost-regex1.71.0 \
-  libpython3.8 \
-  libmemcached11 \
-  libmemcachedutil2 \
-  libmysqlclient21 \
-  libxslt1.1 \
   locales \
-  python \ 
+  python3 \ 
+  python3-dev \ 
   psmisc \
   r-base-core \
   zip \
-  libarchive13 \
-  libatlas3-base \
   curl \
   clang
 

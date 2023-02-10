@@ -216,6 +216,10 @@ if(APPLE)
     HPCC_ADD_SUBDIRECTORY(package)
 endif(APPLE)
 
+if (NOT CLIENTTOOLS_ONLY)
+    install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include DESTINATION ${COMPONENTFILES_DIR}/cl FILES_MATCHING PATTERN "*")
+endif()
+
 ###
 ## CPack install and packaging setup.
 ###
@@ -476,7 +480,7 @@ if(TOP_LEVEL_PROJECT)
     endif()
 
     if(APPLE)
-        set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/HPCCSystems/${CPACK_PACKAGE_VERSION}/clienttools")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/HPCCSystems/${version}/clienttools")
     elseif(UNIX)
         set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
     endif(APPLE)

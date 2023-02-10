@@ -6235,14 +6235,14 @@ IAtom * rtlCreateFieldNameAtom(const char * name)
     return createAtom(name);
 }
 
-void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src)
+void rtlBase64EncodeV2(size32_t & tlen, char * & tgt, size32_t slen, const void * src, bool addLineBreaks)
 {
     tlen = 0;
     tgt = NULL;
     if (slen)
     {
         StringBuffer out;
-        JBASE64_Encode(src, slen, out, true);
+        JBASE64_Encode(src, slen, out, addLineBreaks);
         tlen = out.length();
         if (tlen)
         {
@@ -6251,6 +6251,11 @@ void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * 
             tgt = data;
         }
     }
+}
+
+void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src)
+{
+    rtlBase64EncodeV2(tlen, tgt, slen, src, true);
 }
 
 void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * src)

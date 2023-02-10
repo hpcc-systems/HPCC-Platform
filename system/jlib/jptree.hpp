@@ -333,6 +333,7 @@ jlib_decl const char * queryComponentName();
 typedef std::function<void (const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)> ConfigUpdateFunc;
 jlib_decl unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc);
 jlib_decl void removeConfigUpdateHook(unsigned notifyFuncId);
+jlib_decl void executeConfigUpdaterCallbacks();
 
 class jlib_decl CConfigUpdateHook
 {

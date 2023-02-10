@@ -75,6 +75,8 @@ data:
     toposerver:
 {{ toYaml ( omit .toposerver "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .toposerver) | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
 
 {{ range $roxie := $.Values.roxie -}}
