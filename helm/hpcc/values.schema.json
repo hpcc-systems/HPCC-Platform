@@ -227,6 +227,10 @@
           },
           "egress": {
               "$ref" : "#/definitions/egress"
+          },
+          "expert": {
+            "description": "Custom internal options usually reserved for internal testing",
+            "type": "object"
           }
         },
         "additionalProperties": { "type": ["integer", "string", "boolean"] },
