@@ -123,6 +123,9 @@
         },
         "codeVerify": {
           "$ref": "#/definitions/vaultCategory"
+        },
+        "git": {
+          "$ref": "#/definitions/vaultCategory"
         }
       },
       "additionalProperties": false
