@@ -480,7 +480,7 @@ if(TOP_LEVEL_PROJECT)
     endif()
 
     if(APPLE)
-        set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/HPCCSystems/${CPACK_PACKAGE_VERSION}/clienttools")
+        set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/HPCCSystems/${version}/clienttools")
     elseif(UNIX)
         set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
     endif(APPLE)
