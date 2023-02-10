@@ -345,6 +345,8 @@ secrets:
 vaults:
   storage:
 
+  git:
+
   authn:
 
   ecl:
