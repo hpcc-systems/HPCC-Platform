@@ -456,7 +456,7 @@ startCmd() {
     printf "Starting %-21s" "$compName ..."
     log "compType = $compType"
 
-    local WAITTIME=120
+    local WAITTIME=600
     local RCSTART=0
     local SENTINEL_CHECK=1
 
