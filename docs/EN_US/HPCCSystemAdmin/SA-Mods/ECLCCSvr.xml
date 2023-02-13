@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="ECLCChooks">
+  <title>ECLCCServer and Githooks</title>
+
+  <para>The ECLCCServer hook mechanism allows us to configure, using
+  eclccserver option settings and/or workunit options (which would be set
+  using -f), the behavior of the ECLSServer when launching a compile.</para>
+
+  <para>To have a different program execute rather than ECLCCServer, use the
+  option eclcc-hook. Typically this will name a script file that does some
+  preparation (for example, interaction with a version control system) prior
+  to launching the ECLCCServer.</para>
+
+  <para>To pass parameters to a hook program, use options that contain a -
+  other than at the start. These will then be placed in the environment for
+  the script to test.</para>
+
+  <para>There is a supplied script: /opt/HPCCSystems/bin/git.sh which can be
+  used to facilitate the use of the git version control system as a 'central
+  repository' for ECL usage. To use this script, set the following options in
+  ECLCCServer's Options section:</para>
+
+  <programlisting>eclcc-hook = /opt/HPCCSystems/bin/git.sh
+git-url = URL of upstream repository - for example https://github.com/hpcc-systems/ecl-bundles.git
+</programlisting>
+
+  <para>The following options can be set in eclccserver (some can also be set
+  per workunit, using the ECL Command line run -f option).</para>
+
+  <programlisting>git-repositories = a list of repository tags (see below) for each repository you want to auto-fetch, separated by :
+git-verbose - if set gives more tracing from the git.sh hook script
+git-fetch-expires - if set, indicates the time after each fetch (in seconds) where the previously fetched data will be used
+git-ignore-fetch-errors - if set, indicates that a failed fetch should not be treated as a fatal error (previous fetch will be used)
+</programlisting>
+
+  <para>For each repository tag listed in the git-repositories setting, you
+  can set options specific to that repository. </para>
+
+  <para>For instance: </para>
+
+  <programlisting>&gt;tag&lt;-remote-url-&gt;tag&lt;-branch-&gt;tag&lt;-branch-locked-&gt;tag&lt;-directory-&gt;</programlisting>
+
+  <para>Where :</para>
+
+  <para><emphasis role="bold">&lt;-remote-url&gt;</emphasis> is the URL of the
+  remote repository - for instance:
+  https://github.com/hpcc-systems/ecl-bundles.git</para>
+
+  <para><emphasis role="bold">&lt;-branch-&gt;</emphasis> is the branch to use
+  (default is master)</para>
+
+  <para><emphasis role="bold">&lt;-branch-locked-&gt;</emphasis> if set,
+  indicates that the branch cannot be overriden per workunit </para>
+
+  <para><emphasis role="bold">&lt;-directory-&gt;</emphasis> if set, will use
+  a different directory for the git repository from the default (which will be
+  in /var/lib/HPCCSystems/myeclccserver/repos/)</para>
+
+  <para>These options might be useful if some external syncing is going
+  on.</para>
+</sect2>

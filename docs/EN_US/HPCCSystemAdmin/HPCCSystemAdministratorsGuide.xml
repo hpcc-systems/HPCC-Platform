@@ -1275,14 +1275,6 @@ jvmoptions=-XX:-UsePerfData
 #jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
 #JNI_PATH=/absolute/path/to/alternative/libjvm.so
 
-# Although HPCC platform includes plugins for both Python2 and Python3, 
-# only one may be safely enabled at a time
-# as the Python libraries export the same symbols for both versions. 
-# Enabling both may lead to unpredicatable results
-# including segfaults or undefined symbol errors.
-#
-# If you would prefer to use python 2 and disable python3, change the line below to read
-#  additionalPlugins=python2
 #
 # Multiple paths can be specified (separate with :, or ; on Windows).
 # Relative paths are assumed to be relative to /opt/HPCCSystems/versioned
@@ -1656,19 +1648,23 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <para>The Private and public keys need to be generated in PEM
           format. The same key file pairs should be installed across the
           cluster. These keys <emphasis role="bold">must</emphasis> be the
-          same on every node in the cluster. </para>
+          same on every node in the cluster.</para>
 
           <para>The HPCCCertFile and HPCCPublicKeyFile values must exist and
           be uncommented in environment.conf file as indicated above. The
           HPCCPassPhrase is only used when a passphrase was used in creation
-          of the keys. </para>
+          of the keys.</para>
 
           <para>A good way to ensure the appropriate implementation of the
           secure key files is, as documented in the <emphasis>Installing &amp;
           Running the HPCC Systems Platform</emphasis> book, to use the
-          <emphasis>install-cluster.sh</emphasis> script. </para>
+          <emphasis>install-cluster.sh</emphasis> script.</para>
         </sect3>
       </sect2>
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/ECLCCSvr.xml"
+                  xpointer="xpointer(//*[@id='ECLCChooks'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <!-- Inclusions-As-Sect1-->

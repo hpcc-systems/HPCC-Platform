@@ -1530,6 +1530,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           changes and to communicate this information to peers.</para>
         </sect3>
       </sect2>
+       
+      <xi:include href="HPCCSystemAdmin/SA-Mods/ECLCCSvr.xml"
+                  xpointer="xpointer(//*[@id='ECLCChooks'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <sect2 id="ECL-Scheduler" role="brk">
         <title>ECL Scheduler</title>
