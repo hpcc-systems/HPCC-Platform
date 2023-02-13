@@ -3,6 +3,9 @@ import { Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import { pushUrl } from "../util/history";
 import { pivotItemStyle } from "../layouts/pivot";
+import { DFSCheck } from "./DFSCheck";
+import { DFSExists } from "./DFSExists";
+import { DFSLS } from "./DFSLS";
 import { GetDFSCSV } from "./GetDFSCSV";
 import { GetDFSMap } from "./GetDFSMap";
 import { GetDFSParents } from "./GetDFSParents";
@@ -25,6 +28,15 @@ export const DaliAdmin: React.FunctionComponent<DaliAdminProps> = ({
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/daliadmin/${evt.props.itemKey}`)}>
             <PivotItem headerText={nlsHPCC.GetDFSCSV} itemKey="getdfscsv" style={pivotItemStyle(size)} >
                 <GetDFSCSV />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.DFSCheck} itemKey="dfscheck" style={pivotItemStyle(size)} >
+                <DFSCheck />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.DFSExists} itemKey="dfsexists" style={pivotItemStyle(size)} >
+                <DFSExists />
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.DFSLS} itemKey="dfsls" style={pivotItemStyle(size)} >
+                <DFSLS />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.GetDFSMap} itemKey="getdfsmap"  style={pivotItemStyle(size)} >
                 <GetDFSMap />
