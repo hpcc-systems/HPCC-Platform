@@ -72,13 +72,13 @@ jobs:
       - name: Release LN
         uses: ncipollo/release-action@v1.12.0
         with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
           owner: ${{ secrets.LNB_ACTOR }}
           repo: LN
           token: ${{ secrets.LNB_TOKEN }}
           tag: ${{ steps.vars.outputs.internal_tag }}
-          allowUpdates: true
-          generateReleaseNotes: false
-          prerelease: ${{ contains(github.ref, '-rc') }}
 
   build-docker:
     name: Build Docker
@@ -187,6 +187,8 @@ jobs:
         if: ${{ !matrix.ln }}
         with:
           allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
           artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm"
 
       - name: CMake LN Packages
@@ -206,11 +208,13 @@ jobs:
         if: ${{ matrix.ln }}
         uses: ncipollo/release-action@v1.12.0
         with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
           owner: ${{ secrets.LNB_ACTOR }}
           repo: LN
           token: ${{ secrets.LNB_TOKEN }}
           tag: ${{ needs.preamble.outputs.internal_tag }}
-          allowUpdates: true
           artifacts: "${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-internal*.deb,${{ needs.preamble.outputs.folder_build }}/hpccsystems-platform-internal*.rpm"
 
       - name: Cleanup Environment
@@ -306,6 +310,8 @@ jobs:
         uses: ncipollo/release-action@v1.12.0
         with:
           allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
           artifacts: "./build/*.exe,./build/*.msi,./build/*.dmg,./build/*.pkg,./build/*.tar.gz"
 
       - name: CMake LN Packages
@@ -319,11 +325,13 @@ jobs:
       - name: Upload LN Assets
         uses: ncipollo/release-action@v1.12.0
         with:
+          allowUpdates: true
+          generateReleaseNotes: false
+          prerelease: ${{ contains(github.ref, '-rc') }}
           owner: ${{ secrets.LNB_ACTOR }}
           repo: LN
           token: ${{ secrets.LNB_TOKEN }}
           tag: ${{ needs.preamble.outputs.internal_tag }}
-          allowUpdates: true
           artifacts: "./build/hpccsystems-clienttools-internal*.exe,./build/hpccsystems-clienttools-internal*.msi,./build/hpccsystems-clienttools-internal*.dmg,./build/hpccsystems-clienttools-internal*.pkg,./build/hpccsystems-clienttools-internal*.tar.gz"
 
       - name: Upload error logs
