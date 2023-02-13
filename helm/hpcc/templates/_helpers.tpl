@@ -1211,7 +1211,11 @@ kind: Service
 metadata:
   name: {{ $lvars.serviceName | quote }}
   labels:
+<<<<<<< HEAD
     helmVersion: 8.12.3-closedown0
+=======
+    helmVersion: 8.12.3-closedown0
+>>>>>>> origin/candidate-8.10.x
     {{- include "hpcc.addStandardLabels" (dict "root" $.root "instance" $lvars.serviceName ) | indent 4 }}
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
