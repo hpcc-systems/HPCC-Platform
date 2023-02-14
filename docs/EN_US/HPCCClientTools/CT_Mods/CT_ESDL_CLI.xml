@@ -171,6 +171,18 @@
               </row>
 
               <row>
+                <entry>-I, --include-path</entry>
+
+                <entry>Locations to look for included ESDL files. They can be
+                absolute or relative paths. If you need to specify multiple
+                directories, you can use multiple -I options or use a single
+                entry with the directories separated with the environment
+                separator character. For Linux, use a colon (:) and for
+                Windows, use a semi-colon (;). The paths can also be set using
+                an environment variable--ESDL_INCLUDE_PATH.</entry>
+              </row>
+
+              <row>
                 <entry><emphasis>-v|--verbose</emphasis></entry>
 
                 <entry>display verbose information</entry>
@@ -209,7 +221,7 @@
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec colwidth="105.50pt" />
 
             <colspec />
 
@@ -250,8 +262,8 @@
               <row>
                 <entry><emphasis>-cde </emphasis></entry>
 
-                <entry>Specifies the HPCC Systems Component files directory (location
-                of xslt files).</entry>
+                <entry>Specifies the HPCC Systems Component files directory
+                (location of xslt files).</entry>
               </row>
 
               <row>
@@ -267,6 +279,18 @@
 
                 <entry>Text to include in header or target (generated) file
                 (must be valid ECL).</entry>
+              </row>
+
+              <row>
+                <entry>-I, --include-path</entry>
+
+                <entry>Locations to look for included ESDL files. They can be
+                absolute or relative paths. If you need to specify multiple
+                directories, you can use multiple -I options or use a single
+                entry with the directories separated with the environment
+                separator character. For Linux, use a colon (:) and for
+                Windows, use a semi-colon (;). The paths can also be set using
+                an environment variable--ESDL_INCLUDE_PATH.</entry>
               </row>
 
               <row>
@@ -635,6 +659,19 @@
 
                   <entry>Overwrite the latest version of this ESDL
                   Definition</entry>
+                </row>
+
+                <row>
+                  <entry>-I, --include-path</entry>
+
+                  <entry>Locations to look for included ESDL files. They can
+                  be absolute or relative paths. If you need to specify
+                  multiple directories, you can use multiple -I options or use
+                  a single entry with the directories separated with the
+                  environment separator character. For Linux, use a colon (:)
+                  and for Windows, use a semi-colon (;). The paths can also be
+                  set using an environment variable--ESDL_INCLUDE_PATH.
+                  </entry>
                 </row>
 
                 <row>
