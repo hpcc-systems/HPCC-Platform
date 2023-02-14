@@ -49,6 +49,11 @@
   append them to the <emphasis>TypeName</emphasis> used in the RECORD
   structure to define the value type for the field.</para>
 
+  <para>Alien data types (TYPE) should only be used when accessing external
+  data files. It is much more efficient to use the native types for general
+  processing. In particular, some optimizations to project and filter files
+  remotely are not supported on alien datatypes. </para>
+
   <para>A TYPE structure may only contain function definitions from the the
   list of available Special Functions (see <emphasis role="bold">TYPE
   Structure Special Functions</emphasis>).</para>
