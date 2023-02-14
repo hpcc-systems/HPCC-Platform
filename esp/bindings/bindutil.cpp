@@ -529,6 +529,11 @@ int Utils::url_decode(const char* url, StringBuffer& result)
     return 0;
 }
 
+void Utils::url_decode(size_t len, const char* url, StringBuffer& result)
+{
+    appendDecodedURL(result, len, url);
+}
+
 void Utils::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password,StringBuffer& host, StringBuffer& port, StringBuffer& path)
 {
     int protlen = 0;

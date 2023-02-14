@@ -1324,22 +1324,8 @@ void CHttpRequest::parseQueryString(const char* querystr)
     if(!querystr || !*querystr)
         return;
 
-    bool useHeap = false;
-    int querystrlen = strlen(querystr);
-    if(querystrlen >= 0x80000)
-        useHeap = true;
-
-    char* querystrbuf = NULL;
-    if(useHeap)
-        querystrbuf = (char*)malloc(querystrlen + 1);
-    else
-        querystrbuf = (char*)alloca(querystrlen + 1);
-
-    strcpy(querystrbuf, querystr);
-
-    char* ptr = querystrbuf;
-    char* curname = ptr;
-    char* curvalue = NULL;
+    const char* ptr = querystr;
+    const char* curname = ptr;
     while(true)
     {
         while(*ptr != '\0' && *ptr != '=' && *ptr != '&')
@@ -1354,19 +1340,19 @@ void CHttpRequest::parseQueryString(const char* querystr)
         }
         else if(*ptr == '=')
         {
-            *ptr = '\0';
+            const char * endname = ptr;
             ptr++;
             if(*ptr == '\0')
             {
                 StringBuffer nameval;
-                Utils::url_decode(curname, nameval);
+                Utils::url_decode(endname-curname, curname, nameval);
                 addParameter(nameval.str(), "");
                 break;
             }
             else if(*ptr == '&')
             {
                 StringBuffer nameval;
-                Utils::url_decode(curname, nameval);
+                Utils::url_decode(endname-curname, curname, nameval);
                 addParameter(nameval.str(), "");
                 ptr++;
                 if(*ptr == '\0')
@@ -1376,42 +1362,33 @@ void CHttpRequest::parseQueryString(const char* querystr)
             }
             else
             {
-                curvalue = ptr;
+                const char* curvalue = ptr;
                 while(*ptr != '\0' && *ptr != '&')
                     ptr++;
-                if(*ptr == '\0')
-                {
-                    StringBuffer nameval;
-                    StringBuffer valueval;
-                    Utils::url_decode(curname, nameval);
-                    Utils::url_decode(curvalue, valueval);
-                    addParameter(nameval.str(), valueval.str());
+
+                StringBuffer nameval;
+                StringBuffer valueval;
+                Utils::url_decode(endname-curname, curname, nameval);
+                Utils::url_decode(ptr-curvalue, curvalue, valueval);
+                addParameter(nameval.str(), valueval.str());
+
+                if (*ptr == '\0')
                     break;
-                }
-                else //*ptr == '&'
-                {
-                    *ptr = '\0';
-                    ptr++;
 
-                    StringBuffer nameval;
-                    StringBuffer valueval;
-                    Utils::url_decode(curname, nameval);
-                    Utils::url_decode(curvalue, valueval);
-                    addParameter(nameval.str(), valueval.str());
+                //*ptr == '&'
+                ptr++;
+                if(*ptr == '\0')
+                    break;
 
-                    if(*ptr == '\0')
-                        break;
-                    else
-                        curname = ptr;
-                }
+                curname = ptr;
             }
         }
         else if(*ptr == '&')
         {
-            *ptr=0;
+            const char * endname = ptr;
 
             StringBuffer nameval;
-            Utils::url_decode(curname, nameval);
+            Utils::url_decode(endname-curname, curname, nameval);
             addParameter(nameval.str(), "");
 
             ptr++;
@@ -1421,10 +1398,6 @@ void CHttpRequest::parseQueryString(const char* querystr)
                 curname = ptr;
         }
     }
-
-    if(useHeap && querystrbuf != NULL)
-        delete querystrbuf;
-
 }
 
 int CHttpRequest::parseFirstLine(char* oneline)
