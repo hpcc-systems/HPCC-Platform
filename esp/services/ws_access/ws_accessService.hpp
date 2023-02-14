@@ -87,7 +87,7 @@ class Cws_accessEx : public Cws_access
     void getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
         int accountType, StringArray& basednNames);
     int enableDisableScopeScans(IEspContext &context, CLdapSecManager *secmgr, bool doEnable, StringBuffer &retMsg);
-    CLdapSecManager* queryLDAPSecurityManager(IEspContext &context);
+    CLdapSecManager* queryLDAPSecurityManager(IEspContext &context, bool excpt);
     void addResourcePermission(const char *name, int type, int allows, int denies, IArrayOf<IEspResourcePermission> &permissions);
     const char* getPasswordExpiration(ISecUser *usr, StringBuffer &passwordExpiration);
     void checkUser(IEspContext &context, CLdapSecManager *ldapSecMgr, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
