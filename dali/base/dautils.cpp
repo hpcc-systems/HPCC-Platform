@@ -490,7 +490,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
                     full.append(',');
                 const CDfsLogicalFileName &item = multi->item(i1);
                 StringAttr norm;
-                normalizeName(item.get(), norm, false);
+                normalizeName(item.get(), norm, false, true);
                 full.append(norm);
                 if (item.isExternal())
                     external = external || item.isExternal();
@@ -635,7 +635,7 @@ bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * file
     return true;
 }
 
-void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
+void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict, bool nameIsRoot)
 {
     // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
     StringBuffer nametmp;
@@ -752,7 +752,8 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         else
         {
             s = name;
-            str.append(".::");
+            if (nameIsRoot)
+                str.append(".::");
         }
         tailpos = str.length();
         normalizeScope(name, s, strlen(name)-(s-name), str, strict);
@@ -774,94 +775,85 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
             skipSp(name);
     }
 
+    StringBuffer str;
+    lfn.clear();
+    const char *s=strstr(name,"::");
+    enum { lfntype_file, lfntype_plane, lfntype_remote } lfnType;
     if (startsWithIgnoreCase(name, EXTERNAL_SCOPE "::"))
+        lfnType = lfntype_file;
+    else if (startsWithIgnoreCase(name, PLANE_SCOPE "::"))
+        lfnType = lfntype_plane;
+    else if (startsWithIgnoreCase(name, REMOTE_SCOPE "::"))
+        lfnType = lfntype_remote;
+    else
+        return false;
+
+    normalizeScope(name, name, s-name, str, strict); // "file" or "plane" or "remote"
+    const char *s1 = s+2; // this will be the file host/ip, or plane name, or remote service name
+    const char *ns1 = strstr(s1,"::");
+    if (!ns1)
+        return false;
+
+    switch (lfnType)
     {
-        //syntax file::<ip>::<path>
-        lfn.clear();
-        StringBuffer str;
-        const char *s=strstr(name,"::");
-        normalizeScope(name, name, s-name, str, strict);
-
-        const char *s1 = s+2;
-        const char *ns1 = strstr(s1,"::");
-        if (!ns1)
-            return false;
-
-        SocketEndpoint ep;
-        normalizeNodeName(s1, ns1-s1, ep, strict);
-        if (ep.isNull())
-            return false;
-
-        ep.getUrlStr(str.append("::"));
-        s = ns1;
-        if (s[2] == '>')
+        case lfntype_file:
         {
-            str.append("::");
-            tailpos = str.length();
-            str.append(s+2);
+            //syntax file::<ip>::<path>
+
+            SocketEndpoint ep;
+            normalizeNodeName(s1, ns1-s1, ep, strict);
+            if (ep.isNull())
+                return false;
+
+            ep.getUrlStr(str.append("::"));
+            if (ns1[2] == '>')
+            {
+                str.append("::");
+                tailpos = str.length();
+                str.append(ns1+2);
+                res.set(str);
+                return true;
+            }
+
+            // JCSMORE - really anything relying on using a CDfsLogicalFileName with wildcards should
+            // be calling setAllowWild(true), but maintaining current semantics which has always allowed
+            // wildcards because scopes were not being validated beyond this point before (HPCC-28885)
+            allowWild = true;
+            break;
         }
-        else
+        case lfntype_plane:
         {
-            str.append(s);
-            str.toLowerCase();
+            //Syntax plane::<plane>::<path>
+
+            StringBuffer planeName;
+            normalizeScope(s1, s1, ns1-s1, planeName, strict);
+
+            str.append("::").append(planeName);
+            break;
         }
-        res.set(str);
-        return true;
+        case lfntype_remote:
+        {
+            //Syntax plane::<remote>::<path>
+
+            StringBuffer remoteSvc;
+            normalizeScope(s1, s1, ns1-s1, remoteSvc, strict);
+
+            str.append("::").append(remoteSvc);
+            break;
+        }
     }
 
-    if (startsWithIgnoreCase(name, PLANE_SCOPE "::"))
-    {
-        //Syntax plane::<plane>::<path>
-        lfn.clear();
-        StringBuffer str;
-        const char *s=strstr(name,"::");
-        normalizeScope(name, name, s-name, str, strict);    // "plane"
+    str.toLowerCase();
+    str.append("::");
+    // handle trailing scopes+name
+    StringAttr tail;
+    normalizeName(ns1+2, tail, strict, false); // +2 skipping "::", validated at start
+    // normalizeName sets tailpos relative to ns1+2
+    tailpos += str.length(); // length of <file|plane|remote>::<name>::
+    str.append(tail);
+    res.set(str);
 
-        //find the name of the plane
-        const char *s1 = s+2;
-        const char *ns1 = strstr(s1,"::");
-        if (!ns1)
-            return false;
-
-        StringBuffer planeName;
-        normalizeScope(s1, s1, ns1-s1, planeName, strict);
-
-        Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
-        if (plane->numDevices() == 0)
-            throw makeStringExceptionV(-1, "Scope contains invalid storage plane '%s'", planeName.str());
-            
-        str.append("::").append(planeName);
-        str.append(ns1);
-        str.toLowerCase();
-        res.set(str);
-        return true;
-    }
-
-    if (startsWithIgnoreCase(name, REMOTE_SCOPE "::"))
-    {
-        //Syntax plane::<remote>::<path>
-        lfn.clear();
-        StringBuffer str;
-        const char *s=strstr(name,"::");
-        normalizeScope(name, name, s-name, str, strict);    // "remote"
-
-        //find the name of the remote (service)
-        const char *s1 = s+2;
-        const char *ns1 = strstr(s1,"::");
-        if (!ns1)
-            return false;
-
-        StringBuffer remoteSvc;
-        normalizeScope(s1, s1, ns1-s1, remoteSvc, strict);
-
-        str.append("::").append(remoteSvc);
-        str.append(ns1);
-        str.toLowerCase();
-        res.set(str);
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 void CDfsLogicalFileName::set(const char *name, bool removeForeign)
@@ -910,7 +902,7 @@ void CDfsLogicalFileName::set(const char *name, bool removeForeign)
         external = true;
     else
     {
-        normalizeName(name, lfn, false);
+        normalizeName(name, lfn, false, true);
         if (removeForeign)
         {
             StringAttr _lfn = get(true);

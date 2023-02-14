@@ -153,7 +153,7 @@ public:
     void expand(IUserDescriptor *user);
 
 protected:
-    void normalizeName(const char * name, StringAttr &res, bool strict);
+    void normalizeName(const char * name, StringAttr &res, bool strict, bool nameIsRoot);
     bool normalizeExternal(const char * name, StringAttr &res, bool strict);
 };
 
