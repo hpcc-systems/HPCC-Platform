@@ -419,16 +419,10 @@ static unsigned insideCreate;
 #endif
 
 #ifdef _REPORT_EXPRESSION_LEAKS
-static char activeSource[256];
+static StringBuffer activeSource;
 void setActiveSource(const char * filename)
 {
-    if (filename)
-    {
-        strncpy(activeSource, filename, sizeof(activeSource));
-        activeSource[sizeof(activeSource)-1]= 0;
-    }
-    else
-        activeSource[0] = 0;
+    activeSource.set(filename);
 }
 #else
 void setActiveSource(const char * filename)
@@ -528,7 +522,7 @@ MODULE_EXIT()
             IHqlExpression & ret = iter.query();
         }
 #endif
-        fprintf(stderr, "%s Hash table contains %d entries\n", activeSource, exprCache->count());
+        fprintf(stderr, "%s Hash table contains %d entries\n", activeSource.str(), exprCache->count());
     }
 #endif
 
