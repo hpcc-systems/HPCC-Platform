@@ -108,10 +108,10 @@ export function espTime2SecondsTests() {
 
 export function convertedSize(intsize: number): string {
     const unitConversion = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-    if (intsize === null || intsize === undefined) {
+    if (isNaN(intsize)) {
         return "";
     } else {
-        const x = Math.floor(Math.log(intsize) / Math.log(1024));
+        const x = intsize > 0 ? Math.floor(Math.log(intsize) / Math.log(1024)) : 0;
         return (intsize / Math.pow(1024, x)).toFixed(2) + " " + unitConversion[x];
     }
 }
