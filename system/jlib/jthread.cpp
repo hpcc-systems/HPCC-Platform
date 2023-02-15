@@ -371,6 +371,17 @@ void Thread::init(const char *_name)
     stacksize = 0; // default is EXE default stack size  (set by /STACK)
 }
 
+void Thread::getThreadLoggingInfo()
+{
+    ::getThreadLoggingInfo(logctx, traceFlags);
+}
+
+void Thread::setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags)
+{
+    logctx = _logctx;
+    traceFlags = _traceFlags;
+}
+
 void Thread::start()
 {
     if (alive) {
@@ -382,7 +393,6 @@ void Thread::start()
         return;
     }
     Link();
-    getThreadLoggingInfo(logctx, traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
     startRelease();
 }
 
@@ -562,7 +572,7 @@ void CThreadedPersistent::threadmain()
             break;
         try
         {
-            resetThreadLogging(logctx, traceFlags);
+            resetThreadLogging(athread.logctx, athread.traceFlags);
             owner->threadmain();
             // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
@@ -594,7 +604,6 @@ void CThreadedPersistent::start()
         PrintStackReport();
         throw MakeStringExceptionDirect(-1, msg.str());
     }
-    getThreadLoggingInfo(logctx, traceFlags); // New thread uses context from parent. This may or may not be a good idea by default!
     sem.signal();
 }
 
@@ -674,6 +683,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 {
                     idx = _idx;
                     self = _self;
+                    getThreadLoggingInfo();
                 }
                 int run()
                 {
@@ -726,6 +736,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 {
                     idx = _idx;
                     self = _self;
+                    getThreadLoggingInfo();
                 }
                 int run()
                 {
@@ -805,10 +816,7 @@ class CPooledThreadWrapper;
 class CThreadPoolBase
 {
 public:
-    CThreadPoolBase()
-    {
-        getThreadLoggingInfo(logctx, traceFlags); // Threads in pool use context that was in force when threadpool was created. This may or may not be a good idea by default!
-    }
+    CThreadPoolBase() {}
     virtual ~CThreadPoolBase() {}
 protected: friend class CPooledThreadWrapper;
     IExceptionHandler *exceptionHandler;
@@ -823,7 +831,7 @@ protected: friend class CPooledThreadWrapper;
     unsigned targetpoolsize;
     unsigned delay;
     const IContextLogger *logctx = nullptr;
-    TraceFlags traceFlags = TraceFlags::Standard;
+    TraceFlags traceFlags = queryDefaultTraceFlags();
     Semaphore availsem;
     std::atomic_uint numrunning{0};
     virtual void notifyStarted(CPooledThreadWrapper *item)=0;
@@ -1276,6 +1284,15 @@ public:
             return true;
         }
         return false;
+    }
+    void getThreadLoggingInfo()
+    {
+        ::getThreadLoggingInfo(logctx, traceFlags);
+    }
+    void setThreadLoggingInfo(const IContextLogger *_logctx, TraceFlags _traceFlags)
+    {
+        logctx = _logctx;
+        traceFlags = _traceFlags;
     }
 };
 
