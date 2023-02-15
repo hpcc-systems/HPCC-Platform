@@ -261,6 +261,7 @@ static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
 
 // NOTE - extern thread_local variables are very inefficient - don't be tempted to expose the variables directly
 
+static  TraceFlags defaultTraceFlags = TraceFlags::Standard;
 static thread_local LogMsgJobInfo defaultJobInfo;
 static thread_local TraceFlags threadTraceFlags = TraceFlags::Standard;
 static thread_local const IContextLogger *default_thread_logctx = nullptr;
@@ -3130,16 +3131,10 @@ bool doTrace(TraceFlags featureFlag, TraceFlags level)
     return (threadTraceFlags & featureFlag) == featureFlag;
 }
 
-void setTraceFlag(TraceFlags flag, bool enable)
+void updateTraceFlags(TraceFlags flag, bool global)
 {
-    if (enable)
-        threadTraceFlags |= flag;
-    else
-        threadTraceFlags &= ~flag;
-}
-
-void updateTraceFlags(TraceFlags flag)
-{
+    if (global)
+        defaultTraceFlags = flag;
     threadTraceFlags = flag;
 }
 
@@ -3148,10 +3143,9 @@ TraceFlags queryTraceFlags()
     return threadTraceFlags;
 }
 
-void setTraceLevel(TraceFlags level)
+TraceFlags queryDefaultTraceFlags()
 {
-    threadTraceFlags &= ~TraceFlags::LevelMask;
-    threadTraceFlags |= (level & TraceFlags::LevelMask);
+    return defaultTraceFlags;
 }
 
 LogContextScope::LogContextScope(const IContextLogger *ctx)

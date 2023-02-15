@@ -828,7 +828,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         // Tracing feature flags
         TraceFlags traceLevelFlag = traceLevel ? TraceFlags::Standard : TraceFlags::None;
-        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceLevelFlag | traceRoxieActiveQueries));
+        updateTraceFlags(loadTraceFlags(topology, roxieTraceOptions, traceLevelFlag | traceRoxieActiveQueries), true);
 
         //Logging stuff
 #ifndef _CONTAINERIZED
