@@ -2872,7 +2872,8 @@ public:
         unsigned __int64 stopAfter = readHelper->getChooseNLimit();
 
         Owned<IMessagePacker> output = ROQ->createOutputStream(packet->queryHeader(), false, serializer ? nullptr : meta.queryOriginal(), basefactory->queryId(), logctx);
-        OptimizedRowBuilder rowBuilder(serializer ? rowAllocator : output, meta, output, serializer, serializer==nullptr);
+        IEngineRowAllocator *useAllocator = serializer ? rowAllocator.get() : output.get();   // Windows 2022 compiler seems to need the get() 
+        OptimizedRowBuilder rowBuilder(useAllocator, meta, output, serializer, serializer==nullptr);
 
         unsigned totalSizeSent = 0;
         unsigned skipped = 0;
