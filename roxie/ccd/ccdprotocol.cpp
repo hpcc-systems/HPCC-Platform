@@ -295,7 +295,7 @@ public:
         {
             ssock.setown(secureContext->createSecureSocket(base));
             int loglevel = SSLogMin;
-            if (traceLevel > 1)
+            if (traceLevel > 2)
                 loglevel = SSLogMax;
             int status = ssock->secure_accept(loglevel);
             if (status < 0)
