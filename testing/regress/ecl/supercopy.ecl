@@ -16,10 +16,11 @@
 ############################################################################## */
 
 #onwarning(4523, ignore);
-
-//nothor
-//class=superfile
 //class=spray
+//nothor
+//nohthor
+
+//class=superfile
 //class=copy
 
 import std.system.thorlib;

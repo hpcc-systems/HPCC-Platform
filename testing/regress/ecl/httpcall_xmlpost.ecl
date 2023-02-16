@@ -16,6 +16,9 @@
 ############################################################################## */
 
 //class=spray
+//nothor
+//nohthor
+
 //class=roxieserviceaccess
 //version targetIP='127.0.0.1',goodPort='9876',blacListedPort='9875'
 
