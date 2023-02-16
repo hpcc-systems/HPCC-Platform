@@ -3278,6 +3278,20 @@ WuScopeFilter & WuScopeFilter::addSource(const char * source)
     return *this;
 }
 
+WuScopeFilter & WuScopeFilter::addSource(WuScopeSourceFlags source)
+{
+    checkModifiable();
+    sourceFlags |= source;
+    return *this;
+}
+
+WuScopeFilter & WuScopeFilter::setSources(WuScopeSourceFlags sources)
+{
+    checkModifiable();
+    sourceFlags = sources;
+    return *this;
+}
+
 WuScopeFilter & WuScopeFilter::setDepth(unsigned low, unsigned high)
 {
     checkModifiable();
