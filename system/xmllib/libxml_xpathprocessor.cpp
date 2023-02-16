@@ -1134,6 +1134,15 @@ public:
         return addStringVariable(name, value, getCurrentScope());
     }
 
+    virtual bool checkParameterName(const char * name) override
+    {
+        if (hasVariable(name, nullptr, getCurrentScope()))
+            return true;
+        if (findInput(name))
+            return true;
+        return false;
+    }
+
     virtual bool addXpathVariable(const char * name, const char * xpath) override
     {
         return addXpathVariable(name, xpath, nullptr);

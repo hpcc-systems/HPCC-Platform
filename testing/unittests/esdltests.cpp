@@ -22,6 +22,7 @@
 #include "esdl_script.hpp"
 #include "wsexcept.hpp"
 #include "txsummary.hpp"
+#include "SecureUser.hpp"
 
 #include <stdio.h>
 #include "dllserver.hpp"
@@ -311,6 +312,7 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testTargetElement);
         CPPUNIT_TEST(testStringFunctions);
         CPPUNIT_TEST(testTxSummary);
+        CPPUNIT_TEST(testParamEx);
       //The following require setup, uncomment for development testing for now:
       //CPPUNIT_TEST(testMysql);
       //CPPUNIT_TEST(testCallFunctions); //requires a particular roxie query
@@ -362,6 +364,7 @@ public:
         {
             //printf("starting %s:\n", testname);  //uncomment to help debug
             Owned<IEspContext> ctx = createEspContext(nullptr);
+            ctx->setUser(new CSecureUser("not-real", ""));
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, xml, config);
             scriptContext->setTraceToStdout(true);
             runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname, code);
@@ -1982,6 +1985,34 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         }
         fprintf(stdout, "\nTxSummary-%s-%s) '%s' close enough to '%s'\n", prefix, test, actualText.str(), expectedText);
       }
+    }
+
+    void testParamEx()
+    {
+      static constexpr const char* input = R"!!!(
+        <root>
+          <Request/>
+        </root>
+      )!!!";
+      static constexpr const char* script = R"!!!(
+        <es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Request">
+          <es:param name="espUserStatusString" select="'defaulted'"/>
+          <es:assert test="$espUserStatusString != 'defaulted'" code="'1001'" message="'did not find defined input'"/>
+          <es:source xpath="Request">
+            <es:param name="bar" select="'defaulted'"/>
+            <es:assert test="$bar = 'defaulted'" code="'1002'" message="'did not assign explicit default value'"/>
+          </es:source>
+          <es:source xpath="Request">
+            <es:param name="baz"/>
+            <es:assert test="string-length($baz) = 0" code="'1003'" message="'did not assign implied default value'"/>
+          </es:source>
+          <es:source xpath="Request">
+            <es:param name="bar" failure_code="'1004'" failure_message="'did not find required input'"/>
+          </es:source>
+        </es:CustomRequestTransform>
+      )!!!";
+
+      runTest("param extension", script, input, nullptr, nullptr, 1004);
     }
 
     void testHTTPPostXml()

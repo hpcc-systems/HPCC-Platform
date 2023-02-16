@@ -55,6 +55,7 @@ interface XMLLIB_API IXpathContext : public IInterface
     virtual const char * getVariable(const char * name, StringBuffer & variable) = 0;
     virtual bool addInputXpath(const char * name, const char * xpath) = 0; //values should be declared as parameters before use, "strict parameter mode" requires it
     virtual bool addInputValue(const char * name, const char * value) = 0; //values should be declared as parameters before use, "strict parameter mode" requires it
+    virtual bool checkParameterName(const char * name) = 0;
     virtual bool declareParameter(const char * name, const char *value) = 0;
     virtual bool declareCompiledParameter(const char * name, ICompiledXpath * compiled) = 0;
     virtual void declareRemainingInputs() = 0;
