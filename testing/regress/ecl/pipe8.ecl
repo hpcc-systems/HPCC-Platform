@@ -16,8 +16,12 @@
 ############################################################################## */
 
 import lib_stringlib;
+import std.file;
 import std.str;
 import std.system.thorlib;
+
+dropzonePath := File.GetDefaultDropZone() : STORED('dropzonePath');
+tempPrefix := dropzonePath + IF(dropZonePath[LENGTH(dropzonePath)]='/', '', '/') + 'temp' + WORKUNIT;
 
 nameRecord := RECORD
     STRING name;
@@ -28,25 +32,13 @@ houseRecord := RECORD
     DATASET(nameRecord) names;
 END;
 
-STRING getTempFilename1() := BEGINC++
-#include <stdio.h>
-#body
-    char buffer[TMP_MAX];
-    const char * name = tmpnam(buffer);
-    size32_t len = (size32_t)strlen(name);
-    void * data = rtlMalloc(len);
-    memcpy(data, name, len);
-    __lenResult = len;
-    __result = (char *)data;
-ENDC++;
+STRING getTempFilename1() := tempPrefix + '-' + (string)RANDOM() + '.tmp1_';
+STRING getTempFilename2() := tempPrefix + '-' + (string)RANDOM() + '.tmp2_';
+STRING getTempFilename3() := tempPrefix + '-' + (string)RANDOM() + '.tmp3_';
 
-STRING getTempFilename2() := 'temp' + (string)RANDOM() + '.tmp';
-STRING getTempFilename3() := 'temp' + (string)RANDOM() + '.tmp';
-STRING getTempFilename4() := 'temp' + (string)RANDOM() + '.tmp';
-
-tempname1 := getTempFilename2() : INDEPENDENT;
-tempname2 := getTempFilename3() : INDEPENDENT;
-tempname3 := getTempFilename4() : INDEPENDENT;
+tempname1 := getTempFilename1() : INDEPENDENT;
+tempname2 := getTempFilename2() : INDEPENDENT;
+tempname3 := getTempFilename3() : INDEPENDENT;
 
 tempname1s := tempname1 + thorlib.node();
 tempname2s := tempname2 + thorlib.node();
