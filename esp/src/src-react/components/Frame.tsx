@@ -4,6 +4,7 @@ import { FluentProvider } from "@fluentui/react-components";
 import { select as d3Select } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
 import { useUserTheme } from "../hooks/theme";
+import { useGlobalWorkunitNotes } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { hashHistory } from "../util/history";
 import { router } from "../routes";
@@ -14,6 +15,7 @@ import { userKeyValStore } from "../../src/KeyValStore";
 import { useGlobalStore } from "../hooks/store";
 
 const logger = scopedLogger("../components/Frame.tsx");
+const envLogger = scopedLogger("environment");
 
 interface FrameProps {
 }
@@ -26,6 +28,26 @@ export const Frame: React.FunctionComponent<FrameProps> = () => {
     const { theme, themeV9, isDark } = useUserTheme();
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", false, true);
     const [environmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", "", true);
+
+    const [globalWUNotes] = useGlobalWorkunitNotes();
+
+    React.useEffect(() => {
+        globalWUNotes.forEach(note => {
+            switch (note.Severity) {
+                case "warning":
+                    envLogger.warning(note.Message);
+                    break;
+                case "error":
+                    envLogger.error(note.Message);
+                    break;
+                case "info":
+                default:
+                    envLogger.info(note.Message);
+                    break;
+
+            }
+        });
+    }, [globalWUNotes]);
 
     React.useEffect(() => {
 

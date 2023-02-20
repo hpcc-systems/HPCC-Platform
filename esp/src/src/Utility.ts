@@ -1,5 +1,6 @@
-﻿import { format as d3Format, Palette } from "@hpcc-js/common";
-import { join } from "@hpcc-js/util";
+﻿import { getTheme } from "@fluentui/react";
+import { format as d3Format, Palette } from "@hpcc-js/common";
+import { Level, join } from "@hpcc-js/util";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
@@ -1111,6 +1112,41 @@ export function format(labelTpl, obj) {
         .map(decodeHtml)
         .join("\n")
         ;
+}
+const theme = getTheme();
+const { semanticColors } = theme;
+
+export function logColor(level: Level): { background: string, foreground: string } {
+    const colors = {
+        background: "transparent",
+        foreground: "inherit"
+    };
+
+    switch (level) {
+        case Level.debug:
+            colors.background = semanticColors.successBackground;
+            colors.foreground = semanticColors.successIcon;
+            break;
+        case Level.info:
+        case Level.notice:
+            break;
+        case Level.warning:
+            colors.background = semanticColors.warningBackground;
+            colors.foreground = semanticColors.warningIcon;
+            break;
+        case Level.error:
+            colors.background = semanticColors.errorBackground;
+            colors.foreground = semanticColors.errorIcon;
+            break;
+        case Level.critical:
+        case Level.alert:
+        case Level.emergency:
+            colors.background = semanticColors.severeWarningBackground;
+            colors.foreground = semanticColors.severeWarningIcon;
+            break;
+    }
+
+    return colors;
 }
 
 export function wrapStringWithTag(string, tag = "span") {
