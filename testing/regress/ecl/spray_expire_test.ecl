@@ -15,9 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-//nohthor
-
 //class=spray
+//nohthor
+//nothor
+
 //class=copy
 //class=dfuplus
 
@@ -25,7 +26,8 @@ import Std.File AS FileServices;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-dropzonePath := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
+dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 unsigned VERBOSE := 0;
 

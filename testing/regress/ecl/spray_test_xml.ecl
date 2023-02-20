@@ -15,10 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-//nohthor
-//noroxie
-
 //class=spray
+//nohthor
+//nothor
+
 
 //version xml_header='none',xml_footer='none'
 //version xml_header='none',xml_footer='short'
@@ -36,7 +36,8 @@ import ^ as root;
 
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 espUrl := FileServices.GetEspURL() + '/FileSpray';
 
@@ -77,7 +78,7 @@ allPeople := DATASET([ {'foo', 10, 1},
             ,Layout_Person);
 
 setupXmlPrepFileName := prefix + 'original_xml';
-desprayXmlOutFileName := dropzonePath + prefix + '-desprayed_xml';
+desprayXmlOutFileName := dropzonePath + WORKUNIT + '-desprayed_xml';
 sprayXmlTargetFileName := prefix + 'sprayed_xml';
 dsSetup := DISTRIBUTE(allPeople);
 

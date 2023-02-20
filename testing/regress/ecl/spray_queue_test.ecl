@@ -15,8 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
 //class=spray
+//nothor
+//nohthor
 
 import std.system.thorlib;
 import Std.File AS FileServices;

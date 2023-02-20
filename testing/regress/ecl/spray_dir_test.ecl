@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//class=spray
+
 // The aim of this code is to test the wildcard spray from an empty and a not empty directory
 // and test:
 // 1. No failure if empty directory sprayed with wildcard
@@ -28,10 +30,7 @@
 // operation causes a failure.
 // So, to avoid to abort this code is excluded from Thor target
 //nothor
-
 //nohthor
-//class=spray
-
 
 import std.system.thorlib;
 import Std.File AS FileServices;
@@ -40,7 +39,8 @@ import ^ as root;
 engine := thorlib.platform();
 prefix := '~regress::' + engine + '::' + WORKUNIT + '::';
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 unsigned VERBOSE := 0;
 

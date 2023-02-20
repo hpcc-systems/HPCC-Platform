@@ -23,7 +23,6 @@
 // operation causes a failure.
 // So, to avoid to abort this code is excluded from Thor target
 //nothor
-
 //nohthor
 //class=spray
 
@@ -31,7 +30,8 @@ import $.setup;
 import Std.File AS FileServices;
 
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 prefix := setup.Files(false, false).QueryFilePrefix;
 
 unsigned VERBOSE := 0;
@@ -189,7 +189,7 @@ c6 := CATCH(NOFOLD(p6), ONFAIL(TRANSFORM(rec,
 
 // This should fail based on
 // try to despray out of a drop zone
-DestFile7 := '/var/lib/HPCCSystems/' + File;
+DestFile7 := '/var/lib/HPCCSystems/' + DestFileName;
 dst7 := NOFOLD(DATASET([{SourceFile, DestFile7, SrcAddrIp, True, '', ''}], rec));
 
 p7 := PROJECT(NOFOLD(dst7), t(LEFT));
@@ -211,7 +211,7 @@ c7 := CATCH(NOFOLD(p7), ONFAIL(TRANSFORM(rec,
 
 // This should fail based on
 // not an existing dropzone path used in target file path
-DestFile8 := '/var/lib/HPCCSystems/mydropzone../' + File;
+DestFile8 := '/var/lib/HPCCSystems/mydropzone../' + DestFileName;
 dst8 := NOFOLD(DATASET([{SourceFile, DestFile8, SrcAddrIp, True, '', ''}], rec));
 
 p8 := PROJECT(NOFOLD(dst8), t(LEFT));
@@ -232,7 +232,7 @@ c8 := CATCH(NOFOLD(p8), ONFAIL(TRANSFORM(rec,
 
 
 // This should pass based on valid target file path and valid source address used
-DestFile9 := dropzonePath + 'test/' + prefix + File;
+DestFile9 := dropzonePath + 'test/' + DestFileName;
 dst9 := NOFOLD(DATASET([{SourceFile, DestFile9, SrcAddrIp, True, '', ''}], rec));
 
 p9 := PROJECT(NOFOLD(dst9), t(LEFT));
@@ -274,6 +274,29 @@ c10 := CATCH(NOFOLD(p10), ONFAIL(TRANSFORM(rec,
     o10 := output(c10, {result});
 #end
 
+
+
+// This should pass based on valid relative file path and valid source address used
+DestFile11 := 'test/' + DestFileName;
+dst11 := NOFOLD(DATASET([{SourceFile, DestFile11, SrcAddrIp, True, '', ''}], rec));
+
+p11 := PROJECT(NOFOLD(dst11), t(LEFT));
+
+c11 := CATCH(NOFOLD(p11), ONFAIL(TRANSFORM(rec,
+                                 SELF.result := 'Fail',
+                                 SELF.destFile := DestFile11,
+                                 SELF.sourceFile := SourceFile,
+                                 SELF.ip := SrcAddrIp,
+                                 SELF.allowOverwrite := True,
+                                 SELF.msg := FAILMESSAGE
+                                )));
+#if (VERBOSE = 1)
+    o11 := output(c11);
+#else
+    o11 := output(c11, {result});
+#end
+
+
 SEQUENTIAL(
   setupPeople,
   PARALLEL(
@@ -288,6 +311,7 @@ SEQUENTIAL(
   ),
     // To ensure it running after o9
     o10,
+    o11,
     // Clean-up
     FileServices.DeleteLogicalFile(SourceFile),
     FileServices.DeleteExternalFile('.', DestFile1),
@@ -297,4 +321,5 @@ SEQUENTIAL(
     FileServices.DeleteExternalFile('.', DestFile7),
     FileServices.DeleteExternalFile('.', DestFile8),
     FileServices.DeleteExternalFile('.', DestFile9),
+    FileServices.DeleteExternalFile('.', DestFile11),
 );

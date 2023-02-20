@@ -15,14 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-//noHThor
-
 //class=spray
+//noHThor
+//noThor
 
 import std.system.thorlib;
 import Std.File AS FileServices;
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 espIpPort := 'http://127.0.0.1:8010/FileSpray' : STORED('espIpPort');
 engine := thorlib.platform();
 prefix := '~regress::' + engine + '::' + WORKUNIT + '::';

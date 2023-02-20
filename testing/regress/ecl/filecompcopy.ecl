@@ -16,6 +16,8 @@
 ##############################################################################*/
 
 //class=spray
+//nothor
+//nohthor
 
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;

@@ -15,9 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-//nohthor
-
 //class=spray
+//nohthor
+//nothor
 
 //version sprayFixed=true
 //version sprayFixed=false,sprayEmpty=false
@@ -34,7 +34,8 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 boolean sprayFixed := #IFDEFINED(root.sprayFixed, true);
 boolean sprayEmpty := #IFDEFINED(root.sprayEmpty, false);
 
-dropzonePath := FileServices.GetDefaultDropZone() +'/' : STORED('dropzonePath');
+dropzonePathTemp := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := dropzonePathTemp + IF(dropzonePathTemp[LENGTH(dropzonePathTemp)]='/', '', '/');
 
 unsigned VERBOSE := 0;
 
