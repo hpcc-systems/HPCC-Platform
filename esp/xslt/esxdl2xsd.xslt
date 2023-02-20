@@ -325,20 +325,39 @@
 	</xsd:element>
     </xsl:template>
     <xsl:template match="EsdlRequest">
-        <xsl:variable name="useMethodName" select="/esxdl/EsdlService/@use_method_name='1'"/>
-        <xsd:element>
-            <xsl:attribute name="name">
-                <xsl:choose>
-                    <xsl:when test="$useMethodName"><xsl:value-of select="substring-before(@name, 'Request')"/></xsl:when>
-                    <xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
-                </xsl:choose>
-            </xsl:attribute>
-            <xsd:complexType>
-                <xsd:all>
-                    <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlList|EsdlEnum"/>
-                </xsd:all>
-            </xsd:complexType>
-        </xsd:element>
+        <xsl:choose>
+            <xsl:when test="/esxdl/EsdlService/@use_method_name='1'">
+                <!--
+                    Output an xsd:element of this EsdlRequest structure for each EsdlMethod that
+                    uses this request_type. The name of the xsd:element matches the EsdlMethod/@name.
+                -->
+                <xsl:variable name="curRequest" select="."/>
+                <xsl:for-each select="/esxdl/EsdlService/EsdlMethod[@request_type=$curRequest/@name]">
+                    <xsd:element>
+                        <xsl:attribute name="name">
+                            <xsl:value-of select="@name"/>
+                        </xsl:attribute>
+                        <xsd:complexType>
+                            <xsd:all>
+                                <xsl:apply-templates select="$curRequest/EsdlElement|$curRequest/EsdlArray|$curRequest/EsdlList|$curRequest/EsdlEnum"/>
+                            </xsd:all>
+                        </xsd:complexType>
+                    </xsd:element>
+                </xsl:for-each>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsd:element>
+                    <xsl:attribute name="name">
+                        <xsl:value-of select="@name"/>
+                    </xsl:attribute>
+                    <xsd:complexType>
+                        <xsd:all>
+                            <xsl:apply-templates select="EsdlElement|EsdlArray|EsdlList|EsdlEnum"/>
+                        </xsd:all>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
     <xsl:template match="EsdlResponse">
         <xsd:element>
@@ -362,7 +381,12 @@
             <wsdl:message>
                 <xsl:attribute name="name"><xsl:value-of select="@name"/>SoapIn</xsl:attribute>
                 <wsdl:part name="parameters">
-                    <xsl:attribute name="element">tns:<xsl:value-of select="@name"/><xsl:if test="not($useMethodName)">Request</xsl:if></xsl:attribute>
+                    <xsl:attribute name="element">
+                        <xsl:choose>
+                            <xsl:when test="$useMethodName">tns:<xsl:value-of select="@name"/></xsl:when>
+                            <xsl:otherwise>tns:<xsl:value-of select="@request_type"/></xsl:otherwise>
+                        </xsl:choose>
+                    </xsl:attribute>
                 </wsdl:part>
             </wsdl:message>
             <wsdl:message>
