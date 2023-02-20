@@ -1722,7 +1722,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     localRepositoryManager.processArchive(archiveTree);
 
     if (queryAttributePackage)
-        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage));
+        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, nullptr));
     else
         instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
 
@@ -1811,18 +1811,19 @@ void EclCC::processFile(EclCompileInstance & instance)
 
         //Ensure that this source file is used as the definition (in case there are potential clashes)
         //Note, this will not override standard library files.
+        Owned<IEclSourceCollection> inputFileCollection;
         if (withinRepository)
         {
             //-main only overrides the definition if the query is non-empty.  Otherwise use the existing text.
             if (!optQueryMainAttribute || queryText->length())
             {
-                Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
+                inputFileCollection.setown(createSingleDefinitionEclCollection(attributePath, queryText));
                 localRepositoryManager.addRepository(inputFileCollection, nullptr, true);
             }
         }
         else
         {
-            //Ensure that $ is valid for any file submitted - even if it isn't in the include direcotories
+            //Ensure that $ is valid for any file submitted - even if it isn't in the include directories
             //Disable this for the moment when running the regression suite.
             if (!optBatchMode && !withinRepository && !inputFromStdIn && !optNoSourcePath && !optLegacyImport)
             {
@@ -1836,7 +1837,7 @@ void EclCC::processFile(EclCompileInstance & instance)
                 splitFilename(expandedSourceName, &thisDirectory, &thisDirectory, &thisTail, NULL);
                 attributePath.append(moduleName).append(".").append(thisTail);
 
-                Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
+                inputFileCollection.setown(createSingleDefinitionEclCollection(attributePath, queryText));
                 localRepositoryManager.addRepository(inputFileCollection, nullptr, true);
 
                 Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, ESFnone, 0);
@@ -1847,7 +1848,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         if (attributePackage)
         {
             //If attribute package is specified, resolve that package as the source for the query
-            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, attributePackage));
+            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, attributePackage, inputFileCollection));
         }
         else
         {
@@ -2037,7 +2038,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
     if (!isEmptyString(queryAttributePackage))
     {
-        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage));
+        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, nullptr));
     }
     else
     {
@@ -2047,7 +2048,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
         if (looksLikeGitPackage(searchPath))
         {
-            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, searchPath));
+            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, searchPath, nullptr));
         }
         else
         {
@@ -2862,11 +2863,17 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             const char * arg = tempArg;
             const char * at = strchr(arg, '@');
+            const char * hash = strchr(arg, '#');
             if (at)
             {
                 optQueryMainAttribute.set(arg, at - arg);
                 optQueryMainPackage.set(at+1);
                 optExplicitMainPackage = true;
+            }
+            else if (hash)
+            {
+                optQueryMainAttribute.set(arg, hash - arg);
+                optQueryMainPackageVersion.set(hash+1);
             }
             else
             {
@@ -3090,21 +3097,61 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         optIgnoreSignatures = true;
     }
 
-    // Append the version to the default main package if the main package has no version
-    if (!optQueryMainPackage.isEmpty() && !optQueryMainPackageVersion.isEmpty())
+    // If a default version is explicitly given it takes precedence over the version provided in optDefaultRepo
+    // ensure optDefaultRepo is fully qualified, and optDefaultRepoVersion is consistent
+    if (!optDefaultRepo.isEmpty())
     {
-        if (!strchr(optQueryMainPackage.str(), '#'))
-            optQueryMainPackage.append("#").append(optQueryMainPackageVersion);
+        StringBuffer temp;
+        const char * repo = optDefaultRepo.str();
+        const char * hash = strchr(repo, '#');
+        if (hash)
+        {
+            if (!optDefaultRepoVersion.isEmpty())
+            {
+                //Unusual situation: version provided in default and explicitly, but resolve it consistently
+                //An explicit --defaultrepoversion takes precedence over any default in the repo stringe
+                optDefaultRepo.set(temp.clear().append(hash-repo, repo).append("#").append(optDefaultRepoVersion));
+            }
+            else
+            {
+                //Extract the default version from the version provided to --defaultrepo
+                optDefaultRepoVersion.set(hash+1);
+            }
+        }
+        else if (!optDefaultRepoVersion.isEmpty())
+            optDefaultRepo.set(temp.clear().append(optDefaultRepo).append("#").append(optDefaultRepoVersion));
     }
 
-    if (!optDefaultRepo.isEmpty() && !optDefaultRepoVersion.isEmpty())
-    {
-        if (!strchr(optDefaultRepo.str(), '#'))
-            optDefaultRepo.set(StringBuffer(optDefaultRepo).append("#").append(optDefaultRepoVersion));
-    }
+    // Rules for the repo used if --main has been specified:
+    //   If no repo is specified then use the default repoistory and version
+    //   If repo is specified with no version then use the default repo
+    //   If main repoversion is specified then that takes precedence.
+    // Set up optQueryMainPackage. (optQueryMainPackageVersion does not need to be updated.)
+    if (optQueryMainPackage.isEmpty())
+        optQueryMainPackage.append(optDefaultRepo);
 
-    if (optQueryMainPackage.isEmpty() && !optDefaultRepo.isEmpty())
-        optQueryMainPackage = optDefaultRepo;
+    if (!optQueryMainPackage.isEmpty())
+    {
+        const char * repo = optQueryMainPackage.str();
+        const char * hash = strchr(repo, '#');
+        const char * newVersion = nullptr;
+        if (hash)
+        {
+            //only thing that takes precedence is optQueryMainPackageVersion
+            if (!optQueryMainPackageVersion.isEmpty())
+            {
+                optQueryMainPackage.setLength(hash-repo); // Remove the version - ready for replacing below.
+                newVersion = optQueryMainPackageVersion;
+            }
+        }
+        else if (!optQueryMainPackageVersion.isEmpty())
+            newVersion = optQueryMainPackageVersion.str();
+        else if (!optDefaultRepoVersion.isEmpty())
+            newVersion = optDefaultRepoVersion.str();
+
+        if (newVersion)
+            optQueryMainPackage.append("#").append(newVersion);
+    }
 
     optReleaseAllMemory = optDebugMemLeak || optLeakCheck;
     loadManifestOptions();
