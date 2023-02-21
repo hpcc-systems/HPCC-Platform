@@ -26,7 +26,9 @@
 
 project( ccd ) 
 
-find_package(TBB CONFIG REQUIRED)
+IF (USE_TBBMALLOC AND USE_TBBMALLOC_ROXIE)
+  find_package(TBB CONFIG REQUIRED)
+endif()
 
 set (   SRCS 
         ccdactivities.cpp

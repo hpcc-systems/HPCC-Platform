@@ -23,7 +23,9 @@
 
 project( graph_lcr ) 
 
-find_package(TBB CONFIG REQUIRED)
+if (USE_TBBMALLOC)
+    find_package(TBB CONFIG REQUIRED)
+endif()
 
 set (    SRCS 
          ../thorutil/thbuf.cpp 

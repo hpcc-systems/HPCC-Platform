@@ -5150,6 +5150,7 @@ void rtlStrToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *
     outlen = rtlUtf8Length(outsize, out);
 }
 
+#ifdef _USE_ICU
 #if U_ICU_VERSION_MAJOR_NUM<53
 static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
@@ -5161,7 +5162,6 @@ static int rtlCompareUtf8Utf8ViaUnicode(size32_t llen, const char * left, size32
 }
 #endif
 
-#ifdef _USE_ICU
 int rtlCompareUtf8Utf8(size32_t llen, const char * left, size32_t rlen, const char * right, const char * locale)
 {
 #if U_ICU_VERSION_MAJOR_NUM>=53
