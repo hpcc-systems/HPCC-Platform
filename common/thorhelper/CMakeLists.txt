@@ -25,7 +25,9 @@
 
 project( thorhelper ) 
 
-find_package(TBB CONFIG REQUIRED)
+if (USE_TBB)
+    find_package(TBB CONFIG REQUIRED)
+endif ()
 
 set (    SRCS 
 

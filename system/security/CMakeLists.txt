@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 IF (USE_OPENLDAP)
-HPCC_ADD_SUBDIRECTORY (LdapSecurity)
+  HPCC_ADD_SUBDIRECTORY (LdapSecurity)
 ENDIF(USE_OPENLDAP)
 IF (USE_OPENSSL)
   HPCC_ADD_SUBDIRECTORY (securesocket)
