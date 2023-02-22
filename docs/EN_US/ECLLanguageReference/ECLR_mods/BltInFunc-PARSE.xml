@@ -451,7 +451,7 @@ results := RECORD
   STRING30 RelationPhrase := MatchText(relationtype);
 END;
 outfile1 := PARSE(datafile,line,progeny,results,SCAN ALL);
-</programlisting>
+OUTPUT(outfile1);</programlisting>
   </sect2>
 
   <sect2 id="PARSE_XML_Data">
@@ -530,7 +530,7 @@ outrec t(lineRec L) := TRANSFORM
 END;
 
 textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
-</programlisting>
+OUTPUT(textout);</programlisting>
 
     <para>See Also: <link linkend="DATASET">DATASET</link>, <link
     linkend="OUTPUT">OUTPUT</link>, <link
@@ -600,10 +600,11 @@ outfile :=
 OUTPUT(outfile);
 </programlisting>
 
-    <para>This example parses a small subset of raw movie data (freely
-    available at IMDB.com) into standard database fields:</para>
+    <para>This example parses a small subset of raw movie data into standard
+    database fields:</para>
 
-    <programlisting>Layout_Actors_Raw := RECORD
+    <programlisting>IMPORT Std;
+Layout_Actors_Raw := RECORD
 STRING120 IMDB_Actor_Desc;
 END;
 

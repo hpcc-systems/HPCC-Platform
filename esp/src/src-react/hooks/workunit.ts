@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
-import { Workunit, Result, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
+import { Workunit, Result, WUDetails, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
@@ -21,7 +21,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
     const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean, refresh: (full?: boolean) => Promise<Workunit> }>();
 
     React.useEffect(() => {
-        if (!wuid) {
+        if (wuid === undefined || wuid === null) {
             setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: () => Promise.resolve(undefined) });
             return;
         }
@@ -316,4 +316,22 @@ export function useWorkunitHelpers(wuid: string): [HelperRow[], () => void] {
     }, [counter, workunit, state]);
 
     return [helpers, incCounter];
+}
+
+export function useGlobalWorkunitNotes(): [WUDetails.Note[]] {
+
+    const [notes, setNotes] = React.useState<WUDetails.Note[]>([]);
+
+    React.useEffect(() => {
+        const workunit = Workunit.attach({ baseUrl: "" }, "");
+        const fetchDetails = singletonDebounce(workunit, "fetchDetails");
+        fetchDetails({
+            PropertiesToReturn: { AllNotes: true }
+        }).then(scopes => {
+            setNotes(scopes[0]?.Notes.Note ?? []);
+        }).catch(err => logger.error(err));
+    }, []);
+
+    return [notes];
+
 }

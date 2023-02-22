@@ -17,8 +17,9 @@
   <emphasis>espserverIPport </emphasis> <emphasis role="bold">] </emphasis>
   ,<emphasis role="bold"> [</emphasis> <emphasis>maxConnections</emphasis>
   <emphasis role="bold">] </emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis
-  role="bold">])</emphasis></para>
+  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] </emphasis> ,
+  <emphasis role="bold"> [</emphasis> <emphasis>destinationPlane</emphasis>
+  <emphasis role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fDeSpray<indexterm>
@@ -34,12 +35,13 @@
   <emphasis>espserverIPport </emphasis> <emphasis role="bold">] </emphasis>
   ,<emphasis role="bold"> [</emphasis> <emphasis>maxConnections</emphasis>
   <emphasis role="bold">] </emphasis> ,<emphasis role="bold"> [</emphasis>
-  <emphasis>allowoverwrite</emphasis> <emphasis
-  role="bold">]);</emphasis></para>
+  <emphasis>allowoverwrite</emphasis> <emphasis role="bold">] , [</emphasis>
+  <emphasis>destinationPlane</emphasis> <emphasis
+  role="bold">])</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="105.50pt" />
 
       <colspec />
 
@@ -55,7 +57,8 @@
           <entry><emphasis>destinationIP</emphasis></entry>
 
           <entry>A null-terminated string containing the destination IP
-          address of the file.</entry>
+          address of the file. Deprecated, you should use destinationPlane
+          instead. </entry>
         </row>
 
         <row>
@@ -99,6 +102,16 @@
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           allow the new file to overwrite an existing file of the same name.
           If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>destinationPlane</emphasis></entry>
+
+          <entry>Optional. The destination storage plane. Note:
+          <emphasis>destinationPlane</emphasis> should not be used at the same
+          time as <emphasis>destinationIP</emphasis>. In a containerized
+          deployment, <emphasis>destinationPlane</emphasis> is required if you
+          have more than one Landing Zone.</entry>
         </row>
 
         <row>

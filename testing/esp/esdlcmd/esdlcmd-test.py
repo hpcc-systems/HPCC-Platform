@@ -378,6 +378,18 @@ def main():
         TestCaseXSD(run_settings, 'wsexctest3-xsd-no-exc', 'xsd', 'ws_exc_test_3.ecm', 'WsExcTest3',
                     xsl_base_path, ['--no-exceptions-inline']),
 
+        # use_method_name tests
+
+        # Shows how the name of the method is used as the xsd:element name for the request structure.
+        # One element is created for each method that shares a request structure. Enabled when the
+        # use_method_name option is present on the EsdlService definition.
+        TestCaseXSD(run_settings, 'use-method-name', 'wsdl', 'ws_usemethodname.ecm', 'WsUseMethodName',
+                    xsl_base_path),
+
+        # Shows how the request structure name is used as the xsd:element name for the request structure.
+        # A single element is created for each request structure defined. This is default behavior.
+        TestCaseXSD(run_settings, 'use-request-name', 'wsdl', 'ws_userequestname.ecm', 'WsUseRequestName',
+                    xsl_base_path),
     ]
 
     for case in test_cases:

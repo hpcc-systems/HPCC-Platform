@@ -172,6 +172,11 @@
   function definitions. The delimiter between field definitions in a RECORD
   structure can be either the semi-colon (;) or a comma (,).</para>
 
+  <para>IFBLOCK and alien data types (TYPE) should only be used when accessing
+  external data files. It is much more efficient to use the native types for
+  general processing. In particular, some optimizations to project and filter
+  files remotely are not supported on IFBLOCKs and alien datatypes. </para>
+
   <sect2 id="In-line_Record_Definitions">
     <title>In-line Record Definitions</title>
 

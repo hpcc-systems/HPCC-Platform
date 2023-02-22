@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
-import { format as d3Format } from "@hpcc-js/common";
 import { DFUService, WsDfu } from "@hpcc-js/comms";
+import { format as d3Format } from "@hpcc-js/common";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { formatCost } from "src/Session";
@@ -10,28 +10,28 @@ import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
 import { ShortVerticalDivider } from "./Common";
-import { TableGroup } from "./forms/Groups";
+import { MultiColumnTableGroup, TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
 import { RenameFile } from "./forms/RenameFile";
 import { ReplicateFile } from "./forms/ReplicateFile";
 import { replaceUrl } from "../util/history";
 
-const logger = scopedLogger("src-react/components/LogicalFileSummary.tsx");
+const logger = scopedLogger("src-react/components/IndexFileSummary.tsx");
 
 import "react-reflex/styles.css";
 
+const format = d3Format(",.2f");
+
 const dfuService = new DFUService({ baseUrl: "" });
 
-interface LogicalFileSummaryProps {
+interface IndexFileSummaryProps {
     cluster?: string;
     logicalFile: string;
     tab?: string;
 }
 
-const formatInt = d3Format(",");
-
-export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps> = ({
+export const IndexFileSummary: React.FunctionComponent<IndexFileSummaryProps> = ({
     cluster,
     logicalFile,
     tab = "summary"
@@ -113,7 +113,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                     FileDesc: description,
                     Protect: _protected ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
                     Restrict: restricted ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
-                });
+                }).catch(err => logger.error(err));
             }
         },
         {
@@ -172,10 +172,10 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
                 "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
+                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
                 "Format": { label: nlsHPCC.Format, type: "string", value: file?.Format, readonly: true },
                 "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
-                "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? formatInt(file?.CompressedFileSize) : "", readonly: true },
-                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
+                "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? file?.CompressedFileSize.toString() : "", readonly: true },
                 "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
                 "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
                 "ExpirationDate": { label: nlsHPCC.ExpirationDate, type: "string", value: file?.ExpirationDate, readonly: true },
@@ -186,8 +186,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "RecordCount": { label: nlsHPCC.RecordCount, type: "string", value: file?.RecordCount, readonly: true },
                 "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: (file?.filePartsOnCluster() ?? []).length > 0, readonly: true },
                 "NumParts": { label: nlsHPCC.FileParts, type: "number", value: file?.NumParts, readonly: true },
-                "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: `${Utility.formatDecimal(file?.Stat?.MinSkewInt64 / 100 ?? "0")}%`, readonly: true },
-                "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: `${Utility.formatDecimal(file?.Stat?.MaxSkewInt64 / 100 ?? "0")}%`, readonly: true },
+                "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: file?.Stat?.MinSkew, readonly: true },
+                "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: file?.Stat?.MaxSkew, readonly: true },
                 "MinSkewPart": { label: nlsHPCC.MinSkewPart, type: "string", value: file?.Stat?.MinSkewPart === undefined ? "" : file?.Stat?.MinSkewPart?.toString(), readonly: true },
                 "MaxSkewPart": { label: nlsHPCC.MaxSkewPart, type: "string", value: file?.Stat?.MaxSkewPart === undefined ? "" : file?.Stat?.MaxSkewPart?.toString(), readonly: true },
             }} onChange={(id, value) => {
@@ -203,6 +203,60 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                         break;
                 }
             }} />
+
+            <MultiColumnTableGroup
+                label="Details"
+                columns={[nlsHPCC.NumberOfNodes, nlsHPCC.SizeOnDisk, nlsHPCC.SizeEstimateInMemory]}
+                rows={[
+                    {
+                        label: nlsHPCC.Branches,
+                        numberOfNodes: file?.ExtendedIndexInfo?.NumBranchNodes ?? "",
+                        sizeOnDisk: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeDiskBranches) ?? "",
+                        sizeEstimateInMemory: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeMemoryBranches) ?? ""
+                    },
+                    {
+                        label: nlsHPCC.Leaves,
+                        numberOfNodes: file?.ExtendedIndexInfo?.NumLeafNodes ?? "",
+                        sizeOnDisk: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeDiskLeaves) ?? "",
+                        sizeEstimateInMemory: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeMemoryLeaves) ?? ""
+                    },
+                    {
+                        label: nlsHPCC.Blobs,
+                        numberOfNodes: file?.ExtendedIndexInfo?.NumBlobNodes ? file.ExtendedIndexInfo.NumBlobNodes : "",
+                        sizeOnDisk: file?.ExtendedIndexInfo?.SizeDiskBlobs ? Utility.convertedSize(file.ExtendedIndexInfo.SizeDiskBlobs) : "",
+                        sizeEstimateInMemory: ""
+                    }
+                ]}
+            />
+
+            <MultiColumnTableGroup
+                label="Compression"
+                columns={[nlsHPCC.OriginalSize, nlsHPCC.SizeOnDisk, nlsHPCC.PercentCompression, nlsHPCC.MemorySize]}
+                rows={[
+                    {
+                        label: nlsHPCC.File,
+                        originalSize: Utility.convertedSize(file?.FileSizeInt64),
+                        diskSize: Utility.convertedSize(file?.CompressedFileSize || file?.FileSizeInt64),
+                        percentCompressed: ((file?.CompressedFileSize && file?.FileSizeInt64) ? format(100 * file?.CompressedFileSize / file?.FileSizeInt64) : 0) + "%",
+                        memorySize: (file?.ExtendedIndexInfo?.SizeMemoryBranches && file?.ExtendedIndexInfo?.SizeMemoryLeaves) ? Utility.convertedSize(file?.ExtendedIndexInfo?.SizeMemoryBranches + file?.ExtendedIndexInfo?.SizeMemoryLeaves) : ""
+                    },
+                    {
+                        label: nlsHPCC.Branches,
+                        originalSize: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeOriginalBranches) ?? "",
+                        diskSize: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeDiskBranches) ?? "",
+                        percentCompressed: file?.ExtendedIndexInfo?.BranchCompressionPercent ? format(file.ExtendedIndexInfo.BranchCompressionPercent) + "%" : "",
+                        memorySize: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeMemoryBranches) ?? ""
+                    },
+                    {
+                        label: nlsHPCC.Data,
+                        originalSize: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeOriginalData) ?? "",
+                        diskSize: (file?.ExtendedIndexInfo?.SizeDiskLeaves !== undefined && file?.ExtendedIndexInfo?.SizeDiskBlobs !== undefined) ? Utility.convertedSize(file?.ExtendedIndexInfo?.SizeDiskLeaves + file?.ExtendedIndexInfo?.SizeDiskBlobs) : "",
+                        percentCompressed: file?.ExtendedIndexInfo?.DataCompressionPercent ? format(file.ExtendedIndexInfo.DataCompressionPercent) + "%" : "",
+                        memorySize: Utility.convertedSize(file?.ExtendedIndexInfo?.SizeMemoryLeaves) ?? ""
+                    }
+                ]}
+            />
+
         </ScrollablePane>
         <CopyFile logicalFiles={[logicalFile]} showForm={showCopyFile} setShowForm={setShowCopyFile} />
         <DesprayFile logicalFiles={[logicalFile]} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
