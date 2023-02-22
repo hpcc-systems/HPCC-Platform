@@ -114,17 +114,14 @@ interface IPropertyTree;
 
 extern jlib_decl bool doTrace(TraceFlags featureFlag, TraceFlags level=TraceFlags::Standard);
 
-// Overwrites current trace flags for active thread (and any it creates)
-extern jlib_decl void updateTraceFlags(TraceFlags flag);
-
-// Set a single trace flags for the active thread (and any it creates)
-extern jlib_decl void setTraceFlag(TraceFlags flag, bool enable);
-
-// Set the trace detail level for the active thread (and any it creates)
-extern jlib_decl void setTraceLevel(TraceFlags level);
+// Overwrites current trace flags for active thread (and optionally the global default for new threads)
+extern jlib_decl void updateTraceFlags(TraceFlags flag, bool global = false);
 
 // Retrieve current trace flags for the active thread
 extern jlib_decl TraceFlags queryTraceFlags();
+
+// Retrieve default trace flags for new threads
+extern jlib_decl TraceFlags queryDefaultTraceFlags();
 
 // Load trace flags from a property tree - typically the global config
 // See also the workunit-variant in workunit.hpp
