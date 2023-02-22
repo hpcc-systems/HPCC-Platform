@@ -86,7 +86,7 @@ data:
 
 
 {{- $authtype := .auth | default "none" -}}
-{{- $noAuthSecretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
+{{- $noAuthSecretsCategories := ternary (list "system" "storage" "esp" "codeSign" "codeVerify")  (list "system" "storage" "esp") (eq $application "eclwatch") -}}
 {{- $secretsCategories := ternary (append $noAuthSecretsCategories "authn") $noAuthSecretsCategories  (eq $authtype "ldap") -}}
 {{- $includeStorageCategories := ternary (list "lz" "data" "dll" "debug") (list "data" "dll" "debug") (eq $application "eclwatch") -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeCategories" $includeStorageCategories "env" $env -}}
