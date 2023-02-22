@@ -86,6 +86,11 @@
 # endif
 #endif
 
+// OSX seems to use TCP_KEEPALIVE instead of TCP_KEEPIDLE
+#if defined(__APPLE__) && !defined(TCP_KEEPIDLE)
+# define TCP_KEEPIDLE TCP_KEEPAVLIVE
+#endif
+
 // various options 
 
 #define CONNECT_TIMEOUT_REFUSED_WAIT    1000        // maximum to sleep on connect_timeout
@@ -1193,7 +1198,7 @@ void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
     if (time >= 0)
     {
         optval = time;
-        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &optval, optlen);
+        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, (char *)&optval, optlen);
         if (srtn != 0)
             OWARNLOG("KeepAlive time not set");
     }
@@ -1201,7 +1206,7 @@ void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
     if (intvl >= 0)
     {
         optval = intvl;
-        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &optval, optlen);
+        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, (char *)&optval, optlen);
         if (srtn != 0)
             OWARNLOG("KeepAlive probes not set");
     }
@@ -1209,7 +1214,7 @@ void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
     if (probes >= 0)
     {
         optval = probes;
-        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &optval, optlen);
+        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, (char *)&optval, optlen);
         if (srtn != 0)
             OWARNLOG("KeepAlive probes not set");
     }
