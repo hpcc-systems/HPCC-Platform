@@ -124,6 +124,41 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'«'</programlisting>
     VARSTRING.</para>
 
     <programlisting>MyQString := Q'ABCD'; // same as: (QSTRING)'ABCD'</programlisting>
+
+    <sect3>
+      <title>Multiline Strings</title>
+
+      <para>A multiline string begins and ends with three single quotes
+      (''').</para>
+
+      <para>Any quotes, tabs, or newlines in between the triple quotes are
+      part of the string. While you can use the \ escape character inside a
+      multiline string, escaping is not necessary (except for the \
+      character). The \ character at the end of a line in a multiline string
+      removes the end of line and joins the two lines together. </para>
+
+      <para><emphasis role="bold">Examples:</emphasis></para>
+
+      <programlisting>'Single\n quotes'; 
+u'Can\'t be multiline and must escape embedded single quotes'; 
+u8'€'; 
+v'Can use various prefixes'; 
+d'7172737475'; 
+Q'ABCDE'; 
+
+'''Triple 
+quotes can have embedded newlines, but also \
+support \n escape sequence'''; 
+'''Single quotes inside a multiline string don't need escaping''';
+u'''Unicode triple quotes 
+should be the same, and also  \
+support \n escape sequence'''; 
+u'''Don't have to be multiline and need not escape embedded quotes (but \'can' if they want)'''; 
+u8'''€'''; 
+v'''Can use same prefixes as single'''; 
+d'''7172737475'''; 
+Q'''ABCDE''';</programlisting>
+    </sect3>
   </sect2>
 
   <sect2 id="Numeric">

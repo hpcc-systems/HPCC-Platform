@@ -368,6 +368,73 @@ enum SOCKETMODE { sm_tcp_server, sm_tcp, sm_udp_server, sm_udp, sm_multicast_ser
 # endif
 #endif
 
+static CriticalSection queryKACS;
+
+enum UseKA { UNINIT, DISABLED, ENABLED };
+static std::atomic<UseKA> doKeepAlive { UNINIT };
+static int keepAliveTime = -1;
+static int keepAliveInterval = -1;
+static int keepAliveProbes = -1;
+
+/*
+<Software>
+  <Globals>
+    <keepalive time="200" interval="75" probes="9"/>
+  </Globals>
+
+global:
+  expert:
+    keepalive:
+      time: 200
+      interval: 75
+      probes: 9
+*/
+
+static bool queryKeepAlive(int &time, int &intvl, int &probes)
+{
+    UseKA state = doKeepAlive.load();
+    if (state == UNINIT)
+    {
+        CriticalBlock block(queryKACS);
+        state = doKeepAlive.load();
+        if (state == UNINIT)
+        {
+#ifdef _CONTAINERIZED
+            Owned<IPropertyTree> expert = getGlobalConfigSP()->getPropTree("expert");
+#else
+            // MCK - without this many components will not have a global prop
+            IPropertyTree *expert = nullptr;
+            Owned<IPropertyTree> envtree = getHPCCEnvironment();
+            if (envtree)
+                expert = envtree->queryPropTree("Software/Globals");
+#endif
+            state = DISABLED;
+            if (expert)
+            {
+                IPropertyTree *keepalive = expert->queryPropTree("keepalive");
+                if (keepalive)
+                {
+                    keepAliveTime = keepalive->getPropInt("@time", keepAliveTime);
+                    keepAliveInterval = keepalive->getPropInt("@interval", keepAliveInterval);
+                    keepAliveProbes = keepalive->getPropInt("@probes", keepAliveProbes);
+                    state = ENABLED;
+                }
+            }
+            doKeepAlive = state;
+        }
+    }
+
+    if (state == ENABLED)
+    {
+        time = keepAliveTime;
+        intvl = keepAliveInterval;
+        probes = keepAliveProbes;
+        return true;
+    }
+    else
+        return false;
+}
+
 class CSocket: public ISocket, public CInterface
 {
 public:
@@ -505,6 +572,10 @@ private:
         else
             return 0;
     }
+
+    void checkCfgKeepAlive();
+    void setKeepAlive(bool set, int time, int intval, int probes);
+
 };
 
 CriticalSection CSocket::crit;
@@ -884,6 +955,9 @@ int CSocket::pre_connect (bool block)
         int err = SOCKETERRNO();
         THROWJSOCKEXCEPTION(err);
     }
+
+    checkCfgKeepAlive();
+
     STATS.activesockets++;
     int err = 0;
     set_nonblock(!block);
@@ -946,6 +1020,9 @@ void CSocket::open(int listen_queue_size,bool reuseports)
     if (sock == INVALID_SOCKET) {
         THROWJSOCKEXCEPTION(SOCKETERRNO());
     }
+
+    checkCfgKeepAlive();
+
     STATS.activesockets++;
 
 #ifdef SOCKTRACE
@@ -1098,12 +1175,56 @@ void CSocket::set_linger(int lingertime)
     }
 }
 
-void CSocket::set_keep_alive(bool set)
+void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
 {
     int on=set?1:0;
-    if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&on, sizeof(on)) != 0) {
-        IWARNLOG("KeepAlive not set");
+    if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&on, sizeof(on)) != 0)
+    {
+        OWARNLOG("KeepAlive not set");
+        return;
     }
+
+    if (!on)
+        return;
+
+    int srtn, optval;
+    socklen_t optlen = sizeof(optval);
+
+    if (time >= 0)
+    {
+        optval = time;
+        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &optval, optlen);
+        if (srtn != 0)
+            OWARNLOG("KeepAlive time not set");
+    }
+
+    if (intvl >= 0)
+    {
+        optval = intvl;
+        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &optval, optlen);
+        if (srtn != 0)
+            OWARNLOG("KeepAlive probes not set");
+    }
+
+    if (probes >= 0)
+    {
+        optval = probes;
+        srtn = setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &optval, optlen);
+        if (srtn != 0)
+            OWARNLOG("KeepAlive probes not set");
+    }
+}
+
+void CSocket::checkCfgKeepAlive()
+{
+    int time, intvl, probes;
+    if (queryKeepAlive(time, intvl, probes))
+        setKeepAlive(true, time, intvl, probes);
+}
+
+void CSocket::set_keep_alive(bool set)
+{
+    setKeepAlive(set, -1, -1, -1);
 }
 
 
