@@ -8793,7 +8793,16 @@ public:
     }
 };
 
-static Owned<CConfigUpdater> configFileUpdater;
+static CConfigUpdater *configFileUpdater = nullptr;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+
+MODULE_EXIT()
+{
+    ::Release(configFileUpdater);
+}
 
 unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
 {
@@ -9036,7 +9045,7 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
 
 #if defined(__linux__)
     if (monitor)
-        configFileUpdater.setown(new CConfigUpdater(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute));
+        configFileUpdater = new CConfigUpdater(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
 #endif
     return componentConfiguration.getLink();
 }
