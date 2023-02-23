@@ -3,6 +3,8 @@ build-*/
 node_modules/
 vcpkg_installed/
 externals/
+devdoc/.vitepress/cache/
+devdoc/.vitepress/dist/
 .project
 .svn/
 ln/

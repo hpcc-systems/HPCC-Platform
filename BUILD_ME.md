@@ -58,7 +58,9 @@ Build the platform with the following additional CMake options:
 
 Regardless of which version of CentOS you will be building on, it is suggested that you enable the EPEL repository 
 
-```sudo yum install -y epel-release```
+```bash
+sudo yum install -y epel-release
+```
 
 #### CentOS 7:
 
@@ -180,7 +182,8 @@ sudo R CMD INSTALL Rcpp_0.12.1.tar.gz RInside_0.2.12.tar.gz inline_0.3.14.tar.gz
 Visit [Git-step-by-step](https://github.com/hpcc-systems/HPCC-Platform/wiki/Git-step-by-step) for full instructions.
 
 To get started quickly, simply:
-```
+
+```bash
 git clone [-b <branch name>] --recurse-submodules https://github.com/hpcc-systems/HPCC-Platform.git
 ```
 
@@ -203,8 +206,10 @@ For release builds, do:
     cmake ../src
 
 To enable a specific plugin in the build:
+```bash
     cmake –D<Plugin Name>=ON ../src 
     make –j6 package
+```
 
 These are the current supported plugins: 
 * CASSANDRAEMBED
