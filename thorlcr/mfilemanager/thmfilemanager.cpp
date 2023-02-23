@@ -584,7 +584,6 @@ public:
             fileMap.replace(*new CIDistributeFileMapping(logicalName, *LINK(file))); // cache takes ownership
             return;
         }
-        file->setAccessed();
         offset_t fs = file->getDiskSize(false, false);
         if (publishedFile)
             publishedFile->set(file);

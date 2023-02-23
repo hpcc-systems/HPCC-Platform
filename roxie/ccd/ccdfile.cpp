@@ -3685,7 +3685,6 @@ private:
                 activity->setFileProperties(desc);
 
             Owned<IDistributedFile> publishFile = queryDistributedFileDirectory().createNew(desc); // MORE - we'll create this earlier if we change the locking paradigm
-            publishFile->setAccessedTime(modifiedTime);
             IUserDescriptor * userdesc = NULL;
             if (activity)
                 userdesc = activity->queryUserDescriptor();

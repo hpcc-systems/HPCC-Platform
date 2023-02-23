@@ -762,8 +762,6 @@ void CHThorDiskWriteActivity::publish()
     if (!logicalName.isExternal()) // no need to publish externals
     {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
-        if(file->getModificationTime(modifiedTime))
-            file->setAccessedTime(modifiedTime);
         if ((helper.getFlags() & TDXtemporary) == 0)
         {
             StringBuffer clusterName;

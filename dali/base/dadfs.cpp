@@ -4249,6 +4249,7 @@ public:
             setClusters(fdesc);
             setParts(fdesc,false);
             setUserDescriptor(udesc, user);
+            setAccessed();
 #ifdef EXTRA_LOGGING
             LOGFDESC("CDistributedFile::attach fdesc",fdesc);
             LOGPTREE("CDistributedFile::attach root.2",root);
