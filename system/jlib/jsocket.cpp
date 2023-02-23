@@ -88,7 +88,7 @@
 
 // OSX seems to use TCP_KEEPALIVE instead of TCP_KEEPIDLE
 #if defined(__APPLE__) && !defined(TCP_KEEPIDLE)
-# define TCP_KEEPIDLE TCP_KEEPAVLIVE
+# define TCP_KEEPIDLE TCP_KEEPALIVE
 #endif
 
 // various options 
