@@ -47,7 +47,6 @@ extern HIDLcompiler * hcp;
 bool isSCM = true;
 bool isESP = false;
 bool isESPng = false;
-StrBuffer clarion;
 char srcFileExt[4];
 
 int gOutfile;
@@ -114,30 +113,6 @@ const char *type_name[] =
     "??" // ESPENUM
 };
 
-const char *clarion_type_name[] =
-{
-    "??",
-    "BYTE",
-    "BYTE",
-    "BYTE",
-    "CBOOL",
-    "SHORT",
-    "USHORT",
-    "LONG",
-    "ULONG",
-    "LONG",
-    "ULONG",
-    "LONGLONG",
-    "ULONGLONG",
-    "REAL",
-    "SREAL",
-    "",
-    "",
-    "BYTE",
-    "??",
-    "??"
-};
-
 const int type_size[] =
 {
     0,  // tk_null
@@ -161,105 +136,6 @@ const int type_size[] =
     1,  // ESP_STRUCT
     1   // ESP_ENUM
 };
-
-static const char *xlattable[] =
-{
-    "abs","_abs",
-    "add","_add",
-    "address","_address",
-    "age","_age",
-    "any","_any",
-    "append","_append",
-    "at","_at",
-    "band","_band",
-    "bfloat4","_bfloat4",
-    "bfloat8","_bfloat8",
-    "binary","_binary",
-    "bind","_bind",
-    "blob","_blob",
-    "bor","_bor",
-    "bshift","_bshift",
-    "bxor","_bxor",
-    "byte","_byte",
-    "chr","_chr",
-    "clear","_clear",
-    "column","_column",
-    "create","_create",
-    "decimal","_decimal",
-    "deformat","_deformat",
-    "device","_device",
-    "dim","_dim",
-    "dispose","_dispose",
-    "dock","_dock",
-    "docked","_docked",
-    "dup","_dup",
-    "encrypt","_encrypt",
-    "entry","_entry",
-    "equate","_equate",
-    "errorcode","_errorcode",
-    "format","_format",
-    "get","_get",
-    "hlp","_hlp",
-    "icon","_icon",
-    "imm","_imm",
-    "in","_in",
-    "index","_index",
-    "inlist","_inlist",
-    "inrange","_inrange",
-    "ins","_ins",
-    "int","_int",
-    "key","_key",
-    "length","_length",
-    "like","_like",
-    "logout","_logout",
-    "long","_long",
-    "maximum","_maximum",
-    "memo","_memo",
-    "nocase","_nocase",
-    "omitted","_omitted",
-    "opt","_opt",
-    "out","_out",
-    "over","_over",
-    "ovr","_ovr",
-    "owner","_owner",
-    "page","_page",
-    "pageno","_pageno",
-    "pdecimal","_pdecimal",
-    "peek","_peek",
-    "poke","_poke",
-    "pre","_pre",
-    "press","_press",
-    "print","_print",
-    "project","_project",
-    "put","_put",
-    "range","_range",
-    "real","_real",
-    "reclaim","_reclaim",
-    "req","_req",
-    "round","_round",
-    "scroll","_scroll",
-    "short","_short",
-    "size","_size",
-    "sort","_sort",
-    "step","_step",
-    "string","_string",
-    "text","_text",
-    "upr","_upr",
-    "use","_use",
-    "val","_val",
-    "width","_width",
-    NULL,NULL
-};
-
-
-static const char *xlat(const char *from)
-{
-    for (unsigned i=0;xlattable[i];i+=2) {
-        if (stricmp(from,xlattable[i])==0)
-            return xlattable[i+1];
-    }
-    return from;
-}
 
 
 bool toClaInterface(char * dest, const char * src)
@@ -562,23 +438,8 @@ void ParamInfo::cat_type(char *s,int deref,int var)
     }
 }
 
-clarion_special_type_enum ParamInfo::clarion_special_type()
+void ParamInfo::out_parameter(const char * pfx)
 {
-    if ((type_size[kind]==1)&&((flags&(PF_PTR|PF_REF))==PF_PTR)) {
-        if ((flags&PF_CONST)==0)
-            return cte_cstr;
-        return cte_constcstr;
-    }
-    else if ((flags&(PF_PTR|PF_REF))==(PF_PTR|PF_REF)) { // no support - convert to long
-        return cte_longref;
-    }
-    return cte_normal;
-}
-
-void ParamInfo::out_parameter(const char * pfx, int forclarion)
-{
-    if (forclarion && (clarion_special_type()==cte_cstr))
-        outs("int, ");
     out_type();
     outf(" %s%s",pfx,name);
 }
@@ -655,64 +516,6 @@ void ParamInfo::write_body_struct_elem(int ref)
     outf(" %s;\n",name);
 }
 
-void ParamInfo::out_clarion_parameter()
-{
-    out_clarion_type(false);
-    if(!typname || strcmp(typname, "__int64") != 0) outs(" ");
-    if (clarion_special_type()==cte_longref)
-        outs("REF_");
-    if (name)
-        outs(name);
-    else
-        outs("???");
-
-}
-
-void ParamInfo::out_clarion_type(bool ret)
-{
-    clarion_special_type_enum cte = clarion_special_type();
-    bool isInt64 = (typname && strcmp(typname, "__int64") == 0);
-
-
-    if (!isInt64 && ((flags&PF_REF)||((flags&PF_PTR)&&(cte==cte_normal)))) {
-        outs("*");
-    }
-    if (cte==cte_longref) {
-        outs("LONG");
-    }
-    else if (cte==cte_cstr) {
-        outs("*CSTRING");
-    }
-    else if (cte==cte_constcstr) {
-        if (ret)
-            outs("*CSTRING");
-        else
-            outs("CONST *CSTRING");
-    }
-    else if (typname) {
-        static char _typname[256];
-        if(isInt64) {
-            if(ret) {
-                strcpy(_typname, "__int64");        // __int64 return type unsupported defaulting to ulong for now.
-            }
-            else if((flags & PF_REF) || (flags & PF_PTR)) {
-                strcpy(_typname, "LONG ");
-            }
-            else {
-                strcpy(_typname, "LONG hi");
-                strcat(_typname, name);
-                strcat(_typname, ", LONG lo");
-            }
-        }
-        else if(!toClaInterface(_typname, typname)){
-            xlat(_typname);
-        }
-        outs(_typname);
-    }
-    else {
-        outs(clarion_type_name[kind]);
-    }
-}
 
 void ParamInfo::write_param_convert(int deref)
 {
@@ -1762,132 +1565,6 @@ void ParamInfo::write_esp_param()
     }
 }
 
-void ParamInfo::write_clarion_attr_method(bool isSet)
-{
-    ParamInfo *savenext = next;
-    char metatype[256]={0};
-    esp_xlate_info *xlation = NULL;
-    if (isESP && kind==TK_null)
-    {
-        xlation=esp_xlat(xsdtype);
-
-        if (xlation)
-        {
-            kind = xlation->access_kind;
-            flags |= xlation->access_flags;
-            cat_type(metatype);
-        }
-    }
-    else
-    {
-        cat_type(metatype);
-        xlation=esp_xlat(metatype);
-    }
-
-    char methName[256]={0};
-
-    const char *httpcont = getMetaString("http_content", NULL);
-
-    if (httpcont!=NULL)
-    {
-        ParamInfo strparm;
-        strparm.name = strdup("mimetype");
-        strparm.typname = strdup("const char *");
-        if (isSet)
-        {
-            ProcInfo setProc;
-
-            sprintf(methName, "set%s_mimetype", name);
-            methName[3]=upperchar(methName[3]);
-
-            setProc.name = strdup(methName);
-            setProc.params = &strparm;
-            setProc.out_clarion_method();
-            setProc.params = 0;
-
-        }
-        else
-        {
-            ProcInfo setProc;
-
-            sprintf(methName, "get%s_mimetype", name);
-            methName[3]=upperchar(methName[3]);
-
-            setProc.name = strdup(methName);
-            setProc.rettype = &strparm;
-            setProc.out_clarion_method();
-            setProc.rettype = 0;
-        }
-    }
-
-    ParamInfo lenparm;
-    lenparm.typname = strdup("unsigned int");
-    lenparm.name = strdup("len");
-
-    if (isSet)
-    {
-        ProcInfo setProc;
-        sprintf(methName, "set%s", name);
-        methName[3]=upperchar(methName[3]);
-
-        setProc.name = strdup(methName);
-
-        next = 0;
-        setProc.params = this;
-
-        switch (xlation->eam_type)
-        {
-        case EAM_jmbuf:
-            {
-                next = &lenparm;
-                setProc.out_clarion_method();
-                next=0;
-                break;
-            }
-        case EAM_jmbin:
-        case EAM_basic:
-        case EAM_jsbuf:
-        default:
-            setProc.out_clarion_method();
-            break;
-        }
-
-        setProc.params = 0;
-    }
-    else
-    {
-        ProcInfo getProc;
-        sprintf(methName, "get%s", name);
-        methName[3]=upperchar(methName[3]);
-
-        getProc.name = strdup(methName);
-
-        switch (xlation->eam_type)
-        {
-        case EAM_jmbuf:
-            {
-                next = 0;
-                getProc.params = this;
-                outf("void get%s(%s val, unsigned int len)", methName, xlation->access_type);
-                next = &lenparm;
-                getProc.out_clarion_method();
-                break;
-            }
-        case EAM_jmbin:
-        case EAM_basic:
-        case EAM_jsbuf:
-        default:
-            getProc.rettype = this;
-            getProc.out_clarion_method();
-            break;
-        }
-        getProc.params=0;
-        getProc.rettype=0;
-    }
-
-    next=savenext;
-}
-
 bool ParamInfo::write_mapinfo_check(int indents, const char* ctxvar)
 {
     StrBuffer minVer, maxVer, deprVer;
@@ -2116,34 +1793,6 @@ ProcInfo::~ProcInfo()
     delete next;
 }
 
-void ProcInfo::out_clarion_parameter_list()
-{
-    outs("(");
-    ParamInfo * p=params;
-    while (p) {
-        p->out_clarion_parameter();
-        p = p->next;
-        if (p)
-            outs(", ");
-    }
-    outs(")");
-}
-
-void ProcInfo::out_clarion_method()
-{
-    outf("%-15s  PROCEDURE",xlat(name));
-    out_clarion_parameter_list();
-    if (rettype)
-    {
-        outs(",");
-        rettype->out_clarion_type(true);
-    }
-    if (isSCM)
-        outs(",PROC\n");
-    else
-        outs(",PASCAL\n");
-}
-
 
 void ProcInfo::out_method(const char *classpfx, int omitvirt)
 {
@@ -2184,13 +1833,13 @@ void ProcInfo::out_method(const char *classpfx, int omitvirt)
     }
 }
 
-void ProcInfo::out_parameter_list(const char *pfx,int forclarion)
+void ProcInfo::out_parameter_list(const char *pfx)
 {
     outs("(");
     ParamInfo * p = params;
     while (p)
     {
-        p->out_parameter(pfx, forclarion);
+        p->out_parameter(pfx);
         p = p->next;
         if (p)
             outs(", ");
@@ -2562,33 +2211,6 @@ void ApiInfo::write_header_method()
     }
 }
 
-void ApiInfo::write_clarion_include_method()
-{
-    ProcInfo *pi = proc;
-    if (!pi->callback)
-    {
-        outf("      %s ",xlat(pi->name));
-        pi->out_clarion_parameter_list();
-
-        if (pi->rettype)
-        {
-            outs(",");
-            pi->rettype->out_clarion_type(true);
-        }
-
-        ParamInfo *pa;
-        unsigned sizeOfParms=0;
-        ForEachParam(pi, pa, 0, 0)
-        {
-            if (pa->flags&(PF_PTR|PF_REF))
-                sizeOfParms+=4;
-            else
-                sizeOfParms+=type_size[pa->kind];
-        }
-
-        outf(", pascal, raw, name('_%s@%d')\n", pi->name,sizeOfParms);
-    }
-}
 
 //-------------------------------------------------------------------------------------------------------------
 // class ModuleInfo
@@ -2749,170 +2371,6 @@ void ModuleInfo::write_body_class_stub(int cb)
     }
     outs("}\n\n");
 }
-
-void ModuleInfo::write_clarion_include_module()
-{
-    if (isSCM) {
-        char _name[256];
-        toClaInterface(_name, name);
-        if (base) {
-            char _base[256];
-            toClaInterface(_base, base);
-            outf("%s  INTERFACE(%s),COM\n", _name, _base);
-        }
-        else
-            outf("%s  INTERFACE,COM\n", _name);
-    }
-    else
-        outf("HRPCI_%s  INTERFACE(HRPCI_Clarion_Module)\n",name);
-
-    ProcInfo *pi;
-    for (pi=procs; pi; pi=pi->next) {
-        if (pi->callback)
-            continue;
-
-        outf("%-15s  PROCEDURE",xlat(pi->name));
-        pi->out_clarion_parameter_list();
-        if (pi->rettype) {
-            outs(",");
-            pi->rettype->out_clarion_type(true);
-        }
-        if (isSCM)
-            outs(",PROC\n");
-        else
-            outs(",PASCAL\n");
-    }
-    outs("END\n\n");
-}
-
-void ModuleInfo::write_clarion_scm_stub_class()
-{
-    outf("// clarion interface stub for %s \n",name);
-    outf("class SCMCLWSTUB_%s: public SCMStubBase, implements %s // interface\n",name,name);
-    outf("\t%s &_o;\n",name);
-    outf("public:\n");
-    outf("\tIMPLEMENT_SCMSTUBBASE\n");
-    outf("\tSCMCLW_%s(%s *_if) : SCMStubBase(_if), _o(*LINK(_if)) { } \n",name,name);
-    outf("\t~SCMCLW_%s() { _o.Release(); } \n",name);
-    ProcInfo *pi;
-    for (pi=procs; pi; pi=pi->next) {
-        if (pi->callback)
-            continue;
-        outs("\t");
-        if (pi->rettype==NULL)
-        {
-            outs("void");
-        }
-        else
-            pi->rettype->out_type();
-        outf(" _stdcall %s",pi->name);
-        pi->out_parameter_list("",1);
-        outs("\n");
-        outs("\t{\n");
-        outs("\t\tSCMCLW_INTRO;\n");
-        outf("#ifdef SCMCLW_INTRO_%s_%s;\n",name,pi->name);
-        outf("\t\tSCMCLW_INTRO_%s_%s;\n",name,pi->name);
-        outs("#endif\n");
-        if (pi->rettype) {
-            outs("\t");
-            pi->rettype->write_body_struct_elem(0);
-            outs("\t\t_return = ");
-        }
-        else
-            outs("\t\t");
-        outf("_o.%s(",pi->name);
-        ParamInfo *p;
-        ForEachParam(pi,p,0,0) {
-            outf("%s",p->name);
-            if (p->next)
-                outs(", ");
-        }
-        outs(");\n");
-        outf("#ifdef SCMCLW_OUTRO_%s_%s;\n",name,pi->name);
-        outf("\t\tSCMCLW_OUTRO_%s_%s;\n",name,pi->name);
-        outs("#endif\n");
-        outs("\t\tSCMCLW_OUTRO;\n");
-        if (pi->rettype) {
-            outs("\t\treturn _return;");
-        }
-        outs("\t}\n");
-    }
-    outs("};\n");
-}
-
-void ModuleInfo::write_clarion_interface_class()
-{
-    outs("extern \"C\" {\n\n");
-    outs("\n");
-    outf("// clarion interface class CIC_%s \n",name);
-    outf("struct HRPCI_%s: public HRPCI_Clarion_Module // interface\n",name);
-    ProcInfo *pi;
-    outs("{\n");
-    for (pi=procs; pi; pi=pi->next) {
-        if (pi->callback)
-            continue;
-        outs("\tvirtual ");
-        if (pi->rettype==NULL)
-        {
-            outs("void");
-        }
-        else
-            pi->rettype->out_type();
-        outf(" _stdcall %s",pi->name);
-        pi->out_parameter_list("",1);
-        outs("=0;\n");
-    }
-    outs("};\n");
-    outf("#ifndef LOCAL_%s\n\n",name);
-    outf("class CIC_%s : public HRPCI_%s\n",name,name);
-    outs("{\n");
-    outs("public:\n");
-    outf("\t%s _o;\n",name);
-    outs("\tunsigned xxcount;\n");
-    for (pi=procs; pi; pi=pi->next) {
-        if (pi->callback)
-            continue;
-        outs("\t");
-        if (pi->rettype==NULL)
-        {
-            outs("void");
-        }
-        else
-            pi->rettype->out_type();
-        outf(" _stdcall %s",pi->name);
-        pi->out_parameter_list("",1);
-        outs("\n");
-        outs("\t{\n");
-        outs("\t\t");
-        if (pi->rettype) {
-            outs("return ");
-        }
-        outf("_o.%s(",pi->name);
-        ParamInfo *p;
-        ForEachParam(pi,p,0,0) {
-            outf("%s",p->name);
-            if (p->next)
-                outs(", ");
-        }
-        outs(");\n");
-        outs("\t}\n");
-    }
-    outf("\tCIC_%s() { xxcount = 0; }\n",name);
-    outf("\tvoid _stdcall Link() const { ++const_cast<CIC_%s*>(this)->xxcount; }\n", name);
-    outf("\tint _stdcall Release() const { \n\t\tCIC_%s* ths = const_cast<CIC_%s*>(this);\n\t\tif (ths->xxcount == 0) { delete ths; return 1; }\n\t\t--ths->xxcount;\n\t\treturn 0;\n\t}\n",name,name);
-    outs("\tvoid _stdcall FreeMem(void *p) { free(p); }\n");
-    outs("};\n");
-    outf("CIC_%s* PASCAL HRPC_Make_%s(HRPCI_Clarion_Transport *t)\n",name,name);
-    outs("{\n");
-    outf("\tCIC_%s *ret=new CIC_%s;\n",name,name);
-    outs("\tret->_o.UseTransport(t->GetTransport());\n");
-    outs("\treturn ret;\n");
-    outs("}\n");
-
-    outs("#endif\n");
-    outs("}\n");
-}
-
 
 void ModuleInfo::write_define()
 {
@@ -5106,29 +4564,6 @@ void EspMessageInfo::write_esp()
     write_factory_impl();
 }
 
-void EspMessageInfo::write_clarion_methods(enum espaxm_type axstype)
-{
-    ParamInfo *pi;
-
-    if (axstype!=espaxm_setters)
-    {
-        if (espm_type_==espm_response)
-            outs("queryClientStatus  PROCEDURE(),LONG,PROC\n");
-        for (pi=getParams();pi!=NULL;pi=pi->next)
-        {
-            pi->write_clarion_attr_method(false);
-        }
-    }
-
-    if (axstype!=espaxm_getters)
-    {
-        for (pi=getParams();pi!=NULL;pi=pi->next)
-        {
-            pi->write_clarion_attr_method(true);
-        }
-    }
-}
-
 void EspMessageInfo::write_esp_mapinfo(bool isDecl)
 {
 #ifdef MAP_INFO
@@ -5368,28 +4803,6 @@ void EspMessageInfo::write_factory_impl()
     default:
         assert(!"Unhandled espm type");
     }
-}
-
-
-void EspMessageInfo::write_clarion_include_interface()
-{
-    static char ifname[256];
-    strcpy(ifname, "cppClient");
-    strcat(ifname, name_);
-
-    outf("%s  INTERFACE(cppInterface),COM\n", ifname);
-
-    if (espm_type_==espm_struct)
-    {
-        write_clarion_methods(espaxm_setters);
-        write_clarion_methods(espaxm_getters);
-    }
-    else if (espm_type_==espm_request)
-        write_clarion_methods(espaxm_setters);
-    else
-        write_clarion_methods(espaxm_getters);
-
-    outs("    END\n\n");
 }
 
 
@@ -6868,38 +6281,6 @@ void EspServInfo::write_esp_client()
     outs("}\n\n");
 }
 
-void EspServInfo::write_clarion_include_interface()
-{
-
-    outf("cppClient%sEvents INTERFACE(cppInterface),COM\n", name_);
-
-    EspMethodInfo *mthi;
-    for (mthi=methods;mthi!=NULL;mthi=mthi->next)
-    {
-        outf("on%sComplete PROCEDURE(*cppClient%s resp),PROC\n", mthi->getName(), mthi->getResp());
-        outf("on%sError PROCEDURE(*cppClient%s resp),PROC\n", mthi->getName(), mthi->getResp());
-    }
-
-    outs("\n END\n\n");
-
-
-    outf("cppClient%s INTERFACE(cppInterface),COM\n", name_);
-    outs("setProxyAddress  PROCEDURE(CONST *CSTRING address),PROC\n");
-    outs("addServiceUrl  PROCEDURE(CONST *CSTRING url),PROC\n");
-    outs("removeServiceUrl  PROCEDURE(CONST *CSTRING url),PROC\n");
-    outs("setUsernameToken  PROCEDURE(CONST *CSTRING Username,CONST *CSTRING Password,CONST *CSTRING Realm ),PROC\n");
-
-
-    for (mthi=methods;mthi!=NULL;mthi=mthi->next)
-    {
-        outf("create%sRequest  PROCEDURE(),*cppClient%s,PROC\n", mthi->getName(), mthi->getReq());//mthi->getName());
-        outf("%s  PROCEDURE(*cppClient%s request),*cppClient%s,PROC\n", mthi->getName(), mthi->getReq(), mthi->getResp());
-        outf("async_%s  PROCEDURE(*cppClient%s request, *cppClient%sEvents events,*cppInterface State),PROC\n", mthi->getName(), mthi->getReq(), name_);
-    }
-
-    outs("\n  END\n\n");
-}
-
 //interface IEspInstantEcl
 
 void EspServInfo::write_event_interface()
@@ -6917,7 +6298,6 @@ void EspServInfo::write_event_interface()
 
     outs("\n};\n\n");
 }
-
 
 void EspServInfo::write_esp_interface()
 {
@@ -7098,7 +6478,6 @@ HIDLcompiler::HIDLcompiler(const char * sourceFile,const char *outDir)
 #if 0
     xsvo = createFile(targetBase, "xsv");
 #endif
-    clwo = createFile(targetBase, "int");
 
     espx = isESP ? createFile(targetBase,"esp") : -1;
     espng = isESPng ? createFile(targetBase,"_esp_ng", "ipp") : -1;
@@ -7115,7 +6494,6 @@ HIDLcompiler::~HIDLcompiler()
     close(ho);
     close(cppo);
     //close(xsvo);
-    close(clwo);
     safeclose(espx);
     safeclose(espng);
     safeclose(espngc);
@@ -7160,8 +6538,6 @@ void HIDLcompiler::Process()
         write_esp_ng_cpp();
     }
 
-    if (isSCM)
-        write_clarion_HRPC_interfaces();
 }
 
 
@@ -7331,111 +6707,11 @@ void HIDLcompiler::write_source_file_classes()
     ModuleInfo * mi;
     for (mi=modules;mi;mi=mi->next)
     {
-        if (isSCM) {
-            mi->write_clarion_scm_stub_class();
-        }
-        else {
+        if (!isSCM)
+        {
             mi->write_body_class();
-            mi->write_clarion_interface_class();
         }
     }
-    outs("//end\n"); // CR for Clarion
-}
-
-
-
-void HIDLcompiler::write_clarion_esp_interfaces()
-{
-    gOutfile = clwo;
-
-    EspMessageInfo * mi;
-    for (mi=msgs;mi;mi=mi->next)
-    {
-        mi->write_clarion_include_interface();
-        outs("\n\n");
-    }
-
-    EspServInfo *si;
-    for (si=servs;si;si=si->next)
-    {
-        si->write_clarion_include_interface();
-        outs("\n\n");
-    }
-
-}
-
-
-void HIDLcompiler::write_clarion_HRPC_interfaces()
-{
-    gOutfile = clwo;
-
-    if (isSCM)
-        outs("! Clarion SCM Interfaces\n");
-    else
-    {
-        // outs("! Clarion HRPC Interfaces\n");
-        outs("*** No longer generated\n");
-        return;
-    }
-
-    outf("! Include file generated by " HIDL " Version %s from %s.%s\n", HIDLVER, packagename, srcFileExt);
-    outs("! *** Not to be hand edited (changes will be lost on re-generation) ***\n\n");
-    outf("  OMIT('EndOfInclude',_%s_I_)\n",packagename);
-    outf("_%s_I_ EQUATE(1)\n\n",packagename);
-
-    if (isSCM)
-    {
-        outs("  INCLUDE('SCM.INT'),ONCE\n\n");
-        if (clarion.length())
-        {
-            outs(clarion.str());
-            outs("\n\n");
-        }
-    }
-    else
-        outs("  INCLUDE('HRPC.INC'),ONCE\n\n");
-
-    EnumInfo * ei;
-    for (ei=enums;ei;ei=ei->next)
-    {
-        ei->write_clarion_enum();
-    }
-
-    ModuleInfo * mi;
-    for (mi=modules;mi;mi=mi->next)
-    {
-        mi->write_clarion_include_module();
-    }
-
-    if (isESP)
-    {
-        write_clarion_esp_interfaces();
-    }
-
-
-    outs("\n");
-    outs("  MAP\n");
-    outf("    MODULE('%s')\n",packagename);
-
-    if (!isSCM)
-    {
-        for (mi=modules;mi;mi=mi->next)
-        {
-            outf("      HRPC_Make_%s(HRPCI_Clarion_Transport transport),*HRPCI_%s,PASCAL,NAME('_HRPC_Make_%s@4')\n",mi->name,mi->name,mi->name);
-        }
-    }
-    else
-    {
-        ApiInfo * fi;
-        for (fi=apis;fi;fi=fi->next)
-        {
-            fi->write_clarion_include_method();
-        }
-    }
-
-    outs("    END\n\n");
-    outs("  END\n\n");
-    outf("\nEndOfInclude\n");
 }
 
 void HIDLcompiler::write_example_implementation_module()
@@ -7492,7 +6768,6 @@ void HIDLcompiler::write_header_class_outro()
     outs("\n");
 
     outf("#endif // _%s_%s_INCL\n", packagename,isSCM?"SCM":"HID");
-    outs("//end\n"); // CR for Clarion
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -7511,15 +6786,6 @@ void EnumInfo::write_header_enum()
     outs("};\n\n");
 }
 
-void EnumInfo::write_clarion_enum()
-{
-    outf("%s EQUATE(UNSIGNED)\n", xlat(name));
-    outf("  ITEMIZE,PRE(%s)\n",xlat(name));
-    for (EnumValInfo *vi=vals;vi;vi=vi->next) {
-        outf("%s\tEQUATE(%d)\n",xlat(vi->name),vi->val);
-    }
-    outs("\tEND\n\n");
-}
 
 // end
 //-------------------------------------------------------------------------------------------------------------

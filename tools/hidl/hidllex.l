@@ -17,7 +17,7 @@
 extern YYSTYPE yylval;
 extern unsigned linenum;
 
-static enum { LSskip,LSclarion,LSsectionheader,LSsectionbody,LSsectionfooter} state=LSskip;
+static enum { LSskip,LSsectionheader,LSsectionbody,LSsectionfooter} state=LSskip;
 static int   opencurly=0;
 
 static bool check_return(int);
@@ -41,13 +41,10 @@ dollar[$]
 
 {blank}+    { output_text(); }
 
-module      { if (check_return( MODULE )) return MODULE; }
 SCMexportdef    { if (check_return( SCMEXPORTDEF )) return SCMEXPORTDEF; }
 SCMapi  { if (check_return( SCMAPI )) return SCMAPI; }
 SCMinterface    { if (check_return( SCMINTERFACE )) return SCMINTERFACE; }
 SCMenum { if (check_return( SCMENUM )) return SCMENUM; }
-SCMclarion      { if (check_return( SCMCLARION )) return SCMCLARION; }
-SCMend  { if (check_return( SCMEND )) return SCMEND; }
 ESPdefexport    { if (check_return( ESPDEFEXPORT )) return ESPDEFEXPORT;}
 ESPstruct   { if (check_return( ESPSTRUCT )) return ESPSTRUCTREF; else return ESPSTRUCT; }
 ESPenum     { if (check_return( ESPENUM )) return ESPENUMREF; else return ESPENUM;       }
@@ -255,9 +252,6 @@ bool check_return(int a)
                 case ESPVERSIONDEF:
                     state = LSsectionfooter;
                     return true;
-                case SCMCLARION:
-                    state = LSclarion;
-                    return false;
                 default:
                     output_text();
                     return false;
@@ -267,7 +261,6 @@ bool check_return(int a)
         {
          switch(a)
          {
-                case MODULE:
                 case SCMINTERFACE:
                     state = LSsectionheader;
                     return true;
@@ -277,16 +270,7 @@ bool check_return(int a)
             }
         }
     }
-    else if (state==LSclarion)
-   {
-        if (a == SCMEND)
-        {
-            state = LSskip;
-        }
-        else
-            output_text();
-        return false;
-    }
+
     if (a == '{')
     {
         opencurly++;
@@ -316,11 +300,6 @@ int yywrap()
 
 void output_text()
 {
-    if (state==LSclarion) {
-        if (yytext[0]=='\n')
-            clarion.append("\r");
-        clarion = clarion.append((const char*)yytext);
-    }
-    else if (state==LSskip)
+    if (state==LSskip)
         outs((const char*)yytext);
 }
