@@ -25,7 +25,7 @@
 #include "jregexp.hpp"
 #include "gitfile.hpp"
 #include "jlog.hpp"
-
+#include "jsecrets.hpp"
 #include "git2.h"
 
 /*
@@ -36,7 +36,7 @@
 
 IDirectoryIterator *createGitRepositoryDirectoryIterator(const char *gitFileName, const char *mask=NULL, bool sub=false,bool includedirs=false);
 
-static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAttr &revision, StringAttr &relPath)
+static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAttr &revision, StringAttr &relPath, StringAttr & gitUser)
 {
     assertex(fullName);
     const char *git = strstr(fullName, ".git" PATHSEPSTR "{" );
@@ -47,13 +47,22 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
     tail++;
     const char *end = strchr(tail, '}');
     if (!end)
-        throw MakeStringException(0, "Invalid git repository filename - no matching } found");
-    revision.set(tail, end - tail);
+        throw MakeStringException(0, "Invalid git repository filename '%s' - no matching } found", fullName);
+
+    //Allow <version>#<username> as an extension to allow authentication information to be passed through
+    const char * extra = strchr(tail, '#');
+    if (extra && extra < end)
+    {
+        revision.set(tail, extra - tail);
+        gitUser.set(extra+1, end - (extra+1));
+    }
+    else
+        revision.set(tail, end - tail);
     tail = end+1;
     if (*tail==PATHSEPCHAR || *tail == '/')
         tail++;
     else if (*tail != 0)
-        throw MakeStringException(0, "Invalid git repository filename - " PATHSEPSTR " expected after }");
+        throw MakeStringException(0, "Invalid git repository filename '%s' - " PATHSEPSTR " expected after }", fullName);
     if (tail && *tail)
     {
         StringBuffer s(tail);
@@ -69,10 +78,13 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
         throw MakeStringException(0, "Invalid git repository - config file %s not found", configName.str());
 }
 
-static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDir, const char *revision, const char *relPath)
+static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDir, const char *revision, const char *relPath, const char * gitUser)
 {
     fullname.append(gitDir);
-    fullname.append('{').append(revision).append('}').append('/');
+    fullname.append('{').append(revision);
+    if (gitUser)
+        fullname.append("#").append(gitUser);
+    fullname.append('}').append('/');
     if (relPath && *relPath)
         fullname.append(relPath);
     return fullname;
@@ -162,7 +174,7 @@ class GitRepositoryFileIO : implements CSimpleInterfaceOf<IFileIO>
         return buf.length() > LFSsiglen && memcmp(buf.toByteArray(), LFSsig, LFSsiglen)==0;
     }
 public:
-    GitRepositoryFileIO(GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid)
+    GitRepositoryFileIO(GitCommitTree * commitTree, const char *gitDirectory, const git_oid * oid, const char * gitUser)
     {
         git_blob *blob = nullptr;
         int error = git_blob_lookup(&blob, git_tree_owner(commitTree->queryTree()), oid);
@@ -174,24 +186,7 @@ public:
         buf.append(blobsize, data);
         git_blob_free(blob);
         if (isLFSfile())
-        {
-            Owned<IPipeProcess> pipe = createPipeProcess();
-            if (pipe->run("git-lfs", "git-lfs smudge", gitDirectory, true, true, false, 0))
-            {
-                pipe->write(blobsize, buf.toByteArray());
-                pipe->closeInput();
-                buf.clear();
-                Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
-                readSimpleStream(buf, *pipeReader);
-                pipe->closeOutput();
-            }
-            int retcode = pipe->wait();
-            if (retcode)
-            {
-                buf.clear();  // Can't rely on destructor to clean this for me
-                throw MakeStringException(0, "git-lfs returned exit status %d", retcode);
-            }
-        }
+            readLfsContents(gitDirectory, gitUser);
     }
     virtual size32_t read(offset_t pos, size32_t len, void * data)
     {
@@ -232,6 +227,58 @@ public:
         //This could be implemented, but not likely to be useful so currently return nothing.
         return 0;
     }
+
+protected:
+    void readLfsContents(const char *gitDirectory, const char * gitUser)
+    {
+        EnvironmentVector env;
+        Owned<IFile> extractedKey;
+
+        //If fetching from git and the username is specified then use the script file to provide the username/password
+        //Only support retrieving the password as a secret - not as a filename
+        if (!isEmptyString(gitUser))
+        {
+            env.emplace_back("GIT_TERMINAL_PROMPT", "0");
+            StringBuffer scriptPath;
+            getPackageFolder(scriptPath);
+            addPathSepChar(scriptPath).append("bin/hpccaskpass.sh");
+            env.emplace_back("GIT_ASKPASS", scriptPath);
+
+            Owned<IPropertyTree> secret = getSecret("git", gitUser);
+            if (secret)
+            {
+                MemoryBuffer gitKey;
+                if (getSecretKeyValue(gitKey, secret, "password"))
+                {
+                    extractedKey.setown(writeToProtectedTempFile("eclcc", "git", gitKey.length(), gitKey.toByteArray()));
+                    env.emplace_back("HPCC_GIT_PASSPATH", extractedKey->queryFilename());
+                }
+                else
+                    DBGLOG("Secret doesn't contain password for git user %s", gitUser);
+            }
+        }
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        for (const auto & cur : env)
+            pipe->setenv(cur.first.c_str(), cur.second.c_str());
+        if (pipe->run("git-lfs", "git-lfs smudge", gitDirectory, true, true, false, 0))
+        {
+            pipe->write(buf.length(), buf.toByteArray());
+            pipe->closeInput();
+            buf.clear();
+            Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
+            readSimpleStream(buf, *pipeReader);
+            pipe->closeOutput();
+        }
+        int retcode = pipe->wait();
+        if (extractedKey)
+            extractedKey->remove();
+        if (retcode)
+        {
+            buf.clear();  // Can't rely on destructor to clean this for me
+            throw MakeStringException(0, "git-lfs returned exit status %d", retcode);
+        }
+    }
+
 protected:
     MemoryBuffer buf;
 };
@@ -243,7 +290,7 @@ public:
     GitRepositoryFile(const char *_gitFileName, bool _isDir, bool _isExisting, GitCommitTree * _commitTree, const git_oid & _oid)
     : commitTree(_commitTree), oid(_oid), fullName(_gitFileName), isDir(_isDir), isExisting(_isExisting)
     {
-        splitGitFileName(fullName, gitDirectory, revision, relFileName);
+        splitGitFileName(fullName, gitDirectory, revision, relFileName, gitUser);
     }
     virtual bool exists()
     {
@@ -341,12 +388,12 @@ public:
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid);
+        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid, gitUser);
     }
     virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags) override
     {
         assertex(mode==IFOread && isExisting && !isDir);
-        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid);
+        return new GitRepositoryFileIO(commitTree, gitDirectory, &oid, gitUser);
     }
 
 
@@ -380,6 +427,7 @@ protected:
     const git_oid oid;
     StringAttr gitDirectory;
     StringAttr revision;
+    StringAttr gitUser;
     StringAttr relFileName;
     StringBuffer fullName;
     offset_t fileSize = (offset_t) -1;
@@ -399,13 +447,13 @@ public:
     GitRepositoryDirectoryIterator(const char *_gitFileName, const char *_mask, bool _sub, bool _includeDirs)
     : mask(_mask), sub(_sub), includeDirs(_includeDirs)
     {
-        splitGitFileName(_gitFileName, gitDirectory, revision, relDir);
+        splitGitFileName(_gitFileName, gitDirectory, revision, relDir, gitUser);
         curIndex = 0;
 
         const char * version = revision.length() ? revision.get() : "HEAD";
         commitTree.setown(new GitCommitTree(gitDirectory, version));
         if (!commitTree->queryTree())
-            throw makeStringExceptionV(9900 , "Cannot resolve git revision %s", _gitFileName);
+            throw makeStringExceptionV(9900 , "Cannot resolve git revision '%s' for %s", revision.str(), _gitFileName);
     }
     virtual StringBuffer &getName(StringBuffer &buf)
     {
@@ -504,6 +552,7 @@ protected:
 protected:
     StringAttr gitDirectory;
     StringAttr revision;
+    StringAttr gitUser;
     StringAttr relDir;
     StringAttr mask;
     Owned<IFile> curFile;
@@ -524,7 +573,7 @@ protected:
             offset_t size = sizes.item(curIndex);
             const git_oid & oid = oids[curIndex];
             StringBuffer gitFileName;
-            buildGitFileName(gitFileName, gitDirectory, revision, relDir);
+            buildGitFileName(gitFileName, gitDirectory, revision, relDir, gitUser);
             // Git ls-tree behaves differently according to whether you put the trailing / on the path you supply.
             // With /, it gets all files in that directory
             // Without, it will return just a single match (for the file or dir with that name)
@@ -556,8 +605,8 @@ static IFile *createGitFile(const char *gitFileName)
     StringBuffer fname(gitFileName);
     assertex(fname.length());
     removeTrailingPathSepChar(fname);
-    StringAttr gitDirectory, revision, relDir;
-    splitGitFileName(fname, gitDirectory, revision, relDir);
+    StringAttr gitDirectory, revision, relDir, gitUser;
+    splitGitFileName(fname, gitDirectory, revision, relDir, gitUser);
     if (relDir.isEmpty())
     {
         // Special case the root - ugly but apparently necessary

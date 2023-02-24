@@ -28,6 +28,7 @@
 #include <iterator>
 #include <functional>
 #include <vector>
+#include <string>
 
 #if defined (__APPLE__)
 #include <mach/mach_time.h>
