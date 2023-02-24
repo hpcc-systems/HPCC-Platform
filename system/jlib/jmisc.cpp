@@ -1082,3 +1082,33 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
         throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
     return externalService;
 }
+
+#if defined(__linux__)
+static unsigned envSetterHookId = 0;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    // initialize built-in HPCC environment variables from settings,
+    // such that they can be access from ECL from getEnv calls.
+    auto envSetterFunc = [](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+    {
+        StringBuffer deploymentName;
+        if (isContainerized())
+            getGlobalConfigSP()->getProp("@deploymentName", deploymentName);
+        else
+            queryEnvironmentConf().getProp("deploymentName", deploymentName);
+        if (0 == deploymentName.length())
+            deploymentName.set("UNKNOWN");
+        setenv("HPCC_DEPLOYMENT", deploymentName, 1);
+        setenv("HPCC_OS", "linux", 1);
+    };
+    envSetterHookId = installConfigUpdateHook(envSetterFunc, true);
+
+    return true;
+}
+
+MODULE_EXIT()
+{
+    if ((unsigned)-1 != envSetterHookId)
+        removeConfigUpdateHook(envSetterHookId);
+}
+#endif

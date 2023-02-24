@@ -331,7 +331,7 @@ jlib_decl const char * queryComponentName();
 
 // ConfigUpdateFunc calls are made in a mutex, but after new confis are swapped in
 typedef std::function<void (const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)> ConfigUpdateFunc;
-jlib_decl unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc);
+jlib_decl unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc, bool callWhenInstalled);
 jlib_decl void removeConfigUpdateHook(unsigned notifyFuncId);
 jlib_decl void executeConfigUpdaterCallbacks();
 
