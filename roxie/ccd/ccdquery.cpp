@@ -1654,7 +1654,13 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         else
             result = package.queryEnv(name);
         if (!result && name)
-            result = getenv(name);
+        {
+            char *hpccEnvVal = getHPCCEnvVal(name, defaultValue);
+            if (hpccEnvVal)
+                return hpccEnvVal;
+            else
+                result = getenv(name);
+        }
         return strdup(result ? result : defaultValue);
     }
 

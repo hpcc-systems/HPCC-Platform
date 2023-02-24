@@ -1082,3 +1082,32 @@ std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *applicat
         throw makeStringExceptionV(-1, "dafilesrv '%s': external service port not defined", dafilesrvName.str());
     return externalService;
 }
+
+// checks if 'name' is an internal environment variable (prefixed with 'HPCC_')
+// if !matches : returns null
+// if matches  : returns allocated copy of configured value or defaultValue if not set.
+// NB: Only HPCC_DEPLOYMENT currently supported, but could be extended.
+char *getHPCCEnvVal(const char *name, const char *defaultValue)
+{
+    constexpr const char *builtinPrefix = "HPCC_";
+    if (!startsWith(name, builtinPrefix))
+        return nullptr;
+    const char *hpccEnvVar = name+strlen(builtinPrefix);
+    StringBuffer val;
+    bool valSet = false;
+    if (streq(hpccEnvVar, "DEPLOYMENT"))
+    {
+        if (isContainerized())
+            valSet = getGlobalConfigSP()->getProp("@deploymentName", val);
+        else
+            valSet = queryEnvironmentConf().getProp("deploymentName", val);
+    }
+    // else - just "DEPLOYMENT" for now.
+
+    if (valSet)
+        return val.detach();
+    else if (defaultValue)
+        return strdup(defaultValue);
+    else
+        return strdup("");
+}
