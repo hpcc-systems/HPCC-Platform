@@ -644,7 +644,8 @@ dfuplus action=spray srcplane=lzstorageplane
                   <entry>Optional. The IP address of the destination machine.
                   If omitted, the information must be supplied by the
                   <emphasis>dstxml</emphasis> or <emphasis>dstplane</emphasis>
-                  parameter.</entry>
+                  parameter. Deprecated, you should use
+                  <emphasis>dstplane</emphasis> instead. </entry>
                 </row>
 
                 <row>
@@ -652,7 +653,9 @@ dfuplus action=spray srcplane=lzstorageplane
 
                   <entry>Optional. The destination storage plane. Note:
                   <emphasis>dstplane</emphasis> should not be used at the same
-                  time as <emphasis>dstip</emphasis>.</entry>
+                  time as <emphasis>dstip</emphasis>. In a containerized
+                  deployment, <emphasis>dstplane</emphasis> is required if you
+                  have more than one Landing Zone.</entry>
                 </row>
 
                 <row>

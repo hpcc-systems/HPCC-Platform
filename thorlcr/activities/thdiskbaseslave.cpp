@@ -594,7 +594,7 @@ void CDiskWriteSlaveActivityBase::process()
     StringBuffer tmpStr;
     fName.set(getPartFilename(*partDesc, 0, tmpStr).str());
     if (diskHelperBase->getFlags() & TDXtemporary && !container.queryJob().queryUseCheckpoints())
-        container.queryTempHandler()->registerFile(fName, container.queryOwner().queryGraphId(), usageCount, true);
+        tmpUsage = container.queryTempHandler()->registerFile(fName, container.queryOwner().queryGraphId(), usageCount, true);
     try
     {
         ActPrintLog("handling fname : %s", fName.get());
@@ -671,6 +671,8 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     modifiedTime.getTime(hour, min, sec, nanosec);
     modifiedTime.setTime(hour, min, sec, 0);
     modifiedTime.serialize(mb);
+    if (tmpUsage)
+        tmpUsage->setSize(sz);
 }
 
 /////////////

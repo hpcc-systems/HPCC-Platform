@@ -246,10 +246,27 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
             long response_code;
             curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &response_code);
 
-            if (response_code == 404L)
-                throw makeStringExceptionV(-1, "%s KQL request: Error (404): Ensure the WorkspaceID (%s) is valid!", COMPONENT_NAME, workspaceID);
-
-            throw makeStringExceptionV(-1, "%s KQL request: Error (%d): %s", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "<unknown>"));
+            switch (response_code)
+            {
+            case 400L:
+                throw makeStringExceptionV(-1, "%s KQL response: Error (400): Request is badly formed and failed (permanently)", COMPONENT_NAME);
+            case 401L:
+                throw makeStringExceptionV(-1, "%s KQL response: Error (401): Unauthorized - Client needs to authenticate first.", COMPONENT_NAME);
+            case 403L:
+                throw makeStringExceptionV(-1, "%s KQL response: Error (403): Forbidden - Client request is denied.", COMPONENT_NAME);
+            case 404L:
+                throw makeStringExceptionV(-1, "%s KQL request: Error (404): NotFound - Request references a non-existing entity. Ensure configured WorkspaceID (%s) is valid!", COMPONENT_NAME, workspaceID);
+            case 413:
+                throw makeStringExceptionV(-1, "%s KQL request: Error (413): PayloadTooLarge - Request payload exceeded limits.", COMPONENT_NAME);
+            case 429:
+                throw makeStringExceptionV(-1, "%s KQL request: Error (429): TooManyRequests - Request has been denied because of throttling.", COMPONENT_NAME);
+            case 504:
+                throw makeStringExceptionV(-1, "%s KQL request: Error (504): Timeout - Request has timed out.", COMPONENT_NAME);
+            case 520:
+                throw makeStringExceptionV(-1, "%s KQL request: Error (520): Azure ServiceError - Service found an error while processing the request.", COMPONENT_NAME);
+            default:
+                throw makeStringExceptionV(-1, "%s KQL request: Error (%d): %s", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "<unknown>"));
+            }
         }
         else if (readBuffer.length() == 0)
             throw makeStringExceptionV(-1, "%s KQL request: Empty response!", COMPONENT_NAME);

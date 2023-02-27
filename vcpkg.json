@@ -63,6 +63,7 @@
         "lz4",
         "mongo-cxx-driver",
         "nlohmann-json",
+        "nlp-engine",
         {
             "name": "numactl",
             "platform": "!windows & !osx"

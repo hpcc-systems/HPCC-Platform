@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, Pivot, PivotItem } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotItem } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
@@ -73,7 +73,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
                         img = Utility.getImageHTML("machine.png") + nlsHPCC.Port + ":";
                     } else if (row.type === "binding") {
                         img = Utility.getImageHTML("sync.png");
-                        name = <Link href={`#/desdl/bindings/${name}`}>{name}</Link>;
+                        name = `<a href="#/desdl/bindings/${name}">${name}</a>`;
                     }
                     return img + "&nbsp;" + name;
                 },

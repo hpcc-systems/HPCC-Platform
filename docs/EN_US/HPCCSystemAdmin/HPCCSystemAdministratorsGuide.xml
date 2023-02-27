@@ -1229,27 +1229,27 @@
         <programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
-configs=/etc/HPCCSystems
-path=/opt/HPCCSystems
-classpath=/opt/HPCCSystems/classes
-runtime=/var/lib/HPCCSystems
-lock=/var/lock/HPCCSystems
-# Supported logging fields: 
-#   AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
-logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX
-pid=/var/run/HPCCSystems
-log=/var/log/HPCCSystems
-user=hpcc
-group=hpcc
+configs=${CONFIG_DIR}
+path=${INSTALL_DIR}
+classpath=${INSTALL_DIR}/classes
+runtime=${RUNTIME_PATH}
+lock=${LOCK_PATH}
+# Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX+AUD
+pid=${PID_PATH}
+log=${LOG_PATH}
+user=${RUNTIME_USER}
+group=${RUNTIME_GROUP}
 #umask=022
 #nice=0
-home=/home
-environment=environment.xml
-sourcedir=/etc/HPCCSystems/source
-blockname=HPCCSystems
+home=${HOME_DIR}
+environment=${ENV_XML_FILE}
+sourcedir=${CONFIG_SOURCE_PATH}
+blockname=${DIR_NAME}
 interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
+#epoll_hdlperthrd=10
 # allow kernel pagecache flushing where enabled (true/false)
 allow_pgcache_flush=true
 # report UDP network stats
@@ -1258,35 +1258,29 @@ mpStart=7101
 mpEnd=7500
 mpSoMaxConn=128
 mpTraceLevel=0
-# enable SSL for dafilesrv remote file access 
-#     (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
+# enable SSL for dafilesrv remote file access (SSLNone/false | SSLOnly/true | SSLFirst | UnsecureFirst)
 # Enabling requires setting the HPCCPassPhrase, HPCCCertFile, and HPCCPrivateKeyFile values
 #dfsUseSSL=SSLNone
 
 #Specify location of HPCC PKI public/private key files
 # note: if HPCCPassPhrase specified it must be encrypted
 #HPCCPassPhrase=
-#HPCCCertificateFile=/home/hpcc/.ssh/cert.cer
-#HPCCPublicKeyFile=/home/hpcc/.ssh/id_rsa.pub
-#HPCCPrivateKeyFile=/home/hpcc/.ssh/id_rsa
+#HPCCCertificateFile=${HOME_DIR}/${RUNTIME_USER}/certificate/certificate.pem
+#HPCCPublicKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/public.key.pem
+#HPCCPrivateKeyFile=${HOME_DIR}/${RUNTIME_USER}/certificate/key.pem
 
 jvmoptions=-XX:-UsePerfData
 #Options to enable remote debugging of Java service or application
 #jvmoptions=-XX:-UsePerfData -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=2000
 #JNI_PATH=/absolute/path/to/alternative/libjvm.so
 
-# Although HPCC platform includes plugins for both Python2 and Python3, 
-# only one may be safely enabled at a time
-# as the Python libraries export the same symbols for both versions. 
-# Enabling both may lead to unpredicatable results
-# including segfaults or undefined symbol errors.
-#
-# If you would prefer to use python 2 and disable python3, change the line below to read
-#  additionalPlugins=python2
-#
+# Python plugins can call python cleanup code on exit, but this seems to cause lockups in some Tensorflow examples
+# In most cases, skipping the cleanup is harmless and avoids these lockups
+skipPythonCleanup=true 
+
 # Multiple paths can be specified (separate with :, or ; on Windows).
-# Relative paths are assumed to be relative to /opt/HPCCSystems/versioned
-additionalPlugins=python3
+# Relative paths are assumed to be relative to ${INSTALL_DIR}/versioned
+additionalPlugins=python3 
 
 # To en-/disable Drop Zone restriction.
 # Default is enabled (true).
@@ -1299,8 +1293,7 @@ useDropZoneRestriction=true
 #dafsConnectRetries=2
 #dafsMaxReceiveTimeSeconds=0
 
-# Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv connection 
-#   (default 10 seconds)
+# Dafilesrv: set to change number of seconds before retrying an unresponsive dafilesrv connection (default 10 seconds)
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
@@ -1656,17 +1649,17 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <para>The Private and public keys need to be generated in PEM
           format. The same key file pairs should be installed across the
           cluster. These keys <emphasis role="bold">must</emphasis> be the
-          same on every node in the cluster. </para>
+          same on every node in the cluster.</para>
 
           <para>The HPCCCertFile and HPCCPublicKeyFile values must exist and
           be uncommented in environment.conf file as indicated above. The
           HPCCPassPhrase is only used when a passphrase was used in creation
-          of the keys. </para>
+          of the keys.</para>
 
           <para>A good way to ensure the appropriate implementation of the
           secure key files is, as documented in the <emphasis>Installing &amp;
           Running the HPCC Systems Platform</emphasis> book, to use the
-          <emphasis>install-cluster.sh</emphasis> script. </para>
+          <emphasis>install-cluster.sh</emphasis> script.</para>
         </sect3>
       </sect2>
     </sect1>
@@ -2288,23 +2281,35 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         number of cores divided by two is the maximum number of Thor clusters
         to use.</para>
 
-        <sect3>
-          <title>Multiple Nodes</title>
+        <sect3 id="SepClusterNodes">
+          <title>Separate Worker Nodes</title>
 
-          <para>Try to keep resources running on their own nodes, if possible
-          for either one or multiple Thor clusters. If running some kind of
-          active/passive high availability, don't keep your active and passive
-          master on the same node. Try to keep Dali and ESP on separate nodes.
-          Even if you don't have the luxury of very many nodes, you want the
-          Thor master and the Dali (at minimum) to be on separate nodes. The
-          best practice is to keep as many components as possible on their own
+          <para>In a bare metal deployment, try as much as possible to keep
+          system target cluster resources running on their own physical nodes
+          or partitions. The idea being to avoid putting essential system
+          components on the same partitions as resource intensive and
+          highly-variable cluster data. Another similar type condition could
+          occur, if you are running some kind of active/passive high
+          availability. In this case don't keep your active and passive
+          managers on the same node. Try to keep Dali and ESP on separate
+          nodes. Even if you don't have the luxury of very many physical
+          nodes, you would still want to separate the Thor workers and the
+          Dali (at a minimum) to be on separate disks or partitions of the
+          physical nodes. Thor can have varying and expansive data sizes and
+          is not uncommon to have that data take up most of the available
+          capacity on that partition, or even all of it. If the Dali metadata
+          store is sharing the same disk partition as that cluster's Thor data
+          and insufficient disk space condition such as "out of disk space"
+          occurs, the Dali's metadata could become corrupted. The best
+          practice is to keep as many components as possible on their own
           nodes.</para>
 
-          <para>Another consideration for a multiple node system is to avoid
-          putting any of the components on nodes with slaves. This is not a
-          best practice and leads to an unbalanced cluster, resulting in those
-          slaves with less memory/cpu taking longer than the rest and dragging
-          the whole performance of the cluster down as a result.</para>
+          <para>Along those same lines be wary of the Thor worker nodes and
+          try to avoid putting any other system components on nodes with the
+          workers. That would not be optimal and leads to an unbalanced
+          cluster. Resulting in those workers sharing resources with less
+          available memory/cpu taking longer than the others and dragging the
+          whole performance of the cluster down as a result.</para>
         </sect3>
 
         <sect3 id="Thor_TimesOut">

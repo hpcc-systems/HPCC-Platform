@@ -5,6 +5,7 @@ import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { useECLWatchLogger } from "../hooks/logging";
 import { Level } from "@hpcc-js/util";
+import { logColor } from "src/Utility";
 
 interface LogViewerProps {
 }
@@ -35,7 +36,16 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
         filename: "errorwarnings",
         columns: {
             dateTime: { label: nlsHPCC.Time, width: 160, sortable: false },
-            level: { label: nlsHPCC.Severity, width: 112, sortable: false, formatter: React.useCallback(level => Level[level].toUpperCase(), []) },
+            level: {
+                label: nlsHPCC.Severity,
+                width: 112,
+                sortable: false,
+                formatter: React.useCallback(level => {
+                    const colors = logColor(level);
+                    const styles = { backgroundColor: colors.background, padding: "2px 6px", color: colors.foreground };
+                    return <span style={styles}>{Level[level].toUpperCase()}</span>;
+                }, [])
+            },
             id: { label: nlsHPCC.Source, width: 212, sortable: false },
             message: { label: nlsHPCC.Message, sortable: false }
         }

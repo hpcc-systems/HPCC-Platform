@@ -653,7 +653,7 @@ extern jlib_decl bool mountDrive(const char *drv,const RemoteFilename &rfn); // 
 extern jlib_decl bool unmountDrive(const char *drv); // linux only currently
 
 extern jlib_decl IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, StringBuffer &tmpName, IFOmode mode=IFOcreate);
-
+extern jlib_decl IFile * writeToProtectedTempFile(const char * component, const char * prefix, size_t len, const void * data);
 
 // used by remote copy
 interface ICopyFileIntercept

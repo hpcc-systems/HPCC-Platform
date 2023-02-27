@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import * as ESPActivity from "src/ESPActivity";
 import * as Utility from "src/Utility";
@@ -110,7 +110,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 formatter: React.useCallback(function (_gid, row) {
                     if (activity.isInstanceOfWorkunit(row)) {
                         if (row.GraphName) {
-                            return <Link href={`#/graphs/${row.GraphName}/${row.GID}`}>{row.GraphName}-{row.GID}</Link>;
+                            return `<a href='#/graphs/${row.GraphName}/${row.GID}'>${row.GraphName}-${row.GID}</a>`;
                         }
                     }
                     return "";

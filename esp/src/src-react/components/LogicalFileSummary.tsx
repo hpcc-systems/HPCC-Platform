@@ -1,6 +1,8 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { format as d3Format } from "@hpcc-js/common";
 import { DFUService, WsDfu } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { formatCost } from "src/Session";
 import * as Utility from "src/Utility";
@@ -15,6 +17,8 @@ import { RenameFile } from "./forms/RenameFile";
 import { ReplicateFile } from "./forms/ReplicateFile";
 import { replaceUrl } from "../util/history";
 
+const logger = scopedLogger("src-react/components/LogicalFileSummary.tsx");
+
 import "react-reflex/styles.css";
 
 const dfuService = new DFUService({ baseUrl: "" });
@@ -24,6 +28,8 @@ interface LogicalFileSummaryProps {
     logicalFile: string;
     tab?: string;
 }
+
+const formatInt = d3Format(",");
 
 export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps> = ({
     cluster,
@@ -51,7 +57,7 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
                     replaceUrl("/files");
                 }
-            });
+            }).catch(err => logger.error(err));
         }, [file])
     });
 
@@ -166,10 +172,10 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
                 "KeyType": { label: nlsHPCC.KeyType, type: "string", value: file?.KeyType, readonly: true },
-                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
                 "Format": { label: nlsHPCC.Format, type: "string", value: file?.Format, readonly: true },
                 "IsCompressed": { label: nlsHPCC.IsCompressed, type: "checkbox", value: file?.IsCompressed, readonly: true },
-                "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? file?.CompressedFileSize.toString() : "", readonly: true },
+                "CompressedFileSizeString": { label: nlsHPCC.CompressedFileSize, type: "string", value: file?.CompressedFileSize ? formatInt(file?.CompressedFileSize) : "", readonly: true },
+                "Filesize": { label: nlsHPCC.FileSize, type: "string", value: file?.Filesize, readonly: true },
                 "PercentCompressed": { label: nlsHPCC.PercentCompressed, type: "string", value: file?.PercentCompressed, readonly: true },
                 "Modified": { label: nlsHPCC.Modified, type: "string", value: file?.Modified, readonly: true },
                 "ExpirationDate": { label: nlsHPCC.ExpirationDate, type: "string", value: file?.ExpirationDate, readonly: true },

@@ -5939,6 +5939,24 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
     }
 }
 
+IFile * writeToProtectedTempFile(const char * component, const char * prefix, size_t len, const void * data)
+{
+    Owned<IFile> protectedFile;
+    StringBuffer tempDir;
+    getTempFilePath(tempDir, component, nullptr);
+
+    StringBuffer tempFilename;
+    OwnedIFileIO io = createUniqueFile(tempDir, prefix, NULL, tempFilename);
+    io->write(0, len, data);
+    io->close();
+
+    //Prevent any other users from accessing the file
+    protectedFile.setown(createIFile(tempFilename));
+    protectedFile->setFilePermissions(0700);
+
+    return protectedFile.getClear();
+}
+
 unsigned sortDirectory( CIArrayOf<CDirectoryEntry> &sortedfiles,
                         IDirectoryIterator &iter, 
                         SortDirectoryMode mode,

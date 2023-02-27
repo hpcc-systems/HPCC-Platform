@@ -1319,6 +1319,83 @@ global:
         <para>You can specify the override flags multiple times. The priority
         will be given to the last (right-most) file specified.</para>
       </sect3>
+
+      <sect3 id="YGlobalExpertsets">
+        <title>Global/Expert Settings</title>
+
+        <para>The 'expert' section under 'global' of the values.yaml should be
+        used to define low-level, testing, or developer settings. This section
+        of the helm chart is intended to be used for custom, low-level or
+        debugging options., therefore in most deployments, it should remain
+        empty.</para>
+
+        <para>This is an example of what the global/expert section could look
+        like:</para>
+
+        <programlisting>global:
+  expert:
+    numRenameRetries: 3 
+    maxConnections: 10 
+    keepalive: 
+      time: 200 
+      interval: 75 
+      probes: 9 
+</programlisting>
+
+        <para>NOTE: Some components (such as the DfuServer and Thor) also have
+        an 'expert' settings area (see the values schema) that can be used for
+        relevant settings on a per component instance basis, rather than
+        setting them globally.</para>
+
+        <para>The following options are currently available:</para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term>numRenameRetries</term>
+
+              <listitem>
+                <para>(unsigned) If set to a positive number, the platform
+                will re-attempt to perform a rename of a physical file on
+                failure (after a short delay). This should not normally be
+                needed, but on some file systems it may help mitigate issues
+                where the file has just been closed and not exposed correctly
+                at the posix layer.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>maxConnections</term>
+
+              <listitem>
+                <para>(unsigned) This is a DFU Server setting. If set, it will
+                limit the maximum number of parallel connections and partition
+                streams that will be active at any one time. By default a DFU
+                job will run as many active connection/streams as there are
+                partitions involved in the spray, limited to an absolute
+                maximum of 800. The maxConnections setting can be used to
+                reduce this concurrency. This might be helpful in some
+                scenarios where the concurrency is causing network congestion
+                and degraded performance.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>keepalive</term>
+
+              <listitem>
+                <para>(time: unsigned, interval: unsigned, probes: unsigned)
+                See keepalive example above. If set, these settings will
+                override the system default socket keepalive settings each
+                time the platform creates a socket. This may be useful in some
+                scenarios if the connections would otherwise be closed
+                prematurely by external factors (e.g., firewalls). An example
+                of this is that Azure instances will close sockets that have
+                been idle for greater than 4 minutes that are connected
+                outside of its networks.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect3>
     </sect2>
   </sect1>
 </chapter>

@@ -201,10 +201,21 @@
               This allows you to have multiple configurations where the
               compiler matches each server you need to access. Check the
               <emphasis role="bold">Override Automatic Compiler
-              Selection</emphasis> checkbox and specify the Complier that
-              matches your HPCC Systems instance.</para>
+              Selection</emphasis> checkbox and specify the Complier you want
+              to use. </para>
 
-              <para><graphic fileref="../../images/CT03a.jpg" /></para>
+              <para>For <emphasis role="bold">Compiler</emphasis>, it is
+              usually best to let the system select the best match for you.
+              You can see the available compilers in the <emphasis
+              role="bold">Best Compiler Match</emphasis> drop list. </para>
+
+              <para>Use the <emphasis role="bold">Scan</emphasis> button to
+              update the list of available compilers. Use the <emphasis
+              role="bold">Match</emphasis> button to find the best match.
+              </para>
+
+              <para><graphic
+              fileref="../../images/CT03a.jpg" /><parameter></parameter></para>
             </listitem>
 
             <listitem>

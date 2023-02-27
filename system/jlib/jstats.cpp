@@ -933,6 +933,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(LeafFetch) },
     { TIMESTAT(BlobFetch) },
     { CYCLESTAT(BlobFetch) },
+    { SIZESTAT(PeakSpillFile) },
 };
 
 

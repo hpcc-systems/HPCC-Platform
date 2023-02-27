@@ -6706,7 +6706,6 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         setPublishFileSize(newFileName, fileDesc);
         newFile.setown(queryDistributedFileDirectory().createNew(fileDesc));
         newFile->validate();
-        newFile->setAccessed();
         // JCSMORE attach() should have a timeout, then req.getLockTimeoutMs() should be used here.
         newFile->attach(normalizeTempFileName, userDesc);
 

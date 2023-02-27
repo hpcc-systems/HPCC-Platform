@@ -126,6 +126,7 @@ protected:
     unsigned usageCount;
     CDfsLogicalFileName dlfn;
     StringBuffer tempExternalName;
+    CFileUsageEntry * tmpUsage = nullptr;
 
     void open();
     void removeFiles();
