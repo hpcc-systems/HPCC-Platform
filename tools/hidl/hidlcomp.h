@@ -1017,7 +1017,7 @@ public:
         validateProfileExecutionOptions(executionProfilingOptions);
     }
 
-    const char *getExecutionProfilingMetricName() const
+    const char *getExecutionProfilingMetricVariableName() const
     {
         return executionProfilingHistogramVariableName.c_str();
     }
@@ -1315,6 +1315,8 @@ public:
     void write_clarion_esp_interfaces();
 
     void processExecutionProfiling();
+
+    bool isProcessExecutionEnabled();
 
     const char *getPackageName(){return packagename;}
     char *       filename;

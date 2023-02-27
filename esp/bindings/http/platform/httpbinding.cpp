@@ -295,6 +295,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     m_configFile.set(tree ? tree->queryProp("@config") : "esp.xml");
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
     m_wsdlVer=0.0;
+    processName.set(procname);
 
     // get the config default version
     const char* defVersion = bnd_cfg->queryProp("@defaultServiceVersion");
@@ -508,7 +509,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
         return;
     }
 
-    processName.set(procname);
     readAuthDomainCfg(proc_cfg);
 
     if ((domainAuthType == AuthPerSessionOnly) || (domainAuthType == AuthTypeMixed))

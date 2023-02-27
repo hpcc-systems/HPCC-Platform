@@ -26,4 +26,5 @@
 #define ESPCOMMON_API DECL_IMPORT
 #endif
 
+ESPCOMMON_API std::shared_ptr<hpccMetrics::ScaledHistogramMetric> registerServiceMethodProfilingMetric(const char *processName, const char *serviceName, const char *methodName, const char *desc, const char *profilingOptions);
 ESPCOMMON_API std::shared_ptr<hpccMetrics::ScaledHistogramMetric> registerProfilingMetric(const char *histogramMetricName, const char *desc, const char *profilingOptions);

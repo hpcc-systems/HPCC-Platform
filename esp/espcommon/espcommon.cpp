@@ -52,7 +52,17 @@ static std::vector<__uint64> getExecutionProfileBuckets(const char *profileOptio
     return buckets;
 }
 
-// Registers a profiling metric for an ESP service method
+// Generate metric name for the indicated service method and register a profiling metric
+ESPCOMMON_API std::shared_ptr<hpccMetrics::ScaledHistogramMetric> registerServiceMethodProfilingMetric(
+        const char *processName, const char *serviceName, const char *methodName,
+        const char *desc, const char *profilingOptions)
+{
+    std::string metricName(processName);
+    metricName.append(".").append(serviceName).append(".").append(methodName);
+    return registerProfilingMetric(metricName.c_str(), desc, profilingOptions);
+}
+
+// Registers a profiling metric
 ESPCOMMON_API std::shared_ptr<hpccMetrics::ScaledHistogramMetric> registerProfilingMetric(const char *histogramMetricName, const char *desc, const char *profilingOptions)
 {
     return hpccMetrics::registerCyclesToNsScaledHistogramMetric(histogramMetricName, desc, getExecutionProfileBuckets(profilingOptions));

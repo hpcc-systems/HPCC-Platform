@@ -28,6 +28,8 @@
 #include "platform.h"
 #include "jstatcodes.h"
 #include "jatomic.hpp"
+#include <regex>
+
 
 
 namespace hpccMetrics {
@@ -358,7 +360,7 @@ struct SinkInfo
 class jlib_decl MetricsManager
 {
 public:
-    MetricsManager() {}
+    MetricsManager() : nameValidator("^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$") {}
     ~MetricsManager();
     void init(IPropertyTree *pMetricsTree);
     void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
@@ -378,6 +380,7 @@ protected:
     std::map<std::string, std::unique_ptr<SinkInfo>> sinks;
     std::map<std::string, std::weak_ptr<IMetric>> metrics;
     std::mutex metricVectorMutex;
+    std::regex nameValidator;
 };
 
 jlib_decl std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData());
