@@ -336,6 +336,16 @@ jobs:
           cmake -S ./HPCC-Platform -B ./build ${{ matrix.cmake_config_options }}
           cmake --build ./build ${{ matrix.cmake_build_options }}
 
+      - name: WinTest
+        if: ${{ matrix.os == "windows-2022" && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
+        shell: bash
+        run: |
+          find ./build -name 'eclcc'
+          echo "OUTPUT(1);" > test.ecl
+          cat ./test.ecl
+          ./build/Release/bin/eclcc -g ./test.ecl
+          ./a.out
+
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v3
