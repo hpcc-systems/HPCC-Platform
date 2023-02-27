@@ -199,6 +199,7 @@ class CFileUsageEntry : public CInterface
     unsigned usage;
     graph_id graphId;
     WUFileKind fileKind;
+    offset_t size = 0;
 public:
     CFileUsageEntry(const char *_name, graph_id _graphId, WUFileKind _fileKind, unsigned _usage) :name(_name), graphId(_graphId), fileKind(_fileKind), usage(_usage) { }
     unsigned queryUsage() const { return usage; }
@@ -208,16 +209,24 @@ public:
     void decUsage() { --usage; }
 
     const char *queryFindString() const { return name; }
+    inline void setSize(offset_t _size) { size = _size; }
+    inline offset_t getSize() const { return size; }
 };
 
 typedef IIteratorOf<CFileUsageEntry> IFileUsageIterator;
 
 interface IGraphTempHandler : extends IInterface
 {
-    virtual void registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind=WUFileStandard, StringArray *clusters=NULL) = 0;
+    virtual CFileUsageEntry * registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind=WUFileStandard, StringArray *clusters=NULL) = 0;
     virtual void deregisterFile(const char *name, bool kept=false) = 0;
     virtual void clearTemps() = 0;
     virtual IFileUsageIterator *getIterator() = 0;
+    virtual void serializeUsageStats(MemoryBuffer &mb, graph_id gid) = 0;
+    static void serializeNullUsageStats(MemoryBuffer &mb)
+    {
+        mb.append((offset_t)0);
+        mb.append((offset_t)0);
+    }
 };
 
 class CGraphDependency : public CInterface
@@ -564,10 +573,10 @@ public:
     }
     virtual bool removeTemp(const char *name) = 0;
 // IGraphTempHandler
-    virtual void registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters);
-    virtual void deregisterFile(const char *name, bool kept=false);
-    virtual void clearTemps();
-    virtual IFileUsageIterator *getIterator()
+    virtual CFileUsageEntry * registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters) override;
+    virtual void deregisterFile(const char *name, bool kept=false) override;
+    virtual void clearTemps() override;
+    virtual IFileUsageIterator *getIterator() override
     {
         class CIterator : implements IFileUsageIterator, public CInterface
         {
@@ -582,6 +591,7 @@ public:
         };
         return new CIterator(tmpFiles);
     }
+    virtual void serializeUsageStats(MemoryBuffer &mb, graph_id gid) override;
 };
 
 class graph_decl CGraphStub : public CInterface, implements IThorChildGraph

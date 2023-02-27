@@ -2285,14 +2285,16 @@ IThorGraphResults *CGraphBase::createThorGraphResults(unsigned num)
 
 ////
 
-void CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
+CFileUsageEntry * CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
 {
     assertex(temp);
     LOG(MCdebugProgress, thorJob, "registerTmpFile name=%s, usageCount=%d", name, usageCount);
     CriticalBlock b(crit);
     if (tmpFiles.find(name))
         throw MakeThorException(TE_FileAlreadyUsedAsTempFile, "File already used as temp file (%s)", name);
-    tmpFiles.replace(* new CFileUsageEntry(name, graphId, fileKind, usageCount));
+    CFileUsageEntry *fileEntry = new CFileUsageEntry(name, graphId, fileKind, usageCount);
+    tmpFiles.replace(*fileEntry);
+    return fileEntry;
 }
 
 void CGraphTempHandler::deregisterFile(const char *name, bool kept)
@@ -2341,6 +2343,22 @@ void CGraphTempHandler::clearTemps()
     tmpFiles.kill();
 }
 
+void CGraphTempHandler::serializeUsageStats(MemoryBuffer &mb, graph_id gid)
+{
+    CriticalBlock b(crit);
+    Owned<IFileUsageIterator> iter = getIterator();
+    offset_t activeSpillSize = 0;
+    offset_t graphSpillSize = 0;
+    ForEach(*iter)
+    {
+        CFileUsageEntry &entry = iter->query();
+        if (entry.queryGraphId() == gid)
+            graphSpillSize += entry.getSize();
+        activeSpillSize += entry.getSize();
+    }
+    mb.append(graphSpillSize);
+    mb.append(activeSpillSize);
+}
 /////
 
 class CGraphExecutor;

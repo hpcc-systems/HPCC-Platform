@@ -917,15 +917,16 @@ public:
         queryThorFileManager().clearCacheEntry(name);
         return true;
     }
-    virtual void registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
+    virtual CFileUsageEntry * registerFile(const char *name, graph_id graphId, unsigned usageCount, bool temp, WUFileKind fileKind, StringArray *clusters)
     {
         if (!temp || job.queryUseCheckpoints())
         {
             Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
             wu->addFile(name, clusters, usageCount, fileKind, job.queryGraphName());
+            return nullptr;
         }
         else
-            CGraphTempHandler::registerFile(name, graphId, usageCount, temp, fileKind, clusters);
+            return CGraphTempHandler::registerFile(name, graphId, usageCount, temp, fileKind, clusters);
     }
     virtual void deregisterFile(const char *name, bool kept) // NB: only called for temp files
     {
@@ -2690,6 +2691,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
         sendActivityInitData(); // has to be done at least once
         // NB: At this point, on the slaves, the graphs will start
     }
+    totalActiveSpillSize = graphSpillSize = 0;
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())
     {
@@ -2720,6 +2722,11 @@ void CMasterGraph::handleSlaveDone(unsigned node, MemoryBuffer &mb)
         sdMb.setBuffer(len, (void *)d);
         act->slaveDone(node, sdMb);
     }
+    offset_t activeSpillSize, nodeGraphSpill;
+    mb.read(nodeGraphSpill);
+    mb.read(activeSpillSize);
+    totalActiveSpillSize += activeSpillSize;
+    graphSpillSize += nodeGraphSpill;
 }
 
 void CMasterGraph::getFinalProgress()
@@ -2799,6 +2806,7 @@ void CMasterGraph::getFinalProgress()
             }
         }
     }
+    jobM->updateActiveSpillSize(graphSpillSize, totalActiveSpillSize);
 }
 
 void CMasterGraph::done()

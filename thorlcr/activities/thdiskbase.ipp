@@ -50,6 +50,7 @@ class CWriteMasterBase : public CMasterActivity
     bool published;
     StringAttr fileName;
     CDfsLogicalFileName dlfn;
+    offset_t totalFileSize = 0;
 protected:
     StringArray clusters;
     Owned<IFileDescriptor> fileDesc;
@@ -64,6 +65,7 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave);
     virtual void done();
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb);
+    virtual void getActivityStats(IStatisticGatherer & stats);
 };
 
 

@@ -2695,6 +2695,51 @@ cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
     }
     return totalCost;
 }
+
+// totalSizeSpill and peakSizeSpill should be initialized to zero
+void gatherSpillSize(const IConstWorkUnit * wu, const char *scope, stat_type & totalSizeSpill, stat_type & peakSizeSpill)
+{
+    WuScopeFilter filter;
+    if (!isEmptyString(scope))
+        filter.addScope(scope);
+    else
+        filter.addScope("");
+    filter.setIncludeNesting(2);
+    filter.addSource("global");
+    filter.addOutputStatistic(StSizeSpillFile);
+    filter.addOutputStatistic(StSizePeakSpillFile);
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    for (it->first(); it->isValid(); )
+    {
+        stat_type value = 0;
+        if (it->getStat(StSizeSpillFile, value))
+        {
+            totalSizeSpill += value;
+            if (it->getStat(StSizePeakSpillFile, value))
+            {
+                if (value>peakSizeSpill)
+                    peakSizeSpill = value;
+            }
+            it->nextSibling();
+        }
+        else
+        {
+            it->next();
+        }
+    }
+}
+
+void updateSpillSize(IWorkUnit * wu, const char * scope, StatisticScopeType scopeType)
+{
+    stat_type totalSizeSpill = 0, peakSizeSpill = 0;
+    gatherSpillSize(wu, scope, totalSizeSpill, peakSizeSpill);
+    if (totalSizeSpill)
+    {
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, StSizePeakSpillFile, nullptr, peakSizeSpill, 1, 0, StatsMergeReplace);
+        wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scope, StSizeSpillFile, nullptr, totalSizeSpill, 1, 0, StatsMergeReplace);
+    }
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 
