@@ -11,6 +11,7 @@
 <xsl:param name="chapter.autolabel" select="0"/>  
 <xsl:param name="shade.verbatim" select="1"/> 
 <!--xsl:param name="body.font.family" select="sans-serif"/-->
+<xsl:param name="body.font.family">sans-serif</xsl:param>
 <xsl:param name="body.start.indent" select="0"/>
 <xsl:param name="callout.graphics" select="0"/>
 <xsl:param name="footer.column.widths" select="'0 3 0'"/>
