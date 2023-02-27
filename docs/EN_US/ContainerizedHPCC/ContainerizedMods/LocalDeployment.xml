@@ -458,8 +458,10 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
 
           <listitem>
             <para>The <emphasis role="strong">originalperson</emphasis> file
-            is available from the HPCC Systems Web site
-            (https://cdn.hpccsystems.com/install/docs/3_8_0_8rc_CE/OriginalPerson).</para>
+            is available from the HPCC Systems Web site: </para>
+
+            <para
+            role="syntax">(https://cdn.hpccsystems.com/install/docs/3_8_0_8rc_CE/OriginalPerson).</para>
           </listitem>
         </varlistentry>
       </variablelist></para>
