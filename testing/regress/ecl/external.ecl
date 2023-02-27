@@ -6,10 +6,10 @@ rec := RECORD
 END;
 ds := DATASET([{'a'}], rec);
 
-dropzonePath := File.GetDefaultDropZone() +'/' : STORED('dropzonePath');
+dropzonePath := File.GetDefaultDropZone() : STORED('dropzonePath');
 
 string getFName(string ext) := FUNCTION
- RETURN File.ExternalLogicalFileName('localhost', dropzonePath)  + WORKUNIT + 'external' + ext;
+ RETURN File.ExternalLogicalFileName('localhost', dropzonePath) + '::' + WORKUNIT + 'external' + ext;
 END;
 
 external1 := getFName('1');
