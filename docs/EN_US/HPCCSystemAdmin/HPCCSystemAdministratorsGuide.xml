@@ -2281,23 +2281,35 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         number of cores divided by two is the maximum number of Thor clusters
         to use.</para>
 
-        <sect3>
-          <title>Multiple Nodes</title>
+        <sect3 id="SepClusterNodes">
+          <title>Separate Worker Nodes</title>
 
-          <para>Try to keep resources running on their own nodes, if possible
-          for either one or multiple Thor clusters. If running some kind of
-          active/passive high availability, don't keep your active and passive
-          master on the same node. Try to keep Dali and ESP on separate nodes.
-          Even if you don't have the luxury of very many nodes, you want the
-          Thor master and the Dali (at minimum) to be on separate nodes. The
-          best practice is to keep as many components as possible on their own
+          <para>In a bare metal deployment, try as much as possible to keep
+          system target cluster resources running on their own physical nodes
+          or partitions. The idea being to avoid putting essential system
+          components on the same partitions as resource intensive and
+          highly-variable cluster data. Another similar type condition could
+          occur, if you are running some kind of active/passive high
+          availability. In this case don't keep your active and passive
+          managers on the same node. Try to keep Dali and ESP on separate
+          nodes. Even if you don't have the luxury of very many physical
+          nodes, you would still want to separate the Thor workers and the
+          Dali (at a minimum) to be on separate disks or partitions of the
+          physical nodes. Thor can have varying and expansive data sizes and
+          is not uncommon to have that data take up most of the available
+          capacity on that partition, or even all of it. If the Dali metadata
+          store is sharing the same disk partition as that cluster's Thor data
+          and insufficient disk space condition such as "out of disk space"
+          occurs, the Dali's metadata could become corrupted. The best
+          practice is to keep as many components as possible on their own
           nodes.</para>
 
-          <para>Another consideration for a multiple node system is to avoid
-          putting any of the components on nodes with slaves. This is not a
-          best practice and leads to an unbalanced cluster, resulting in those
-          slaves with less memory/cpu taking longer than the rest and dragging
-          the whole performance of the cluster down as a result.</para>
+          <para>Along those same lines be wary of the Thor worker nodes and
+          try to avoid putting any other system components on nodes with the
+          workers. That would not be optimal and leads to an unbalanced
+          cluster. Resulting in those workers sharing resources with less
+          available memory/cpu taking longer than the others and dragging the
+          whole performance of the cluster down as a result.</para>
         </sect3>
 
         <sect3 id="Thor_TimesOut">

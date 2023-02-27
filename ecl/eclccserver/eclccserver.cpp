@@ -650,6 +650,9 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         eclccCmd.appendf(" --component=%s", queryStatisticsComponentName());
         eclccCmd.appendf(" --fetchrepos=1 --updaterepos=1");  // Default these options on in eclccserver (can be overridden in debug options)
 
+        if (workunit->getDebugValueBool("createQueryArchive", config->getPropBool("@createQueryArchive", true)))
+            eclccCmd.appendf(" -q -qa");
+
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)
         {

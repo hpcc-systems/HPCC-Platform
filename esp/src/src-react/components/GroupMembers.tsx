@@ -52,7 +52,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         WsAccess.GroupMemberQuery({
             request: { GroupName: groupname }
         })
-            .then(({ Users }) => setData(Users?.User ?? []))
+            .then(({ GroupMemberQueryResponse }) => setData(GroupMemberQueryResponse?.Users?.User ?? []))
             .catch(err => logger.error(err));
     }, [groupname]);
 
