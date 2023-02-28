@@ -33,6 +33,8 @@ export default {
                     { text: 'Development Guide', link: '/devdoc/Development' },
                     { text: 'C++ Style Guide', link: '/devdoc/StyleGuide' },
                     { text: 'ECL Style Guide', link: '/ecllibrary/StyleGuide.html' },
+                    { text: 'Code Submission Guidelines', link: '/devdoc/CodeSubmissions' },
+                    { text: 'Code Review Guidelines', link: '/devdoc/CodeReviews' },
                 ]
             },
             {
@@ -40,6 +42,7 @@ export default {
                 items: [
                     { text: 'Workunit Workflow', link: '/devdoc/Workunits' },
                     { text: 'Code Generator', link: '/devdoc/CodeGenerator' },
+                    { text: 'Roxie', link: '/devdoc/roxie' },
                     { text: 'Memory Manager', link: '/devdoc/MemoryManager' },
                     { text: 'Metrics', link: '/devdoc/Metrics' },
                 ]

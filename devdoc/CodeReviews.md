@@ -1,21 +1,6 @@
 # Code Review Guidelines
 
-This document describes some of the goals and expectations for code reviewers.
-
-## Pull requests
-There are a few things that should be considered when creating a PR to increase the likelihood that they can be accepted quickly.
-
-* Think about the checkboxes.\
-  The check boxes are there to remind you to consider different aspects.  If you tick a box and have not really thought about the item then prepare to be embarrassed!
-* Ensure the reviewer has enough information to review the change.\
-  The code reviewer only has the JIRA and the PR to go on.  The JIRA (or associated documentation) should contain enough details to review the PR - e.g. the purpose/main aim etc.. If the scope of the jira has changed then the jira should be updated to reflect that.
-* Check for silly mistakes\
-  Scan the code after creating the PR to check there are no tracing/other debugging artifacts or typos.  It doesn't take long, and often catches trivial issues.  It can avoid the need for a cycle of code-review/fixes.
-* Request one or more reviews (see below)
-
-## GitHub "Reviewers" feature
-Contributors should use the github reviewers section on the PR to request reviews and feedback from 1 or more user.  After a contributor has pushed a set of changes in response to a review, they should refresh the github review status, so the users are notified it is ready for re-review.
-Reviewers should check for PRs that ready for their review via github's webpage (filter "review-requested:\<reviewer-id>") or via the github CLI (e.g. gh pr status)
+The [Code Submissions](CodeSubmissions.md) document is aimed at developers that are submitting PRs.  This document describes some of the goals and expectations for code reviewers.
 
 ## Review Goals
 Code reviews have a few different goals:
@@ -23,7 +8,7 @@ Code reviews have a few different goals:
   These should have been caught earlier, but better later than never...
 * Catch bugs early (incorrect behaviour, inefficiencies, security issues)
 * Ensure the code is readable and maintainable.\
-  This includes following the project coding standards (see [Style Guide](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/StyleGuide.rst)).
+  This includes following the project coding standards (see [Style Guide](StyleGuide.md)).
 * A opportunity for training/passing on information.\
   For example providing information about how the current system works, functionality that is already available or suggestions of other approaches the developer may not have thought of.
 
@@ -37,6 +22,8 @@ Some general comments on code reviews:
   ...rather than wasting time trying to second-guess the reviewer.
 - Contributors should feel free to push back if they consider comments are too picky.\
   The reviewer can either agree, or provide reasons why they consider it to be an issue.
+- The reviewer should not extend the scope of the original change.\
+  If the change could be extended, or only partially solves the issue, a new JIRA should be created for the extra work.  If the change will introduce regressions, or fundamentally fails to solve the problem then this does not apply!
 - Clearly indicate if a review is incomplete.\
   Sometimes a significant design problem means the rest of the code has not been reviewed in detail.  Other times an initial review has picked up a set of issues, but the reviewer needs to go back and check other aspects in detail.  If this is the case it should be explicitly noted.
 - Repeated issues.\
@@ -61,6 +48,34 @@ All code reviews don't need to be equally strict.  The "strictness" of the revie
 * If the code is in a core library then efficiency and edge cases will be more important.
 * If it is a core part of the system then security is key.  If it is a developer only tool then edge cases are less significant.
 * Reviews of draft pull requests are likely to concentrate on the overall approach, rather than the details.  They are likely to be more informal (e.g. not always using comments tags).
+
+## Checklist
+
+What are some examples of checks to bear in mind when reviewing code?
+
+General:
+* Is the commit title in the correct format, and understandable in a change log?
+* Is the target correct?
+* Is the size appropriate.  Could it have been split up?
+* Does the jira contain details of the change, especially the reason?
+* Does it duplicate other functionality?
+* Does the style match the context and the style guide?
+* Is the design encapsulated at the right level?  Too abstract or too concrete?
+
+Content:
+* Silly mistakes - indent, typos, commented outcode, spurious changes.
+* Does it introduce any memory leaks?  E.g. Correct use of linking?  Are exceptions released?
+* Thread safety
+  - critical sections or atomic variables if accessed by more than one thread
+  - race conditions
+  - deadlock
+* authorization.  Should it be checked, does it fail by default?
+* Any potential for overflow or DOS?  Are all user inputs validated and all lengths protected?
+* Are all secrets stored and passed securely?
+* Comments explaining why for any code that is complex or counter-intuitive.
+* Backward compatibility.\
+  Could this possibly cause problems if data produced with this change is used in earlier/later versions?  Could there be problems if it was used in a mixed-version environment?
+
 
 ## Comment tags
 When reading comments in a review it can sometimes be hard to know why the reviewer made a comment, or what response is expected.  If there is any doubt the contributor should ask.  However to make it clearer we are aiming to always add a tag to the front of each review comment.  The tag will give an indication of why the comment is being made, its severity and what kind of response is expected.  Here is a provisional table of tags:
@@ -90,5 +105,5 @@ documentation: | This change may have an impact on documentation | Make sure cha
 
 The comments should always be constructive.  The reviewer should have a reason for each of them, and be able to articulate the reason in the comment or when asked.  "I wouldn't have done it like that" is not a good enough on its own!
 
-Similarly there is a difference in opinion within the team on some style issues - e.g. standard libraries or jlib, inline or out of line functions, nested or non-nested classes.  Reviews should try and avoid commenting on these unless there is a clear reason why they are significant (functionality, efficiency, compile time) and if so spell it out.  Code reviewers should discuss any style issues that they consider should be universally adopted that are not in the [style guide](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/StyleGuide.rst).
+Similarly there is a difference in opinion within the team on some style issues - e.g. standard libraries or jlib, inline or out of line functions, nested or non-nested classes.  Reviews should try and avoid commenting on these unless there is a clear reason why they are significant (functionality, efficiency, compile time) and if so spell it out.  Code reviewers should discuss any style issues that they consider should be universally adopted that are not in the [style guide](StyleGuide.md).
 
