@@ -58,7 +58,7 @@ export const About: React.FunctionComponent<AboutProps> = ({
         <Pivot>
             <PivotItem itemKey="about" headerText={nlsHPCC.About}>
                 <div style={{ minHeight: "208px", paddingTop: "32px" }}>
-                    <TableGroup fields={{
+                    <TableGroup width="100%" fields={{
                         platformVersion: { label: `${nlsHPCC.Platform}:`, type: "string", value: version || "???", readonly: true },
                         eclwatchVersion: { label: "ECL Watch:", type: "string", value: eclwatchVersion, readonly: true },
                     }}>
