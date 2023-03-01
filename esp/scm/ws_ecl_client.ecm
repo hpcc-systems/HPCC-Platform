@@ -33,7 +33,7 @@ SCMInterface IClientWsEclResp(IInterface)
 {
    unsigned long getRequestId();
    unsigned long getClientValue();
-   
+
    WsEclClientRequestState getRequestState();
    const char *getResultsXML();
    const char *getSoapMessage();
@@ -123,18 +123,17 @@ SCMInterface IClientWsEclService(IInterface)
     void removeServiceUrl(const char *url);
     const char* queryServiceUrl();
     IClientWsEclRequest* createRequest(const char *methodName);
-   
+
     IClientWsEclResp* search(IClientWsEclRequest* request);
     void searchAsync(IClientWsEclRequest* request, IClientWsEclEvents &events);
     IClientWsEclResp* searchEx(IClientWsEclRequest* request, const char *user, const char *pw, const char *relm);
 
-    IClientWsEclResp* searchEx(IClientWsEclRequest* request,const char* URL, const char *user, const char *pw, const char *relm);   
-    IClientWsEclResp* sendHttpRequest(IClientWsEclRequest* request, const char* method, const char* URL, 
-                                                 const char *user, const char *pw, const char *realm, const char* httpPostVariableName, 
+    IClientWsEclResp* searchEx(IClientWsEclRequest* request,const char* URL, const char *user, const char *pw, const char *relm);
+    IClientWsEclResp* sendHttpRequest(IClientWsEclRequest* request, const char* method, const char* URL,
+                                                 const char *user, const char *pw, const char *realm, const char* httpPostVariableName,
                                                  bool encodeHttpPostBody);
 };
 
 
 extern "C" WS_ECL_CLIENT_API IClientWsEclService * getWsEclClient();
 extern "C" WS_ECL_CLIENT_API IClientWsEclService * createWsEclClient();
-
