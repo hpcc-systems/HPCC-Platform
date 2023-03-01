@@ -196,9 +196,20 @@ ${copyCSVRowsTPL(rows)} \
     }
 }
 
-function doDownload(type: string, wuid: string, sequence?: number, logicalName?: string) {
+interface doDownloadOpts {
+    type: string;
+    wuid?: string;
+    resultName?: string;
+    sequence?: number;
+    logicalName?: string;
+}
+
+function doDownload(opts: doDownloadOpts) {
     const base = new ESPBase();
-    if (wuid && sequence) {
+    const { type, wuid, resultName, sequence, logicalName } = { ...opts };
+    if (wuid && resultName) {
+        window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&ResultName=" + resultName, "_blank");
+    } else if (wuid && sequence !== undefined) {
         window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + wuid + "&Sequence=" + sequence, "_blank");
     } else if (logicalName) {
         window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&LogicalName=" + logicalName, "_blank");
@@ -334,11 +345,11 @@ export const Result: React.FunctionComponent<ResultProps> = ({
             key: "download", text: nlsHPCC.DownloadToCSV, iconOnly: true, iconProps: { iconName: "Download" },
             subMenuProps: {
                 items: [
-                    { key: "zip", text: nlsHPCC.Zip, onClick: () => doDownload("zip", wuid, result.Sequence, result.LogicalFileName) },
-                    { key: "gzip", text: nlsHPCC.GZip, onClick: () => doDownload("gzip", wuid, result.Sequence, result.LogicalFileName) },
-                    { key: "json", text: nlsHPCC.JSON, onClick: () => doDownload("json", wuid, result.Sequence, result.LogicalFileName) },
-                    { key: "xls", text: nlsHPCC.XLS, title: nlsHPCC.DownloadToCSVNonFlatWarning, onClick: () => doDownload("xls", wuid, result.Sequence, result.LogicalFileName) },
-                    { key: "csv", text: nlsHPCC.CSV, title: nlsHPCC.DownloadToCSVNonFlatWarning, onClick: () => doDownload("csv", wuid, result.Sequence, result.LogicalFileName) },
+                    { key: "zip", text: nlsHPCC.Zip, onClick: () => doDownload({ type: "zip", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
+                    { key: "gzip", text: nlsHPCC.GZip, onClick: () => doDownload({ type: "gzip", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
+                    { key: "json", text: nlsHPCC.JSON, onClick: () => doDownload({ type: "json", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
+                    { key: "xls", text: nlsHPCC.XLS, title: nlsHPCC.DownloadToCSVNonFlatWarning, onClick: () => doDownload({ type: "xls", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
+                    { key: "csv", text: nlsHPCC.CSV, title: nlsHPCC.DownloadToCSVNonFlatWarning, onClick: () => doDownload({ type: "csv", wuid, resultName: result.ResultName, sequence: result.Sequence, logicalName: result.LogicalFileName }) },
                 ]
             }
         }
