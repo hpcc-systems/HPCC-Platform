@@ -59,10 +59,11 @@ USER hpcc
 ARG BUILD_USER=hpcc-systems
 ARG BUILD_TAG=none
 RUN echo BUILD_USER is ${BUILD_USER}
-RUN git clone --no-checkout https://github.com/${BUILD_USER}/HPCC-Platform.git
-
-WORKDIR /hpcc-dev/HPCC-Platform
-RUN git checkout ${BUILD_TAG} && \
+# NB: ensure the following 3 commands are done in one step, otherwise clone could succeed and get cached,
+# followed by an unsuccessful git checkout (because missing BUILD_TAG), meaning clone would not be redone
+RUN git clone --no-checkout https://github.com/${BUILD_USER}/HPCC-Platform.git && \
+    cd HPCC-Platform && \
+    git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
