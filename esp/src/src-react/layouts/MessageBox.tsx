@@ -46,6 +46,8 @@ interface MessageBoxProps {
     title: string;
     minWidth?: number;
     show: boolean;
+    modeless?: boolean;
+    blocking?: boolean;
     setShow: (_: boolean) => void;
     footer?: React.ReactNode;
     children?: React.ReactNode;
@@ -55,6 +57,8 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     title,
     minWidth = 360,
     show,
+    modeless = true,
+    blocking = true,
     setShow,
     footer,
     children
@@ -69,8 +73,8 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
 
     const close = React.useCallback(() => setShow(false), [setShow]);
 
-    return <Modal isOpen={show} onDismiss={close} isModeless={true} dragOptions={dragOptions}
-        isBlocking={true} containerClassName={contentStyles.container} styles={modalStyles}>
+    return <Modal isOpen={show} onDismiss={close} isModeless={modeless} dragOptions={dragOptions}
+        isBlocking={blocking} containerClassName={contentStyles.container} styles={modalStyles}>
         <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }} className="draggable">
             <h2>{title}</h2>
             <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} />
