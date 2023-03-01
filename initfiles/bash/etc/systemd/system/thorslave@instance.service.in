@@ -9,9 +9,7 @@ Group=@RUNTIME_GROUP@
 PermissionsStartOnly=false
 PIDFile=@PID_PATH@/%i.pid
 EnvironmentFile=@RUNTIME_PATH@/thorslaves/%i.cfg
-@spark_slave_start@
 ExecStart=@EXEC_PATH@/@processName@ @processArgs@
-@spark_slave_stop@
 
 [Install]
 DefaultInstance=my@component@
