@@ -5,18 +5,10 @@
 		}
 	],
 	"settings": {
-		"cmake.configureArgs": [
-			"-DCONTAINERIZED=OFF",
-			"-DUSE_OPTIONAL=OFF",
-			"-DCLIENTTOOLS_ONLY=ON", 
-			"-DINCLUDE_PLUGINS=OFF", 
-			"-DUSE_LIBMEMCACHED=OFF", 
-			"-DUSE_OPENLDAP=OFF", 
-			"-DUSE_CASSANDRA=OFF", 
-			"-DUSE_AZURE=OFF", 
-			"-DWSSQL_SERVICE=OFF"
+		"cmake.configureArgs": [],
+		"cmake.buildArgs": [
+			"--parallel"
 		],
-		"cmake.buildArgs": ["--parallel"],
 		"cmake.buildToolArgs": [
 			"-m"
 		],

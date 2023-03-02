@@ -19,7 +19,6 @@ MACRO(SET_PLUGIN_PACKAGE plugin)
     set(PLATFORM OFF)
     set(INCLUDE_PLUGINS OFF)
     set(SIGN_MODULES OFF)
-    set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
 ENDMACRO()
 
 set(VCPKG_INCLUDE "(windows | osx | linux)")
@@ -102,11 +101,6 @@ endif()
 set(VCPKG_GIT "${VCPKG_SUPPRESS}")
 if (USE_GIT)
     set(VCPKG_GIT "${VCPKG_INCLUDE}")
-endif()
-
-set(VCPKG_ICU "${VCPKG_SUPPRESS}")
-if (USE_ICU)
-    set(VCPKG_ICU "${VCPKG_INCLUDE}")
 endif()
 
 set(VCPKG_LIBXSLT "${VCPKG_SUPPRESS}")

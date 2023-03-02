@@ -6,17 +6,7 @@
 	],
 	"settings": {
 		"cmake.configureArgs": [
-			"-DCONTAINERIZED=OFF",
-			"-DUSE_OPTIONAL=OFF",
-			"-DINCLUDE_PLUGINS=ON",
-			"-DSUPPRESS_V8EMBED=ON",
-			"-DSUPPRESS_REMBED=ON",
-			"-DSUPPRESS_MEMCACHED=ON",
-			"-DSUPPRESS_MONGODBEMBED=ON",
-			"-DUSE_CASSANDRA=OFF",
-			"-DSUPPRESS_CASSANDRAEMBED=ON",
-			"-DUSE_CPPUNIT=ON",
-			"-DUSE_JAVA=OFF"
+
 		],
 	},
 	"extensions": {

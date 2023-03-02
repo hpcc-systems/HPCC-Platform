@@ -89,12 +89,7 @@ endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
 
-if(CENTOS_6_BOOST)
-  add_dependencies(eclrtl boost-regex)
-  target_link_libraries( eclrtl boost-regex)
-else()
-  target_link_libraries( eclrtl ${Boost_REGEX_LIBRARY} )
-endif()
+target_link_libraries( eclrtl ${Boost_REGEX_LIBRARY} )
 
 target_link_libraries ( eclrtl 
       jlib
@@ -102,14 +97,12 @@ target_link_libraries ( eclrtl
       roxiemem
     )
 
-if (USE_ICU)
-    include_directories (
-         ${ICU_INCLUDE_DIR}
-        )
-    target_link_libraries ( eclrtl
-          ${ICU_LIBRARIES}
-        )
-endif ()
+include_directories (
+      ${ICU_INCLUDE_DIR}
+    )
+target_link_libraries ( eclrtl
+      ${ICU_LIBRARIES}
+    )
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-delete-non-virtual-dtor -Wno-overloaded-virtual -Wno-deprecated-declarations")

@@ -54,10 +54,7 @@
             "name": "hiredis",
             "platform": "@VCPKG_REDIS@"
         },
-        {
-            "name": "icu",
-            "platform": "@VCPKG_ICU@"
-        },
+        "icu",
         {
             "name": "jsoncpp",
             "platform": "@VCPKG_ELASTICSTACK_CLIENT@"

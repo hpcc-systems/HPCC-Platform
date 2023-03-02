@@ -24,53 +24,59 @@
 
 project( memcachedplugin )
 
-if (MEMCACHED OR USE_LIBMEMCACHED)
-    ADD_PLUGIN(memcached)
-    if(MAKE_MEMCACHED OR USE_LIBMEMCACHED)
+if (MEMCACHED)
+    if(WIN32)
+        message(STATUS "libmemcached not available on Windows.  Disabling for build")
+    elseif(APPLE)
+        message(STATUS "libmemcached not available on macOS.  Disabling for build")
+    else()
+        ADD_PLUGIN(memcached)
+        if(MAKE_MEMCACHED)
 
-        find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION} REQUIRED)
+            find_package(LIBMEMCACHED REQUIRED)
 
-        set(
-            SRCS
-            memcachedplugin.hpp
-            memcachedplugin.cpp)
+            set(
+                SRCS
+                memcachedplugin.hpp
+                memcachedplugin.cpp)
 
-        include_directories(
-            ./../../system/include
-            ./../../rtl/eclrtl
-            ./../../rtl/include
-            ./../../common/deftype
-            ./../../system/jlib
-            ${LIBMEMCACHED_INCLUDE_DIR})
+            include_directories(
+                ./../../system/include
+                ./../../rtl/eclrtl
+                ./../../rtl/include
+                ./../../common/deftype
+                ./../../system/jlib
+                ${LIBMEMCACHED_INCLUDE_DIR})
 
-        add_definitions(-D_USRDLL -DECL_MEMCACHED_EXPORTS)
+            add_definitions(-D_USRDLL -DECL_MEMCACHED_EXPORTS)
 
-        #libmemcached-1.0.18 includes the header <cinttypes> which translates to <bits/cinttypes> requiring ISO C++ 2011 standard to build.
-        #All lesser versions explicitly include <tr1/cinttypes> which does not.
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
+            #libmemcached-1.0.18 includes the header <cinttypes> which translates to <bits/cinttypes> requiring ISO C++ 2011 standard to build.
+            #All lesser versions explicitly include <tr1/cinttypes> which does not.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 
-        HPCC_ADD_LIBRARY(memcachedplugin SHARED ${SRCS})
-        if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
-            message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-        elseif(NOT APPLE)
-            set_target_properties(memcachedplugin PROPERTIES NO_SONAME 1)
-        endif()
+            HPCC_ADD_LIBRARY(memcachedplugin SHARED ${SRCS})
+            if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
+                message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+            elseif(NOT APPLE)
+                set_target_properties(memcachedplugin PROPERTIES NO_SONAME 1)
+            endif()
 
-        target_link_libraries(
-            memcachedplugin
-            eclrtl
-            jlib
-            ${LIBMEMCACHED_LIBRARIES})
+            target_link_libraries(
+                memcachedplugin
+                eclrtl
+                jlib
+                ${LIBMEMCACHED_LIBRARIES})
 
-        install(
-            TARGETS memcachedplugin
-            DESTINATION plugins
-            CALC_DEPS)
+            install(
+                TARGETS memcachedplugin
+                DESTINATION plugins
+                CALC_DEPS)
 
-	if(TARGET generate-libmemcached)
-            target_link_libraries(memcachedplugin libmemcached libmemcachedutil)
-            add_dependencies(memcachedplugin generate-libmemcached)
-            install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
+            if(TARGET generate-libmemcached)
+                target_link_libraries(memcachedplugin libmemcached libmemcachedutil)
+                add_dependencies(memcachedplugin generate-libmemcached)
+                install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")
+            endif()
         endif()
     endif()
 endif()

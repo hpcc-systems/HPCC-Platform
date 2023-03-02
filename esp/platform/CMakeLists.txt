@@ -24,6 +24,18 @@
 
 project( esp ) 
 
+if(USE_LIBMEMCACHED)
+    if(WIN32)
+        message(STATUS "libmemcached not available on Windows.  Disabling for build")
+    elseif(APPLE)
+        message(STATUS "libmemcached not available on macOS.  Disabling for build")
+    else()
+        find_package(LIBMEMCACHED REQUIRED)
+        add_definitions(-DUSE_LIBMEMCACHED)
+        include_directories(${LIBMEMCACHED_INCLUDE_DIR})
+    endif()
+endif()
+
 set (    SRCS 
          application_config.cpp
          espcfg.cpp 
@@ -51,7 +63,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE -DESPCFG_EXPORTS)
 
 HPCC_ADD_EXECUTABLE ( esp ${SRCS} )
-install ( TARGETS esp RUNTIME DESTINATION ${EXEC_DIR} )
+install ( TARGETS esp RUNTIME DESTINATION ${EXEC_DIR} CALC_DEPS )
 target_link_libraries ( esp 
          jlib
          mp 
