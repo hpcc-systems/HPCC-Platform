@@ -168,6 +168,8 @@ void handleSyntax()
     out.append("        srcpassword=<password-for-source-dali>\n");
     out.append("    status options:\n");
     out.append("        wuid=<dfu-workunit-id>\n");
+    out.append("        limit=<limit> -- For publisher wuids, maximum number of child workunits\n");
+    out.append("                         to list, default is 1000.\n");
     out.append("    abort options:\n");
     out.append("        wuid=<dfu-workunit-id>\n");
     out.append("    resubmit options:\n");
