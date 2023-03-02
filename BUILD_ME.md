@@ -163,19 +163,6 @@ wget http://cran.r-project.org/src/contrib/inline_0.3.14.tar.gz
 sudo R CMD INSTALL Rcpp_0.12.1.tar.gz RInside_0.2.12.tar.gz inline_0.3.14.tar.gz
 ```
 
-### Building CouchBase plugin:
-  To install the prerequisites for libcouchbase, go to http://developer.couchbase.com/documentation/server/current/sdk/c/start-using-sdk.html and install the libcouchbase repo for your distribution.  Then add the libcouchbase libraries and headers to your system.
-
-### Building with Spark support:
-  The following CMake flags are useful for developers building 7.0.0+:
-* SPARK=ON enables building of the spark plugin package
-* INCLUDE_SPARK=ON includes the spark plugin in a platform build
-* SUPPRESS_SPARK=ON suppresses the building of a spark plugin in an INCLUDE_PLUGINS=ON build with the platform
-* SPARK_URL select a specific version of spark to build against
-* SPARK_HPCC_VERSION and WSCLIENT_VERSION select a specific version of spark-hpcc to fetch and build against
-* SPARK_HPCC_JAR and WSCLIENT_JAR absolute file paths for using local jars instead of downloading from maven central
-
-
 
 ## Get Latest HPCC Systems Sources
 

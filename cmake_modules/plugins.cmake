@@ -33,7 +33,6 @@ set(PLUGINS_LIST
     NLP
     REDIS
     REMBED
-    SPARK
     SQLITE3EMBED
     SQS
     V8EMBED

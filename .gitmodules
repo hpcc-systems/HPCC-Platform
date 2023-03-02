@@ -13,12 +13,6 @@
 [submodule "system/aeron"]
 	path = system/aeron
 	url = https://github.com/hpcc-systems/aeron.git
-[submodule "plugins/spark/spark-hadoop"]
-	path = plugins/spark/spark-hadoop
-	url = https://github.com/hpcc-systems/spark-hadoop
-[submodule "plugins/spark/spark-plugin-java-packages"]
-	path = plugins/spark/spark-plugin-java-packages
-	url = https://github.com/hpcc-systems/spark-plugin-java-packages.git
 [submodule "vcpkg"]
 	path = vcpkg
 	url = https://github.com/hpcc-systems/vcpkg.git
