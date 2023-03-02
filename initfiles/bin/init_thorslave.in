@@ -47,9 +47,10 @@ stop_slaves()
     local isAlive=0
 
     log "Attempting to kill $slavename with SIGTERM"
-    killall -SIGTERM $slavename > /dev/null 2>&1
+    slavepids=$(pidof ${slavename})
+    kill -SIGTERM ${slavepids} > /dev/null 2>&1
     while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
-        killall -0 $slavename > /dev/null 2>&1
+        kill -0 ${slavepids} > /dev/null 2>&1
         isAlive=$?
         [[ $isAlive -eq 0 ]] && sleep 0.5
         ((timer--))
@@ -57,7 +58,7 @@ stop_slaves()
 
     if [[ $isAlive -eq 0 ]]; then
         log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
-        killall -SIGKILL $slavename > /dev/null
+        kill -SIGKILL ${slavepids} > /dev/null
     fi
 
     # need regex here to prevent removing other Thor instance pid files
