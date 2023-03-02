@@ -186,8 +186,8 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                 "RecordCount": { label: nlsHPCC.RecordCount, type: "string", value: file?.RecordCount, readonly: true },
                 "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: (file?.filePartsOnCluster() ?? []).length > 0, readonly: true },
                 "NumParts": { label: nlsHPCC.FileParts, type: "number", value: file?.NumParts, readonly: true },
-                "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: `${Utility.formatDecimal(file?.Stat?.MinSkewInt64 / 100 ?? "0")}%`, readonly: true },
-                "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: `${Utility.formatDecimal(file?.Stat?.MaxSkewInt64 / 100 ?? "0")}%`, readonly: true },
+                "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: `${Utility.formatDecimal(file?.Stat?.MinSkewInt64 / 100 ?? 0)}%`, readonly: true },
+                "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: `${Utility.formatDecimal(file?.Stat?.MaxSkewInt64 / 100 ?? 0)}%`, readonly: true },
                 "MinSkewPart": { label: nlsHPCC.MinSkewPart, type: "string", value: file?.Stat?.MinSkewPart === undefined ? "" : file?.Stat?.MinSkewPart?.toString(), readonly: true },
                 "MaxSkewPart": { label: nlsHPCC.MaxSkewPart, type: "string", value: file?.Stat?.MaxSkewPart === undefined ? "" : file?.Stat?.MaxSkewPart?.toString(), readonly: true },
             }} onChange={(id, value) => {

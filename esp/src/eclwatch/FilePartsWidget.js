@@ -11,6 +11,8 @@ define([
 
     "hpcc/_Widget",
 
+    "src/Utility",
+
     "@hpcc-js/common",
 
     "dojo/text!../templates/FilePartsWidget.html",
@@ -19,9 +21,7 @@ define([
 ],
     function (declare, nlsHPCCMod, MemoryMod, Observable,
         OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
-        _Widget,
-        hpccCommon,
-        template) {
+        _Widget, Utility, hpccCommon, template) {
 
         var formatNum = hpccCommon.format(",");
 
@@ -60,13 +60,13 @@ define([
                         PartSizeInt64: {
                             label: this.i18n.Size, width: 120,
                             formatter: function (intsize) {
-                                return formatNum(intsize);
+                                return Utility.safeFormatNum(intsize);
                             }
                         },
                         CompressedSize: {
                             label: this.i18n.CompressedSize, width: 120,
                             formatter: function (intsize) {
-                                return formatNum(intsize);
+                                return Utility.safeFormatNum(intsize);
                             }
                         }
                     },

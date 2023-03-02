@@ -553,6 +553,7 @@ export = {
         NoScheduledEvents: "No Scheduled Events.",
         NoSplit: "No Split",
         NotActive: "Not active",
+        NotAvailable: "Not available",
         NothingSelected: "Nothing Selected...",
         NotInSuperfiles: "Not in Superfiles",
         Normal: "Normal",

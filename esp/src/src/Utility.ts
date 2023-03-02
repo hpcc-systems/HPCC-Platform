@@ -4,6 +4,7 @@ import { Level, join } from "@hpcc-js/util";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
+import nlsHPCC from "src/nlsHPCC";
 
 declare const dojoConfig;
 declare const ActiveXObject;
@@ -1060,19 +1061,28 @@ export function deleteCookie(name: string) {
 }
 
 const d3FormatDecimal = d3Format(",.2f");
+const d3FormatInt = d3Format(",");
 
-export function formatDecimal(str): string {
-    if (isNaN(str)) {
-        return str;
+export function formatDecimal(num: number): string {
+    if (isNaN(num)) {
+        return num.toString();
     }
-    return d3FormatDecimal(str);
+    return d3FormatDecimal(num);
 }
 
-export function formatNum(str): string {
-    if (isNaN(str)) {
-        return str;
+export function formatNum(num: number): string {
+    if (isNaN(num)) {
+        return num.toString();
     }
-    return d3FormatNum(str);
+    return d3FormatNum(num);
+}
+
+export function safeFormatNum(num: number): string {
+    if (isNaN(num)) {
+        return num.toString();
+    }
+    if (num < 0) return nlsHPCC.NotAvailable;
+    return d3FormatInt(num);
 }
 
 export function formatNums(obj) {
