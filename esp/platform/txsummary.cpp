@@ -66,12 +66,6 @@ CTxSummary::TxEntryBase::TxEntryBase(const char* _key, const LogLevel _logLevel,
         else
             name = fullname.str();
     }
-
-    // The expectation for JSON-formatted output is for numeric values to be presented as numbers.
-    // Appending suffix text to unquoted JSON numbers invalidates the data, which suggests suffizes
-    // should be embedded in names. Record when a separate suffix will be ignored.
-    if (!suffix.isEmpty())
-        IWARNLOG("TxSummary entry with name '%s' and suffix '%s'; suffix is ignored", _key, _suffix);
 }
 
 bool CTxSummary::TxEntryBase::shouldSerialize(const LogLevel requestedLevel, const unsigned int requestedGroup)
