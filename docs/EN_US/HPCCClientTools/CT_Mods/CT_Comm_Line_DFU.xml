@@ -1301,11 +1301,19 @@ dfuplus action=add srcxml=exportedMysuper.xml dstname=Mysuper
 
                     <entry>The workunit identifier of the workunit.</entry>
                   </row>
+
+                  <row>
+                    <entry><emphasis><emphasis><emphasis>limit</emphasis></emphasis></emphasis></entry>
+
+                    <entry>For publisher workunits, this limits the number of
+                    child workunits to list. Default is 1000. </entry>
+                  </row>
                 </tbody>
               </tgroup>
-            </informaltable>Example:</para>
+            </informaltable>Examples:</para>
 
-          <programlisting>dfuplus action=status wuid=W20050309-093020</programlisting>
+          <programlisting>dfuplus action=status wuid=D20220816-135243
+dfuplus action=status limit=300 wuid=P20230301-123456</programlisting>
 
           <para></para>
         </sect3>
