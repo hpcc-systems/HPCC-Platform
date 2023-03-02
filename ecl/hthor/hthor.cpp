@@ -688,6 +688,7 @@ void CHThorDiskWriteActivity::publish()
                 mygrp.setown(agent.getHThorGroup(mygroupname));
         }
         ClusterPartDiskMapSpec partmap; // will get this from group at some point
+        partmap.defaultCopies = 1;
         desc->setNumParts(1);
         desc->setPartMask(base.str());
         desc->addCluster(mygroupname.str(),mygrp, partmap);
@@ -1303,6 +1304,7 @@ void CHThorIndexWriteActivity::execute()
                 mygrp.setown(agent.getHThorGroup(mygroupname));
         }
         ClusterPartDiskMapSpec partmap; // will get this from group at some point
+        partmap.defaultCopies = 1;
         desc->setNumParts(1);
         desc->setPartMask(base.str());
         desc->addCluster(mygroupname.str(),mygrp, partmap);
