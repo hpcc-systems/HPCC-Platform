@@ -907,7 +907,11 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         {
             // only check size if specified
             if ( (size != (offset_t) -1) && !isCompressed && fileSize != size) // MORE - should be able to do better on compressed you'da thunk
-                return FileSizeMismatch;
+            {
+                DBGLOG("File size mismatch for '%s': local %llu, DFS %llu", f->queryFilename(), fileSize, size);
+                if (!ignoreFileSizeMismatches)
+                    return FileSizeMismatch;
+            }
             // A temporary fix - files stored on azure don't have an accurate time stamp, so treat them as up to date.
             if (isUrl(f->queryFilename()))
                 return FileIsValid;
@@ -928,7 +932,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     return FileIsValid;
             }
             StringBuffer s1, s2;
-            DBGLOG("File date mismatch: local %s, DFS %s", mt.getString(s1).str(), modified.getString(s2).str());
+            DBGLOG("File date mismatch for '%s': local %s, DFS %s", f->queryFilename(), mt.getString(s1).str(), modified.getString(s2).str());
             if (ignoreFileDateMismatches)
                 return FileIsValid;
             return FileDateMismatch;

@@ -387,6 +387,7 @@ extern unsigned parallelQueryLoadThreads;
 extern bool adhocRoxie;
 extern bool alwaysFailOnLeaks;
 extern bool ignoreFileDateMismatches;
+extern bool ignoreFileSizeMismatches;
 extern int fileTimeFuzzySeconds;
 extern SinkMode defaultSinkMode;
 

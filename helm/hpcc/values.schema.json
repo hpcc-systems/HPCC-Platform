@@ -1669,6 +1669,11 @@
           "default": false,
           "description": "Ignore mismatched file dates on local files"
         },
+        "ignoreFileSizeMismatches": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore mismatched file sizes on local files"
+        },
         "fileTimeFuzzySeconds": { 
           "type": "integer",
           "default": 0,
