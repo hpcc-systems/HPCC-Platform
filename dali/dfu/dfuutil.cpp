@@ -480,6 +480,15 @@ public:
         StringBuffer dstdir;
         getLFNDirectoryUsingBaseDir(dstdir, dstlfn.get(), spec.defaultBaseDir.get());
         dstfdesc->setDefaultDir(dstdir.str());
+
+        Owned<IStoragePlane> plane = getDataStoragePlane(cluster1, false);
+        if (plane) // I think it should always exist, even in bare-metal.., but guard against it not for now (assumes initializeStorageGroups has been called)
+        {
+            if (plane->queryDirPerPart())
+                dstfdesc->setFlags(FileDescriptorFlags::dirperpart);
+        }
+        else
+            WARNLOG("cloneSubFile: plane '%s' not found", cluster1.get());
         dstfdesc->addCluster(cluster1,grp1,spec);
         if (iskey&&!cluster2.isEmpty())
             dstfdesc->addCluster(cluster2,grp2,spec2);
