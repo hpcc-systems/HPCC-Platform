@@ -93,6 +93,8 @@ class Cws_accessEx : public Cws_access
     void checkUser(IEspContext &context, CLdapSecManager *ldapSecMgr, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
     CLdapSecManager* queryLDAPSecurityManagerAndCheckUser(IEspContext &context, const char *rtype = nullptr, const char *rtitle = nullptr, unsigned int SecAccessFlags = SecAccess_Full);
     void createResourceArrayForResources(const char *baseDN, SecResourceType rType, IArrayOf<ISecResource> &resources, IArrayOf<IEspResource> &resourceArray);
+    void readFileScopesFromString(const char* str, StringArray& scopes, bool append);
+    void addAFileScope(const char* scope, StringBuffer& newFileScope, StringArray& fileScopes, bool append);
 
 public:
     IMPLEMENT_IINTERFACE;
