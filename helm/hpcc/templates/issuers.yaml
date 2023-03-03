@@ -92,9 +92,13 @@ spec:
 {{- end -}}
 
 {{- define "hpcc.addIssuer" -}}
+ {{- $issuerKind := (hasKey .me "kind" | ternary .me.kind "") -}}
  {{- $issuerEnabled := (hasKey .me "enabled" | ternary .me.enabled true) -}}
- {{- if $issuerEnabled }}
-  {{- if (hasKey .me "spec") -}} {{- /* no spec means we are referencing an external issuer and don't need to instantiate our own */ -}}
+ {{- $issuerPredefined := (hasKey .me "predefined" | ternary .me.predefined false) -}}
+ {{- $createIssuerResource := and $issuerEnabled (not $issuerPredefined) -}}
+ {{- if and (eq "Issuer" $issuerKind) $createIssuerResource -}}
+  {{- $issuerSpec := .me.spec | default dict -}}
+  {{- if not (empty $issuerSpec) -}} {{- /* no spec means we are referencing an external issuer and don't need to instantiate our own */ -}}
 apiVersion: cert-manager.io/v1
 kind: {{ .me.kind | default "Issuer" }}
 metadata:
