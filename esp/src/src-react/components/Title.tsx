@@ -3,8 +3,8 @@ import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem,
 import { Level } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
+import { cookie } from "dojo/main";
 
-import * as WsAccount from "src/ws_account";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { ModernMode } from "src/BuildInfo";
@@ -12,7 +12,7 @@ import { ModernMode } from "src/BuildInfo";
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore, useUserStore } from "../hooks/store";
-import { useUserSession } from "../hooks/user";
+import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
 
 import { TitlebarConfig } from "./forms/TitlebarConfig";
@@ -46,7 +46,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
-    const [currentUser, setCurrentUser] = React.useState(undefined);
+    const { currentUser } = useMyAccount();
     const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
@@ -184,12 +184,20 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     }, [log, logLastUpdated, theme]);
 
     React.useEffect(() => {
-        WsAccount.MyAccount({})
-            .then(({ MyAccountResponse }) => {
-                setCurrentUser(MyAccountResponse);
-            })
-            ;
-    }, [setCurrentUser]);
+        if (!currentUser.username) return;
+        if (!cookie("PasswordExpiredCheck")) {
+            // cookie expires option expects whole number of days, use a decimal < 1 for hours
+            cookie("PasswordExpiredCheck", "true", { expires: 0.5 });
+            if (currentUser.passwordIsExpired) {
+                alert(nlsHPCC.PasswordExpired);
+                setShowMyAccount(true);
+            } else if (currentUser.passwordDaysRemaining <= currentUser.passwordExpirationWarningDays) {
+                if (confirm(nlsHPCC.PasswordExpirePrefix + currentUser.passwordDaysRemaining + nlsHPCC.PasswordExpirePostfix)) {
+                    setShowMyAccount(true);
+                }
+            }
+        }
+    }, [currentUser]);
 
     React.useEffect(() => {
         if (!environmentTitle) return;
