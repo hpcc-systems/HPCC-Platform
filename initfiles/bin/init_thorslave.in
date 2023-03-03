@@ -47,7 +47,9 @@ stop_slaves()
     local isAlive=0
 
     log "Attempting to kill $slavename with SIGTERM"
+    echo $(which pidof)
     slavepids=$(pidof ${slavename})
+    echo "slave pids are: ${slavepids}"
     kill -SIGTERM ${slavepids} > /dev/null 2>&1
     while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
         kill -0 ${slavepids} > /dev/null 2>&1
