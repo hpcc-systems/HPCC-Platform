@@ -19,6 +19,7 @@ MACRO(SET_PLUGIN_PACKAGE plugin)
     set(PLATFORM OFF)
     set(INCLUDE_PLUGINS OFF)
     set(SIGN_MODULES OFF)
+    set(USE_OPTIONAL OFF) # Force failure if we can't find the plugin dependencies
 ENDMACRO()
 
 set(VCPKG_INCLUDE "(windows | osx | linux)")

@@ -545,6 +545,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
         endif()
 
+        if(USE_OPTIONAL)
+            message(AUTHOR_WARNING "USE_OPTIONAL = ON - missing dependencies for plugins will automatically disable them")
+        endif()
+
         execute_process(
             COMMAND brew --prefix flex
             RESULT_VARIABLE BREW_FLEX
