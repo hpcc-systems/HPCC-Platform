@@ -1061,9 +1061,10 @@ class CSendManager : implements ISendManager, public CInterface
                 bool wasDuplicate = false;
                 auto updateTrackingIfMatches = [&msg,&wasDuplicate](UdpPermitToSendMsg &m)
                 {
-                    if (!m.matches(msg))
+                    if (!m.isSamePermit(msg))
                         return false;
                     m.seen = msg.seen; // Update the queue entry with the most recent tracking information
+                    m.max_data = msg.max_data;
                     wasDuplicate = true;
                     return true;
                 };
