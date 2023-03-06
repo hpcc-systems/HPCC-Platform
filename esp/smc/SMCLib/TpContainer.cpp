@@ -490,12 +490,12 @@ class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
     ClusterType platform;
     unsigned clusterWidth;
     StringArray thorProcesses;
-    bool queriesOnly = false;
+    RoxieTargetType roxieTargetType = RTTQueued;
 
 public:
     CContainerWUClusterInfo(const char* _name, const char* type, const char* _ldapUser,
         unsigned _clusterWidth, bool _queriesOnly)
-        : name(_name), ldapUser(_ldapUser), clusterWidth(_clusterWidth), queriesOnly(_queriesOnly)
+        : name(_name), ldapUser(_ldapUser), clusterWidth(_clusterWidth)
     {
         StringBuffer queue;
         if (strieq(type, "thor"))
@@ -508,6 +508,8 @@ public:
         {
             agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
             platform = RoxieCluster;
+            if (_queriesOnly)
+                roxieTargetType = RTTPublished;
         }
         else
         {
@@ -550,9 +552,17 @@ public:
     {
         return false;
     }
-    virtual bool isQueriesOnly() const override
+    virtual RoxieTargetType getRoxieTargetType() const override
     {
-        return queriesOnly;
+        return roxieTargetType;
+    }
+    virtual bool canPublishQueries() const override
+    {
+        return roxieTargetType & RTTPublished;
+    }
+    virtual bool onlyPublishedQueries() const override
+    {
+        return roxieTargetType == RTTPublished;
     }
     virtual IStringVal& getScope(IStringVal& str) const override
     {

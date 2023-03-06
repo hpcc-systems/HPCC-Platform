@@ -66,7 +66,13 @@ enum EnvMachineOS
     MachineOsSize = 4
 };
 
-
+enum RoxieTargetType
+{
+    RTTUnknown = 0,
+    RTTPublished = 1,
+    RTTQueued = 2,
+    RTTBoth = 3
+};
 
 interface IConstComputerTypeInfo : extends IConstEnvBase
 {
@@ -274,7 +280,9 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getChannelsPerNode() const = 0;
     virtual int getRoxieReplicateOffset() const = 0;
     virtual const char *getAlias() const = 0;
-    virtual bool isQueriesOnly() const = 0;
+    virtual RoxieTargetType getRoxieTargetType() const = 0;
+    virtual bool canPublishQueries() const = 0;
+    virtual bool onlyPublishedQueries() const = 0;
 };
 
 typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
@@ -300,6 +308,7 @@ extern ENVIRONMENT_API void getRoxieProcessServers(const char *process, SocketEn
 extern ENVIRONMENT_API bool isProcessCluster(const char *remoteDali, const char *process);
 extern ENVIRONMENT_API bool isProcessCluster(const char *process);
 extern ENVIRONMENT_API unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames);
+extern ENVIRONMENT_API RoxieTargetType readRoxieTargetType(const char *roxieName);
 
 #endif // !_CONTAINERIZED
 

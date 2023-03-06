@@ -17,6 +17,14 @@
 
 EspInclude(common);
 
+ESPenum HPCCQueueType : string
+{
+    Thor("Thor"),
+    HThor("HThor"),
+    Roxie("Roxie"),
+    All("All")
+};
+
 ESPStruct HPCCService
 {
     string Name;
@@ -88,8 +96,26 @@ ESPresponse [nil_remove, exceptions_inline] WebLinksQueryResponse
     ESParray<ESPstruct ConfiguredWebLink> ConfiguredWebLinks;
 };
 
-ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsResources
+ESPStruct [nil_remove] HPCCQueue
 {
+    string Name;
+    ESPenum HPCCQueueType Type;
+};
+
+ESPrequest TargetQueryRequest
+{
+    ESPenum HPCCQueueType Type;
+};
+
+ESPresponse [nil_remove, exceptions_inline] TargetQueryResponse
+{
+    ESParray<ESPstruct HPCCQueue> Queues;
+    ESParray<string> Roxies;
+};
+
+ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsResources
+{
+    ESPmethod [auth_feature("ResourceQueryAccess:READ"), min_ver("1.03")] TargetQuery(TargetQueryRequest, TargetQueryResponse);
     ESPmethod [auth_feature("ResourceQueryAccess:READ")] ServiceQuery(ServiceQueryRequest, ServiceQueryResponse);
     ESPmethod [auth_feature("ResourceQueryAccess:READ"), min_ver("1.01")] WebLinksQuery(WebLinksQueryRequest, WebLinksQueryResponse);
 };

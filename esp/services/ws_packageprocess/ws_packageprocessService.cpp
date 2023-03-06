@@ -1321,11 +1321,7 @@ bool CWsPackageProcessEx::onGetPackageMapSelectOptions(IEspContext &context, IEs
             ForEachItemIn(c, clusters)
             {
                 IConstWUClusterInfo &cluster = clusters.item(c);
-#ifndef _CONTAINERIZED
-                if (cluster.getPlatform() == RoxieCluster)
-#else
-                if ((cluster.getPlatform() == RoxieCluster) && cluster.isQueriesOnly())
-#endif
+                if ((cluster.getPlatform() == RoxieCluster) && cluster.canPublishQueries())
                 {
                     SCMStringBuffer str;
                     Owned<IEspTargetData> target = createTargetData();

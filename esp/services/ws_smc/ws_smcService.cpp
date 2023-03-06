@@ -283,7 +283,7 @@ void CActivityInfo::readTargetClusterInfo(CConstWUClusterInfoArray& clusters, IP
     ForEachItemIn(c, clusters)
     {
         IConstWUClusterInfo &cluster = clusters.item(c);
-        if (cluster.isQueriesOnly()) //"publish-only" roxie queues not in SDS /JobQueues.
+        if (cluster.onlyPublishedQueries()) //"publish-only" roxie not in SDS /JobQueues.
             continue;
 
         Owned<CWsSMCTargetCluster> targetCluster = new CWsSMCTargetCluster();
