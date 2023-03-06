@@ -126,7 +126,6 @@ long ZCALLBACK fseek_file_func (opaque, stream, offset, origin)
    int origin;
 {
     int fseek_origin=0;
-    long ret;
     switch (origin)
     {
     case ZLIB_FILEFUNC_SEEK_CUR :
@@ -140,9 +139,7 @@ long ZCALLBACK fseek_file_func (opaque, stream, offset, origin)
         break;
     default: return -1;
     }
-    ret = 0;
-    fseek((FILE *)stream, offset, fseek_origin);
-    return ret;
+    return (long)fseek((FILE *)stream, offset, fseek_origin);
 }
 
 int ZCALLBACK fclose_file_func (opaque, stream)

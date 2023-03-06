@@ -366,14 +366,13 @@ int RSAZCryptor::zipToFile(const char* zipFileName, bool cleanFileListAfterUsed)
         strcat(filename_try,".zip");
 
     zipFile zf;
-    int opt_overwrite=0; //?1
 
 #ifdef USEWIN32IOAPI
     zlib_filefunc_def ffunc;
     fill_win32_filefunc(&ffunc);
-    zf = zipOpen2(filename_try,(opt_overwrite==2) ? 2 : 0,NULL,&ffunc);
+    zf = zipOpen2(filename_try,APPEND_STATUS_CREATE,NULL,&ffunc);
 #else
-    zf = zipOpen(filename_try,(opt_overwrite==2) ? 2 : 0);
+    zf = zipOpen(filename_try,APPEND_STATUS_CREATE);
 #endif
 
     int err=0;
@@ -557,7 +556,7 @@ int RSAZCryptor::zip(int in_len, unsigned char* in, ZBuffer& outbuf)
 
     int ret;
     unsigned have;
-    z_stream strm;
+    z_stream strm = {Z_NULL};
 
     int buflen = in_len / 10;
     if(buflen <= 1)
@@ -615,7 +614,7 @@ int RSAZCryptor::unzip(int in_len, unsigned char* in, ZBuffer& outbuf)
 
     int ret;
     unsigned have;
-    z_stream strm;
+    z_stream strm = {Z_NULL};
 
     /* allocate inflate state */
     strm.zalloc = Z_NULL;
@@ -1074,7 +1073,7 @@ void zlib_deflate(MemoryBuffer &mb, const char* inputBuffer, unsigned int inputS
      maintain pointers to the "input" and "output" byte buffers (next_in/out) as
      well as information about how many bytes have been processed, how many are
      left to process, etc. */
-    z_stream zs;        // z_stream is zlib's control structure
+    z_stream zs = {Z_NULL};        // z_stream is zlib's control structure
     zs.zalloc = Z_NULL; // Set zalloc, zfree, and opaque to Z_NULL so
     zs.zfree  = Z_NULL; // that when we call deflateInit2 they will be
     zs.opaque = Z_NULL; // updated to use default allocation functions.
