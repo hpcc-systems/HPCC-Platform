@@ -360,7 +360,7 @@ struct SinkInfo
 class jlib_decl MetricsManager
 {
 public:
-    MetricsManager() : nameValidator("^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$") {}
+    MetricsManager();
     ~MetricsManager();
     void init(IPropertyTree *pMetricsTree);
     void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
