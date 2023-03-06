@@ -190,7 +190,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => {
                 setMine(!mine);
             }
