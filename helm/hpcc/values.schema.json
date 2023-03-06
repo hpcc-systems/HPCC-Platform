@@ -1028,6 +1028,11 @@
           "type": "integer",
           "description": "Number of log entries to drop from the log queue when it is full. Disabled if 0, or if queueLength is 0",
           "default": 0
+        },
+        "dataFormat": {
+          "type": "string",
+          "description": "The data format used to report logging: xml|json|table(space delimited values)",
+          "enum": [ "xml", "json", "table"]
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }

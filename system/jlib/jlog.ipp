@@ -445,6 +445,17 @@ protected:
     StringBuffer              curMsgText;
 };
 
+class HandleLogMsgHandlerJSON : implements HandleLogMsgHandler, public CInterface
+{
+public:
+    HandleLogMsgHandlerJSON(FILE * _handle, unsigned _fields) : HandleLogMsgHandler(_handle, _fields) {}
+    IMPLEMENT_IINTERFACE;
+    void                      handleMessage(const LogMsg & msg);
+    bool                      needsPrep() const { return false; }
+    void                      prep() {}
+    void                      addToPTree(IPropertyTree * tree) const;
+};
+
 class HandleLogMsgHandlerXML : implements HandleLogMsgHandler, public CInterface
 {
 public:
@@ -491,6 +502,17 @@ protected:
     bool                      flushes;
     mutable CriticalSection   crit;
     StringBuffer              curMsgText;
+};
+
+class FileLogMsgHandlerJSON : implements FileLogMsgHandler, public CInterface
+{
+public:
+    FileLogMsgHandlerJSON(const char * _filename, const char * _headerText = 0, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true) : FileLogMsgHandler(_filename, _headerText, _fields, _append, _flushes) {}
+    IMPLEMENT_IINTERFACE;
+    void                      handleMessage(const LogMsg & msg);
+    bool                      needsPrep() const { return false; }
+    void                      prep() {}
+    void                      addToPTree(IPropertyTree * tree) const;
 };
 
 class FileLogMsgHandlerXML : implements FileLogMsgHandler, public CInterface

@@ -3213,7 +3213,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
         {
             if (!multiThreaded)
             {
-                handler.setown(getHandleLogMsgHandler(logFile, 0, false));
+                handler.setown(getHandleLogMsgHandler(logFile, 0, LOGFORMAT_table));
                 Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail);
                 queryLogMsgManager()->addMonitor(handler, filter);
 

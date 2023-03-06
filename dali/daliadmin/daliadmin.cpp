@@ -180,7 +180,7 @@ int main(int argc, const char* argv[])
         Owned<ILogMsgHandler> fileMsgHandler;
         if (props->getProp("logfile",logname)) {
             if (logname.length()) {
-                fileMsgHandler.setown(getFileLogMsgHandler(logname.str(), NULL, rawlog?MSGFIELD_prefix:MSGFIELD_STANDARD, false, false, true));
+                fileMsgHandler.setown(getFileLogMsgHandler(logname.str(), NULL, rawlog?MSGFIELD_prefix:MSGFIELD_STANDARD, LOGFORMAT_table, false, true));
                 queryLogMsgManager()->addMonitorOwn(fileMsgHandler.getClear(), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
             }
         }

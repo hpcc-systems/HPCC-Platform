@@ -585,6 +585,7 @@ public:
            unsigned port, LogMsgSessionId session)  __attribute__((format(printf,6, 0)));
     StringBuffer &            toStringPlain(StringBuffer & out, unsigned fields) const;
     StringBuffer &            toStringXML(StringBuffer & out, unsigned fields) const;
+    StringBuffer &            toStringJSON(StringBuffer & out, unsigned fields) const;
     StringBuffer &            toStringTable(StringBuffer & out, unsigned fields) const;
     static StringBuffer &     toStringTableHead(StringBuffer & out, unsigned fields);
     static void               fprintTableHead(FILE * handle, unsigned fields);
@@ -628,6 +629,13 @@ interface jlib_decl ILogMsgFilter : public IInterface
 };
 
 // Handler for log messages --- contains method to write or send messages
+
+typedef enum
+{
+    LOGFORMAT_xml,
+    LOGFORMAT_json,
+    LOGFORMAT_table
+} LogHandlerFormat;
 
 interface jlib_decl ILogMsgHandler : public IInterface
 {
@@ -772,8 +780,8 @@ extern jlib_decl ILogMsgFilter * getOrLogMsgFilter(ILogMsgFilter * arg1, ILogMsg
 extern jlib_decl ILogMsgFilter * getOrLogMsgFilterOwn(ILogMsgFilter * arg1, ILogMsgFilter * arg2);
 extern jlib_decl ILogMsgFilter * getSwitchLogMsgFilterOwn(ILogMsgFilter * switchFilter, ILogMsgFilter * yesFilter, ILogMsgFilter * noFilter);
 
-extern jlib_decl ILogMsgHandler * getHandleLogMsgHandler(FILE * handle = stderr, unsigned fields = MSGFIELD_all, bool writeXML = false);
-extern jlib_decl ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, bool writeXML = true, bool append = false, bool flushes = true);
+extern jlib_decl ILogMsgHandler * getHandleLogMsgHandler(FILE * handle = stderr, unsigned fields = MSGFIELD_all, LogHandlerFormat logFormat = LOGFORMAT_table);
+extern jlib_decl ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, LogHandlerFormat logFormat = LOGFORMAT_table, bool append = false, bool flushes = true);
 extern jlib_decl ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields = MSGFIELD_all, bool append = false, bool flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false, long maxLogSize = 0);
 extern jlib_decl ILogMsgHandler * getBinLogMsgHandler(const char * filename, bool append = false);
 extern jlib_decl ILogMsgHandler * getPostMortemLogMsgHandler(const char * filebase, unsigned maxLinesToKeep, unsigned _messageFields=MSGFIELD_all);
@@ -784,9 +792,9 @@ extern jlib_decl void installLogMsgFilterSwitch(ILogMsgHandler * handler, ILogMs
 
 // Functions to make standard handlers and catagory filters and add to manager
 
-extern jlib_decl ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, bool writeXML = true, bool append = false, bool flushes = true, bool local = false);
+extern jlib_decl ILogMsgHandler * attachStandardFileLogMsgMonitor(const char * filename, const char * headertext = 0, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, LogHandlerFormat logFormat = LOGFORMAT_table, bool append = false, bool flushes = true, bool local = false);
 extern jlib_decl ILogMsgHandler * attachStandardBinLogMsgMonitor(const char * filename, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, bool append = false, bool local = false);
-extern jlib_decl ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle = stderr, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, bool writeXML = false, bool local = false);
+extern jlib_decl ILogMsgHandler * attachStandardHandleLogMsgMonitor(FILE * handle = stderr, unsigned fields = MSGFIELD_all, unsigned audiences = MSGAUD_all, unsigned classes = MSGCLS_all, LogMsgDetail detail = TopDetail, LogHandlerFormat logFormat = LOGFORMAT_table, bool local = false);
 
 // Function to construct filter from serialized and XML forms, and construct handler from XML form, and attach monitor(s) from XML form
 
