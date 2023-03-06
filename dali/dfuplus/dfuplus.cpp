@@ -1523,8 +1523,9 @@ int CDfuPlusHelper::status()
     const char* wuid = globals->queryProp("wuid");
     if(!wuid || !*wuid)
         throw MakeStringException(-1, "wuid not specified");
+    int limit = globals->getPropInt("limit");
     if (isDfuPublisherWuid(wuid))
-        return reportDfuPublisherStatus(wuid);
+        return reportDfuPublisherStatus(wuid, limit);
     return reportDfuWorkunitStatus(wuid);
 }
 
@@ -1587,11 +1588,12 @@ int CDfuPlusHelper::reportDfuWorkunitStatus(const char *wuid)
     return reportDfuWorkunitStatus(resp->getResult(), false);
 }
 
-int CDfuPlusHelper::reportDfuPublisherStatus(const char *wuid)
+int CDfuPlusHelper::reportDfuPublisherStatus(const char *wuid, int limit)
 {
     Owned<IClientGetDFUWorkunits> req = sprayclient->createGetDFUWorkunitsRequest();
     setMtlsSecret(req->rpc());
     req->setPublisherWuid(wuid);
+    req->setPageSize((limit > 0) ? limit : 1000);
 
     Owned<IClientGetDFUWorkunitsResponse> resp = sprayclient->GetDFUWorkunits(req);
     if (outputServiceCallExceptions(resp.get()))
