@@ -331,7 +331,7 @@ public:
 
     IEsdlScriptContext *createTestScriptContext(IEspContext *ctx, const char *xml, const char *config, IEsdlFunctionRegister *functionRegister=nullptr)
     {
-        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, functionRegister);
+        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, functionRegister, nullptr);
         scriptContext->setTestMode(true);
 
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
@@ -1771,7 +1771,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
         try {
           Owned<IEspContext> ctx = createEspContext(nullptr);
-          Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr);
+          Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr, nullptr);
           scriptContext->setTestMode(true);
           scriptContext->setTraceToStdout(true);
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
@@ -1913,7 +1913,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         try {
           Owned<IEspContext> ctx = createEspContext(nullptr);
           CTxSummary* txSummary = ctx->queryTxSummary();
-          Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr);
+          Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr, nullptr);
           scriptContext->setTestMode(true);
           scriptContext->setTraceToStdout(true);
           scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");

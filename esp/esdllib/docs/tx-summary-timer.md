@@ -5,9 +5,7 @@
         core_group="Boolean literal"
         level="enumerated text or numeric literal"
         mode="enumerated text literal"
-        name="text literal"
-        optional="Boolean literal"
-        trace="text literal">
+        name="text literal">
       <!-- operations to be timed -->
     </tx-summary-timer>
 ```
@@ -25,8 +23,6 @@ With respect to the summary, this operation is concerned only with the creation 
 | level | 0..1 | Minimum ESP log level at which the entry is included in log output. May be `min` (1), `normal` (5), `max` (10), or an integer between 1 and 10.<br/><br/>Default when omitted or empty is *1*. |
 | mode | 0..1 | Choice of how to add the value to trace output. May be `append` (add a new scalar value to the end of the list), `set` (replace an existing scalar value or add a new scalar value to the end of the list), or `accumulate` (increment an existing timer value or add a new timer value to the end).<br/><br/>Default when omiited or empty is *append*. |
 | name | 1..1 | Unique value label of the form `text ( '.' text )*`, where no `text` component may be empty.<br/><br/>The dotted name notation has special meaning in JSON formatted summary output. Each name segment preceding a dot represents the name of a JSON object nested within the summary object; multiple such segments result in multiple levels of embedded objects. |
-| optional | 0..1 | Flag indicating whether script syntax errors are fatal (*false*) or merely generate warnings (*true*).<br/><br/>Defaults to *false*. |
-| trace | 0..1 | Label used in trace log output messages.<br/><br/>Default when omitted or empty is the element name. |
 
 Success is not guaranteed. Failure will produce warnings in trace output and script processing will continue. Script authors are responsible for resolving reported warnings. Reasons for failure are:
 

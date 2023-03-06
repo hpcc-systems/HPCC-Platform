@@ -2047,7 +2047,7 @@ private:
         Owned<IXpathContext>         xpathCtx(createXPathContext(scriptCtx, section));
         Owned<IXmlWriter>            writer(xpathCtx->createXmlWriter());
         StringBuffer                 stored;
-    
+
         writer->outputUtf8(rtlUtf8Length(unsigned(strlen(value)), value), value, name);
         if (!xpathCtx->evaluateAsString(name, stored))
             fprintf(stdout, "\n%s: evaluation of '%s' failed\n", test, name);

@@ -6,7 +6,7 @@
 
 For testing purposes, it can be helpful to have operations with predictable durations. Consider `tx-summary-timer` recording elapsed time. Testing the timer requires waiting for predictable periods of time.
 
-The delay is guaranteed to be at least `millis` milliseonds in duration, as measured in a difference in tick counts. It is not guarantedd to be exactly `millis` milliseonds in duration; no attempt is made to limit the duration.
+The delay induced by this childless operation is guaranteed to be at least `millis` milliseonds in duration, as measured in a difference in tick counts. It is not guarantedd to be exactly `millis` milliseonds in duration; no attempt is made to limit the duration.
 
 | Property | Count | Description |
 | :- | :-: | :- |

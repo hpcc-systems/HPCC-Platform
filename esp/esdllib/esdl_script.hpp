@@ -32,6 +32,9 @@
 
 #include "esdl_def.hpp"
 
+#include "datamaskingengine.hpp"
+#include "tracer.h"
+
 #include <map>
 #include <mutex>
 #include <thread>
@@ -63,6 +66,10 @@ interface IEsdlScriptContext : extends ISectionalXmlDocModel
     virtual bool getTraceToStdout() const = 0;
     virtual void setTestMode(bool val) = 0; //enable features that help with unit testing but should never be used in production
     virtual bool getTestMode() const = 0;
+    virtual ITracer& tracerRef() const = 0;
+    virtual bool enableMasking(const char* domainId, uint8_t version) = 0;
+    virtual bool maskingEnabled() const = 0;
+    virtual IDataMaskingProfileContext* getMasker() const = 0;
 };
 
 /**
@@ -71,7 +78,7 @@ interface IEsdlScriptContext : extends ISectionalXmlDocModel
  * The absence of a sectional document model in the parameter list implies the returned instance
  * is responsible for creating its own model.
  */
-extern "C" esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister);
+extern "C" esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine);
 
 interface IEsdlCustomTransform : extends IInterface
 {

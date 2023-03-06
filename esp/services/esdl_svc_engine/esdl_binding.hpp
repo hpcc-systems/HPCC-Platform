@@ -32,6 +32,7 @@
 #include "esdl_store.hpp"
 #include "esdl_monitor.hpp"
 #include "espplugin.ipp"
+#include "datamaskingengine.hpp"
 #include "txsummary.hpp"
 
 static const char* ESDL_METHOD_DESCRIPTION="description";
@@ -73,6 +74,7 @@ class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
     inline Owned<ILoggingManager>& loggingManager() { return m_oDynamicLoggingManager ? m_oDynamicLoggingManager : m_oStaticLoggingManager; }
+    inline Owned<IDataMaskingEngine>& maskingEngine() { return m_oDynamicMaskingEngine ? m_oDynamicMaskingEngine : m_oStaticMaskingEngine; }
     IEspContainer *container;
     Owned<IEsdlTransformMethodMap> m_transforms = createEsdlTransformMethodMap();
     bool nonLegacyTransforms = false;
@@ -92,6 +94,8 @@ private:
     StringBuffer                m_defaultFeatureAuth;
     MapStringTo<Owned<String> > m_explicitNamespaces;
     Owned<ITxSummaryProfile>    m_txSummaryProfile;
+    Owned<IDataMaskingEngine>   m_oDynamicMaskingEngine;
+    Owned<IDataMaskingEngine>   m_oStaticMaskingEngine;
 
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;
@@ -174,6 +178,7 @@ public:
     virtual void init(const IPropertyTree *cfg, const char *process, const char *service);
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
     virtual void configureLogging(IPropertyTree *cfg);
+    virtual void configureMasking(IPropertyTree *cfg);
     void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
     void configureCppMethod(const char *method, IPropertyTree &entry, IEspPlugin*& plugin);
     void configureUrlMethod(const char *method, IPropertyTree &entry);
@@ -209,6 +214,12 @@ public:
     virtual bool subscribeServiceToDali() override {return false;}
     virtual bool attachServiceToDali() override {return false;}
     virtual bool detachServiceFromDali() override {return false;}
+
+private:
+    bool initMaskingEngineDirectory(const char* dir);
+    template <typename file_loader_t>
+    bool initMaskingEngineDirectory(const char* dir, const char* mask, file_loader_t loader);
+    bool initMaskingEngineEmbedded(Owned<IDataMaskingEngine>& engine, const IPropertyTree* ptree, bool required);
 };
 
 #define DEFAULT_ESDLBINDING_URN_BASE "urn:hpccsystems:ws"

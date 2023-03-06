@@ -33,6 +33,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/common/thorhelper #JSONWRITER
     ${HPCC_SOURCE_DIR}/common/dllserver #loading plugins
     ${HPCC_SOURCE_DIR}/tools/hidl #TAccessMapGenerator
+    ${HPCC_SOURCE_DIR}/system/masking/include
 )
 
 ADD_DEFINITIONS ( -D_USRDLL -DESDLLIB_EXPORTS )
