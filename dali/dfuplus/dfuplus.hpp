@@ -92,8 +92,7 @@ private:
 
     int reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo);
     int reportDfuWorkunitStatus(const char *wuid);
-    int reportDfuPublisherStatus(IConstDFUWorkunit & dfuwu);
-    int reportDfuPublisherStatus(const char *wuid);
+    int reportDfuPublisherStatus(const char *wuid, int limit);
 
     Owned<IProperties> globals;
     Owned<IClientFileSpray> sprayclient;
