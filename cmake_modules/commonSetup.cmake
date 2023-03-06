@@ -526,6 +526,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   ###########################################################################
 
+    if(USE_OPTIONAL)
+        message(AUTHOR_WARNING "USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
+    endif()
+
     if(NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
         message(STATUS "Using externals directory at ${EXTERNALS_DIRECTORY}")
     endif()
@@ -543,10 +547,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         if (BREW_BISON EQUAL 0 AND EXISTS "${BREW_BISON_PREFIX}")
             message(STATUS "Found Bison keg installed by Homebrew at ${BREW_BISON_PREFIX}")
             set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
-        endif()
-
-        if(USE_OPTIONAL)
-            message(AUTHOR_WARNING "USE_OPTIONAL = ON - missing dependencies for plugins will automatically disable them")
         endif()
 
         execute_process(
@@ -727,6 +727,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       ELSE()
         message(FATAL_ERROR "ICU requested but package not found")
       ENDIF()
+      if(WSSQL_SERVICE AND NOT USE_JAVA)
+        set(WSSQL_SERVICE OFF)
+      endif()
 
       if(USE_XALAN)
         find_package(XALAN)
@@ -811,7 +814,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
           message(FATAL_ERROR "BOOST_REGEX requested but package not found")
         endif()
       else(USE_BOOST_REGEX)
-        message(STATUS "NO REGEX requested")
+        message(STATUS "C11_REGEX enabled")
+        add_definitions (-D_USE_C11_REGEX)
       endif(USE_BOOST_REGEX)
 
       if(USE_OPENSSL)
