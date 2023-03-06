@@ -4970,6 +4970,8 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
             ipaddr.getIpText(EspIP);
             resp.setESPIPAddress(EspIP.str());
         }
+        if ((version >= 1.96) && !queryRemoteLogAccessor())
+            resp.setMessage("Warning: may not be able to include log file because Remote Log Access plug-in is not available!");
 
         //Get Archive
         Owned<IConstWUQuery> query = cw->getQuery();
