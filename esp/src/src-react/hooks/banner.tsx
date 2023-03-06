@@ -74,7 +74,7 @@ export function useBanner({ showForm, setShowForm }: useBannerProps): [React.Fun
     }, [activity?.BannerColor, activity?.BannerContent, activity?.BannerScroll, activity?.BannerSize, activity?.ShowBanner, reset]);
 
     const BannerConfig = React.useMemo(() => () => {
-        return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.SetBanner} minWidth={680}
+        return <MessageBox show={showForm} setShow={closeForm} blocking={true} modeless={false} title={nlsHPCC.SetBanner} minWidth={680}
             footer={<>
                 <PrimaryButton text={nlsHPCC.OK} onClick={handleSubmit(onSubmit)} />
                 <DefaultButton text={nlsHPCC.Cancel} onClick={closeForm} />

@@ -283,10 +283,10 @@ public:
 struct UdpPermitToSendMsg
 {
 public:
-    bool matches(const UdpPermitToSendMsg & other) const
+    bool isSamePermit(const UdpPermitToSendMsg & other) const
     {
         //Comparisons ordered to fail as quickly as possible (called on a high priority thread)
-        return flowSeq == other.flowSeq && destNode == other.destNode && cmd == other.cmd && max_data == other.max_data;
+        return flowSeq == other.flowSeq && destNode == other.destNode && cmd == other.cmd;
     }
 
 public:

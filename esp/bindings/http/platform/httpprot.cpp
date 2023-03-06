@@ -422,17 +422,15 @@ bool CHttpThread::onRequest()
     if(m_is_ssl && m_ssctx && m_persistentHandler == nullptr)
     {
         ESPLOG(LogMax, "Creating secure socket");
-        secure_sock.setown(m_ssctx->createSecureSocket(m_socket.getLink(), getEspLogLevel()));
+        LogLevel logLevel = getEspLogLevel();
+        secure_sock.setown(m_ssctx->createSecureSocket(m_socket.getLink(), logLevel));
         int res = 0;
         try
         {
             ESPLOG(LogMax, "Accepting from secure socket");
-            res = secure_sock->secure_accept();
+            res = secure_sock->secure_accept(logLevel);
             if(res < 0)
-            {
-                ESPLOG(LogMin, "Error accepting from secure socket");
                 return false;
-            }
         }
         catch(IException* e)
         {

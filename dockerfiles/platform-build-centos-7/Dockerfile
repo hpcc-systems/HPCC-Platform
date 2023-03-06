@@ -82,10 +82,9 @@ WORKDIR /hpcc-dev
 ARG GITHUB_ACTOR=hpcc-systems
 ARG BUILD_TAG=candidate-8.8.0
 RUN echo GITHUB_ACTOR is ${GITHUB_ACTOR}
-RUN git clone --no-checkout https://github.com/${GITHUB_ACTOR}/HPCC-Platform.git
-
-WORKDIR /hpcc-dev/HPCC-Platform
-RUN git checkout ${BUILD_TAG} && \
+RUN git clone --no-checkout https://github.com/${GITHUB_ACTOR}/HPCC-Platform.git && \
+    cd HPCC-Platform && \
+    git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
 WORKDIR /hpcc-dev/HPCC-Platform/vcpkg

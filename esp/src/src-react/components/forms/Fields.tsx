@@ -108,7 +108,12 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
     const [selectedIdx, setSelectedIdx] = React.useState<number>();
 
     React.useEffect(() => {
-        const item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
+        let item;
+        if (selectedItem?.key) {
+            item = selOptions?.find(row => row.key === selectedItem?.key) ?? selOptions[0];
+        } else {
+            item = selOptions?.find(row => row.key === selectedKey) ?? selOptions[0];
+        }
         if (!item) return;
         if (item.key === selectedKey) {
             // do nothing, unless

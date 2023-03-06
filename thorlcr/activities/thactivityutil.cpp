@@ -835,7 +835,7 @@ StringBuffer &locateFilePartPath(CActivityBase *activity, const char *logicalFil
 {
     unsigned location;
     OwnedIFile ifile;
-    if (globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, activity))
+    if (globals->getPropBool("@autoCopyBackup", !isContainerized())?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, activity))
         ActPrintLog(activity, "reading physical file '%s' (logical file = %s)", filePath.str(), logicalFilename);
     else
     {

@@ -76,7 +76,7 @@ export const TitlebarConfig: React.FunctionComponent<TitlebarConfigProps> = ({
         reset(values);
     }, [environmentTitle, reset, showEnvironmentTitle, titlebarColor]);
 
-    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.SetToolbarColor} minWidth={400}
+    return <MessageBox show={showForm} setShow={closeForm} blocking={true} modeless={false} title={nlsHPCC.SetToolbarColor} minWidth={400}
         footer={<>
             <PrimaryButton text={nlsHPCC.OK} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />

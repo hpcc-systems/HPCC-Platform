@@ -6579,6 +6579,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
     Owned<IDistributedFile> newFile;
     Owned<IFileDescriptor> fileDesc;
     StringBuffer normalizeTempFileName;
+    bool newFileAttached = false;
     try
     {
         const char *fileId = req.getFileId();
@@ -6708,6 +6709,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
         newFile->validate();
         // JCSMORE attach() should have a timeout, then req.getLockTimeoutMs() should be used here.
         newFile->attach(normalizeTempFileName, userDesc);
+        newFileAttached = true;
 
         if (!newFile->renamePhysicalPartFiles(newFileName, nullptr, nullptr, fileDesc->queryDefaultDir()))
             throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "DFUFilePublish: Failed in renamePhysicalPartFiles %s.", newFileName.str());
@@ -6723,18 +6725,28 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
 
     if (exception)
     {
-        if (fileDesc)
+        try
         {
-            Owned<IMultiException> exceptions = MakeMultiException("CWsDfuEx::onDFUFilePublish");
-            queryDistributedFileDirectory().removePhysicalPartFiles(normalizeTempFileName, fileDesc, exceptions);
-            if (exceptions->ordinality())
+            if (fileDesc)
             {
-                StringBuffer errMsg("Error whilst clearing up temporary file: ");
-                EXCLOG(exceptions, errMsg.append(normalizeTempFileName).str());
+                Owned<IMultiException> exceptions = MakeMultiException("CWsDfuEx::onDFUFilePublish");
+                queryDistributedFileDirectory().removePhysicalPartFiles(normalizeTempFileName, fileDesc, exceptions);
+                if (exceptions->ordinality())
+                {
+                    StringBuffer errMsg("Error whilst clearing up temporary file: ");
+                    EXCLOG(exceptions, errMsg.append(normalizeTempFileName).str());
+                }
             }
+            if (newFileAttached)
+                newFile->detach(30000);
         }
-        if (newFile)
-            newFile->detach(30000);
+        catch (IException *e)
+        {
+            // follow-on exception.
+            // Ensure original exception takes precedence, log follow-on exception only.
+            EXCLOG(e);
+            e->Release();
+        }
         FORWARDEXCEPTION(context, exception.getClear(), ECLWATCH_INTERNAL_ERROR);
     }
     return true;

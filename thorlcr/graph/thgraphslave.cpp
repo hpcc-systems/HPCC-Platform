@@ -1991,7 +1991,7 @@ public:
         unsigned location;
         OwnedIFile iFile;
         StringBuffer filePath;
-        if (globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(&activity, *partDesc, iFile, location, filePath):getBestFilePart(&activity, *partDesc, iFile, location, filePath, &activity))
+        if (globals->getPropBool("@autoCopyBackup", !isContainerized())?ensurePrimary(&activity, *partDesc, iFile, location, filePath):getBestFilePart(&activity, *partDesc, iFile, location, filePath, &activity))
             return iFile.getClear();
         else
         {
