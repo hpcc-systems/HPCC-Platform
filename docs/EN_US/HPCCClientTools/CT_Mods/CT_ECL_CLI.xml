@@ -780,13 +780,13 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>--dfu-queue </entry>
+                  <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
                 </row>
 
                 <row>
-                  <entry>--dfu-wait </entry>
+                  <entry>--dfu-wait</entry>
 
                   <entry>The amount of time in seconds to wait for the DFU
                   copy to complete (if neither --only-copy-files or
@@ -795,10 +795,10 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>--dfu-overwrite </entry>
+                  <entry>--dfu-overwrite</entry>
 
                   <entry>Specifies that DFU copy command should overwrite
-                  physical files that are already on disk. </entry>
+                  physical files that are already on disk.</entry>
                 </row>
 
                 <row>
@@ -6297,6 +6297,182 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
               </tbody>
             </tgroup>
           </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT-RCTL-MEMLOCK" role="brk">
+        <title>memlock</title>
+
+        <para><emphasis role="bold">ecl roxie memlock
+        &lt;process_cluster&gt;</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>process_cluster</emphasis></entry>
+
+                <entry>The Roxie process cluster to memlock</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The 'roxie memlock' command locks Roxie heap memory. This helps
+        to prevent intermittent slow queries by ensuring that the operating
+        system does not swap the memory out.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie memlock mycluster
+</programlisting>
+      </sect2>
+
+      <sect2 id="CT-RCTL-MEMUNLOCK" role="brk">
+        <title>memunlock</title>
+
+        <para><emphasis role="bold">ecl roxie memunlock
+        &lt;process_cluster&gt;</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>process_cluster</emphasis></entry>
+
+                <entry>The roxie process cluster to memunlock</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The 'roxie memunlock' command unlocks Roxie heap memory.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie memunlock mycluster
+</programlisting>
+      </sect2>
+
+      <sect2 id="CT-RCTL-GETMEMLOCK" role="brk">
+        <title>getmemlocked</title>
+
+        <para><emphasis role="bold">ecl roxie getmemlocked
+        &lt;process_cluster&gt;</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>process_cluster</emphasis></entry>
+
+                <entry>The Roxie process cluster to getmemlocked
+                status</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The 'roxie getmemlocked' command retrieves the Roxie heap memory
+        lock status. You can run the ECL command-line on any host as long as
+        it knows what ESP to connect to. This is the ‘best’ way to check if
+        Roxie memory is locked.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie getmemlocked mycluster
+</programlisting>
+
+        <sect3 id="CT-CheckMemIndivNodes">
+          <title>Checking individual nodes</title>
+
+          <para>The above command <emphasis>ecl roxie getmemlocked</emphasis>
+          is the best way to check if Roxie memory is locked, however, if you
+          wanted to check it out on each individual Roxie node, you can use
+          the command:</para>
+
+          <programlisting>$ cat /proc/`pidof roxie`/status | grep VmLck</programlisting>
+
+          <para>Which returns something like:</para>
+
+          <programlisting>VmLck:   5242880 kB</programlisting>
+
+          <para>If the VmLck value is 0 then memory is not locked.</para>
+
+          <para>The VmLck value should match the memsize=roxie log
+          line:</para>
+
+          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated for the pool 
+         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
+
+          <para>Which is found in the environment.xml's RoxieCluster setting
+          for <emphasis role="strong">totalMemoryLimit</emphasis>:</para>
+
+          <programlisting>    totalMemoryLimit="5368709120"</programlisting>
+        </sect3>
+
+        <sect3 id="CT-resource-limits">
+          <title>Resource Limits</title>
+
+          <para>There is also a resource limit set by default at install time
+          that increases the amount of memory allowed to be locked:</para>
+
+          <programlisting>hpcc soft memlock unlimited</programlisting>
+
+          <para>and</para>
+
+          <programlisting>hpcc hard memlock unlimited</programlisting>
+
+          <para>Without this the limit will not be large enough to lock the
+          memory sizes used by a typical Roxie.</para>
+
+          <para>You can also check this limit with a shell command:</para>
+
+          <programlisting>ulimit -l</programlisting>
+
+          <para>Be sure to run this command as the <emphasis>hpcc</emphasis>
+          user.</para>
+        </sect3>
+
+        <sect3>
+          <title>Manual Memory Lock</title>
+
+          <para>If running version a 8.6.40 version of the HPCC Systems
+          platform and you want memory locked on Roxie start up, you can add
+          to the <emphasis role="strong">environment.xml</emphasis> in the
+          RoxieCluster section.</para>
+
+          <programlisting>    heapLockMemory="true"</programlisting>
+        </sect3>
       </sect2>
     </sect1>
   </chapter>
