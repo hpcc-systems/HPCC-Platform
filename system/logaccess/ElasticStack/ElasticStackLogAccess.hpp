@@ -89,7 +89,7 @@ public:
     // IRemoteLogAccess methods
     virtual bool fetchLog(LogQueryResultDetails & resultDetails, const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) override;
     virtual const char * getRemoteLogAccessType() const override { return type; }
-    virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
+    virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("");}
     virtual const char * fetchConnectionStr() const override { return m_esConnectionStr.str();}
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) override;
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) override;

@@ -40,7 +40,7 @@ ESPenum LogSelectColumnMode : int
     DEFAULT(1, "DEFAULT"),
     ALL(2, "ALL"),
     CUSTOM(3, "CUSTOM")
-} ;
+};
 
 ESPStruct TimeRange
 {
@@ -52,8 +52,42 @@ ESPRequest GetLogAccessInfoRequest
 {
 };
 
+ESPenum LogColumnType : string
+{
+    global("global"),
+    workunits("workunits"),
+    components("components"),
+    audience("audience"),
+    logclass("class"),
+    instance("instance"),
+    node("node"),
+    message("message"),
+    logid("logid"),
+    processid("processid"),
+    threadid("threadid"),
+    timestamp("timestamp")
+};
+
+ESPenum LogColumnValueType : string
+{
+    str("string"),
+    numeric("numeric"),
+    datetime("datetime"),
+    enum("enum")
+};
+
+ESPStruct LogColumn
+{
+    string Name;
+    ESPenum LogColumnType LogType;
+    ESParray<string> EnumeratedValues;
+    LogSelectColumnMode ColumnMode;
+    ESPenum LogColumnValueType ColumnType;
+};
+
 ESPResponse GetLogAccessInfoResponse
 {
+    [min_ver("1.04")] ESParray<ESPstruct LogColumn, Column> Columns;
     string RemoteLogManagerType;
     string RemoteLogManagerConnectionString;
 };
@@ -170,7 +204,7 @@ ESPResponse GetLogsResponse
     [min_ver("1.02")] unsigned int TotalLogLinesAvailable;
 };
 
-ESPservice [auth_feature("WsLogAccess:READ"), version("1.03"), default_client_version("1.03"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.04"), default_client_version("1.04"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
 {
     ESPmethod GetLogAccessInfo(GetLogAccessInfoRequest, GetLogAccessInfoResponse);
     ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);

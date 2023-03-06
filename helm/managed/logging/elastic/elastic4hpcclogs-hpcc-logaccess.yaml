@@ -12,16 +12,62 @@ global:
           storeName: "hpcc-logs*"                    #Logs are expected to be housed in ES indexes prefixed 'filebeat-'
           searchColumn: "message"                    #The 'message' field is to be targeted for wilcard text searches
           timeStampColumn: "@timestamp"              #The '@timestamp' field contains time log entry timestamp
+          columnMode: "ALL"
+          columnType: "string"
         - type: "workunits"                          #Search by workunits specific log mapping
           storeName: "hpcc-logs*"                    # Only needed if differs from global.storeName
           searchColumn: "hpcc.log.jobid"             # Field containing WU information
+          columnMode: "DEFAULT"
+          columnType: "string"
         - type: "components"                         #Search by components specific log mapping
           searchColumn: "kubernetes.container.name"  # Field containing container information
+          columnMode: "MIN"
+          columnType: "string"
         - type: "audience"                           #Search by audience specific log mapping
           searchColumn: "hpcc.log.audience"          # Field containing audience information
+          enumValues:
+          - code: OPR
+          - code: USR
+          - code: PRO
+          - code: ADT
+          columnMode: "DEFAULT"
+          columnType: "enum"
         - type: "class"                              #Search by log class specific log mapping
           searchColumn: "hpcc.log.class"             # Field containing log class information
+          enumValues:
+          - code: DIS
+          - code: ERR
+          - code: WRN
+          - code: INF
+          - code: PRO
+          - code: MET
+          columnMode: "DEFAULT"
+          columnType: "enum"
         - type: "instance"                           #Search by log source instance specific mapping
           searchColumn: "kubernetes.pod.name"        # Field containing source instance information
-        - type: "host"                               #Search by log source host specific mapping
+          columnMode: "ALL"
+          columnType: "string"
+        - type: "node"                               #Search by log source host specific mapping
           searchColumn: "kubernetes.node.hostname"   # Field containing source host information
+          columnMode: "ALL"
+          columnType: "string"
+        - type: "message"
+          searchColumn: "hpcc.log.message"
+          columnMode: "MIN"
+          columnType: "string"
+        - type: "logid"
+          searchColumn: "hpcc.log.sequence"
+          columnMode: "DEFAULT"
+          columnType: "numeric"
+        - type: "processid"
+          searchColumn: "hpcc.log.procid"
+          columnMode: "DEFAULT"
+          columnType: "numeric"
+        - type: "threadid"
+          searchColumn: "hpcc.log.threadid"
+          columnMode: "DEFAULT"
+          columnType: "numeric"
+        - type: "timestamp"
+          searchColumn: "hpcc.log.timestamp"
+          columnMode: "MIN"
+          columnType: "datetime"
