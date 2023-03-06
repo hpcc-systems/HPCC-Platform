@@ -727,6 +727,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       ELSE()
         message(FATAL_ERROR "ICU requested but package not found")
       ENDIF()
+
       if(WSSQL_SERVICE AND NOT USE_JAVA)
         set(WSSQL_SERVICE OFF)
       endif()
