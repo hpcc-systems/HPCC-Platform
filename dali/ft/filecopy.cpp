@@ -3548,7 +3548,9 @@ void FileSprayer::updateTargetProperties()
                                     strieq(aname,"@node") ||
                                     strieq(aname,"@num")  ||
                                     strieq(aname,"@size") ||
+                                    strieq(aname,"@compressedSize") ||
                                     strieq(aname,"@name") ) ||
+                                    (!sameSizeHeaderFooter && (strieq(aname, FPheaderLength) || strieq(aname, FPfooterLength))) ||
                                     ( strieq(aname,"@recordCount") && (sources.ordinality() == targets.ordinality()) )
                                )
                                 curProps.setProp(aname,aiter->queryValue());
