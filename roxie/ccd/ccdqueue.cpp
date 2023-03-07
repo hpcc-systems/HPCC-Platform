@@ -2524,14 +2524,14 @@ public:
         abortsSent++;
     }
 
-    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx)
+    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IOutputMetaData *meta, unsigned activityId, const IRoxieContextLogger &logctx)
     {
         unsigned qnum = outOfBand ? 0 : ((header.retries & ROXIE_FASTLANE) || !fastLaneQueue) ? 1 : 2;
         if (logctx.queryTraceLevel() > 8)
         {
             StringBuffer s; logctx.CTXLOG("Creating Output Stream for reply packet on Q=%d - %s", qnum, header.toString(s).str());
         }
-        return sendManager->createMessagePacker(header.uid, header.getSequenceId(), &header, sizeof(RoxiePacketHeader), header.serverId, qnum);
+        return sendManager->createMessagePacker(header.uid, header.getSequenceId(), &header, sizeof(RoxiePacketHeader), header.serverId, qnum, meta, activityId);
     }
 
     virtual bool replyPending(RoxiePacketHeader &header)
@@ -3001,10 +3001,11 @@ class LocalMessagePacker : public CDummyMessagePacker
     Linked<ILocalReceiveManager> rm;
     ruid_t id;
     bool outOfBand;
-
 public:
     IMPLEMENT_IINTERFACE;
-    LocalMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm) : rm(_rm), outOfBand(_outOfBand)
+    LocalMessagePacker(RoxiePacketHeader &_header, bool _outOfBand, ILocalReceiveManager *_rm, const IOutputMetaData *_outputMeta, unsigned _activityId)
+    : CDummyMessagePacker(_outputMeta, _activityId),
+      rm(_rm), outOfBand(_outOfBand)
     {
         id = _header.uid;
         header.append(sizeof(RoxiePacketHeader), &_header);
@@ -3277,7 +3278,7 @@ public:
             {
                 // Send back an out-of-band immediately, to let Roxie server know that channel is still active
                 RoxiePacketHeader newHeader(header, ROXIE_ALIVE, 0);
-                Owned<IMessagePacker> output = createOutputStream(newHeader, true, logctx);
+                Owned<IMessagePacker> output = createOutputStream(newHeader, true, nullptr, 0, logctx);
                 output->flush();
                 return; // No point sending the retry in localAgent mode
             }
@@ -3344,9 +3345,9 @@ public:
         abortsSent++;
     }
 
-    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx) override
+    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IOutputMetaData *meta, unsigned activityId, const IRoxieContextLogger &logctx) override
     {
-        return new LocalMessagePacker(header, outOfBand, receiveManager);
+        return new LocalMessagePacker(header, outOfBand, receiveManager, meta, activityId);
     }
 
     virtual IReceiveManager *queryReceiveManager() override

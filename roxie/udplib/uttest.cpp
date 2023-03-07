@@ -338,7 +338,7 @@ void testNxN()
                 TestHeader t = {sequences[dest], myIndex};
                 ServerIdentifier destServer;
                 destServer.setIp(allNodes.item(dest));
-                packers[dest] = sendMgr->createMessagePacker(1, sequences[dest], &t, sizeof(t), destServer, 0);
+                packers[dest] = sendMgr->createMessagePacker(1, sequences[dest], &t, sizeof(t), destServer, 0, nullptr, 0);
             }
             void *row = packers[dest]->getBuffer(rowSize, variableRows);
             memset(row, 0xaa, rowSize);
