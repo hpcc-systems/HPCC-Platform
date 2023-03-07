@@ -71,4 +71,3 @@ if ( UNIX )
     install ( PROGRAMS ecl-package.install DESTINATION etc/init.d/install COMPONENT Runtime )
     install ( PROGRAMS ecl-package.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif ( UNIX )
-

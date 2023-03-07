@@ -69,5 +69,3 @@ target_link_libraries ( dfuplus
          xmllib
          esphttp
     )
-
-

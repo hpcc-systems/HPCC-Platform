@@ -6281,7 +6281,6 @@ void EspServInfo::write_esp_client()
     outs("}\n\n");
 }
 
-//interface IEspInstantEcl
 
 void EspServInfo::write_event_interface()
 {

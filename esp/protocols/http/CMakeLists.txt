@@ -64,7 +64,7 @@ include_directories(
     ./../../../system/security/shared
     ./../../../system/security/LdapSecurity
     ./../../../system/security/zcrypt
-    ./../../../system/mp 
+    ./../../../system/mp
     ./../../../dali/base
     ./../../../common/workunit
     ${HPCC_SOURCE_DIR}/common/thorhelper

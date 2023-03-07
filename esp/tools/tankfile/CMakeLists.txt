@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: tankfile 
+# Component: tankfile
 
 #####################################################
 # Description:
@@ -31,7 +31,7 @@ set (    SRCS
          archive.cpp
          main.cpp
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp
-         ${ESPSCM_GENERATED_DIR}/ws_decoupledlogging_esp.cpp 
+         ${ESPSCM_GENERATED_DIR}/ws_decoupledlogging_esp.cpp
     )
 
 include_directories (

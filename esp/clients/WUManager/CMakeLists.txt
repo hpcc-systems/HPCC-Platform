@@ -15,38 +15,38 @@
 ################################################################################
 
 
-# Component: wumanager 
+# Component: wumanager
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for wumanager
 #####################################################
 
-project( wumanager ) 
+project( wumanager )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 
-set (    SRCS 
+set (    SRCS
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_struct_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_queryset_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_logaccess_esp.cpp
-         WUManager.cpp 
+         WUManager.cpp
     )
 
-include_directories ( 
+include_directories (
          ./../../../system/security/shared
-         ./../../../system/include 
-         ./../../bindings 
-         ./../../bindings/SOAP/xpp 
-         ./../../../system/xmllib 
-         ./../../../system/jlib 
-         ./../../platform 
-         ./../../clients 
+         ./../../../system/include
+         ./../../bindings
+         ./../../bindings/SOAP/xpp
+         ./../../../system/xmllib
+         ./../../../system/jlib
+         ./../../platform
+         ./../../clients
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
@@ -56,10 +56,10 @@ HPCC_ADD_EXECUTABLE ( wumanager ${SRCS} )
 add_dependencies ( wumanager espscm )
 #install ( TARGETS wumanager RUNTIME DESTINATION ${EXEC_DIR} ) # do not install - this is an example program
 
-target_link_libraries ( wumanager 
+target_link_libraries ( wumanager
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib
-         xmllib 
+         xmllib
          esphttp
     )
 
@@ -68,4 +68,3 @@ IF (USE_OPENSSL)
     	securesocket
     )
 ENDIF()
-

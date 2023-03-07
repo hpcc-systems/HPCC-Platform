@@ -43,7 +43,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
          ${HPCC_SOURCE_DIR}/system/security/shared
-         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/dali/daliadmin
@@ -59,9 +59,9 @@ target_link_libraries ( ws_dali
          daliadminlib
          esphttp
     )
-    
+
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_dali 
+    target_link_libraries ( ws_dali
         securesocket
     )
 ENDIF()

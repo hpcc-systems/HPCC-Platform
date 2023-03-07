@@ -15,37 +15,37 @@
 ################################################################################
 
 
-# Component: ws_account 
+# Component: ws_account
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for ws_account
 #####################################################
 
-project( ws_account ) 
+project( ws_account )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
 
-set (    SRCS 
+set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_account_esp.cpp
-         ws_accountPlugin.cpp 
-         ws_accountService.cpp 
+         ws_accountPlugin.cpp
+         ws_accountService.cpp
     )
 
-include_directories ( 
-         ./../.. 
-         ./../../platform 
-         ./../../../system/jlib 
-         ./../../services 
-         ./../../../system/xmllib 
-         ./../../../system/security/securesocket 
-         ./../../../system/include 
-         ./../../clients 
-         ./../../../system/security/LdapSecurity 
-         ./../../../system/security/shared 
-         ./../../bindings 
+include_directories (
+         ./../..
+         ./../../platform
+         ./../../../system/jlib
+         ./../../services
+         ./../../../system/xmllib
+         ./../../../system/security/securesocket
+         ./../../../system/include
+         ./../../clients
+         ./../../../system/security/LdapSecurity
+         ./../../../system/security/shared
+         ./../../bindings
          ./../../bindings/SOAP/xpp
-         ./../../smc/SMCLib  
+         ./../../smc/SMCLib
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
@@ -59,10 +59,10 @@ ADD_DEFINITIONS( -D_USRDLL -Dws_account_API_LOCAL )
 HPCC_ADD_LIBRARY( ws_account SHARED ${SRCS} )
 install ( TARGETS ws_account RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} COMPONENT Runtime )
 add_dependencies (ws_account espscm)
-target_link_libraries ( ws_account 
+target_link_libraries ( ws_account
          jlib
-         xmllib 
-         esphttp 
+         xmllib
+         esphttp
     )
 IF (USE_OPENSSL)
     target_link_libraries ( ws_account

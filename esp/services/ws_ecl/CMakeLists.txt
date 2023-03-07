@@ -15,42 +15,42 @@
 ################################################################################
 
 
-# Component: ws_ecl 
+# Component: ws_ecl
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for ws_ecl
 #####################################################
 
-project( ws_ecl ) 
+project( ws_ecl )
 
-set (    SRCS 
-         ws_ecl_plugin.cpp 
-         ws_ecl_service.cpp 
-         ws_ecl_wuinfo.cpp 
+set (    SRCS
+         ws_ecl_plugin.cpp
+         ws_ecl_service.cpp
+         ws_ecl_wuinfo.cpp
     )
 
-include_directories ( 
-         ./../../esplib 
-         ./../../platform 
-         ./../../services 
-         ./../../services/common 
-         ./../../bindings 
-         ./../../bindings/SOAP/xpp 
-         ./../../bindings/http/client 
-         ./../../clients 
-         ./../../../system/mp 
-         ./../../../system/jlib 
+include_directories (
+         ./../../esplib
+         ./../../platform
+         ./../../services
+         ./../../services/common
+         ./../../bindings
+         ./../../bindings/SOAP/xpp
+         ./../../bindings/http/client
+         ./../../clients
+         ./../../../system/mp
+         ./../../../system/jlib
          ./../../../common/environment
-         ./../../../system/hrpc 
-         ./../../../system/xmllib 
-         ./../../../system/security/shared 
-         ./../../../system/security/securesocket 
-         ./../../../system/include 
-         ./../../../common/workunit 
+         ./../../../system/hrpc
+         ./../../../system/xmllib
+         ./../../../system/security/shared
+         ./../../../system/security/securesocket
+         ./../../../system/include
+         ./../../../common/workunit
          ./../../../common/wuwebview
-         ./../../../common/fileview2 
-         ./../../../dali/base 
+         ./../../../common/fileview2
+         ./../../../dali/base
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
@@ -59,24 +59,24 @@ ADD_DEFINITIONS( -D_USRDLL )
 HPCC_ADD_LIBRARY( ws_ecl SHARED ${SRCS} )
 add_dependencies( ws_ecl espscm )
 install ( TARGETS ws_ecl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( ws_ecl  
+target_link_libraries ( ws_ecl
          jlib
-         xmllib 
-         esphttp 
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         dllserver 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
+         xmllib
+         esphttp
+         mp
+         hrpc
+         remote
+         dalibase
+         dllserver
+         nbcd
+         eclrtl
+         deftype
+         workunit
          wuwebview
-         jhtree 
-         hql 
-         fileview2 
-         xmllib 
+         jhtree
+         hql
+         fileview2
+         xmllib
     )
 
 if (NOT CONTAINERIZED)

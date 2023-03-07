@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# Component: ws_config 
+# Component: ws_config
 #####################################################
 # Description:
 # ------------
@@ -26,32 +26,32 @@ if (CONTAINERIZED)
     message(FATAL_ERROR "Configgen is not included in container builds")
 endif()
 
-project( ws_config ) 
+project( ws_config )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
 
-set (    SRCS 
-         ${ESPSCM_GENERATED_DIR}/ws_config_esp.cpp 
-         ws_configPlugin.cpp 
-         ws_configService.cpp 
+set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/ws_config_esp.cpp
+         ws_configPlugin.cpp
+         ws_configService.cpp
     )
 
-include_directories ( 
-         ./../../esplib 
-         ./../.. 
-         ./../../platform 
-         ./../../../system/jlib 
-         ./../../services 
-         ./../../../system/security/securesocket 
-         ./../../../system/security/shared 
-         ./../../../system/include 
+include_directories (
+         ./../../esplib
+         ./../..
+         ./../../platform
+         ./../../../system/jlib
+         ./../../services
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/include
          ./../../../system/xmllib
-         ./../../../system/mp 
+         ./../../../system/mp
          ./../../../common/environment
-         ./../../clients 
-         ./../../../dali/base 
-         ./../../bindings 
-         ./../../bindings/SOAP/xpp 
+         ./../../clients
+         ./../../../dali/base
+         ./../../bindings
+         ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
@@ -60,14 +60,14 @@ ADD_DEFINITIONS( -D_USRDLL -Dws_config_API_LOCAL )
 HPCC_ADD_LIBRARY( ws_config SHARED ${SRCS} )
 install ( TARGETS ws_config RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} COMPONENT Runtime )
 add_dependencies (ws_config espscm)
-target_link_libraries ( ws_config 
+target_link_libraries ( ws_config
          jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
+         mp
+         hrpc
+         remote
+         dalibase
          environment
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
-         xmllib 
-         esphttp 
+         xmllib
+         esphttp
     )

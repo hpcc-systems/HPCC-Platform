@@ -77,4 +77,3 @@ ENDIF()
 IF (USE_OPENLDAP)
 target_link_libraries ( ws_cloud LdapSecurity )
 ENDIF(USE_OPENLDAP)
-

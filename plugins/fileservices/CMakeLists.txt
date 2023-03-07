@@ -15,70 +15,69 @@
 ################################################################################
 
 
-# Component: fileservices 
+# Component: fileservices
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for fileservices
 #####################################################
 
-project( fileservices ) 
+project( fileservices )
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set ( SRCS 
+set ( SRCS
       ${ESPSCM_GENERATED_DIR}/ws_dfu_common_esp.cpp
-      ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp 
-      ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp 
-      fileservices.cpp 
-      ../../esp/bindings/bindutil.cpp 
-      ../../dali/dfuplus/dfuplus.cpp 
+      ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp
+      ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
+      fileservices.cpp
+      ../../esp/bindings/bindutil.cpp
+      ../../dali/dfuplus/dfuplus.cpp
     )
 
-include_directories ( 
+include_directories (
          .
          ./../../common/environment
-         ./../../common/remote 
-         ./../../system/jhtree 
-         ./../../system/mp 
-         ./../../common/workunit 
-         ./../../esp/clients 
-         ./../../dali/ft 
-         ./../../system/security/shared 
-         ./../../esp/bindings/SOAP/xpp 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../esp/bindings 
-         ./../../dali/base 
-         ./../../ecl/eclagent 
-         ./../../rtl/include 
-         ./../../system/xmllib 
-         ./../../esp/platform 
-         ./../../system/jlib 
-         ./../../common/thorhelper 
-         ./../../rtl/eclrtl 
-         ./../../dali/dfu 
+         ./../../common/remote
+         ./../../system/jhtree
+         ./../../system/mp
+         ./../../common/workunit
+         ./../../esp/clients
+         ./../../dali/ft
+         ./../../system/security/shared
+         ./../../esp/bindings/SOAP/xpp
+         ./../../common/deftype
+         ./../../system/include
+         ./../../esp/bindings
+         ./../../dali/base
+         ./../../ecl/eclagent
+         ./../../rtl/include
+         ./../../system/xmllib
+         ./../../esp/platform
+         ./../../system/jlib
+         ./../../common/thorhelper
+         ./../../rtl/eclrtl
+         ./../../dali/dfu
          ./../../dali/dfuplus
          ./../../system/jlib
             )
 
 ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS -DWSDFU_API_LOCAL -DFileSpray_API_LOCAL )
 
-HPCC_ADD_LIBRARY( fileservices SHARED ${SRCS} )  
+HPCC_ADD_LIBRARY( fileservices SHARED ${SRCS} )
 add_dependencies ( fileservices espscm )
 install ( TARGETS fileservices DESTINATION plugins )
 target_link_libraries ( fileservices
          jlib
-         remote 
-         dalibase 
+         remote
+         dalibase
          esphttp
-         dllserver 
-         nbcd 
-         eclrtl  
-         deftype 
-         workunit 
+         dllserver
+         nbcd
+         eclrtl
+         deftype
+         workunit
     )
 
 if (NOT CONTAINERIZED)
     target_link_libraries ( fileservices environment )
 endif()
-

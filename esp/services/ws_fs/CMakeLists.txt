@@ -15,7 +15,7 @@
 ################################################################################
 
 
-# Component: ws_fs 
+# Component: ws_fs
 
 #####################################################
 # Description:
@@ -24,40 +24,40 @@
 #####################################################
 
 
-project( ws_fs ) 
+project( ws_fs )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set (    SRCS 
+set (    SRCS
          ../../../dali/dfu/dfuutil.cpp
-         ../../../dali/sasha/sacmd.cpp 
-         ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp 
-         ws_fsBinding.cpp 
-         ws_fsPlugin.cpp 
-         ws_fsService.cpp 
+         ../../../dali/sasha/sacmd.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
+         ws_fsBinding.cpp
+         ws_fsPlugin.cpp
+         ws_fsService.cpp
     )
 
-include_directories ( 
-         ./../../../dali/dfu 
-         ./../../../system/mp 
-         ./../../platform 
-         ./../../../dali/sasha 
-         ./../../../system/jlib 
-         ./../../../common/environment 
-         ./../../../dali/ft 
-         ./../common 
-         ./../../../esp/bindings/http/platform 
-         ./../../../system/security/securesocket 
-         ./../../../system/security/shared 
-         ./../../../system/include 
+include_directories (
+         ./../../../dali/dfu
+         ./../../../system/mp
+         ./../../platform
+         ./../../../dali/sasha
+         ./../../../system/jlib
+         ./../../../common/environment
+         ./../../../dali/ft
+         ./../common
+         ./../../../esp/bindings/http/platform
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/include
          ./../../../system/xmllib
-         ./../../clients 
-         ./../../../esp/esplib 
-         ./../../../dali/base 
-         ./../../bindings 
-         ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
-         ./../../../fs/dafsclient 
+         ./../../clients
+         ./../../../esp/esplib
+         ./../../../dali/base
+         ./../../bindings
+         ./../../smc/SMCLib
+         ./../../bindings/SOAP/xpp
+         ./../../../fs/dafsclient
          ./../../../common/pkgfiles
          ./../../../common/workunit
          ${HPCC_SOURCE_DIR}/common/thorhelper
@@ -73,11 +73,11 @@ add_dependencies ( ws_fs espscm )
 install ( TARGETS ws_fs RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_fs
          jlib
-         esphttp 
-         dalibase 
+         esphttp
+         dalibase
          workunit
-         SMCLib 
-         dfuwu 
+         SMCLib
+         dfuwu
          pkgfiles
          ws_dfsclient
     )

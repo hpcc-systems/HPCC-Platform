@@ -15,53 +15,53 @@
 ################################################################################
 
 
-# Component: eclplus 
+# Component: eclplus
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for eclplus
 #####################################################
 
-project( eclplus ) 
+project( eclplus )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 
-set (    SRCS 
-         ../../esp/bindings/bindutil.cpp 
+set (    SRCS
+         ../../esp/bindings/bindutil.cpp
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_struct_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_req_resp_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_queryset_req_resp_esp.cpp
-         ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp 
+         ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_logaccess_esp.cpp
-         DeleteHelper.cpp 
-         DumpHelper.cpp 
-         eclplus.cpp 
-         formattypes.cpp 
-         ListHelper.cpp 
-         main.cpp 
-         QueryHelper.cpp 
-         ViewHelper.cpp 
+         DeleteHelper.cpp
+         DumpHelper.cpp
+         eclplus.cpp
+         formattypes.cpp
+         ListHelper.cpp
+         main.cpp
+         QueryHelper.cpp
+         ViewHelper.cpp
     )
 
-include_directories ( 
+include_directories (
          ./../../system/security/shared
-         ./../../system/mp 
-         ./../../common/dllserver 
-         ./../../common/fileview2 
-         ./../../common/workunit 
-         ./../../esp/clients 
-         ./../../common/environment 
-         ./../../esp/bindings/SOAP/xpp 
-         ./../../system/include 
-         ./../../esp/bindings 
-         ./../../ecl/hql 
-         ./../../dali/base 
-         ./../../esp/platform 
-         ./../../system/jlib 
-         ./../../system/xmllib 
+         ./../../system/mp
+         ./../../common/dllserver
+         ./../../common/fileview2
+         ./../../common/workunit
+         ./../../esp/clients
+         ./../../common/environment
+         ./../../esp/bindings/SOAP/xpp
+         ./../../system/include
+         ./../../esp/bindings
+         ./../../ecl/hql
+         ./../../dali/base
+         ./../../esp/platform
+         ./../../system/jlib
+         ./../../system/xmllib
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
@@ -70,8 +70,7 @@ ADD_DEFINITIONS( -DECLPLUS_EXPORTS -D_CONSOLE -DWSWU_API_LOCAL -Dws_logaccess_AP
 HPCC_ADD_EXECUTABLE ( eclplus ${SRCS} )
 add_dependencies ( eclplus espscm )
 install ( TARGETS eclplus RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries (  eclplus 
+target_link_libraries (  eclplus
          jlib
-         esphttp 
+         esphttp
     )
-
