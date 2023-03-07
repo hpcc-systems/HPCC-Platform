@@ -103,13 +103,15 @@
 
             <entry>Optional. Specifies keeping n number of duplicate records.
             If omitted, the default behavior is to KEEP 1. Not valid with the
-            ALL option present.</entry>
+            ALL option present. </entry>
           </row>
 
           <row>
             <entry><emphasis>n</emphasis></entry>
 
-            <entry>The number of duplicate records to keep.</entry>
+            <entry>The number of duplicate records to keep. If
+            <emphasis>keeper</emphasis> is set to RIGHT, the only valid number
+            of duplicate records to keep is 1.</entry>
           </row>
 
           <row>
@@ -245,12 +247,12 @@
   The first in the <emphasis>sort-list</emphasis> order of records are
   retained. The <emphasis>sort-list</emphasis> is comma delimited list of
   fields. The fields may be prefixed with a minus sign to require a reverse
-  sort on that field. </para>
+  sort on that field.</para>
 
   <para>DEDUP(recordset, field1, BEST(field2) ) means that from set of
   duplicate records, the first record from the set duplicates sorted by field2
   is retained. DEDUP(recordset, field1, BEST(-field2) ) produces the last
-  record sorted by field2 from the set of duplicates. </para>
+  record sorted by field2 from the set of duplicates.</para>
 
   <para>The BEST option cannot be used with a KEEP parameter greater than
   1.</para>
