@@ -9,6 +9,7 @@ export * from "./grid";
 export * from "./logging";
 export * from "./metrics";
 export * from "./platform";
+export * from "./resources";
 export * from "./store";
 export * from "./theme";
 export * from "./user";

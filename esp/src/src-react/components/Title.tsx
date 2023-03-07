@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
 import { CounterBadgeProps, CounterBadge } from "@fluentui/react-components";
 import { Level } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
@@ -21,11 +21,11 @@ import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { toasterScale } from "./controls/CustomToaster";
+import { AppPanel } from "./AppPanel";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
 const waffleIcon: IIconProps = { iconName: "WaffleOffice365" };
-const searchboxStyles = { margin: "5px", height: "auto", width: "100%" };
 
 const personaStyles = {
     root: {
@@ -48,7 +48,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
     const { currentUser } = useMyAccount();
-    const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
+    const [showAppPanel, { setTrue: openAppPanel, setFalse: dismissAppPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
@@ -65,17 +65,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             size: PersonaSize.size32
         };
     }, [currentUser]);
-
-    const onRenderNavigationContent: IRenderFunction<IPanelProps> = React.useCallback(
-        (props, defaultRender) => (
-            <>
-                <IconButton iconProps={waffleIcon} onClick={dismissPanel} style={{ width: 48, height: 48 }} />
-                <span style={searchboxStyles} />
-                {defaultRender!(props)}
-            </>
-        ),
-        [dismissPanel],
-    );
 
     const [log, logLastUpdated] = useECLWatchLogger();
 
@@ -216,7 +205,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             <Stack.Item align="center">
                 <Stack horizontal>
                     <Stack.Item>
-                        <IconButton iconProps={waffleIcon} onClick={openPanel} style={{ width: 48, height: 48, color: theme.palette.themeDarker }} />
+                        <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48, color: theme.palette.themeDarker }} />
                     </Stack.Item>
                     <Stack.Item align="center">
                         <Link href="#/activities">
@@ -254,17 +243,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 }} />
             </Stack.Item>
         </Stack>
-        <Panel type={PanelType.smallFixedNear}
-            onRenderNavigationContent={onRenderNavigationContent}
-            headerText={nlsHPCC.Apps}
-            isLightDismiss
-            isOpen={isOpen}
-            onDismiss={dismissPanel}
-            hasCloseButton={false}
-        >
-            <DefaultButton text="Kibana" href="https://www.elastic.co/kibana/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=www.elastic.co" />} />
-            <DefaultButton text="K8s Dashboard" href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=kubernetes.io" />} />
-        </Panel>
+        <AppPanel show={showAppPanel} onDismiss={dismissAppPanel} />
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
         <TitlebarConfig toolbarThemeDefaults={toolbarThemeDefaults} showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />
