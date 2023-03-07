@@ -3223,7 +3223,6 @@ inline bool nonempty(IPropertyTree *pt, const char *p) { const char *s = pt->que
 bool FileSprayer::disallowImplicitReplicate()
 {
     return options->getPropBool(ANsplit) ||
-           options->getPropBool(ANnosplit) ||
            querySplitPrefix() ||
            nonempty(options,"@header") ||
            nonempty(options,"@footer") ||
