@@ -11,14 +11,6 @@ The following steps can be used to set up cert-manager in a kubernetes cluster.
 
 --------------------------------------------------------------------------------------------------------
 
-## Install cert-manager custom resource defintions:
-
-This adds new custom resource types to kubernetes for certificate issuers and certificates.
-
-```
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.0/cert-manager.crds.yaml
-```
-
 ## Install cert-manager helm chart:
 
 Add Jetstack helm repo:
@@ -27,10 +19,10 @@ Add Jetstack helm repo:
 helm repo add jetstack https://charts.jetstack.io
 ```
 
-Install vault server.
+Install cert-manager.
 
 ```bash
-helm install cert-manager jetstack/cert-manager --version v1.1.0
+helm install cert-manager jetstack/cert-manager --set installCRDs=true --namespace cert-manager --create-namespace
 ```
 
 ## Run from HPCC-Platform/helm directory
@@ -65,12 +57,28 @@ The secret name matches the default name used in the local issuer configuration 
 kubectl create secret tls hpcc-local-issuer-key-pair --cert=ca.crt --key=ca.key
 ```
 
+
+## ECL code signing root certificate
+
+Repeat the root certificate creation process to create the CA secret for the code signing issuer.
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -keyout signingca.key -sha256 -days 1825 -out signingca.crt -config examples/certmanager/ca-req.cfg
+```
+
+## Create a Kubernetes TLS secret from the generated signing root certificate and privatekey
+
+```bash
+kubectl create secret tls hpcc-signing-issuer-key-pair --cert=signingca.crt --key=signingca.key
+```
+
+
 ## Installing the HPCC with certificate generation enabled
 
 Install the HPCC helm chart with the "--set certificates.enabled" option set to true.
 
 ```bash
-helm install myhpcc hpcc/ --set global.image.version=latest --set certificates.enabled=true
+helm install myhpcc hpcc/hpcc --set certificates.enabled=true
 ```
 
 Use kubectl to check the status of the deployed pods.  Wait until all pods are running before continuing.
@@ -200,3 +208,15 @@ You should see a result similar to this:
 The default public issuer uses self signed certificates. This makes it very easy to set up but browsers
 will not recognize the certificates as trustworthy and the browser will warn users that the connection
 is not safe.
+
+How to set up a cert-manager ClusterIssuer to use something like LetsEncrypt or Zerossl is outside the
+scope of this document, but once you have one set up you can use it to generate your public certificates
+by setting the public issuer values something like this:
+
+certificates:
+  issuers:
+    public:
+      name: zerossl-issuer
+      kind: ClusterIssuer
+
+Where "zerossl-issuer" is the name of the externally defined cert-manager ClusterIssuer you wish to use.
