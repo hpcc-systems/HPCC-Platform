@@ -65,7 +65,9 @@ for f in `find helm/hpcc -name *.yaml` helm/hpcc/templates/_helpers.tpl ; do
   if [[ -f $f ]] ; then
     echo patch versions in $f
     update_chart_file $f
-    $scriptdir/git-fixversion $f > $f.bak && echo Adding $f && git add $f
-    mv $f.bak $f
+    $scriptdir/git-fixversion $f > $f.fixed && \
+        echo Adding $f && \
+        mv $f.fixed $f && \
+        git add $f
   fi
 done
