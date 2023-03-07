@@ -88,7 +88,6 @@ WORKDIR /hpcc-dev/build
 ARG BUILD_TYPE=RelWithDebInfo
 ARG USE_CPPUNIT=0
 RUN cmake /hpcc-dev/HPCC-Platform -Wno-dev \
-    -DCONTAINERIZED=OFF \
     -DUSE_OPTIONAL=OFF \
     -DUSE_AZURE=OFF \
     -DINCLUDE_PLUGINS=ON \

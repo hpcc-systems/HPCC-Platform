@@ -87,12 +87,35 @@ option(INCLUDE_CONFIG_MANAGER "Build config manager" ON)
 option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
 option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
 option(USE_ADDRESS_SANITIZER "Use address sanitizer to spot leaks" OFF)
+option(BUILD_ALL "Set options for tests and release builds" OFF)
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
-    set ( CMAKE_BUILD_TYPE "Release" )
+    set (CMAKE_BUILD_TYPE "Release")
 elseif (NOT "${CMAKE_BUILD_TYPE}" MATCHES "^Debug$|^Release$|^RelWithDebInfo$")
     message (FATAL_ERROR "Unknown build type ${CMAKE_BUILD_TYPE}")
 endif ()
 message ("-- Making ${CMAKE_BUILD_TYPE} system")
 
+function(build_all_override option value)
+    if (NOT ${option} STREQUAL "${value}")
+        message("---- ${option} to ${value}" )
+        set(${option} ${value} PARENT_SCOPE)
+    endif ()
+endfunction()
+
+if (BUILD_ALL)
+    message("-- BUILD_ALL" )
+    build_all_override(USE_OPTIONAL OFF)
+
+    build_all_override(INCLUDE_PLUGINS ON)
+    build_all_override(SUPPRESS_EXAMPLEPLUGIN ON)
+    build_all_override(SUPPRESS_V8EMBED ON)
+    build_all_override(SUPPRESS_SPARK ON)
+
+    build_all_override(USE_AWS ON)
+    build_all_override(USE_AZURE ON)
+    build_all_override(USE_CASSANDRA ON)
+    build_all_override(USE_JAVA ON)
 endif ()
+
+

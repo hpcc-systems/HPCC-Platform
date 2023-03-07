@@ -287,7 +287,7 @@ jobs:
         rm -f CMakeCache.txt
         if [[ ! -f cache-timestamp ]]; then touch cache-timestamp; fi
         touch ../cmake-timestamp
-        `../src/vcpkg/vcpkg fetch cmake | tail -n 1` ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=Release -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_JAVA=ON -DUSE_AWS=ON -DUSE_AZURE=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest" -DSTRIP_RELEASE_SYMBOLS=0
+        `../src/vcpkg/vcpkg fetch cmake | tail -n 1` ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DCMAKE_BUILD_TYPE=Release -DUSE_CPPUNIT=ON -DBUILD_ALL=ON -DSUPPRESS_REMBED=ON -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest" -DSTRIP_RELEASE_SYMBOLS=0
         make -j$(nproc) install
 
     - name: build-logs-artifact

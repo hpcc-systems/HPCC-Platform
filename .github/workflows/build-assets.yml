@@ -177,9 +177,9 @@ jobs:
           sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
           docker_label=build-${{ matrix.os }}:latest
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DCONTAINERIZED=ON -DBUILD_ALL=ON -DSUPPRESS_REMBED=ON -DCPACK_STRIP_FILES=OFF"
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DCONTAINERIZED=ON -DBUILD_ALL=ON -DSUPPRESS_REMBED=ON -DCPACK_STRIP_FILES=ON" 
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
       - name: Upload Assets
@@ -199,9 +199,9 @@ jobs:
           sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
           docker_label=build-${{ matrix.os }}:latest
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DCONTAINERIZED=OFF -DBUILD_ALL=ON -DSUPPRESS_REMBED=ON -DCPACK_STRIP_FILES=OFF"
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
-          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
+          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DCONTAINERIZED=OFF -DBUILD_ALL=ON -DSUPPRESS_REMBED=ON -DCPACK_STRIP_FILES=ON" 
           # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
       - name: Upload LN Assets
@@ -238,12 +238,12 @@ jobs:
           - os: "windows-2022"
             mono: ""
             sudo: ""
-            cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF'
+            cmake_config_options: '-T host=x64 -A x64 -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON'
             cmake_build_options: "--config Release --parallel $NUMBER_OF_PROCESSORS"
           - os: "macos-12"
             mono: "mono"
             sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON -DUSE_AZURE=OFF -DUSE_CASSANDRA=OFF -DUSE_JAVA=OFF -DUSE_OPENLDAP=OFF"
+            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DUSE_OPTIONAL=OFF -DCLIENTTOOLS_ONLY=ON"
             cmake_build_options: "--parallel $(nproc)"
       fail-fast: false
 

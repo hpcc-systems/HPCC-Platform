@@ -806,6 +806,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
       endif(USE_URIPARSER)
 
+      set(Boost_NO_WARN_NEW_VERSIONS ON)
       if(USE_BOOST_REGEX)
         find_package(Boost COMPONENTS regex)
         if (Boost_REGEX_FOUND)
