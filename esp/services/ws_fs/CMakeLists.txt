@@ -56,7 +56,8 @@ include_directories (
          ./../../../dali/base 
          ./../../bindings 
          ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ./../../../fs/dafsclient 
          ./../../../common/pkgfiles
          ./../../../common/workunit

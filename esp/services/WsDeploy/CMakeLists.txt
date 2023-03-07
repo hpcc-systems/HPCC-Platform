@@ -51,7 +51,8 @@ include_directories (
          ./../../../dali/base 
          ./../../../common/dllserver 
          ./../../bindings 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ./../../bindings/http/client
          ./../../../system/mp 
          ../../../deployment/deploy 

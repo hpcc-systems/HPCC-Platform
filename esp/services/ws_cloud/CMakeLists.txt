@@ -48,6 +48,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
     )
 

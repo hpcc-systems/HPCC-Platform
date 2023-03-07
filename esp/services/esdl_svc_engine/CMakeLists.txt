@@ -43,7 +43,9 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients/wsecl
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/esp/bindings/http/client
+         ${HPCC_SOURCE_DIR}/esp/clients/wsecl
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/xmllib
          ${HPCC_SOURCE_DIR}/system/security/securesocket

@@ -92,6 +92,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}/generated
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

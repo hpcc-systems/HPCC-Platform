@@ -36,6 +36,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/common/deftype

@@ -56,7 +56,8 @@ include_directories (
          ./../../../common/dllserver 
          ./../../bindings 
          ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/sasha
     )

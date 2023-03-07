@@ -54,7 +54,8 @@ include_directories (
          ./../../common/workunit 
          ./../../esp/clients 
          ./../../common/environment 
-         ./../../esp/bindings/SOAP/xpp 
+         ./../../esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ./../../system/include 
          ./../../esp/bindings 
          ./../../ecl/hql 

@@ -67,6 +67,7 @@ include_directories(
     ./../../../system/mp 
     ./../../../dali/base
     ./../../../common/workunit
+    ./../../bindings/SOAP/Platform
     ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 

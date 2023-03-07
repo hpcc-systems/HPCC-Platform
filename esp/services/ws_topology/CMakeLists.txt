@@ -54,7 +54,8 @@ include_directories (
          ./../ws_workunits 
          ./../../bindings 
          ./../../smc/SMCLib 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ./../..//esplib
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )

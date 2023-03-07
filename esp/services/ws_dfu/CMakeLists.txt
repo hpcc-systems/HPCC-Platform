@@ -77,7 +77,8 @@ include_directories (
          ./../../bindings 
          ./../../smc/SMCLib 
          ./../../../common/fileview2 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/esp/clients
     )
 

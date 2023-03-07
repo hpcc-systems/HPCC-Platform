@@ -36,7 +36,8 @@ include_directories (
          ./../../services 
          ./../../services/common 
          ./../../bindings 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ./../../bindings/http/client 
          ./../../clients 
          ./../../../system/mp 

@@ -50,6 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/esp/bindings/http/client
          ${HPCC_SOURCE_DIR}/esp/http/platform
          ${HPCC_SOURCE_DIR}/system/mp

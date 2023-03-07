@@ -45,7 +45,8 @@ include_directories (
          ./../../../system/security/shared 
          ./../../bindings 
          ./../../bindings/SOAP/xpp
-         ./../../smc/SMCLib  
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
+         ./../../smc/SMCLib
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 

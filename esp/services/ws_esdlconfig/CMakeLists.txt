@@ -53,6 +53,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients/wsecl
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
          ${HPCC_SOURCE_DIR}/esp/services/esdl_svc_engine

@@ -42,7 +42,8 @@ include_directories (
          ./../../../system/security/shared
          ./../../../system/include 
          ./../../bindings 
-         ./../../bindings/SOAP/xpp 
+         ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
          ./../../../system/xmllib 
          ./../../../system/jlib 
          ./../../platform 

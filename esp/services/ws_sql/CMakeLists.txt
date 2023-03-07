@@ -69,6 +69,7 @@ if(WSSQL_SERVICE AND USE_JAVA)
         ${HPCC_WSSQL_SOURCE_DIR}/esp/services/ws_sql/SQL2ECL
         ${HPCC_SOURCE_DIR}/esp/bindings
         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
+        ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/Platform
         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
         ${HPCC_SOURCE_DIR}/esp/platform
         ${HPCC_SOURCE_DIR}/esp/services
