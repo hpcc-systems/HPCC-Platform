@@ -130,7 +130,7 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
             continue;
 
         //Match path
-        if (startsWith(path, plane.queryProp("@prefix")))
+        if (isEmptyString(path) || startsWith(path, plane.queryProp("@prefix")))
             return LINK(&plane);
     }
     return nullptr;

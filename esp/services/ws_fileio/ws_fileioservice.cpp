@@ -20,6 +20,7 @@
 
 #include "jiface.hpp"
 #include "environment.hpp"
+#include "dautils.hpp"
 #include "ws_fileioservice.hpp"
 #ifdef _WIN32
 #include "windows.h"
@@ -34,128 +35,46 @@ void CWsFileIOEx::init(IPropertyTree *cfg, const char *process, const char *serv
     tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
 }
 
-bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const char* netAddrReq, const char* relPath, StringBuffer& netAddr, StringBuffer& absPath)
+void CWsFileIOEx::validateDropZoneAccess(IEspContext &context, const char *targetDZNameOrHost, const char *hostReq, SecAccessFlags permissionReq,
+    const char *fileNameWithRelPath, CDfsLogicalFileName &dlfn)
 {
-    if (!targetDZNameOrAddress || (targetDZNameOrAddress[0] == 0) || !relPath || (relPath[0] == 0))
-        return false;
+    if (containsRelPaths(fileNameWithRelPath)) //Detect a path like: a/../../../f
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", fileNameWithRelPath);
 
-    if (containsRelPaths(relPath)) //Detect a path like: a/../../../f
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", relPath);
-
-#ifdef _CONTAINERIZED
-    bool isIp4Req = isIPAddress(netAddrReq);
-    ForEachItemIn(i, allTpDropZones)
+    Owned<IPropertyTree> dropZone = getDropZonePlane(targetDZNameOrHost);
+    if (!dropZone) //The targetDZNameOrHost could be a dropzone host.
     {
-        IConstTpDropZone& dropZone = allTpDropZones.item(i);
-        if (!dropZone.getECLWatchVisible())
-            continue;
-
-        const char* name = dropZone.getName();
-        if (isEmptyString(name) || !streq(targetDZNameOrAddress, name))
-            continue;
-
-        const char* prefix = dropZone.getPath();
-        if (isEmptyString(prefix))
-            continue;
-
-        IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
-        ForEachItemIn(ii, tpMachines)
-        {
-            IConstTpMachine& tpMachine = tpMachines.item(ii);
-            if (!isEmptyString(netAddrReq) && !matchNetAddressRequest(netAddrReq, isIp4Req, tpMachine))
-                continue;
-
-            netAddr.set(tpMachine.getNetaddress());
-            absPath.set(prefix);
-            addPathSepChar(absPath);
-            absPath.append(relPath);
-            return true;
-        }
+        dropZone.setown(findDropZonePlane(nullptr, targetDZNameOrHost, true));
+        if (!dropZone)
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DropZone not found for %s", targetDZNameOrHost);
     }
-#else
-    netAddr.clear();
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> env = factory->openEnvironment();
-    Owned<IConstDropZoneInfo> dropZoneInfo = env->getDropZone(targetDZNameOrAddress);
-    if (!dropZoneInfo || !dropZoneInfo->isECLWatchVisible())
+    else if (!isEmptyString(hostReq))
     {
-        if (stricmp(targetDZNameOrAddress, "localhost")==0)
-            targetDZNameOrAddress = ".";
-
-        Owned<IConstDropZoneInfoIterator> dropZoneItr = env->getDropZoneIteratorByAddress(targetDZNameOrAddress);
-        ForEach(*dropZoneItr)
-        {
-            IConstDropZoneInfo & dz = dropZoneItr->query();
-            if (dz.isECLWatchVisible())
-            {
-                dropZoneInfo.set(&dropZoneItr->query());
-                netAddr.set(targetDZNameOrAddress);
-                break;
-            }
-        }
+        if (!isHostInPlane(dropZone, hostReq, true))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host %s is not valid DropZone plane %s", hostReq, targetDZNameOrHost);
     }
 
-    if (dropZoneInfo)
+    //make sure a relative dropzone path
+    StringBuffer s;
+    const char* prefix = dropZone->queryProp("@prefix");
+    if (hasPrefix(fileNameWithRelPath, prefix, true))
     {
-        SCMStringBuffer directory, computerName, computerAddress;
-        if (netAddr.isEmpty())
-        {
-            dropZoneInfo->getComputerName(computerName); //legacy structure
-            if(computerName.length() != 0)
-            {
-                Owned<IConstMachineInfo> machine = env->getMachine(computerName.str());
-                if (machine)
-                {
-                    machine->getNetAddress(computerAddress);
-                    if (computerAddress.length() != 0)
-                    {
-                        netAddr.set(computerAddress.str());
-                    }
-                }
-            }
-            else
-            {
-                Owned<IConstDropZoneServerInfoIterator> serverIter = dropZoneInfo->getServers();
-                ForEach(*serverIter)
-                {
-                    IConstDropZoneServerInfo &serverElem = serverIter->query();
-                    serverElem.getServer(netAddr.clear());
-                    if (!netAddr.isEmpty())
-                        break;
-                }
-            }
-        }
-
-        dropZoneInfo->getDirectory(directory);
-        if (directory.length() != 0)
-        {
-            absPath.set(directory.str());
-
-            char absPathLastChar = absPath.charAt(absPath.length() - 1);
-            const char pathSepChar = getPathSepChar(directory.str());
-            if (relPath[0] != pathSepChar)
-            {
-                if (absPathLastChar != pathSepChar)
-                    absPath.append(pathSepChar);
-            }
-            else
-            {
-                if (absPathLastChar == pathSepChar)
-                    absPath.setLength(absPath.length() - 1);
-            }
-            absPath.append(relPath);
-            return true;
-        }
-        else
-        {
-            SCMStringBuffer dropZoneName;
-            ESPLOG(LogMin, "Found LZ '%s' without a directory attribute!", dropZoneInfo->getName(dropZoneName).str());
-        }
-
+        const char* p = fileNameWithRelPath + strlen(prefix);
+        if (!*p || !isPathSepChar(p[0]))
+            addPathSepChar(s);
+        s.append(p);
+        fileNameWithRelPath = s.str();
     }
-#endif
 
-    return false;
+    const char *dropZoneName = dropZone->queryProp("@name");
+    dlfn.setPlaneExternal(dropZoneName, fileNameWithRelPath);
+
+    Owned<IUserDescriptor> userDesc = createUserDescriptor();
+    userDesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
+    SecAccessFlags permission = queryDistributedFileDirectory().getDLFNPermissions(dlfn, userDesc);
+    if (permission < permissionReq)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Access Required.",
+            dropZoneName, fileNameWithRelPath, context.queryUserId(), getSecAccessFlagName(permission), getSecAccessFlagName(permissionReq));
 }
 
 bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req, IEspCreateFileResponse &resp)
@@ -180,19 +99,11 @@ bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req,
     resp.setDestDropZone(server);
     resp.setDestRelativePath(destRelativePath);
 
-    StringBuffer destAbsPath;
-    StringBuffer destNetAddr;
-    if (!CheckServerAccess(server, req.getDestNetAddress(), destRelativePath, destNetAddr, destAbsPath))
-    {
-        result.appendf("Failed to access the destination: %s %s.", server, destRelativePath);
-        resp.setResult(result.str());
-        return true;
-    }
+    CDfsLogicalFileName dlfn;
+    validateDropZoneAccess(context, server, req.getDestNetAddress(), SecAccess_Write, destRelativePath, dlfn);
 
     RemoteFilename rfn;
-    SocketEndpoint ep;
-    ep.set(destNetAddr);
-    rfn.setPath(ep, destAbsPath);
+    dlfn.getExternalFilename(rfn);
     Owned<IFile> file = createIFile(rfn);
 
     fileBool isDir = file->isDirectory();
@@ -238,15 +149,6 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
     resp.setDestDropZone(server);
     resp.setDestRelativePath(destRelativePath);
 
-    StringBuffer destAbsPath;
-    StringBuffer destNetAddr;
-    if (!CheckServerAccess(server, req.getDestNetAddress(), destRelativePath, destNetAddr, destAbsPath))
-    {
-        result.appendf("Failed to access the destination: %s %s.", server, destRelativePath);
-        resp.setResult(result.str());
-        return true;
-    }
-
     __int64 dataSize = req.getDataSize();
     __int64 offset = req.getOffset();
     resp.setDataSize(dataSize);
@@ -263,11 +165,12 @@ bool CWsFileIOEx::onReadFileData(IEspContext &context, IEspReadFileDataRequest &
         return true;
     }
 
+    CDfsLogicalFileName dlfn;
+    validateDropZoneAccess(context, server, req.getDestNetAddress(), SecAccess_Read, destRelativePath, dlfn);
+
     StringBuffer user;
     RemoteFilename rfn;
-    SocketEndpoint ep;
-    ep.set(destNetAddr);
-    rfn.setPath(ep, destAbsPath);
+    dlfn.getExternalFilename(rfn);
     Owned<IFile> file = createIFile(rfn);
     fileBool isFile = file->isFile();
     if (isFile != fileBool::foundYes)
@@ -349,20 +252,12 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
     resp.setDestDropZone(server);
     resp.setDestRelativePath(destRelativePath);
 
-    StringBuffer destAbsPath;
-    StringBuffer destNetAddr;
-    if (!CheckServerAccess(server, req.getDestNetAddress(), destRelativePath, destNetAddr, destAbsPath))
-    {
-        result.appendf("Failed to access the destination: %s %s.", server, destRelativePath);
-        resp.setResult(result.str());
-        return true;
-    }
+    CDfsLogicalFileName dlfn;
+    validateDropZoneAccess(context, server, req.getDestNetAddress(), SecAccess_Write, destRelativePath, dlfn);
 
     StringBuffer user;
     RemoteFilename rfn;
-    SocketEndpoint ep;
-    ep.set(destNetAddr);
-    rfn.setPath(ep, destAbsPath);
+    dlfn.getExternalFilename(rfn);
     Owned<IFile> file = createIFile(rfn);
     fileBool isFile = file->isFile();
     if (isFile != fileBool::foundYes)

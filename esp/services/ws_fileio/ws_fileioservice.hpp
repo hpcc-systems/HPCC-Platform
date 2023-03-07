@@ -47,7 +47,8 @@ public:
     virtual bool onReadFileData(IEspContext &context,     IEspReadFileDataRequest &req,   IEspReadFileDataResponse &resp);
 
 protected:
-    bool CheckServerAccess(const char* server, const char* netAddrIn, const char* relPath, StringBuffer& netAddrOut, StringBuffer& absPath);
+    void validateDropZoneAccess(IEspContext &context, const char *targetDZNameOrHost, const char *hostReq,
+        SecAccessFlags permissionReq, const char *fileNameWithRelPath, CDfsLogicalFileName &dlfn);
 };
 
 #endif //_ESPWIZ_WsFileIO_HPP__
