@@ -74,11 +74,3 @@ SCMInterface IClientInstantEcl(IInterface)
 
 extern "C" ECL_CLIENT_API IClientInstantEcl * createInstantEclClient();
 
-SCMclarion
-  map
-    module('instant ecl client')
-      createInstantEclClient procedure, *cppClientInstantEcl, pascal, raw, name('_createInstantEclClient@0')
-    end
-  end
-SCMend
-

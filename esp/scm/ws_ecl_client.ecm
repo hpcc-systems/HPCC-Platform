@@ -138,11 +138,3 @@ SCMInterface IClientWsEclService(IInterface)
 extern "C" WS_ECL_CLIENT_API IClientWsEclService * getWsEclClient();
 extern "C" WS_ECL_CLIENT_API IClientWsEclService * createWsEclClient();
 
-SCMclarion
-  map
-    module('instant ecl client')
-      createWsEclClient procedure, *cppClientWsEclService, pascal, raw, name('_createWsEclClient@0')
-    end
-  end
-SCMend
-

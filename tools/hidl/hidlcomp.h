@@ -100,9 +100,6 @@ typedef struct esp_xlate_info_
 
 esp_xlate_info *esp_xlat(const char *from, bool defaultToString=true);
 
-
-enum  clarion_special_type_enum { cte_normal,cte_longref,cte_constcstr,cte_cstr };
-
 void out(const char*, ssize_t);
 void outs(const char*);
 void outf(const char*,...) __attribute__((format(printf, 1, 2)));
@@ -434,10 +431,8 @@ public:
     char *bytesize(int deref=0);
     bool simpleneedsswap();
     void cat_type(char *s,int deref=0,int var=0);
-    clarion_special_type_enum clarion_special_type();
     void out_clarion_parameter();
-    void out_clarion_type(bool ret);
-    void out_parameter(const char *pfx,int forclarion=0);
+    void out_parameter(const char *pfx);
     void out_type(int deref=0,int var=0);
     void typesizeacc(char *accstr,size_t &acc);
     size_t typesizealign(size_t &ofs);
@@ -495,8 +490,6 @@ public:
     const char* getArrayImplType();
 
     bool hasNameTag(){return (typname && !stricmp(typname, "EspTextFile"));}
-
-    void write_clarion_attr_method(bool isSet);
 
     bool hasMapInfo();
     bool write_mapinfo_check(int indents, const char* ctxvar);
@@ -583,9 +576,8 @@ public:
     ProcInfo();
     ~ProcInfo();
 
-    void out_clarion_parameter_list();
     void out_method(const char * classpfx=NULL,int omitvirt=0);
-    void out_parameter_list(const char *pfx,int forclarion=0);
+    void out_parameter_list(const char *pfx);
     void write_body_method_structs2(const char * modname);
     void write_body_popparam(int swapp);
     int write_body_swapparam();
@@ -593,8 +585,6 @@ public:
     void write_body_pushparam(int swapp);
     void write_body_pushreturn();
     void write_head_size();
-
-    void out_clarion_method();
 
     char      * name;
     ParamInfo * rettype;
@@ -619,9 +609,6 @@ public:
     void write_body_class();
     void write_body_class_proxy(int cb);
     void write_body_class_stub(int cb);
-    void write_clarion_include_module();
-    void write_clarion_interface_class();
-    void write_clarion_scm_stub_class();
     void write_define();
     void write_example_module();
     void write_header_class();
@@ -675,7 +662,6 @@ public:
     ~ApiInfo();
 
    void write_header_method();
-   void write_clarion_include_method();
 
     char            *group;
     char        *name;
@@ -723,7 +709,6 @@ public:
     }
 
     void write_header_enum();
-    void write_clarion_enum();
 
     char         *name;
     EnumValInfo  *vals;
@@ -837,9 +822,6 @@ public:
     void write_factory_impl();
     void write_esp_parms(bool isClientImpl);
     void write_esp_client_method(const char *serv, const char *respname, const char *methname, bool isDecl, bool isPure);
-
-    void write_clarion_methods(enum espaxm_type axstype);
-    void write_clarion_include_interface();
 
     const char *getParentName()
     {
@@ -1260,7 +1242,6 @@ public:
     void write_esp_client();
     void write_esp_client_ipp();
     void write_catch_blocks(EspMethodInfo* mthi, catch_type ct, int indents);
-    void write_clarion_include_interface();
 
     EspMethodInfo   *methods;
     EspMountInfo    *mounts;
@@ -1303,7 +1284,6 @@ public:
 
     void Process();
     void write_source_file_classes();
-    void write_clarion_HRPC_interfaces();
     void write_example_implementation_module();
     void write_header_class_intro();
     void write_header_class_outro();
@@ -1311,8 +1291,6 @@ public:
     void write_esp_ng();
     void write_esp_ng_cpp();
     void write_esp_ex_ipp();
-
-    void write_clarion_esp_interfaces();
 
     void processExecutionProfiling();
 
@@ -1327,7 +1305,6 @@ private:
     int          espx;
     int          espi;
     int          espc;
-    int          clwo;
     int          cppo;
     int          ho;
     int          xsvo;
@@ -1348,7 +1325,6 @@ extern bool isESP;
 extern bool isESPng;
 extern std::string esp_def_export_tag;
 
-extern StrBuffer clarion;
 extern char srcFileExt[4];
 extern int nCommentStartLine;
 extern void yyerror(const char *s);
