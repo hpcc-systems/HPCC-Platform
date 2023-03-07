@@ -1,3 +1,6 @@
+if ("${VCPKG_DONE}" STREQUAL "")
+  set (VCPKG_DONE 1)
+
 set(VCPKG_FILES_DIR "${CMAKE_BINARY_DIR}" CACHE STRING "Folder for vcpkg download, build and installed files")
 set(CMAKE_TOOLCHAIN_FILE ${HPCC_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 set(VCPKG_ROOT ${HPCC_SOURCE_DIR}/vcpkg)
@@ -20,3 +23,5 @@ foreach(VCPKG_PACKAGE ${VCPKG_PACKAGES})
 endforeach()
 file(WRITE ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt ${VCPKG_PACKAGE_LIST})
 install(FILES ${CMAKE_BINARY_DIR}/vcpkg-catalog.txt DESTINATION "." COMPONENT Runtime)
+
+endif ()
