@@ -31,6 +31,7 @@ hpcc_compname=${11}
 hpcc_setenv=${12}
 
 export logfile="${logpth}/${hpcc_compname}/${13}"
+export logdebug="${logpth}/${hpcc_compname}/${13}.debug"
 
 valgrindOptions=${14}
 
@@ -41,6 +42,12 @@ set_environmentvars
 
 slavename=thorslave_${hpcc_compname}
 
+process_dump_debug()
+{
+    echo "debug dump" >> ${logdebug}
+    ps aux >> ${logdebug}
+}
+
 stop_slaves()
 {
     local timer=15
@@ -49,14 +56,24 @@ stop_slaves()
     log "Attempting to kill $slavename with SIGTERM"
     log $(which pidof)
     slavepids=$(pidof ${slavename})
+    log "----------------------------"
+    log "     before killing"
+    log "$(ps aux | grep thor)"
     log "slave pids are: ${slavepids}"
     kill -SIGTERM ${slavepids} > /dev/null 2>&1
     while [[ $isAlive -eq 0 && $timer -gt 0 ]];do
+            log "----------------------------"
+            log "     in isAlive loop"
+            log "$(ps aux | grep thor)"
         kill -0 ${slavepids} > /dev/null 2>&1
         isAlive=$?
         [[ $isAlive -eq 0 ]] && sleep 0.5
         ((timer--))
     done
+
+    log "----------------------------"
+    log "     after isAlive loop"
+    log "$(ps aux | grep thor)"
 
     if [[ $isAlive -eq 0 ]]; then
         log "Failed to kill slaves with SIGTERM. Sending SIGKILL"
@@ -102,6 +119,8 @@ start_slaves()
     ulimit -Sn hard > /dev/null
     [[ $? -ne 0 ]] && log "Failed to set ulimit for number of file descriptors open"
 
+    log "----------------------------"
+    log "$(ps aux | grep thor)"
     log "slave init"
     log "slave(s) starting"
 
@@ -128,6 +147,8 @@ start_slaves()
         exit 1
     fi
 
+    echo "in start" >> ${logdebug}
+    process_dump_debug
     # NB: Would simply use slavesPerNode to create N slaves, but for backward compatilibty reasons, need to cater for clusters
     # defined with arbitrary repeated IP's listed in their definitions.    
     fts=0
