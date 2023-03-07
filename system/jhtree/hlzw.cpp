@@ -100,6 +100,18 @@ int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength,
     return 1;
 }
 
+bool KeyCompressor::write(const char * data, size32_t datalength)
+{
+    comp->startblock(); // start transaction
+    if (comp->write(data,datalength)!=datalength) {
+        close();
+        return false;
+    }
+    comp->commitblock();    // end transaction
+    return true;
+}
+
+
 unsigned KeyCompressor::writeBlob(const char *data, unsigned datalength)
 {
     assert(isBlob);

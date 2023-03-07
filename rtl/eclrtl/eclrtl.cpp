@@ -6208,8 +6208,10 @@ size32_t rtlGetPackedSizeFromFirst(byte first)
     return numExtraBytesFromFirst(first)+1;
 }
 
-
-
+size32_t rtlGetPackedSize(unsigned __int64 value)
+{
+    return numExtraBytesFromValue(value) + 1;
+}
 
 //Store signed by moving the sign to the bottom bit, and inverting if negative.
 //so small positive and negative numbers are stored compactly.

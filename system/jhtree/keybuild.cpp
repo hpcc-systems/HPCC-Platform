@@ -19,6 +19,7 @@
 #include "eclhelper.hpp"
 #include "bloom.hpp"
 #include "jmisc.hpp"
+#include "jhinplace.hpp"
 
 struct CRC32HTE
 {
@@ -72,12 +73,6 @@ public:
     }
     virtual const void *getFindParam(const void *et) const { return ((const CRC32HTE *)et)->queryEndParam(); }
     virtual bool matchesFindParam(const void *et, const void *fp, unsigned) const { return *(offset_t *)((const CRC32HTE *)et)->queryEndParam() == *(offset_t *)fp; }
-};
-
-interface IIndexCompressor : public IInterface
-{
-    virtual const char *queryName() const = 0;
-    virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const = 0;
 };
 
 class PocIndexCompressor : public CInterfaceOf<IIndexCompressor>
@@ -207,10 +202,10 @@ public:
             {
                 const char *compression = _helper->queryCompression();
                 hdr->version = 2;    // Old builds will give a reasonable error message
-                if (strieq(compression, "POC"))
-                {
+                if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
                     indexCompressor.setown(new PocIndexCompressor);
-                }
+                else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
+                    indexCompressor.setown(new InplaceIndexCompressor(keyedSize, _helper, compression));
                 else
                     throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
             }

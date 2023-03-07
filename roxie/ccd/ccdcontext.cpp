@@ -2598,6 +2598,7 @@ protected:
             factory->mergeStats(logctx);
         }
         globalStats.reset();
+        logCacheState();
         if (!protocol)
             return;
 
