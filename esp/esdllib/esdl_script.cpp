@@ -1255,10 +1255,20 @@ public:
 
 class CEsdlTransformOperationParameter : public CEsdlTransformOperationVariable
 {
+private:
+    Owned<ICompiledXpath> m_failureCode;
+    Owned<ICompiledXpath> m_failureMsg;
 public:
     CEsdlTransformOperationParameter(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, IEsdlFunctionRegister *functionRegister)
         : CEsdlTransformOperationVariable(xpp, stag, prefix, functionRegister)
     {
+        if (!m_select)
+        {
+            m_failureCode.setown(compileOptionalXpath(stag.getValue("failure_code")));
+            m_failureMsg.setown(compileOptionalXpath(stag.getValue("failure_message")));
+            if (m_failureCode && !m_failureMsg)
+                recordError(ESDL_SCRIPT_MissingOperationAttr, "failure_code without failure_message");
+        }
     }
 
     virtual ~CEsdlTransformOperationParameter()
@@ -1271,6 +1281,13 @@ public:
 
         if (m_select)
             return sourceContext->declareCompiledParameter(m_name, m_select);
+        if (m_failureMsg && !sourceContext->checkParameterName(m_name))
+        {
+            StringBuffer msg;
+            int code = (m_failureCode ? (int)sourceContext->evaluateAsNumber(m_failureCode) : ESDL_SCRIPT_Error);
+            sourceContext->evaluateAsString(m_failureMsg, msg);
+            throw makeStringExceptionV(code, "%s", msg.str());
+        }
         return sourceContext->declareParameter(m_name, "");
     }
 };
@@ -3206,13 +3223,8 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
     }
     else
     {
-        // enable transforms to distinguish secure versus insecure requests
-        sourceContext->addInputValue("espTransactionID", "");
-        sourceContext->addInputValue("espUserName", "");
-        sourceContext->addInputValue("espUserRealm", "");
-        sourceContext->addInputValue("espUserPeer", "");
-        sourceContext->addInputValue("espUserStatus", "");
-        sourceContext->addInputValue("espUserStatusString", "");
+        // Input values do not default to empty when added. They default to empty when
+        // imported as parameters. Setting empty here serves no purpose.
     }
 
     StringBuffer defaultTarget; //This default gives us backward compatibility with only being able to write to the actual request
