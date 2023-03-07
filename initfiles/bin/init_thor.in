@@ -17,6 +17,11 @@
 
 ###<REPLACE>###
 
+exec 22> thor_debug.log
+
+export BASH_XTRACEFD="22"
+set -x
+
 source ${INSTALL_DIR}/sbin/hpcc_setenv
 deploydir=$(dirname $(type -path $0))
 
