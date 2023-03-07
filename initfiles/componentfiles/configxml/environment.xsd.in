@@ -806,7 +806,7 @@
             <xs:field xpath="@program"/>
         </xs:keyref>
         <xs:key name="processKey">
-            <xs:selector xpath=".//EclServerProcess|.//EclAgentProcess|.//SybaseProcess|.//SpareProcess|.//HoleCluster|.//ThorCluster|.//DaliServer|.//BackupNodeProcess|.//SparkThorProcess"/>
+            <xs:selector xpath=".//EclServerProcess|.//EclAgentProcess|.//SybaseProcess|.//SpareProcess|.//HoleCluster|.//ThorCluster|.//DaliServer|.//BackupNodeProcess"/>
             <xs:field xpath="@name"/>
         </xs:key>
         <xs:key name="hmonKey">

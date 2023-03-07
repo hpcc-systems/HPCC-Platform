@@ -73,10 +73,6 @@
   <Component name="backupnode" processName="BackupNode" schema="backupnode.xsd">
     <File name="backupnode.xsl" method="xslt" destName="backupnode.xml"/>
   </Component>
-  <Component name="sparkthor" processName="SparkThor" schema="sparkThor.xsd">
-    <File name="sparkThor.xsl" method="xslt" destName="spark-env.conf"/>
-    <File name="spark-defaults.xsl" method="xslt" destName="spark-defaults.conf"/>
-  </Component>
   <Component name="thor" processName='ThorCluster' schema='thor.xsd'>
     <File name="thor.xsl" method="xslt" destName="thor.xml"/>
     <File name="setvars.xsl" method="xslt" destName="setvars.bat"/>

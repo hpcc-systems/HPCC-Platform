@@ -969,25 +969,6 @@
              name="s1"
              netAddress="."/>
   </TopoServerProcess>
-  @SPARK_ENV_S@
-  <SparkThorProcess build="_"
-                    buildSet="sparkthor"
-                    name="mysparkthor"
-                    ThorClusterName="mythor"
-                    daliServers="mydali"
-                    SPARK_EXECUTOR_CORES="1"
-                    SPARK_EXECUTOR_MEMORY="1G"
-                    SPARK_MASTER_WEBUI_PORT="8080"
-                    SPARK_MASTER_PORT="7077"
-                    SPARK_WORKER_CORES="1"
-                    SPARK_WORKER_MEMORY="1G"
-                    SPARK_WORKER_PORT="7071">
-   <Instance computer="localhost"
-             directory="${RUNTIME_PATH}/mysparkthor"
-             name="s1"
-             netAddress="."/>
-   </SparkThorProcess>
-   @SPARK_ENV_F@
  </Software>
  <EnvSettings>
   <pid>${PID_PATH}</pid>
@@ -1355,13 +1336,6 @@
              path="componentfiles/toposerver"
              processName="TopoServerProcess"
              schema="toposerver.xsd"/>
-   @SPARK_ENV_S@
-   <BuildSet installSet="deploy_map.xml"
-             name="sparkthor"
-             path="componentfiles/sparkthor"
-             processName="SparkThorProcess"
-             schema="sparkThor.xsd"/>
-   @SPARK_ENV_F@
   </Build>
  </Programs>
 </Environment>

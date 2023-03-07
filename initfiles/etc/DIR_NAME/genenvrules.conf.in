@@ -1,7 +1,7 @@
 
 [Algorithm]
 max_comps_per_node=4
-do_not_generate=SiteCertificate,dfuplus,soapplus,eclplus,ldapServer,ws_account,eclserver,cassandraloggingagent,esploggingagent,loggingmanager,wslogging,daliplugin,ws_store@DNG_SPARKTHOR@
+do_not_generate=SiteCertificate,dfuplus,soapplus,eclplus,ldapServer,ws_account,eclserver,cassandraloggingagent,esploggingagent,loggingmanager,wslogging,daliplugin,ws_store
 avoid_combo=dali-eclagent,dali-sasha
 comps_on_all_nodes=dafilesrv,ftslave
 exclude_from_comps_on_all_nodes=ldapServer
