@@ -103,12 +103,6 @@
               </row>
 
               <row>
-                <entry>roxie</entry>
-
-                <entry>execute commands for Roxie</entry>
-              </row>
-
-              <row>
                 <entry>packagemap</entry>
 
                 <entry>execute packagemap commands (for Roxie)</entry>
@@ -118,6 +112,12 @@
                 <entry>bundle</entry>
 
                 <entry>manage ECL bundles</entry>
+              </row>
+
+              <row>
+                <entry>roxie</entry>
+
+                <entry>execute commands for Roxie</entry>
               </row>
 
               <row>
@@ -145,6 +145,27 @@
 
                 <entry>returns the WUID(s) of the given workunit job
                 name.</entry>
+              </row>
+
+              <row>
+                <entry>zapgen</entry>
+
+                <entry>generate and download the zap file for the given
+                WUID.</entry>
+              </row>
+
+              <row>
+                <entry>sign</entry>
+
+                <entry>adds a digital signature to an ecl or text
+                file.</entry>
+              </row>
+
+              <row>
+                <entry>listkeyuid</entry>
+
+                <entry>returns a list of all the key user IDs that can be used
+                by the sign command.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -347,41 +368,209 @@ ecl deploy roxie - --job-name=FindPersonService
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">ECL Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--main=&lt;definition&gt;</entry>
+
+                  <entry>The definition to use from a legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--snapshot, -sn=&lt;label&gt;</entry>
+
+                  <entry>Snapshot label to use from a legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Send ECL query to HPCC Systems cluster as text rather
+                  than gathering dependencies and building an archive</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>Sets the result limit for the query</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an ECL option (equivalent to #option)</entry>
+                </row>
+
+                <row>
+                  <entry>-f-&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an eclcc command line option with the single dash
+                  ('-')</entry>
+                </row>
+
+                <row>
+                  <entry>-f--&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an eclcc command line option with the double dash
+                  ('--')</entry>
+                </row>
+
+                <row>
+                  <entry>-Dname=value</entry>
+
+                  <entry>Override the definition of a global attribute
+                  'name'</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>-I &lt;path&gt;</entry>
+
+                  <entry>Add path to locations to search for ecl
+                  imports</entry>
+                </row>
+
+                <row>
+                  <entry>-L &lt;path&gt;</entry>
+
+                  <entry>Add path to locations to search for system
+                  libraries</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to the manifest file</entry>
+                </row>
+
+                <row>
+                  <entry>-g, --debug</entry>
+
+                  <entry>Enable debug symbols in generated code</entry>
+                </row>
+
+                <row>
+                  <entry>-checkDirty</entry>
+
+                  <entry>This option reports any modified attributes using git
+                  status</entry>
+                </row>
+
+                <row>
+                  <entry>--fetchrepos</entry>
+
+                  <entry>This option automatically downloads any missing
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>-R&lt;repo&gt;[#version]=&lt;path&gt;</entry>
+
+                  <entry>This option resolves repository references specified
+                  in directory &lt;path&gt;</entry>
+                </row>
+
+                <row>
+                  <entry>--updaterepos</entry>
+
+                  <entry>Setting this option automatically updates
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
                 </row>
 
                 <row>
-                  <entry>-s, --server</entry>
+                  <entry>-s, --server=&lt;ip&gt;</entry>
 
                   <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
+                  services</entry>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
+                  <entry>--port=&lt;port&gt;</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
-                  <entry>-u, --username</entry>
+                  <entry>--accept-self-signed</entry>
 
-                  <entry>The username (if necessary)</entry>
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username=&lt;name&gt;</entry>
+
+                  <entry>The username for accessing ECL services</entry>
                 </row>
 
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password for accessing ECL services</entry>
                 </row>
 
                 <row>
@@ -396,69 +585,6 @@ ecl deploy roxie - --job-name=FindPersonService
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--main</entry>
-
-                  <entry>The definition to use from legacy ECL
-                  repository</entry>
-                </row>
-
-                <row>
-                  <entry>--ecl-only</entry>
-
-                  <entry>Send ECL query to HPCC Systems cluster as text rather
-                  than as a generated archive</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">eclcc
-                  Options</emphasis></entry>
-
-                  <entry></entry>
-                </row>
-
-                <row>
-                  <entry>-Ipath</entry>
-
-                  <entry>Add path to locations to search for ecl
-                  imports</entry>
-                </row>
-
-                <row>
-                  <entry>-Lpath</entry>
-
-                  <entry>Add path to locations to search for system
-                  libraries</entry>
-                </row>
-
-                <row>
-                  <entry>--manifest</entry>
-
-                  <entry>Specify path to manifest file</entry>
-                </row>
-
-                <row>
-                  <entry>-checkDirty</entry>
-
-                  <entry>Causes eclcc to generate a warning for any attribute
-                  that has been modified (according to the output of git
-                  status). Use of this function requires that git be installed
-                  and available on the path.</entry>
-                </row>
-
-                <row>
-                  <entry>--nostdinc</entry>
-
-                  <entry>Do not include the current directory in -I</entry>
-                </row>
-
-                <row>
-                  <entry>--fastsyntax</entry>
-
-                  <entry>Delay expanding functions when parsing. May speed up
-                  processing for some queries</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -559,6 +685,8 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
+
+                  <entry></entry>
                 </row>
 
                 <row>
@@ -598,6 +726,13 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>--protect</entry>
+
+                  <entry>Protects the workunit specified from
+                  deletion.</entry>
+                </row>
+
+                <row>
                   <entry>--no-files</entry>
 
                   <entry>Specifies to not copy DFS file information for files
@@ -620,17 +755,39 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>--daliip=</entry>
+                  <entry>--daliip=&lt;IP&gt;</entry>
 
                   <entry>IP address or hostname of the remote Dali to use for
                   remote logical file lookups.</entry>
                 </row>
 
                 <row>
-                  <entry>--update-dfs</entry>
+                  <entry>-O, --overwrite</entry>
 
-                  <entry>Update local DFS info if remote DALI has
+                  <entry>Completely replaces the existing DFS file
+                  information. This option is dangerous - only use as a last
+                  resort.</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Update local DFS super-files if remote DALI has
                   changed</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Update local clone from location if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Issue this option only to avoid locking issues due to
+                  adding a cluster to the file</entry>
                 </row>
 
                 <row>
@@ -682,61 +839,72 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
+                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
-                  <entry>Output additional tracing information</entry>
+                  <entry></entry>
                 </row>
 
                 <row>
-                  <entry>-s, --server</entry>
+                  <entry>--dfu-copy</entry>
 
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
+                  <entry>Use DFU to copy files during deployment, not on Roxie
+                  in the background</entry>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
+                  <entry>--dfu-queue</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The DFU Queue to use when doing a DFU copy</entry>
                 </row>
 
                 <row>
-                  <entry>-ssl</entry>
+                  <entry>--dfu-wait</entry>
 
-                  <entry>Use SSL to secure the connection to the
-                  server.</entry>
+                  <entry>The amount of time in seconds to wait for the DFU
+                  copy to complete (if neither --only-copy-files or
+                  --stop-if-files-copied are specified). Default is 1800 (30
+                  minutes)</entry>
                 </row>
 
                 <row>
-                  <entry>-u, --username</entry>
+                  <entry>--dfu-overwrite</entry>
 
-                  <entry>The username (if necessary)</entry>
+                  <entry>Specifies that DFU copy command should overwrite
+                  physical files that are already on disk.</entry>
                 </row>
 
                 <row>
-                  <entry>-pw, --password</entry>
+                  <entry>--only-copy-files</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>Copy the files needed for the query, but don't
+                  publish the query</entry>
                 </row>
 
                 <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+                  <entry>--stop-if-files-copied</entry>
 
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
+                  <entry>If all files already exist, publish the query.
+                  Otherwise, copy the files needed for the query, but don't
+                  publish the query</entry>
                 </row>
 
                 <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
+                  <entry><emphasis role="bold">ECL Options</emphasis></entry>
 
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
+                  <entry></entry>
                 </row>
 
                 <row>
-                  <entry>--main</entry>
+                  <entry>--main=&lt;definition&gt;</entry>
 
-                  <entry>The definition to use from legacy ECL
+                  <entry>The definition to use from a legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--snapshot, -sn=&lt;label&gt;</entry>
+
+                  <entry>Snapshot label to use from a legacy ECL
                   repository</entry>
                 </row>
 
@@ -760,60 +928,24 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>-f-&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an eclcc command line option with the single dash
+                  ('-')</entry>
+                </row>
+
+                <row>
+                  <entry>-f--&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an eclcc command line option with the double dash
+                  ('--')</entry>
+                </row>
+
+                <row>
                   <entry>-Dname=value</entry>
 
                   <entry>Override the definition of a global attribute
                   'name'</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">DFU Options</emphasis></entry>
-
-                  <entry></entry>
-                </row>
-
-                <row>
-                  <entry>--dfu-copy</entry>
-
-                  <entry>Use DFU to copy files during deployment, not on Roxie
-                  in the background</entry>
-                </row>
-
-                <row>
-                  <entry>--dfu-queue </entry>
-
-                  <entry>The DFU Queue to use when doing a DFU copy</entry>
-                </row>
-
-                <row>
-                  <entry>--dfu-wait </entry>
-
-                  <entry>The amount of time in seconds to wait for the DFU
-                  copy to complete (if neither --only-copy-files or
-                  --stop-if-files-copied are specified). Default is 1800 (30
-                  minutes)</entry>
-                </row>
-
-                <row>
-                  <entry>--dfu-overwrite </entry>
-
-                  <entry>Specifies that DFU copy command should overwrite
-                  physical files that are already on disk. </entry>
-                </row>
-
-                <row>
-                  <entry>--only-copy-files</entry>
-
-                  <entry>Copy the files needed for the query, but don't
-                  publish the query</entry>
-                </row>
-
-                <row>
-                  <entry>--stop-if-files-copied</entry>
-
-                  <entry>If all files already exist, publish the query.
-                  Otherwise, copy the files needed for the query, but don't
-                  publish the query</entry>
                 </row>
 
                 <row>
@@ -824,14 +956,14 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
-                  <entry>-Ipath</entry>
+                  <entry>-I &lt;path&gt;</entry>
 
                   <entry>Add path to locations to search for ecl
                   imports</entry>
                 </row>
 
                 <row>
-                  <entry>-Lpath</entry>
+                  <entry>-L &lt;path&gt;</entry>
 
                   <entry>Add path to locations to search for system
                   libraries</entry>
@@ -840,16 +972,41 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 <row>
                   <entry>--manifest</entry>
 
-                  <entry>Specify path to manifest file</entry>
+                  <entry>Specify path to the manifest file</entry>
+                </row>
+
+                <row>
+                  <entry>-g, --debug</entry>
+
+                  <entry>Enable debug symbols in generated code</entry>
                 </row>
 
                 <row>
                   <entry>-checkDirty</entry>
 
-                  <entry>Causes eclcc to generate a warning for any attribute
-                  that has been modified (according to the output of git
-                  status). Use of this function requires that git be installed
-                  and available on the path.</entry>
+                  <entry>This option reports any modified attributes using git
+                  status</entry>
+                </row>
+
+                <row>
+                  <entry>--fetchrepos</entry>
+
+                  <entry>This option automatically downloads any missing
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>-R&lt;repo&gt;[#version]=&lt;path&gt;</entry>
+
+                  <entry>This option resolves repository references specified
+                  in directory &lt;path&gt;</entry>
+                </row>
+
+                <row>
+                  <entry>--updaterepos</entry>
+
+                  <entry>Setting this option automatically updates
+                  repositories associated with dependencies</entry>
                 </row>
 
                 <row>
@@ -864,6 +1021,99 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                   <entry>Delay expanding functions when parsing. May speed up
                   processing for some queries</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username=&lt;name&gt;</entry>
+
+                  <entry>The username for accessing ECL services</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password for accessing ECL services</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -872,7 +1122,7 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
       <sect2 id="CT_CLI_SyntaxECLUnPublish" role="brk">
         <title>ecl unpublish</title>
 
-        <para><emphasis role="bold">ecl unpublish &lt;queryset&gt;
+        <para><emphasis role="bold">ecl unpublish &lt;target&gt;
         &lt;query_id&gt;</emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
@@ -897,25 +1147,59 @@ ecl unpublish roxie "FindpersonService*"
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+
+                  <entry></entry>
                 </row>
 
                 <row>
-                  <entry>queryset</entry>
+                  <entry>&lt;target&gt;</entry>
 
-                  <entry>The name of queryset containing query to
-                  unpublish</entry>
+                  <entry>The name of target queryset containing the query to
+                  remove</entry>
                 </row>
 
                 <row>
-                  <entry>query_id</entry>
+                  <entry>&lt;query_id&gt;</entry>
 
                   <entry>The query to remove from query set. Wildcards
                   allowed, but must be in quotes (e.g., "MyQuery*" ).</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--activated=yes|no</entry>
+
+                  <entry>Specify yes to unpublish activated queries or no to
+                  unpublish deactivated queries. When the &lt;query_id&gt; is
+                  '*'. Default to all queries.</entry>
+                </row>
+
+                <row>
+                  <entry>--suspended-by-user</entry>
+
+                  <entry>Unpublish the queries suspended by user when
+                  &lt;query_id&gt; is '*'.</entry>
+                </row>
+
+                <row>
+                  <entry>--delete-workunit</entry>
+
+                  <entry>Delete the workunit for the &lt;query_id&gt;. Default
+                  to No.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -932,16 +1216,43 @@ ecl unpublish roxie "FindpersonService*"
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1027,6 +1338,8 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
                 <row>
                   <entry><emphasis role="bold">Arguments</emphasis></entry>
+
+                  <entry></entry>
                 </row>
 
                 <row>
@@ -1090,10 +1403,19 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
 
                   <entry>Maximum time to wait for cluster finish updating (in
                   ms)</entry>
+                </row>
+
+                <row>
+                  <entry>--poll</entry>
+
+                  <entry>Submits a job asynchronously and polls the server
+                  until the state of the workunit changes to completed. It
+                  then retrieves the results. Combine with the --wait option
+                  to limit the time that it polls.</entry>
                 </row>
 
                 <row>
@@ -1105,6 +1427,148 @@ ecl run thor findperson.ecl -I C:\MyECL\
                   role="bold">warning</emphasis>, or <emphasis
                   role="bold">error</emphasis>. The default is info which
                   returns all exceptions.</entry>
+                </row>
+
+                <row>
+                  <entry>--protect</entry>
+
+                  <entry>This option prevents the workunit from
+                  deletion</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">ECL Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--main=&lt;definition&gt;</entry>
+
+                  <entry>The definition to use from a legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--snapshot, -sn=&lt;label&gt;</entry>
+
+                  <entry>Snapshot label to use from a legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Send ECL query to HPCC Systems cluster as text rather
+                  than as a generated archive</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>Sets the result limit for the query</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an ECL option (equivalent to #option)</entry>
+                </row>
+
+                <row>
+                  <entry>-f-&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an eclcc command line option with the single dash
+                  ('-')</entry>
+                </row>
+
+                <row>
+                  <entry>-f--&lt;option&gt;[=value]</entry>
+
+                  <entry>Set an eclcc command line option with the double dash
+                  ('--')</entry>
+                </row>
+
+                <row>
+                  <entry>-Dname=value</entry>
+
+                  <entry>Override the definition of a global attribute
+                  'name'</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>-I &lt;path&gt;</entry>
+
+                  <entry>Add path to locations to search for ecl
+                  imports</entry>
+                </row>
+
+                <row>
+                  <entry>-L &lt;path&gt;</entry>
+
+                  <entry>Add path to locations to search for system
+                  libraries</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to the manifest file</entry>
+                </row>
+
+                <row>
+                  <entry>-g, --debug</entry>
+
+                  <entry>Enable debug symbols in generated code</entry>
+                </row>
+
+                <row>
+                  <entry>-checkDirty</entry>
+
+                  <entry>This option reports any modified attributes using git
+                  status</entry>
+                </row>
+
+                <row>
+                  <entry>--fetchrepos</entry>
+
+                  <entry>This option automatically downloads any missing
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>-R&lt;repo&gt;[#version]=&lt;path&gt;</entry>
+
+                  <entry>This option resolves repository references specified
+                  in directory &lt;path&gt;</entry>
+                </row>
+
+                <row>
+                  <entry>--updaterepos</entry>
+
+                  <entry>Setting this option automatically updates
+                  repositories associated with dependencies</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -1121,25 +1585,43 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
-                  <entry>--poll</entry>
+                  <entry>--accept-self-signed</entry>
 
-                  <entry>Submits a job asynchronously and polls the server
-                  until the state of the workunit changes to completed. It
-                  then retrieves the results. Combine with the --wait option
-                  to limit the time that it polls.</entry>
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1166,89 +1648,6 @@ ecl run thor findperson.ecl -I C:\MyECL\
 
                   <entry>Timeout while reading from socket (in
                   seconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--main</entry>
-
-                  <entry>The definition to use from legacy ECL
-                  repository</entry>
-                </row>
-
-                <row>
-                  <entry>--ecl-only</entry>
-
-                  <entry>Send ECL query to HPCC Systems cluster as text rather
-                  than as a generated archive</entry>
-                </row>
-
-                <row>
-                  <entry>--limit</entry>
-
-                  <entry>Sets the result limit for the query, defaults to
-                  100</entry>
-                </row>
-
-                <row>
-                  <entry>-f&lt;option&gt;[=value]</entry>
-
-                  <entry>set an ECL option (equivalent to #OPTION in
-                  ECL)</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis role="bold">eclcc
-                  Options</emphasis></entry>
-
-                  <entry></entry>
-                </row>
-
-                <row>
-                  <entry>-I &lt;path&gt;</entry>
-
-                  <entry>Add path to locations to search for ECL imports
-                  (e.g., -I C:\MyECL\ )</entry>
-                </row>
-
-                <row>
-                  <entry>-L &lt;path&gt;</entry>
-
-                  <entry>Add path to locations to search for system
-                  libraries</entry>
-                </row>
-
-                <row>
-                  <entry>--manifest</entry>
-
-                  <entry>Specify path to manifest file</entry>
-                </row>
-
-                <row>
-                  <entry>-checkDirty</entry>
-
-                  <entry>Causes eclcc to generate a warning for any attribute
-                  that has been modified (according to the output of git
-                  status). Use of this function requires that git be installed
-                  and available on the path.</entry>
-                </row>
-
-                <row>
-                  <entry>--nostdinc</entry>
-
-                  <entry>Do not include the current directory in -I</entry>
-                </row>
-
-                <row>
-                  <entry>--fastsyntax</entry>
-
-                  <entry>Delay expanding functions when parsing. May speed up
-                  processing for some queries</entry>
-                </row>
-
-                <row>
-                  <entry>-f-xxx</entry>
-
-                  <entry>Will pass the option -xxx to eclcc</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1318,6 +1717,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -1331,16 +1744,43 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1401,12 +1841,14 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
                 <row>
                   <entry><emphasis role="bold">Arguments</emphasis></entry>
+
+                  <entry></entry>
                 </row>
 
                 <row>
-                  <entry>queryset</entry>
+                  <entry>target</entry>
 
-                  <entry>The name of queryset containing query to
+                  <entry>The name of target queryset containing query to
                   activate</entry>
                 </row>
 
@@ -1417,7 +1859,17 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -1434,16 +1886,43 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1507,10 +1986,10 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>queryset</entry>
+                  <entry>target</entry>
 
-                  <entry>The name of queryset containing alias to
-                  deactivate</entry>
+                  <entry>The name of the target queryset containing the alias
+                  to deactivate</entry>
                 </row>
 
                 <row>
@@ -1521,7 +2000,17 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -1538,16 +2027,43 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1626,7 +2142,7 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 </row>
 
                 <row>
-                  <entry>queryset</entry>
+                  <entry>&lt;target&gt;</entry>
 
                   <entry>The name of queryset from which to list
                   queries</entry>
@@ -1635,14 +2151,15 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 <row>
                   <entry>-t, --target</entry>
 
-                  <entry>The target cluster associated with the queries to
-                  list</entry>
+                  <entry>The name of the target cluster associated with the
+                  queries to list</entry>
                 </row>
 
                 <row>
-                  <entry>-A, --activate</entry>
+                  <entry>--inactivate</entry>
 
-                  <entry>Activates query when published</entry>
+                  <entry>Show only the queries that do not have an active
+                  alias</entry>
                 </row>
 
                 <row>
@@ -1674,7 +2191,17 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -1691,16 +2218,43 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1790,7 +2344,17 @@ SuperFiles used:
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -1807,16 +2371,43 @@ SuperFiles used:
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1902,17 +2493,24 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>target_queryset</entry>
+                  <entry>&lt;target&gt;</entry>
 
-                  <entry>The name of the queryset to which the query should be
-                  copied</entry>
+                  <entry>The name of the target cluster to copy the query
+                  to</entry>
                 </row>
 
                 <row>
-                  <entry>-t, --target</entry>
+                  <entry>--source-ssl</entry>
 
-                  <entry>The target cluster to associate with the remote
-                  workunit</entry>
+                  <entry>Use SSL when connecting to the source (default if
+                  --ssl is enabled)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-no-ssl</entry>
+
+                  <entry>Do not use SSL when connecting to source (default if
+                  --ssl is NOT enabled)</entry>
                 </row>
 
                 <row>
@@ -1923,9 +2521,23 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
+                  <entry>--daliip=&lt;IP&gt;</entry>
+
+                  <entry>IP address or hostname of the remote Dali DFS to use
+                  for copying file information. Only required when remote
+                  environment is less than version 3.8</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process</entry>
+
+                  <entry>Process cluster to copy files from</entry>
+                </row>
+
+                <row>
                   <entry>-A, --activate</entry>
 
-                  <entry>Activates query when copied</entry>
+                  <entry>Activates the query when copied</entry>
                 </row>
 
                 <row>
@@ -1948,18 +2560,47 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>--allow-foreign</entry>
-
-                  <entry>Specifies to allow the use of foreign files in a
-                  Roxie query. If a Roxie query references foreign files and
-                  this is not enabled, copy will fail.</entry>
-                </row>
-
-                <row>
                   <entry>-O, --overwrite</entry>
 
                   <entry>Whether to overwrite existing information - true if
                   present</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Update local DFS super-files if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Update local clone from location if remote DALI has
+                  changed</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Only use to avoid locking issues due to adding
+                  cluster to file</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, copy will fail. Prevents failure if
+                  using foreign files in Roxie query.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
                 </row>
 
                 <row>
@@ -1985,76 +2626,23 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>--wait=&lt;sec&gt;</entry>
+                  <entry>--priority=&lt;val&gt;</entry>
 
-                  <entry>Maximum time to wait for cluster finish updating (in
-                  ms)</entry>
+                  <entry>Set the priority for the query. Values can be LOW,
+                  HIGH, SLA, NONE. NONE will clear the current
+                  setting.</entry>
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
+                  <entry>--comment=&lt;string&gt;</entry>
 
-                  <entry>Output additional tracing information</entry>
+                  <entry>Set a comment associated with the query</entry>
                 </row>
 
                 <row>
-                  <entry>-s, --server</entry>
+                  <entry>-n, --name=&lt;value&gt;</entry>
 
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
-                </row>
-
-                <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
-
-                  <entry>Use SSL to secure the connection to the
-                  server(s)</entry>
-                </row>
-
-                <row>
-                  <entry>--source-ssl</entry>
-
-                  <entry>Use SSL when connecting to the source (default if
-                  --ssl is enabled)</entry>
-                </row>
-
-                <row>
-                  <entry>--source-no-ssl</entry>
-
-                  <entry>Do not use SSL when connecting to source (default if
-                  --ssl is NOT enabled)</entry>
-                </row>
-
-                <row>
-                  <entry>-u, --username</entry>
-
-                  <entry>The username (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>-pw, --password</entry>
-
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
+                  <entry>The destination name for the copied query</entry>
                 </row>
 
                 <row>
@@ -2105,6 +2693,99 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>If all files already exist, publish the query.
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2168,6 +2849,20 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
+                  <entry>--source-ssl</entry>
+
+                  <entry>Use SSL when connecting to the source (default if
+                  --ssl is enabled)</entry>
+                </row>
+
+                <row>
+                  <entry>--source-no-ssl</entry>
+
+                  <entry>Do not use SSL when connecting to source (default if
+                  --ssl is NOT enabled)</entry>
+                </row>
+
+                <row>
                   <entry>--all</entry>
 
                   <entry>Specifies to copy both active and inactive queries.
@@ -2202,14 +2897,6 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>--allow-foreign</entry>
-
-                  <entry>Specifies to allow the use of foreign files in a
-                  Roxie query. If a Roxie query references foreign files and
-                  this is not enabled, copy will fail.</entry>
-                </row>
-
-                <row>
                   <entry>-O, --overwrite</entry>
 
                   <entry>Whether to overwrite existing DFS information - true
@@ -2217,69 +2904,32 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
+                  <entry>--update-super-files</entry>
 
-                  <entry>Output additional tracing information</entry>
+                  <entry>Update local DFS super-files if remote DALI has
+                  changed</entry>
                 </row>
 
                 <row>
-                  <entry>-s, --server</entry>
+                  <entry>--update-clone-from</entry>
 
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
+                  <entry>Update local clone from location if remote DALI has
+                  changed</entry>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
+                  <entry>--dont-append-cluster</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>Only use to avoid locking issues due to adding
+                  cluster to file</entry>
                 </row>
 
                 <row>
-                  <entry>-ssl, --ssl</entry>
+                  <entry>--allow-foreign</entry>
 
-                  <entry>Use SSL to secure the connection to the
-                  server(s)</entry>
-                </row>
-
-                <row>
-                  <entry>--source-ssl</entry>
-
-                  <entry>Use SSL when connecting to the source (default if
-                  --ssl is enabled)</entry>
-                </row>
-
-                <row>
-                  <entry>--source-no-ssl</entry>
-
-                  <entry>Do not use SSL when connecting to source (default if
-                  --ssl is NOT enabled)</entry>
-                </row>
-
-                <row>
-                  <entry>-u, --username</entry>
-
-                  <entry>The username (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>-pw, --password</entry>
-
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, copy will fail.</entry>
                 </row>
 
                 <row>
@@ -2330,6 +2980,99 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry>If all files already exist, publish the query.
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2425,6 +3168,34 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
+                  <entry>--priority=&lt;val&gt;</entry>
+
+                  <entry>Set the priority for the query. Values can be LOW,
+                  HIGH, SLA, NONE. NONE will clear the current
+                  setting.</entry>
+                </row>
+
+                <row>
+                  <entry>--comment=&lt;string&gt;</entry>
+
+                  <entry>Set a comment associated with the query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -2438,16 +3209,43 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2687,58 +3485,6 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
-
-                  <entry>Output additional tracing information</entry>
-                </row>
-
-                <row>
-                  <entry>-s, --server=&lt;IP&gt;</entry>
-
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl, --ssl</entry>
-
-                  <entry>Use SSL to secure the connection to the
-                  server.</entry>
-                </row>
-
-                <row>
-                  <entry>--port=&lt;port&gt;</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-u, --username</entry>
-
-                  <entry>The username (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>-pw, --password</entry>
-
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
                   <entry></entry>
@@ -2786,6 +3532,99 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry>If all files already exist, publish the query.
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2927,58 +3766,6 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
-
-                  <entry>Output additional tracing information</entry>
-                </row>
-
-                <row>
-                  <entry>-s, --server=&lt;IP&gt;</entry>
-
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl, --ssl</entry>
-
-                  <entry>Use SSL to secure the connection to the
-                  server.</entry>
-                </row>
-
-                <row>
-                  <entry>--port=&lt;port&gt;</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-u, --username</entry>
-
-                  <entry>The username (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>-pw, --password</entry>
-
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
                   <entry></entry>
@@ -3026,6 +3813,99 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                   <entry>If all files already exist, publish the query.
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3105,13 +3985,27 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
                 </row>
 
                 <row>
-                  <entry>-s, --server=&lt;IP&gt;</entry>
+                  <entry>-s, --server</entry>
 
                   <entry>The IP Address or hostname of ESP server running ECL
                   Watch services</entry>
@@ -3125,9 +4019,36 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
-                  <entry>--port=&lt;port&gt;</entry>
+                  <entry>--accept-self-signed</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -3255,55 +4176,44 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
+                  <entry>--global-scope</entry>
 
-                  <entry>Output additional tracing information</entry>
+                  <entry>The packagemap specific with this option can be
+                  shared across multiple targets</entry>
                 </row>
 
                 <row>
-                  <entry>-s, --server</entry>
+                  <entry>--preload-all</entry>
 
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
+                  <entry>Sets the preload files option for all
+                  packages</entry>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
+                  <entry>--replace</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>Replace the existing packagemap</entry>
                 </row>
 
                 <row>
-                  <entry>-ssl</entry>
+                  <entry>--update-superfiles</entry>
 
-                  <entry>Use SSL to secure the connection to the
-                  server.</entry>
+                  <entry>Updates the local DFS super-files if the remote DALI
+                  has changed</entry>
                 </row>
 
                 <row>
-                  <entry>-u, --username</entry>
+                  <entry>--update-clone-from</entry>
 
-                  <entry>The username (if necessary)</entry>
+                  <entry>Update the local clone from location if the remote
+                  DALI has changed</entry>
                 </row>
 
                 <row>
-                  <entry>-pw, --password</entry>
+                  <entry>--dont-append-cluster</entry>
 
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
+                  <entry>Only use to prevent locking issues due to adding
+                  cluster to file</entry>
                 </row>
 
                 <row>
@@ -3355,6 +4265,99 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3364,7 +4367,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
         <title>ecl packagemap delete</title>
 
         <para><emphasis role="bold">ecl packagemap delete [options]
-        &lt;target&gt;&lt;packagemap&gt;</emphasis></para>
+        &lt;target&gt;&lt;packagemap&gt; </emphasis></para>
 
         <para>Examples:</para>
 
@@ -3398,6 +4401,42 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;target&gt;</entry>
+
+                  <entry>The name of the target to use when deleting the
+                  packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>&lt;filename&gt;</entry>
+
+                  <entry>The name of the packagemap to delete</entry>
+                </row>
+
+                <row>
+                  <entry>--global-scope</entry>
+
+                  <entry>Use when the specified packagemap is shared across
+                  multiple targets</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -3414,16 +4453,43 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -3501,7 +4567,24 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--global-scope</entry>
+
+                  <entry>The specified packagemap can shared across multiple
+                  targets</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -3518,16 +4601,43 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -3604,7 +4714,24 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--global-scope</entry>
+
+                  <entry>The specified packagemap can shared across multiple
+                  targets</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -3621,16 +4748,43 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -3710,7 +4864,17 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -3727,16 +4891,43 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -3817,7 +5008,17 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -3834,16 +5035,43 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -4009,58 +5237,6 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
-
-                  <entry>Output additional tracing information</entry>
-                </row>
-
-                <row>
-                  <entry>-s, --server</entry>
-
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
-                </row>
-
-                <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
-
-                  <entry>Use SSL to secure the connection to the
-                  server.</entry>
-                </row>
-
-                <row>
-                  <entry>-u, --username</entry>
-
-                  <entry>The username (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>-pw, --password</entry>
-
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
                   <entry></entry>
@@ -4108,6 +5284,99 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>If all files already exist, publish the query.
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4185,6 +5454,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -4198,16 +5481,43 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -4314,6 +5624,19 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               </row>
 
               <row>
+                <entry><emphasis role="bold">Common Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry>--help</entry>
+
+                <entry>Displays usage information for the given
+                command</entry>
+              </row>
+
+              <row>
                 <entry>-v, --verbose</entry>
 
                 <entry>Output additional tracing information</entry>
@@ -4327,15 +5650,41 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               </row>
 
               <row>
-                <entry>--port</entry>
+                <entry>-ssl, --ssl</entry>
 
-                <entry>The ECL Watch services port (Default is 8010)</entry>
+                <entry>Use SSL to secure the connection to the server.</entry>
               </row>
 
               <row>
-                <entry>-ssl</entry>
+                <entry>--accept-self-signed</entry>
 
-                <entry>Use SSL to secure the connection to the server.</entry>
+                <entry>Allows SSL servers to use self signed
+                certificates</entry>
+              </row>
+
+              <row>
+                <entry>--cert</entry>
+
+                <entry>Path to file containing SSL client certificate</entry>
+              </row>
+
+              <row>
+                <entry>--key</entry>
+
+                <entry>Path to file containing SSL client certificate private
+                key</entry>
+              </row>
+
+              <row>
+                <entry>--cacert</entry>
+
+                <entry>Path to file containing SSL CA certificate</entry>
+              </row>
+
+              <row>
+                <entry>--port</entry>
+
+                <entry>The ECL services port (Default is 8010)</entry>
               </row>
 
               <row>
@@ -4449,23 +5798,6 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>-v, --verbose</entry>
-
-                  <entry>Output additional tracing information</entry>
-                </row>
-
-                <row>
-                  <entry>-s, --server</entry>
-
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
-                </row>
-
-                <row>
                   <entry>--active</entry>
 
                   <entry>Validates the package map that is active for the
@@ -4473,9 +5805,16 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
                 </row>
 
                 <row>
-                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+                  <entry>--check-dfs</entry>
 
-                  <entry>Validates the given package map</entry>
+                  <entry>This option verifies that subfiles exist in the
+                  DFS</entry>
+                </row>
+
+                <row>
+                  <entry>-pm, --pmid</entry>
+
+                  <entry>Validates the specified packagemap</entry>
                 </row>
 
                 <row>
@@ -4508,16 +5847,77 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
                 </row>
 
                 <row>
-                  <entry>--port</entry>
+                  <entry>--global-scope</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The specified package map is sharable across multiple
+                  targets</entry>
                 </row>
 
                 <row>
-                  <entry>-ssl</entry>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -4668,58 +6068,6 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>-v, --verbose</entry>
-
-                  <entry>Output additional tracing information</entry>
-                </row>
-
-                <row>
-                  <entry>-s, --server</entry>
-
-                  <entry>The IP Address or hostname of ESP server running ECL
-                  Watch services</entry>
-                </row>
-
-                <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
-
-                  <entry>Use SSL to secure the connection to the
-                  server.</entry>
-                </row>
-
-                <row>
-                  <entry>-u, --username</entry>
-
-                  <entry>The username (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>-pw, --password</entry>
-
-                  <entry>The password (if necessary)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-connect=&lt;Ms&gt;</entry>
-
-                  <entry>Timeout while connecting to server (in
-                  milliseconds)</entry>
-                </row>
-
-                <row>
-                  <entry>--wait-read=&lt;Secs&gt;</entry>
-
-                  <entry>Timeout while reading from socket (in
-                  seconds)</entry>
-                </row>
-
-                <row>
                   <entry><emphasis role="bold">DFU Options</emphasis></entry>
 
                   <entry></entry>
@@ -4768,6 +6116,99 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   Otherwise, copy the files needed for the query, but don't
                   publish the query</entry>
                 </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Timeout while connecting to server (in
+                  milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4812,7 +6253,23 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>The maximum time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -4829,16 +6286,43 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -4898,7 +6382,23 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>The maximum time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -4915,16 +6415,43 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -4984,7 +6511,23 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>The maximum time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5001,16 +6544,43 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
+                </row>
+
+                <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -5070,7 +6640,23 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>--wait=&lt;ms&gt;</entry>
+
+                  <entry>The maximum time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5087,22 +6673,43 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
-                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+                  <entry>--accept-self-signed</entry>
 
-                  <entry>Max time to wait in milliseconds</entry>
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -5207,7 +6814,21 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 <row>
                   <entry>--wait=&lt;ms&gt;</entry>
 
-                  <entry>Max time to wait in milliseconds</entry>
+                  <entry>The maximum time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5224,22 +6845,43 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 </row>
 
                 <row>
-                  <entry>--port</entry>
-
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
-                </row>
-
-                <row>
-                  <entry>--ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
-                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+                  <entry>--accept-self-signed</entry>
 
-                  <entry>Max time to wait in milliseconds</entry>
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -5321,6 +6963,13 @@ ecl bundle depends mybundle --version=2</programlisting>
                 </row>
 
                 <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information about the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -5362,16 +7011,37 @@ ecl bundle info mybundle --version=2</programlisting>
                 </row>
 
                 <row>
-                  <entry>&lt;bundleName&gt;</entry>
+                  <entry>&lt;bundle&gt;</entry>
 
                   <entry>A bundle filename, a bundle folder, a bundle name, or
                   a URL.</entry>
                 </row>
 
                 <row>
+                  <entry>--branch</entry>
+
+                  <entry>Names a branch to install when bundle references a
+                  git repository</entry>
+                </row>
+
+                <row>
+                  <entry>--remote</entry>
+
+                  <entry>Interprets the bundle name as a remote name from
+                  catalog</entry>
+                </row>
+
+                <row>
                   <entry>--version</entry>
 
                   <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information about the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5450,9 +7120,23 @@ ecl bundle install mybundle --keepprior</programlisting>
                 </row>
 
                 <row>
+                  <entry>--remote</entry>
+
+                  <entry>Interprets the bundle name as a remote name from
+                  catalog</entry>
+                </row>
+
+                <row>
                   <entry>--update</entry>
 
                   <entry>Update an existing installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information about the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5571,6 +7255,13 @@ ecl bundle install mybundle --keepprior</programlisting>
                 </row>
 
                 <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information about the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -5625,6 +7316,13 @@ ecl bundle list myb*
                 </row>
 
                 <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information about the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -5665,7 +7363,7 @@ ecl bundle list myb*
                 </row>
 
                 <row>
-                  <entry>&lt;bundleName&gt;</entry>
+                  <entry>&lt;bundle&gt;</entry>
 
                   <entry>The name of a bundle file</entry>
                 </row>
@@ -5675,6 +7373,13 @@ ecl bundle list myb*
 
                   <entry>The version of the bundle to make active, or
                   "none"</entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information about the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5712,11 +7417,26 @@ ecl bundle list myb*
 
                   <entry>Finds files in the DFS for the given roxie process
                   that are not currently used by queries on that
-                  roxie.</entry>
+                  roxie.process_cluster</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis role="bold">Options</emphasis></entry>
+                  <entry>process_cluster</entry>
+
+                  <entry>The roxie process cluster to check, or</entry>
+                </row>
+
+                <row>
+                  <entry>--roxies &lt;list&gt;</entry>
+
+                  <entry>A comma-separated list of roxies to check</entry>
+                </row>
+
+                <row>
+                  <entry>--planes &lt;list&gt;</entry>
+
+                  <entry>A comma-separated list of data planes to search for
+                  files</entry>
                 </row>
 
                 <row>
@@ -5724,6 +7444,40 @@ ecl bundle list myb*
 
                   <entry>Exclude files referenced in active package
                   maps</entry>
+                </row>
+
+                <row>
+                  <entry>--delete</entry>
+
+                  <entry>Deletes unused files from DFS</entry>
+                </row>
+
+                <row>
+                  <entry>--delete-subfiles</entry>
+
+                  <entry>Deletes unused files from DFS and removes them from
+                  superfiles.</entry>
+                </row>
+
+                <row>
+                  <entry>--delete-recursive</entry>
+
+                  <entry>Deletes unused files from DFS and removes them from
+                  superfiles recursively.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
                 </row>
 
                 <row>
@@ -5740,16 +7494,43 @@ ecl bundle list myb*
                 </row>
 
                 <row>
-                  <entry>-ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
                   <entry>--port</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -5811,6 +7592,8 @@ ecl abort -n MyJob</programlisting>
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
+
+                  <entry></entry>
                 </row>
 
                 <row>
@@ -5827,6 +7610,20 @@ ecl abort -n MyJob</programlisting>
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -5840,16 +7637,43 @@ ecl abort -n MyJob</programlisting>
                 </row>
 
                 <row>
-                  <entry>-ssl,--ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
                   <entry>--port</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -5927,6 +7751,20 @@ ecl status -n MyJob</programlisting>
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -5940,16 +7778,43 @@ ecl status -n MyJob</programlisting>
                 </row>
 
                 <row>
-                  <entry>-ssl,--ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
                   <entry>--port</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -6026,6 +7891,20 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -6039,16 +7918,43 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 </row>
 
                 <row>
-                  <entry>-ssl,--ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
                   <entry>--port</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -6068,6 +7974,13 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 
                   <entry>Timeout while connecting to server (in
                   milliseconds)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Timeout while reading from socket (in
+                  seconds)</entry>
                 </row>
 
                 <row>
@@ -6127,6 +8040,20 @@ ecl getname -wu W201407*
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -6140,16 +8067,43 @@ ecl getname -wu W201407*
                 </row>
 
                 <row>
-                  <entry>-ssl,--ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
                   <entry>--port</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -6210,8 +8164,8 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                 <row>
                   <entry>ecl zapgen</entry>
 
-                  <entry>Creates a ZAP file for the given workunit in the
-                  specified path.</entry>
+                  <entry>Generates and downloads a ZAP file for the given
+                  workunit in the specified path.</entry>
                 </row>
 
                 <row>
@@ -6244,6 +8198,26 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                 </row>
 
                 <row>
+                  <entry>--create-dirs</entry>
+
+                  <entry>Creates the necessary directory tree</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Common
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>--help</entry>
+
+                  <entry>Displays usage information for the given
+                  command</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -6257,16 +8231,43 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                 </row>
 
                 <row>
-                  <entry>-ssl,--ssl</entry>
+                  <entry>-ssl, --ssl</entry>
 
                   <entry>Use SSL to secure the connection to the
                   server.</entry>
                 </row>
 
                 <row>
+                  <entry>--accept-self-signed</entry>
+
+                  <entry>Allows SSL servers to use self signed
+                  certificates</entry>
+                </row>
+
+                <row>
+                  <entry>--cert</entry>
+
+                  <entry>Path to file containing SSL client
+                  certificate</entry>
+                </row>
+
+                <row>
+                  <entry>--key</entry>
+
+                  <entry>Path to file containing SSL client certificate
+                  private key</entry>
+                </row>
+
+                <row>
+                  <entry>--cacert</entry>
+
+                  <entry>Path to file containing SSL CA certificate</entry>
+                </row>
+
+                <row>
                   <entry>--port</entry>
 
-                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                  <entry>The ECL services port (Default is 8010)</entry>
                 </row>
 
                 <row>

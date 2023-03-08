@@ -62,9 +62,10 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   if [ -e helm/hpcc/Chart.yaml ] ; then
     update_chart_file helm/hpcc/Chart.yaml $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR 
     doit "git add helm/hpcc/Chart.yaml"
+    rm -rf helm/hpcc/**/*.bak
     for f in helm/hpcc/templates/* ; do
       update_chart_file $f $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR 
-    if [ "$CHART_CHANGED" != "0" ] ; then
+      if [ "$CHART_CHANGED" != "0" ] ; then
         doit "git add $f"
       fi
     done
@@ -78,6 +79,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
     if [ -e helm/hpcc/Chart.yaml ] ; then
       update_chart_file helm/hpcc/Chart.yaml closedown 0 0 $NEW_MINOR 
       doit "git add helm/hpcc/Chart.yaml"
+      rm -rf helm/hpcc/**/*.bak
       for f in helm/hpcc/templates/* ; do
         update_chart_file $f closedown 0 0 $NEW_MINOR 
         if [ "$CHART_CHANGED" != "0" ] ; then
