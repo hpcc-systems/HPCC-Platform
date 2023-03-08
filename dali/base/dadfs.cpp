@@ -314,6 +314,8 @@ public:
             return str.append(": Cluster does not have storage plane: ").append(errstr);
         case DFSERR_MissingStoragePlane:
             return str.append(": Storage plane missing: ").append(errstr);
+        case DFSERR_PhysicalCompressedPartInvalid:
+            return str.append(": Compressed part is not in the valid format: ").append(errstr);
         }
         return str.append("Unknown DFS Exception");
     }
@@ -7084,9 +7086,15 @@ offset_t CDistributedFilePart::getSize(bool checkCompressed)
             Owned<IFile> partfile = createIFile(getFilename(rfn,copy));
             if (checkCompressed && compressed)
             {
-                Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(partfile);
-                if (compressedIO)
-                    ret = compressedIO->size();
+                Owned<IFileIO> partFileIO = partfile->open(IFOread);
+                if (partFileIO)
+                {
+                    Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(partFileIO);
+                    if (compressedIO)
+                        ret = compressedIO->size();
+                    else
+                        throw new CDFS_Exception(DFSERR_PhysicalCompressedPartInvalid, partfile->queryFilename());
+                }
             }
             else
                 ret = partfile->size();

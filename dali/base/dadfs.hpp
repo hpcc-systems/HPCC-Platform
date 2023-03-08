@@ -801,7 +801,8 @@ enum DistributedFileSystemError
     DFSERR_PassIterateFilesLimit,
     DFSERR_RestrictedFileAccessDenied,
     DFSERR_EmptyStoragePlane,
-    DFSERR_MissingStoragePlane
+    DFSERR_MissingStoragePlane,
+    DFSERR_PhysicalCompressedPartInvalid
 };
 
 
