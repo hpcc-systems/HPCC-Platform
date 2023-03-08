@@ -82,7 +82,6 @@ int  nCommentStartLine = -1;
   SCMEXPORTDEF
   SCMINTERFACE
   SCMENUM
-  SCMCLARION
   SCMEND
   ESPSTRUCT
   ESPENUM
@@ -851,12 +850,7 @@ Module
 
 
 ModuleStart
- : MODULE ID
- {
-   CurModule = new ModuleInfo($2.getName());
-   LastProc = NULL;
- }
- | SCMINTERFACE ID
+ : SCMINTERFACE ID
  {
    CurModule = new ModuleInfo($2.getName());
    CurModule->isSCMinterface = true;
