@@ -40,9 +40,9 @@ When preparing our Dockerfile (CUDA 11.4) we reference the above gpu.Dockerfile 
 Go to <HPCC Platform>/dockerfiles/platform-gnn-gpu directory:
 
 ```console
-#docker build --build-arg DOCKER_REPO=<Docker Image REPO> --build-arg BUILD_LABEL=<Major>.<Minor>.<Point> <Dockerfile directory>
+#docker build --build-arg DOCKER_REPO=<Docker Image REPO> --build-arg BUILD_LABEL=<Major>.<Minor>.<Point> -t <tag> <Dockerfile directory>
 #For example,
-docker build --build-arg DOCKER_REPO=hpccsystems --build-arg BUILD_LABEL=8.8.0  .
+docker build --build-arg DOCKER_REPO=hpccsystems --build-arg BUILD_LABEL=8.12.0  -t platform-gnn-gpu:8.12.0 .
 ```
 ## Test
 Users can deploy HPCC Cluster with the Docker Image of HPCC GNN/GPU using either HPCC Terraform or Helm Charts
@@ -85,7 +85,7 @@ kubectl exec -i -t <pod name> -- /bin/bash
 ```
 ### Test CUDA driver
 ```console
-nvcc --version
+nvcc --version # or nvdisasm --version
 nvidia-smi
 ```
 ### Test from Tensorflow
