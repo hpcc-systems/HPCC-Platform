@@ -30,13 +30,15 @@ interface FileDetailsProps {
     logicalFile: string;
     tab?: string;
     sort?: QuerySortItem;
+    queryParams?: { [key: string]: string };
 }
 
 export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     cluster,
     logicalFile,
     tab = "summary",
-    sort
+    sort,
+    queryParams = {}
 }) => {
 
     const { themeV9 } = useUserTheme();
@@ -62,7 +64,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                 }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Contents} itemKey="contents" style={pivotItemStyle(size, 0)}>
-                <Result cluster={cluster} logicalFile={logicalFile} />
+                <Result cluster={cluster} logicalFile={logicalFile} filter={queryParams} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="datapatterns" style={pivotItemStyle(size, 0)}>
                 <DataPatterns cluster={cluster} logicalFile={logicalFile} />
