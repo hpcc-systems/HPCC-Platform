@@ -192,7 +192,7 @@ function useFluentStoreGrid({
     }));
 
     const refreshTable = useDeepCallback((clearSelection = false) => {
-        if (isNaN(start) || (isNaN(count) || count === 0)) return;
+        if (isNaN(start) || isNaN(count)) return;
         if (clearSelection) {
             selectionHandler.setItems([], true);
         }
