@@ -1076,6 +1076,8 @@ public:
     WuScopeFilter & addId(const char * id);
     WuScopeFilter & setDepth(unsigned low, unsigned high);
     WuScopeFilter & addSource(const char * source);
+    WuScopeFilter & addSource(WuScopeSourceFlags source);
+    WuScopeFilter & setSources(WuScopeSourceFlags sources);
 
     WuScopeFilter & setIncludeMatch(bool value);
     WuScopeFilter & setIncludeNesting(unsigned depth);
