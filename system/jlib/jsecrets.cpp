@@ -92,12 +92,6 @@ MODULE_EXIT()
     udpKey.clear();
 }
 
-inline static bool isValidSecreteStartOrEndChr(char c)
-{
-    return ('\0' != c && (isalpha(c)));
-}
-
-
 //based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
 
 static const char *validSecretNameChrs = ".-";
