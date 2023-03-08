@@ -487,7 +487,7 @@ void AzureLogAnalyticsCurlClient::azureLogAnalyticsTimestampQueryRangeString(Str
     range.setf("%s >= unixtime_milliseconds_todatetime(%s)", timeStampField, std::to_string(from*1000).c_str());
     if (to != -1) //aka 'to' has been initialized
     {
-        range.setf(" and %s < unixtime_milliseconds_todatetime(%s)", timeStampField, std::to_string(to*1000).c_str());
+        range.appendf(" and %s < unixtime_milliseconds_todatetime(%s)", timeStampField, std::to_string(to*1000).c_str());
     }
 }
 
