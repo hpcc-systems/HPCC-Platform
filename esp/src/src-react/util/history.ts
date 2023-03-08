@@ -1,5 +1,5 @@
 import UniversalRouter, { ResolveContext } from "universal-router";
-import { exclude, parse, ParsedQuery, pick, stringify } from "query-string";
+import { parse, ParsedQuery, pick, stringify } from "query-string";
 import { hashSum, scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 import { QuerySortItem } from "src/store/Store";
@@ -37,9 +37,20 @@ function parseHash(hash: string): HistoryLocation {
     };
 }
 
-export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: string): T {
+export function parseQuery<T = ParsedQuery<string | boolean | number>>(_: string): T {
     if (_[0] !== "?") return {} as T;
-    return { ...parse(exclude(_.substring(1), ["sortBy", "pageNum"]), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
+    return { ...parse(_.substring(1), { parseBooleans: true, parseNumbers: true }) } as unknown as T;
+}
+
+export function parseSearch<T = ParsedQuery<string | boolean | number>>(_: string): T {
+    const parsed = parseQuery(_);
+    const excludeKeys = ["sortBy", "pageNum"];
+    Object.keys(parsed).forEach(key => {
+        if (excludeKeys.includes(key)) {
+            delete parsed[key];
+        }
+    });
+    return { ...parsed } as unknown as T;
 }
 
 export function parseSort(_: string): QuerySortItem {
@@ -213,7 +224,7 @@ export function pushParamExact(key: string, val?: string | string[] | number | b
 }
 
 export function pushParams(search: { [key: string]: string | string[] | number | boolean }, state?: any, keepEmpty: boolean = false) {
-    const params = parseSearch(hashHistory.location.search);
+    const params = parseQuery(hashHistory.location.search);
     for (const key in search) {
         const val = search[key];
         //  No empty strings OR "false" booleans...
@@ -227,7 +238,7 @@ export function pushParams(search: { [key: string]: string | string[] | number |
 }
 
 export function updateParam(key: string, val?: string | string[] | number | boolean, state?: any) {
-    const params = parseSearch(hashHistory.location.search);
+    const params = parseQuery(hashHistory.location.search);
     if (val === undefined) {
         delete params[key];
     } else {
