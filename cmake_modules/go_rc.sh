@@ -15,13 +15,19 @@ fi
 sync_git
 parse_cmake
 
+NEW_MAJOR=$HPCC_MAJOR
 if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   if (( "$HPCC_POINT" % 2 != 1 )) ; then
     if [ "$HPCC_POINT" = "0" ] ; then
       # special case when creating new minor release
       NEW_POINT=0
       if (( "$HPCC_MINOR" % 2 == 1 )) ; then
-        NEW_MINOR=$((HPCC_MINOR+1))
+        if [ "$CREATE_NEW_MAJOR" = "1" ] ; then
+          NEW_MAJOR=$((HPCC_MAJOR+1))
+          NEW_MINOR=0
+        else
+          NEW_MINOR=$((HPCC_MINOR+1))
+        fi
       else
         echo "A closedown version should have an odd point or minor version to create a new rc"
         exit 2
@@ -46,9 +52,9 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
     fi
   fi
   if [ "$GIT_BRANCH" = "master" ]; then
-    doit "git checkout -b candidate-$HPCC_MAJOR.$NEW_MINOR.x"
+    doit "git checkout -b candidate-$NEW_MAJOR.$NEW_MINOR.x"
   fi
-  doit "git checkout -b candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT"
+  doit "git checkout -b candidate-$NEW_MAJOR.$NEW_MINOR.$NEW_POINT"
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
   if [ "$GIT_BRANCH" = "master" ]; then
@@ -58,40 +64,40 @@ if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
     TRUNK_POINT=$((NEW_POINT+1))
     TRUNK_MINOR=$NEW_MINOR
   fi
-  update_version_file $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR
+  update_version_file $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR $NEW_MAJOR
   if [ -e helm/hpcc/Chart.yaml ] ; then
-    update_chart_file helm/hpcc/Chart.yaml $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR 
+    update_chart_file helm/hpcc/Chart.yaml $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR $NEW_MAJOR
     doit "git add helm/hpcc/Chart.yaml"
     rm -rf helm/hpcc/**/*.bak
     for f in helm/hpcc/templates/* ; do
-      update_chart_file $f $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR 
+      update_chart_file $f $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR $NEW_MAJOR
       if [ "$CHART_CHANGED" != "0" ] ; then
         doit "git add $f"
       fi
     done
   fi
   doit "git add $VERSIONFILE"
-  doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
+  doit "git commit -s -m \"Split off $NEW_MAJOR.$NEW_MINOR.$NEW_POINT\""
   doit "git push $REMOTE $GIT_BRANCH"
   if [ "$GIT_BRANCH" = "master" ]; then
-    doit "git checkout candidate-$HPCC_MAJOR.$NEW_MINOR.x"
-    update_version_file closedown 0 0 $NEW_MINOR
+    doit "git checkout candidate-$NEW_MAJOR.$NEW_MINOR.x"
+    update_version_file closedown 1 0 $NEW_MINOR $NEW_MAJOR
     if [ -e helm/hpcc/Chart.yaml ] ; then
-      update_chart_file helm/hpcc/Chart.yaml closedown 0 0 $NEW_MINOR 
+      update_chart_file helm/hpcc/Chart.yaml closedown 1 0 $NEW_MINOR $NEW_MAJOR
       doit "git add helm/hpcc/Chart.yaml"
       rm -rf helm/hpcc/**/*.bak
       for f in helm/hpcc/templates/* ; do
-        update_chart_file $f closedown 0 0 $NEW_MINOR 
+        update_chart_file $f closedown 1 0 $NEW_MINOR $NEW_MAJOR
         if [ "$CHART_CHANGED" != "0" ] ; then
           doit "git add $f"
         fi
       done
     fi
     doit "git add $VERSIONFILE"
-    doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
-    doit "git push $REMOTE candidate-$HPCC_MAJOR.$NEW_MINOR.x"
+    doit "git commit -s -m \"Split off $NEW_MAJOR.$NEW_MINOR.$NEW_POINT\""
+    doit "git push $REMOTE candidate-$NEW_MAJOR.$NEW_MINOR.x"
   fi
-  GIT_BRANCH=candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT
+  GIT_BRANCH=candidate-$NEW_MAJOR.$NEW_MINOR.$NEW_POINT
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
   NEW_SEQUENCE=1
@@ -109,12 +115,12 @@ else
   NEW_SEQUENCE=$((HPCC_SEQUENCE+1))
 fi
 
-update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR
+update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
 if [ -e helm/hpcc/Chart.yaml ] ; then
-  update_chart_file helm/hpcc/Chart.yaml rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR 
+  update_chart_file helm/hpcc/Chart.yaml rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
   doit "git add helm/hpcc/Chart.yaml"
   for f in helm/hpcc/templates/* ; do
-    update_chart_file $f rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR 
+    update_chart_file $f rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR $NEW_MAJOR
     if [ "$CHART_CHANGED" != "0" ] ; then
       doit "git add $f"
     fi
@@ -123,6 +129,7 @@ fi
 
 HPCC_MATURITY=rc
 HPCC_SEQUENCE=$NEW_SEQUENCE
+HPCC_MAJOR=$NEW_MAJOR
 HPCC_MINOR=$NEW_MINOR
 HPCC_POINT=$NEW_POINT
 set_tag

@@ -85,8 +85,12 @@ function update_version_file()
     local _new_point=$2
     local _new_sequence=$3
     local _new_minor=$4
+    local _new_major=$5
     if [ -z "$_new_minor" ] ; then
       _new_minor=$HPCC_MINOR
+    fi
+    if [ -z "$_new_major" ] ; then
+      _new_major=$HPCC_MAJOR
     fi
     if [ "$_new_maturity" == "trunk" ]; then
       _new_maturity=-SNAPSHOT
@@ -98,7 +102,7 @@ function update_version_file()
       # don't set for non-snapshots
       _new_maturity=
     fi
-    local _v="${HPCC_MAJOR}.${_new_minor}.${_new_point}-${_new_sequence}${_new_maturity}"
+    local _v="${_new_major}.${_new_minor}.${_new_point}-${_new_sequence}${_new_maturity}"
     if [ $_mvn_return_value -eq 0 ]; then
         local version_update_cmd="mvn versions:set -DnewVersion=$_v"
     else
