@@ -1,3 +1,6 @@
+if ("${PLUGINS_DONE}" STREQUAL "")
+  set (PLUGINS_DONE 1)
+
 # Plugin Options ---
 MACRO(SET_PLUGIN_PACKAGE plugin)
     string(TOLOWER "${plugin}" pname)
@@ -8,7 +11,7 @@ MACRO(SET_PLUGIN_PACKAGE plugin)
     endif()
     foreach(p in ${PLUGINS_LIST})
         if(NOT "${p}" STREQUAL "${plugin}" AND ${p})
-            message(FATAL_ERROR "Cannot declare multiple plugins in a plugin package")
+            message(FATAL_ERROR "Cannot declare multiple plugins in a plugin package (${p}, ${plugin})")
         endif()
     endforeach()
     set(PLUGIN ON)
@@ -69,6 +72,10 @@ endif()
 
 if (USE_LIBMEMCACHED)
     set(VCPKG_MEMCACHED "${VCPKG_INCLUDE}")
+endif()
+
+if (USE_MYSQL_REPOSITORY)
+    set(VCPKG_MYSQLEMBED "${VCPKG_INCLUDE}")
 endif()
 
 #  vcpkg.json options  ---
@@ -143,3 +150,5 @@ if (USE_ZLIB)
 endif()
 
 configure_file("${HPCC_SOURCE_DIR}/vcpkg.json.in" "${HPCC_SOURCE_DIR}/vcpkg.json")
+
+endif()

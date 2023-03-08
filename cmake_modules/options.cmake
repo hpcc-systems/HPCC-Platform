@@ -1,3 +1,6 @@
+if ("${OPTIONS_DONE}" STREQUAL "")
+  set (OPTIONS_DONE 1)
+
 # General Options ---
 option(CONTAINERIZED "Build for container images." OFF)
 option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
@@ -90,3 +93,11 @@ option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
 option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
 option(USE_ADDRESS_SANITIZER "Use address sanitizer to spot leaks" OFF)
 
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
+    set ( CMAKE_BUILD_TYPE "Release" )
+elseif (NOT "${CMAKE_BUILD_TYPE}" MATCHES "^Debug$|^Release$|^RelWithDebInfo$")
+    message (FATAL_ERROR "Unknown build type ${CMAKE_BUILD_TYPE}")
+endif ()
+message ("-- Making ${CMAKE_BUILD_TYPE} system")
+
+endif ()
