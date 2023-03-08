@@ -92,6 +92,61 @@ MODULE_EXIT()
     udpKey.clear();
 }
 
+inline static bool isValidSecreteStartOrEndChr(char c)
+{
+    return ('\0' != c && (isalpha(c)));
+}
+
+
+//based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
+
+static const char *validSecretNameChrs = ".-";
+inline static bool isValidSecretOrKeyNameChr(char c, bool firstOrLastChar, bool isKeyName)
+{
+    if (c == '\0')
+        return false;
+    if (isalnum(c))
+        return true;
+    if (firstOrLastChar)
+        return false;
+    if (strchr(validSecretNameChrs, c)!=nullptr)
+        return true;
+    return (isKeyName && c=='_'); //keyname also supports '_'
+}
+
+static bool isValidSecretOrKeyName(const char *name, bool isKeyName)
+{
+    if (!isValidSecretOrKeyNameChr(*name, true, isKeyName))
+        return false;
+    ++name;
+    while ('\0' != *name)
+    {
+        bool lastChar = ('\0' == *(name+1));
+        if (!isValidSecretOrKeyNameChr(*name, lastChar, isKeyName))
+            return false;
+        ++name;
+    }
+    return true;
+}
+
+static void validateCategoryName(const char *category)
+{
+    if (!isValidSecretOrKeyName(category, true))
+      throw makeStringExceptionV(-1, "Invalid secret category %s", category);
+}
+
+static void validateSecretName(const char *secret)
+{
+    if (!isValidSecretOrKeyName(secret, false))
+      throw makeStringExceptionV(-1, "Invalid secret name %s", secret);
+}
+
+static void validateKeyName(const char *key)
+{
+    if (!isValidSecretOrKeyName(key, true))
+      throw makeStringExceptionV(-1, "Invalid secret key name %s", key);
+}
+
 static void splitUrlAddress(const char *address, size_t len, StringBuffer &host, StringBuffer *port)
 {
     if (!address || len==0)
@@ -766,6 +821,9 @@ static IPropertyTree *loadLocalSecret(const char *category, const char * name)
 
 extern jlib_decl IPropertyTree *getLocalSecret(const char *category, const char * name)
 {
+    validateCategoryName(category);
+    validateSecretName(name);
+
     Owned<IPropertyTree> tree = getCachedLocalSecret(category, name);
     if (tree)
         return tree.getClear();
@@ -830,6 +888,9 @@ static IPropertyTree *requestVaultSecret(const char *category, const char *vault
 
 extern jlib_decl IPropertyTree *getVaultSecret(const char *category, const char *vaultId, const char * name, const char *version)
 {
+    validateCategoryName(category);
+    validateSecretName(name);
+
     CVaultKind kind;
     StringBuffer json;
     IVaultManager *vaultmgr = ensureVaultManager();
@@ -848,6 +909,9 @@ extern jlib_decl IPropertyTree *getVaultSecret(const char *category, const char 
 
 extern jlib_decl IPropertyTree *getSecret(const char *category, const char * name)
 {
+    validateCategoryName(category);
+    validateSecretName(name);
+
     //check for any chached first
     Owned<IPropertyTree> secret = getCachedLocalSecret(category, name);
     if (!secret)
@@ -862,6 +926,8 @@ extern jlib_decl IPropertyTree *getSecret(const char *category, const char * nam
 
 extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *secret, const char * key)
 {
+    validateKeyName(key);
+
     IPropertyTree *tree = secret->queryPropTree(key);
     if (tree)
         return tree->getPropBin(nullptr, result);
@@ -870,6 +936,8 @@ extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *se
 
 extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *secret, const char * key)
 {
+    validateKeyName(key);
+
     IPropertyTree *tree = secret->queryPropTree(key);
     if (!tree)
         return false;
@@ -892,6 +960,8 @@ extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *se
 
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required)
 {
+    validateKeyName(key); //name and category validated in getSecret
+
     Owned<IPropertyTree> secret = getSecret(category, name);
     if (required && !secret)
         throw MakeStringException(-1, "secret %s.%s not found", category, name);
@@ -981,6 +1051,8 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
 
 IPropertyTree *queryTlsSecretInfo(const char *name)
 {
+    validateSecretName(name);
+
     if (isEmptyString(name))
         return nullptr;
     CriticalBlock block(mtlsInfoCacheCS);

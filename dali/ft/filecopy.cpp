@@ -3212,7 +3212,6 @@ inline bool nonempty(IPropertyTree *pt, const char *p) { const char *s = pt->que
 bool FileSprayer::disallowImplicitReplicate()
 {
     return options->getPropBool(ANsplit) ||
-           options->getPropBool(ANnosplit) ||
            querySplitPrefix() ||
            nonempty(options,"@header") ||
            nonempty(options,"@footer") ||
@@ -3552,7 +3551,9 @@ void FileSprayer::updateTargetProperties()
                                     strieq(aname,"@node") ||
                                     strieq(aname,"@num")  ||
                                     strieq(aname,"@size") ||
+                                    strieq(aname,"@compressedSize") ||
                                     strieq(aname,"@name") ) ||
+                                    (!sameSizeHeaderFooter && (strieq(aname, FPheaderLength) || strieq(aname, FPfooterLength))) ||
                                     ( strieq(aname,"@recordCount") && (sources.ordinality() == targets.ordinality()) )
                                )
                                 curProps.setProp(aname,aiter->queryValue());
