@@ -276,7 +276,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => setMine(!mine)
         },
     ], [currentUser, data, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);

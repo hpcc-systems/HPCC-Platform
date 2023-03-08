@@ -249,7 +249,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             onClick: () => { setShowFilter(true); }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
             onClick: () => { setMine(!mine); }
         },
     ], [currentUser, hasFilter, mine, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
