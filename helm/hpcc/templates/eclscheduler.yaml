@@ -64,7 +64,7 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: "no"
-        helmVersion: 8.13.0-trunk0
+        helmVersion: 9.1.0-trunk0
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
