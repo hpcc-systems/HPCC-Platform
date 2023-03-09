@@ -5,6 +5,7 @@ import { useUserTheme } from "../../hooks/theme";
 
 interface FieldsTableProps {
     fields: Fields;
+    width?: string;
     onChange?: (id: string, newValue: any) => void;
 }
 
@@ -28,12 +29,13 @@ const tableGroupStyles = mergeStyleSets({
 
 export const TableGroup: React.FunctionComponent<FieldsTableProps> = ({
     fields,
+    width = "initial",
     onChange = (id: string, newValue: any) => { }
 }) => {
 
     const formFields: { id: string, label: string, field: any }[] = createInputs(fields, onChange);
 
-    return <table className={tableGroupStyles.root}>
+    return <table className={tableGroupStyles.root} style={{ width }}>
         <tbody>
             {formFields.map((ff) => {
                 return <tr key={ff.id}>
