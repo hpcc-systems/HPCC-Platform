@@ -49,6 +49,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         latest: 1   # this should only be set on the current minor branch
         build_ml: ${{ matrix.engine }}
+        docker_repo: ${{ secrets.IMAGE_REPOSITORY }}
         github_actor: ${{ secrets.LNB_ACTOR }}
         github_token: ${{ secrets.LNB_TOKEN }}
 
