@@ -748,6 +748,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         ENDIF()
       ENDIF(USE_ICU)
 
+      if(WSSQL_SERVICE AND NOT USE_JAVA)
+        set(WSSQL_SERVICE OFF)
+      endif()
+
       if(USE_XALAN)
         find_package(XALAN)
         if (XALAN_FOUND)
