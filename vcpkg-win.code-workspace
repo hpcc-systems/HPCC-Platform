@@ -5,10 +5,11 @@
 		}
 	],
 	"settings": {
+		"cmake.generator": "Ninja",
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
-			"-DCLIENTTOOLS_ONLY=ON", 
+			"-DCLIENTTOOLS_ONLY=OFF", 
 			"-DINCLUDE_PLUGINS=OFF", 
 			"-DUSE_LIBMEMCACHED=OFF", 
 			"-DUSE_OPENLDAP=OFF", 
@@ -17,9 +18,7 @@
 			"-DWSSQL_SERVICE=OFF"
 		],
 		"cmake.buildArgs": ["--parallel"],
-		"cmake.buildToolArgs": [
-			"-m"
-		],
+		"cmake.buildToolArgs": [],
 		"ecl.launchConfiguration": "not found",
 		"ecl.targetCluster": {},
 	},

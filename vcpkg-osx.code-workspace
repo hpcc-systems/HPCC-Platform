@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
+		"cmake.generator": "Ninja",
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
