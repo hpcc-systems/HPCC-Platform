@@ -16,7 +16,6 @@ jobs:
   build:
     name: "Build and publish release container"
     runs-on: ubuntu-20.04
-    if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -36,7 +35,6 @@ jobs:
   ml-builds:
     needs: build
     runs-on: ubuntu-20.04
-    if: github.repository == 'hpcc-systems/HPCC-Platform'
     strategy:
       matrix:
         engine: ['ml', 'gnn', 'gnn-gpu']
@@ -56,7 +54,6 @@ jobs:
   ln-builds:
     needs: build
     runs-on: ubuntu-20.04
-    if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
     - name: Checkout
       uses: actions/checkout@v2
