@@ -694,6 +694,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         type={field.type}
                         name={fieldID}
                         value={field.value}
+                        title={field.value}
                         placeholder={field.placeholder}
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                         borderless={field.readonly && !field.multiline}

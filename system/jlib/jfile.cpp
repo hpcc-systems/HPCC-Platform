@@ -2652,6 +2652,7 @@ CFileIOStream::CFileIOStream(IFileIO * _io)
 
 void CFileIOStream::flush()
 {
+    io->flush();
 }
 
 
