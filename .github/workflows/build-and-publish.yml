@@ -25,6 +25,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           latest: 1   # this should only be set on the current minor branch
+          build_user: ${{ secrets.LNB_ACTOR }}
           github_actor: ${{ secrets.LNB_ACTOR }}
           github_token: ${{ secrets.LNB_TOKEN }}
           sign_modules: "OFF"
