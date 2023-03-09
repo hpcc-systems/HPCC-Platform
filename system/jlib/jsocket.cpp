@@ -405,14 +405,29 @@ static bool queryKeepAlive(int &time, int &intvl, int &probes)
         if (state == UNINIT)
         {
 #ifdef _CONTAINERIZED
-            Owned<IPropertyTree> expert = getGlobalConfigSP()->getPropTree("expert");
+            Owned<IPropertyTree> expert;
 #else
-            // MCK - without this many components will not have a global prop
+            Owned<IPropertyTree> envtree;
             IPropertyTree *expert = nullptr;
-            Owned<IPropertyTree> envtree = getHPCCEnvironment();
-            if (envtree)
-                expert = envtree->queryPropTree("Software/Globals");
 #endif
+            try
+            {
+#ifdef _CONTAINERIZED
+                expert.setown(getGlobalConfigSP()->getPropTree("expert"));
+#else
+                // MCK - without this many components will not have a global prop
+                envtree.setown(getHPCCEnvironment());
+                if (envtree)
+                    expert = envtree->queryPropTree("Software/Globals");
+#endif
+            }
+            catch (IException *e)
+            {
+                e->Release();
+            }
+            catch (...)
+            {
+            }
             state = DISABLED;
             if (expert)
             {
