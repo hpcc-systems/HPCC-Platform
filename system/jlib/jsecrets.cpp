@@ -1043,10 +1043,11 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
 
 IPropertyTree *queryTlsSecretInfo(const char *name)
 {
-    validateSecretName(name);
-
     if (isEmptyString(name))
         return nullptr;
+
+    validateSecretName(name);
+
     CriticalBlock block(mtlsInfoCacheCS);
     IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
     if (info)
