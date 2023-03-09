@@ -29,13 +29,17 @@
             "platform": "@VCPKG_AZURE@"
         },
         {
-            "name":"boost-regex",
+            "name": "boost-regex",
             "platform": "@VCPKG_BOOST_REGEX@"
         },
         "boost-property-tree",
         {
             "name": "cpp-driver",
             "platform": "@VCPKG_CASSANDRAEMBED@"
+        },
+        {
+            "name": "cppunit",
+            "platform": "@VCPKG_CPPUNIT@"
         },
         {
             "name": "cpr",
