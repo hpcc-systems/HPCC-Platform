@@ -92,12 +92,6 @@ MODULE_EXIT()
     udpKey.clear();
 }
 
-inline static bool isValidSecreteStartOrEndChr(char c)
-{
-    return ('\0' != c && (isalpha(c)));
-}
-
-
 //based on kubernetes secret / key names. Even if some vault backends support additional characters we'll restrict to this subset for now
 
 static const char *validSecretNameChrs = ".-";
@@ -1051,10 +1045,11 @@ IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool a
 
 IPropertyTree *queryTlsSecretInfo(const char *name)
 {
-    validateSecretName(name);
-
     if (isEmptyString(name))
         return nullptr;
+
+    validateSecretName(name);
+
     CriticalBlock block(mtlsInfoCacheCS);
     IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
     if (info)
