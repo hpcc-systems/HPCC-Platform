@@ -1183,7 +1183,7 @@ kind: Service
 metadata:
   name: {{ $lvars.serviceName | quote }}
   labels:
-    helmVersion: 8.6.80-rc1
+    helmVersion: 8.6.80-rc2
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
 {{- end }}
