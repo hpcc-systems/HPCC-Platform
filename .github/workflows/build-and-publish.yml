@@ -27,7 +27,7 @@ jobs:
           latest: 1   # this should only be set on the current minor branch
           github_actor: ${{ secrets.LNB_ACTOR }}
           github_token: ${{ secrets.LNB_TOKEN }}
-          sign_modules: 1
+          sign_modules: 0
           signing_secret: ${{ secrets.SIGNING_SECRET }}
           signing_keyid: ${{ secrets.SIGNING_KEYID }}
           signing_passphrase: ${{ secrets.SIGNING_PASSPHRASE }}
@@ -71,7 +71,7 @@ jobs:
         build_ln: 1
         github_actor: ${{ secrets.LNB_ACTOR }}
         github_token: ${{ secrets.LNB_TOKEN }}
-        sign_modules: 1
+        sign_modules: 0
         signing_secret: ${{ secrets.SIGNING_SECRET }}
         signing_keyid: ${{ secrets.SIGNING_KEYID }}
         signing_passphrase: ${{ secrets.SIGNING_PASSPHRASE }}
