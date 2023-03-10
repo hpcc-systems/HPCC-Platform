@@ -395,7 +395,7 @@ global:
       probes: 9
 */
 
-static bool queryKeepAlive(int &time, int &intvl, int &probes)
+extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
 {
     UseKA state = doKeepAlive.load();
     if (state == UNINIT)
