@@ -25,6 +25,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           latest: 1   # this should only be set on the current minor branch
+          docker_repo: ${{ secrets.IMAGE_REPOSITORY }}
           build_user: ${{ secrets.LNB_ACTOR }}
           github_actor: ${{ secrets.LNB_ACTOR }}
           github_token: ${{ secrets.LNB_TOKEN }}
@@ -33,25 +34,26 @@ jobs:
           signing_keyid: ${{ secrets.SIGNING_KEYID }}
           signing_passphrase: ${{ secrets.SIGNING_PASSPHRASE }}
 
-  ml-builds:
-    needs: build
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        engine: ['ml', 'gnn', 'gnn-gpu']
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Build
-      uses: ./dockerfiles
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        latest: 1   # this should only be set on the current minor branch
-        build_ml: ${{ matrix.engine }}
-        docker_repo: ${{ secrets.IMAGE_REPOSITORY }}
-        github_actor: ${{ secrets.LNB_ACTOR }}
-        github_token: ${{ secrets.LNB_TOKEN }}
+  # ml-builds:
+  #   needs: build
+  #   runs-on: ubuntu-20.04
+  #   strategy:
+  #     matrix:
+  #       engine: ['ml', 'gnn', 'gnn-gpu']
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
+  #   - name: Build
+  #     uses: ./dockerfiles
+  #     with:
+  #       username: ${{ secrets.DOCKER_USERNAME }}
+  #       password: ${{ secrets.DOCKER_PASSWORD }}
+  #       latest: 1   # this should only be set on the current minor branch
+  #       build_ml: ${{ matrix.engine }}
+  #       docker_repo: ${{ secrets.IMAGE_REPOSITORY }}
+  #       build_user: ${{ secrets.LNB_ACTOR }}
+  #       github_actor: ${{ secrets.LNB_ACTOR }}
+  #       github_token: ${{ secrets.LNB_TOKEN }}
 
   ln-builds:
     needs: build
@@ -64,13 +66,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        ln_username: ${{ secrets.JFROG_USERNAME }}
-        ln_password: ${{ secrets.JFROG_PASSWORD }}
-        ln_registry: ${{ secrets.JFROG_REGISTRY }}
-        ln_docker_repo: ${{ secrets.JFROG_REPOSITORY }}
-        lnb_token: ${{ secrets.LNB_TOKEN }}
+        ln_username: ${{ secrets.LN_IMAGE_USERNAME }} # for image repo
+        ln_password: ${{ secrets.LN_IMAGE_PASSWORD }} # for image repo
+        ln_registry: ${{ secrets.LN_IMAGE_REGISTRY }} # for image repo
+        ln_docker_repo: ${{ secrets.LN_IMAGE_REPOSITORY }} # for image repo
+        lnb_token: ${{ secrets.LNB_TOKEN }} # for github
         latest: 1   # this should only be set on the current minor branch
         build_ln: 1
+        build_user: ${{ secrets.LNB_ACTOR }}
         github_actor: ${{ secrets.LNB_ACTOR }}
         github_token: ${{ secrets.LNB_TOKEN }}
         sign_modules: "OFF"
