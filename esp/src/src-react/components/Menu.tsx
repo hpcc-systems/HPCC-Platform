@@ -128,7 +128,7 @@ type SubMenuItems = { [nav: string]: SubMenu[] };
 const subMenuItems: SubMenuItems = {
     "activities": [
         { headerText: nlsHPCC.Activities, itemKey: "/activities" },
-        { headerText: nlsHPCC.EventScheduler + " (L)", itemKey: "/events" }
+        { headerText: nlsHPCC.EventScheduler, itemKey: "/events" }
     ],
     "workunits": [
         { headerText: nlsHPCC.Workunits, itemKey: "/workunits" },

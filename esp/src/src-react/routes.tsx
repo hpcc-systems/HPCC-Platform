@@ -36,8 +36,7 @@ export const routes: RoutesEx = [
         name: "events",
         path: "/events",
         children: [
-            { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="EventScheduleWorkunitWidget" />) },
-            { path: "/:Event", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUDetailsWidget" params={params} />) }
+            { path: "", action: (ctx) => import("./components/EventScheduler").then(_ => <_.EventScheduler filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} page={parsePage(ctx.search)} />) },
         ]
     },
     {

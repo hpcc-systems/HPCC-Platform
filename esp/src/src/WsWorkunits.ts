@@ -9,7 +9,7 @@ import nlsHPCC from "./nlsHPCC";
 
 declare const dojo;
 
-class EventScheduleStore extends ESPRequest.Store {
+export class EventScheduleStore extends ESPRequest.Store {
 
     service = "WsWorkunits";
     action = "WUShowScheduled";
