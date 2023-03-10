@@ -161,10 +161,10 @@ jobs:
             sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
             docker_label=build-${{ matrix.os }}:latest
             docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=OFF" 
-            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+            docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc)" 
             # Disabled as not currently needed ---
             # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -D$plugin=ON -DCONTAINERIZED=OFF -DCPACK_STRIP_FILES=ON"
-            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+            # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc)" 
           done
 
       - name: CMake Containerized Packages
@@ -175,7 +175,7 @@ jobs:
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
           docker_label=build-${{ matrix.os }}:latest
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc)" 
 
 
       - name: CMake LN Packages
@@ -186,10 +186,10 @@ jobs:
           sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
           docker_label=build-${{ matrix.os }}:latest
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=OFF"
-          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package" 
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc)" 
           # Disabled as not currently needed ---
           # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/LN -B /hpcc-dev/build -DHPCC_SOURCE_DIR=/hpcc-dev/HPCC-Platform ${{ needs.preamble.outputs.cmake_docker_config }} -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DCONTAINERIZED=OFF -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
-          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
+          # docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_ln }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc)"
 
       - name: Upload error logs
         if: ${{ failure() || cancelled() }}
@@ -209,19 +209,19 @@ jobs:
             mono: "mono"
             sudo: "sudo"
             cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
+            cmake_build_options: "--parallel $(nproc)"
             event_name: "schedule"
           - os: "ubuntu-20.04"
             mono: "mono"
             sudo: "sudo"
             cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
+            cmake_build_options: "--parallel $(nproc)"
             event_name: "schedule"
           - os: "ubuntu-22.04"
             mono: "mono"
             sudo: "sudo"
             cmake_config_options: "-G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
+            cmake_build_options: "--parallel $(nproc)"
             event_name: "pull_request"
           - os: "windows-2019"
             mono: ""
@@ -279,6 +279,7 @@ jobs:
           gnupg \
           groff-base \
           libtool \
+          ninja-build \
           pkg-config \
           software-properties-common \
           tar \
@@ -299,7 +300,7 @@ jobs:
         if: ${{ contains(matrix.os, 'macos') && contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
         shell: "bash"
         run: |
-          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake openjdk@11
+          brew install bison flex pkg-config autoconf autoconf-archive automake libtool cmake ninja openjdk@11
 
       - name: "Remove builtin vcpkg (old)"
         if: ${{ contains(matrix.event_name, github.event_name) && needs.preamble.outputs.platform }}
