@@ -7,5 +7,5 @@ set ( HPCC_MAJOR 8 )
 set ( HPCC_MINOR 10 )
 set ( HPCC_POINT 30 )
 set ( HPCC_MATURITY "rc" )
-set ( HPCC_SEQUENCE 2 )
+set ( HPCC_SEQUENCE 3 )
 ###
