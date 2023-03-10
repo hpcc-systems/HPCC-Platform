@@ -30,6 +30,7 @@ RUN apt-get clean -y && \
 
 RUN apt-get install -y \
   default-jdk \
+  elfutils \
   g++ \
   git \
   git-lfs \
