@@ -55,6 +55,16 @@ DEST_DOCKER_REPO=${DOCKER_REPO}
 [[ -n ${INPUT_LN_DOCKER_REPO} ]] && DEST_DOCKER_REPO=${INPUT_LN_DOCKER_REPO}
 [[ -n ${INPUT_LN_REGISTRY} ]] && DEST_DOCKER_REGISTRY=${INPUT_LN_REGISTRY}
 
+if [[ "${DEST_DOCKER_REGISTRY}" != "useast.jfrog.lexisnexisrisk.com" ]] ; then
+  DEST_DOCKER_REGISTRY=useast.jfrog.lexisnexisrisk.com
+  echo setting DEST_DOCKER_REGISTRY=useast.jfrog.lexisnexisrisk.com
+fi
+if [[ "${DEST_DOCKER_REPO}" != "LN" ]] ; then
+  DEST_DOCKER_REPO=LN
+  echo setting DEST_DOCKER_REPO=LN
+fi
+
+
 if [[ -n ${INPUT_BUILD_THREADS} ]] ; then
   BUILD_THREADS=$INPUT_BUILD_THREADS
 fi
