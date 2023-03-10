@@ -62,11 +62,12 @@ if [[ -n ${INPUT_BUILD_LN} ]] ; then
 fi
 
 if [[ -n "$BUILD_LN" ]]; then
+  echo here...
   if [[ "${DEST_DOCKER_REGISTRY}" != "useast.jfrog.lexisnexisrisk.com" ]] ; then
     DEST_DOCKER_REGISTRY=useast.jfrog.lexisnexisrisk.com
     echo setting DEST_DOCKER_REGISTRY=useast.jfrog.lexisnexisrisk.com
   fi
-  if [[ "${DEST_DOCKER_REPO}" != "LN" ]] ; then
+  if [[ "${DEST_DOCKER_REPO}" != "hpccsystems" ]] ; then
     DEST_DOCKER_REPO=LN
     echo setting DEST_DOCKER_REPO=LN
   fi
