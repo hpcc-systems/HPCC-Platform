@@ -2925,7 +2925,7 @@ private:
         case 'T':
             if (stricmp(queryName, "control:testAgentFailure")==0)
             {
-                testAgentFailure = control->getPropInt("@val", 20);
+                testAgentFailure = control->getPropInt("@val", (unsigned) -1);
             }
             else if (stricmp(queryName, "control:timeActivities")==0)
             {

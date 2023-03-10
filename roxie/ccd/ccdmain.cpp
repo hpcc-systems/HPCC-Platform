@@ -803,6 +803,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
         traceRemoteFiles = topology->getPropBool("@traceRemoteFiles", false);
+        testAgentFailure = topology->getPropInt("expert/@testAgentFailure", testAgentFailure);
 
         Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
 #ifndef _CONTAINERIZED
