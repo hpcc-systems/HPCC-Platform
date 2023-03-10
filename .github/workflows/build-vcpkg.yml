@@ -52,7 +52,7 @@ jobs:
           echo 'mount_build=source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached' >> $GITHUB_OUTPUT
           community_ref=${{ github.ref }}
           echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
-          echo "internal_ref=$(echo $community_ref | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+          echo "internal_ref=${{ github.base_ref }}" >> $GITHUB_OUTPUT
           community_tag=$(echo $community_ref | cut -d'/' -f3)
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
@@ -95,6 +95,9 @@ jobs:
             event_name: "pull_request"
           - os: amazonlinux
             event_name: "schedule"
+          - os: centos-7
+            ln: true
+            event_name: "schedule"
       fail-fast: false
 
     steps:
@@ -107,7 +110,7 @@ jobs:
           path: ${{ needs.preamble.outputs.folder_platform }}
 
       - name: Checkout LN
-        if: ${{ matrix.ln }}
+        if: ${{ matrix.ln && contains(matrix.event_name, github.event_name) }}
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository_owner }}/LN
