@@ -382,6 +382,7 @@ class CHThorIndexWriteActivity : public CHThorActivityBase
     IHThorIndexWriteArg &helper;
     Owned<ClusterWriteHandler> clusterHandler;
     StringAttr filename;
+    StringBuffer defaultIndexCompression;
     Owned<IFile> file;
     bool incomplete;
     bool defaultNoSeek = false;

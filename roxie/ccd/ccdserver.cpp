@@ -12587,7 +12587,16 @@ public:
             if (!needsSeek)
                 out.setown(createNoSeekIOStream(out));
 
-            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
+            StringBuffer defaultIndexCompression;
+            IRoxieServerContext * serverContext = ctx->queryServerContext();
+            if (serverContext)
+            {
+                IConstWorkUnit *workunit = serverContext->queryWorkUnit();
+                if (workunit)
+                    workunit->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
+            }
+
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0, &helper, defaultIndexCompression, true, false);
             class BcWrapper : implements IBlobCreator
             {
                 IKeyBuilder *builder;
