@@ -61,18 +61,6 @@ if [[ -n ${INPUT_BUILD_LN} ]] ; then
   BUILD_LN=${INPUT_BUILD_LN}
 fi
 
-if [[ -n "$BUILD_LN" ]]; then
-  echo here...
-  if [[ "${DEST_DOCKER_REGISTRY}" != "useast.jfrog.lexisnexisrisk.com" ]] ; then
-    DEST_DOCKER_REGISTRY=useast.jfrog.lexisnexisrisk.com
-    echo setting DEST_DOCKER_REGISTRY=useast.jfrog.lexisnexisrisk.com
-  fi
-  if [[ "${DEST_DOCKER_REPO}" != "hpccsystems" ]] ; then
-    DEST_DOCKER_REPO=LN
-    echo setting DEST_DOCKER_REPO=LN
-  fi
-fi
-
 if [[ -n ${INPUT_BUILD_THREADS} ]] ; then
   BUILD_THREADS=$INPUT_BUILD_THREADS
 fi
