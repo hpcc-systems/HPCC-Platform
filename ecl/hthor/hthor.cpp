@@ -1122,6 +1122,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
     clusterHandler.setown(createClusterWriteHandler(agent, &helper, NULL, lfn, filename, false, true));
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
     defaultNoSeek = agent.queryWorkUnit()->getDebugValueBool("noSeekBuildIndex", isContainerized());
+    agent.queryWorkUnit()->getDebugValue("defaultIndexCompression", StringBufferAdaptor(defaultIndexCompression));
 }
 
 CHThorIndexWriteActivity::~CHThorIndexWriteActivity()
@@ -1205,7 +1206,7 @@ void CHThorIndexWriteActivity::execute()
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
 
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, &helper, true, false);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0, &helper, defaultIndexCompression, true, false);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;

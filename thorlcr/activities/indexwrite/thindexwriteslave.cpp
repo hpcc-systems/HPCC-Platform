@@ -63,6 +63,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
 
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
+    StringBuffer defaultIndexCompression;
     bool needFirstRow, enableTlkPart0, receivingTag2;
 
     unsigned replicateDone;
@@ -99,6 +100,7 @@ public:
         defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", isContainerized())));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
         duplicateKeyCount = 0;
+        container.queryJob().getWorkUnitValue("defaultIndexCompression", defaultIndexCompression);
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -213,7 +215,7 @@ public:
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
         maxRecordSizeSeen = 0;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, !isTlk, isTlk));
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper->getKeyedSize(), isTlk ? 0 : totalCount, helper, defaultIndexCompression, !isTlk, isTlk));
     }
     void buildLayoutMetadata(Owned<IPropertyTree> & metadata)
     {
