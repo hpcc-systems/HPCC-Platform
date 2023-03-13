@@ -50,7 +50,6 @@ class CWriteMasterBase : public CMasterActivity
     bool published;
     StringAttr fileName;
     CDfsLogicalFileName dlfn;
-    offset_t totalFileSize = 0;
 protected:
     StringArray clusters;
     Owned<IFileDescriptor> fileDesc;
