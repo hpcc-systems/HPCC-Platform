@@ -454,31 +454,24 @@ bool readECLWUCurrentJob(const char* curjob, const char* clusterName, const char
         return false;
 
     // action name
-    char action[256];
     bptr = eptr + 1;
     eptr = strchr(bptr, ',');
     if(!eptr)
         return false;
 
-    int len = eptr - bptr;
-    strncpy(action, bptr, len);
-    action[len] = 0;
+    StringBuffer action;
+    action.append(eptr - bptr, bptr);
 
     // cluster name
-    char cluster[256];
     bptr = eptr + 1;
     eptr = strchr(bptr, ',');
     if(!eptr)
         return false;
 
-    len = eptr - bptr;
-    strncpy(cluster, bptr, len);
-    cluster[len] = 0;
-
-    if (cluster && *cluster)
+    if (eptr > bptr)
     {
-        clusterStr.clear().append(cluster);
-        if (clusterName && *clusterName && stricmp(cluster, clusterName))
+        clusterStr.clear().append(eptr - bptr, bptr);
+        if (!isEmptyString(clusterName) && !strieq(clusterStr, clusterName))
             return false;
     }
 
@@ -502,6 +495,10 @@ bool readECLWUCurrentJob(const char* curjob, const char* clusterName, const char
     if(!eptr)
         return false;
 
+    //The graph number in the job string may be in 2 formats:
+    //a number (for example: 2) or with the 'graph' in front of the number (for example: group2).
+    //Skip the 'graph' if it is in front of the number.
+    int len = eptr - bptr;
     if (bptr[0] == 'g' && len > 5)
         bptr += 5;
 
