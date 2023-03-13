@@ -975,6 +975,7 @@ export = {
         title_WUDetails: "ECL Workunit Details",
         title_WorkunitScopeDefaultPermissions: "Default permissions of workunits",
         title_WUQuery: "ECL Workunits",
+        TLS: "TLS",
         To: "To",
         ToDate: "To Date",
         Toenablegraphviews: "To enable graph views, please install the Graph View Control plugin",

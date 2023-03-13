@@ -148,6 +148,7 @@ const subMenuItems: SubMenuItems = {
     "topology": [
         { headerText: nlsHPCC.Configuration, itemKey: "/topology/configuration" },
         { headerText: nlsHPCC.Pods, itemKey: "/topology/pods" },
+        { headerText: nlsHPCC.Services, itemKey: "/topology/services" },
         { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
         { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin" },
     ],
