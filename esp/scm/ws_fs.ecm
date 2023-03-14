@@ -535,6 +535,7 @@ ESPresponse [exceptions_inline] DFUWUFileResponse
 
 ESPrequest FileListRequest
 {
+    [min_ver("1.24")] string DropZoneName;
     string Netaddr;
     string Path;
     string Mask;

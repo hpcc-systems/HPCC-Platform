@@ -44,9 +44,7 @@ void CWsFileIOEx::validateDropZoneAccess(IEspContext &context, const char *targe
     Owned<IPropertyTree> dropZone = getDropZonePlane(targetDZNameOrHost);
     if (!dropZone) //The targetDZNameOrHost could be a dropzone host.
     {
-        dropZone.setown(findDropZonePlane(nullptr, targetDZNameOrHost, true));
-        if (!dropZone)
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DropZone not found for %s", targetDZNameOrHost);
+        dropZone.setown(findDropZonePlane(nullptr, targetDZNameOrHost, true, true));
     }
     else if (!isEmptyString(hostReq))
     {
