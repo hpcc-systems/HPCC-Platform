@@ -283,6 +283,11 @@ bool hasKnownSortlist(IHqlExpression * sortlist)
 }
 
 
+static bool isAnyDistribution(IHqlExpression * distribution)
+{
+    return (distribution == queryAnyDistributionAttribute());
+}
+
 bool CHqlMetaInfo::appearsToBeSorted(bool isLocal, bool ignoreGrouping)
 {
     if (isLocal)
@@ -1762,6 +1767,9 @@ static unsigned fullSortMatch(const HqlExprArray & sorts, IHqlExpression * distr
 
 static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpression * distribute2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
+    if (isAnyDistribution(distribute1) || isAnyDistribution(distribute2))
+        return true;
+
     unsigned match1 = sort1.find(*distribute1->queryBody());
     unsigned match2 = sort2.find(*distribute2->queryBody());
     if ((match1 != NotFound) || (match2 != NotFound))
@@ -1906,7 +1914,7 @@ bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2
                  return false;
 
             //Self join is guaranteed to be from the same sort
-            //NOTE: IF/NONEMPTY return sitribution if the same - but since still only
+            //NOTE: IF/NONEMPTY return distribution if the same - but since still only
             //one or the other the dataset will be distributed ok.
             if (queryColocalDataset(dataset1) != queryColocalDataset(dataset2))
                 return false;
