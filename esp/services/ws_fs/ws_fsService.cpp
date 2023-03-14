@@ -1162,10 +1162,17 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             {
                 DFUstate state = prog->getState();
                 resultWU->setState(state);
-                StringBuffer statemsg;
-                encodeDFUstate(state,statemsg);
-                resultWU->setStateMessage(statemsg.str());
+                StringBuffer prgmsg;
+                encodeDFUstate(state, prgmsg);
+                resultWU->setStateMessage(prgmsg.str());
                 resultWU->setPercentDone(prog->getPercentDone());
+                if (req.getIncludeProgressMessages())
+                {
+                    prog->formatProgressMessage(prgmsg.clear());
+                    resultWU->setProgressMessage(prgmsg.str());
+                    prog->formatSummaryMessage(prgmsg.clear());
+                    resultWU->setSummaryMessage(prgmsg.str());
+                }
             }
             result.append(*resultWU.getLink());
             itr->next();
