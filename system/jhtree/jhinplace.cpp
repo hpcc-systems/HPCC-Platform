@@ -380,7 +380,7 @@ unsigned __int64 readBytesEntry64(const byte * address, unsigned index, unsigned
     //Non aligned access, assumes little endian, but avoids a loop
     const unsigned __int64 * pValue = (const unsigned __int64 *)(address + index * bytes);
     unsigned __int64 value = *pValue;
-    unsigned __int64 mask = U64C(0xFFFFFFFFFFFF) >> ((8 - bytes) * 8);
+    unsigned __int64 mask = U64C(0xFFFFFFFFFFFFFFFF) >> ((8 - bytes) * 8);
     return (value & mask);
 }
 
@@ -1586,8 +1586,12 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
         if (sizeMask & NSFscaleFilepos)
             scaleFposByNodeSize = true;
         bytesPerPosition = (sizeMask & 0xF);
-
         firstSequence = readPacked64(data);
+        if (isLeaf())
+            minPosition = readPacked64(data);
+        else
+            minPosition = firstSequence;
+
         positionData = data;
 
         if (bytesPerPosition != 0)
@@ -1624,13 +1628,22 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     //Currently the uncompressed data is still in memory (if it was moved to the end it could be thrown away)
                     //However that provides the scope to dynamically throw away the decompressed data
                     size32_t compressedLen = readPacked32(data);
-                    Owned<IExpander> exp = createLZWExpander(true);
-                    int len=exp->init(data);
-                    if (len!=0)
+                    if (keyHdr->isRowCompressed())
                     {
-                        payload = (byte *)malloc(len);
-                        exp->expand(payload);
-                        ownedPayload = true;
+                        payload = (byte *)data;
+                        rowexp.setown(createRandRDiffExpander());
+                        rowexp->init(data, false);
+                    }
+                    else
+                    {
+                        Owned<IExpander> exp = createLZWExpander(true);
+                        int len=exp->init(data);
+                        if (len!=0)
+                        {
+                            payload = (byte *)malloc(len);
+                            exp->expand(payload);
+                            ownedPayload = true;
+                        }
                     }
                     data += compressedLen;
                     expandedSize += len;
@@ -1665,7 +1678,7 @@ offset_t CJHInplaceBranchNode::getFPosAt(unsigned int index) const
     if (scaleFposByNodeSize)
         delta *= getNodeDiskSize();
 
-    return firstSequence + delta;
+    return minPosition + delta;
 }
 
 
@@ -1684,7 +1697,11 @@ size32_t CJHInplaceBranchNode::getSizeAt(unsigned int index) const
 
 offset_t CJHInplaceLeafNode::getFPosAt(unsigned int index) const
 {
-    throwUnexpected();
+    //Required for the TLK!
+    offset_t filePosition = minPosition;
+    if (bytesPerPosition > 0)
+        filePosition += readBytesEntry64(positionData, index, bytesPerPosition);
+    return filePosition;
 }
 
 bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst) const
@@ -1693,36 +1710,44 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst) const
     if (dst)
     {
         unsigned len = keyCompareLen;
-        if (payloadOffsets.ordinality())
+        if (rowexp)
         {
-            size32_t offset = 0;
-            if (index)
-                offset = payloadOffsets.item(index-1);
-            size32_t endOffset = payloadOffsets.item(index);
-            size32_t copyLen = endOffset - offset;
-
-            if (copyLen)
-            {
-                memcpy(dst + len, payload + offset, copyLen);
-                len += copyLen;
-            }
+            rowexp->expandRow(dst+len,index,0,keyLen-keyCompareLen);
+            len = keyLen;
         }
         else
         {
-            //Fixed size payload...
-            unsigned payloadSize = keyLen - keyCompareLen;
-            if (likely(payloadSize))
+            if (payloadOffsets.ordinality())
             {
-                memcpy(dst + len, payload + index * payloadSize, payloadSize);
-                len += payloadSize;
+                size32_t offset = 0;
+                if (index)
+                    offset = payloadOffsets.item(index-1);
+                size32_t endOffset = payloadOffsets.item(index);
+                size32_t copyLen = endOffset - offset;
+
+                if (copyLen)
+                {
+                    memcpy(dst + len, payload + offset, copyLen);
+                    len += copyLen;
+                }
+            }
+            else
+            {
+                //Fixed size payload...
+                unsigned payloadSize = keyLen - keyCompareLen;
+                if (likely(payloadSize))
+                {
+                    memcpy(dst + len, payload + index * payloadSize, payloadSize);
+                    len += payloadSize;
+                }
             }
         }
         if (keyHdr->hasSpecialFileposition())
         {
-            offset_t filePosition = firstSequence;
+            offset_t filePosition = minPosition;
             if (bytesPerPosition > 0)
                 filePosition += readBytesEntry64(positionData, index, bytesPerPosition);
-            memcpy(dst+len, &filePosition, sizeof(offset_t));
+            _cpyrev8(dst+len, &filePosition);
         }
     }
     return true;
@@ -1897,8 +1922,12 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     if (0xffff == hdr.numKeys)
         return false;
 
-    if ((0 == hdr.numKeys) && (keyLen != keyCompareLen))
-        lzwcomp.open(compressed.mem(), nodeSize, isVariable, rowCompression);
+    if (0 == hdr.numKeys)
+    {
+        firstSequence = sequence;
+        if (keyLen != keyCompareLen)
+            lzwcomp.open(compressed.mem(), nodeSize, isVariable, rowCompression);
+    }
 
     __uint64 savedMinPosition = minPosition;
     __uint64 savedMaxPosition = maxPosition;
@@ -1990,7 +2019,7 @@ unsigned CInplaceLeafWriteNode::getDataSize()
     if (minPosition != maxPosition)
         bytesPerPosition = bytesRequired(maxPosition-minPosition);
 
-    unsigned posSize = 1 + sizePacked(minPosition) + bytesPerPosition * positions.ordinality();
+    unsigned posSize = 1 + sizePacked(firstSequence) + sizePacked(minPosition) + bytesPerPosition * positions.ordinality();
     unsigned offsetSize = payloadLengths.ordinality() * 2;  // MORE: Could probably compress
     unsigned payloadSize = 0;
     if (keyLen != keyCompareLen)
@@ -2022,6 +2051,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
         bool useUncompressed = false; // Implement in HPCC-19115
         byte sizeMask = (byte)bytesPerPosition | (useUncompressed ? NSFuncompressedPayload : 0);
         data.append(sizeMask);
+        serializePacked(data, firstSequence);
         serializePacked(data, minPosition);
         if (bytesPerPosition != 0)
         {
