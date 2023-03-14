@@ -54,6 +54,9 @@ function formatQuery(_filter, mine, currentUser) {
     if (mine === true) {
         filter.Owner = currentUser?.username;
     }
+    if (filter.Type === true) {
+        filter.Type = "archived workunits";
+    }
     logger.debug(filter);
     return filter;
 }
