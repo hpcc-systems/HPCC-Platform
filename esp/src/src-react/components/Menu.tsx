@@ -196,8 +196,13 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     const { theme, themeV9 } = useUserTheme();
 
     const [favorites] = useFavorites();
+    const [favoriteCount, setFavoriteCount] = React.useState(0);
     const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
     const [history] = useHistory();
+
+    React.useEffect(() => {
+        setFavoriteCount(Object.keys(favorites).length);
+    }, [favorites]);
 
     const mainNav = React.useMemo(() => {
         return navSelectedKey(hashPath);
@@ -252,13 +257,21 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
             </Stack.Item>
             <Stack.Item align="center" grow={0}>
                 <IconButton title={nlsHPCC.History} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
-                <IconButton title={nlsHPCC.Favorites} iconProps={{ iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" }} menuProps={{ items: favoriteMenu }} split onClick={() => {
-                    if (isFavorite) {
-                        removeFavorite();
-                    } else {
-                        addFavorite();
-                    }
-                }} styles={{ splitButtonMenuButton: { backgroundColor: theme.palette.themeLighter, border: "none" } }} />
+                <IconButton
+                    title={isFavorite ? nlsHPCC.RemoveFromFavorites : nlsHPCC.AddToFavorites}
+                    iconProps={{ iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" }}
+                    menuProps={favoriteCount ? { items: favoriteMenu } : null}
+                    split={favoriteCount > 0}
+                    splitButtonAriaLabel={nlsHPCC.Favorites}
+                    onClick={() => {
+                        if (isFavorite) {
+                            removeFavorite();
+                        } else {
+                            addFavorite();
+                        }
+                    }}
+                    styles={{ splitButtonMenuButton: { backgroundColor: theme.palette.themeLighter, border: "none" } }}
+                />
             </Stack.Item>
         </Stack>
     </div>;
