@@ -502,26 +502,6 @@ void ParamInfo::cat_type(char *s,int deref,int var)
     }
 }
 
-clarion_special_type_enum ParamInfo::clarion_special_type()
-{
-    if ((type_size[kind]==1)&&((flags&(PF_PTR|PF_REF))==PF_PTR)) {
-        if ((flags&PF_CONST)==0)
-            return cte_cstr;
-        return cte_constcstr;
-    }
-    else if ((flags&(PF_PTR|PF_REF))==(PF_PTR|PF_REF)) { // no support - convert to long
-        return cte_longref;
-    }
-    return cte_normal;
-}
-
-void ParamInfo::out_parameter(const char * pfx, int forclarion)
-{
-    if (forclarion && (clarion_special_type()==cte_cstr))
-        outs("int, ");
-    out_type();
-    outf(" %s%s",pfx,name);
-}
 
 void ParamInfo::out_type(int deref,int var)
 {

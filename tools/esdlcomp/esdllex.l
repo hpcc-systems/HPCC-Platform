@@ -14,7 +14,7 @@ extern unsigned linenum;
 
 extern void yy_flush_buffer (YY_BUFFER_STATE b  );
 
-static enum { LSskip,LSclarion,LSsectionheader,LSsectionbody,LSsectionfooter} state=LSskip;
+static enum { LSskip,LSsectionheader,LSsectionbody,LSsectionfooter} state=LSskip;
 static int   opencurly=0;
 
 static bool check_return(int);
@@ -43,7 +43,6 @@ SCMexportdef    { if (check_return( SCMEXPORTDEF )) return SCMEXPORTDEF; }
 SCMapi  { if (check_return( SCMAPI )) return SCMAPI; }
 SCMinterface    { if (check_return( SCMINTERFACE )) return SCMINTERFACE; }
 SCMenum { if (check_return( SCMENUM )) return SCMENUM; }
-SCMclarion      { if (check_return( SCMCLARION )) return SCMCLARION; }
 SCMend  { if (check_return( SCMEND )) return SCMEND; }
 ESPdefexport    { if (check_return( ESPDEFEXPORT )) return ESPDEFEXPORT;}
 ESPstruct   { if (check_return( ESPSTRUCT )) return ESPSTRUCTREF; else return ESPSTRUCT; }
@@ -227,9 +226,6 @@ bool check_return(int a)
                 case ESPVERSIONDEF:
                     state = LSsectionfooter;
                     return true;
-                case SCMCLARION:
-                    state = LSclarion;
-                    return false;
                 default:
                     output_text();
                     return false;
@@ -248,16 +244,6 @@ bool check_return(int a)
                     return false;
             }
         }
-    }
-    else if (state==LSclarion)
-   {
-        if (a == SCMEND)
-        {
-            state = LSskip;
-        }
-        else
-            output_text();
-        return false;
     }
     if (a == '{')
     {
@@ -293,8 +279,6 @@ YY_BUFFER_STATE getCurrentBuffer()
 
 void output_text()
 {
-    if (state==LSclarion) {
-    }
-    else if (state==LSskip)
+    if (state==LSskip)
         outs((const char*)yytext);
 }
