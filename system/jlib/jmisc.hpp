@@ -339,4 +339,6 @@ extern jlib_decl std::pair<std::string, unsigned> getExternalService(const char 
 
 extern jlib_decl std::pair<std::string, unsigned> getDafileServiceFromConfig(const char *application);
 
+extern jlib_decl char *getHPCCEnvVal(const char *name, const char *defaultValue);
+
 #endif

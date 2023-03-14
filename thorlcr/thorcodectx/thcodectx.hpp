@@ -67,13 +67,19 @@ public:
     virtual char *getPlatform() override { return strdup("thor"); };
     virtual char *getEnv(const char *name, const char *defaultValue) const override
     {
-        const char *val = getenv(name);
-        if (val)
-            return strdup(val);
-        else if (defaultValue)
-            return strdup(defaultValue);
+        char *hpccEnvVal = getHPCCEnvVal(name, defaultValue);
+        if (hpccEnvVal)
+            return hpccEnvVal;
         else
-            return strdup("");
+        {
+            const char *val = getenv(name);
+            if (val)
+                return strdup(val);
+            else if (defaultValue)
+                return strdup(defaultValue);
+            else
+                return strdup("");
+        }
     }
     virtual char *getOS() override
     {
