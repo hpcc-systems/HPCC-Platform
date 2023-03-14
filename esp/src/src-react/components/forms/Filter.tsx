@@ -1,5 +1,6 @@
 import * as React from "react";
 import { DefaultButton, PrimaryButton, Stack } from "@fluentui/react";
+import { useOnEvent } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../layouts/MessageBox";
 import { Fields, Values } from "./Fields";
@@ -23,7 +24,16 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
     const [doSubmit, setDoSubmit] = React.useState(false);
     const [doReset, setDoReset] = React.useState(false);
 
-    const closeFilter = () => setShowFilter(false);
+    const closeFilter = React.useCallback(() => setShowFilter(false), [setShowFilter]);
+
+    const handleKeyup = React.useCallback((evt) => {
+        if (!showFilter) return;
+        if (evt.code === "Enter") {
+            setDoSubmit(true);
+            closeFilter();
+        }
+    }, [closeFilter, showFilter]);
+    useOnEvent(document, "keyup", handleKeyup, true);
 
     return <MessageBox title={nlsHPCC.Filter} show={showFilter} setShow={closeFilter}
         footer={<>

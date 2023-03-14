@@ -27,16 +27,13 @@ const FilterFields: Fields = {
     "Activated": { type: "queries-active-state", label: nlsHPCC.Activated }
 };
 
-function formatQuery(filter: any, mine, currentUser) {
+function formatQuery(filter: any): { [id: string]: any } {
     const retVal = {
         ...filter,
         PriorityLow: filter.Priority,
         PriorityHigh: filter.Priority
     };
     delete retVal.Priority;
-    if (mine === true) {
-        retVal.Owner = currentUser?.username;
-    }
     return retVal;
 }
 
@@ -50,7 +47,7 @@ const defaultUIState = {
 
 interface QueriesProps {
     wuid?: string;
-    filter?: object;
+    filter?: { [id: string]: any };
     sort?: QuerySortItem;
     store?: any;
     page?: number;
@@ -68,7 +65,6 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 }) => {
 
     const [showFilter, setShowFilter] = React.useState(false);
-    const [mine, setMine] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
@@ -80,8 +76,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     }, [store]);
 
     const query = React.useMemo(() => {
-        return formatQuery(filter, mine, currentUser);
-    }, [filter, mine, currentUser]);
+        return formatQuery(filter);
+    }, [filter]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
         persistID: "queries",
@@ -234,12 +230,17 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.PublishedBy === currentUser.username,
             onClick: () => {
-                setMine(!mine);
+                if (filter.PublishedBy === currentUser.username) {
+                    filter.PublishedBy = "";
+                } else {
+                    filter.PublishedBy = currentUser.username;
+                }
+                pushParams(filter);
             }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};

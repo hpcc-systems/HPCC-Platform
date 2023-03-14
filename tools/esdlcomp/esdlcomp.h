@@ -106,8 +106,6 @@ typedef struct esp_xlate_info_
 esp_xlate_info *esp_xlat(const char *from, bool defaultToString=true);
 
 
-enum  clarion_special_type_enum { cte_normal,cte_longref,cte_constcstr,cte_cstr };
-
 void out(const char*, size_t);
 void outs(const char*);
 void outf(const char*,...) __attribute__((format(printf, 1, 2)));
@@ -418,10 +416,6 @@ public:
     char *bytesize(int deref=0);
     bool simpleneedsswap();
     void cat_type(char *s,int deref=0,int var=0);
-    clarion_special_type_enum clarion_special_type();
-    void out_clarion_parameter();
-    void out_clarion_type(bool ret);
-    void out_parameter(const char *pfx,int forclarion=0);
     void out_type(int deref=0,int var=0);
     void typesizeacc(char *accstr,size_t &acc);
     size_t typesizealign(size_t &ofs);
@@ -464,8 +458,6 @@ public:
     const char* getArrayImplType();
 
     bool hasNameTag(){return (typname && !stricmp(typname, "EspTextFile"));}
-
-    void write_clarion_attr_method(bool isSet);
 
     bool hasMapInfo();
     bool write_mapinfo_check(int indents, const char* ctxvar);
@@ -717,7 +709,6 @@ public:
 
 
    void write_header_method();
-   void write_clarion_include_method();
 
     char        *group;
     char        *name;

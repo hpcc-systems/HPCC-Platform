@@ -23,6 +23,7 @@
 #include "wsexcept.hpp"
 #include "txsummary.hpp"
 #include "SecureUser.hpp"
+#include "datamaskingengine.hpp"
 
 #include <stdio.h>
 #include "dllserver.hpp"
@@ -313,6 +314,7 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testStringFunctions);
         CPPUNIT_TEST(testTxSummary);
         CPPUNIT_TEST(testParamEx);
+        CPPUNIT_TEST(testMaskingIntegration);
       //The following require setup, uncomment for development testing for now:
       //CPPUNIT_TEST(testMysql);
       //CPPUNIT_TEST(testCallFunctions); //requires a particular roxie query
@@ -2013,6 +2015,228 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       )!!!";
 
       runTest("param extension", script, input, nullptr, nullptr, 1004);
+    }
+
+    struct HistoricalEvent
+    {
+      LogMsgAudience msgAudience;
+      LogMsgClass    msgClass;
+      StringBuffer   msg;
+      HistoricalEvent(const LogMsgCategory& category, const char* format, va_list arguments)
+      {
+        msgAudience = category.queryAudience();
+        msgClass = category.queryClass();
+        msg.valist_appendf(format, arguments);
+      }
+      HistoricalEvent(const LogMsgCategory& category, const char* _msg)
+      {
+        msgAudience = category.queryAudience();
+        msgClass = category.queryClass();
+        msg.append(_msg);
+      }
+      bool operator == (const HistoricalEvent& right) const
+      {
+        if ((msgAudience == right.msgAudience) && (msgClass == right.msgClass))
+        {
+          if (streq(msg, right.msg))
+            return true;
+          try
+          {
+            return areEquivalentTestXMLStrings(msg, right.msg, true);
+          }
+          catch (IException* e)
+          {
+            e->Release();
+          }
+          catch (...)
+          {
+          }
+        }
+        return false;
+      }
+      bool operator != (const HistoricalEvent& right) const
+      {
+        return !(*this == right);
+      }
+    };
+    using History = std::list<HistoricalEvent>;
+    class CMockTraceMsgSink : public CInterfaceOf<IModularTraceMsgSink>
+    {
+    public:
+      virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override
+      {
+        history.emplace_back(category, format, arguments);
+      }
+      virtual bool rejects(const LogMsgCategory& category) const
+      {
+        return false;
+      }
+    public:
+      History history;
+    };
+    struct SubstituteException {};
+    void testMaskingIntegration()
+    {
+      static constexpr const char* maskingConfigurationText = R"!!!(
+        maskingPlugin:
+          library: datamasker
+          entryPoint: newPartialMaskSerialToken
+          profile:
+          - domain: 'urn:hpcc:unittest'
+            valueType:
+            - name: restricted
+              maskStyle:
+              - name: alternate
+                pattern: +
+              rule:
+              - startToken: <foo>
+                endToken: </foo>
+                contentType: xml
+              - startToken: <bar>
+                endToken: </bar>
+                contentType: json
+      )!!!";
+      static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+        <root>
+          <Request>
+            <foo>foo</foo>
+            <bar>bar</bar>
+            <baz>baz</baz>
+          </Request>
+        </root>
+      )!!";
+      static constexpr const char * traceScript = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" source="Request" target="Request">
+        <es:trace-content select="."/>
+        <es:trace-content select="." skip_mask="true()"/>
+        <es:trace-content select="." content_type="xml"/>
+        <es:trace-content select="." content_type="json"/>
+        <es:trace-content select="." content_type="unrecognized"/>
+        <es:trace-value select="foo" value_type="restricted"/>
+        <es:trace-value select="bar" xpath_value_type="'restricted'" mask_style="alternate"/>
+        <es:trace-value select="baz" value_type="unrecognized" class="information"/>
+        <es:trace-value select="baz" value_type="unrecognized" class="progress"/>
+        <es:trace-value select="baz" value_type="unrecognized" class="warning"/>
+        <es:trace-value select="baz" value_type="unrecognized" class="error"/>
+        <es:trace-value select="*" value_type="ambiguous"/>
+        <es:trace-value select="bar" xpath_value_type="''"/>
+        <es:trace-content select="maskValue(foo, 'restricted')" skip_mask="true()"/>
+        <es:trace-content select="maskValue(bar, 'restricted', 'alternate')" skip_mask="true()"/>
+        <es:trace-content select="maskValue(baz, 'restricted')" skip_mask="true()"/>
+        <es:trace-content select="maskContent(toXmlString(foo))" skip_mask="true()"/>
+        <es:trace-content select="maskContent(toXmlString(foo), 'xml')" skip_mask="true()"/>
+        <es:trace-content select="maskContent(toXmlString(foo), 'json')" skip_mask="true()"/>
+      </es:CustomRequestTransform>
+      )!!";
+      History expected({
+        { MCuserInfo, "<Request><foo>***</foo><bar>***</bar><baz>baz</baz></Request>" },
+        { MCuserInfo, "<Request><foo>foo</foo><bar>bar</bar><baz>baz</baz></Request>" },
+        { MCuserInfo, "<Request><foo>***</foo><bar>bar</bar><baz>baz</baz></Request>" },
+        { MCuserInfo, "<Request><foo>foo</foo><bar>***</bar><baz>baz</baz></Request>" },
+        { MCuserInfo, "<Request><foo>foo</foo><bar>bar</bar><baz>baz</baz></Request>" },
+        { MCuserInfo, "***" },
+        { MCuserInfo, "+++" },
+        { MCuserInfo, "baz" },
+        { MCuserProgress, "baz" },
+        { MCuserWarning, "baz" },
+        { MCuserError, "baz" },
+        { MCuserInfo, "***" },
+        { MCuserInfo, "+++" },
+        { MCuserInfo, "***" },
+        { MCuserInfo, "<foo>***</foo>" },
+        { MCuserInfo, "<foo>***</foo>" },
+        { MCuserInfo, "<foo>foo</foo>" },
+      });
+
+      try {
+        Owned<IEspContext> ctx = createEspContext(nullptr);
+        Owned<CMockTraceMsgSink> sink(new CMockTraceMsgSink());
+        Owned<CModularTracer> tracer(createTracer(*sink));
+        Owned<IDataMaskingEngine> engine(createMaskingEngine(maskingConfigurationText, *tracer));
+        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(ctx, nullptr, LINK(engine));
+        sink->history.clear();
+        scriptContext->setTestMode(true);
+        scriptContext->enableMasking(nullptr, 0);
+        dynamic_cast<CModularTracer&>(scriptContext->tracerRef()).setSink(sink.getLink());
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", "EsdlExample");
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", "EchoPersonInfo");
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", "EchoPersonInfoRequest");
+        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
+        scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, input);
+
+        runTransform(scriptContext, traceScript, ESDLScriptCtxSection_ESDLRequest, "Masking", "masking", 0);
+        bool failed = false;
+        if (sink->history.size() == expected.size())
+        {
+          for (History::iterator aIt = sink->history.begin(), eIt = expected.begin(); eIt != expected.end(); ++aIt, ++eIt)
+          {
+            if (*aIt != *eIt)
+            {
+              fprintf(stdout, "\nExpected: %d/%d/%s\nActual:  %d/%d/%s\n", eIt->msgAudience, eIt->msgClass, eIt->msg.str(), aIt->msgAudience, aIt->msgClass, aIt->msg.str());
+              failed = true;
+            }
+          }
+        }
+        else
+        {
+          unsigned idx = 0;
+          fprintf(stdout, "\nExpected:\n");
+          for (const HistoricalEvent& he : expected)
+            fprintf(stdout, "    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
+          idx = 0;
+          fprintf(stdout, "Actual:\n");
+          for (const HistoricalEvent& he : sink->history)
+            fprintf(stdout, "    %2u: %d/%d/%s\n", ++idx, he.msgAudience, he.msgClass, he.msg.str());
+          failed = true;
+        }
+        CPPUNIT_ASSERT(!failed);
+      }
+      catch (IException *E)
+      {
+        StringBuffer m;
+        fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "masking", E->errorCode(), E->errorMessage(m).str());
+        E->Release();
+        CPPUNIT_ASSERT(false);
+      }
+    }
+    IPTree* createMaskingConfiguration(const char* text)
+    {
+      Owned<IPTree> cfg;
+      try
+      {
+        cfg.setown(createPTreeFromYAMLString(text));
+      }
+      catch (IException* e)
+      {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        fprintf(stdout, "\nexception parsing masking configuration: %s", msg.str());
+        e->Release();
+        throw SubstituteException();
+      }
+      return cfg.getClear();
+    }
+    IDataMaskingEngine* createMaskingEngine(const char* text, ITracer& tracer)
+    {
+      bool failed = false;
+      Owned<IDataMaskingEngine> engine(new DataMasking::CEngine(LINK(&tracer)));
+      Owned<IPTree> cfg(createMaskingConfiguration(text));
+      Owned<IPTreeIterator> it(cfg->getElements("//maskingPlugin"));
+      ForEach(*it)
+      {
+        if (!engine->loadProfiles(it->query()))
+        {
+          fprintf(stdout, "loadProfiles failed\n");
+          failed = true;
+        }
+      }
+      CPPUNIT_ASSERT(!failed);
+      return engine.getClear();
+    }
+    CModularTracer* createTracer(CMockTraceMsgSink& sink)
+    {
+      Owned<CModularTracer> tracer(new CModularTracer());
+      tracer->setSink(LINK(&sink));
+      return tracer.getClear();
     }
 
     void testHTTPPostXml()

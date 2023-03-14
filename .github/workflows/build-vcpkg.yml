@@ -52,7 +52,7 @@ jobs:
           echo 'mount_build=source="${{ github.workspace }}/build",target=/hpcc-dev/build,type=bind,consistency=cached' >> $GITHUB_OUTPUT
           community_ref=${{ github.ref }}
           echo "community_ref=$community_ref" >> $GITHUB_OUTPUT
-          echo "internal_ref=$(echo $community_ref | sed 's/community/internal/')" >> $GITHUB_OUTPUT
+          echo "internal_ref=${{ github.base_ref }}" >> $GITHUB_OUTPUT
           community_tag=$(echo $community_ref | cut -d'/' -f3)
           echo "community_tag=$community_tag" >> $GITHUB_OUTPUT
           echo "internal_tag=$(echo $community_tag | sed 's/community/internal/')" >> $GITHUB_OUTPUT
@@ -87,13 +87,14 @@ jobs:
             event_name: "schedule"
           - os: ubuntu-20.04
             event_name: "schedule"
-          - os: ubuntu-18.04
-            event_name: "schedule"
           - os: centos-8
             event_name: "schedule"
           - os: centos-7
             event_name: "pull_request"
           - os: amazonlinux
+            event_name: "schedule"
+          - os: centos-7
+            ln: true
             event_name: "schedule"
       fail-fast: false
 
@@ -107,7 +108,7 @@ jobs:
           path: ${{ needs.preamble.outputs.folder_platform }}
 
       - name: Checkout LN
-        if: ${{ matrix.ln }}
+        if: ${{ matrix.ln && contains(matrix.event_name, github.event_name) }}
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository_owner }}/LN
@@ -205,12 +206,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: "ubuntu-18.04"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=${{ needs.preamble.outputs.include_plugins }} -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
-            event_name: "schedule"
           - os: "ubuntu-20.04"
             mono: "mono"
             sudo: "sudo"

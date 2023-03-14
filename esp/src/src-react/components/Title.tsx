@@ -1,5 +1,6 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { ContextualMenuItemType, DefaultButton, IconButton, IContextualMenuItem, IIconProps, IPersonaSharedProps, Link, mergeStyleSets, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { CounterBadgeProps, CounterBadge } from "@fluentui/react-components";
 import { Level } from "@hpcc-js/util";
 import { useBoolean } from "@fluentui/react-hooks";
 import { Toaster } from "react-hot-toast";
@@ -20,11 +21,11 @@ import { switchTechPreview } from "./controls/ComingSoon";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
 import { toasterScale } from "./controls/CustomToaster";
+import { AppPanel } from "./AppPanel";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
 const waffleIcon: IIconProps = { iconName: "WaffleOffice365" };
-const searchboxStyles = { margin: "5px", height: "auto", width: "100%" };
 
 const personaStyles = {
     root: {
@@ -42,12 +43,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const theme = useTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
     const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
-    const [logIconColor, setLogIconColor] = React.useState(theme.semanticColors.link);
+    const [logIconColor, setLogIconColor] = React.useState<CounterBadgeProps["color"]>();
 
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
     const { currentUser } = useMyAccount();
-    const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
+    const [showAppPanel, { setTrue: openAppPanel, setFalse: dismissAppPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
     const [showEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active, true);
@@ -65,17 +66,6 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         };
     }, [currentUser]);
 
-    const onRenderNavigationContent: IRenderFunction<IPanelProps> = React.useCallback(
-        (props, defaultRender) => (
-            <>
-                <IconButton iconProps={waffleIcon} onClick={dismissPanel} style={{ width: 48, height: 48 }} />
-                <span style={searchboxStyles} />
-                {defaultRender!(props)}
-            </>
-        ),
-        [dismissPanel],
-    );
-
     const [log, logLastUpdated] = useECLWatchLogger();
 
     const [_modernMode, setModernMode] = useUserStore(ModernMode, String(true));
@@ -86,6 +76,36 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         },
         [setModernMode]
     );
+
+    const [logCount, setLogCount] = React.useState(0);
+    React.useEffect(() => {
+        const errorCodes = [Level.alert, Level.critical, Level.emergency, Level.error];
+        const warningCodes = [Level.warning];
+        const errorAndWarningCodes = errorCodes.concat(warningCodes);
+
+        const logCounts = {
+            errors: log.filter(msg => errorCodes.includes(msg.level)).length,
+            warnings: log.filter(msg => warningCodes.includes(msg.level)).length,
+            other: log.filter(msg => !errorAndWarningCodes.includes(msg.level)).length,
+        };
+
+        let count = 0;
+        let color: CounterBadgeProps["color"];
+
+        if (logCounts.errors > count) {
+            count = logCounts.errors;
+            color = "danger";
+        } else if (logCounts.warnings > count) {
+            count = logCounts.warnings;
+            color = "important";
+        } else {
+            count = logCounts.other;
+            color = "informative";
+        }
+
+        setLogCount(count);
+        setLogIconColor(color);
+    }, [log, logLastUpdated]);
 
     const advMenuProps = React.useMemo(() => {
         return {
@@ -154,34 +174,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             background: "transparent",
             minWidth: 48,
             padding: "0 10px 0 4px",
-            color: logIconColor
-        },
-        errorsWarningsCount: {
-            margin: "-3px 0 0 -3px"
+            color: theme.semanticColors.link
         }
-    }), [logIconColor]);
-
-    React.useEffect(() => {
-        switch (log[0]?.level) {
-            case Level.alert:
-            case Level.critical:
-            case Level.emergency:
-                setLogIconColor(theme.semanticColors.severeWarningIcon);
-                break;
-            case Level.error:
-                setLogIconColor(theme.semanticColors.errorIcon);
-                break;
-            case Level.warning:
-                setLogIconColor(theme.semanticColors.warningIcon);
-                break;
-            case Level.info:
-            case Level.notice:
-            case Level.debug:
-            default:
-                setLogIconColor(theme.semanticColors.link);
-                break;
-        }
-    }, [log, logLastUpdated, theme]);
+    }), [theme.semanticColors.link]);
 
     React.useEffect(() => {
         if (!currentUser.username) return;
@@ -210,7 +205,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             <Stack.Item align="center">
                 <Stack horizontal>
                     <Stack.Item>
-                        <IconButton iconProps={waffleIcon} onClick={openPanel} style={{ width: 48, height: 48, color: theme.palette.themeDarker }} />
+                        <IconButton iconProps={waffleIcon} onClick={openAppPanel} style={{ width: 48, height: 48, color: theme.palette.themeDarker }} />
                     </Stack.Item>
                     <Stack.Item align="center">
                         <Link href="#/activities">
@@ -234,8 +229,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         </Stack.Item>
                     }
                     <Stack.Item align="center">
-                        <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: log.length > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
-                            <span className={btnStyles.errorsWarningsCount}>{`(${log.length})`}</span>
+                        <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: logCount > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
+                            <CounterBadge appearance="filled" size="small" color={logIconColor} count={logCount} />
                         </DefaultButton>
                     </Stack.Item>
                     <Stack.Item align="center">
@@ -248,17 +243,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 }} />
             </Stack.Item>
         </Stack>
-        <Panel type={PanelType.smallFixedNear}
-            onRenderNavigationContent={onRenderNavigationContent}
-            headerText={nlsHPCC.Apps}
-            isLightDismiss
-            isOpen={isOpen}
-            onDismiss={dismissPanel}
-            hasCloseButton={false}
-        >
-            <DefaultButton text="Kibana" href="https://www.elastic.co/kibana/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=www.elastic.co" />} />
-            <DefaultButton text="K8s Dashboard" href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=kubernetes.io" />} />
-        </Panel>
+        <AppPanel show={showAppPanel} onDismiss={dismissAppPanel} />
         <About eclwatchVersion="9" show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
         <TitlebarConfig toolbarThemeDefaults={toolbarThemeDefaults} showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig} />

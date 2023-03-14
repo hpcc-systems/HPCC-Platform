@@ -145,6 +145,8 @@ inline StringBuffer & GetHostName(StringBuffer &str) { return str.append(GetCach
 extern jlib_decl IpAddress &GetHostIp(IpAddress &ip);
 extern jlib_decl IpAddress &localHostToNIC(IpAddress &ip);  
 
+extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes);
+
 class jlib_decl SocketEndpoint : extends IpAddress
 {
 public:

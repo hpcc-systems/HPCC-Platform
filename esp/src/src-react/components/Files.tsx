@@ -39,7 +39,7 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter, mine, currentUser) {
+function formatQuery(_filter): { [id: string]: any } {
     const filter = { ..._filter };
     if (filter.LogicalFiles || filter.SuperFiles) {
         filter.FileType = "";
@@ -71,9 +71,6 @@ function formatQuery(_filter, mine, currentUser) {
     if (filter.EndDate) {
         filter.EndDate = new Date(filter.StartDate).toISOString();
     }
-    if (mine === true) {
-        filter.Owner = currentUser?.username;
-    }
     return filter;
 }
 
@@ -82,7 +79,7 @@ const defaultUIState = {
 };
 
 interface FilesProps {
-    filter?: object;
+    filter?: { [id: string]: any };
     sort?: QuerySortItem;
     store?: any;
     page?: number;
@@ -106,7 +103,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [showRenameFile, setShowRenameFile] = React.useState(false);
     const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
-    const [mine, setMine] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [viewByScope, setViewByScope] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
@@ -117,8 +113,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     }, [store]);
 
     const query = React.useMemo(() => {
-        return formatQuery(filter, mine, currentUser);
-    }, [filter, mine, currentUser]);
+        return formatQuery(filter);
+    }, [filter]);
 
     const { Grid, GridPagination, selection, refreshTable, copyButtons } = useFluentPagedGrid({
         persistID: "files",
@@ -287,12 +283,17 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
             onClick: () => {
-                setMine(!mine);
+                if (filter.Owner === currentUser.username) {
+                    filter.Owner = "";
+                } else {
+                    filter.Owner = currentUser.username;
+                }
+                pushParams(filter);
             }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
     const filterFields: Fields = {};

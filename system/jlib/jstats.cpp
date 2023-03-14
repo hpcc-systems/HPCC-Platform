@@ -677,11 +677,11 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
     return dft;
 }
 
-constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
+static constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
 {
     return
         (measure == SMeasureTimeNs) ? StatsMergeSum :
-        (measure == SMeasureTimestampUs) ? StatsMergeKeepNonZero :
+        (measure == SMeasureTimestampUs) ? StatsMergeFirst : // NOTE - this is not 100% accurate for some "WhenLast" stats, which use StatsMergeLast
         (measure == SMeasureCount) ? StatsMergeSum :
         (measure == SMeasureSize) ? StatsMergeSum :
         (measure == SMeasureLoad) ? StatsMergeMax :
@@ -755,7 +755,8 @@ constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
 //These are the macros to use to define the different entries in the stats meta table
 //#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
 #define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeSum, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENFIRSTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeFirst, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENLASTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeLast, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -784,14 +785,14 @@ public:
 static const constexpr StatisticMeta statsMetaData[StMax] = {
     { StKindNone, SMeasureNone, StatsMergeSum, StKindNone, StKindNone, { "none" }, { "@none" } },
     { StKindAll, SMeasureAll, StatsMergeSum, StKindAll, StKindAll, { "all" }, { "@all" } },
-    { WHENSTAT(GraphStarted) }, // Deprecated - use WhenStart
-    { WHENSTAT(GraphFinished) }, // Deprecated - use WhenFinished
-    { WHENSTAT(FirstRow) },
-    { WHENSTAT(QueryStarted) }, // Deprecated - use WhenStart
-    { WHENSTAT(QueryFinished) }, // Deprecated - use WhenFinished
-    { WHENSTAT(Created) },
-    { WHENSTAT(Compiled) },
-    { WHENSTAT(WorkunitModified) },
+    { WHENFIRSTSTAT(GraphStarted) }, // Deprecated - use WhenStart
+    { WHENLASTSTAT(GraphFinished) }, // Deprecated - use WhenFinished
+    { WHENFIRSTSTAT(FirstRow) },
+    { WHENFIRSTSTAT(QueryStarted) }, // Deprecated - use WhenStart
+    { WHENLASTSTAT(QueryFinished) }, // Deprecated - use WhenFinished
+    { WHENFIRSTSTAT(Created) },
+    { WHENFIRSTSTAT(Compiled) },
+    { WHENFIRSTSTAT(WorkunitModified) },
     { TIMESTAT(Elapsed) },
     { TIMESTAT(LocalExecute) },
     { TIMESTAT(TotalExecute) },
@@ -869,8 +870,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(TotalNested) },
     { TIMESTAT(Generate) },
     { CYCLESTAT(Generate) },
-    { WHENSTAT(Started) },
-    { WHENSTAT(Finished) },
+    { WHENFIRSTSTAT(Started) },
+    { WHENLASTSTAT(Finished) },
     { NUMSTAT(AnalyseExprs) },
     { NUMSTAT(TransformExprs) },
     { NUMSTAT(UniqueAnalyseExprs) },
@@ -934,6 +935,10 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(BlobFetch) },
     { CYCLESTAT(BlobFetch) },
     { SIZESTAT(PeakSpillFile) },
+    { TIMESTAT(AgentQueue) },
+    { CYCLESTAT(AgentQueue) },
+    { TIMESTAT(IBYTIDelay) },
+    { CYCLESTAT(IBYTIDelay) },
 };
 
 
@@ -1217,7 +1222,13 @@ unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int6
             return newValue;
         else
             return prevValue;
+    case StatsMergeFirst:
+        if (newValue && ((prevValue > newValue) || !prevValue))
+            return newValue;
+        else
+            return prevValue;
     case StatsMergeMax:
+    case StatsMergeLast:
         if (prevValue < newValue)
             return newValue;
         else
@@ -2341,6 +2352,10 @@ void CRuntimeStatistic::merge(unsigned __int64 otherValue, StatsMergeAction merg
     case StatsMergeMin:
         value.store_min(otherValue);
         break;
+    case StatsMergeFirst:
+        value.store_first(otherValue);
+        break;
+    case StatsMergeLast:
     case StatsMergeMax:
         value.store_max(otherValue);
         break;
@@ -2564,14 +2579,21 @@ StringBuffer & CRuntimeStatisticCollection::toStr(StringBuffer &str) const
 {
     ForEachItem(iStat)
     {
+        StatisticKind kind = getKind(iStat);
+        StatisticKind serialKind = querySerializedKind(kind);
+        if (kind != serialKind)
+            continue; // ignore - we will roll this one into the corresponding serialized value's output
         unsigned __int64 value = values[iStat].get();
+        StatisticKind rawKind = queryRawKind(kind);
+        if (kind != rawKind)
+        {
+            // roll raw values into the corresponding serialized value, if present...
+            unsigned __int64 rawValue = getStatisticValue(rawKind);
+            if (rawValue)
+                value += convertMeasure(rawKind, kind, rawValue);
+        }                
         if (value)
         {
-            StatisticKind kind = getKind(iStat);
-            StatisticKind serialKind = querySerializedKind(kind);
-            if (kind != serialKind)
-                value = convertMeasure(kind, serialKind, value);
-
             const char * name = queryStatisticName(serialKind);
             str.append(' ').append(name).append("=");
             formatStatistic(str, value, serialKind);
@@ -2815,6 +2837,8 @@ static bool isWorthReportingMergedValue(StatisticKind kind)
     case StatsMergeSum:
     case StatsMergeMin:
     case StatsMergeMax:
+    case StatsMergeFirst:
+    case StatsMergeLast:
         break;
     default:
         return false;

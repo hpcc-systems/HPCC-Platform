@@ -256,6 +256,7 @@ function useFluentStoreGrid({
         setKey="set"
         layoutMode={DetailsListLayoutMode.justified}
         selection={selectionHandler}
+        isSelectedOnFocus={false}
         selectionPreservedOnEmptyClick={true}
         onItemInvoked={this._onItemInvoked}
         onColumnHeaderClick={onColumnClick}

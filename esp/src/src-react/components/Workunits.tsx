@@ -34,7 +34,7 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
 };
 
-function formatQuery(_filter, mine, currentUser) {
+function formatQuery(_filter): { [id: string]: any } {
     const filter = { ..._filter };
     if (filter.LastNDays) {
         const end = new Date();
@@ -51,8 +51,11 @@ function formatQuery(_filter, mine, currentUser) {
             filter.EndDate = new Date(filter.EndDate).toISOString();
         }
     }
-    if (mine === true) {
-        filter.Owner = currentUser?.username;
+    if (filter.Type === true) {
+        filter.Type = "archived workunits";
+    }
+    if (filter.Type === true) {
+        filter.Type = "archived workunits";
     }
     logger.debug(filter);
     return filter;
@@ -69,7 +72,7 @@ const defaultUIState = {
 };
 
 interface WorkunitsProps {
-    filter?: object;
+    filter?: { [id: string]: any };
     sort?: QuerySortItem;
     store?: WUQueryStore;
     page?: number;
@@ -88,14 +91,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
 
     const [showFilter, setShowFilter] = React.useState(false);
-    const [mine, setMine] = React.useState(false);
     const { currentUser } = useMyAccount();
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
     const query = React.useMemo(() => {
-        return formatQuery(filter, mine, currentUser);
-    }, [currentUser, filter, mine]);
+        return formatQuery(filter);
+    }, [filter]);
 
     const gridStore = React.useMemo(() => {
         return store ? store : CreateWUQueryStore();
@@ -249,10 +251,17 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             onClick: () => { setShowFilter(true); }
         },
         {
-            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
-            onClick: () => { setMine(!mine); }
+            key: "mine", text: nlsHPCC.Mine, disabled: !currentUser?.username, iconProps: { iconName: "Contact" }, canCheck: true, checked: filter.Owner === currentUser.username,
+            onClick: () => {
+                if (filter.Owner === currentUser.username) {
+                    filter.Owner = "";
+                } else {
+                    filter.Owner = currentUser.username;
+                }
+                pushParams(filter);
+            }
         },
-    ], [currentUser, hasFilter, mine, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [currentUser, filter, hasFilter, refreshTable, selection, setShowAbortConfirm, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {

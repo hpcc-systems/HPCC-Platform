@@ -29,7 +29,7 @@
 #The name of your "upstream" git remote
 UPSTREAM=upstream
 
-while getopts “d:fhlpt:n:u:b:r:a:” opt; do
+while getopts “d:fhvlpt:n:u:b:r:a:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
     n) CUSTOM_TAG_NAME=$OPTARG ;;
@@ -41,6 +41,7 @@ while getopts “d:fhlpt:n:u:b:r:a:” opt; do
     b) INPUT_BUILD_TYPE=$OPTARG ;;
     r) UPSTREAM=$OPTARG ;;
     f) FORCE=1 ;;
+    v) BUILDKIT_PROGRESS=plain ;;
     h) echo "Usage: incr.sh [options]"
        echo "    -d <docker-repo>   Specify the repo to publish images to"
        echo "    -f                 Force build from scratch"
@@ -53,6 +54,7 @@ while getopts “d:fhlpt:n:u:b:r:a:” opt; do
        echo "    -t <num-threads>   Override the number of build threads"
        echo "    -u <user>          Specify the build user"
        echo "    -a <pat>           Personal access token for github packages"
+       echo "    -v                 use verbose buildkit mode"
        exit
        ;;
   esac

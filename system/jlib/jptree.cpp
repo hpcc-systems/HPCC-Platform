@@ -19,6 +19,7 @@
 #include <unordered_set>
 #include <string>
 #include <tuple>
+#include <algorithm>
 
 #include "platform.h"
 #include "jarray.hpp"
@@ -8695,7 +8696,6 @@ static void holdLoop()
 }
 #endif
 
-#if defined(__linux__)
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute);
 
 class CConfigUpdater : public CInterface
@@ -8711,15 +8711,47 @@ class CConfigUpdater : public CInterface
     CriticalSection notifyFuncCS;
     unsigned notifyFuncId = 0;
     std::unordered_map<unsigned, ConfigUpdateFunc> notifyConfigUpdates;
+    std::vector<unsigned> pendingInitializeFuncIds;
 
 public:
-    CConfigUpdater(const char *_absoluteConfigFilename, IPropertyTree *_componentDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
-        : absoluteConfigFilename(_absoluteConfigFilename), componentDefault(_componentDefault), componentTag(_componentTag), envPrefix(_envPrefix), legacyFilename(_legacyFilename), mapper(_mapper), altNameAttribute(_altNameAttribute)
+    CConfigUpdater()
     {
+    }
+    bool isInitialized() const
+    {
+        return args.ordinality(); // NB: null terminated, so always >=1 if initialized
+    }
+    void init(const char *_absoluteConfigFilename, IPropertyTree *_componentDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
+    {
+        dbgassertex(!isInitialized());
+        absoluteConfigFilename.set(_absoluteConfigFilename);
+        componentDefault.set(_componentDefault);
+        componentTag.set(_componentTag);
+        envPrefix.set(_envPrefix);
+        legacyFilename.set(_legacyFilename);
+        mapper = _mapper;
+        altNameAttribute.set(_altNameAttribute);
         while (const char *arg = *argv++)
             args.append(arg);
         args.append(nullptr);
 
+        Owned<IPropertyTree> config = getComponentConfig();
+        Owned<IPropertyTree> global = getGlobalConfig();
+        while (pendingInitializeFuncIds.size())
+        {
+            unsigned notifyFuncId = pendingInitializeFuncIds.back();
+            pendingInitializeFuncIds.pop_back();
+            ConfigUpdateFunc notifyFunc = notifyConfigUpdates[notifyFuncId];
+            notifyFunc(config, global);
+        }
+    }
+    bool startMonitoring()
+    {
+#if !defined(__linux__) // file moinitoring only supported in Linux (because createFileEventWatcher only implemented in Linux at the moment)
+        return false;
+#endif
+        if (0 == absoluteConfigFilename.length() || (nullptr != fileWatcher.get()))
+            return false;
         auto updateFunc = [&](const char *filename, FileWatchEvents events)
         {
             bool changed = containsFileWatchEvents(events, FileWatchEvents::closedWrite) && streq(filename, configFilename);
@@ -8751,18 +8783,15 @@ public:
                 absoluteConfigFilename.set(std::get<0>(result).c_str());
             }
         };
+        fileWatcher.setown(createFileEventWatcher(updateFunc));
 
-        if (absoluteConfigFilename.length())
-        {
-            fileWatcher.setown(createFileEventWatcher(updateFunc));
-
-            // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
-            StringBuffer path, filename;
-            splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
-            configFilename.set(filename);
-            fileWatcher->add(path, FileWatchEvents::anyChange);
-            fileWatcher->start();
-        }
+        // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
+        StringBuffer path, filename;
+        splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
+        configFilename.set(filename);
+        fileWatcher->add(path, FileWatchEvents::anyChange);
+        fileWatcher->start();
+        return true;
     }
     void executeCallbacks(IPropertyTree *oldComponentConfiguration, IPropertyTree *oldGlobalConfiguration)
     {
@@ -8779,23 +8808,46 @@ public:
             }
         }
     }
-    unsigned addNotifyFunc(ConfigUpdateFunc notifyFunc)
+    unsigned addNotifyFunc(ConfigUpdateFunc notifyFunc, bool callWhenInstalled)
     {
         CriticalBlock b(notifyFuncCS);
         notifyFuncId++;
         notifyConfigUpdates[notifyFuncId] = notifyFunc;
+        if (callWhenInstalled)
+        {
+            if (isInitialized())
+                notifyFunc(getComponentConfigSP(), getGlobalConfigSP());
+            else
+            {
+                // If the configuration is not yet be loaded, track notify callbacks that
+                // want to be initialized on install, and call during CConfigUpdater::init.
+                pendingInitializeFuncIds.push_back(notifyFuncId);
+            }
+        }
         return notifyFuncId;
     }
     bool removeNotifyFunc(unsigned funcId)
     {
         CriticalBlock b(notifyFuncCS);
-        return notifyConfigUpdates.erase(funcId) > 0;
+        auto it = notifyConfigUpdates.find(funcId);
+        if (it == notifyConfigUpdates.end())
+            return false;
+
+        ConfigUpdateFunc notifyFunc = it->second;
+        notifyConfigUpdates.erase(it);
+        if (!isInitialized())
+        {
+           auto it = std::remove(pendingInitializeFuncIds.begin(), pendingInitializeFuncIds.end(), funcId);
+           pendingInitializeFuncIds.erase(it, pendingInitializeFuncIds.end());
+        }
+        return true;
     }
 };
 
 static CConfigUpdater *configFileUpdater = nullptr;
-MODULE_INIT(INIT_PRIORITY_STANDARD)
+MODULE_INIT(INIT_PRIORITY_JPTREE)
 {
+    configFileUpdater = new CConfigUpdater();
     return true;
 }
 
@@ -8804,49 +8856,29 @@ MODULE_EXIT()
     ::Release(configFileUpdater);
 }
 
-unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
+unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc, bool callWhenInstalled)
 {
-    if (!configFileUpdater)
-        WARNLOG("installConfigUpdateHook(): configuration updater not installed");
-    else
-        return configFileUpdater->addNotifyFunc(notifyFunc);
-    return 0;
+    if (!configFileUpdater) // NB: installConfigUpdateHook should always be called after configFileUpdater is initialized
+        return 0;
+    return configFileUpdater->addNotifyFunc(notifyFunc, callWhenInstalled);
 }
 
 void removeConfigUpdateHook(unsigned notifyFuncId)
 {
     if (0 == notifyFuncId)
         return;
-    if (!configFileUpdater)
-    {
-        WARNLOG("removeConfigUpdateHook(): configuration updater not installed");
+    if (!configFileUpdater) // NB: removeConfigUpdateHook should always be called after configFileUpdater is initialized
         return;
-    }
     if (!configFileUpdater->removeNotifyFunc(notifyFuncId))
         WARNLOG("removeConfigUpdateHook(): notifyFuncId %u not installed", notifyFuncId);
 }
 
 void executeConfigUpdaterCallbacks()
 {
-    if (!configFileUpdater)
-        WARNLOG("executeConfigUpdaterCallbacks(): configuration updater not installed");
-    else
-        configFileUpdater->executeCallbacks(componentConfiguration.getLink(), globalConfiguration.getLink());
+    if (!configFileUpdater) // NB: executeConfigUpdaterCallbacks should always be called after configFileUpdater is initialized
+        return;
+    configFileUpdater->executeCallbacks(componentConfiguration.getLink(), globalConfiguration.getLink());
 }
-#else
-unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
-{
-    return 0;
-}
-
-void removeConfigUpdateHook(unsigned notifyFuncId)
-{
-}
-
-void executeConfigUpdaterCallbacks()
-{
-}
-#endif // __linux__
 
 void CConfigUpdateHook::clear()
 {
@@ -8865,9 +8897,7 @@ void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhen
         id = configCBId.load(std::memory_order_acquire);
         if ((unsigned)-1 == id)
         {
-            if (callWhenInstalled)
-                callbackFunc(getComponentConfigSP(), getGlobalConfigSP());
-            id = installConfigUpdateHook(callbackFunc);
+            id = installConfigUpdateHook(callbackFunc, callWhenInstalled);
             configCBId.store(id, std::memory_order_release);
         }
     }
@@ -9021,8 +9051,10 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
 
 jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute, bool monitor)
 {
-    if (componentConfiguration)
+    assertex(configFileUpdater); // NB: loadConfiguration should always be called after configFileUpdater is initialized
+    if (configFileUpdater->isInitialized())
         throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+
     auto result = doLoadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
 
     componentConfiguration.setown(std::get<1>(result));
@@ -9037,16 +9069,15 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
      * on-demand, which means this mechanism is sufficient to cover most cases.
      * 
      * In bare-metal the monitoring mechanism will similarly spot any legacy config file changes, e.g.
-     * that would be refreshed by during a 'service hpcc-init setup'.
+     * that would be refreshed during a 'service hpcc-init setup'.
      * Some bare-metal code relies on directly interrogating the environment, for those situations, there is
      * also a default triggering mechanism (see executeConfigUpdaterCallbacks in daclient.cpp) that will cause any
      * installed config hooks to be called when an environment change is detected e.g when pushed to Dali)
      */
 
-#if defined(__linux__)
+    configFileUpdater->init(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
     if (monitor)
-        configFileUpdater = new CConfigUpdater(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
-#endif
+        configFileUpdater->startMonitoring();
     return componentConfiguration.getLink();
 }
 

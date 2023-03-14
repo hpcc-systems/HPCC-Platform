@@ -432,8 +432,8 @@ static bool prepareToResubmitFailedPublisherTasks(const char *publisherWuid, Str
     if (!progress)
        throw MakeStringException(-1,"DFUWU: Could not open progress section of publisher workunit %s", publisherWuid);
     DFUstate state = decodeDFUstate(progress->queryProp("@state"));
-    if (state!=DFUstate_aborted && state!=DFUstate_failed)
-       throw MakeStringException(-1,"DFUWU: Can only resubmit publisher workunits that are in a failed or aborted state %s", publisherWuid);
+    if (state!=DFUstate_aborted && state!=DFUstate_failed && state!=DFUstate_unknown)
+       throw MakeStringException(-1,"DFUWU: Can only resubmit publisher workunits that are in a failed, unknown, or aborted state %s", publisherWuid);
 
     unsigned taskCount = 0;
     unsigned tasksFinished = 0;
@@ -3218,6 +3218,8 @@ public:
     {
         IDFUprogress *progress = publisherWu->queryUpdateProgress();
         unsigned taskId = progress->incPublisherTaskCount();
+        if (progress->getState()==DFUstate_unknown)
+            progress->setState(DFUstate_started);
 
         StringBuffer wuRoot;
         getXPath(wuRoot, publisherWu->queryId(), taskId);

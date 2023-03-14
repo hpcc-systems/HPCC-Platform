@@ -60,7 +60,7 @@ let rewrite = [
     { from: "/ws_esdlconfig/(.*)", to: protocol + "://" + ip + ":" + port + "/ws_esdlconfig/$1" },
     { from: "/ws_logaccess/(.*)", to: protocol + "://" + ip + ":" + port + "/ws_logaccess/$1" },
     { from: "/ws_machine/(.*)", to: protocol + "://" + ip + ":" + port + "/ws_machine/$1" },
-    { from: "/ws_resources/(.*)", to: protocol + "://" + ip + ":" + port + "/ws_resources/$1" },
+    { from: "/WsResources/(.*)", to: protocol + "://" + ip + ":" + port + "/WsResources/$1" },
     { from: "/ws_store/(.*)", to: protocol + "://" + ip + ":" + port + "/ws_store/$1" },
     { from: "/(.*)", to: "/$1" }
 ];

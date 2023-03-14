@@ -669,6 +669,7 @@ public:
 
 class CNocryptRoxieQueryPacket: public CRoxieQueryPacket, implements ISerializedRoxieQueryPacket
 {
+    unsigned __int64 enqueuedTime = 0;
 public:
     IMPLEMENT_IINTERFACE;
     CNocryptRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacket(_data, length)
@@ -709,10 +710,19 @@ public:
     {
         return const_cast<CNocryptRoxieQueryPacket *>(LINK(this));
     }
+
+    virtual unsigned __int64 queryIBYTIDelayTime() const override { return 0; }
+    virtual unsigned __int64 queryEnqueuedTimeStamp() const override { return enqueuedTime; }
+    virtual void noteQueued(unsigned __int64 _IBYTIdelay) override
+    {
+        enqueuedTime = nsTick();
+    }
 };
 
 class CSerializedRoxieQueryPacket : public CRoxieQueryPacketBase, implements ISerializedRoxieQueryPacket
 {
+    unsigned __int64 IBYTIdelay = 0;
+    unsigned __int64 enqueuedTime = 0;
 public:
     IMPLEMENT_IINTERFACE;
     CSerializedRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacketBase(_data, length)
@@ -764,6 +774,13 @@ public:
             mb.append(length, data);
         }
         return createRoxiePacket(mb);
+    }
+    virtual unsigned __int64 queryIBYTIDelayTime() const override { return IBYTIdelay; }
+    virtual unsigned __int64 queryEnqueuedTimeStamp() const override { return enqueuedTime; }
+    virtual void noteQueued(unsigned __int64 _IBYTIdelay) override
+    {
+        IBYTIdelay = _IBYTIdelay;
+        enqueuedTime = nsTick();
     }
 
 };
@@ -1194,20 +1211,21 @@ public:
         workers.clear();  // Breaks a cyclic reference count that would stop us from releasing RoxieReceiverThread otherwise
     }
 
-    void enqueue(ISerializedRoxieQueryPacket *x)
+    void enqueue(ISerializedRoxieQueryPacket *x, unsigned __int64 IBYTIdelay)
     {
         {
 #ifdef TIME_PACKETS
             x->queryHeader().tick = msTick();
 #endif
             CriticalBlock qc(qcrit);
+            x->noteQueued(IBYTIdelay);
             waiting.enqueue(x);
         }
         noteQueued();
         available.signal();
     }
 
-    void enqueueUnique(ISerializedRoxieQueryPacket *x, unsigned subChannel)
+    void enqueueUnique(ISerializedRoxieQueryPacket *x, unsigned subChannel, unsigned __int64 IBYTIdelay)
     {
         RoxiePacketHeader &header = x->queryHeader();
 #ifdef TIME_PACKETS
@@ -1228,7 +1246,10 @@ public:
                 }
             }
             if (!found)
+            {
+                x->noteQueued(IBYTIdelay);
                 waiting.enqueue(x);
+            }
         }
         if (found)
         {
@@ -1555,24 +1576,28 @@ public:
                 unsigned delay = 0;
                 for (unsigned subChannel = 0; subChannel < mySubChannel; subChannel++)
                     delay += getIbytiDelay(header.subChannels[subChannel].getIpAddress());
-                unsigned start = 0;
+                unsigned __int64 actualDelay = 0;
                 if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer x;
                     DBGLOG("YES myTurnToDelay subchannel=%u delay=%u %s", mySubChannel, delay, header.toString(x).str());
-                    start = msTick();
                 }
                 if (delay)
+                {
+                    unsigned __int64 start = nsTick();
                     ibytiSem.wait(delay);
+                    actualDelay = nsTick()-start;
+                }
                 if (doTrace(traceRoxiePackets) || (delay && !abortJob && doTrace(traceIBYTIfails)))
                 {
                     StringBuffer x;
-                    DBGLOG("Delay %u done, abortJob=%d, elapsed=%d", delay, (int) abortJob, msTick()-start);
+                    DBGLOG("Delay %u done, abortJob=%d, elapsed=%" I64F "d", delay, (int) abortJob, actualDelay);
                 }
                 if (!abortJob)
                 {
                     for (unsigned subChannel = 0; subChannel < mySubChannel; subChannel++)
                         noteNodeSick(header.subChannels[subChannel]);
+                    logctx.setStatistic(StTimeIBYTIDelay, actualDelay);
                 }
             }
 #else
@@ -1594,6 +1619,7 @@ public:
 
                     if (delay)
                     {
+                        unsigned __int64 start = nsTick();
                         ibytiSem.wait(delay);
                         if (!abortJob)
                         {
@@ -1603,6 +1629,7 @@ public:
                                 StringBuffer x;
                                 DBGLOG("Delay %u done, abortJob=%d", delay, (int) abortJob);
                             }
+                            logctx.setStatistic(StTimeIBYTIDelay, nsTick()-start);
                         }
                         if (doTrace(traceIBYTIfails))
                         {
@@ -1725,6 +1752,10 @@ public:
                     if (next)
                     {
                         logctx.set(next);
+                        logctx.setStatistic(StTimeAgentQueue, nsTick()-next->queryEnqueuedTimeStamp());
+#ifdef NEW_IBYTI
+                        logctx.setStatistic(StTimeIBYTIDelay, next->queryIBYTIDelayTime());
+#endif
                         packet.setown(next->deserialize());
                         next.clear();
                         queueLength--;
@@ -2211,6 +2242,7 @@ public:
     {
         // Goes on the end. But percolate the expiry time backwards
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
+        packet->noteQueued(0);
         DelayedPacketEntry *newEntry = new DelayedPacketEntry(packet, expires);
         if (doTrace(traceRoxiePackets))
         {
@@ -2250,12 +2282,13 @@ public:
                     StringBuffer s;
                     DBGLOG("No IBYTI received yet for delayed packet %s", header.toString(s).str());
                 }
+                unsigned __int64 IBYTIdelay = nsTick()-packet->queryEnqueuedTimeStamp();
                 if (header.activityId & ROXIE_SLA_PRIORITY)
-                    slaQueue.enqueue(packet);
+                    slaQueue.enqueue(packet, IBYTIdelay);
                 else if (header.activityId & ROXIE_HIGH_PRIORITY)
-                    hiQueue.enqueue(packet);
+                    hiQueue.enqueue(packet, IBYTIdelay);
                 else
-                    loQueue.enqueue(packet);
+                    loQueue.enqueue(packet, IBYTIdelay);
                 for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
                 {
                     if (header.subChannels[subChannel].isMe() || header.subChannels[subChannel].isNull())
@@ -2677,10 +2710,10 @@ public:
                 const std::vector<unsigned> channels = topology->queryChannels();
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 for (unsigned i = 1; i < channels.size(); i++)
-                    queue.enqueue(packet->cloneSerializedPacket(channels[i]));
+                    queue.enqueue(packet->cloneSerializedPacket(channels[i]), 0);
                 header.retries |= ROXIE_BROADCAST;
                 header.channel = channels[0];
-                queue.enqueue(packet.getClear());
+                queue.enqueue(packet.getClear(), 0);   // NOTE - This would be wrong in NEW_IBYTI mode - should add to delayed instead if we are not primary... 
                 return;
             }
 
@@ -2792,7 +2825,7 @@ public:
                         {
                             StringBuffer xx; logctx.CTXLOG("Retry %d received on subchannel %u for %s", retries+1, mySubchannel, header.toString(xx).str());
                         }
-                        queue.enqueueUnique(packet.getClear(), mySubchannel);
+                        queue.enqueueUnique(packet.getClear(), mySubchannel, 0);  // MORE - what about IBYTI processing in NEW_IBYTI mode
                     }
                 }
                 else // first time (not a retry).
@@ -2807,7 +2840,7 @@ public:
                     }
                     else
 #endif
-                        queue.enqueue(packet.getClear());
+                        queue.enqueue(packet.getClear(), 0);
                 }
             }
         }
@@ -3292,17 +3325,17 @@ public:
             Owned<ISerializedRoxieQueryPacket> serialized = packet->serialize();
             if (header.channel)
             {
-                targetQueue->enqueue(serialized.getClear());
+                targetQueue->enqueue(serialized.getClear(), 0);
             }
             else
             {
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
                 for (unsigned i = 1; i < numChannels; i++)
-                    targetQueue->enqueue(serialized->cloneSerializedPacket(i+1));
+                    targetQueue->enqueue(serialized->cloneSerializedPacket(i+1), 0);
                 header.retries |= ROXIE_BROADCAST;
                 header.channel = 1;
-                targetQueue->enqueue(serialized.getClear());
+                targetQueue->enqueue(serialized.getClear(), 0);
             }
         }
     }
