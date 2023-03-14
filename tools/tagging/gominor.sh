@@ -1,12 +1,7 @@
 #!/bin/bash
-# This script is used to tag a new rc for either a candidate branch, or a point release
+# This script is used to tag the rc for a new minor release
 #
-# <path>/gorc.sh <version>
-
-if [[ -z $1 ]] ; then
-   echo Expected a version number
-   exit 2
-fi
+# <path>/gominor.sh
 
 if [[ -z $all ]]; then
    echo "List of repos not configured (environment variable 'all')"
@@ -22,30 +17,28 @@ scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
 gitroot="${gitroot/#\~/$HOME}"
 
-echo Create new RC candidate-$1
-
 for f in $all ; do
    cd $gitroot/$f
    git fetch origin
-   git checkout candidate-$1
+   git checkout master
    if [ $? -ne 0 ]; then
-      echo "Target branch candidate-$1 failed to check out"
+      echo "Target branch master failed to check out"
       exit 1
    fi
 
-   git merge origin/candidate-$1 --ff-only
+   git merge origin/master --ff-only
    if [ $? -ne 0 ]; then
-      echo "Target branch candidate-$1 is inconsistent with origin/candidate-$1"
+      echo "Target branch master is inconsistent with origin/master"
       exit 1
    fi
    git submodule update --recursive --init --force
 done
 
-echo Press any key to go rc for "$all"
+echo Press any key to create a new minor version for "$all"
 read -n 1 -s
 
 for f in $all ; do
    cd $gitroot/$f
    echo "Process $f"
-   $hpccdir/cmake_modules/go_rc.sh
+   $hpccdir/cmake_modules/go_rc.sh $*
 done

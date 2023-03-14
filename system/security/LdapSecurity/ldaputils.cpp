@@ -116,7 +116,44 @@ LDAP* LdapUtils::LdapInit(const char* protocol, const char* host, int port, int 
             return nullptr;
         }
 #endif
+
     }
+
+    //Set TLS KeepAlive options
+    int kaTime;
+    int kaInterval;
+    int kaProbes;
+    if (queryKeepAlive(kaTime, kaInterval, kaProbes))//query OpenLDAP per connection tcp-keepalive settings
+    {
+        StringBuffer kaLog;
+        int rc;
+        if (kaTime != -1)
+        {
+            kaLog.appendf(" Time: %d", kaTime);
+            rc = ldap_set_option(nullptr, LDAP_OPT_X_KEEPALIVE_IDLE, &kaTime);
+            if(rc != LDAP_SUCCESS)
+                ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_KEEPALIVE_IDLE, %d) error - %s", kaTime, ldap_err2string(rc));
+        }
+
+        if (kaInterval != -1)
+        {
+            kaLog.appendf(" Interval: %d", kaInterval);
+            rc = ldap_set_option(nullptr, LDAP_OPT_X_KEEPALIVE_INTERVAL, &kaInterval);
+            if(rc != LDAP_SUCCESS)
+                ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_KEEPALIVE_INTERVAL, %d) error - %s", kaInterval, ldap_err2string(rc));
+        }
+
+        if (kaProbes != -1)
+        {
+            kaLog.appendf(" Probes: %d", kaProbes);
+            rc = ldap_set_option(nullptr, LDAP_OPT_X_KEEPALIVE_PROBES, &kaProbes);
+            if(rc != LDAP_SUCCESS)
+                ERRLOG("LdapUtils::LdapInit : ldap_set_option(LDAP_OPT_X_KEEPALIVE_PROBES, %d) error - %s", kaProbes, ldap_err2string(rc));
+        }
+        if (!kaLog.isEmpty())
+            DBGLOG("LDAP tcp keepalive%s", kaLog.str());
+    }
+
     return ld;
 }
 
