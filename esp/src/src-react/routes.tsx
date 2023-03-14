@@ -168,6 +168,7 @@ export const routes: RoutesEx = [
             { path: "/configuration", action: (ctx, params) => import("./components/Configuration").then(_ => <_.Configuration />) },
             { path: "/pods", action: (ctx, params) => import("./components/Pods").then(_ => <_.Pods />) },
             { path: "/pods-json", action: (ctx, params) => import("./components/Pods").then(_ => <_.PodsJSON />) },
+            { path: "/services", action: (ctx, params) => import("./components/Services").then(_ => <_.Services />) },
             { path: "/logs", action: (ctx) => import("./components/Logs").then(_ => <_.Logs filter={parseSearch(ctx.search) as any} />) },
             {
                 path: "/daliadmin",
