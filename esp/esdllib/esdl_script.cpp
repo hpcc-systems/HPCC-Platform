@@ -737,12 +737,10 @@ public:
         }
 
         int type = 0;
-        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        while((type = xpp.next()) != XmlPullParser::END_TAG)
         {
-            switch(type)
+            if (XmlPullParser::START_TAG == type)
             {
-                case XmlPullParser::START_TAG:
-                {
                     StartTag stag;
                     xpp.readStartTag(stag);
                     const char *op = stag.getLocalName();
@@ -754,11 +752,6 @@ public:
                         readFullContent(xpp, m_sql);
                     else
                         xpp.skipSubTreeEx();
-                    break;
-                }
-                case XmlPullParser::END_TAG:
-                case XmlPullParser::END_DOCUMENT:
-                    return;
             }
         }
 
@@ -1076,28 +1069,21 @@ public:
             m_testDelay.setown(compileXpath(msTestDelayStr));
 
         int type = 0;
-        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        while((type = xpp.next()) != XmlPullParser::END_TAG)
         {
-            switch(type)
+            if (XmlPullParser::START_TAG == type)
             {
-                case XmlPullParser::START_TAG:
-                {
-                    StartTag stag;
-                    xpp.readStartTag(stag);
-                    const char *op = stag.getLocalName();
-                    if (isEmptyString(op))
-                        recordError(ESDL_SCRIPT_Error, "unknown error");
-                    if (streq(op, "http-header"))
-                        m_headers.append(*new CEsdlTransformOperationHttpHeader(xpp, stag, prefix));
-                    else if (streq(op, "content"))
-                        m_content.setown(new CEsdlTransformOperationHttpContentXml(xpp, stag, prefix, functionRegister));
-                    else
-                        xpp.skipSubTreeEx();
-                    break;
-                }
-                case XmlPullParser::END_TAG:
-                case XmlPullParser::END_DOCUMENT:
-                    return;
+                StartTag stag;
+                xpp.readStartTag(stag);
+                const char *op = stag.getLocalName();
+                if (isEmptyString(op))
+                    recordError(ESDL_SCRIPT_Error, "unknown error");
+                if (streq(op, "http-header"))
+                    m_headers.append(*new CEsdlTransformOperationHttpHeader(xpp, stag, prefix));
+                else if (streq(op, "content"))
+                    m_content.setown(new CEsdlTransformOperationHttpContentXml(xpp, stag, prefix, functionRegister));
+                else
+                    xpp.skipSubTreeEx();
             }
         }
     }
@@ -2142,8 +2128,9 @@ void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullP
     Owned<CEsdlTransformOperationConditional> otherwise;
 
     int type = 0;
-    while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+    while(true)
     {
+        type = xpp.next();
         switch(type)
         {
             case XmlPullParser::START_TAG:
@@ -2162,7 +2149,6 @@ void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullP
                 break;
             }
             case XmlPullParser::END_TAG:
-            case XmlPullParser::END_DOCUMENT:
             {
                 if (otherwise)
                     operations.append(*otherwise.getClear());
@@ -2216,25 +2202,17 @@ public:
 void loadCallWithParameters(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, IEsdlOperationTraceMessenger& messenger, IEsdlFunctionRegister *functionRegister)
 {
     int type = 0;
-    while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+    while((type = xpp.next()) != XmlPullParser::END_TAG)
     {
-        switch(type)
+        if (XmlPullParser::START_TAG == type)
         {
-            case XmlPullParser::START_TAG:
-            {
-                StartTag opTag;
-                xpp.readStartTag(opTag);
-                const char *op = opTag.getLocalName();
-                if (streq(op, "with-param"))
-                    operations.append(*new CEsdlTransformOperationVariable(xpp, opTag, prefix, functionRegister));
-                else
-                    messenger.recordError(ESDL_SCRIPT_Error, VStringBuffer("Unrecognized operation '%s', only 'with-param' allowed within 'call-function'", op));
-
-                break;
-            }
-            case XmlPullParser::END_TAG:
-            case XmlPullParser::END_DOCUMENT:
-                return;
+            StartTag opTag;
+            xpp.readStartTag(opTag);
+            const char *op = opTag.getLocalName();
+            if (streq(op, "with-param"))
+                operations.append(*new CEsdlTransformOperationVariable(xpp, opTag, prefix, functionRegister));
+            else
+                messenger.recordError(ESDL_SCRIPT_Error, VStringBuffer("Unrecognized operation '%s', only 'with-param' allowed within 'call-function'", op));
         }
     }
 }
@@ -2522,21 +2500,13 @@ public:
 void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, IEsdlOperationTraceMessenger& messenger, IEsdlFunctionRegister *functionRegister)
 {
     int type = 0;
-    while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+    while((type = xpp.next()) != XmlPullParser::END_TAG)
     {
-        switch(type)
+        if (XmlPullParser::START_TAG == type)
         {
-            case XmlPullParser::START_TAG:
-            {
-                Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, prefix, withVariables, messenger, functionRegister, false);
-                if (operation)
-                    operations.append(*operation.getClear());
-                break;
-            }
-            case XmlPullParser::END_TAG:
-                return;
-            case XmlPullParser::END_DOCUMENT:
-                return;
+            Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, prefix, withVariables, messenger, functionRegister, false);
+            if (operation)
+                operations.append(*operation.getClear());
         }
     }
 }
@@ -3095,20 +3065,13 @@ public:
 
         CEsdlOperationDefaultTraceMessenger defaultMessenger(tag, m_name);
         int type = 0;
-        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        while((type = xpp.next()) != XmlPullParser::END_TAG)
         {
-            switch(type)
+            if (XmlPullParser::START_TAG == type)
             {
-                case XmlPullParser::START_TAG:
-                {
-                    Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, m_prefix, true, defaultMessenger, &functionRegister, true);
-                    if (operation)
-                        m_operations.append(*operation.getClear());
-                    break;
-                }
-                case XmlPullParser::END_TAG:
-                case XmlPullParser::END_DOCUMENT:
-                    return;
+                Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, m_prefix, true, defaultMessenger, &functionRegister, true);
+                if (operation)
+                    m_operations.append(*operation.getClear());
             }
         }
     }
@@ -3439,22 +3402,16 @@ public:
     {
         int type;
         StartTag childTag;
-        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        while((type = xpp.next()) != XmlPullParser::END_TAG)
         {
-            switch (type)
+            if (XmlPullParser::START_TAG == type)
             {
-                case XmlPullParser::START_TAG:
-                {
-                    xpp.readStartTag(childTag);
-                    const char *tagname = childTag.getLocalName();
-                    if (streq("Scripts", tagname) || streq("Transforms", tagname)) //allow nesting of container structures for maximum compatability
-                        add(xpp, childTag, foundNonLegacyTransforms);
-                    else
-                        addChild(xpp, childTag,foundNonLegacyTransforms);
-                    break;
-                }
-                case XmlPullParser::END_TAG:
-                    return;
+                xpp.readStartTag(childTag);
+                const char *tagname = childTag.getLocalName();
+                if (streq("Scripts", tagname) || streq("Transforms", tagname)) //allow nesting of container structures for maximum compatability
+                    add(xpp, childTag, foundNonLegacyTransforms);
+                else
+                    addChild(xpp, childTag,foundNonLegacyTransforms);
             }
         }
     }
