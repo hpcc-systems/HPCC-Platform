@@ -3472,6 +3472,11 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     std::atomic<unsigned> globallasttick;
     unsigned targetActiveThreads;
     Linked<IPropertyTree> keyPairInfo;
+    enum class StreamCmd:byte { NEWSTREAM, CONTINUE, CLOSE, VERSION };
+    std::unordered_map<std::string, StreamCmd> streamCmdMap = {
+        {"newstream", StreamCmd::NEWSTREAM}, {"continue", StreamCmd::CONTINUE},
+        {"close", StreamCmd::CLOSE}, {"version", StreamCmd::VERSION}
+    };
 
     class CHandleTracer
     {
@@ -4574,7 +4579,7 @@ public:
          *
          * {
          *  "format" : "binary",
-         *  "handle" : "1234",
+         *  "command": "newstream"
          *  "replyLimit" : "64",
          *  "commCompression" : "LZ4",
          *  "node" : {
@@ -4599,7 +4604,7 @@ public:
          * OR
          * {
          *  "format" : "binary",
-         *  "handle" : "1234",
+         *  "command": "newstream"
          *  "replyLimit" : "64",
          *  "commCompression" : "LZ4",
          *  "node" : {
@@ -4621,7 +4626,7 @@ public:
          * OR
          * {
          *  "format" : "xml",
-         *  "handle" : "1234",
+         *  "command": "newstream"
          *  "replyLimit" : "64",
          *  "node" : {
          *   "kind" : "diskread",
@@ -4642,7 +4647,7 @@ public:
          * OR
          * {
          *  "format" : "xml",
-         *  "handle" : "1234",
+         *  "command": "newstream"
          *  "node" : {
          *   "kind" : "indexread",
          *   "fileName": "examplefilename",
@@ -4659,6 +4664,7 @@ public:
          * OR
          * {
          *  "format" : "xml",
+         *  "command": "newstream"
          *  "node" : {
          *   "kind" : "xmlread",
          *   "fileName": "examplefilename",
@@ -4678,6 +4684,7 @@ public:
          * OR
          * {
          *  "format" : "xml",
+         *  "command": "newstream"
          *  "node" : {
          *   "kind" : "csvread",
          *   "fileName": "examplefilename",
@@ -4699,6 +4706,7 @@ public:
          * OR
          * {
          *  "format" : "xml",
+         *  "command": "newstream"
          *  "node" : {
          *   "action" : "count",            // if present performs count with/without filter and returns count
          *   "fileName": "examplefilename", // can be either index or flat file
@@ -4712,7 +4720,7 @@ public:
          * OR
          * {
          *  "format" : "binary",
-         *  "handle" : "1234",
+         *  "command": "newstream"
          *  "replyLimit" : "64",
          *  "commCompression" : "LZ4",
          *  "node" : {
@@ -4728,7 +4736,7 @@ public:
          * OR
          * {
          *  "format" : "binary",
-         *  "handle" : "1234",
+         *  "command": "newstream"
          *  "replyLimit" : "64",
          *  "node" : {
          *   "kind" : "indexwrite",
@@ -4743,6 +4751,7 @@ public:
          * Fetch fpos stream example:
          * {
          *  "format" : "binary",
+         *  "command": "newstream"
          *  "replyLimit" : "64",
          *  "fetch" : {
          *   "fpos" : "30",
@@ -4761,6 +4770,7 @@ public:
          * fetch continuation:
          * {
          *  "format" : "binary",
+         *  "command": "continue"
          *  "handle" : "1234",
          *  "replyLimit" : "64",
          *  "fetch" : {
@@ -4768,6 +4778,12 @@ public:
          *   "fpos" : "135",
          *   "fpos" : "150"
          *  }
+         *
+         * Close an open file:
+         * {
+         *  "format" : "binary",
+         *  "command": "close"
+         *  "handle" : "1234",
          * }
          */
 
@@ -4778,109 +4794,164 @@ public:
         Owned<CRemoteRequest> remoteRequest;
         Owned<IRemoteActivity> outputActivity;
         OpenFileInfo fileInfo;
-        if (!cursorHandle)
+
+        StreamCmd cmd;
+        const char *qCommand = requestTree->queryProp("command");
+        if (!qCommand)
         {
-            const char *outputFmtStr = requestTree->queryProp("format");
-            if (nullptr == outputFmtStr)
-                outputFormat = outFmt_Xml; // default
-            else if (strieq("xml", outputFmtStr))
-                outputFormat = outFmt_Xml;
-            else if (strieq("json", outputFmtStr))
-                outputFormat = outFmt_Json;
-            else if (strieq("binary", outputFmtStr))
-                outputFormat = outFmt_Binary;
+            // legacy handling
+            // If cursor sent - meant continuation of existing stream, handle should correspond to existing request
+            // No cursor - meant request would contain info to build a new stream
+            if (cursorHandle)
+                cmd = StreamCmd::CONTINUE;
             else
-                throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
-
-            /* pre-version 2.4, "outputCompression" denoted data was compressed in communication protocol and only applied to reply row data
-             * Since 2.5 "commCompression" replaces "outputCompression", and applies to both incoming row data (write) and outgoing row data (read).
-             * But "outputCompression" is checked for backward compatibility.
-             */
-            if (requestTree->hasProp("outputCompression") || requestTree->hasProp("commCompression"))
-            {
-                const char *commCompressionType = requestTree->queryProp("commCompression");
-                if (isEmptyString(commCompressionType))
-                    commCompressionType = requestTree->queryProp("outputCompression");
-
-                if (isEmptyString(commCompressionType))
-                {
-                    compressor.setown(queryDefaultCompressHandler()->getCompressor());
-                    expander.setown(queryDefaultCompressHandler()->getExpander());
-                }
-                else if (outFmt_Binary == outputFormat)
-                {
-                    compressor.setown(getCompressor(commCompressionType));
-                    expander.setown(getExpander(commCompressionType));
-                    if (!compressor)
-                        WARNLOG("Unknown compressor type specified: %s", commCompressionType);
-                }
-                else
-                    WARNLOG("Communication protocol compression not supported for format: %s", outputFmtStr);
-            }
-
-#ifdef _CONTAINERIZED
-            bool authorizedOnly = hasMask(featureSupport, FeatureSupport::stream) && !hasMask(featureSupport, FeatureSupport::directIO);
-#else
-            /* NB: In bare-metal, unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
-             * In a locked down secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
-             */
-            bool authorizedOnly = rowServiceSock && client.isRowServiceClient();
-#endif
-
-            // In future this may be passed the request and build a chain of activities and return sink.
-            outputActivity.setown(createOutputActivity(*requestTree, authorizedOnly, keyPairInfo));
-
-            {
-                CriticalBlock block(sect);
-                cursorHandle = getNextHandle();
-            }
-            remoteRequest.setown(new CRemoteRequest(cursorHandle, outputFormat, compressor, expander, outputActivity));
-
-            StringBuffer requestStr("jsonrequest:");
-            outputActivity->getInfoStr(requestStr);
-            Owned<StringAttrItem> name = new StringAttrItem(requestStr);
-
-            CriticalBlock block(sect);
-            client.previdx = client.openFiles.ordinality();
-            client.openFiles.append(OpenFileInfo(cursorHandle, remoteRequest, name));
+                cmd = StreamCmd::NEWSTREAM;
         }
-        else if (!lookupFileIOHandle(cursorHandle, fileInfo))
-            cursorHandle = 0; // challenge response ..
-        else // known handle, continuation
-        {
-            remoteRequest.set(fileInfo.remoteRequest);
-            outputFormat = fileInfo.remoteRequest->queryFormat();
-        }
-
-        if (cursorHandle)
-            remoteRequest->process(requestTree, rest, reply, stats);
         else
         {
-            const char *outputFmtStr = requestTree->queryProp("format");
-            if (nullptr == outputFmtStr)
-                outputFormat = outFmt_Xml; // default
-            else if (strieq("xml", outputFmtStr))
-                outputFormat = outFmt_Xml;
-            else if (strieq("json", outputFmtStr))
-                outputFormat = outFmt_Json;
-            else if (strieq("binary", outputFmtStr))
-                outputFormat = outFmt_Binary;
-            else
-                throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
+            auto it = streamCmdMap.find(qCommand);
+            if (it == streamCmdMap.end())
+                throw makeStringExceptionV(0, "Unrecognised stream command: %s", qCommand);
+            cmd = it->second;
+        }
 
-            if (outFmt_Binary == outputFormat)
-                reply.append(cursorHandle);
-            else // outFmt_Xml || outFmt_Json
+        const char *outputFmtStr = requestTree->queryProp("format");
+        if (nullptr == outputFmtStr)
+            outputFormat = outFmt_Xml; // default
+        else if (strieq("binary", outputFmtStr))
+            outputFormat = outFmt_Binary;
+        else if (strieq("xml", outputFmtStr))
+            outputFormat = outFmt_Xml;
+        else if (strieq("json", outputFmtStr))
+            outputFormat = outFmt_Json;
+        else
+            throw MakeStringException(0, "Unrecognised output format: %s", outputFmtStr);
+
+        switch (cmd)
+        {
+            case StreamCmd::NEWSTREAM:
             {
-                Owned<IXmlWriterExt> responseWriter = createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSONObject);
-                responseWriter->outputBeginNested("Response", true);
-                if (outFmt_Xml == outputFormat)
-                    responseWriter->outputCString("urn:hpcc:dfs", "@xmlns:dfs");
-                responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
-                responseWriter->outputEndNested("Response");
-                responseWriter->finalize();
-                reply.append(responseWriter->length(), responseWriter->str());
+                if (cursorHandle)
+                    throw createDafsException(DAFSERR_cmdstream_protocol_failure, "unexpected cursor handle supplied to 'newstream' command");
+
+                /* pre-version 2.4, "outputCompression" denoted data was compressed in communication protocol and only applied to reply row data
+                * Since 2.5 "commCompression" replaces "outputCompression", and applies to both incoming row data (write) and outgoing row data (read).
+                * But "outputCompression" is checked for backward compatibility.
+                */
+                if (requestTree->hasProp("outputCompression") || requestTree->hasProp("commCompression"))
+                {
+                    const char *commCompressionType = requestTree->queryProp("commCompression");
+                    if (isEmptyString(commCompressionType))
+                        commCompressionType = requestTree->queryProp("outputCompression");
+
+                    if (isEmptyString(commCompressionType))
+                    {
+                        compressor.setown(queryDefaultCompressHandler()->getCompressor());
+                        expander.setown(queryDefaultCompressHandler()->getExpander());
+                    }
+                    else if (outFmt_Binary == outputFormat)
+                    {
+                        compressor.setown(getCompressor(commCompressionType));
+                        expander.setown(getExpander(commCompressionType));
+                        if (!compressor)
+                            WARNLOG("Unknown compressor type specified: %s", commCompressionType);
+                    }
+                    else
+                        WARNLOG("Communication protocol compression not supported for format: %s", outputFmtStr);
+                }
+
+#ifdef _CONTAINERIZED
+                bool authorizedOnly = hasMask(featureSupport, FeatureSupport::stream) && !hasMask(featureSupport, FeatureSupport::directIO);
+#else
+                /* NB: In bare-metal, unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
+                * In a locked down secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
+                */
+                bool authorizedOnly = rowServiceSock && client.isRowServiceClient();
+#endif
+
+                // In future this may be passed the request and build a chain of activities and return sink.
+                outputActivity.setown(createOutputActivity(*requestTree, authorizedOnly, keyPairInfo));
+
+                {
+                    CriticalBlock block(sect);
+                    cursorHandle = getNextHandle();
+                }
+                remoteRequest.setown(new CRemoteRequest(cursorHandle, outputFormat, compressor, expander, outputActivity));
+
+                StringBuffer requestStr("jsonrequest:");
+                outputActivity->getInfoStr(requestStr);
+                Owned<StringAttrItem> name = new StringAttrItem(requestStr);
+
+                CriticalBlock block(sect);
+                client.previdx = client.openFiles.ordinality();
+                client.openFiles.append(OpenFileInfo(cursorHandle, remoteRequest, name));
+
+                remoteRequest->process(requestTree, rest, reply, stats);
+                return;
             }
+            case StreamCmd::CONTINUE:
+            {
+                if (0 == cursorHandle)
+                    throw createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'continue' command");
+
+                if (lookupFileIOHandle(cursorHandle, fileInfo)) // known handle, continuation
+                {
+                    remoteRequest.set(fileInfo.remoteRequest);
+                    outputFormat = fileInfo.remoteRequest->queryFormat();
+
+                    remoteRequest->process(requestTree, rest, reply, stats);
+                    return;
+                }
+
+                cursorHandle = 0; // challenge response ..
+                break;
+            }
+            case StreamCmd::CLOSE:
+            {
+                if (0 == cursorHandle)
+                    throw createDafsException(DAFSERR_cmdstream_protocol_failure, "cursor handle not supplied to 'close' command");
+                IFileIO *dummy;
+                checkFileIOHandle(cursorHandle, dummy, true);
+                break;
+            }
+            case StreamCmd::VERSION:
+            {
+                // handled in final response, see below
+                break;
+            }
+            default: // should not get here, see streamCmdMap lookup before switch statement
+                throwUnexpected();
+        }
+
+        Owned<IXmlWriterExt> responseWriter;
+        if (outFmt_Binary == outputFormat)
+            reply.append(cursorHandle);
+        else // outFmt_Xml || outFmt_Json
+        {
+            responseWriter.setown(createIXmlWriterExt(0, 0, nullptr, outFmt_Xml == outputFormat ? WTStandard : WTJSONObject));
+            responseWriter->outputBeginNested("Response", true);
+            if (outFmt_Xml == outputFormat)
+                responseWriter->outputCString("urn:hpcc:dfs", "@xmlns:dfs");
+            responseWriter->outputUInt(cursorHandle, sizeof(cursorHandle), "handle");
+        }
+        switch (cmd)
+        {
+            case StreamCmd::VERSION:
+            {
+                if (outFmt_Binary == outputFormat)
+                    reply.append(DAFILESRV_VERSIONSTRING);
+                else
+                    responseWriter->outputString(strlen(DAFILESRV_VERSIONSTRING), DAFILESRV_VERSIONSTRING, "version");
+                break;
+            }
+            default:
+                break;
+        }
+        if (outFmt_Binary != outputFormat)
+        {
+            responseWriter->outputEndNested("Response");
+            responseWriter->finalize();
+            reply.append(responseWriter->length(), responseWriter->str());
         }
     }
 
