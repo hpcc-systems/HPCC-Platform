@@ -31,7 +31,7 @@ define([
     const hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
     const store = KeyValStore.userKeyValStore();
-    store.getEx(BuildInfo.ModernMode, { defaultValue: String(BuildInfo.containerized) }).then(modernMode => {
+    store.getEx(BuildInfo.ModernMode, { defaultValue: String(true) }).then(modernMode => {
         if (modernMode === String(true) && hpccWidget !== "IFrameWidget") {
             window.location.replace("/esp/files/index.html");
         } else {
