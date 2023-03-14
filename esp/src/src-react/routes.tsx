@@ -36,8 +36,7 @@ export const routes: RoutesEx = [
         name: "events",
         path: "/events",
         children: [
-            { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="EventScheduleWorkunitWidget" />) },
-            { path: "/:Event", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUDetailsWidget" params={params} />) }
+            { path: "", action: (ctx) => import("./components/EventScheduler").then(_ => <_.EventScheduler filter={parseSearch(ctx.search) as any} sort={parseSort(ctx.search)} page={parsePage(ctx.search)} />) },
         ]
     },
     {
@@ -169,6 +168,7 @@ export const routes: RoutesEx = [
             { path: "/configuration", action: (ctx, params) => import("./components/Configuration").then(_ => <_.Configuration />) },
             { path: "/pods", action: (ctx, params) => import("./components/Pods").then(_ => <_.Pods />) },
             { path: "/pods-json", action: (ctx, params) => import("./components/Pods").then(_ => <_.PodsJSON />) },
+            { path: "/services", action: (ctx, params) => import("./components/Services").then(_ => <_.Services />) },
             { path: "/logs", action: (ctx) => import("./components/Logs").then(_ => <_.Logs filter={parseSearch(ctx.search) as any} />) },
             {
                 path: "/daliadmin",

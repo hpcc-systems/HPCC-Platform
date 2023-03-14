@@ -46,18 +46,20 @@
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
+static IPropertyTree *getPlaneHostGroup(IPropertyTree *plane)
+{
+    if (plane->hasProp("@hostGroup"))
+        return getHostGroup(plane->queryProp("@hostGroup"), true);
+    else if (plane->hasProp("hosts"))
+        return LINK(plane); // plane itself holds 'hosts'
+    return nullptr;
+}
 
 bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
 {
-    Owned<IPropertyTree> planeGroup;
-    if (plane->hasProp("@hostGroup"))
-        planeGroup.setown(getHostGroup(plane->queryProp("@hostGroup"), true));
-    else
-    {
-        if (!plane->hasProp("hosts"))
-            return false;
-        planeGroup.set(plane); // plane itself holds 'hosts'
-    }
+    Owned<IPropertyTree> planeGroup = getPlaneHostGroup(plane);
+    if (!planeGroup)
+        return false;
     Owned<IPropertyTreeIterator> hostsIter = planeGroup->getElements("hosts");
     SocketEndpoint hostEp;
     if (ipMatch)
@@ -79,12 +81,8 @@ bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch)
 
 bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
 {
-    Owned<IPropertyTree> hostGroup;
-    if (plane->hasProp("@hostGroup"))
-        hostGroup.setown(getHostGroup(plane->queryProp("@hostGroup"), true));
-    else if (plane->hasProp("hosts"))
-        hostGroup.set(plane); // the plane holds the "hosts"
-    else
+    Owned<IPropertyTree> hostGroup = getPlaneHostGroup(plane);
+    if (!hostGroup)
         return false;
 
     if (which >= hostGroup->getCount("hosts"))
@@ -92,6 +90,17 @@ bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which)
     VStringBuffer xpath("hosts[%u]", which+1); // which is 0 based
     host.append(hostGroup->queryProp(xpath));
     return true;
+}
+
+void getPlaneHosts(StringArray &hosts, IPropertyTree *plane)
+{
+    Owned<IPropertyTree> hostGroup = getPlaneHostGroup(plane);
+    if (hostGroup)
+    {
+        Owned<IPropertyTreeIterator> hostsIter = hostGroup->getElements("hosts");
+        ForEach (*hostsIter)
+            hosts.append(hostsIter->query().queryProp(nullptr));
+    }
 }
 
 constexpr const char * lz_plane_path = "storage/planes[@category='lz']";
@@ -113,8 +122,9 @@ IPropertyTree * getDropZonePlane(const char * name)
     return getGlobalConfigSP()->getPropTree(xpath);
 }
 
-IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch)
+IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch, bool mustMatch)
 {
+    const char * hostReq = host;
     if (streq(host, "localhost"))
         host = nullptr;
     Owned<IPropertyTreeIterator> iter = getDropZonePlanesIterator();
@@ -133,6 +143,9 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
         if (isEmptyString(path) || startsWith(path, plane.queryProp("@prefix")))
             return LINK(&plane);
     }
+    if (mustMatch)
+        throw makeStringExceptionV(-1, "DropZone not found for host '%s' path '%s'.",
+            isEmptyString(hostReq) ? "unspecified" : hostReq, isEmptyString(path) ? "unspecified" : path);
     return nullptr;
 }
 

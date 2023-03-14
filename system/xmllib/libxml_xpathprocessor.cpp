@@ -991,8 +991,21 @@ public:
         switch (obj->type)
         {
             case XPATH_NODESET:
-                toXMLNodeSet(obj, content);
-                isValue = false;
+                if (isValue)
+                {
+                    if (obj->nodesetval->nodeNr > 1)
+                    {
+                        isValue = false;
+                        result = false;
+                    }
+                    else
+                    {
+                        evaluateAsString(obj, content, ccXpath->getXpath());
+                        obj = nullptr; // freed above
+                    }
+                }
+                else
+                    toXMLNodeSet(obj, content);
                 break;
             case XPATH_BOOLEAN:
             case XPATH_NUMBER:

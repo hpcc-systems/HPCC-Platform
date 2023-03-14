@@ -90,8 +90,8 @@ private:
         return false;
     }
 
-    int reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo);
-    int reportDfuWorkunitStatus(const char *wuid);
+    int reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo, bool summarizeFinished);
+    int reportDfuWorkunitStatus(const char *wuid, bool jobinfo, bool summarizeFinished);
     int reportDfuPublisherStatus(const char *wuid, int limit);
 
     Owned<IProperties> globals;

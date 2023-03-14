@@ -153,6 +153,7 @@ ESPrequest GetDFUWorkunits
     int64 CacheHint(-1);
     string ParentWuid;
     string PublisherWuid;
+    [min_ver("1.24")] bool includeProgressMessages(false);
 };
 
 ESPresponse [encode(0), exceptions_inline]
@@ -534,6 +535,7 @@ ESPresponse [exceptions_inline] DFUWUFileResponse
 
 ESPrequest FileListRequest
 {
+    [min_ver("1.24")] string DropZoneName;
     string Netaddr;
     string Path;
     string Mask;
@@ -696,7 +698,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.23"),
+    version("1.24"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);

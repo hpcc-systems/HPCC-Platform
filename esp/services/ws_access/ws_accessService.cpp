@@ -327,38 +327,7 @@ bool Cws_accessEx::getNewFileScopeNames(CLdapSecManager* secmgr, const char* nam
     if (pStr0[0] == 0)
         return false;
 
-    StringBuffer lastFileScope;
-    char* pStr = strstr(pStr0, "::");
-    while (pStr)
-    {
-        char fileScope[10240];
-        strncpy(fileScope, pStr0, pStr-pStr0);
-        fileScope[pStr-pStr0] = 0;
-
-        if (lastFileScope.length() < 1)
-            lastFileScope.append(fileScope);
-        else
-            lastFileScope.appendf("::%s", fileScope);
-        newResources.append(lastFileScope.str());
-
-        pStr0 = pStr+2;
-        while (pStr0[0] == ':') //in case of more than two ':' by mistake
-            pStr0++;
-        if (pStr0[0] == 0)
-            break;
-
-        pStr = strstr(pStr0, "::");
-    }
-
-    if (pStr0[0] != 0)
-    {
-        if (lastFileScope.length() < 1)
-            lastFileScope.append(pStr0);
-        else
-            lastFileScope.appendf("::%s", pStr0);
-        newResources.append(lastFileScope.str());
-    }
-
+    readFileScopesFromString(pStr0, newResources, true);
     while (newResources.ordinality())
     {
         StringBuffer namebuf(newResources.item(0));
@@ -383,6 +352,46 @@ bool Cws_accessEx::getNewFileScopeNames(CLdapSecManager* secmgr, const char* nam
     }
 
     return true;
+}
+
+//Parse a filescope spec (fs1::fs2::fs3) and populate the scopes array with each sub filespec (fs1, fs1::fs2, fs1::fs2::fs3).
+void Cws_accessEx::readFileScopesFromString(const char* spec, StringArray& scopes, bool append)
+{
+    if (isEmptyString(spec))
+        return;
+
+    StringBuffer newFileScope;
+    const char* scopeStart = spec;
+    const char* scopeEnd = strstr(scopeStart, "::");
+    while (scopeEnd)
+    {
+        StringBuffer scope;
+        scope.append(scopeEnd - scopeStart, scopeStart);
+        addAFileScope(scope, newFileScope, scopes, append);
+
+        scopeStart = scopeEnd + 2;
+        while (scopeStart[0] == ':') //in case of more than two ':' by mistake
+            scopeStart++;
+        if (!*scopeStart)
+            break;
+
+        scopeEnd = strstr(scopeStart, "::");
+    }
+
+    if (!isEmptyString(scopeStart))
+        addAFileScope(scopeStart, newFileScope, scopes, append);
+}
+
+void Cws_accessEx::addAFileScope(const char* scope, StringBuffer& newFileScope, StringArray& fileScopes, bool append)
+{
+    if (!newFileScope.isEmpty())
+        newFileScope.append("::");
+    newFileScope.append(scope);
+
+    if (append)
+        fileScopes.append(newFileScope);
+    else
+        fileScopes.add(newFileScope, 0);
 }
 
 bool Cws_accessEx::setNewFileScopePermissions(CLdapSecManager* secmgr, IEspDnStruct* basednReq, StringBuffer& existingResource, StringArray& newResources)
@@ -4618,41 +4627,9 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
             //Check the permissin for the file and the group
             if (*pStr0 && basednStr.length() > 0)
             {
-                StringBuffer lastFileScope;
-                StringArray scopes;
-
-                char* pStr = strstr(pStr0, "::");
-                while (pStr)
-                {
-                    char fileScope[10240];
-                    strncpy(fileScope, pStr0, pStr-pStr0);
-                    fileScope[pStr-pStr0] = 0;
-
-                    if (lastFileScope.length() < 1)
-                        lastFileScope.append(fileScope);
-                    else
-                        lastFileScope.appendf("::%s", fileScope);
-                    scopes.add(lastFileScope.str(), 0);
-
-                    pStr0 = pStr+2;
-                    while (pStr0[0] == ':') //in case of more than two ':' by mistake
-                        pStr0++;
-                    if (pStr0[0] == 0)
-                        break;
-
-                    pStr = strstr(pStr0, "::");
-                }
-
-                if (pStr0[0] != 0)
-                {
-                    if (lastFileScope.length() < 1)
-                        lastFileScope.append(pStr0);
-                    else
-                        lastFileScope.appendf("::%s", pStr0);
-                    scopes.add(lastFileScope.str(), 0);
-                }
-
                 access = SecAccess_None;
+                StringArray scopes;
+                readFileScopesFromString(pStr0, scopes, false);
                 ForEachItemIn(y, scopes)
                 {
                     StringBuffer namebuf(scopes.item(y));

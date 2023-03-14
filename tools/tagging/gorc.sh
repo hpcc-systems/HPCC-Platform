@@ -41,7 +41,7 @@ for f in $all ; do
    git submodule update --recursive --init --force
 done
 
-echo Press any key to go rc
+echo Press any key to go rc for "$all"
 read -n 1 -s
 
 for f in $all ; do

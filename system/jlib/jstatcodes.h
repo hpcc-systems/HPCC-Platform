@@ -270,6 +270,10 @@ enum StatisticKind
     StTimeBlobFetch,
     StCycleBlobFetchCycles,
     StSizePeakSpillFile,
+    StTimeAgentQueue,
+    StCycleAgentQueueCycles,
+    StTimeIBYTIDelay,
+    StCycleIBYTIDelayCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

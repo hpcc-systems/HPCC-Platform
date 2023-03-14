@@ -1523,13 +1523,13 @@ int CDfuPlusHelper::status()
     const char* wuid = globals->queryProp("wuid");
     if(!wuid || !*wuid)
         throw MakeStringException(-1, "wuid not specified");
-    int limit = globals->getPropInt("limit");
+    int limit = globals->getPropInt("limit", -1);
     if (isDfuPublisherWuid(wuid))
         return reportDfuPublisherStatus(wuid, limit);
-    return reportDfuWorkunitStatus(wuid);
+    return reportDfuWorkunitStatus(wuid, false, true);
 }
 
-int CDfuPlusHelper::reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo)
+int CDfuPlusHelper::reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobinfo, bool summarizeFinished)
 {
     const char *wuid = dfuwu.getID();
     if (isEmptyString(wuid))
@@ -1553,7 +1553,15 @@ int CDfuPlusHelper::reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobi
             progress("%s status: queued%s\n", wuid, jobinfoText.str());
             break;
         case DFUstate_started:
-            progress("%s%s\n", dfuwu.getProgressMessage(), jobinfoText.str());
+            if (jobinfo)
+            {
+                const char *prgmsg = dfuwu.getProgressMessage();
+                if (isEmptyString(prgmsg))
+                    prgmsg = "status: started"; //older server
+                progress("%s %s%s\n", wuid, prgmsg, jobinfoText.str());
+            }
+            else
+                progress("%s\n", dfuwu.getProgressMessage());
             break;
 
         case DFUstate_aborted:
@@ -1561,12 +1569,14 @@ int CDfuPlusHelper::reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobi
             return -1;
 
         case DFUstate_failed:
-            info("%s status: failed - %s%s\n", wuid, dfuwu.getSummaryMessage(), jobinfoText.str());
-            return -1;
-
+            {
+                const char *msg = dfuwu.getSummaryMessage();
+                info("%s status: failed - %s%s\n", wuid, msg ? msg : "", jobinfoText.str());
+                return -1;
+            }
         case DFUstate_finished:
             info("%s Finished%s\n", wuid, jobinfoText.str());
-            if (dfuwu.getSummaryMessage())
+            if (summarizeFinished && dfuwu.getSummaryMessage())
                 progress("%s\n", dfuwu.getSummaryMessage());
             break;
         default:
@@ -1575,7 +1585,7 @@ int CDfuPlusHelper::reportDfuWorkunitStatus(IConstDFUWorkunit & dfuwu, bool jobi
     return 0;
 }
 
-int CDfuPlusHelper::reportDfuWorkunitStatus(const char *wuid)
+int CDfuPlusHelper::reportDfuWorkunitStatus(const char *wuid, bool jobinfo, bool summarizeFinished)
 {
     Owned<IClientGetDFUWorkunit> req = sprayclient->createGetDFUWorkunitRequest();
     setMtlsSecret(req->rpc());
@@ -1585,15 +1595,24 @@ int CDfuPlusHelper::reportDfuWorkunitStatus(const char *wuid)
     if (outputServiceCallExceptions(resp.get()))
         return -1;
 
-    return reportDfuWorkunitStatus(resp->getResult(), false);
+    return reportDfuWorkunitStatus(resp->getResult(), jobinfo, summarizeFinished);
 }
 
 int CDfuPlusHelper::reportDfuPublisherStatus(const char *wuid, int limit)
 {
+    //First show the overall status of the parent workunit
+    reportDfuWorkunitStatus(wuid, true, false);
+    //limit 0 means only show parent status
+    if (limit==0)
+        return 0;
+
+    info("----------------\n");
+
     Owned<IClientGetDFUWorkunits> req = sprayclient->createGetDFUWorkunitsRequest();
     setMtlsSecret(req->rpc());
     req->setPublisherWuid(wuid);
     req->setPageSize((limit > 0) ? limit : 1000);
+    req->setIncludeProgressMessages(true);
 
     Owned<IClientGetDFUWorkunitsResponse> resp = sprayclient->GetDFUWorkunits(req);
     if (outputServiceCallExceptions(resp.get()))
@@ -1601,7 +1620,7 @@ int CDfuPlusHelper::reportDfuPublisherStatus(const char *wuid, int limit)
 
     IArrayOf<IConstDFUWorkunit> & dfuwus = resp->getResults();
     ForEachItemIn(i, dfuwus)
-        reportDfuWorkunitStatus(dfuwus.item(i), true);
+        reportDfuWorkunitStatus(dfuwus.item(i), true, false);
     return 0;
 }
 

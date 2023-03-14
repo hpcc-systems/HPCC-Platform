@@ -131,7 +131,7 @@ private:
     bool isTLK = false;
 
 public:
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, bool _enforceOrder, bool _isTLK)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence,  IHThorIndexWriteArg *_helper, const char * defaultCompression, bool _enforceOrder, bool _isTLK)
         : out(_out),
           enforceOrder(_enforceOrder),
           isTLK(_isTLK)
@@ -184,6 +184,7 @@ public:
 
         doCrc = true;
         duplicateCount = 0;
+        const char * compression = defaultCompression;
         if (_helper)
         {
             partitionFieldMask = _helper->getPartitionFieldMask();
@@ -199,18 +200,20 @@ public:
                 }
             }
             if (_helper->getFlags() & TIWcompressdefined)
-            {
-                const char *compression = _helper->queryCompression();
-                hdr->version = 2;    // Old builds will give a reasonable error message
-                if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
-                    indexCompressor.setown(new PocIndexCompressor);
-                else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
-                    indexCompressor.setown(new InplaceIndexCompressor(keyedSize, _helper, compression));
-                else
-                    throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
-            }
+                compression = _helper->queryCompression();
         }
-        if (!indexCompressor)
+
+        if (!isEmptyString(compression))
+        {
+            hdr->version = 2;    // Old builds will give a reasonable error message
+            if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
+                indexCompressor.setown(new PocIndexCompressor);
+            else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
+                indexCompressor.setown(new InplaceIndexCompressor(keyedSize, _helper, compression));
+            else
+                throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
+        }
+        else
             indexCompressor.setown(new LegacyIndexCompressor);
     }
 
@@ -658,9 +661,9 @@ protected:
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, bool enforceOrder, bool isTLK)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, IHThorIndexWriteArg *helper, const char * defaultCompression, bool enforceOrder, bool isTLK)
 {
-    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, enforceOrder, isTLK);
+    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence, helper, defaultCompression, enforceOrder, isTLK);
 }
 
 

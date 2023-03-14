@@ -155,3 +155,38 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
     }
     return false;
 }
+
+extern TPWRAPPER_API SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
+{
+    if (isEmptyString(dropZonePath))
+        throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDropZoneScopePermissions(): DropZone path must be specified.");
+
+    Owned<IPropertyTree> plane;
+    if (isEmptyString(dropZoneName))
+    {
+        plane.setown(findDropZonePlane(dropZonePath, dropZoneHost, true, true));
+        dropZoneName = plane->queryProp("@name");
+    }
+    else
+    {
+        plane.setown(getDropZonePlane(dropZoneName));
+        if (!plane)
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "getDropZoneScopePermissions(): DropZone %s not found.", dropZoneName);
+    }
+
+    //If the dropZonePath is an absolute path, change it to a relative path.
+    StringBuffer s;
+    const char* prefix = plane->queryProp("@prefix");
+    if (hasPrefix(dropZonePath, prefix, true))
+    {
+        const char* p = dropZonePath + strlen(prefix);
+        if (!*p || !isPathSepChar(p[0]))
+            addPathSepChar(s);
+        s.append(p);
+        dropZonePath = s.str();
+    }
+
+    Owned<IUserDescriptor> userDesc = createUserDescriptor();
+    userDesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
+    return queryDistributedFileDirectory().getDropZoneScopePermissions(dropZoneName, dropZonePath, userDesc);
+}

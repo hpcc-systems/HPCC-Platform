@@ -116,6 +116,20 @@ MetricsManager &hpccMetrics::queryMetricsManager()
 }
 
 
+MetricsManager::MetricsManager()
+{
+    try
+    {
+        nameValidator = "^[A-Za-z][A-Za-z0-9.]*[A-Za-z0-9]$";
+    }
+    catch (std::regex_error &regex_error)
+    {
+        throw makeStringExceptionV(MSGAUD_operator, "Metrics manager initialized name validator regex with invalid expression, code=%d, what=%s",
+                                   regex_error.code(), regex_error.what());
+    }
+}
+
+
 MetricsManager::~MetricsManager()
 {
     for (auto const &sinkIt : sinks)
@@ -140,52 +154,69 @@ bool MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
     std::string name = pMetric->queryName();
 
     // Ensure metric name follows naming convention
-    if (std::regex_match(name, nameValidator))
+    try
     {
-        auto metaData = pMetric->queryMetaData();
-        std::unique_lock<std::mutex> lock(metricVectorMutex);
-        for (auto &metaDataIt: metaData)
+        if (std::regex_match(name, nameValidator))
         {
-            name.append(".").append(metaDataIt.value);
-        }
-
-        auto it = metrics.find(name);
-        if (it == metrics.end())
-        {
-            metrics.insert({name, pMetric});
-            rc = true;
-        }
-        else
-        {
-            // If there is a match only report an error if the metric has not been destroyed in the meantime
-            auto match = it->second.lock();
-            if (match)
+            auto metaData = pMetric->queryMetaData();
+            std::unique_lock<std::mutex> lock(metricVectorMutex);
+            for (auto &metaDataIt: metaData)
             {
-#ifdef _DEBUG
-                // In debug throw an exception so the developer knows when a duplicate metric name is being added
-                throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
-#else
-                // In relase notify the operator of the error, but don't prevent the system from loading
-                OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
-#endif
+                name.append(".").append(metaDataIt.value);
+            }
+
+            auto it = metrics.find(name);
+            if (it == metrics.end())
+            {
+                metrics.insert({name, pMetric});
+                rc = true;
             }
             else
             {
-                rc = true;  // old metric no longer present, so it's considered unique
+                // If there is a match only report an error if the metric has not been destroyed in the meantime
+                auto match = it->second.lock();
+                if (match)
+                {
+#ifdef _DEBUG
+                    // In debug throw an exception so the developer knows when a duplicate metric name is being added
+                    throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
+#else
+                    // In release notify the operator of the error, but don't prevent the system from loading
+                    OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
+#endif
+                }
+                else
+                {
+                    rc = true;  // old metric no longer present, so it's considered unique
+                }
+                it->second = pMetric;
             }
-            it->second = pMetric;
+        }
+        else
+        {
+#ifdef _DEBUG
+            // In debug throw an exception to notify the developer of the invalid name
+            throw makeStringExceptionV(MSGAUD_operator, "addMetric - Attempted to add metric with invalid name ('%s')", name.c_str());
+#else
+            // In release notify the operator of the error, but don't prevent the system from loading
+            OERRLOG("addMetric - Metric name is not valid '%s', metric not added", name.c_str());
+#endif
         }
     }
-    else
+
+    // Handle exception from regex match
+    catch (std::regex_error &regex_error)
     {
 #ifdef _DEBUG
-        // In debug throw an exception to notify the developer of the invalid name
-        throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add metric with invalid name ('%s')", name.c_str());
+        // In debug throw an exception so the developer knows there is a regex error
+        throw makeStringExceptionV(MSGAUD_operator, "Metrics manager failed to validate metric name, regex match error, code=%d, what=%s",
+                                   regex_error.code(), regex_error.what());
 #else
         // In release notify the operator of the error, but don't prevent the system from loading
-        OERRLOG("addMetric - Metric name is not valid '%s', metric not added", name.c_str());
+        OERRLOG("addMetric - Regex match failed validating metric '%s'", name.c_str());
 #endif
     }
+
     return rc;
 }
 
@@ -239,7 +270,7 @@ std::vector<std::shared_ptr<IMetric>> MetricsManager::queryMetricsForReport(cons
     }
     else
     {
-        throw MakeStringException(MSGAUD_operator, "queryMetricsForReport - sink name %s not found", sinkName.c_str());
+        throw makeStringExceptionV(MSGAUD_operator, "queryMetricsForReport - sink name %s not found", sinkName.c_str());
     }
     return reportMetrics;
 }
@@ -259,7 +290,7 @@ void MetricsManager::initializeSinks(IPropertyTreeIterator *pSinkIt)
         // Make sure both name and type are provided
         if (cfgSinkType.isEmpty() || cfgSinkName.isEmpty())
         {
-            throw MakeStringException(MSGAUD_operator, "initializeSinks - All sinks definitions must specify a name and a type");
+            throw makeStringException(MSGAUD_operator, "initializeSinks - All sinks definitions must specify a name and a type");
         }
 
         //
@@ -294,17 +325,17 @@ MetricSink *MetricsManager::getSinkFromLib(const char *type, const char *sinkNam
             pSink = getInstanceProc(sinkName, pSettingsTree);
             if (pSink == nullptr)
             {
-                throw MakeStringException(MSGAUD_operator, "getSinkFromLib - Unable to get sink instance");
+                throw makeStringException(MSGAUD_operator, "getSinkFromLib - Unable to get sink instance");
             }
         }
         else
         {
-            throw MakeStringException(MSGAUD_operator, "getSinkFromLib - Unable to get shared procedure (getSinkInstance)");
+            throw makeStringException(MSGAUD_operator, "getSinkFromLib - Unable to get shared procedure (getSinkInstance)");
         }
     }
     else
     {
-        throw MakeStringException(MSGAUD_operator, "getSinkFromLib - Unable to load sink lib (%s)", libName.c_str());
+        throw makeStringExceptionV(MSGAUD_operator, "getSinkFromLib - Unable to load sink lib (%s)", libName.c_str());
     }
     return pSink;
 }

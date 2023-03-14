@@ -647,6 +647,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual SecAccessFlags getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags=0)=0;
     virtual SecAccessFlags getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0)=0;
     virtual SecAccessFlags getDLFNPermissions(CDfsLogicalFileName &dlfn,IUserDescriptor *user,unsigned auditflags=0)=0;
+    virtual SecAccessFlags getDropZoneScopePermissions(const char *dropZoneName,const char *dropZonePath,IUserDescriptor *user,unsigned auditflags=0)=0;
 
     virtual DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user)=0;
     virtual bool filePhysicalVerify(const char *lfn1,IUserDescriptor *user,bool includecrc,StringBuffer &errstr)=0;
@@ -801,7 +802,8 @@ enum DistributedFileSystemError
     DFSERR_PassIterateFilesLimit,
     DFSERR_RestrictedFileAccessDenied,
     DFSERR_EmptyStoragePlane,
-    DFSERR_MissingStoragePlane
+    DFSERR_MissingStoragePlane,
+    DFSERR_PhysicalCompressedPartInvalid
 };
 
 

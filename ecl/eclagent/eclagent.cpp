@@ -1572,7 +1572,12 @@ char *EclAgent::getEnv(const char *name, const char *defaultValue) const
 {
     const char *val = cmdLineArgs->queryProp(name);
     if (!val)
+    {
+        char *hpccEnvVal = getHPCCEnvVal(name, defaultValue);
+        if (hpccEnvVal)
+            return hpccEnvVal;
         val = getenv(name);
+    }
     if (val)
         return strdup(val);
     else if (defaultValue)

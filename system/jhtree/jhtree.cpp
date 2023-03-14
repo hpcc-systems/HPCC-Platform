@@ -3439,7 +3439,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
                 (useTrailingHeader ? USE_TRAILING_HEADER : 0) |
                 (noSeek ? TRAILING_HEADER_ONLY : 0) |
                 0,
-                maxRecSize, NODESIZE, keyedSize, 0, &helper, true, false);
+                maxRecSize, NODESIZE, keyedSize, 0, &helper, nullptr, true, false);
 
         char keybuf[18];
         memset(keybuf, '0', 18);
