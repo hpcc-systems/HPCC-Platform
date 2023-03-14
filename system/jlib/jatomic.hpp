@@ -79,6 +79,7 @@ public:
     inline T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
     inline void store_max(T _value) noexcept { while (_value > load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
     inline void store_min(T _value) noexcept { while (_value < load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
+    inline void store_first(T _value) noexcept { while (_value && (_value < load() || !load())) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
 
 //extra functions
     // avoid a locked increment if the value is zero
