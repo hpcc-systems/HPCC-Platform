@@ -45,7 +45,6 @@ CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=RelWithDebInfo -DVCPKG_FILES_DIR=/hpcc-dev -DC
 doBuild amazonlinux
 doBuild ubuntu-22.04 
 doBuild ubuntu-20.04
-doBuild ubuntu-18.04
 doBuild centos-8
 doBuild centos-7
 
