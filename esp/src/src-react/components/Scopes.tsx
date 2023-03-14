@@ -75,7 +75,6 @@ const mergeFileData = (DFULogicalFiles, files) => {
     });
     files.forEach((file, idx) => {
         file["__hpcc_id"] = file.Name + "_" + idx;
-        file["Name"] = file.Name.split("::").pop();
         data.push(file);
     });
 
@@ -104,7 +103,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [, { currencyCode }] = useBuildInfo();
 
-    React.useEffect(() => {
+    const refreshData = React.useCallback(() => {
         if (scope === ".") {
             setScopePath([]);
             dfuService.DFUFileView({ Scope: "" }).then(async ({ DFULogicalFiles }) => {
@@ -124,8 +123,12 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         }
     }, [currentUser, filter.Owner, scope]);
 
+    React.useEffect(() => {
+        refreshData();
+    }, [refreshData]);
+
     //  Grid ---
-    const { Grid, selection, refreshTable, copyButtons } = useFluentGrid({
+    const { Grid, selection, copyButtons } = useFluentGrid({
         data,
         primaryID: "__hpcc_id",
         filename: "logicalfiles",
@@ -160,7 +163,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
             __hpcc_displayName: {
                 label: nlsHPCC.LogicalName, width: 600,
                 formatter: React.useCallback((_, row) => {
-                    let name = row.Name;
+                    let name = row.Name?.split("::").pop();
                     let url = `#/files/${row.NodeGroup ? row.NodeGroup + "/" : ""}${[].concat(".", scopePath, name).join("::")}`;
                     if (row.isDirectory) {
                         name = row.Directory;
@@ -208,8 +211,8 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
         message: nlsHPCC.DeleteSelectedFiles,
         items: selection.filter(s => s.isDirectory === false).map(s => s.Name),
         onSubmit: React.useCallback(() => {
-            WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
-        }, [refreshTable, selection])
+            WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshData());
+        }, [refreshData, selection])
     });
 
     const applyFilter = React.useCallback((params) => {
@@ -235,7 +238,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -301,7 +304,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                 applyFilter(filter);
             }
         },
-    ], [applyFilter, currentUser, data, filter, hasFilter, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);
+    ], [applyFilter, currentUser, data, filter, hasFilter, refreshData, selection, setShowDeleteConfirm, uiState.hasSelection, viewByScope]);
 
     //  Filter  ---
     React.useEffect(() => {
@@ -342,10 +345,10 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                     </div>
                 }</SizeMe>
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={applyFilter} />
-                <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable} />
-                <CopyFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
-                <RenameFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshTable} />
-                <AddToSuperfile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshTable} />
+                <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshData} />
+                <CopyFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshData} />
+                <RenameFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} refreshGrid={refreshData} />
+                <AddToSuperfile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} refreshGrid={refreshData} />
                 <DesprayFile logicalFiles={selection.filter(s => s.isDirectory === false).map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
                 <DeleteConfirm />
             </>
