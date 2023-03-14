@@ -935,6 +935,10 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(BlobFetch) },
     { CYCLESTAT(BlobFetch) },
     { SIZESTAT(PeakSpillFile) },
+    { TIMESTAT(AgentQueue) },
+    { CYCLESTAT(AgentQueue) },
+    { TIMESTAT(IBYTIDelay) },
+    { CYCLESTAT(IBYTIDelay) },
 };
 
 
