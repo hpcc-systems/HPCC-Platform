@@ -8802,6 +8802,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     ::Release(configFileUpdater);
+    configFileUpdater = nullptr;
 }
 
 unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
