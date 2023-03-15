@@ -400,7 +400,7 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         request->getParameter("Name", nameStr);
         request->getParameter("DropZoneName", dropZoneName);
 
-        SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, pathStr, netAddressStr);
+        SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, pathStr, netAddressStr);
         if (permission < SecAccess_Read)
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s %s not allowed for user %s (permission:%s). Read Access Required.",
                 dropZoneName.str(), netAddressStr.str(), pathStr.str(), context.queryUserId(), getSecAccessFlagName(permission));
@@ -490,7 +490,7 @@ int CFileSpraySoapBindingEx::onStartUpload(IEspContext& ctx, CHttpRequest* reque
     request->getParameter("DropZoneName", dropZoneName);
     if (!validateDropZonePath(nullptr, netAddress, path)) //The path should be the absolute path for the dropzone.
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Landing Zone path %s", path.str());
-    SecAccessFlags permission = getDropZoneScopePermissions(ctx, dropZoneName, path, netAddress);
+    SecAccessFlags permission = getDZPathScopePermissions(ctx, dropZoneName, path, netAddress);
     if (permission < SecAccess_Full)
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s %s not allowed for user %s (permission:%s). Full Access Required.",
             dropZoneName.str(), netAddress.str(), path.str(), ctx.queryUserId(), getSecAccessFlagName(permission));

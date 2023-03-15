@@ -45,10 +45,6 @@ public:
     virtual bool onCreateFile(IEspContext &context, IEspCreateFileRequest &req, IEspCreateFileResponse &resp);
     virtual bool onWriteFileData(IEspContext &context,  IEspWriteFileDataRequest &req,  IEspWriteFileDataResponse &resp);
     virtual bool onReadFileData(IEspContext &context,     IEspReadFileDataRequest &req,   IEspReadFileDataResponse &resp);
-
-protected:
-    void validateDropZoneAccess(IEspContext &context, const char *targetDZNameOrHost, const char *hostReq,
-        SecAccessFlags permissionReq, const char *fileNameWithRelPath, CDfsLogicalFileName &dlfn);
 };
 
 #endif //_ESPWIZ_WsFileIO_HPP__
