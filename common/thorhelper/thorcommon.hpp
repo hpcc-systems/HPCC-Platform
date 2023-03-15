@@ -136,6 +136,8 @@ inline unsigned getCompMethod(unsigned flags)
 
 inline unsigned getCompMethod(const char *compStr)
 {
+    //Could change to return translateToCompMethod(compStr);
+    //but would need to extend rw flags to cope with the other variants
     unsigned compMethod = COMPRESS_METHOD_LZ4;
     if (!isEmptyString(compStr))
     {
