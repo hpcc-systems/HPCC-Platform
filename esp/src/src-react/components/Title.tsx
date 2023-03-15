@@ -210,8 +210,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     <Stack.Item align="center">
                         <Link href="#/activities">
                             <Text variant="large" nowrap block >
-                                <b title="ECL Watch v9" style={{ color: showEnvironmentTitle && titlebarColor ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
-                                    {showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch v9"}
+                                <b title="ECL Watch" style={{ color: showEnvironmentTitle && titlebarColor ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                                    {showEnvironmentTitle && environmentTitle.length ? environmentTitle : "ECL Watch"}
                                 </b>
                             </Text>
                         </Link>
