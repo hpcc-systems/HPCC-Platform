@@ -906,7 +906,7 @@ void buildSampleJsonDataset(StringBuffer &json, IPropertyTree *xsdtree, const ch
         {
             StringArray parentTypes;
             delimitJSON(json, true);
-            JsonHelpers::buildJsonMsg(parentTypes, type, json, resultname, NULL, REQSF_SAMPLE_DATA);
+            JsonHelpers::buildJsonMsg(parentTypes, type, json, StringBuffer(resultname).toLowerCase().replace(' ', '_'), NULL, REQSF_SAMPLE_DATA);
         }
     }
 
