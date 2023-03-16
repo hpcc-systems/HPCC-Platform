@@ -1136,8 +1136,7 @@
     using any xml or text editor however the file structure must remain
     valid.</para>
 
-    <para>
-      <figure>
+    <para><figure>
         <title>Sample Production Configuration</title>
 
         <mediaobject>
@@ -1145,8 +1144,7 @@
             <imagedata fileref="images/SA008.jpg" />
           </imageobject>
         </mediaobject>
-      </figure>
-    </para>
+      </figure></para>
 
     <!--/*Including special SysAdmin Config Module -paras- */-->
 
@@ -1192,9 +1190,7 @@
 
             <tbody>
               <row>
-                <entry>
-                  <inlinegraphic fileref="images/caution.png" />
-                </entry>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
                 <entry><emphasis role="bold">WARNING</emphasis>: These
                 settings are essential to proper system operation. Only expert
@@ -1225,8 +1221,7 @@
 
       <para>The default envrionment.conf:</para>
 
-      <para>
-        <programlisting>## Default environment configuration file for OpenHPCC
+      <para><programlisting>## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=${CONFIG_DIR}
@@ -1297,8 +1292,7 @@ useDropZoneRestriction=true
 # NB: for now this only applies to the last cached server 
 #dafsConnectFailRetrySeconds=10
 
-</programlisting>
-      </para>
+</programlisting></para>
 
       <para>The default environment.conf file includes several comments and
       explanations for many of the values defined in it.</para>
@@ -1469,8 +1463,7 @@ lock=/var/lock/HPCCSystems</programlisting>
           <para>The following are logfield macros which provide a bundled
           group of columns:</para>
 
-          <para>
-            <informaltable>
+          <para><informaltable>
               <tgroup cols="2">
                 <tbody>
                   <row>
@@ -1487,8 +1480,7 @@ lock=/var/lock/HPCCSystems</programlisting>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
         </sect3>
       </sect2>
 
@@ -1557,13 +1549,10 @@ lock=/var/lock/HPCCSystems</programlisting>
         JNI library (libjvm) or if you want an alternate libjvm. For
         example:</para>
 
-        <para>
-          <programlisting>JNI_PATH=/absolute/path/to/alternative/libjvm.so
-</programlisting>
-        </para>
+        <para><programlisting>JNI_PATH=/absolute/path/to/alternative/libjvm.so
+</programlisting></para>
 
-        <para>
-          <informaltable colsep="1" frame="all" rowsep="1">
+        <para><informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
 
             <tgroup cols="2">
@@ -1573,36 +1562,23 @@ lock=/var/lock/HPCCSystems</programlisting>
 
               <tbody>
                 <row>
-                  <entry>
-                    <inlinegraphic fileref="images/OSSgr3.png" />
-                  </entry>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                  <entry>
-                    <para>When targeting custom classes, all dependencies must
-                    be accessible by declaring their location on the
-                    classpath, or including in the host jar file.</para>
-
-                    <para>Custom java classes should be built using compatible
-                    Java versions. To check the Java version used to build a
-                    given class use:</para>
-
-                    <para>
-                      <programlisting>javap: javap -verbose MyClass | grep "major" </programlisting>
-                    </para>
-
-                    <para>When targeting a given method, ensure the signature
-                    declared in the embedded Java section matches the actual
-                    method signature. To get the signature, use:</para>
-
-                    <para>
-                      <programlisting>javap: javap –s MyClass</programlisting>
-                    </para>
-                  </entry>
+                  <entry><para>When targeting custom classes, all dependencies
+                  must be accessible by declaring their location on the
+                  classpath, or including in the host jar file.</para>
+                  <para>Custom java classes should be built using compatible
+                  Java versions. To check the Java version used to build a
+                  given class use:</para> <para> <programlisting>javap: javap -verbose MyClass | grep "major" </programlisting>
+                  </para> <para>When targeting a given method, ensure the
+                  signature declared in the embedded Java section matches the
+                  actual method signature. To get the signature, use:</para>
+                  <para> <programlisting>javap: javap –s MyClass</programlisting>
+                  </para></entry>
                 </row>
               </tbody>
             </tgroup>
-          </informaltable>
-        </para>
+          </informaltable></para>
       </sect2>
 
       <sect2 id="ConfiguringRemoteAccessOverTLS">
@@ -1838,9 +1814,74 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
                 xpointer="xpointer(//*[@id='CassandraWUStorage'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
-                xpointer="xpointer(//*[@id='wutool'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <sect1 id="SA-ControlsANDTools">
+      <title>System Tools and Controls</title>
+
+      <sect2 id="SA-RoxieControlCmds">
+        <title>Roxie Control Commands</title>
+
+        <para>There are a Roxie controls can be run through the <emphasis>ecl
+        roxie</emphasis> CLI which goes through ESP to forward the control
+        commands to roxie on the backend.</para>
+
+        <sect3 id="CT-CheckMemIndivNodes">
+          <title>Roxie Memlock Status on Individual Nodes</title>
+
+          <para>The <emphasis>ecl roxie getmemlocked</emphasis> ecl CLI
+          command is the best way to check if Roxie memory is locked. If you
+          wanted to check for locks on individual Roxie nodes, and if you can
+          access those nodes. Use the command:</para>
+
+          <programlisting>$ cat /proc/`pidof roxie`/status | grep VmLck</programlisting>
+
+          <para>Which returns something like:</para>
+
+          <programlisting>VmLck:   5242880 kB</programlisting>
+
+          <para>If the VmLck value is 0 then memory is not locked.</para>
+
+          <para>The VmLck value should match the memsize=roxie log
+          line:</para>
+
+          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated for the pool 
+         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
+
+          <para>Which is found in the environment.xml's RoxieCluster setting
+          for <emphasis role="strong">totalMemoryLimit</emphasis>:</para>
+
+          <programlisting>    totalMemoryLimit="5368709120"</programlisting>
+        </sect3>
+
+        <sect3 id="CT-resource-limits">
+          <title>Resource Limits</title>
+
+          <para>There is also a resource limit set by default at install time
+          that increases the amount of memory allowed to be locked:</para>
+
+          <programlisting>hpcc soft memlock unlimited</programlisting>
+
+          <para>and</para>
+
+          <programlisting>hpcc hard memlock unlimited</programlisting>
+
+          <para>Without this the limit will not be large enough to lock the
+          memory sizes used by a typical Roxie.</para>
+
+          <para>You can also check this limit with a shell command:</para>
+
+          <programlisting>ulimit -l</programlisting>
+
+          <para>Be sure to run this command as the <emphasis>hpcc</emphasis>
+          user.</para>
+        </sect3>
+
+        <!--ADD-ecl-Roxie-Control-CMD-HERE-IF-->
+      </sect2>
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
+                  xpointer="xpointer(//*[@id='wutool'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
 
     <sect1 id="Redefining_Thor_Nodes">
       <title>Redefining nodes in a Thor Cluster</title>
