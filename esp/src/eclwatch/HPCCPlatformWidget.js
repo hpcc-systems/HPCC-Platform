@@ -508,6 +508,11 @@ define([
             /* */
         },
 
+        _onECLWatchV9: function (evt) {
+            var teaserNode = dom.byId(this.id + "teaser");
+            srcReact.render(ComingSoonModule.ComingSoon, { style: { color: "white" }, value: true }, teaserNode);
+        },
+
         _onAboutLoaded: false,
         _onAbout: function (evt) {
             var placeholderNode = dom.byId(this.id + "DialogPlaceholder");
