@@ -2132,6 +2132,10 @@
           "minimum": 0,
           "description": "Interval (in milliseconds) between checks that client socket is still open"
         },
+        "expert": {
+          "description": "Custom internal options usually reserved for internal testing",
+          "type": "object"
+        },
         "egress": {
           "$ref" : "#/definitions/egress"
         },
