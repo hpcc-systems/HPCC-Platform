@@ -349,98 +349,115 @@ bool FileTransferThread::launchFtSlaveCmd()
     MemoryBuffer msg;
     msg.setEndian(__BIG_ENDIAN);
     SocketEndpoint connectEP;
-    if (sprayer.useFtSlave)
+    HANDLE localFtSlaveHandle = 0; // used only if ftslave is launched on this host
+    Owned<IException> exception;
+    try
     {
-        StringBuffer tmp;
-        if (isContainerized())
+        if (sprayer.useFtSlave)
         {
-            //In containerized world all ftslave processes are executed locally
-            connectEP.set("localhost");
+            StringBuffer tmp;
+            if (isContainerized())
+            {
+                //In containerized world all ftslave processes are executed locally
+                connectEP.set("localhost");
+            }
+            else
+                connectEP.set(ep);
+            socket.setown(spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), connectEP, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid, &localFtSlaveHandle));
+            if (!socket)
+                throwError1(DFTERR_FailedStartSlave, url.str());
+
+            prepareCmd(msg, 0);
+            if (!catchWriteBuffer(socket, msg))
+                throwError1(RFSERR_TimeoutWaitConnect, url.str());
         }
         else
-            connectEP.set(ep);
-        socket.setown(spawnRemoteChild(SPAWNdfu, sprayer.querySlaveExecutable(ep, tmp), connectEP, DAFT_VERSION, queryFtSlaveLogDir(), this, wuid));
-        if (!socket)
-            throwError1(DFTERR_FailedStartSlave, url.str());
-
-        prepareCmd(msg, 0);
-        if (!catchWriteBuffer(socket, msg))
-            throwError1(RFSERR_TimeoutWaitConnect, url.str());
-    }
-    else
-    {
-        if (isContainerized())
-            connectEP.set(sprayer.sprayServiceHost);
-        else
         {
-            connectEP.set(ep);
-            setDafsEndpointPort(connectEP);
-            if (connectEP.isNull())
-                return false;
-        }
-        // allow a relatively long time in case service is overloaded (unable to cope with # parallel requests)
-        constexpr unsigned timeoutMs = 1000*60*30; // 30 mins
-        CTimeMon tm(timeoutMs);
-        unsigned remaining;
-        while (true)
-        {
-            try
+            if (isContainerized())
+                connectEP.set(sprayer.sprayServiceHost);
+            else
             {
-                socket.setown(connectDafs(connectEP, 60000, sprayer.sprayServiceConfig));
-                if (socket)
-                    break;
+                connectEP.set(ep);
+                setDafsEndpointPort(connectEP);
+                if (connectEP.isNull())
+                    return false;
             }
-            catch (IException *e)
+            // allow a relatively long time in case service is overloaded (unable to cope with # parallel requests)
+            constexpr unsigned timeoutMs = 1000*60*30; // 30 mins
+            CTimeMon tm(timeoutMs);
+            unsigned remaining;
+            while (true)
             {
-                if (e->errorCode() != JSOCKERR_connection_failed || tm.timedout(&remaining))
-                    throw;
-                PROGLOG("Dafilesrv spray service not responding, retrying..");
+                try
+                {
+                    socket.setown(connectDafs(connectEP, 60000, sprayer.sprayServiceConfig));
+                    if (socket)
+                        break;
+                }
+                catch (IException *e)
+                {
+                    if (e->errorCode() != JSOCKERR_connection_failed || tm.timedout(&remaining))
+                        throw;
+                    PROGLOG("Dafilesrv spray service not responding, retrying..");
+                }
             }
+            if (!socket)
+                throwError1(DFTERR_FailedStartSlave, url.str());
+            prepareCmd(msg, daFileSrvCommandVersion);
+            sendDaFsFtSlaveCmd(socket, msg);
         }
-        if (!socket)
-            throwError1(DFTERR_FailedStartSlave, url.str());
-        prepareCmd(msg, daFileSrvCommandVersion);
-        sendDaFsFtSlaveCmd(socket, msg);
-    }
-    bool done;
-    for (;;)
-    {
-        msg.clear();
-        if (!catchReadBuffer(socket, msg, FTTIME_PROGRESS))
-            throwError1(RFSERR_TimeoutWaitSlave, url.str());
-
-        msg.setEndian(__BIG_ENDIAN);
-        msg.read(done);
-        if (done)
-            break;
-
-        OutputProgress newProgress;
-        newProgress.deserializeCore(msg);
-        newProgress.deserializeExtra(msg, 1);
-        newProgress.deserializeExtra(msg, 2);
-        sprayer.updateProgress(newProgress);
-
-        LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
-        if (isAborting())
+        bool done;
+        for (;;)
         {
-            if (!sendRemoteAbort(socket))
+            msg.clear();
+            if (!catchReadBuffer(socket, msg, FTTIME_PROGRESS))
                 throwError1(RFSERR_TimeoutWaitSlave, url.str());
+
+            msg.setEndian(__BIG_ENDIAN);
+            msg.read(done);
+            if (done)
+                break;
+
+            OutputProgress newProgress;
+            newProgress.deserializeCore(msg);
+            newProgress.deserializeExtra(msg, 1);
+            newProgress.deserializeExtra(msg, 2);
+            sprayer.updateProgress(newProgress);
+
+            LOG(MCdebugProgress(10000), job, "Update %s: %d %" I64F "d->%" I64F "d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
+            if (isAborting())
+            {
+                if (!sendRemoteAbort(socket))
+                    throwError1(RFSERR_TimeoutWaitSlave, url.str());
+            }
+        }
+        msg.read(ok);
+        setErrorOwn(deserializeException(msg));
+
+        LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
+
+        // if communicating with ftslave, the process has a final ack wait
+        if (sprayer.useFtSlave)
+        {
+            // ftslave sends back a final ack.
+            msg.clear().append(true);
+            catchWriteBuffer(socket, msg);
+            if (sprayer.options->getPropInt("@fail", 0)) // probably used as a debug testing option
+                throwError1(DFTERR_CopyFailed, "unknown reason");
         }
     }
-    msg.read(ok);
-    setErrorOwn(deserializeException(msg));
-
-    LOG(MCdebugProgressDetail, job, "Finished generating part %s [%p] ok(%d) error(%d)", url.str(), this, (int)ok, (int)(error!=NULL));
-
-    // if communicating with ftslave, the process has a final ack wait
-    if (sprayer.useFtSlave)
+    catch (IException *e)
     {
-        // ftslave sends back a final ack.
-        msg.clear().append(true);
-        catchWriteBuffer(socket, msg);
-        if (sprayer.options->getPropInt("@fail", 0)) // probably used as a debug testing option
-            throwError1(DFTERR_CopyFailed, "unknown reason");
+        exception.set(e);
     }
+    if (localFtSlaveHandle)
+    {
+        DWORD runcode;
+        if (!wait_program_timeout(localFtSlaveHandle, runcode, 5000))
+            WARNLOG("FileTransferThread::launchFtSlaveCmd - Timed out waiting for local FtSlave process to exit");
+    }
+    if (exception)
+        throw exception.getClear();
     return ok;
 }
 

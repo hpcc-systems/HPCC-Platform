@@ -646,6 +646,21 @@ void close_program(HANDLE handle)
 
 #endif
 
+bool wait_program_timeout(HANDLE handle,DWORD &runcode,unsigned timeoutMs)
+{
+    CTimeMon timer(timeoutMs);
+    while (true)
+    {
+        if (wait_program(handle,runcode,false))
+            break;
+        unsigned remaining;
+        if (timer.timedout(&remaining))
+            return false;
+        MilliSleep(remaining > 1000 ? 1000 : remaining);
+    }
+    return true;
+}
+
 //========================================================================================================================
 
 static bool hadAbortSignal = false;

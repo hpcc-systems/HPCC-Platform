@@ -38,7 +38,7 @@ enum SpawnKind
 
 interface IAbortRequestCallback;
 
-extern REMOTE_API ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint & remoteEP, unsigned version, const char *logdir, IAbortRequestCallback * abort = NULL, const char *extra=NULL);
+extern REMOTE_API ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint & remoteEP, unsigned version, const char *logdir, IAbortRequestCallback * abort = nullptr, const char *extra=nullptr, HANDLE *localProcessHandle=nullptr);
 extern REMOTE_API void setRemoteSpawnSSH(
                 const char *identfilename,
                 const char *username, // if NULL then disable SSH
