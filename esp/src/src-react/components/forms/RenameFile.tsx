@@ -4,7 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
 import { MessageBox } from "../../layouts/MessageBox";
-import { pushUrl } from "../../util/history";
+import { replaceUrl } from "../../util/history";
 import * as FormStyles from "./landing-zone/styles";
 
 interface RenameFileFormValues {
@@ -50,7 +50,11 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
                         const request = { ...data, srcname: logicalFiles[0] };
                         FileSpray.Rename({ request: request }).then(response => {
                             closeForm();
-                            pushUrl(`/files/${data.dstname}`);
+                            if (window.location.hash.match(/#\/files\//) === null) {
+                                if (refreshGrid) refreshGrid(true);
+                            } else {
+                                replaceUrl(`/files/${data.dstname}`);
+                            }
                         });
                     } else {
                         logicalFiles.forEach((logicalFile, idx) => {

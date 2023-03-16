@@ -8854,6 +8854,7 @@ MODULE_INIT(INIT_PRIORITY_JPTREE)
 MODULE_EXIT()
 {
     ::Release(configFileUpdater);
+    configFileUpdater = nullptr;
 }
 
 unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc, bool callWhenInstalled)

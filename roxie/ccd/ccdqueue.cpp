@@ -1386,8 +1386,8 @@ class CRoxieWorker : public CInterface, implements IPooledThread
     Semaphore ibytiSem;
 #endif
     std::atomic<bool> stopped;
-    std::atomic<bool> abortJob;
-    std::atomic<bool> busy;
+    std::atomic<bool> abortLaunch;
+    std::atomic<bool> workerThreadBusy;
     Owned<IRoxieAgentActivity> activity;
     Owned<IRoxieQueryPacket> packet;
 #ifndef SUBCHANNELS_IN_HEADER
@@ -1401,15 +1401,15 @@ public:
     {
         queue = NULL;
         stopped = false;
-        busy = false;
-        abortJob = false;
+        workerThreadBusy = false;
+        abortLaunch = false;
     }
     virtual void init(void *_r) override
     {
         queue = (RoxieQueue *) _r;
         stopped = false;
-        busy = false;
-        abortJob = false;
+        workerThreadBusy = false;
+        abortLaunch = false;
     }
     virtual bool canReuse() const override
     {
@@ -1438,7 +1438,7 @@ public:
         CriticalBlock b(actCrit);
         if (packet && packet->queryHeader().channel==channel)
         {
-            abortJob = true;
+            abortLaunch = true;
 #ifndef NEW_IBYTI
             if (doIbytiDelay) 
                 ibytiSem.signal();
@@ -1454,7 +1454,7 @@ public:
         if (packet && packet->queryHeader().matchPacket(h))
         {
             queryFound = true;
-            abortJob = true;
+            abortLaunch = true;
 #ifndef NEW_IBYTI
             if (doIbytiDelay)
                 ibytiSem.signal();
@@ -1464,11 +1464,18 @@ public:
                 // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority agent 
                 // (more primary in the rank). The agents with higher rank will hold the lower bits of the retries field in IBYTI packet).
 #ifdef SUBCHANNELS_IN_HEADER
+                if (doTrace(traceRoxiePackets))
+                {
+                    StringBuffer x;
+                    DBGLOG("Deciding whether to abort: checkRank=%um respondingSub=%u, mySub=%u", checkRank, h.getRespondingSubChannel(), h.mySubChannel());
+                }
                 if (!checkRank || h.getRespondingSubChannel() < h.mySubChannel())
 #else
                 if (!checkRank || topology->queryChannelInfo(h.channel).otherAgentHasPriority(h.priorityHash(), h.getRespondingSubChannel()))
 #endif
                 {
+                    if (doTrace(traceRoxiePackets))
+                        DBGLOG("Decided to abort running activity based on ranks");
                     activity->abort();
                     return true;
                 }
@@ -1477,9 +1484,17 @@ public:
                     return false;
                 }
             }
-            else if (busy) 
+            else if (workerThreadBusy)  // packet set and workerThreadBusy false should never happen...
             {
+                if (doTrace(traceRoxiePackets))
+                {
+                    StringBuffer x;
+                    DBGLOG("Decided to abort: preactivity");
+                }
                 preActivity = true;
+                // NOTE - it's possible for this to happen after the activity is actually committed to starting even though the activity is not set
+                // In such cases we can and should let it continue (because in such cases I have already sent an IBYTI by this point, I may have caused buddy to abort)
+                // We will count (and trace) this as a successful IBYTI even if it is actually potentially too late, but that does not really matter.
                 return true;
             }
         }
@@ -1567,7 +1582,7 @@ public:
             if (debugging)
             {
                 if (mySubChannel)
-                    abortJob = true;  // when debugging, we always run on primary only...
+                    abortLaunch = true;  // when debugging, we always run on primary only...
             }
 #ifndef NEW_IBYTI
 #ifdef SUBCHANNELS_IN_HEADER
@@ -1588,10 +1603,10 @@ public:
                     ibytiSem.wait(delay);
                     actualDelay = nsTick()-start;
                 }
-                if (doTrace(traceRoxiePackets) || (delay && !abortJob && doTrace(traceIBYTIfails)))
+                if (doTrace(traceRoxiePackets) || (delay && !abortLaunch && doTrace(traceIBYTIfails)))
                 {
                     StringBuffer x;
-                    DBGLOG("Delay %u done, abortJob=%d, elapsed=%" I64F "d", delay, (int) abortJob, actualDelay);
+                    DBGLOG("Delay %u done, abortLaunch=%d, elapsed=%" I64F "d", delay, (int) abortLaunch, actualDelay);
                 }
                 if (!abortJob)
                 {
@@ -1621,13 +1636,13 @@ public:
                     {
                         unsigned __int64 start = nsTick();
                         ibytiSem.wait(delay);
-                        if (!abortJob)
+                        if (!abortLaunch)
                         {
                             topology->queryChannelInfo(channel).noteChannelsSick(primarySubChannel);
                             if (doTrace(traceRoxiePackets) || doTrace(traceIBYTIfails))
                             {
                                 StringBuffer x;
-                                DBGLOG("Delay %u done, abortJob=%d", delay, (int) abortJob);
+                                DBGLOG("Delay %u done, abortLaunch=%d", delay, (int) abortLaunch);
                             }
                             logctx.setStatistic(StTimeIBYTIDelay, nsTick()-start);
                         }
@@ -1635,7 +1650,7 @@ public:
                         {
                             StringBuffer x;
                             logctx.CTXLOG("Buddy did%s send IBYTI, updated delay : %s",
-                                abortJob ? "" : " NOT", header.toString(x).str());
+                                abortLaunch ? "" : " NOT", header.toString(x).str());
                         }
                     }
                 }
@@ -1657,9 +1672,9 @@ public:
 #endif
 #endif
 
-            if (abortJob)
+            if (abortLaunch)
             {
-                busy = false;  // Keep order - before setActivity below
+                workerThreadBusy = false;  // Keep order - before setActivity below
                 if (logctx.queryTraceLevel() > 5)
                 {
                     StringBuffer x;
@@ -1687,14 +1702,13 @@ public:
                 return;
             }
 
-            if (!debugging)
-                ROQ->sendIbyti(header, logctx, mySubChannel);
-
             activitiesStarted++;
             unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
             Owned <IAgentActivityFactory> factory = queryFactory->getAgentActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
+            if (!debugging)
+                ROQ->sendIbyti(header, logctx, mySubChannel);
             Owned<IMessagePacker> output = activity->process();
             if (logctx.queryTraceLevel() > 5)
             {
@@ -1704,7 +1718,10 @@ public:
             if (output)
             {
                 activitiesCompleted++;
-                busy = false; // Keep order - before setActivity below
+                if (doTrace(traceRoxiePackets))
+                    DBGLOG("Activity completed successfully");
+
+                workerThreadBusy = false; // Keep order - before setActivity below
                 setActivity(NULL);  // Ensures all stats are merged from child queries etc
                 logctx.flush();
                 output->flush();
@@ -1725,7 +1742,7 @@ public:
         {
             throwRemoteException(MakeStringException(ROXIE_MULTICAST_ERROR, "Unknown exception"), activity, packet, false);
         }
-        busy = false; // Keep order - before setActivity below
+        workerThreadBusy = false; // Keep order - before setActivity below
         setActivity(NULL);
     }
 
@@ -1742,8 +1759,8 @@ public:
                         break;
                     agentsActive++;
                     maxAgentsActive.store_max(agentsActive);
-                    abortJob = false;
-                    busy = true;
+                    abortLaunch = false;
+                    workerThreadBusy = true;
 #ifndef NEW_IBYTI
                     if (doIbytiDelay) 
                         ibytiSem.reinit(0U); // Make sure sem is is in no-signaled state
@@ -1807,7 +1824,7 @@ public:
                         }
 #endif
                     }
-                    busy = false;
+                    workerThreadBusy = false;
                     {
                         CriticalBlock b(actCrit);
                         packet.clear();
@@ -2655,7 +2672,7 @@ public:
                 foundInQ = mySubChannel != 0 && delayed.queryQueue(header.channel, mySubChannel).doIBYTI(header);
 #endif
                 if (!foundInQ)
-                    foundInQ = queue.remove(header);
+                    foundInQ = queue.remove(header);  // Check on list waiting for a free worker
                 if (foundInQ)
                 {
                     if (doTrace(traceRoxiePackets))
@@ -2682,7 +2699,7 @@ public:
                 if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
-                    DBGLOG("doIBYTI packet was too late (or too early) : %s", header.toString(s).str());
+                    DBGLOG("doIBYTI packet was too late (or too early, or too low priority) : %s", header.toString(s).str());
                 }
                 ibytiPacketsTooLate.fastInc(); // meaning either I started and reserve the right to finish, or I finished already
                 if (IBYTIbufferSize)
@@ -2825,19 +2842,33 @@ public:
                         {
                             StringBuffer xx; logctx.CTXLOG("Retry %d received on subchannel %u for %s", retries+1, mySubchannel, header.toString(xx).str());
                         }
-                        queue.enqueueUnique(packet.getClear(), mySubchannel, 0);  // MORE - what about IBYTI processing in NEW_IBYTI mode
+#ifdef NEW_IBYTI
+                        // It's debatable whether we should delay for the primary here - they had one chance already...
+                        // But then again, so did we, assuming the timeout is longer than the IBYTIdelay
+                        unsigned delay = 0;
+                        if (mySubchannel != 0)  // i.e. I am not the primary here
+                        {
+                            for (unsigned subChannel = 0; subChannel < mySubchannel; subChannel++)
+                                delay += getIbytiDelay(header.subChannels[subChannel]);
+                        }
+                        if (delay)
+                            delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
+                        else
+#endif
+                            queue.enqueueUnique(packet.getClear(), mySubchannel, 0);
                     }
                 }
                 else // first time (not a retry).
                 {
 #ifdef NEW_IBYTI
+                    unsigned delay = 0;
                     if (mySubchannel != 0)  // i.e. I am not the primary here
                     {
-                        unsigned delay = 0;
                         for (unsigned subChannel = 0; subChannel < mySubchannel; subChannel++)
                             delay += getIbytiDelay(header.subChannels[subChannel]);
-                        delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
                     }
+                    if (delay)
+                        delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
                     else
 #endif
                         queue.enqueue(packet.getClear(), 0);
