@@ -157,7 +157,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 { key: "divider_3", itemType: ContextualMenuItemType.Divider },
                 { key: "config", href: "#/topology/configuration", text: nlsHPCC.Configuration },
                 {
-                    key: "techpreview", text: nlsHPCC.TechPreview,
+                    key: "eclwatchv9", text: "ECL Watch v9",
                     canCheck: true,
                     isChecked: true,
                     onClick: onTechPreviewClick

@@ -64,18 +64,27 @@ export function switchTechPreview(checked: boolean) {
 interface ComingSoon {
     defaultValue: boolean;
     style?: IStyle;
+    value?: boolean;
 }
 
 export const ComingSoon: React.FunctionComponent<ComingSoon> = ({
     defaultValue = false,
-    style
+    style,
+    value
 }) => {
     const [modernMode, setModernMode] = useUserStore(ModernMode, String(defaultValue));
+
+    React.useEffect(() => {
+        if (value !== undefined) {
+            setModernMode(String(value));
+            switchTechPreview(value);
+        }
+    }, [setModernMode, value]);
 
     const onChangeCallback = React.useCallback((ev: React.MouseEvent<HTMLElement>, checked: boolean) => {
         setModernMode(checked ? String(true) : String(false));
         switchTechPreview(checked);
     }, [setModernMode]);
 
-    return <Toggle label={nlsHPCC.TechPreview} checked={(modernMode ?? String(defaultValue)) !== String(false)} onText={nlsHPCC.On} offText={nlsHPCC.Off} onChange={onChangeCallback} styles={{ label: style }} />;
+    return <Toggle label="ECL Watch v9" checked={(modernMode ?? String(defaultValue)) !== String(false)} onText={nlsHPCC.On} offText={nlsHPCC.Off} onChange={onChangeCallback} styles={{ label: style }} />;
 };
