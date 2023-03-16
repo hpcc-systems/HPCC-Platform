@@ -47,7 +47,13 @@ ARG PATCH_MD5
 COPY --chown=hpcc:hpcc hpcc.gitpatch .
 RUN if [ -s hpcc.gitpatch ]; then git apply --whitespace=nowarn hpcc.gitpatch; fi
 
+USER root
 WORKDIR /hpcc-dev/build
+RUN chown hpcc:hpcc generated/*
+
+USER hpcc
+WORKDIR /hpcc-dev/build
+
 ARG BUILD_THREADS
 RUN if [ -n "${BUILD_THREADS}" ] ; then echo ${BUILD_THREADS} > ~/build_threads; else echo $(($(nproc)*3/2)) > ~/build_threads ; fi
 RUN echo Building with $(cat ~/build_threads) threads
