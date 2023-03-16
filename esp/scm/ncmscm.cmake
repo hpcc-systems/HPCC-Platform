@@ -34,7 +34,7 @@ set ( ECMCSM_SRCS
 foreach ( loop_var ${ESPSCM_SRCS} )
     string(  REGEX REPLACE "[.]ncm" "" result ${loop_var} )
     add_custom_command ( DEPENDS hidl ${ESPSCM_SOURCE_DIR}/${loop_var}
-                         OUTPUT ${ESPSCM_GENERATED_DIR}/${result}.esp ${ESPSCM_GENERATED_DIR}/${result}.hpp ${ESPSCM_GENERATED_DIR}/${result}.int ${ESPSCM_GENERATED_DIR}/${result}.ipp ${ESPSCM_GENERATED_DIR}/${result}_esp.cpp ${ESPSCM_GENERATED_DIR}/${result}_esp.ipp ${ESPSCM_GENERATED_DIR}/${result}_esp_ng.cpp ${ESPSCM_GENERATED_DIR}/${result}_esp_ng.ipp
+                         OUTPUT ${ESPSCM_GENERATED_DIR}/${result}.esp ${ESPSCM_GENERATED_DIR}/${result}.hpp ${ESPSCM_GENERATED_DIR}/${result}.ipp ${ESPSCM_GENERATED_DIR}/${result}_esp.cpp ${ESPSCM_GENERATED_DIR}/${result}_esp.ipp ${ESPSCM_GENERATED_DIR}/${result}_esp_ng.cpp ${ESPSCM_GENERATED_DIR}/${result}_esp_ng.ipp
                          COMMAND ${ASAN_LEAK_SUPPRESS_PREFIX} $<TARGET_FILE:hidl> ${ESPSCM_SOURCE_DIR}/${result}.ncm ${ESPSCM_GENERATED_DIR}
                        )
     add_custom_command ( DEPENDS esdl-xml ${ESPSCM_SOURCE_DIR}/${loop_var}
@@ -43,7 +43,6 @@ foreach ( loop_var ${ESPSCM_SRCS} )
                        )
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}.esp PROPERTIES ESPSCM_GENERATED_DIR TRUE)
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}.hpp PROPERTIES ESPSCM_GENERATED_DIR TRUE)
-    set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}.int PROPERTIES ESPSCM_GENERATED_DIR TRUE)
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}.ipp PROPERTIES ESPSCM_GENERATED_DIR TRUE)
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}_esp.cpp PROPERTIES ESPSCM_GENERATED_DIR TRUE)
     set_source_files_properties(${ESPSCM_GENERATED_DIR}/${result}_esp.ipp PROPERTIES ESPSCM_GENERATED_DIR TRUE)

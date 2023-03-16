@@ -8,4 +8,4 @@ export const cmake_build_type: BUILD_TYPE = _cmake_build_type.indexOf("CMAKE_BUI
 export const containerized: boolean = cmake_true.indexOf(_containerized.toUpperCase()) >= 0 || _containerized.indexOf("CONTAINERIZED") > 0;
 export const bare_metal: boolean = !containerized || _containerized.indexOf("CONTAINERIZED") > 0;
 
-export const ModernMode = "ModernMode-8.10";
+export const ModernMode = "ModernMode-9.0";
