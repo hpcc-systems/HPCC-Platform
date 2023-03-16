@@ -52,6 +52,11 @@
         customization YAML. In addition, you can pass multiple YAML files in
         the same command, if desired.</para>
 
+        <para>You can also use the -f option to pass a YAML file using a URL.
+        For example:</para>
+
+        <para><programlisting>helm install mycluster hpcc/hpcc -f https://raw.githubusercontent.com/JD/MyHelm/main/noroxie.yaml</programlisting></para>
+
         <para>For this tutorial, we will use the third method to stand up a
         platform with all the default settings but add some customizations. In
         the first example, instead of one Roxie, it will have two. In the
