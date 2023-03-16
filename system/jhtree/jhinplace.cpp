@@ -2254,7 +2254,7 @@ class InplaceIndexTest : public CppUnit::TestFixture
             else if (!streq(entry, result))
                 printf("%u: '%s', '%s'\n", i, entry, result);
 
-            auto callback = [numEntries, entries, &searcher](const char * search)
+            auto callback = [numEntries, &entries, &searcher](const char * search)
             {
                 for (unsigned j= 0; j < numEntries; j++)
                 {
