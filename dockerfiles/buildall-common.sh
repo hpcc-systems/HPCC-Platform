@@ -132,6 +132,8 @@ build_image() {
   echo build_image name is $(uppercase $name)
   echo build_image label is $(uppercase $label)
   echo build_image buildTag is $(uppercase $buildTag)
+  echo BUILD_USER buildTag is $(uppercase $BUILD_USER)
+  echo GITHUB_TOKEN buildTag is $(uppercase $GITHUB_TOKEN)
 
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
