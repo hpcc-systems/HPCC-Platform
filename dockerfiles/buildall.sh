@@ -45,7 +45,11 @@ BUILD_ML=    # all or ml,gnn,gnn-gpu
 [[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
 
 BUILD_LN=
-[[ -n ${INPUT_BUILD_LN} ]] && BUILD_LN=${INPUT_BUILD_LN}
+if [[ -n ${INPUT_BUILD_LN} ]]
+then
+  BUILD_LN=${INPUT_BUILD_LN}
+  echo "BUILD_LN set via INPUT_BUILD_LN"
+fi
 
 LNB_TOKEN=
 [[ -n ${INPUT_LNB_TOKEN} ]] && LNB_TOKEN=${INPUT_LNB_TOKEN}
@@ -95,6 +99,7 @@ build_ml_images() {
 }
 
 if [[ -n "$BUILD_LN" ]]; then
+  echo "BUILD_LN set"
   set_tag "internal"
   GITHUB_TOKEN=${LNB_TOKEN}
   lnBuildTag=${BUILD_TAG/community_/internal_}

@@ -107,6 +107,11 @@ if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
   LATEST=1
 fi
 
+uppercase()
+{
+    echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
 build_image() {
   local name=$1
   local label=$2
@@ -119,6 +124,10 @@ build_image() {
       rebuild=1
     fi
   fi
+
+  echo build_image name is $(uppercase($name))
+  echo build_image label is $(uppercase($name))
+  echo build_image buildTag is $(uppercase($buildTag))
 
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
