@@ -125,6 +125,10 @@ build_image() {
     fi
   fi
 
+  echo docker_repo is $(uppercase $DOCKER_REPO)
+  echo INPUT_DOCKER_REPO is $(uppercase $INPUT_DOCKER_REPO)
+  echo INPUT_LN_DOCKER_REPO is $(uppercase $INPUT_LN_DOCKER_REPO)
+  echo DEST_DOCKER_REPO is $(uppercase $DEST_DOCKER_REPO)
   echo build_image name is $(uppercase $name)
   echo build_image label is $(uppercase $label)
   echo build_image buildTag is $(uppercase $buildTag)

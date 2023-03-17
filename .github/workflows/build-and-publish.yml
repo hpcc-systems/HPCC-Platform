@@ -66,6 +66,7 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+        docker_repo: ${{ secrets.IMAGE_REPOSITORY }}
         ln_username: ${{ secrets.LN_IMAGE_USERNAME }} # for image repo
         ln_password: ${{ secrets.LN_IMAGE_PASSWORD }} # for image repo
         ln_registry: ${{ secrets.LN_IMAGE_REGISTRY }} # for image repo
