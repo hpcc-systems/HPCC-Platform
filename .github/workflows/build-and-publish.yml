@@ -76,7 +76,7 @@ jobs:
         build_ln: 1
         build_user: ${{ secrets.LNB_ACTOR }}
         github_actor: ${{ secrets.LNB_ACTOR }}
-        github_token: ${{ secrets.LNB_TOKEN2 }}
+        github_token: ${{ secrets.LNB_TOKEN }}
         sign_modules: "OFF"
         signing_secret: ${{ secrets.SIGNING_SECRET }}
         signing_keyid: ${{ secrets.SIGNING_KEYID }}
