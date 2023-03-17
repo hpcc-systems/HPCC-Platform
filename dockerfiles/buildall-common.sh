@@ -125,9 +125,9 @@ build_image() {
     fi
   fi
 
-  echo build_image name is $(uppercase($name))
-  echo build_image label is $(uppercase($name))
-  echo build_image buildTag is $(uppercase($buildTag))
+  echo build_image name is $(uppercase $name)
+  echo build_image label is $(uppercase $label)
+  echo build_image buildTag is $(uppercase $buildTag)
 
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
