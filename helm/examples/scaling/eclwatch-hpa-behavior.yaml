@@ -1,0 +1,54 @@
+## ESP applications 'eclwatch' with HPA of 1 to 3 replicas based on 50% cpu utilization
+esp:
+- name: eclwatch
+  application: eclwatch
+  auth: none
+  replicas: 1
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+    metrics:
+    - type: Resource
+      name: "cpu"
+      target: 
+        type: Utilization
+        value: "50"
+##Configures the scaling behavior of the target in both Up and Down directions
+    behavior: 
+      scaleDown:
+##Scaling down policy. If not set, the default value is to allow to scale down to minReplicas pods,
+## with a 300 second stabilization window (i.e., the highest recommendation for the last 300sec is used).
+        policies:
+##Scale down 1 pod every ~20 seconds
+        - type: Pods
+          value: 1
+##describes how much time will pass between termination of each pod, maximum value is 1800 second (30 minutes).
+          periodSeconds: 20
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+##when metrics indicate that target should be scaled down,
+## this algorithm takes a look into previously calculated desired states and uses highest value from specified interval.
+##For scale down default value is 300, maximum value is 3600 (one hour).
+        stabilizationWindowSeconds: 300
+      scaleUp:
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+        - type: Pods
+          value: 3
+          periodSeconds: 60
+        selectPolicy: Min
+  service:
+    ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
+    port: 8888
+    ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
+    servicePort: 8010
+    ## wsdlAddress should be set to the host and port which clients can use to hit this service.
+    #   This address is added to the service wsdl files which simplify setting up a SOAP client to hit this service.  There may be many external factors determining the address
+    #   that is accible to clients.
+    # wsdlAddress: clientfacingaddress:8010
+    ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
+    visibility: local

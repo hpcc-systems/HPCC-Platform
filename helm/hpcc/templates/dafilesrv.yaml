@@ -91,6 +91,10 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 6 }}
 {{- end }}
 ---
+{{- if hasKey . "hpa" }}
+ {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+{{- end }}
+---
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap")) }}
 ---

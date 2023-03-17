@@ -234,6 +234,9 @@
           "expert": {
             "description": "Custom internal options usually reserved for internal testing",
             "type": "object"
+          },
+          "hpa": {
+            "$ref": "#/definitions/hpa"
           }
         },
         "additionalProperties": { "type": ["integer", "string", "boolean"] },
@@ -1299,6 +1302,9 @@
         },
         "egress": {
           "$ref" : "#/definitions/egress"
+        },
+        "hpa": {
+          "$ref": "#/definitions/hpa"
         }
       }
     },
@@ -1396,6 +1402,9 @@
         },
         "egress": {
           "$ref" : "#/definitions/egress"
+        },
+        "hpa": {
+          "$ref": "#/definitions/hpa"
         }
       }
     },
@@ -1461,6 +1470,9 @@
         },
         "preferredDataReadPlanes": {
           "$ref" : "#/definitions/preferredDataReadPlanes"
+        },
+        "hpa": {
+          "$ref": "#/definitions/hpa"
         }
       }
     },
@@ -2141,6 +2153,9 @@
         },
         "preferredDataReadPlanes": {
           "$ref" : "#/definitions/preferredDataReadPlanes"
+        },
+        "hpa": {
+          "$ref": "#/definitions/hpa"
         }
       }
     },
@@ -2170,6 +2185,9 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "hpa": {
+          "$ref": "#/definitions/hpa"
         }
       }
     },
@@ -2670,6 +2688,9 @@
         },
         "egress": {
           "$ref" : "#/definitions/egress"
+        },
+        "hpa": {
+          "$ref": "#/definitions/hpa"
         }
       }
     },
@@ -2946,6 +2967,133 @@
       "description": "A list of planes that will take precedence to read from if logical files reside on mutiple planes",
       "type": "array",
       "items": { "type": "string" }
+    },
+    "hpa" : {
+      "type": "object",
+      "description": "Horizontal Pod Autoscaler parameters",
+      "properties": {
+        "minReplicas": {
+          "description": "Lower limit for number of replicas which the autoscaler can scale down. It defaults to 1 pod.",
+          "type": "integer"
+        },
+        "maxReplicas": {
+          "description": "Upper limit for number of replicas which the autoscaler can scale up. It cannot be less that minReplicas",
+          "type": "integer"
+        },
+        "behavior": {
+          "type": "object",
+          "description": "Configures the scaling behavior of the target in both Up and Down directions",
+          "properties": {
+            "scaleUp": {
+              "type": "object",
+              "$ref": "#/definitions/hpaScalingRules"
+            },
+            "scaleDown": {
+              "type": "object",
+              "$ref": "#/definitions/hpaScalingRules"
+            }
+          }
+        },
+        "metrics": {
+          "type": "array",
+          "description": "Specifies variables used to calculate the desired replica count. The desired replica count is calculated multiplying the ratio between the target value and the current value by the current number of pods.",
+          "items": { "$ref": "#/definitions/hpaMetric" }
+        }
+      },
+      "required": [ "maxReplicas", "metrics" ]
+    },
+    "hpaScalingRules": {
+      "type": "object",
+      "properties": {
+        "policies" : {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Specifies the scaling policy type"
+              },
+              "value": {
+                "type": "integer",
+                "description": "The amount of change which is permitted by the policy. It must be greater than zero"
+              },
+              "periodSeconds": {
+                "type": "integer",
+                "description": "Specifies the window of time for which the policy should hold true. PeriodSeconds must be greater than zero and less than or equal to 1800 (30 min)."
+              }
+            },
+            "required": ["type", "value", "periodSeconds"]
+          }
+        },
+        "selectPolicy": {
+          "type": "string",
+          "description": "Specify which policy should be used. If not set, the default value Max is used."
+        },
+        "stabilizationWindowSeconds": {
+          "type": "integer",
+          "description": "Seconds for which past recommendations should be considered while scaling up or scaling down. StabilizationWindowSeconds must be greater than or equal to zero and less than or equal to 3600 (one hour). If not set, use the default values: - For scale up: 0 (i.e. no stabilization is done). - For scale down: 300 (i.e. the stabilization window is 300 seconds long)."
+        }
+      }
+    },
+    "hpaMetric" : {
+      "type": "object",
+      "description": "Target metric for Horizontal Pod Autoscaler",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description" : "The metric type to determine workload scaling",
+          "enum": [ "Resource","Pods", "External", "Object"]
+        },
+        "name": {
+          "description": "The metric name",
+          "type": "string"
+        },
+        "selector": {
+          "type": "object",
+          "description": "The string-encoded form of a standard kubernetes label selector for the given metric. When set, it is passed as an additional parameter to the metrics server for more specific metrics scoping. When unset, just the metricName will be used to gather metrics.",
+          "properties": {
+            "matchLabels": {
+              "type": "object"
+             }
+          }
+        },
+        "describedObject": {
+          "type": "object",
+          "description": "Specifies the descriptions of an object, such as kind, name, apiVersion",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "description": "Specifies the referent kind; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+             },
+             "name": {
+              "type": "string",
+              "description": "Specifies the referent name; More info: http://kubernetes.io/docs/user-guide/identifiers#names"
+             },
+             "apiVersion": {
+              "type": "string",
+              "description": "Specifies the referent api version; eg: networking.k8s.io/v1"
+             }
+          },
+          "required": [ "kind", "name" ]
+        },
+        "target": {
+          "description": "Describes th HPA target threshold",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [ "Utilization", "AverageValue", "Value" ]
+             },
+             "value": {
+              "description": "Represents the target averageUtilization or averageValue, or the value",
+              "type": "string"
+             }
+          },
+          "required": [ "type", "value" ]
+        }
+      },
+      "required": [ "name", "type", "target" ]
     }
   }
 }
