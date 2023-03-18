@@ -44,7 +44,7 @@ interface IModularTraceMsgFilter : extends IInterface
  */
 interface IModularTraceMsgSink : extends IModularTraceMsgFilter
 {
-    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) = 0;
+    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) __attribute__((format(printf, 3, 0))) = 0;
 };
 
 /**
@@ -54,15 +54,17 @@ interface IModularTraceMsgSink : extends IModularTraceMsgFilter
 class CStandardTraceMsgSink : public CInterfaceOf<IModularTraceMsgSink>
 {
 public:
-    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override
-    {
-        VALOG(category, format, arguments);
-    }
+    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override __attribute__((format(printf, 3, 0)));
     virtual bool rejects(const LogMsgCategory& category) const
     {
         return REJECTLOG(category);
     }
 };
+
+inline void CStandardTraceMsgSink::valog(const LogMsgCategory& category, const char* format, va_list arguments)
+{
+    VALOG(category, format, arguments);
+}
 
 /**
  * @brief Concrete implementation of `CBaseTracer` that permits helper objects to change the
@@ -104,31 +106,7 @@ public:
         }
     }
 protected:
-    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) const override
-    {
-        ReadLockBlock block(sinksLock);
-        switch (sinks.size())
-        {
-        case 0:
-            break;
-        case 1:
-            if (checkFilters(category))
-                sinks.begin()->second->valog(category, format, arguments);
-            break;
-        default:
-            if (checkFilters(category))
-            {
-                for (const Sinks::value_type& node : sinks)
-                {
-                    va_list copiedArguments;
-                    va_copy(copiedArguments, arguments);
-                    node.second->valog(category, format, copiedArguments);
-                    va_end(copiedArguments);
-                }
-            }
-            break;
-        }
-    }
+    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) const override __attribute__((format(printf, 3, 0)));
     virtual bool checkFilters(const LogMsgCategory& category) const
     {
         ReadLockBlock block(filtersLock);
@@ -219,6 +197,32 @@ public:
     }
 };
 
+inline void CModularTracer::valog(const LogMsgCategory& category, const char* format, va_list arguments) const
+{
+    ReadLockBlock block(sinksLock);
+    switch (sinks.size())
+    {
+    case 0:
+        break;
+    case 1:
+        if (checkFilters(category))
+            sinks.begin()->second->valog(category, format, arguments);
+        break;
+    default:
+        if (checkFilters(category))
+        {
+            for (const Sinks::value_type& node : sinks)
+            {
+                va_list copiedArguments;
+                va_copy(copiedArguments, arguments);
+                node.second->valog(category, format, copiedArguments);
+                va_end(copiedArguments);
+            }
+        }
+        break;
+    }
+}
+
 /**
  * @brief Implementation of `IModularTraceMsgSink` directing message output directly to `stdout`.
  *
@@ -233,16 +237,7 @@ public:
 class CConsoleTraceMsgSink : public CInterfaceOf<IModularTraceMsgSink>
 {
 public:
-    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override
-    {
-        StringBuffer msg;
-        if (prependEOLN)
-            msg.append('\n');
-        msg.valist_appendf(format, arguments);
-        if (appendEOLN && msg.charAt(msg.length() - 1) != '\n')
-            msg.append('\n');
-        printf("%s", msg.str());
-    }
+    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override __attribute__((format(printf, 3, 0)));
     virtual bool rejects(const LogMsgCategory& category) const
     {
         return false;
@@ -264,3 +259,14 @@ public:
     {
     }
 };
+
+inline void CConsoleTraceMsgSink::valog(const LogMsgCategory& category, const char* format, va_list arguments)
+{
+    StringBuffer msg;
+    if (prependEOLN)
+        msg.append('\n');
+    msg.valist_appendf(format, arguments);
+    if (appendEOLN && msg.charAt(msg.length() - 1) != '\n')
+        msg.append('\n');
+    printf("%s", msg.str());
+}

@@ -74,19 +74,38 @@ interface ITraceLoggingComponent : extends IInterface
     virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const = 0;
 
     /// Directs accepted content to implemtation-defined targets.
-    virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const = 0;
+    virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const __attribute__((format(printf, 3, 0))) = 0;
 
     /// Defines optional instance identification for content adjustment.
     virtual const char*  traceId() const = 0;
 
     /**
-     * LOG_METHOD_TEMPLATE defines a non-virtual method using its first parameter. The method
+     * DECLARE_LOG_METHOD_TEMPLATE defines a non-virtual method using its first parameter. The method
      * defines a shared instance of a LogMsgCategory using the remaining parameters. If the
      * requested message priority is neither zero nor greater than the message priority limit, the
      * message will be logged.
      */
-#define LOG_METHOD_TEMPLATE(function, audience, classification) \
-    void function(LogMsgDetail priorityRequested, const char* format, ...) const __attribute__((format(printf, 3, 4))) \
+#define DECLARE_LOG_METHOD_TEMPLATE(function, audience, classification) \
+    void function(LogMsgDetail priorityRequested, const char* format, ...) const __attribute__((format(printf, 3, 4)));
+
+    DECLARE_LOG_METHOD_TEMPLATE(uerrlog, MSGAUD_user, MSGCLS_error);
+    DECLARE_LOG_METHOD_TEMPLATE(uwarnlog, MSGAUD_user, MSGCLS_warning);
+    DECLARE_LOG_METHOD_TEMPLATE(uproglog, MSGAUD_user, MSGCLS_progress);
+    DECLARE_LOG_METHOD_TEMPLATE(uinfolog, MSGAUD_user, MSGCLS_information);
+    DECLARE_LOG_METHOD_TEMPLATE(ierrlog, MSGAUD_programmer, MSGCLS_error);
+    DECLARE_LOG_METHOD_TEMPLATE(iwarnlog, MSGAUD_programmer, MSGCLS_warning);
+    DECLARE_LOG_METHOD_TEMPLATE(iproglog, MSGAUD_programmer, MSGCLS_progress);
+    DECLARE_LOG_METHOD_TEMPLATE(iinfolog, MSGAUD_programmer, MSGCLS_information);
+    DECLARE_LOG_METHOD_TEMPLATE(oerrlog, MSGAUD_operator, MSGCLS_error);
+    DECLARE_LOG_METHOD_TEMPLATE(owarnlog, MSGAUD_operator, MSGCLS_warning);
+    DECLARE_LOG_METHOD_TEMPLATE(oproglog, MSGAUD_operator, MSGCLS_progress);
+    DECLARE_LOG_METHOD_TEMPLATE(oinfolog, MSGAUD_operator, MSGCLS_information);
+
+#undef DECLARE_LOG_METHOD_TEMPLATE
+};
+
+#define DEFINE_LOG_METHOD_TEMPLATE(function, audience, classification) \
+    inline void ITraceLoggingComponent::function(LogMsgDetail priorityRequested, const char* format, ...) const \
     { \
         static const LogMsgCategory LMC##function(audience, classification, 1); \
         if (priorityRequested && priorityRequested <= tracePriorityLimit(LMC##function)) \
@@ -98,21 +117,20 @@ interface ITraceLoggingComponent : extends IInterface
         } \
     }
 
-    LOG_METHOD_TEMPLATE(uerrlog, MSGAUD_user, MSGCLS_error);
-    LOG_METHOD_TEMPLATE(uwarnlog, MSGAUD_user, MSGCLS_warning);
-    LOG_METHOD_TEMPLATE(uproglog, MSGAUD_user, MSGCLS_progress);
-    LOG_METHOD_TEMPLATE(uinfolog, MSGAUD_user, MSGCLS_information);
-    LOG_METHOD_TEMPLATE(ierrlog, MSGAUD_programmer, MSGCLS_error);
-    LOG_METHOD_TEMPLATE(iwarnlog, MSGAUD_programmer, MSGCLS_warning);
-    LOG_METHOD_TEMPLATE(iproglog, MSGAUD_programmer, MSGCLS_progress);
-    LOG_METHOD_TEMPLATE(iinfolog, MSGAUD_programmer, MSGCLS_information);
-    LOG_METHOD_TEMPLATE(oerrlog, MSGAUD_operator, MSGCLS_error);
-    LOG_METHOD_TEMPLATE(owarnlog, MSGAUD_operator, MSGCLS_warning);
-    LOG_METHOD_TEMPLATE(oproglog, MSGAUD_operator, MSGCLS_progress);
-    LOG_METHOD_TEMPLATE(oinfolog, MSGAUD_operator, MSGCLS_information);
+    DEFINE_LOG_METHOD_TEMPLATE(uerrlog, MSGAUD_user, MSGCLS_error);
+    DEFINE_LOG_METHOD_TEMPLATE(uwarnlog, MSGAUD_user, MSGCLS_warning);
+    DEFINE_LOG_METHOD_TEMPLATE(uproglog, MSGAUD_user, MSGCLS_progress);
+    DEFINE_LOG_METHOD_TEMPLATE(uinfolog, MSGAUD_user, MSGCLS_information);
+    DEFINE_LOG_METHOD_TEMPLATE(ierrlog, MSGAUD_programmer, MSGCLS_error);
+    DEFINE_LOG_METHOD_TEMPLATE(iwarnlog, MSGAUD_programmer, MSGCLS_warning);
+    DEFINE_LOG_METHOD_TEMPLATE(iproglog, MSGAUD_programmer, MSGCLS_progress);
+    DEFINE_LOG_METHOD_TEMPLATE(iinfolog, MSGAUD_programmer, MSGCLS_information);
+    DEFINE_LOG_METHOD_TEMPLATE(oerrlog, MSGAUD_operator, MSGCLS_error);
+    DEFINE_LOG_METHOD_TEMPLATE(owarnlog, MSGAUD_operator, MSGCLS_warning);
+    DEFINE_LOG_METHOD_TEMPLATE(oproglog, MSGAUD_operator, MSGCLS_progress);
+    DEFINE_LOG_METHOD_TEMPLATE(oinfolog, MSGAUD_operator, MSGCLS_information);
 
-#undef LOG_METHOD_TEMPLATE
-};
+#undef DEFINE_LOG_METHOD_TEMPLATE
 
 /**
  * Standard interface implementation, inheriting behavior from base class 'C'.
@@ -156,7 +174,7 @@ class CEspTraceLoggingComponent : implements ITraceLoggingComponent, extends CIn
 public:
     IMPLEMENT_IINTERFACE;
     virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const override { return (getEspLogLevel() * 10); }
-    virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const override { VALOG(category, format, arguments); }
+    virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const override __attribute__((format(printf, 3, 0))) { VALOG(category, format, arguments); }
     virtual const char*  traceId() const override { return nullptr; }
     inline  LogMsgDetail tracePriorityLimit(LogMsgAudience audience, LogMsgClass classification) const { return tracePriorityLimit(LogMsgCategory(audience, classification, 1)); } \
 };

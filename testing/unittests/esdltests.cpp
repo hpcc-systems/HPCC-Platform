@@ -2063,10 +2063,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
     class CMockTraceMsgSink : public CInterfaceOf<IModularTraceMsgSink>
     {
     public:
-      virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override
-      {
-        history.emplace_back(category, format, arguments);
-      }
+      virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override __attribute__((format(printf, 3, 0)));
       virtual bool rejects(const LogMsgCategory& category) const
       {
         return false;
@@ -3280,6 +3277,11 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       }
     }
 };
+
+inline void ESDLTests::CMockTraceMsgSink::valog(const LogMsgCategory& category, const char* format, va_list arguments)
+{
+  history.emplace_back(category, format, arguments);
+}
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ESDLTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ESDLTests, "ESDL" );
