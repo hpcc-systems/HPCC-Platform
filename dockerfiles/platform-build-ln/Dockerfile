@@ -37,6 +37,9 @@ RUN git fetch origin && \
     git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
 
+WORKDIR /hpcc-dev/HPCC-Platform/vcpkg
+RUN ./bootstrap-vcpkg.sh
+
 WORKDIR /hpcc-dev
 RUN mkdir lnbuild
 WORKDIR /hpcc-dev/lnbuild
