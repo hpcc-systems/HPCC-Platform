@@ -589,6 +589,7 @@ export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props)
             .then(({ UserGroupEditInputResponse }) => {
                 const groups = UserGroupEditInputResponse?.Groups?.Group
                     .filter(group => group.name !== "Administrators")
+                    .sort((l, r) => l.name.localeCompare(r.name))
                     .map(group => {
                         return {
                             key: group.name,
