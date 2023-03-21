@@ -1973,6 +1973,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
     Owned<ICompressor> compressor;
     Owned<IExpander> expander;
     unsigned compMethod;
+    offset_t lastFlushPos = (offset_t)-1;
 
     unsigned indexNum() { return indexbuf.length()/sizeof(offset_t); }
 
@@ -1999,7 +2000,6 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         expsize = (size32_t)(index[b]-curpos);
         return b;
     }
-
 
     void getblock(offset_t pos)
     {
@@ -2035,42 +2035,7 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
 
     }
 
-    void flush()
-    {   
-        try
-        {
-            curblocknum++;
-            indexbuf.append((unsigned __int64) trailer.expandedSize-overflow.length());
-            offset_t p = ((offset_t)curblocknum)*((offset_t)trailer.blockSize);
-            if (trailer.recordSize==0) {
-                compressor->close();
-                compblklen = compressor->buflen();
-            }
-            if (compblklen) {
-                if (p>trailer.indexPos) { // fill gap
-                    MemoryAttr fill;
-                    size32_t fl = (size32_t)(p-trailer.indexPos);
-                    memset(fill.allocate(fl),0xff,fl);
-                    checkedwrite(trailer.indexPos,fl,fill.get());
-                }
-                checkedwrite(p,compblklen,compblkptr);
-                p += compblklen;
-                compblklen = 0;
-            }
-            trailer.indexPos = p;
-            if (trailer.recordSize==0) {
-                compressor->open(compblkptr, trailer.blockSize);
-            }
-        }
-        catch (IException *e)
-        {
-            writeException = true;
-            EXCLOG(e, "CCompressedFile::flush");
-            throw;
-        }
-    }
-
-    virtual void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize)
+    void expand(const void *compbuf,MemoryBuffer &expbuf,size32_t expsize)
     {
         size32_t rs = trailer.recordSize;
         if (rs) { // diff expand
@@ -2262,14 +2227,7 @@ public:
             }
         }
     }
-
-    virtual offset_t size()                                             
-    { 
-        CriticalBlock block(crit);
-        return trailer.expandedSize;
-    }
-
-    virtual size32_t read(offset_t pos, size32_t len, void * data)          
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override
     {
         CriticalBlock block(crit);
         assertex(mode==ICFread);
@@ -2293,7 +2251,12 @@ public:
         }
         return ret;
     }
-    size32_t write(offset_t pos, size32_t len, const void * data)   
+    virtual offset_t size() override
+    { 
+        CriticalBlock block(crit);
+        return trailer.expandedSize;
+    }
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override
     {
         CriticalBlock block(crit);
         assertex(mode!=ICFread);
@@ -2313,16 +2276,46 @@ public:
         }
         return ret;
     }
-
-    virtual unsigned __int64 getStatistic(StatisticKind kind)
-    {
-        return fileio->getStatistic(kind);
+    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override { UNIMPLEMENTED; }
+    virtual void setSize(offset_t size) override { UNIMPLEMENTED; }
+    virtual void flush() override
+    {   
+        try
+        {
+            if (lastFlushPos == trailer.expandedSize) // nothing written since last flush. NB: only sequential writes supported
+                return;
+            curblocknum++;
+            indexbuf.append((unsigned __int64) trailer.expandedSize-overflow.length());
+            offset_t p = ((offset_t)curblocknum)*((offset_t)trailer.blockSize);
+            if (trailer.recordSize==0) {
+                compressor->close();
+                compblklen = compressor->buflen();
+            }
+            if (compblklen) {
+                if (p>trailer.indexPos) { // fill gap
+                    MemoryAttr fill;
+                    size32_t fl = (size32_t)(p-trailer.indexPos);
+                    memset(fill.allocate(fl),0xff,fl);
+                    checkedwrite(trailer.indexPos,fl,fill.get());
+                }
+                checkedwrite(p,compblklen,compblkptr);
+                p += compblklen;
+                compblklen = 0;
+            }
+            trailer.indexPos = p;
+            if (trailer.recordSize==0) {
+                compressor->open(compblkptr, trailer.blockSize);
+            }
+            lastFlushPos = trailer.expandedSize;
+        }
+        catch (IException *e)
+        {
+            writeException = true;
+            EXCLOG(e, "CCompressedFile::flush");
+            throw;
+        }
     }
-
-    void setSize(offset_t size) { UNIMPLEMENTED; }
-    offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; }
-
-    void close()
+    virtual void close() override
     {
         CriticalBlock block(crit);
         if (mode!=ICFread) {
@@ -2351,33 +2344,37 @@ public:
         curblockpos = 0;
         curblocknum = (unsigned)-1; // relies on wrap
     }
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override
+    {
+        return fileio->getStatistic(kind);
+    }
 
-    unsigned dataCRC()
+// CCompressedFile impl.
+    virtual unsigned dataCRC() override
     {
         if (mode==ICFread)
             return trailer.datacrc;
         return trailer.crc;
     }
-    size32_t recordSize()
+    virtual size32_t recordSize() override
     {
         return trailer.recordSize;
     }
-    size32_t blockSize()
+    virtual size32_t blockSize() override
     {
         return trailer.blockSize;
     }
-    void setBlockSize(size32_t size)
+    virtual void setBlockSize(size32_t size) override
     {
         trailer.blockSize = size;
         compressor->close();
         compressor->open(compblkptr, size);
     }
-    bool readMode()
+    virtual bool readMode() override
     {
         return (mode==ICFread);
     }
-
-    unsigned method()
+    virtual unsigned method() override
     {
         return trailer.method();
     }
