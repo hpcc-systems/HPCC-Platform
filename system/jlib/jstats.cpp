@@ -548,6 +548,23 @@ void validateScope(const char * scopeText)
     }
 }
 
+StatisticScopeType getScopeType(const char * scope)
+{
+    StatsScopeId id;
+    if (nullptr == scope)
+        id.setId(SSTglobal, 0);
+    else if (startsWith(scope, "compile"))
+        id.setId(SSTcompilestage, 0);
+    else
+    {
+        const char * colon = strchr(scope, ':');
+        if (colon)
+            id.setScopeText(colon+1);
+        else
+            id.setScopeText(scope);
+    }
+    return id.queryScopeType();
+}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -939,6 +956,11 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(AgentQueue) },
     { TIMESTAT(IBYTIDelay) },
     { CYCLESTAT(IBYTIDelay) },
+    { WHENFIRSTSTAT(Queued) },
+    { WHENFIRSTSTAT(Dequeued) },
+    { WHENFIRSTSTAT(K8sLaunched) },
+    { WHENFIRSTSTAT(K8sStarted) },
+    { WHENFIRSTSTAT(K8sReady) },
 };
 
 

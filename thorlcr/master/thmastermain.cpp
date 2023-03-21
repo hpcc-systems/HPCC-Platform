@@ -313,6 +313,16 @@ public:
             --remaining;
         }
         assertex(slaves == connectedSlaves.ordinality());
+        
+        if (isContainerized())
+        {
+            unsigned wfid = globals->getPropInt("@wfid");
+            const char *wuid = globals->queryProp("@workunit");
+            const char *graphName = globals->queryProp("@graphName");
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+            Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+            addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
+        }
 
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
@@ -650,9 +660,7 @@ int main( int argc, const char *argv[]  )
 #endif
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
-#ifndef _CONTAINERIZED
-    unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-#endif
+    unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1); // for bare-metal only
     unsigned channelsPerWorker;
     if (globals->hasProp("@channelsPerWorker"))
         channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
@@ -664,6 +672,7 @@ int main( int argc, const char *argv[]  )
 
     installDefaultFileHooks(globals);
     ILogMsgHandler *logHandler;
+    unsigned wfid = 0;
     const char *workunit = nullptr;
     const char *graphName = nullptr;
     try
@@ -848,46 +857,50 @@ int main( int argc, const char *argv[]  )
         if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
         globals->setProp("@thorPath", thorPath);
 
-#ifdef _CONTAINERIZED
-        workunit = globals->queryProp("@workunit");
-        graphName = globals->queryProp("@graphName");
-        if (isEmptyString(workunit))
-            throw makeStringException(0, "missing --workunit");
-        if (isEmptyString(graphName))
-            throw makeStringException(0, "missing --graphName");
-#else
-        const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
-        const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
-        StringBuffer datadir;
-        StringBuffer repdir;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"data","thor",globals->queryProp("@name"),datadir))
-            overrideBaseDirectory = datadir.str();
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"mirror","thor",globals->queryProp("@name"),repdir))
-            overrideReplicateDirectory = repdir.str();
-        if (overrideBaseDirectory&&*overrideBaseDirectory)
-            setBaseDirectory(overrideBaseDirectory, false);
-        if (overrideReplicateDirectory&&*overrideBaseDirectory)
-            setBaseDirectory(overrideReplicateDirectory, true);
-
-        StringBuffer soDir, soPath;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
-            globals->setProp("@query_so_dir", soDir.str());
-        else if (!globals->getProp("@query_so_dir", soDir)) {
-            globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
-            soDir.append(DEFAULT_QUERY_SO_DIR);
+        if (isContainerized())
+        {
+            wfid = globals->getPropInt("@wfid");
+            workunit = globals->queryProp("@workunit");
+            graphName = globals->queryProp("@graphName");
+            if (isEmptyString(workunit))
+                throw makeStringException(0, "missing --workunit");
+            if (isEmptyString(graphName))
+                throw makeStringException(0, "missing --graphName");
         }
-        if (isAbsolutePath(soDir.str()))
-            soPath.append(soDir);
         else
         {
-            soPath.append(thorPath);
+            const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
+            const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
+            StringBuffer datadir;
+            StringBuffer repdir;
+            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"data","thor",globals->queryProp("@name"),datadir))
+                overrideBaseDirectory = datadir.str();
+            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"mirror","thor",globals->queryProp("@name"),repdir))
+                overrideReplicateDirectory = repdir.str();
+            if (overrideBaseDirectory&&*overrideBaseDirectory)
+                setBaseDirectory(overrideBaseDirectory, false);
+            if (overrideReplicateDirectory&&*overrideBaseDirectory)
+                setBaseDirectory(overrideReplicateDirectory, true);
+
+            StringBuffer soDir, soPath;
+            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
+                globals->setProp("@query_so_dir", soDir.str());
+            else if (!globals->getProp("@query_so_dir", soDir)) {
+                globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
+                soDir.append(DEFAULT_QUERY_SO_DIR);
+            }
+            if (isAbsolutePath(soDir.str()))
+                soPath.append(soDir);
+            else
+            {
+                soPath.append(thorPath);
+                addPathSepChar(soPath);
+                soPath.append(soDir);
+            }
             addPathSepChar(soPath);
-            soPath.append(soDir);
+            globals->setProp("@query_so_dir", soPath.str());
+            recursiveCreateDirectory(soPath.str());
         }
-        addPathSepChar(soPath);
-        globals->setProp("@query_so_dir", soPath.str());
-        recursiveCreateDirectory(soPath.str());
-#endif
 
         StringBuffer tempDirStr;
         if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"spill","thor",globals->queryProp("@name"), tempDirStr))
@@ -918,11 +931,13 @@ int main( int argc, const char *argv[]  )
     }
 
     StringBuffer queueName;
-#ifdef _CONTAINERIZED
+
+    // only for K8s
     StringBuffer cloudJobName;
     bool workerNSInstalled = false;
     bool workerJobInstalled = false;
-#else
+
+#ifndef _CONTAINERIZED
     SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
     if (!thorName) thorName = "thor";
@@ -950,64 +965,70 @@ int main( int argc, const char *argv[]  )
 
         unsigned numWorkers = 0;
         bool doWorkerRegistration = false;
-#ifdef _CONTAINERIZED
-        LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
-        thorJob.setJobID(thorJobId);
-        setDefaultJobId(thorJobId);
-        StringBuffer thorEpStr;
-        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
-        LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+        if (isContainerized())
+        {
+            LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
+            thorJob.setJobID(thorJobId);
+            setDefaultJobId(thorJobId);
+            StringBuffer thorEpStr;
+            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+            LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
-        unsigned numWorkersPerPod = 1;
-        if (!globals->hasProp("@numWorkers"))
-            throw makeStringException(0, "Default number of workers not defined (numWorkers)");
+            unsigned numWorkersPerPod = 1;
+            if (!globals->hasProp("@numWorkers"))
+                throw makeStringException(0, "Default number of workers not defined (numWorkers)");
+            else
+            {
+                // check 'numWorkers' workunit option.
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IConstWorkUnit> wuRead = factory->openWorkUnit(workunit);
+                if (!wuRead)
+                    throw makeStringExceptionV(0, "Cannot open workunit: %s", workunit);
+                if (wuRead->hasDebugValue("numWorkers"))
+                    numWorkers = wuRead->getDebugValueInt("numWorkers", 0);
+                else
+                    numWorkers = globals->getPropInt("@numWorkers", 0);
+                if (0 == numWorkers)
+                    throw makeStringException(0, "Number of workers must be > 0 (numWorkers)");
+                if (wuRead->hasDebugValue("numWorkersPerPod"))
+                    numWorkersPerPod = wuRead->getDebugValueInt("numWorkersPerPod", 1);
+                else
+                    numWorkersPerPod = globals->getPropInt("@numWorkersPerPod", 1); // default to 1
+                if (numWorkersPerPod < 1)
+                    throw makeStringException(0, "Number of workers per pod must be > 0 (numWorkersPerPod)");
+                if ((numWorkers % numWorkersPerPod) != 0)
+                    throw makeStringExceptionV(0, "numWorkersPerPod must be a factor of numWorkers. (numWorkers=%u, numWorkersPerPod=%u)", numWorkers, numWorkersPerPod);
+
+                Owned<IWorkUnit> workunit = &wuRead->lock();
+                addTimeStamp(workunit, wfid, graphName, StWhenK8sStarted);
+            }
+
+            cloudJobName.appendf("%s-%s", workunit, graphName);
+
+            StringBuffer myEp;
+            queryMyNode()->endpoint().getUrlStr(myEp);
+
+            workerNSInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "networkpolicy", { }, false, true);
+            if (workerNSInstalled)
+            {
+                KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+                workerJobInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "job", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false, KeepK8sJobs::none == keepJob);
+                if (workerJobInstalled)
+                    doWorkerRegistration = true;
+            }
+        }
         else
         {
-            // check 'numWorkers' workunit option.
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            Owned<IConstWorkUnit> wuRead = factory->openWorkUnit(workunit);
-            if (!wuRead)
-                throw makeStringExceptionV(0, "Cannot open workunit: %s", workunit);
-            if (wuRead->hasDebugValue("numWorkers"))
-                numWorkers = wuRead->getDebugValueInt("numWorkers", 0);
-            else
-                numWorkers = globals->getPropInt("@numWorkers", 0);
-            if (0 == numWorkers)
-                throw makeStringException(0, "Number of workers must be > 0 (numWorkers)");
-            if (wuRead->hasDebugValue("numWorkersPerPod"))
-                numWorkersPerPod = wuRead->getDebugValueInt("numWorkersPerPod", 1);
-            else
-                numWorkersPerPod = globals->getPropInt("@numWorkersPerPod", 1); // default to 1
-            if (numWorkersPerPod < 1)
-                throw makeStringException(0, "Number of workers per pod must be > 0 (numWorkersPerPod)");
-            if ((numWorkers % numWorkersPerPod) != 0)
-                throw makeStringExceptionV(0, "numWorkersPerPod must be a factor of numWorkers. (numWorkers=%u, numWorkersPerPod=%u)", numWorkers, numWorkersPerPod);
+            StringBuffer thorEpStr;
+            LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+            LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
+            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+            Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+            setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
+            numWorkers = queryNodeClusterWidth();
+            doWorkerRegistration = true;
         }
-
-        cloudJobName.appendf("%s-%s", workunit, graphName);
-
-        StringBuffer myEp;
-        queryMyNode()->endpoint().getUrlStr(myEp);
-
-        workerNSInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "networkpolicy", { }, false, true);
-        if (workerNSInstalled)
-        {
-            KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
-            workerJobInstalled = applyK8sYaml("thorworker", workunit, cloudJobName, "job", { { "graphName", graphName}, { "master", myEp.str() }, { "_HPCC_NUM_WORKERS_", std::to_string(numWorkers/numWorkersPerPod)} }, false, KeepK8sJobs::none == keepJob);
-            if (workerJobInstalled)
-                doWorkerRegistration = true;
-        }
-#else
-        StringBuffer thorEpStr;
-        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
-        LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
-        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-        Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
-        setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerWorker, slaveBasePort, localThorPortInc);
-        numWorkers = queryNodeClusterWidth();
-        doWorkerRegistration = true;
-#endif
 
         if (doWorkerRegistration && registry->connect(numWorkers))
         {
@@ -1095,49 +1116,50 @@ int main( int argc, const char *argv[]  )
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
         exception.setown(e);
     }
-#ifdef _CONTAINERIZED
-    if (!cloudJobName.isEmpty())
+    if (isContainerized())
     {
-        if (workerJobInstalled)
+        if (!cloudJobName.isEmpty())
         {
-            try
+            if (workerJobInstalled)
             {
-                KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
-                switch (keepJob)
+                try
                 {
-                    case KeepK8sJobs::all:
-                        // do nothing
-                        break;
-                    case KeepK8sJobs::podfailures:
-                        if (nullptr == exception)
+                    KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+                    switch (keepJob)
+                    {
+                        case KeepK8sJobs::all:
+                            // do nothing
+                            break;
+                        case KeepK8sJobs::podfailures:
+                            if (nullptr == exception)
+                                deleteK8sResource("thorworker", "job", cloudJobName);
+                            break;
+                        case KeepK8sJobs::none:
                             deleteK8sResource("thorworker", "job", cloudJobName);
-                        break;
-                    case KeepK8sJobs::none:
-                        deleteK8sResource("thorworker", "job", cloudJobName);
-                        break;
+                            break;
+                    }
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e);
+                    e->Release();
                 }
             }
-            catch (IException *e)
+            if (workerNSInstalled)
             {
-                EXCLOG(e);
-                e->Release();
+                try
+                {
+                    deleteK8sResource("thorworker", cloudJobName, "networkpolicy");
+                }
+                catch (IException *e)
+                {
+                    EXCLOG(e);
+                    e->Release();
+                }
             }
         }
-        if (workerNSInstalled)
-        {
-            try
-            {
-                deleteK8sResource("thorworker", cloudJobName, "networkpolicy");
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e);
-                e->Release();
-            }
-        }
+        setExitCode(0);
     }
-    setExitCode(0);
-#endif
 
     // cleanup handler to be sure we end
     thorEndHandler->start(30);
