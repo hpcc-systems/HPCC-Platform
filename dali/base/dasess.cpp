@@ -151,6 +151,26 @@ static CriticalSection sessionCrit;
 #define CLDAPE_getpermtimeout (-1)
 #define CLDAPE_ldapfailure    (-2)
 
+#ifdef NULL_DALIUSER_STACKTRACE
+
+static void logNullUser(const char * func, int line = __LINE__)
+{
+    const double nullUserLogMinutes = 60;	//log NULL user requests no more than once this often
+    static time_t lastNullUserLogEntry = (time_t)NULL;
+    static CriticalSection nullUserLogCS;
+
+    CriticalBlock block(nullUserLogCS);
+    time_t timeNow = time(nullptr);
+    if (difftime(timeNow, lastNullUserLogEntry) >= nullUserLogMinutes)
+    {
+        DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp %s line %d", func, line);
+        PrintStackReport();
+        lastNullUserLogEntry = timeNow;
+    }
+}
+
+#endif
+
 class DECL_EXCEPTION CDaliLDAP_Exception: implements IException, public CInterface
 {
     int errcode;
@@ -624,7 +644,7 @@ public:
                 udesc->getUserName(sb);
                 if (0==sb.length())
                 {
-                    DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CSessionRequestServer::processMessage() line %d", __LINE__);
+                    logNullUser("CSessionRequestServer::processMessage()");
                 }
 #endif
                 unsigned auditflags = 0;
@@ -938,8 +958,7 @@ public:
             udesc->getUserName(sb);
         if (0==sb.length())
         {
-            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp getPermissionsLDAP() line %d",__LINE__);
-            PrintStackReport();
+            logNullUser("getPermissionsLDAP()");
         }
 #endif
 
@@ -1190,8 +1209,7 @@ public:
             _udesc->getUserName(sb);
         if (sb.length()==0)
         {
-            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CLdapWorkItem::start() line %d",__LINE__);
-            PrintStackReport();
+            logNullUser("CLdapWorkItem::start()");
         }
 #endif
         udesc.set(_udesc);
@@ -1458,8 +1476,7 @@ public:
             udesc->getUserName(sb);
         if (sb.length()==0)
         {
-            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CCovenSessionManager::getPermissionsLDAP() line %d",__LINE__);
-            PrintStackReport();
+            logNullUser("CCovenSessionManager::getPermissionsLDAP()");
         }
 #endif
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
