@@ -36,9 +36,7 @@ if(SQS AND USE_AWS)
 
         install(
             TARGETS sqs
-            DESTINATION plugins
-            CALC_DEPS
-        )
+            DESTINATION plugins)
 
         target_link_libraries(
             sqs

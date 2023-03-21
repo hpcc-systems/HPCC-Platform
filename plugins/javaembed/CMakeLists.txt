@@ -83,8 +83,7 @@ if(JAVAEMBED AND USE_JAVA)
         install(
             FILES ${java_classes}
             DESTINATION classes/com/HPCCSystems
-            COMPONENT Runtime
-            CALC_DEPS)
+            COMPONENT Runtime)
 
         # We link against jsig so that signals are chained from the jvm
 

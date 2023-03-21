@@ -63,7 +63,7 @@ if(CASSANDRAEMBED OR USE_CASSANDRA)
     install(
       TARGETS cassandraembed
       DESTINATION ${LIB_DIR}
-      COMPONENT Runtime CALC_DEPS)
+      COMPONENT Runtime)
 
     target_link_libraries(
       cassandraembed

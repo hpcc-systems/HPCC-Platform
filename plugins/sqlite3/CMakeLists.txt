@@ -53,7 +53,6 @@ if(SQLITE3EMBED)
         install(
             TARGETS sqlite3embed
             DESTINATION plugins
-            CALC_DEPS
         )
         target_link_libraries(
             sqlite3embed

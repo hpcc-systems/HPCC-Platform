@@ -51,7 +51,7 @@ IF(MONGODBEMBED)
 
         install(
             TARGETS mongodbembed
-            DESTINATION plugins CALC_DEPS)
+            DESTINATION plugins)
 
         install(
             FILES ${LIBMONGOCXX_LIB_REAL}

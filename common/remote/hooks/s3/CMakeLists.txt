@@ -43,7 +43,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DS3FILE_EXPORTS )
 
 HPCC_ADD_LIBRARY( s3file SHARED ${SRCS}  )
-install ( TARGETS s3file DESTINATION filehooks CALC_DEPS)
+install ( TARGETS s3file DESTINATION filehooks )
 
 target_link_libraries ( s3file
     jlib

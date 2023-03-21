@@ -61,7 +61,7 @@ IF(NLP)
         install(
             TARGETS nlp
             DESTINATION plugins
-            CALC_DEPS)
+        )
 
         target_link_libraries(nlp PRIVATE
             eclrtl

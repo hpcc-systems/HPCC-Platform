@@ -62,13 +62,11 @@ endif()
 if (CONTAINERIZED)
 install(
     TARGETS py2embed
-    DESTINATION plugins
-    CALC_DEPS)
+    DESTINATION plugins)
 else()
 install(
     TARGETS py2embed
-    DESTINATION versioned/python2
-    CALC_DEPS)
+    DESTINATION versioned/python2)
 endif()
 
 if(debug_python)

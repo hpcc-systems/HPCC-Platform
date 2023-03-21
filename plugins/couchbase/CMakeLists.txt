@@ -52,8 +52,7 @@ IF ( COUCHBASEEMBED )
         install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libcouchbase-build/lib\")")
         install(
             TARGETS couchbaseembed
-            DESTINATION plugins
-            CALC_DEPS)
+            DESTINATION plugins)
 
         target_link_libraries(
             couchbaseembed

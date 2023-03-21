@@ -56,13 +56,11 @@ endif()
 if (CONTAINERIZED)
 install(
     TARGETS py3embed
-    DESTINATION plugins
-    CALC_DEPS)
+    DESTINATION plugins)
 else()
 install(
     TARGETS py3embed
-    DESTINATION versioned/python3
-    CALC_DEPS)
+    DESTINATION versioned/python3)
 endif()
 
 target_link_libraries(

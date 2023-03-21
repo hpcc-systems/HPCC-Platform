@@ -62,8 +62,7 @@ if(REMBED)
 
         install(
             TARGETS Rembed
-            DESTINATION plugins
-            CALC_DEPS)
+            DESTINATION plugins)
         install(
             FILES ${RINSIDE_LIBRARY}
             DESTINATION ${LIB_DIR}

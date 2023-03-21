@@ -100,4 +100,8 @@ elseif (NOT "${CMAKE_BUILD_TYPE}" MATCHES "^Debug$|^Release$|^RelWithDebInfo$")
 endif ()
 message ("-- Making ${CMAKE_BUILD_TYPE} system")
 
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    set(CPACK_STRIP_FILES TRUE)
+endif()
+
 endif ()

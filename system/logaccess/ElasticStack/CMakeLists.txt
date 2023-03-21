@@ -48,5 +48,4 @@ target_link_libraries(elasticstacklogaccess
 install(TARGETS elasticstacklogaccess
   RUNTIME DESTINATION ${EXEC_DIR}
   LIBRARY DESTINATION ${LIB_DIR}
-  CALC_DEPS
 )

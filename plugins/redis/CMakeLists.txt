@@ -53,8 +53,7 @@ if(REDIS)
 
         install(
             TARGETS redis
-            DESTINATION plugins
-            CALC_DEPS)
+            DESTINATION plugins)
 
         target_link_libraries(
             redis
