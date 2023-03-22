@@ -957,30 +957,63 @@ void ReferencedFileList::cloneFileInfo(StringBuffer &publisherWuid, const char *
 {
     Owned<IDFUWorkUnit> publisher;
     bool dfucopy = 0 != (updateFlags & DFU_UPDATEF_COPY);
-    if (dfucopy && filesNeedCopying(cloneForeign))
-    {
-        StringBuffer dfuQueueName(dfu_queue);
-        if (!dfuQueueName)
-            getDefaultDFUName(dfuQueueName);
+    bool needToCopyPhysicalFiles = filesNeedCopying(cloneForeign);
 
+    if (dfucopy)
+    {
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        publisher.setown(factory->createPublisherWorkUnit());
-        publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
-        publisher->setQueue(dfuQueueName);
-        publisherWuid.set(publisher->queryId());
+        if (!needToCopyPhysicalFiles)
+        {
+            if (!publisherWuid.isEmpty())
+            {
+                publisher.setown(factory->updateWorkUnit(publisherWuid, true));
+                if (publisher)
+                {
+                    publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
+                    IDFUprogress *progress = publisher->queryUpdateProgress();
+                    if (progress)
+                        progress->setState(DFUstate_finished); //don't just delete because empty, automated systems might be tracking
+                    publisher->commit();
+                }
+                publisher.clear();
+            }
+        }
+        else
+        {
+            StringBuffer dfuQueueName(dfu_queue);
+            if (!dfuQueueName)
+                getDefaultDFUName(dfuQueueName);
+
+            if (publisherWuid.isEmpty())
+                publisher.setown(factory->createPublisherWorkUnit());
+            else
+            {
+                //Publisher WUIDs can be preallocated in order to provide them to the user early in the process, but only newly created publisher workunits can be used
+                publisher.setown(factory->updateWorkUnit(publisherWuid, true));
+                if(!publisher)
+                    throw makeStringException(-1, "Failed to open preallocated Publisher DFU Workunit.");
+                if (publisher->queryProgress()->getState()!=DFUstate_unknown)
+                    throw makeStringException(-1, "Cannot clone files by reusing a previously used publisher workunit.");
+            }
+
+            publisher->setQueue(dfuQueueName);
+            publisher->setJobName(jobName.isEmpty() ? "copy published files" : jobName);
+            publisherWuid.set(publisher->queryId());
+        }
     }
 
-    IPropertyTree *directories = nullptr;
-
-#ifndef _CONTAINERIZED
-    Owned<IPropertyTree> envtree = getHPCCEnvironment();
-    if (envtree)
-        directories = envtree->queryPropTree("Software/Directories");
-#endif
-
     ReferencedFileIterator files(this);
-    ForEach(files)
-        files.queryObject().cloneInfo(directories, publisher, updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, dfu_queue);
+    if (needToCopyPhysicalFiles)
+    {
+        IPropertyTree *directories = nullptr;
+#ifndef _CONTAINERIZED
+        Owned<IPropertyTree> envtree = getHPCCEnvironment();
+        if (envtree)
+            directories = envtree->queryPropTree("Software/Directories");
+#endif
+        ForEach(files)
+            files.queryObject().cloneInfo(directories, publisher, updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder, dfu_queue);
+    }
     if (cloneSuperInfo)
         ForEach(files)
             files.queryObject().cloneSuperInfo(publisher, updateFlags, this, user, remote);

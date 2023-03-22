@@ -30,6 +30,7 @@ include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 set (    SRCS
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_smc_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          ecl-bundle.cpp
          ${HPCC_SOURCE_DIR}/ecl/eclcmd/eclcmd_shell.cpp
          ${HPCC_SOURCE_DIR}/ecl/eclcmd/eclcmd_common.hpp
@@ -54,9 +55,10 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/eclcmd
          ${HPCC_SOURCE_DIR}/ecl/eclcc
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${ESPSCM_GENERATED_DIR}
     )
 
-ADD_DEFINITIONS( -D_CONSOLE -DWSSMC_API_LOCAL )
+ADD_DEFINITIONS( -D_CONSOLE -DWSSMC_API_LOCAL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( ecl-bundle ${SRCS} )
 install ( TARGETS ecl-bundle RUNTIME DESTINATION ${EXEC_DIR} )

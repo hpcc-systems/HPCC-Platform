@@ -54,6 +54,7 @@ ESPrequest [nil_remove] WURecreateQueryRequest
     [min_ver("1.89")] bool DfuOverwrite(false);
     [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
     [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
+    [min_ver("1.95")] string DfuPublisherWuid; //Wuid can be preallocated and then passed in here to use.  Will be created if empty
 };
 
 ESPresponse [exceptions_inline, nil_remove] WURecreateQueryResponse
@@ -139,6 +140,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     [min_ver("1.89")] bool DfuOverwrite(false);
     [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
     [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
+    [min_ver("1.95")] string DfuPublisherWuid; //Wuid can be preallocated and then passed in here to use.  Will be created if empty
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -388,6 +390,7 @@ ESPrequest WUQuerysetImportRequest
     [min_ver("1.89")] bool DfuOverwrite(false);
     [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
     [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
+    [min_ver("1.95")] string DfuPublisherWuid; //Wuid can be preallocated and then passed in here to use.  Will be created if empty
 };
 
 ESPresponse [exceptions_inline] WUQuerysetImportResponse
@@ -474,6 +477,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     [min_ver("1.89")] bool DfuOverwrite(false);
     [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
     [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
+    [min_ver("1.95")] string DfuPublisherWuid; //Wuid can be preallocated and then passed in here to use.  Will be created if empty
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
@@ -508,6 +512,7 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     [min_ver("1.89")] bool DfuOverwrite(false);
     [min_ver("1.89")] bool OnlyCopyFiles(false); //Copies the files needed for the command but doesn't actually complete the command
     [min_ver("1.89")] bool StopIfFilesCopied(false); //Command only completes if no files need copying.  User can run again after DFU Publisher Workunit completes.
+    [min_ver("1.95")] string DfuPublisherWuid; //Wuid can be preallocated and then passed in here to use.  Will be created if empty
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse

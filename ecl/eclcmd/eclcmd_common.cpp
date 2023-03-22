@@ -23,8 +23,9 @@
 #include "workunit.hpp"
 #include "eclwatch_errorlist.hpp"
 
-
 #include "eclcmd_common.hpp"
+
+#include "ws_fs.hpp"
 
 static StringBuffer eclccpath;
 
@@ -894,4 +895,39 @@ eclCmdOptionMatchIndicator EclCmdWithQueryTarget::parseCommandLineOptions(ArgvIt
             return ind;
     }
     return EclCmdOptionMatch;
+}
+
+void EclCmdOptionsDFU::preallocatePublisherWuid(EclCmdCommon &cmd)
+{
+    Owned<IClientFileSpray> client = createCmdClientExt(FileSpray, cmd, "");
+    Owned<IClientCreateDFUPublisherWorkunit> req = client->createCreateDFUPublisherWorkunitRequest();
+    Owned<IClientCreateDFUPublisherWorkunitResponse> resp;
+    try
+    {
+         resp.setown(client->CreateDFUPublisherWorkunit(req));
+    }
+    catch (IException *E)
+    {
+        //if we can't preallocate the publisher DFU workunit it might be because the server is too old, an expected scenario pre release 9.2, we'll just create the publisher wuid the old way
+        StringBuffer msg;
+        int code = E->errorCode();
+        E->errorMessage(msg);
+        E->Release();
+
+        //try to do is to improve the message when the server is old
+        if (code == -2 && strstr(msg, "CreateDFUPublisherWorkunit not available"))
+            fputs("\nCan't preallocate the Publisher Workunit, server too old, workunit will be created during processing.\n", stderr);
+        else
+            fprintf(stderr, "\nError trying to preallocate the publisher DFU Workunit, will try to create workunit during processing instead.\n%d - %s\n", code, msg.str());
+        return;
+    }
+
+    const char *publisherWuid = resp ? resp->getResult().getID() : nullptr;
+    if (!isEmptyString(publisherWuid))
+    {
+        fprintf(stdout, "\nPublisher workunit: %s", publisherWuid);
+        optDfuPublisherWuid.set(publisherWuid);
+    }
+    else
+        fputs("\nUnable to to preallocate the publisher DFU Workunit.  Workunit will be created during processing instead.\n", stderr);
 }
