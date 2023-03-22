@@ -1,15 +1,15 @@
-:root {
+.flat .dojo-component.dgrid.dgrid-grid {
     --header-font-size: 14px;
     --row-font-size: 13px;
     --grid-background: transparent;
     --grid-selectionForeground: rgb(50, 49, 48);
     --grid-selectionForegroundDark: rgb(225, 225, 225);
     --grid-selectionForgroundHoverDark: rgb(225, 225, 225);
-    --grid-selectionBackground: rgb(235, 235, 235);
-    --grid-selectionBackgroundDark: rgb(47, 47, 47);
+    --grid-selectionBackground: rgb(225, 238, 246);
+    --grid-selectionBackgroundDark: rgb(64, 64, 64);
     --grid-hoverBackground: rgb(215, 237, 248);
-    --grid-hoverBackgroundDark: rgb(176, 176, 176);
-    --grid-selectionHoverBackground: rgb(227, 225, 223);
+    --grid-hoverBackgroundDark: rgb(96, 96, 96);
+    --grid-selectionHoverBackground: rgb(215, 237, 248);
     --grid-selectionHoverBackgroundDark: rgb(77, 41, 0);
 }
 
