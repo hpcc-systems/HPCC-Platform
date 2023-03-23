@@ -1725,10 +1725,27 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+8),
 .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+9),
 .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+10) {
-    background:#F3F3F3;
-    -webkit-box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
-    -moz-box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
-    box-shadow: 0px 0px 0px 6px rgba(243,243,243,1);
+    background: var(--neutralLighter);
+    box-shadow: 0px 0px 0px 6px var(--neutralLighter);
+}
+
+
+.flat-dark .eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+3),
+.flat-dark .eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+4),
+.flat-dark .eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+4),
+.flat-dark .eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+5),
+.flat-dark .eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+6),
+.flat-dark .eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+5),
+.flat-dark .eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+6),
+.flat-dark .eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+7),
+.flat-dark .eclwatch_DPReport.report-col-count-4 .ddCell:nth-child(8n+8),
+.flat-dark .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+6),
+.flat-dark .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+7),
+.flat-dark .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+8),
+.flat-dark .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+9),
+.flat-dark .eclwatch_DPReport.report-col-count-5 .ddCell:nth-child(10n+10) {
+    background: var(--dark-neutralLighter);
+    box-shadow: 0px 0px 0px 6px var(--dark-neutralLighter);
 }
 
 .dijitTab.tabStripButton {
