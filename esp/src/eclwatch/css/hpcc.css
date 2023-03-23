@@ -1697,7 +1697,7 @@ button.clippy img {
     font-weight: normal;
 }
 
-span.dijitReset.dijitInline.dijitIcon.fa {
+.dijitIcon.fa {
     font-family: "FontAwesome";
     color:#2D97D6;
     min-width: 16px;
@@ -1831,6 +1831,10 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 .flat:has(.fui-FluentProvider) .dijitTabHover {
     background-color: inherit;
     color: inherit;
+}
+
+.flat-dark:has(.fui-FluentProvider) .dijitIcon.fa {
+    color: var(--dark-themePrimary);
 }
 
 .flat .fui-FluentProvider .dgrid-expando-icon {
