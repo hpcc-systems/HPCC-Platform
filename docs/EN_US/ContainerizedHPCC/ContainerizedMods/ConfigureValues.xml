@@ -1067,6 +1067,41 @@
         customization configuration YAML file when you deploy your
         containerized HPCC Systems.</para>
       </sect3>
+
+      <sect3 id="CNT_IndexBuildPlane">
+        <title>Index Build Plane</title>
+
+        <para>Define the <emphasis>indexBuildPlane</emphasis> value as a helm
+        chart option to allow index files to be written by default to a
+        different data plane. Unlike flat files, index files have different
+        requirements. The index files benefit from quick random access
+        storage. Ordinarily flat files and index files are output to the
+        defined default data plane(s). Using this option you can define that
+        index files are built on a separate data plane from other common
+        files. This chart value can be supplied at a component or global
+        level.</para>
+
+        <para>For example, adding the value to a global level under
+        globlal.storage :</para>
+
+        <programlisting>global:
+  storage:
+    indexBuildPlane: myindexplane</programlisting>
+
+        <para>Optionally, you could add it at the component level, as
+        follows:</para>
+
+        <programlisting>thor:
+- name: thor
+  prefix: thor
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
+  indexBuildPlane: myindexplane</programlisting>
+
+        <para>When this value is set at the component level it would override
+        the value set at the global level.</para>
+      </sect3>
     </sect2>
   </sect1>
 
