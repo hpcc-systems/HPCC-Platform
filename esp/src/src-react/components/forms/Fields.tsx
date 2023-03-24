@@ -165,6 +165,7 @@ interface StringField extends BaseField {
     value?: string;
     readonly?: boolean;
     multiline?: boolean;
+    errorMessage?: string;
 }
 
 interface NumericField extends BaseField {
@@ -701,6 +702,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         readOnly={field.readonly}
                         required={field.required}
                         multiline={field.multiline}
+                        errorMessage={field.errorMessage ?? ""}
                         canRevealPassword={field.type === "password" ? true : false}
                         revealPasswordAriaLabel={nlsHPCC.ShowPassword}
                     />

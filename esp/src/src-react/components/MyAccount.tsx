@@ -25,6 +25,7 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
     const [newPassword2, setNewPassword2] = React.useState("");
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
+    const [passwordMismatch, setPasswordMismatch] = React.useState("");
 
     const service = useConst(() => new AccountService({ baseUrl: "" }));
 
@@ -71,7 +72,7 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
             "lastname": { label: nlsHPCC.LastName, type: "string", value: currentUser?.lastName, readonly: true },
             "oldPassword": { label: nlsHPCC.OldPassword, type: "password", value: oldPassword },
             "newPassword1": { label: nlsHPCC.NewPassword, type: "password", value: newPassword1 },
-            "newPassword2": { label: nlsHPCC.ConfirmPassword, type: "password", value: newPassword2 },
+            "newPassword2": { label: nlsHPCC.ConfirmPassword, type: "password", value: newPassword2, errorMessage: passwordMismatch },
             "PasswordExpiration": { label: nlsHPCC.PasswordExpiration, type: "string", value: currentUser?.passwordExpiration, readonly: true },
         }} onChange={(id, value) => {
             switch (id) {
@@ -83,6 +84,11 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
                     break;
                 case "newPassword2":
                     setNewPassword2(value);
+                    if (value && value !== newPassword1) {
+                        setPasswordMismatch(nlsHPCC.PasswordsDoNotMatch);
+                    } else {
+                        setPasswordMismatch("");
+                    }
                     break;
                 default:
                     logger.debug(`${id}: ${value}`);
