@@ -1,6 +1,5 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Icon, Image, Link } from "@fluentui/react";
-import * as domClass from "dojo/dom-class";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
 import * as Utility from "src/Utility";
@@ -128,11 +127,10 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             JobName: { label: nlsHPCC.JobName, width: 500 },
             ClusterName: { label: nlsHPCC.Cluster, width: 126 },
             StateMessage: { label: nlsHPCC.State, width: 72 },
-            PercentDone: {
-                label: nlsHPCC.PctComplete, width: 90, sortable: false,
-                renderCell: React.useCallback(function (object, value, node, options) {
-                    domClass.add(node, "justify-right");
-                    node.innerText = Utility.valueCleanUp(value);
+            PCTDone: {
+                label: nlsHPCC.PctComplete, width: 90, sortable: true,
+                formatter: React.useCallback(function (value, row) {
+                    return Utility.valueCleanUp(row.PercentDone);
                 }, [])
             }
         }
