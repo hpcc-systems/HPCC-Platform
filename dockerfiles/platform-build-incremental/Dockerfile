@@ -32,6 +32,8 @@ RUN apt-get install -y \
     dnsutils \
     nano 
 
+RUN apt-get install -y libcap2-bin zip libarchive13 libatlas3-base clang
+
 # Set the locale
 RUN apt-get install -y locales
 RUN locale-gen en_US.UTF-8
