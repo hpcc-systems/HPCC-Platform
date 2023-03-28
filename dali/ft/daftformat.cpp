@@ -1884,6 +1884,7 @@ void CRemotePartitioner::prepareCmd(MemoryBuffer &msg)
 
 void CRemotePartitioner::callRemote()
 {
+    HANDLE localFtSlaveHandle = 0; // used only if ftslave is launched on this host
     try
     {
         LogMsgJobInfo job(unknownJob);
@@ -1901,8 +1902,7 @@ void CRemotePartitioner::callRemote()
         if (sprayer.useFtSlave)
         {
             // NB: In containerized mode, spawnRemoteChild will launch ftslave's locally and set connectEP to localhost
-            StringBuffer tmp;
-            socket.setown(spawnRemoteChild(SPAWNdfu, slave, connectEP, DAFT_VERSION, queryFtSlaveLogDir(), nullptr, wuid));
+            socket.setown(spawnRemoteChild(SPAWNdfu, slave, connectEP, DAFT_VERSION, queryFtSlaveLogDir(), nullptr, wuid, &localFtSlaveHandle));
             if (!socket)
                 throwError1(DFTERR_FailedStartSlave, url.str());
 
@@ -1962,6 +1962,13 @@ void CRemotePartitioner::callRemote()
 
     if (sem)
         sem->signal();
+
+    if (localFtSlaveHandle)
+    {
+        DWORD runcode;
+        if (!wait_program_timeout(localFtSlaveHandle, runcode, 5000))
+            WARNLOG("CRemotePartitioner::callRemote - Timed out waiting for local FtSlave process to exit");
+    }
 }
 
 
