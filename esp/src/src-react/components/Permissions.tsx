@@ -146,19 +146,19 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
     const [ClearPermissionsConfirm, setShowClearPermissionsConfirm] = useConfirm({
         title: nlsHPCC.ClearPermissionsCache,
         message: nlsHPCC.ClearPermissionsCacheConfirm,
-        onSubmit: () => WsAccess.ClearPermissionsCache
+        onSubmit: () => WsAccess.ClearPermissionsCache()
     });
 
     const [EnableScopesConfirm, setShowEnableScopesConfirm] = useConfirm({
         title: nlsHPCC.EnableScopeScans,
         message: nlsHPCC.EnableScopeScansConfirm,
-        onSubmit: () => WsAccess.EnableScopeScans
+        onSubmit: () => WsAccess.EnableScopeScans()
     });
 
     const [DisableScopesConfirm, setShowDisableScopesConfirm] = useConfirm({
         title: nlsHPCC.DisableScopeScans,
         message: nlsHPCC.DisableScopeScanConfirm,
-        onSubmit: () => WsAccess.DisableScopeScans
+        onSubmit: () => WsAccess.DisableScopeScans()
     });
 
     //  Command Bar  ---
