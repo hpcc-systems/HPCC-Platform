@@ -62,7 +62,7 @@ export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     React.useEffect(() => {
         try {
             const t = window.setTimeout(function () {
-                if (themeIsDark) {
+                if (themeIsDark()) {
                     editor.setOption("theme", "darcula");
                 } else {
                     editor.setOption("theme", "default");

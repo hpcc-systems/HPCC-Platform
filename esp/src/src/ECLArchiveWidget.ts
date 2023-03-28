@@ -57,7 +57,7 @@ export class ECLArchiveWidget {
     }
 
     setEditorTheme() {
-        if (themeIsDark) {
+        if (themeIsDark()) {
             this.editor.setOption("theme", "darcula");
         } else {
             this.editor.setOption("theme", "default");
