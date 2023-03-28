@@ -97,6 +97,8 @@ ESPStruct [nil_remove] DFUWorkunit
     [min_ver("1.14")] int expireDays;
     [min_ver("1.21")] bool PreserveFileParts;
     [min_ver("1.23")] double FileAccessCost;
+    [min_ver("1.25")] int KbPerSecAve;
+    [min_ver("1.25")] int KbPerSec;
 };
 
 ESPStruct [nil_remove] GroupNode
@@ -154,6 +156,8 @@ ESPrequest GetDFUWorkunits
     string ParentWuid;
     string PublisherWuid;
     [min_ver("1.24")] bool includeProgressMessages(false);
+    [min_ver("1.25")] bool includeTimings(false);
+    [min_ver("1.25")] bool includeTransferRate(false);
 };
 
 ESPresponse [encode(0), exceptions_inline]
@@ -698,7 +702,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.24"),
+    version("1.25"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);
