@@ -110,7 +110,16 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
             <Nav selectedKey={selKey} groups={menu} />
         </Stack.Item>
         <Stack.Item>
-            <IconButton iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }} onClick={() => setTheme(isDark ? "light" : "dark")} />
+            <IconButton
+                iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }}
+                onClick={() => {
+                    setTheme(isDark ? "light" : "dark");
+                    const themeChangeEvent = new CustomEvent("eclwatch-theme-toggle", {
+                        detail: { dark: !isDark }
+                    });
+                    document.dispatchEvent(themeChangeEvent);
+                }}
+            />
             {/* Disable Theme editor button for launch of 9.0 */}
             {/* <IconButton iconProps={{ iconName: "Equalizer" }} onClick={() => { }} /> */}
         </Stack.Item>
