@@ -1729,7 +1729,6 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
     box-shadow: 0px 0px 0px 6px var(--neutralLighter);
 }
 
-
 .flat-dark .eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+3),
 .flat-dark .eclwatch_DPReport.report-col-count-2 .ddCell:nth-child(4n+4),
 .flat-dark .eclwatch_DPReport.report-col-count-3 .ddCell:nth-child(6n+4),
@@ -1750,6 +1749,88 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 
 .dijitTab.tabStripButton {
     background-color: transparent;
+}
+
+.flat .fui-FluentProvider .dijitTab,
+.flat .fui-FluentProvider .dijitTabPaneWrapper,
+.flat .fui-FluentProvider .dijitToolbar,
+.flat .fui-FluentProvider .dijitContentPane,
+.flat .fui-FluentProvider .dijitToolbar .dijitToggleButtonChecked .dijitButtonNode,
+.flat .fui-FluentProvider .dgrid-header, 
+.flat .fui-FluentProvider .dgrid-header-row, 
+.flat .fui-FluentProvider .dgrid-footer {
+    background-color: inherit;
+}
+
+.flat .dijitTooltipDialog .dijitTooltipContainer,
+.flat .dijitPopup {
+    background-color: inherit;
+    color: var(--neutralPrimary);
+}
+
+.flat-dark .dijitTooltipDialog .dijitTooltipContainer {
+    color: var(--dark-neutralPrimary);
+}
+
+.flat .dijitTabContainerTop-tabs .dijitTabChecked:before {
+    background: var(--themePrimary);
+}
+
+.flat-dark .dijitTabContainerTop-tabs .dijitTabChecked:before {
+    background: var(--dark-themePrimary);
+}
+
+.flat:has(.fui-FluentProvider) .dijitPopup {
+    background-color: var(--white);
+}
+
+.flat-dark:has(.fui-FluentProvider) .dijitPopup {
+    background-color: var(--dark-white);
+}
+
+.flat:has(.fui-FluentProvider) .dijitPopup .dijitButton {
+    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+}
+
+.flat:has(.fui-FluentProvider) .dijitPopup .dijitButtonNode {
+    background-color: inherit;
+    border: none;
+    padding: 0;
+    color: inherit;
+}
+
+.flat:has(.fui-FluentProvider) .dijitPopup .dijitButton:has([type="button"]) {
+    border: 1px solid var(--neutralDark);
+}
+
+.flat-dark:has(.fui-FluentProvider) .dijitPopup .dijitButton:has([type="button"]) {
+    border: 1px solid var(--neutralQuaternary);
+    color: var(--white);
+}
+
+.flat:has(.fui-FluentProvider) .dijitPopup .dijitButton:has([type="submit"]) {
+    background-color: var(--themePrimary);
+    color: var(--white);
+}
+
+.flat-dark:has(.fui-FluentProvider) .dijitPopup .dijitButton:has([type="submit"]) {
+    background-color: var(--dark-themePrimary);
+    color: var(--black);
+}
+
+.flat:has(.fui-FluentProvider) .dijitInputField {
+    color: var(--dark-themeLighter);
+}
+
+.flat:has(.fui-FluentProvider) .dijitDropDownButtonHover .dijitButtonNode,
+.flat:has(.fui-FluentProvider) .dijitToggleButtonHover .dijitButtonNode,
+.flat:has(.fui-FluentProvider) .dijitButtonHover .dijitButtonNode,
+.flat:has(.fui-FluentProvider) .dijitTabHover {
+    background-color: inherit;
+    color: inherit;
 }
 
 .flat .fui-FluentProvider .dgrid-expando-icon {
