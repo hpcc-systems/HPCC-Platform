@@ -1863,3 +1863,23 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 .flat-dark .fui-FluentProvider .ui-icon-triangle-1-se {
     border-top: 4px solid white;
 }
+
+.flat .phosphor_WidgetAdapter {
+    background: inherit;
+}
+
+.flat .p-TabBar-tab {
+    background: rgb(229, 229, 229);
+}
+
+.flat-dark .p-TabBar-tab {
+    background: rgb(48, 48, 48);
+}
+
+.flat-dark .p-TabBar-tab:hover:not(.p-mod-current) {
+    background: rgb(72, 72, 72);
+}
+
+.flat .p-TabBar-tab.p-mod-current {
+    background: inherit;
+}
