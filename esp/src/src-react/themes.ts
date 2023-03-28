@@ -39,8 +39,8 @@ const lightThemeOld: PartialTheme = {
 const darkThemeOld: PartialTheme = {
     palette: {
         themePrimary: "#ff8600",
-        themeLighterAlt: "#0a0500",
-        themeLighter: "#291600",
+        themeLighterAlt: "#2c2c2c",
+        themeLighter: "#3a3a3a",
         themeLight: "#4d2900",
         themeTertiary: "#995200",
         themeSecondary: "#e07800",
@@ -59,7 +59,7 @@ const darkThemeOld: PartialTheme = {
         neutralPrimary: "#e1e1e1",
         neutralDark: "#f0f0f0",
         black: "#ffffff",
-        white: "#000000",
+        white: "#222222",
     }
 };
 

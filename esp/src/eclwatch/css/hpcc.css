@@ -1751,3 +1751,34 @@ span.dijitReset.dijitInline.dijitIcon.fa.disabled {
 .dijitTab.tabStripButton {
     background-color: transparent;
 }
+
+.flat .fui-FluentProvider .dgrid-expando-icon {
+    width: 0px;
+    height: 0px;
+    background-image: none;
+    cursor: pointer;
+}
+
+.flat .fui-FluentProvider .ui-icon-triangle-1-e {
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 4px solid black;
+    margin-top: 7px;
+    margin-right: 6px;
+}
+
+.flat .fui-FluentProvider .ui-icon-triangle-1-se {
+    margin-top: 9px;
+    margin-right: 5px;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid black;
+}
+
+.flat-dark .fui-FluentProvider .ui-icon-triangle-1-e {
+    border-left: 4px solid white;
+}
+
+.flat-dark .fui-FluentProvider .ui-icon-triangle-1-se {
+    border-top: 4px solid white;
+}
