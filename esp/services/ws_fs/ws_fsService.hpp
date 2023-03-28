@@ -71,6 +71,8 @@ class CFileSprayEx : public CFileSpray
     void getServersInDropZone(const char* dropZoneName, IArrayOf<IConstTpDropZone>& dropZoneList,
         bool isECLWatchVisibleOnly, StringArray& serverList);
     IPropertyTree* getAndValidateDropZone(const char * path, const char * host);
+    IEspDFUWorkunit* createDFUWUFromSashaListResult(const char* result);
+    void setDFUCommand(const char* commandStr, IEspDFUWorkunit* dfuWU);
 
 public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
