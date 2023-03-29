@@ -2005,16 +2005,51 @@ public:
         return argv;
     }
 
+    bool isPlatformProcess(HANDLE pid)
+    {
+        // MORE - may need to cope with other installation locations - perhaps check that the installation location matches the current exe's location? Is there some other way to know the install location?
+        VStringBuffer procPath("/proc/%u/exe", pid);
+        char path[PATH_MAX + 1];
+        ssize_t len = readlink(procPath, path, PATH_MAX);
+        if (len != -1)
+        {
+            path[len] = 0;
+            return startsWith(path, "/opt/HPCCSystems/bin/");
+        }
+        else
+            return false;
+    }
 
     void run()
     {
+        /* NB: Important to call splitargs (which calls malloc) before the fork()
+         * and not in the child process. Because performing malloc in the child
+         * process, which then calls exec() can cause problems for TBB malloc proxy.
+         */
+        unsigned argc;
+        char **argv=splitargs(prog,argc);
+
+        bool wantsSecrets = false;
+        StringArray secretsWanted;
+        for (char **arg = argv; *arg != nullptr; arg++)
+        {
+            if (streq(*arg, "--secret") && arg[1] != nullptr)
+            {
+                wantsSecrets = true;
+                secretsWanted.append(arg[1]);
+                arg++;
+            }
+        }
+
         int inpipe[2];
         int outpipe[2];
         int errpipe[2];
+        int secretpipe[2];
         if (aborted ||
             (hasinput && (::pipe(inpipe)==-1)) ||
             (hasoutput && (::pipe(outpipe)==-1)) ||
-            (haserror && (::pipe(errpipe)==-1)))
+            (haserror && (::pipe(errpipe)==-1)) ||
+            (wantsSecrets && ::pipe(secretpipe)==-1))
         {
             retcode = START_FAILURE;
             started.signal();
@@ -2039,12 +2074,6 @@ public:
             envp.append(nullptr);
         }
 
-        /* NB: Important to call splitargs (which calls malloc) before the fork()
-         * and not in the child process. Because performing malloc in the child
-         * process, which then calls exec() can cause problems for TBB malloc proxy.
-         */
-        unsigned argc;
-        char **argv=splitargs(prog,argc);
         for (;;)
         {
             pipeProcess = (HANDLE)fork();
@@ -2062,6 +2091,10 @@ public:
                 if (haserror) {
                     close(errpipe[0]);
                     close(errpipe[1]);
+                }
+                if (wantsSecrets) {
+                    close(secretpipe[0]);
+                    close(secretpipe[1]);
                 }
                 retcode = START_FAILURE;
                 started.signal();
@@ -2090,7 +2123,11 @@ public:
                 close(errpipe[0]);
                 close(errpipe[1]);
             }
-
+            if (wantsSecrets) {
+                dup2(secretpipe[0],3);
+                close(secretpipe[0]);
+                close(secretpipe[1]);
+            }
             if (dir.get() && chdir(dir) == -1)
             {
                 if (haserror)
@@ -2117,9 +2154,29 @@ public:
             close(outpipe[1]);
         if (haserror)
             close(errpipe[1]);
+        if (wantsSecrets)
+            close(secretpipe[0]);
         hInput = hasinput?inpipe[1]:((HANDLE)-1);
         hOutput = hasoutput?outpipe[0]:((HANDLE)-1);
         hError = haserror?errpipe[0]:((HANDLE)-1);
+        if (wantsSecrets)
+        {
+            if (isPlatformProcess(pipeProcess))
+            {
+                DBGLOG("Secrets passed");
+                ForEachItemIn(idx, secretsWanted)
+                {
+                    const char *secretName = secretsWanted.item(idx);
+                    VStringBuffer msg("%s=%s\n", secretName, "secret");  // MORE - replace with appropriate call to jsecrets function
+                    ssize_t ret = ::write(secretpipe[1], msg, msg.length());
+                    if (ret != msg.length())
+                        DBGLOG("Failed to write secret - ::write returned %" I64F "d", (__int64_t) ret);
+                }
+            }
+            else
+                DBGLOG("Secrets requested but not passed");
+            close(secretpipe[1]);
+        }
         started.signal();
         retcode = dowaitpid(pipeProcess, 0);
         if (retcode==START_FAILURE) 

@@ -486,6 +486,7 @@ int main(int argc, char *argv[])
 
     StringBuffer query;
     StringBuffer resultName;
+    StringBuffer secretName;
     StringBuffer logFile;
     unsigned numThreads = 2;
     bool retryMode = true;
@@ -622,6 +623,12 @@ int main(int argc, char *argv[])
             break;
 #endif
         }
+        else if (stricmp(argv[i], "--secret") == 0)   //indicates named secret for ssl connection will be passed via pipe handle 3
+        {
+            i++;
+            if (i <argc)
+                secretName.clear().append(argv[i]);
+        }
         else
         {
             fatalError.appendf("Unknown/unexpected parameter %s", argv[i]);
@@ -630,6 +637,27 @@ int main(int argc, char *argv[])
     }
 
     PROGLOG("roxiepipe starting, command line %s", cmdLine.str());
+
+    if (secretName.length())
+    {
+        // MORE - we want to process the secrets, not print them!
+        char buf;
+        printf("Secrets: ");
+        while (true)
+        {
+            int rc = read(3, &buf, 1);
+            if (rc==1)
+                printf("%c", buf);
+            else
+            {
+                if (rc)
+                    perror("Failed to read secret");
+                break;
+            }
+        }
+        printf("\n");
+    }
+
 
     StringBuffer logDir;
     if (!logFile.length())
