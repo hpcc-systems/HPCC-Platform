@@ -861,9 +861,7 @@ extern jlib_decl const LogMsgJobInfo unknownJob;
 
 extern jlib_decl ILogMsgManager * queryLogMsgManager();
 extern jlib_decl ILogMsgHandler * queryStderrLogMsgHandler();
-#ifdef _CONTAINERIZED
 extern jlib_decl void setupContainerizedLogMsgHandler();
-#endif
 
 //extern jlib_decl ILogMsgManager * createLogMsgManager(); // use with care! (needed by mplog listener facility)
 
