@@ -385,6 +385,9 @@ unsigned MemoryValue::getHash(unsigned initval)
 {
     size32_t size = getSize();
     assertThrow(val.length()>=size);
+    constexpr unsigned maxHashLength = 0x100000;     //Only hash the first 1M - to avoid pathological performance for (string4000000000)'x' etc.
+    if (size > maxHashLength)
+        size = maxHashLength;
     return hashc((unsigned char *) val.get(), size, initval);
 }
 
