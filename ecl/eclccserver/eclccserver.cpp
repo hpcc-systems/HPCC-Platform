@@ -708,10 +708,12 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 unsigned __int64 elapsed_compile = cycle_to_nanosec(get_cycles_now() - startCompile);
                 workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StTimeElapsed, NULL, elapsed_compile, 1, 0, StatsMergeReplace);
             }
-            timedOut = abortWaiter.stop();
+            bool processKilled = (retcode >= 128);
+            //If the process is killed it is probably because it ran out of memory - so try to compile as a K8s job
+            timedOut = abortWaiter.stop() || (isContainerized() && processKilled);
             if (!timedOut)
             {
-                if (retcode == 0 && !timedOut)
+                if (retcode == 0)
                 {
                     StringBuffer realdllname, dllurl;
                     realdllname.append(SharedObjectPrefix).append(wuid).append(SharedObjectExtension);
@@ -752,6 +754,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 }
                 else
                 {
+                    if (processKilled)
+                        addExceptionToWorkunit(workunit, SeverityError, "eclccserver", 9999, "eclcc killed - likely to be out of memory - see compile log for details", nullptr, 0, 0, 0);
 #ifndef _CONTAINERIZED
                     Owned<IWUQuery> query = workunit->updateQuery();
                     associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
