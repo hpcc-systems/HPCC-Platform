@@ -8,6 +8,7 @@ import { Users } from "./Users";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
 
 interface SecurityProps {
     filter?: object;
@@ -29,7 +30,7 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
         <SizeMe monitorHeight>{({ size }) =>
             <Pivot
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => pushUrl(`/security/${evt.props.itemKey}`)}
+                onLinkClick={evt => pushUrl(`/${Utility.opsRouteCategory}/security/${evt.props.itemKey}`)}
             >
                 <PivotItem headerText={nlsHPCC.Users} itemKey="users" style={pivotItemStyle(size)}>
                     <Users filter={filter} page={page} />

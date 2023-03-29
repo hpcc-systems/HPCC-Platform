@@ -45,16 +45,16 @@ function navLinkGroups(): INavLinkGroup[] {
         },
         {
             name: nlsHPCC.Operations,
-            url: "#/topology-bare-metal",
+            url: "#/operations",
             icon: "Admin",
-            key: "topology-bare-metal"
+            key: "operations"
         }
     ];
     if (!containerized) {
         links = links.filter(l => l.key !== "topology");
     }
     if (!bare_metal) {
-        links = links.filter(l => l.key !== "topology-bare-metal");
+        links = links.filter(l => l.key !== "operations");
     }
     return [{ links }];
 }
@@ -159,16 +159,17 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.Pods, itemKey: "/topology/pods" },
         { headerText: nlsHPCC.Services, itemKey: "/topology/services" },
         { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
+        { headerText: nlsHPCC.Security + " (L)", itemKey: "/topology/security" },
         { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin" },
     ],
-    "topology-bare-metal": [
-        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology-bare-metal" },
-        { headerText: nlsHPCC.DiskUsage + " (L)", itemKey: "/diskusage" },
-        { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/clusters" },
-        { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/processes" },
-        { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/servers" },
-        { headerText: nlsHPCC.Security + " (L)", itemKey: "/security" },
-        { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/desdl" },
+    "operations": [
+        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/operations" },
+        { headerText: nlsHPCC.DiskUsage + " (L)", itemKey: "/operations/diskusage" },
+        { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/operations/clusters" },
+        { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/operations/processes" },
+        { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/operations/servers" },
+        { headerText: nlsHPCC.Security + " (L)", itemKey: "/operations/security" },
+        { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/operations/desdl" },
     ],
 };
 
