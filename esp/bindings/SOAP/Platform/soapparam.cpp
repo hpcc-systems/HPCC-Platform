@@ -107,7 +107,7 @@ void SoapStringParam::toXMLValue(StringBuffer &s, bool encode)
     if (!encode)
         s.append(value);
     else
-        encodeUtf8XML(value.str(), s, getEncodeNewlines() ? ENCODE_NEWLINES : 0);
+        encodeUtf8XML(value.str(), s, getEncodeNewlines() ? ENCODE_NEWLINES : 0, value.length());
 }
 
 void SoapStringParam::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *basepath, bool encode, const char *xsdtype, const char *prefix, bool encodeJSON)

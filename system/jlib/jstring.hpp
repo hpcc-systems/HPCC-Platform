@@ -417,7 +417,7 @@ interface IVariableSubstitutionHelper
 extern jlib_decl StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool exceptions, IVariableSubstitutionHelper *helper, const char* delim = "${", const char* term = "}");
 extern jlib_decl StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, bool exceptions, const char* delim = "${env.", const char* term = "}");
 
-inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
+inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=0, unsigned len=(unsigned)-1)
 {
     return encodeXML(x, ret, flags, len, true);
 }
