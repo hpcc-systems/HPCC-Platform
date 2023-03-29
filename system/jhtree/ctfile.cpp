@@ -200,12 +200,12 @@ void CKeyHdr::load(KeyHdr &_hdr)
         throw MakeKeyException(KeyExcpt_IncompatVersion, "This build is compatible with key versions <= %u. Key is version %u", KEYBUILD_VERSION, (unsigned) hdr.version);
 }
 
-unsigned int CKeyHdr::getMaxKeyLength() 
+unsigned int CKeyHdr::getMaxKeyLength() const
 {
     return hdr.length; 
 }
 
-bool CKeyHdr::isVariable() 
+bool CKeyHdr::isVariable() const
 {
     return (hdr.ktype & HTREE_VARSIZE) == HTREE_VARSIZE; 
 }

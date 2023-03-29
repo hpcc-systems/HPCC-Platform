@@ -157,7 +157,7 @@ public:
                 if (timedOut || wu->aborting())
                 {
                     CriticalBlock b(crit);
-                    DBGLOG("Aborting compilation");
+                    DBGLOG("Aborting compilation after %ums (%s)", msTick() - start, timedOut ? "timed out" : "aborted");
                     ForEachItemIn(idx, pipes)
                     {
                         IPipeProcess *pipe = pipes.item(idx);

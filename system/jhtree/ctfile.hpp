@@ -171,9 +171,9 @@ public:
 
     void load(KeyHdr &_hdr);
 
-    unsigned int getMaxKeyLength();  // MORE - is this correctly named? Is it the max record length?
+    unsigned int getMaxKeyLength() const;  // MORE - is this correctly named? Is it the max record length?
     void setMaxKeyLength(uint32_t max) { hdr.length = max; };
-    bool isVariable();
+    bool isVariable() const;
     inline unsigned int getNodeKeyLength() 
     {
         return hdr.nodeKeyLength != -1 ? hdr.nodeKeyLength : getMaxKeyLength(); 
@@ -182,24 +182,24 @@ public:
     {
         return (hdr.nodeKeyLength != -1);
     }
-    inline char getKeyType() { return hdr.ktype; }
-    inline offset_t getRootFPos() { return hdr.root; }
-    inline unsigned short getMaxNodeBytes() { return hdr.maxkbl; }
+    inline char getKeyType() const { return hdr.ktype; }
+    inline offset_t getRootFPos() const { return hdr.root; }
+    inline unsigned short getMaxNodeBytes() const { return hdr.maxkbl; }
     inline KeyHdr *getHdrStruct() { return &hdr; }
     inline static size32_t getSize() { return sizeof(KeyHdr); }
-    inline __int64 getNumRecords() { return hdr.nument; }
-    inline unsigned getNodeSize() { return hdr.nodeSize; }
+    inline __int64 getNumRecords() const { return hdr.nument; }
+    inline unsigned getNodeSize() const { return hdr.nodeSize; }
     inline offset_t getFirstLeafPos() const { return (offset_t)hdr.firstLeaf; }
     inline bool hasSpecialFileposition() const { return true; }
     inline bool isRowCompressed() const { return (hdr.ktype & (HTREE_QUICK_COMPRESSED_KEY|HTREE_VARSIZE)) == HTREE_QUICK_COMPRESSED_KEY; }
-    __uint64 getPartitionFieldMask()
+    __uint64 getPartitionFieldMask() const
     {
         if (hdr.partitionFieldMask == (__uint64) -1)
             return 0;
         else
             return hdr.partitionFieldMask;
     }
-    unsigned numPartitions()
+    unsigned numPartitions() const
     {
         if (hdr.ktype & HTREE_TOPLEVEL_KEY)
             return (unsigned) hdr.nument-1;

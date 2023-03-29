@@ -1458,6 +1458,7 @@ public:
     virtual void *bufptr() { return outbuf;}
     virtual size32_t buflen() { return outlen;}
 
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_ROWDIF; }
 };
 
 
@@ -1743,6 +1744,7 @@ public:
     void *bufptr() { return outbuf;}
     size32_t buflen() { return header->totsize;}
 
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_RANDROW; }
 };
 
 
@@ -2663,6 +2665,8 @@ public:
     {
         comp->commitblock();
     }
+
+    virtual CompressionMethod getCompressionMethod() const override { return (CompressionMethod)(COMPRESS_METHOD_AES | comp->getCompressionMethod()); }
 };
 
 class CAESExpander : implements IExpander, public CInterface
@@ -2883,6 +2887,20 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
         virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
         virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
     };
+    class CRDiffCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        CRDiffCompressHandler() : CCompressHandlerBase("RDIFF") { }
+        virtual ICompressor *getCompressor(const char *options) { return createRDiffCompressor(); }
+        virtual IExpander *getExpander(const char *options) { return createRDiffExpander(); }
+    };
+    class CRandRDiffCompressHandler : public CCompressHandlerBase
+    {
+    public:
+        CRandRDiffCompressHandler() : CCompressHandlerBase("RANDROW") { }
+        virtual ICompressor *getCompressor(const char *options) { return createRandRDiffCompressor(); }
+        virtual IExpander *getExpander(const char *options) { UNIMPLEMENTED; } // Expander has a different interface
+    };
     class CLZWCompressHandler : public CCompressHandlerBase
     {
     public:
@@ -2893,6 +2911,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     addCompressorHandler(new CAESCompressHandler());
     addCompressorHandler(new CDiffCompressHandler());
     addCompressorHandler(new CLZWCompressHandler());
+    addCompressorHandler(new CRDiffCompressHandler());
+    addCompressorHandler(new CRandRDiffCompressHandler());
     addCompressorHandler(new CFLZCompressHandler());
     addCompressorHandler(new CLZ4HCCompressHandler());    
     ICompressHandler *lz4Compressor = new CLZ4CompressHandler();
@@ -2904,6 +2924,12 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 ICompressHandler *queryCompressHandler(const char *type)
 {
     return compressors.lookup(type);
+}
+
+ICompressHandler *queryCompressHandler(CompressionMethod method)
+{
+    //Could be more efficient, but doesn't matter
+    return compressors.lookup(translateFromCompMethod(method));
 }
 
 void setDefaultCompressor(const char *type)
@@ -2935,6 +2961,54 @@ IExpander *getExpander(const char *type, const char *options)
     return NULL;
 }
 
+
+
+CompressionMethod translateToCompMethod(const char *compStr, CompressionMethod defaultMethod)
+{
+    CompressionMethod compMethod = defaultMethod;
+    if (!isEmptyString(compStr))
+    {
+        if (strieq("FLZ", compStr))
+            compMethod = COMPRESS_METHOD_FASTLZ;
+        else if (strieq("LZW", compStr))
+            compMethod = COMPRESS_METHOD_LZW;
+        else if (strieq("RDIFF", compStr))
+            compMethod = COMPRESS_METHOD_ROWDIF;
+        else if (strieq("RANDROW", compStr))
+            compMethod = COMPRESS_METHOD_RANDROW;
+        else if (strieq("LZMA", compStr))
+            compMethod = COMPRESS_METHOD_LZMA;
+        else if (strieq("LZ4HC", compStr))
+            compMethod = COMPRESS_METHOD_LZ4HC;
+        else if (strieq("LZ4", compStr))
+            compMethod = COMPRESS_METHOD_LZ4;
+        //else // default is LZ4
+    }
+    return compMethod;
+}
+
+const char *translateFromCompMethod(unsigned compMethod)
+{
+    switch (compMethod)
+    {
+        case COMPRESS_METHOD_ROWDIF:
+            return "RDIFF";
+        case COMPRESS_METHOD_RANDROW:
+            return "RANDROW";
+        case COMPRESS_METHOD_LZW:
+            return "LZW";
+        case COMPRESS_METHOD_FASTLZ:
+            return "FLZ";
+        case COMPRESS_METHOD_LZ4:
+            return "LZ4";
+        case COMPRESS_METHOD_LZ4HC:
+            return "LZ4HC";
+        case COMPRESS_METHOD_LZMA:
+            return "LZMA";
+        default:
+            return ""; // none
+    }
+}
 
 
 //===================================================================================

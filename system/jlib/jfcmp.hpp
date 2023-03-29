@@ -190,12 +190,6 @@ public:
         return outbuf;
     }
 
-    size32_t buflen()
-    {
-        assertex(!inbuf);  // i.e. closed
-        return outlen;
-    }
-
     void startblock()
     {
         inlenblk = inlen;
