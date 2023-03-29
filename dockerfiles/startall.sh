@@ -150,6 +150,13 @@ fi
 if [[ -n ${PERSIST} ]] ; then
   PERSIST=$(realpath -q $PERSIST || echo $PERSIST)
   PERSIST_PATH=$(echo $PERSIST | sed 's/\\//g')
+  if [[ -n "${WSL_DISTRO_NAME}" ]] ; then
+    WSLPATH=${PERSIST_PATH#/run/desktop/mnt/host/}
+    if [[ ${PERSIST_PATH} != ${WSLPATH} ]] ; then # if they're different PERSIST_PATH was prefixed with WSLPATH
+      PERSIST_PATH="/mnt/${WSLPATH}"
+      echo WSLPATH = ${PERSIST_PATH}
+    fi
+  fi
   if [[ $MKDIR == '1' ]] ; then
     for subdir in `grep subPath: $PVFILE | awk '{ print $2 }'` ; do
       echo mkdir -p ${PERSIST_PATH}/$subdir
