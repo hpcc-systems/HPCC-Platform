@@ -704,8 +704,9 @@ Pass in dict with root, component (in case of error), optional (true if daliArg 
   {{- else -}}
     {{- $dali := (index .root.Values.dali 0) -}}
     {{- $daliService := $dali.service | default dict -}}
-    {{- $daliServicePort := $daliService.servicePort | default 7070 -}}
-"--daliServers={{ (index .root.Values.dali 0).name }}:{{ $daliServicePort }}"
+    {{- $daliHost := .overrideDaliHost | default $dali.name -}}
+    {{- $daliServicePort := .overrideDaliPort | default ($daliService.servicePort | default 7070) -}}
+"--daliServers={{ $daliHost }}:{{ $daliServicePort }}"
   {{- end -}}
 {{- end -}}
 
@@ -1115,6 +1116,8 @@ Pass in dict with root, me and dali if container in dali pod
 */}}
 {{- define "hpcc.addSashaContainer" }}
 {{- $serviceName := printf "sasha-%s" .me.name }}
+{{- $overrideDaliHost := .overrideDaliHost | default "" }}
+{{- $overrideDaliPort := .overrideDaliPort | default 0 }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
   command: [ saserver ] 
@@ -1123,7 +1126,7 @@ Pass in dict with root, me and dali if container in dali pod
           {{ include "hpcc.configArg" . }},
 {{- end }}
           "--service={{ .me.name }}",
-{{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false) | indent 10 }}
+{{ include "hpcc.daliArg" (dict "root" .root "component" "Sasha" "optional" false "overrideDaliHost" $overrideDaliHost "overrideDaliPort" $overrideDaliPort) | indent 10 }}
         ]
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}

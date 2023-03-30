@@ -49,6 +49,7 @@ true
 {{- $daliSecretsCategories := list "system" "authn" -}}
 {{- $tmpDaliScope := dict "aggregateSashaSecretsCategories" list "aggregatePlaneCategories" $daliPlaneIncludeCategories "aggregateSashaNamedPlanes" list -}}
 {{- $daliSashaServicesCtx := dict "services" ($dali.services | default dict) -}}
+{{- $daliPort := (.service | default dict).port | default 7070 -}}
 {{- include "hpcc.getSashaServices" $daliSashaServicesCtx -}}
 {{- range $sashaName, $_sasha := $daliSashaServicesCtx.services -}}
  {{- $sasha := deepCopy ($_sasha | default dict) -}}
@@ -133,7 +134,7 @@ spec:
   {{- $_ := set $thisServiceCtx "sashaStoragePlane" ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha"))) -}}
  {{- end -}}
  {{- with ($sasha | merge (dict "access" $sashaAccess)) -}}
-  {{- include "hpcc.addSashaContainer" (dict "root" $ "me" . "dali" $dali) | nindent 6 }}
+  {{- include "hpcc.addSashaContainer" (dict "root" $ "me" . "dali" $dali "overrideDaliHost" "localhost" "overrideDaliPort" $daliPort) | nindent 6 }}
         volumeMounts:
   {{- $serviceName := printf "sasha-%s" $sashaName -}}
   {{- with (dict "name" $serviceName) }}
