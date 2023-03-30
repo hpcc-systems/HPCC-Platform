@@ -51,15 +51,14 @@ function doBuild() {
     # GIT_DIFF=$(git diff)
     # GIT_DIFF_FILE=$(mktemp)
     # echo "$GIT_DIFF" > "$GIT_DIFF_FILE"
+    git ls-files --modified --exclude-standard > rsync_include.txt
     docker run --rm \
         --mount source=$(pwd),target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
         --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
         --mount source="$(pwd)/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind \
         build-$1:$GITHUB_REF /bin/bash -c \
         "git reset --hard --recurse-submodules && \
-            cd /hpcc-dev/HPCC-Platform-local && \
-            git ls-files --exclude-standard -oi --directory > /hpcc-dev/exclude.txt && \
-            rsync -av --exclude-from=exclude.txt --exclude='.git' --delete /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
+            rsync -av  --files-from=/hpcc-dev/HPCC-Platform-local/rsync_include.txt /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
     # rm "$GIT_DIFF_FILE"
      
     # Check if cmake config needs to be generated  ---
@@ -84,11 +83,11 @@ function doBuild() {
     docker commit $CONTAINER build-$1:$GITHUB_REF
     docker rm $CONTAINER
 
-    # docker build --rm -f "$SCRIPT_DIR/dev-core.dockerfile" \
-    #     -t dev-core:latest \
-    #     -t hpccsystems/platform-core:gordon \
-    #     --build-arg BUILD_IMAGE=build-$1:$GITHUB_REF \
-    #     "$SCRIPT_DIR"
+    docker build --rm -f "$SCRIPT_DIR/dev-core.dockerfile" \
+        -t dev-core:latest \
+        -t hpccsystems/platform-core:gordon \
+        --build-arg BUILD_IMAGE=build-$1:$GITHUB_REF \
+        "$SCRIPT_DIR"
 }
 
 # doBuild amazonlinux
