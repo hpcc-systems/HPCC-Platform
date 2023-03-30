@@ -343,7 +343,7 @@ public:
         bool isStatus;
 
         Owned<IDebuggerContext> debuggerContext;
-        HttpHelper httpHelper(NULL);
+        HttpHelper httpHelper(nullptr, nullptr);
         try
         {
             client->querySocket()->getPeerAddress(peer);

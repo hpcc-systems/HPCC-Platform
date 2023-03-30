@@ -324,7 +324,7 @@
         which clearly describes it, such as <emphasis>thor_50</emphasis> as in
         the following example.</para>
 
-        <para><programlisting>-name: thor_50</programlisting></para>
+        <para><programlisting>- name: thor_50</programlisting></para>
 
         <para>Updating the <emphasis>numWorkers</emphasis> value will restart
         the Thor agent listening to the queue, causing all new jobs to use the
@@ -857,6 +857,71 @@
       </sect3>
     </sect2>
 
+    <sect2 id="Egress-HYAML" role="brk">
+      <title>Egress</title>
+
+      <para>In order to allow clusters to be securely locked down but still
+      allow access to the services they need there is an egress mechanism.
+      Egress provides a similar mechanism to Ingress, by being able to define
+      which endpoints and ports components are permitted to connect to.</para>
+
+      <para>Most HPCC Systems components have their own auto-generated network
+      policies. The generated network policies typically work to limit ingress
+      and egress to inter-component communication, or expected external
+      service ingress only.</para>
+
+      <para>For instance, in a default deployed system with network policies
+      enforced, a query running (on hThor, Thor, or Roxie), will not be able
+      to connect with a 3rd party service, such as an LDAP service or log
+      stack.</para>
+
+      <para>In the default configuration, any pod with Kube API access will
+      also have access to any external endpoint. This is because a
+      <emphasis>NetworkPolicy</emphasis> is generated for egress access for
+      components that need access to the Kube API. However,
+      <emphasis>global.egress.kubeApiCidr</emphasis> and
+      <emphasis>global.egress.kubeApiPort</emphasis> in the values.yaml should
+      be configured in a secure system to lock this egress access down so that
+      it only exposes egress access to the Kube API endpoint.</para>
+
+      <para>We have added a mechanism similar to the visibilities definitions,
+      which allows named egress sections, which can then be referenced per
+      component.</para>
+
+      <para>For example:</para>
+
+      <programlisting>global:
+  egress:
+    engineEgress:
+    - to:
+        - ipBlock:
+            cidr: 201.13.21.0/24
+        - ipBlock:
+            cidr: 142.250.187.0/24
+      ports:
+        - protocol: TCP
+          port: 6789
+        - protocol: TCP
+          port: 7890
+...
+
+thor:
+...
+  egress: engineEgress</programlisting>
+
+      <para>Note that the name 'engineEgress' is an arbitrary name, any name
+      can be chosen, and any number of these named egress sections can be
+      defined.</para>
+
+      <para>For more information, please see the <emphasis>egress:</emphasis>
+      section in the default stock/delivered HPCC Systems YAML file. The
+      <emphasis>values.yaml</emphasis> file can be found under the helm/hpcc/
+      directory on the HPCC Systems github repository:</para>
+
+      <para><ulink
+      url="https://github.com/hpcc-systems/HPCC-Platform">https://github.com/hpcc-systems/HPCC-Platform</ulink></para>
+    </sect2>
+
     <sect2>
       <title>The Security Values</title>
 
@@ -917,7 +982,7 @@
       and service types for any service with the specified visibility.</para>
     </sect2>
 
-    <sect2>
+    <sect2 id="Replicas-Resources-YAML">
       <title>Replicas and Resources</title>
 
       <para>Other noteworthy values in the charts that have bearing on HPCC

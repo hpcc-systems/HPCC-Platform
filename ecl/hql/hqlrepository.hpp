@@ -50,6 +50,7 @@ public:
     void addMapping(const char * url, const char * path);
 
     IEclPackage * createPackage(const char * packageName);
+    void gatherPackagesUsed(StringArray & used) const;
     void inherit(const EclRepositoryManager & other);
     void kill();
 
