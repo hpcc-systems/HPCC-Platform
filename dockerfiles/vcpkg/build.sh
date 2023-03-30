@@ -31,7 +31,7 @@ CMAKE_OPTIONS="-G \"Ninja\" -DCMAKE_BUILD_TYPE=Debug -DVCPKG_FILES_DIR=/hpcc-dev
 
 function doBuild() {
     # Ensure build tools are up to date  ---
-    docker build --progress plain --rm -f "$SCRIPT_DIR/$1.dockerfile" \
+    docker build --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         -t build-$1:$GITHUB_REF \
         -t build-$1:latest \
         --build-arg DOCKER_NAMESPACE=$DOCKER_USERNAME \
@@ -41,14 +41,14 @@ function doBuild() {
     rm $ROOT_DIR/vcpkg/vcpkg || true
      
     # Check if cmake config needs to be generated  ---
-    # if [ ! -f "$ROOT_DIR/build-$1/CMakeCache.txt" ] 
-    # then
+    if [ ! -f "$ROOT_DIR/build-$1/CMakeCache.txt" ] 
+    then
         docker run --rm \
             --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
             build-$1:$GITHUB_REF /bin/bash -c \
             "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS}"
     #        docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:5918a7b8 /bin/bash
-    # fi
+    fi
 
     # Build  (should also update existing config ---
     CONTAINER=$(docker create \
@@ -56,13 +56,15 @@ function doBuild() {
         build-$1:$GITHUB_REF /bin/bash -c \
         "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc) --target install")
 
+    rm $ROOT_DIR/vcpkg/vcpkg || true
+
     docker start -a $CONTAINER
     docker commit $CONTAINER build-$1:$GITHUB_REF
     docker rm $CONTAINER
 
-    docker build --progress plain --rm -f "$SCRIPT_DIR/dev-core.dockerfile" \
+    docker build --rm -f "$SCRIPT_DIR/dev-core.dockerfile" \
         -t dev-core:latest \
-        -t platform-core:gordon \
+        -t hpccsystems/platform-core:gordon \
         --build-arg BUILD_IMAGE=build-$1:$GITHUB_REF \
         "$SCRIPT_DIR"
 }
@@ -73,7 +75,7 @@ doBuild "ubuntu-22.04"
 # doBuild centos-8
 # doBuild centos-7
 
-# docker build --progress plain --pull --rm -f "$SCRIPT_DIR/core.dockerfile" \
+# docker build --pull --rm -f "$SCRIPT_DIR/core.dockerfile" \
 #     -t $DOCKER_USERNAME/core:$GITHUB_REF \
 #     -t $DOCKER_USERNAME/core:latest \
 #     "build-ubuntu-22.04" 
