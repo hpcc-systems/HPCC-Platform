@@ -1,12 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, getTheme, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, useTheme } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
 import { Editor, ECLEditor, XMLEditor, JSONEditor } from "@hpcc-js/codemirror";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { useWorkunitXML } from "../hooks/workunit";
-import { darkTheme } from "../themes";
+import { themeIsDark } from "src/Utility";
 import { ShortVerticalDivider } from "./Common";
 import "eclwatch/css/cmDarcula.css";
 
@@ -33,14 +33,14 @@ interface SourceEditorProps {
     onChange?: (text: string) => void;
 }
 
-const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
+export const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     mode = "text",
     text = "",
     readonly = false,
     onChange = (text: string) => { }
 }) => {
 
-    const theme = getTheme();
+    const theme = useTheme();
 
     //  Command Bar  ---
     const buttons: ICommandBarItemProps[] = [
@@ -60,9 +60,16 @@ const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     );
 
     React.useEffect(() => {
-        if (theme.semanticColors.link === darkTheme.palette.themePrimary) {
-            editor.setOption("theme", "darcula");
-        }
+        try {
+            const t = window.setTimeout(function () {
+                if (themeIsDark()) {
+                    editor.setOption("theme", "darcula");
+                } else {
+                    editor.setOption("theme", "default");
+                }
+                window.clearTimeout(t);
+            }, 50);
+        } catch (e) { } // editor's internal codemirror is possibly undefined?
 
         if (editor.text() !== text) {
             editor.text(text);
@@ -72,18 +79,16 @@ const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
             .readOnly(readonly)
             .lazyRender()
             ;
+    }, [editor, readonly, text, theme]);
 
-    }, [editor, readonly, text, theme.semanticColors.link]);
-
-    const handleThemeToggle = (evt) => {
+    const handleThemeToggle = React.useCallback((evt) => {
         if (!editor) return;
         if (evt.detail && evt.detail.dark === true) {
             editor.setOption("theme", "darcula");
         } else {
             editor.setOption("theme", "default");
         }
-    };
-
+    }, [editor]);
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
 
     return <HolyGrail

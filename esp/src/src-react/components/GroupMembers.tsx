@@ -3,12 +3,14 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
+import { GroupMemberStore, CreateGroupMemberStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { GroupAddUserForm } from "./forms/GroupAddUser";
+import { QuerySortItem } from "src/store/Store";
 
 const logger = scopedLogger("src-react/components/GroupMembers.tsx");
 
@@ -18,21 +20,38 @@ const defaultUIState = {
 
 interface GroupMembersProps {
     groupname?: string;
+    sort?: QuerySortItem;
+    page?: number;
+    store?: GroupMemberStore;
 }
+
+const defaultSort = { attribute: "username", descending: false };
 
 export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     groupname,
+    sort = defaultSort,
+    page = 1,
+    store
 }) => {
 
     const [showAdd, setShowAdd] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "username",
-        sort: { attribute: "name", descending: false },
+    const query = React.useMemo(() => {
+        return { GroupName: groupname };
+    }, [groupname]);
+
+    const gridStore = React.useMemo(() => {
+        return store ? store : CreateGroupMemberStore();
+    }, [store]);
+
+    const { Grid, GridPagination, selection, copyButtons, refreshTable } = useFluentPagedGrid({
+        persistID: "username",
+        store: gridStore,
+        query,
+        sort,
+        pageNum: page,
         filename: "groupMembers",
         columns: {
             username: {
@@ -48,14 +67,6 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         }
     });
 
-    const refreshData = React.useCallback(() => {
-        WsAccess.GroupMemberQuery({
-            request: { GroupName: groupname }
-        })
-            .then(({ GroupMemberQueryResponse }) => setData(GroupMemberQueryResponse?.Users?.User ?? []))
-            .catch(err => logger.error(err));
-    }, [groupname]);
-
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToRemoveUserFrom,
@@ -70,9 +81,9 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
                 requests.push(WsAccess.GroupMemberEdit({ request: request }));
             });
             Promise.all(requests)
-                .then(() => refreshData())
+                .then(() => refreshTable(true))
                 .catch(err => logger.error(err));
-        }, [groupname, refreshData, selection])
+        }, [groupname, refreshTable, selection])
     });
 
     //  Selection  ---
@@ -89,7 +100,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshData()
+            onClick: () => refreshTable()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -113,18 +124,15 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true)
         },
-    ], [refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
-
-    React.useEffect(() => {
-        refreshData();
-    }, [refreshData]);
+    ], [refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={<Grid />}
+            footer={<GridPagination />}
         />
-        <GroupAddUserForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshData} groupname={groupname} />
+        <GroupAddUserForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshTable} groupname={groupname} />
         <DeleteConfirm />
     </>;
 

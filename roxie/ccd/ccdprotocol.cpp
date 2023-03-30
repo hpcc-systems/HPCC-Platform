@@ -1723,7 +1723,7 @@ readAnother:
         unsigned agentsResends = 0;
         StringArray allTargets;
         sink->getTargetNames(allTargets);
-        HttpHelper httpHelper(&allTargets);
+        HttpHelper httpHelper(&allTargets, global->targetAliases.get());
         try
         {
             if (client)

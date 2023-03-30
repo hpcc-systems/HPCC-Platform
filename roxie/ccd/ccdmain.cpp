@@ -661,6 +661,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
     codeDirectory.set(currentDirectory);
     addNonEmptyPathSepChar(codeDirectory);
+    PerfTracer startupTracer;
     try
     {
         Owned<IFile> sentinelFile = createSentinelTarget();
@@ -670,6 +671,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
+        if (topology->getPropBool("expert/@profileStartup", false))
+        {
+            double interval = topology->getPropReal("expert/@profileStartupInterval", 0.2);
+            startupTracer.setInterval(interval);
+            startupTracer.start();
+        }
         localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
         encryptInTransit = topology->getPropBool("@encryptInTransit", false) && !localAgent;
         if (encryptInTransit)
@@ -1526,6 +1533,30 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 writeSentinelFile(sentinelFile);
 #endif
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
+                if (topology->getPropBool("expert/@profileStartup", false))
+                {
+                    const char *fname = topology->queryProp("expert/@profileStartupFileName");
+                    if (!fname)
+                        fname = "startuptrace.svg";
+                    startupTracer.stop();
+                    Owned<IFile> iFile = createIFile(fname);
+                    try
+                    {
+                        Owned<IFileIO> iFileIO = iFile->open(IFOcreate);
+                        if (iFileIO)
+                        {
+                            StringBuffer &svg = startupTracer.queryResult();
+                            iFileIO->write(0, svg.length(), svg.str());
+                            DBGLOG("Flame graph for startup written to %s", fname);
+                        }
+                    }
+                    catch (IException *E)
+                    {
+                        VStringBuffer msg("Failed to write flame graph for startup to %s", fname);
+                        EXCLOG(E, msg);
+                        ::Release(E);
+                    }
+                }
                 DBGLOG("Waiting for queries");
                 if (pingInterval)
                     startPingTimer();

@@ -902,6 +902,7 @@ extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, const cha
 
 extern jlib_decl void validateScopeId(const char * idText);
 extern jlib_decl void validateScope(const char * scopeText);
+extern jlib_decl StatisticScopeType getScopeType(const char * scope);
 
 //Scopes need to be processed in a consistent order so they can be merged.
 //activities are in numeric order

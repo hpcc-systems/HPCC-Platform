@@ -7,8 +7,15 @@ import * as QueryResults from "dojo/store/util/QueryResults";
 import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
 import * as topic from "dojo/topic";
 
+import { AccessService, WsAccess } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
+
 import * as ESPRequest from "./ESPRequest";
 import { Memory } from "./store/Memory";
+import { Paged } from "./store/Paged";
+import { BaseStore } from "./store/Store";
+
+const logger = scopedLogger("src/ws_access.ts");
 
 class UsersStore extends ESPRequest.Store {
 
@@ -677,4 +684,79 @@ export function CreateResourcesStore(groupname, username, basedn, name) {
     store.basedn = basedn;
     store.name = name;
     return new Observable(store);
+}
+
+const service = new AccessService({ baseUrl: "" });
+const emptyStore = { data: [], total: 0 };
+
+export type GroupStore = BaseStore<WsAccess.GroupQueryRequest, WsAccess.Group>;
+
+export function CreateGroupStore(): BaseStore<WsAccess.GroupQueryRequest, WsAccess.Group> {
+    const store = new Paged<WsAccess.GroupQueryRequest, WsAccess.Group>({
+        start: "PageStartFrom",
+        count: "PageSize",
+        sortBy: "SortBy",
+        descending: "Descending"
+    }, "Name", request => {
+        try {
+            return service.GroupQuery(request).then(response => {
+                return {
+                    data: response.Groups.Group,
+                    total: response.TotalGroups
+                };
+            });
+        } catch (err) {
+            logger.error(err);
+            return Promise.resolve(emptyStore);
+        }
+    });
+    return store;
+}
+
+export type UserStore = BaseStore<WsAccess.GroupRequest, WsAccess.User>;
+
+export function CreateUserStore(): BaseStore<WsAccess.UserQueryRequest, WsAccess.User> {
+    const store = new Paged<WsAccess.UserQueryRequest, WsAccess.User>({
+        start: "PageStartFrom",
+        count: "PageSize",
+        sortBy: "SortBy",
+        descending: "Descending"
+    }, "username", request => {
+        try {
+            return service.UserQuery(request).then(response => {
+                return {
+                    data: response.Users.User,
+                    total: response.TotalUsers
+                };
+            });
+        } catch (err) {
+            logger.error(err);
+            return Promise.resolve(emptyStore);
+        }
+    });
+    return store;
+}
+
+export type GroupMemberStore = BaseStore<WsAccess.GroupRequest, WsAccess.User>;
+
+export function CreateGroupMemberStore(): BaseStore<WsAccess.GroupMemberQueryRequest, WsAccess.User> {
+    const store = new Paged<WsAccess.GroupMemberQueryRequest, WsAccess.User>({
+        start: "PageStartFrom",
+        count: "PageSize",
+        sortBy: "SortBy",
+        descending: "Descending"
+    }, "username", request => {
+        try {
+            return service.GroupMemberQuery(request).then(response => {
+                return {
+                    data: response.Users.User,
+                    total: response.TotalUsers
+                };
+            });
+        } catch (err) {
+            logger.error(err);
+            return Promise.resolve(emptyStore);
+        }
+    });
+    return store;
 }

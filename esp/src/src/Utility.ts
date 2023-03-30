@@ -4,6 +4,7 @@ import { Level, join } from "@hpcc-js/util";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
+import { darkTheme } from "../src-react/themes";
 import nlsHPCC from "src/nlsHPCC";
 
 declare const dojoConfig;
@@ -1157,6 +1158,10 @@ export function logColor(level: Level): { background: string, foreground: string
     }
 
     return colors;
+}
+
+export function themeIsDark() {
+    return theme.semanticColors.link === darkTheme.palette.themePrimary;
 }
 
 export function wrapStringWithTag(string, tag = "span") {

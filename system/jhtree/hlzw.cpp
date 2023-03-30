@@ -59,6 +59,19 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompres
     else
         comp = createLZWCompressor(true);
     comp->open(blk,blksize);
+    method = comp->getCompressionMethod();
+}
+
+void KeyCompressor::open(void *blk,int blksize,bool _isVariable, ICompressHandler * compressionHandler)
+{
+    isVariable = _isVariable;
+    isBlob = false;
+    curOffset = 0;
+    ::Release(comp);
+    const char * options = nullptr;
+    comp = compressionHandler->getCompressor(options);
+    comp->open(blk,blksize);
+    method = comp->getCompressionMethod();
 }
 
 void KeyCompressor::openBlob(void *blk,int blksize)

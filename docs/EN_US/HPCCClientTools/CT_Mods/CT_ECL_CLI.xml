@@ -185,7 +185,7 @@
 eclWatchIP=10.150.50.12
 eclWatchPort=28010
 eclUserName=emilykate
-eclPassword=elmo812
+eclPassword=
 resultLimit=200
 </programlisting>
 
@@ -204,9 +204,9 @@ resultLimit=200
                     xml:base="../../" /></entry>
 
                     <entry>We do not recommend storing your password in the
-                    INI file (which is clear text). The password is included
-                    in the INI file for these examples to simplify the example
-                    code.</entry>
+                    INI file or environment variable (which is clear text).
+                    The password is included in the INI file for these
+                    examples to simplify the example code.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -235,6 +235,11 @@ resultLimit=200
               <para>default value</para>
             </listitem>
           </itemizedlist>
+
+          <para></para>
+
+          <para>If a username is supplied by any method, and a password is
+          not, you are prompted for the password.</para>
         </sect3>
 
         <sect3 id="CT_CLI_Syntax_EnvironmentVariables" role="brk">
@@ -570,7 +575,9 @@ ecl deploy roxie - --job-name=FindPersonService
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password for accessing ECL services</entry>
+                  <entry>The password for accessing ECL services. If you
+                  supply a username and do not supply a password, you will be
+                  promoted for a password.</entry>
                 </row>
 
                 <row>
@@ -1098,7 +1105,9 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password for accessing ECL services</entry>
+                  <entry>The password for accessing ECL services. If you
+                  supply a username and do not supply a password, you will be
+                  promoted for a password.</entry>
                 </row>
 
                 <row>
@@ -1264,7 +1273,9 @@ ecl unpublish roxie "FindpersonService*"
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -1633,7 +1644,9 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -1792,7 +1805,9 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -1934,7 +1949,9 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -2075,7 +2092,9 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -2266,7 +2285,9 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -2419,7 +2440,9 @@ SuperFiles used:
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -2771,7 +2794,9 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -3058,7 +3083,9 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -3257,7 +3284,9 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -3610,7 +3639,9 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -3891,7 +3922,9 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -4060,7 +4093,9 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -4342,7 +4377,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -4501,7 +4538,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -4649,7 +4688,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -4796,7 +4837,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -4939,7 +4982,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -5083,7 +5128,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -5362,7 +5409,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -5529,7 +5578,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -5696,7 +5747,9 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
               <row>
                 <entry>-pw, --password</entry>
 
-                <entry>The password (if necessary)</entry>
+                <entry>The password (if necessary). If you supply a username
+                and do not supply a password, you will be promoted for a
+                password.</entry>
               </row>
 
               <row>
@@ -5929,7 +5982,9 @@ ecl packagemap validate roxie mypackagemap.pkg --ignore-queries='findPerson*, fi
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -6193,7 +6248,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -6334,7 +6391,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -6463,7 +6522,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -6592,7 +6653,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -6721,7 +6784,9 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -6893,7 +6958,9 @@ ecl roxie xref myroxie --queryids=myquery.1,myotherquery.1</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -7542,7 +7609,9 @@ ecl bundle list myb*
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -7685,7 +7754,9 @@ ecl abort -n MyJob</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -7826,7 +7897,9 @@ ecl status -n MyJob</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -7966,7 +8039,9 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -8115,7 +8190,9 @@ ecl getname -wu W201407*
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>
@@ -8279,7 +8356,9 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                 <row>
                   <entry>-pw, --password</entry>
 
-                  <entry>The password (if necessary)</entry>
+                  <entry>The password (if necessary). If you supply a username
+                  and do not supply a password, you will be promoted for a
+                  password.</entry>
                 </row>
 
                 <row>

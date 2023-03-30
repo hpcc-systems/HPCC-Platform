@@ -103,7 +103,7 @@ void getRemoteSpawnSSH(
 }
 
 
-ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint & childEP, unsigned version, const char *logdir, IAbortRequestCallback * abort, const char *extra)
+ISocket *spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoint & childEP, unsigned version, const char *logdir, IAbortRequestCallback * abort, const char *extra, HANDLE *localProcessHandle)
 {
     SocketEndpoint myEP;
     myEP.setLocalHost(0);
@@ -143,7 +143,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
 
 #ifdef _CONTAINERIZED
     DWORD runcode;
-    if (!invoke_program(cmd.str(), runcode, false))
+    if (!invoke_program(cmd.str(), runcode, false, nullptr, localProcessHandle))
         throw makeStringExceptionV(-1,"Error spawning %s", exe);
 #else
     //Run the program directly if it is being run on the local machine - so ssh doesn't need to be running...
@@ -151,7 +151,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
     if (childEP.isLocal())
     {
         DWORD runcode;
-        if (!invoke_program(cmd.str(), runcode, false))
+        if (!invoke_program(cmd.str(), runcode, false, nullptr, localProcessHandle))
             throw makeStringExceptionV(-1,"Error spawning %s", exe);
     }
     else

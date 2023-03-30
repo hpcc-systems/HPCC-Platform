@@ -890,6 +890,146 @@ static void maskContent(xmlXPathParserContextPtr ctxt, int nargs)
     xmlXPathReturnString(ctxt, xmlStrdup((const xmlChar*)content.str()));
 }
 
+static void getMaskValueBehavior(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+    Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+
+    if (nargs < 1 || nargs > 2)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    StringBuffer valueType, maskStyle;
+    xmlChar* tmp;
+    if (2 <= nargs)
+    {
+        tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        maskStyle.append((const char*)tmp);
+        xmlFree(tmp);
+    }
+
+    tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    valueType.append((const char*)tmp);
+    xmlFree(tmp);
+
+    uint8_t matchMask = 0;
+    if (masker && masker->canMaskValue())
+    {
+        static const uint8_t VALUE_TYPE = 1;
+        static const uint8_t MASK_STYLE = 2;
+        static const uint8_t SELECTED = 4;
+        IDataMaskingProfileValueType* vt = masker->inspector().queryValueType(valueType);
+        if (vt)
+            matchMask |= (VALUE_TYPE | SELECTED);
+        else
+        {
+            StringBuffer cachedSet(masker->queryProperty("valuetype-set"));
+            if (!streq(cachedSet, "*"))
+            {
+                // The masker interface exposes what is currently selected by the context. This
+                // is checking for something that is not selected. Checks for individual value
+                // types at runtime should be rare, with decisions made by testing domain identity
+                // or custom property support being preferred. An infrequent update to a small map
+                // is favored over increasing interface complexity.
+                masker->setProperty("valuetype-set", "*");
+                vt = masker->inspector().queryValueType(valueType);
+                if (cachedSet.isEmpty())
+                    masker->removeProperty("valuetype-set");
+                else
+                    masker->setProperty("valuetype-set", cachedSet);
+                if (vt)
+                    matchMask |= VALUE_TYPE;
+            }
+            if (!vt && !streq(valueType, "*") && ((vt = masker->inspector().queryValueType("*")) != nullptr))
+                matchMask |= SELECTED;
+        }
+        if (vt && !maskStyle.isEmpty() && vt->queryMaskStyle(masker, maskStyle))
+        {
+            matchMask |= MASK_STYLE;
+        }
+    }
+
+    xmlXPathReturnNumber(ctxt, (int)matchMask);
+}
+
+static void canMaskContent(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs > 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    StringBuffer contentType;
+    if (nargs >= 1)
+    {
+        xmlChar* tmp = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+        contentType.append((const char*)tmp);
+        xmlFree(tmp);
+    }
+
+    Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+    bool canMask = masker && masker->canMaskContent() && masker->inspector().hasRule(contentType);
+    xmlXPathReturnBoolean(ctxt, canMask);
+}
+
+static void getMaskingPropertyAwareness(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+    Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    StringBuffer property;
+    xmlChar* tmp = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt))
+        return;
+    property.append((const char*)tmp);
+    xmlFree(tmp);
+
+    uint8_t availability = 0;
+    if (masker)
+    {
+        static const uint8_t ACCEPTED = 1;
+        static const uint8_t USED = 2;
+        if (masker->inspector().usesProperty(property))
+            availability = USED;
+        else if (masker->inspector().acceptsProperty(property))
+            availability = ACCEPTED;
+    }
+
+    xmlXPathReturnNumber(ctxt, (int)availability);
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -915,6 +1055,9 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "getTxSummary", (void *)getTxSummary);
     xpathContext->registerFunction(uri, "maskValue", (void *)maskValue);
     xpathContext->registerFunction(uri, "maskContent", (void *)maskContent);
+    xpathContext->registerFunction(uri, "getMaskValueBehavior", (void *)getMaskValueBehavior);
+    xpathContext->registerFunction(uri, "canMaskContent", (void *)canMaskContent);
+    xpathContext->registerFunction(uri, "getMaskingPropertyAwareness", (void *)getMaskingPropertyAwareness);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)

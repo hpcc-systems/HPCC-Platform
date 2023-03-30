@@ -1552,7 +1552,7 @@ bool CSafeSocket::readBlocktms(StringBuffer &ret, unsigned timeoutms, HttpHelper
 
                 if (pHttpHelper->isHttpGet())
                 {
-                    pHttpHelper->checkTarget();
+                    pHttpHelper->checkHttpGetTarget();
                     return true;
                 }
 

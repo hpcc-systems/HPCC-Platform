@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
-import { getTheme, PrimaryButton, IconButton, IIconProps, Link, Dropdown, IDropdownOption, TextField } from "@fluentui/react";
+import { PrimaryButton, IconButton, IIconProps, Link, Dropdown, IDropdownOption, TextField, useTheme } from "@fluentui/react";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { mergeStyleSets } from "@fluentui/style-utilities";
 import { ECLEditor, IPosition } from "@hpcc-js/codemirror";
@@ -14,8 +14,6 @@ import { TabbedResults } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
 import { TargetClusterOption, TargetClusterTextField } from "./forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
-
-import "eclwatch/css/cmDarcula.css";
 
 interface ECLPlaygroundProps {
     wuid?: string;
@@ -339,7 +337,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
 export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props) => {
 
     const { wuid } = props;
-    const theme = getTheme();
+    const theme = useTheme();
 
     const [outputMode, setOutputMode] = React.useState<OutputMode>(OutputMode.ERRORS);
     const [workunit, setWorkunit] = React.useState<Workunit>();
@@ -376,6 +374,8 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
         if (editor) {
             if (theme.semanticColors.link === darkTheme.palette.themePrimary) {
                 editor.setOption("theme", "darcula");
+            } else {
+                editor.setOption("theme", "default");
             }
         }
     }, [wuid, editor, theme]);

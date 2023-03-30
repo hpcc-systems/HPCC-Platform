@@ -235,6 +235,7 @@ export class StringStatsWidget extends StyledTable {
     constructor(row) {
         super();
         return new StyledTable()
+            .fontColor("inherit")
             .tbodyColumnStyles([
                 { "font-weight": "bold", "text-align": "right", "width": "100px" },
                 { "font-weight": "normal", "width": "auto" }

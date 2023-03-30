@@ -14,7 +14,7 @@ import { FileHistory } from "./FileHistory";
 import { ProtectedBy } from "./ProtectedBy";
 import { SuperFiles } from "./SuperFiles";
 import { SubFiles } from "./SubFiles";
-import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
+import { SourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { FileDetailsGraph } from "./FileDetailsGraph";
 import { LogicalFileSummary } from "./LogicalFileSummary";
 import { SuperFileSummary } from "./SuperFileSummary";
@@ -70,7 +70,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                 <DataPatterns cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="ecl" style={pivotItemStyle(size, 0)}>
-                <ECLSourceEditor text={file?.Ecl} readonly={true} />
+                <SourceEditor text={file?.Ecl} mode="ecl" readonly={true} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.DEF} itemKey="def" style={pivotItemStyle(size, 0)}>
                 <XMLSourceEditor text={defFile} readonly={true} />

@@ -710,12 +710,13 @@ void CJobManager::run()
             break;
         }
         StringAttr graphName, wuid;
-        const char *wuidGraph = item->queryWUID(); // actually <wuid>/<graphName>
+        const char *wuidGraph = item->queryWUID(); // actually <wfid>/<wuid>/<graphName>
         StringArray sArray;
         sArray.appendList(wuidGraph, "/");
-        assertex(2 == sArray.ordinality());
-        wuid.set(sArray.item(0));
-        graphName.set(sArray.item(1));
+        assertex(3 == sArray.ordinality());
+        unsigned wfid = atoi(sArray.item(0));
+        wuid.set(sArray.item(1));
+        graphName.set(sArray.item(2));
 
         handlingConversation = true;
         SocketEndpoint agentep;
@@ -747,6 +748,11 @@ void CJobManager::run()
         {
             factory.setown(getWorkUnitFactory());
             workunit.setown(factory->openWorkUnit(wuid));
+
+            {
+                Owned<IWorkUnit> w = &workunit->lock();
+                addTimeStamp(w, wfid, graphName, StWhenDequeued);
+            }
 
             unsigned maxLogDetail = workunit->getDebugValueInt("maxlogdetail", DefaultDetail); 
             ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
@@ -1265,11 +1271,11 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
     // validate
     StringArray sArray;
     sArray.appendList(next, "/");
-    if (2 == sArray.ordinality())
+    if (3 == sArray.ordinality())
     {
         if (!thorQueue)
         {
-            if (wuid && !streq(sArray.item(0), wuid))
+            if (wuid && !streq(sArray.item(1), wuid))
                 return 0; // mismatch/ignore
             msg.clear().append(true);
             if (!queryWorldCommunicator().reply(msg, 60*1000)) // should be quick!
@@ -1277,9 +1283,12 @@ static int recvNextGraph(unsigned timeoutMs, const char *wuid, StringBuffer &ret
         }
     }
     else
+    {
+        WARNLOG("Unrecognised job format received: %s", next.str());
         return 0; // unrecognised format, ignore
-    retWuid.set(sArray.item(0));
-    retGraphName.set(sArray.item(1));
+    }
+    retWuid.set(sArray.item(1));
+    retGraphName.set(sArray.item(2));
     return 1; // success
 }
 

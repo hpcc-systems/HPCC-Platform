@@ -713,47 +713,56 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
     return true;
 }
 
-int readFromCommaSeparatedString(const char *commaSeparatedString, StringBuffer* output)
+//Sasha List command returns comma separated strings about archived DFU WUs.
+//Each comma separated string is for one DFU WU: WUID,User,JobName,ClusterName,StateMessage,Command.
+//Parse the string to build one DFU WU.
+IEspDFUWorkunit *CFileSprayEx::createDFUWUFromSashaListResult(const char *result)
 {
-    int numOfItems = 0;
-    if (commaSeparatedString && *commaSeparatedString)
+    StringArray wuInfoFields;
+    wuInfoFields.appendList(result, ",");
+    unsigned numOfWUInfoFields = wuInfoFields.length();
+    if (numOfWUInfoFields == 0)
+        return nullptr;
+
+    Owned<IEspDFUWorkunit> dfuWU = createDFUWorkunit();
+    dfuWU->setArchived(true);
+
+    ForEachItemIn(i, wuInfoFields)
     {
-        char *pStr = (char *) commaSeparatedString;
-        while (pStr)
+        switch(i)
         {
-            char item[1024];
-            bool bFoundComma = false;
-            int len = strlen(pStr);
-            for (int i = 0; i < len; i++)
-            {
-                char *pStr1 = pStr + i;
-                if (pStr1[0] != ',')
-                    continue;
-
-                strncpy(item, pStr, pStr1 - pStr);
-                item[pStr1 - pStr] = 0;
-
-                bFoundComma = true;
-                if (i < len - 1)
-                    pStr = pStr1 + 1;
-                else
-                    pStr = NULL;
-
+            case 0:
+                dfuWU->setID(wuInfoFields.item(i));
                 break;
-            }
-
-            if (!bFoundComma && len > 0)
-            {
-                strcpy(item, pStr);
-                pStr = NULL;
-            }
-
-            output[numOfItems] = item;
-            numOfItems++;
+            case 1:
+                dfuWU->setUser(wuInfoFields.item(i));
+                break;
+            case 2:
+                dfuWU->setJobName(wuInfoFields.item(i));
+                break;
+            case 3:
+                dfuWU->setClusterName(wuInfoFields.item(i));
+                break;
+            case 4:
+                dfuWU->setStateMessage(wuInfoFields.item(i));
+                break;
+            case 5:
+                const char *commandStr = wuInfoFields.item(5);
+                if (!isEmptyString(commandStr))
+                    setDFUCommand(commandStr, dfuWU);
+                break;
         }
     }
+    return dfuWU.getClear();
+}
 
-    return numOfItems;
+void CFileSprayEx::setDFUCommand(const char *commandStr, IEspDFUWorkunit *dfuWU)
+{
+    DFUcmd cmd = decodeDFUcommand(commandStr);
+    if (cmd != DFUcmd_none)
+        dfuWU->setCommand(cmd);
+    else
+        dfuWU->setCommand(atoi(commandStr)); //back to the old behaviour
 }
 
 bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &req, IEspGetDFUWorkunitsResponse &resp)
@@ -800,33 +809,11 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
 
     IArrayOf<IEspDFUWorkunit> results;
     __int64 actualCount = cmd->numIds();
-    StringBuffer s;
-    for (unsigned j=0;j<actualCount;j++)
+    for (unsigned i = 0; i < actualCount; i++)
     {
-        const char *wuidStr = cmd->queryId(j);
-        if (!wuidStr)
-            continue;
-
-        StringBuffer strArray[6];
-        readFromCommaSeparatedString(wuidStr, strArray);
-
-        //skip any workunits without access
-        Owned<IEspDFUWorkunit> resultWU = createDFUWorkunit("", "");
-        resultWU->setArchived(true);
-        if (strArray[0].length() > 0)
-            resultWU->setID(strArray[0].str());
-        if (strArray[1].length() > 0)
-            resultWU->setUser(strArray[1].str());
-        if (strArray[2].length() > 0)
-            resultWU->setJobName(strArray[2].str());
-        if (strArray[3].length() > 0)
-            resultWU->setClusterName(strArray[3].str());
-        if (strArray[4].length() > 0)
-            resultWU->setStateMessage(strArray[4].str());
-        if (strArray[5].length() > 0)
-            resultWU->setCommand(atoi(strArray[5].str()));
-
-        results.append(*resultWU.getLink());
+        Owned<IEspDFUWorkunit> dfuWU = createDFUWUFromSashaListResult(cmd->queryId(i));
+        if (dfuWU)
+            results.append(*dfuWU.getLink());
     }
 
     resp.setPageStartFrom(begin+1);

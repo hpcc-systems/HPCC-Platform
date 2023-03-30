@@ -12,6 +12,7 @@ import * as registry from "dijit/registry";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 import nlsHPCC from "./nlsHPCC";
+import { themeIsDark } from "./Utility";
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
 // @ts-ignore
@@ -55,6 +56,14 @@ export class ECLArchiveWidget {
         this.inherited(arguments);
     }
 
+    setEditorTheme() {
+        if (themeIsDark()) {
+            this.editor.setOption("theme", "darcula");
+        } else {
+            this.editor.setOption("theme", "default");
+        }
+    }
+
     postCreate(args) {
         this.inherited(arguments);
         this.borderContainer = registry.byId(this.id + "BorderContainer");
@@ -95,6 +104,16 @@ export class ECLArchiveWidget {
         this.archiveViewer = new SplitPanel("horizontal");
         this.leftPanel = new SplitPanel("vertical");
 
+        const handleThemeToggle = (evt) => {
+            if (!context.editor) return;
+            if (evt.detail && evt.detail.dark === true) {
+                context.editor.setOption("theme", "darcula");
+            } else {
+                context.editor.setOption("theme", "default");
+            }
+        };
+        document.addEventListener("eclwatch-theme-toggle", handleThemeToggle);
+
         const tableDataTransformer = d => {
             const ret = d.map((n: any) => {
                 return [
@@ -118,6 +137,10 @@ export class ECLArchiveWidget {
                     .addWidget(context.editor)
                     .lazyRender()
                     ;
+                const t = window.setTimeout(function () {
+                    context.setEditorTheme();
+                    window.clearTimeout(t);
+                }, 300);
             } else {
                 context.directoryTree
                     .data({
@@ -179,6 +202,7 @@ export class ECLArchiveWidget {
                     .then(([archiveXML, scopes]) => {
                         const markerData = buildMarkerData(scopes);
                         renderArchive(archiveXML, markerData);
+                        context.setEditorTheme();
                     });
             }
         });

@@ -4,7 +4,8 @@
 <sect1 id="Unity_Launcher">
   <title>Unity Launcher Icon</title>
 
-  <para>The HPCC Systems platform supports an Ubuntu Unity Launcher icon.</para>
+  <para>The HPCC Systems platform supports an Ubuntu Unity Launcher
+  icon.</para>
 
   <para>This allows you to start, stop, restart, or query the status of an
   installed single node system from an icon on the Unity Launcher of a desktop
@@ -67,8 +68,9 @@
         <term>Note:</term>
 
         <listitem>
-          <para>In Ubuntu 12.04 or later, you can move the to any position on
-          the bar by dragging and dropping to the desired position.</para>
+          <para>In Ubuntu 12.04 or later, you can move the launcher to any
+          position on the bar by dragging and dropping to the desired
+          position.</para>
         </listitem>
       </varlistentry>
     </variablelist>

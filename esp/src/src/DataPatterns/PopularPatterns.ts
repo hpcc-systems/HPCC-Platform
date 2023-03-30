@@ -8,6 +8,7 @@ export class PopularPatterns extends BreakdownTable {
             this.columns(["Popular Patterns", ""]);
         }
         this
+            .fontColor("inherit")
             .theadColumnStyles([{
                 "font-size": config.secondaryFontSize + "px",
                 "text-align": "left",

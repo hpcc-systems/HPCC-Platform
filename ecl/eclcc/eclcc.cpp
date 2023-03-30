@@ -307,14 +307,16 @@ protected:
     bool isWithinPath(const char * sourcePathname, const char * searchPath);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver & errorProcessor);
     void outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml);
-    void processSingleQuery(EclCompileInstance & instance,
-                               IFileContents * queryContents,
-                               const char * queryAttributePath);
+    void processSingleQuery(const EclRepositoryManager & localRepositoryManager,
+                            EclCompileInstance & instance,
+                            IFileContents * queryContents,
+                            const char * queryAttributePath);
     void processXmlFile(EclCompileInstance & instance, const char *archiveXML);
     void processFile(EclCompileInstance & info);
     void processReference(EclCompileInstance & instance, const char * queryAttributePath, const char * queryAttributePackage);
     void processBatchFiles();
     void processDefinitions(EclRepositoryManager & target);
+    void recordPackagesUsed(IWorkUnit * wu, const EclRepositoryManager & manager);
     void reportCompileErrors(IErrorReceiver & errorProcessor, const char * processName);
     void setDebugOption(const char * name, bool value);
     void traceError(char const * format, ...) __attribute__((format(printf, 2, 3)));
@@ -1184,7 +1186,8 @@ void EclCC::evaluateResult(EclCompileInstance & instance)
     printf("%s\n", out.str());
 }
 
-void EclCC::processSingleQuery(EclCompileInstance & instance,
+void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManager,
+                               EclCompileInstance & instance,
                                IFileContents * queryContents,
                                const char * queryAttributePath)
 {
@@ -1487,6 +1490,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             errorProcessor.reportError(3, s.str(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
+
+        recordPackagesUsed(instance.wu, localRepositoryManager);
     }
 
     //Free up the repository (and any cached expressions) as soon as the expression has been parsed
@@ -1729,7 +1734,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     //Ensure classes are not linked by anything else
     localRepositoryManager.kill();  // help ensure non-shared repositories are freed as soon as possible
 
-    processSingleQuery(instance, contents, queryAttributePath);
+    processSingleQuery(localRepositoryManager, instance, contents, queryAttributePath);
 }
 
 
@@ -1856,7 +1861,7 @@ void EclCC::processFile(EclCompileInstance & instance)
             instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
         }
 
-        processSingleQuery(instance, queryText, attributePath.str());
+        processSingleQuery(localRepositoryManager, instance, queryText, attributePath.str());
     }
 
     if (!instance.reportErrorSummary() || instance.archive || (optGenerateMeta && instance.generatedMeta))
@@ -2056,11 +2061,23 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
         }
     }
 
-    processSingleQuery(instance, NULL, queryAttributePath);
+    processSingleQuery(localRepositoryManager, instance, NULL, queryAttributePath);
 
     if (instance.reportErrorSummary())
         return;
     generateOutput(instance);
+}
+
+void EclCC::recordPackagesUsed(IWorkUnit * wu, const EclRepositoryManager & manager)
+{
+    StringArray packages;
+    manager.gatherPackagesUsed(packages);
+    ForEachItemIn(i, packages)
+    {
+        StringBuffer key;
+        key.append("package").append(i+1);
+        wu->setApplicationValue("packages", key, packages.item(i), true);
+    }
 }
 
 bool EclCC::generatePrecompiledHeader()

@@ -669,6 +669,18 @@ class CFastLZCompressor final : public CFcmpCompressor
         trailing = true;
     }
 
+    size32_t buflen() override
+    {
+        if (inbuf)
+        {
+            //calling flushcommitted() would mean everything is serialized as trailing
+            size32_t toflush = (inlenblk==COMMITTED)?inlen:inlenblk;
+            return outlen+sizeof(size32_t)*2+toflush+fastlzSlack(toflush);
+        }
+        return outlen;
+    }
+
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_FASTLZ; }
 };
 
 

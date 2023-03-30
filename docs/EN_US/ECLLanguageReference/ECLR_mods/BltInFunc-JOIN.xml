@@ -286,8 +286,11 @@
             <entry><emphasis role="bold">[MANY] LOOKUP</emphasis></entry>
 
             <entry>Specifies the <emphasis>rightrecset</emphasis> is a
-            relatively small file of lookup records that can be fully copied
-            to every node. If MANY is not present, the
+            relatively small file of lookup records. If the LOCAL option is
+            not present a hash table of the entire
+            <emphasis>rightrecset</emphasis> is fully copied to every node,
+            but if the LOCAL option is present the hash table is created
+            locally on each node. If MANY is not present, the
             <emphasis>rightrecset</emphasis> records bear a Many to 0/1
             relationship with the records in the
             <emphasis>leftrecset</emphasis> (for each record in the

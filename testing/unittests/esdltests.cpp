@@ -2063,10 +2063,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
     class CMockTraceMsgSink : public CInterfaceOf<IModularTraceMsgSink>
     {
     public:
-      virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override
-      {
-        history.emplace_back(category, format, arguments);
-      }
+      virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) override __attribute__((format(printf, 3, 0)));
       virtual bool rejects(const LogMsgCategory& category) const
       {
         return false;
@@ -2083,6 +2080,8 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
           entryPoint: newPartialMaskSerialToken
           profile:
           - domain: 'urn:hpcc:unittest'
+            property:
+            - name: accepted
             valueType:
             - name: restricted
               maskStyle:
@@ -2095,6 +2094,20 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
               - startToken: <bar>
                 endToken: </bar>
                 contentType: json
+            - name: '*'
+              memberOf:
+              - name: unconditional
+              - name: 'sometimes-unconditional'
+              maskStyle:
+              - name: alternate
+                pattern: '='
+            - name: 'sometimes-restricted'
+              memberOf:
+              - name: somethimes
+              - name: 'sometimes-unconditional'
+              maskStyle:
+              - name: alternate
+                pattern: '?'
       )!!!";
       static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
         <root>
@@ -2125,6 +2138,32 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         <es:trace-content select="maskContent(toXmlString(foo))" skip_mask="true()"/>
         <es:trace-content select="maskContent(toXmlString(foo), 'xml')" skip_mask="true()"/>
         <es:trace-content select="maskContent(toXmlString(foo), 'json')" skip_mask="true()"/>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('undefined')"/>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('sometimes-restricted')"/>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('sometimes-restricted', 'alternate')"/>
+        <es:update-masking-context>
+          <set name="valuetype-set" value="unconditional"/>
+        </es:update-masking-context>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('undefined')"/>
+        <es:update-masking-context>
+          <remove name="valuetype-set"/>
+        </es:update-masking-context>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('restricted')"/>
+        <es:update-masking-context>
+          <set name="valuetype-set" value="unconditional"/>
+        </es:update-masking-context>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('undefined', 'alternate')"/>
+        <es:update-masking-context>
+          <remove name="valuetype-set"/>
+        </es:update-masking-context>
+        <es:trace skip_mask="true()" select="getMaskValueBehavior('restricted', 'alternate')"/>
+        <es:trace skip_mask="true()" select="getMaskingPropertyAwareness('unknown')"/>
+        <es:trace skip_mask="true()" select="getMaskingPropertyAwareness('accepted')"/>
+        <es:trace skip_mask="true()" select="getMaskingPropertyAwareness('valuetype-set')"/>
+        <es:trace skip_mask="true()" select="canMaskContent()"/>
+        <es:trace skip_mask="true()" select="canMaskContent('xml')"/>
+        <es:trace skip_mask="true()" select="canMaskContent('json')"/>
+        <es:trace skip_mask="true()" select="canMaskContent('yaml')"/>
       </es:CustomRequestTransform>
       )!!";
       History expected({
@@ -2145,6 +2184,20 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         { MCuserInfo, "<foo>***</foo>" },
         { MCuserInfo, "<foo>***</foo>" },
         { MCuserInfo, "<foo>foo</foo>" },
+        { MCuserInfo, "0" },
+        { MCuserInfo, "1" },
+        { MCuserInfo, "3" },
+        { MCuserInfo, "4" },
+        { MCuserInfo, "5" },
+        { MCuserInfo, "6" },
+        { MCuserInfo, "7" },
+        { MCuserInfo, "0" },
+        { MCuserInfo, "1" },
+        { MCuserInfo, "2" },
+        { MCuserInfo, "true" },
+        { MCuserInfo, "true" },
+        { MCuserInfo, "true" },
+        { MCuserInfo, "false" },
       });
 
       try {
@@ -3280,6 +3333,11 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
       }
     }
 };
+
+inline void ESDLTests::CMockTraceMsgSink::valog(const LogMsgCategory& category, const char* format, va_list arguments)
+{
+  history.emplace_back(category, format, arguments);
+}
 
 CPPUNIT_TEST_SUITE_REGISTRATION( ESDLTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( ESDLTests, "ESDL" );
