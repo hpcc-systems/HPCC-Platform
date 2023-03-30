@@ -38,27 +38,30 @@ function doBuild() {
         --build-arg VCPKG_REF=$VCPKG_REF \
         "$SCRIPT_DIR/." 
 
-    rm $ROOT_DIR/vcpkg/vcpkg || true
+    # rm $ROOT_DIR/vcpkg/vcpkg || true
      
-    # Check if cmake config needs to be generated  ---
-    if ! docker volume ls -q -f name=build-$1 | grep -q build-$1; then
+    # # Check if cmake config needs to be generated  ---
+    # if ! docker volume ls -q -f name=build-$1 | grep -q build-$1; then
         docker run --rm \
-            --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
-            --mount source=build-$1,target=/hpcc-dev/build,type=volume \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source="$(pwd)/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind,consistency=cached \
+            --mount source=hpcc_build,target=/hpcc-dev/build,type=volume \
             build-$1:$GITHUB_REF /bin/bash -c \
-            "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${CMAKE_OPTIONS}"
+            "git reset --hard && git submodule update --init --recursive && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${CMAKE_OPTIONS}"
         #   docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached --mount source=build-$1,target=/hpcc-dev/build,type=volume build-ubuntu-22.04:5918a7b8 /bin/bash
-    fi
+    # fi
 
 
     # Build  (should also update existing config ---
+    GIT_STASH=$(git stash create hpcc-docker)
     CONTAINER=$(docker create \
-        --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
-        --mount source=build-$1,target=/hpcc-dev/build,type=volume \
+        --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
+        --mount source="$(pwd)/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind,consistency=cached \
+        --mount source=hpcc_build,target=/hpcc-dev/build,type=volume \
         build-$1:$GITHUB_REF /bin/bash -c \
-        "cmake --build /hpcc-dev/build --parallel $(nproc) --target install")
+        "git stash apply $GIT_STASH && cmake --build /hpcc-dev/build --parallel --target install")
 
-    rm $ROOT_DIR/vcpkg/vcpkg || true
+    # rm $ROOT_DIR/vcpkg/vcpkg || true
 
     docker start -a $CONTAINER
     docker commit $CONTAINER build-$1:$GITHUB_REF

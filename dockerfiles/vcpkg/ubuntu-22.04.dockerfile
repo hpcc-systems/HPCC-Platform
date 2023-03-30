@@ -23,4 +23,4 @@ RUN ./cmake-3.26.1-linux-aarch64.sh --skip-license
 # RUN make -j
 # RUN make install
 
-WORKDIR /hpcc-dev
+WORKDIR /hpcc-dev/HPCC-Platform
