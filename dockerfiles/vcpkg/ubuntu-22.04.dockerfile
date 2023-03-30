@@ -18,6 +18,11 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.26.1/cmake-3.26.1
 RUN chmod +x ./cmake-3.26.1-linux-aarch64.sh
 RUN ./cmake-3.26.1-linux-aarch64.sh --skip-license
 
+RUN git config --global --add safe.directory '*'
+
+RUN apt-get install --no-install-recommends -y \
+    rsync
+
 # WORKDIR /hpcc-dev/cmake-3.25.3
 # RUN cmake .
 # RUN make -j
