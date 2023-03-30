@@ -621,6 +621,24 @@ void EclRepositoryManager::addMapping(const char * url, const char * path)
     repos.append(*new EclRepositoryMapping(repo, version, path));
 }
 
+void EclRepositoryManager::gatherPackagesUsed(StringArray & used) const
+{
+    for (auto const & cur : dependencies)
+    {
+        const char * url = cur.first.c_str();
+        if (!isEmptyString(url))
+        {
+            StringBuffer repoUrn, repo, version;
+            if (splitRepoVersion(repoUrn, repo, version, url, nullptr))
+            {
+                StringBuffer package;
+                package.append(repo).append("#").append(version);
+                used.append(package);
+            }
+        }
+    }
+}
+
 void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
 {
     IArrayOf<IEclRepository> savedSources;        // also includes -D options
