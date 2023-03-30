@@ -52,7 +52,7 @@ unsigned int tlExtractTimeFromTimeStruct(const struct tm* timeInfo);
 
 void tlLocalTime_r(const time_t* clock, struct tm* timeInfoPtr);
 void tlGMTime_r(const time_t* clock, struct tm* timeInfoPtr);
-time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone = true);
+time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone = false);
 
 TIMELIB_API __int64 TIMELIB_CALL tlSecondsFromParts(int year, unsigned int month, unsigned int day, unsigned int hour, unsigned int minute, unsigned int second, bool is_local_time = false);
 TIMELIB_API size32_t TIMELIB_CALL tlSecondsToParts(ARowBuilder & __self, __int64 seconds, bool is_local_time);
