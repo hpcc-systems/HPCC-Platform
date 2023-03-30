@@ -4,12 +4,12 @@
 <sect1 id="ESDL_boolean" role="nobrk">
   <title>boolean<indexterm>
       <primary>boolean</primary>
+    </indexterm> / <indexterm>
+      <primary>bool</primary>
     </indexterm>bool</title>
 
-  <para><indexterm>
-      <primary>bool</primary>
-    </indexterm>A boolean or logical data type having one of two possible
-  values: true (1) or false (0).</para>
+  <para>A boolean or logical data type having one of two possible values: true
+  (1) or false (0).</para>
 
   <para><emphasis role="bold">Example:</emphasis></para>
 
