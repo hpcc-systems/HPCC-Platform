@@ -2084,6 +2084,14 @@ int HqlLex::processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, 
             }
             *bf++ = next;
         }
+        else if (next == '\r')
+        {
+            //Convert \r\n to \n and \r to \n
+            next = finger[1];
+            if (next == '\n')
+                finger++;
+            *bf++ = '\n';
+        }
         else if (next == '\'' && !isMultiline)
         {
             returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
@@ -2181,10 +2189,17 @@ void HqlLex::stripSlashNewline(attribute & returnToken, StringBuffer & target, s
             }
             else
             {
-                StringBuffer msg("Can not terminate a string with escape char '\\': ");
+                StringBuffer msg("Cannot terminate a string with escape char '\\': ");
                 msg.append(len, text);
                 reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
             }
+        }
+        else if (cur == '\r')
+        {
+            //Normalize unusual end of line sequences
+            if ((i+1 < len) && (text[i+1] == '\n'))
+                i++;
+            cur = '\n';
         }
 
         target.append(cur);
