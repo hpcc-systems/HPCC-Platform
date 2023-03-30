@@ -40,8 +40,8 @@ function doBuild() {
 
     # rm $ROOT_DIR/vcpkg/vcpkg || true
      
-    # # Check if cmake config needs to be generated  ---
-    # if ! docker volume ls -q -f name=build-$1 | grep -q build-$1; then
+    # Check if cmake config needs to be generated  ---
+    if ! docker volume ls -q -f name=hpcc_build | grep -q hpcc_build; then
         docker run --rm \
             --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
             --mount source="$(pwd)/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind,consistency=cached \
@@ -49,7 +49,7 @@ function doBuild() {
             build-$1:$GITHUB_REF /bin/bash -c \
             "git reset --hard && git submodule update --init --recursive && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${CMAKE_OPTIONS}"
         #   docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached --mount source=build-$1,target=/hpcc-dev/build,type=volume build-ubuntu-22.04:5918a7b8 /bin/bash
-    # fi
+    fi
 
 
     # Build  (should also update existing config ---
