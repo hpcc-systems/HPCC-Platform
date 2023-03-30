@@ -29,7 +29,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
-ROOT_DIR=$SCRIPT_DIR/../..
+ROOT_DIR=$(git rev-parse --show-toplevel)
 
 export $(grep -v '^#' $ROOT_DIR/.env | xargs -d '\r' | xargs -d '\n') > /dev/null
 
@@ -58,7 +58,8 @@ CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=Debug -DVCPKG_FILES_DIR=/hpcc-dev -DC
 CMAKE_CONFIGURE="cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${CMAKE_OPTIONS}"
 
 function doBuild() {
-    # Ensure build tools are up to date  ---
+
+    echo "  --- Create Build Image: $1 ---"
     docker build --rm -f "$SCRIPT_DIR/$1.dockerfile" \
         -t build-$1:$GITHUB_REF \
         -t build-$1:latest \
@@ -66,57 +67,57 @@ function doBuild() {
         --build-arg VCPKG_REF=$VCPKG_REF \
             "$SCRIPT_DIR/." 
 
-
-    if ! docker volume ls -q -f name=hpcc_src_$GITHUB_REF | grep -q hpcc_src_$GITHUB_REF; then
+    if "$force_config" = true || ! docker volume ls -q -f name=hpcc_src | grep -q hpcc_src; then
+        echo "  --- git reset ---"
         docker run --rm \
-            --mount source=hpcc_src_$GITHUB_REF,target=/hpcc-dev/HPCC-Platform,type=volume \
-            --mount source="$(pwd)/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind \
-            -v "$GIT_DIFF_FILE":/tmp/diff.patch \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source="$ROOT_DIR/.git",target=/hpcc-dev/HPCC-Platform/.git,type=bind \
             build-$1:$GITHUB_REF \
-                "git reset --hard --recurse-submodules"
+                "cd /hpcc-dev/HPCC-Platform && git reset --hard --recurse-submodules"
     fi
 
+    echo "  --- rsync ---"
     git ls-files --modified --exclude-standard > rsync_include.txt
     docker run --rm \
-        --mount source=$(pwd),target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
-        --mount source=hpcc_src_$GITHUB_REF,target=/hpcc-dev/HPCC-Platform,type=volume \
+        --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
+        --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
         build-$1:$GITHUB_REF \
-            "rsync -av  --files-from=/hpcc-dev/HPCC-Platform-local/rsync_include.txt /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
+            "cd /hpcc-dev/HPCC-Platform && rsync -av --files-from=/hpcc-dev/HPCC-Platform-local/rsync_include.txt /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
      
     if [ "$force_config" = true ]; then
+        # rm -rf $ROOT_DIR/build-$1
+        echo "  --- clean cmake config ---"
         docker run --rm \
-            --mount source=hpcc_src_$GITHUB_REF,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
             --mount source=hpcc_build,target=/hpcc-dev/build,type=volume \
             build-$1:$GITHUB_REF \
-                "rm -rf /hpcc-dev/build/CMakeCache.txt CMakeFiles"
+                "cd /hpcc-dev/HPCC-Platform && rm -rf /hpcc-dev/build/CMakeCache.txt CMakeFiles"
     fi
 
-    if [! docker volume ls | awk '{print $2}' | grep -q "^hpcc_build$"] || [ "$force_config" = true ]; then
+    if [ "$force_config" = true ] || ! docker volume ls | awk '{print $2}' | grep -q "^hpcc_build$"; then
+        echo "  --- cmake config ---"
         docker run --rm \
-            --mount source=hpcc_src_$GITHUB_REF,target=/hpcc-dev/HPCC-Platform,type=volume \
+            --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
             --mount source=hpcc_build,target=/hpcc-dev/build,type=volume \
             build-$1:$GITHUB_REF \
-                "${CMAKE_CONFIGURE}"
+                "cd /hpcc-dev/HPCC-Platform && ${CMAKE_CONFIGURE}"
         #   docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached --mount source=build-$1,target=/hpcc-dev/build,type=volume build-ubuntu-22.04:5918a7b8 /bin/bash
     fi
 
-    # Build  (should also update existing config ---
-
-    CONTAINER=$(docker create \
-        --mount source=hpcc_src_$GITHUB_REF,target=/hpcc-dev/HPCC-Platform,type=volume \
+    echo "  --- build ---"
+    mkdir -p $ROOT_DIR/build-$1
+    docker run --rm \
+        --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
         --mount source=hpcc_build,target=/hpcc-dev/build,type=volume \
+        --mount source=$ROOT_DIR/build-$1,target=/opt,type=bind \
         build-$1:$GITHUB_REF \
-            "cmake --build /hpcc-dev/build --parallel --target install")
+            "cd /hpcc-dev/HPCC-Platform && cmake --build /hpcc-dev/build --parallel --target install"
 
-    docker start -a $CONTAINER
-    docker commit $CONTAINER build-$1:$GITHUB_REF
-    docker rm $CONTAINER
-
+    echo "  --- Create final image ---"
     docker build --rm -f "$SCRIPT_DIR/dev-core.dockerfile" \
         -t dev-core:latest \
-        -t hpccsystems/platform-core:gordon \
-        --build-arg BUILD_IMAGE=build-$1:$GITHUB_REF \
-        "$SCRIPT_DIR"
+        -t hpccsystems/platform-core:latest \
+        "$ROOT_DIR/build-$1/HPCCSystems"
 }
 
 # doBuild amazonlinux

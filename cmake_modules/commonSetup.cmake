@@ -1112,17 +1112,24 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
           install(CODE "set(destination \"lib\")")
         endif (WIN32)
         install(CODE [[
+            set(MY_VAR_VALUE $ENV{MY_VAR})
+           
             file(GET_RUNTIME_DEPENDENCIES
+                LIBRARIES ${_arg1}
                 RESOLVED_DEPENDENCIES_VAR _r_deps
                 UNRESOLVED_DEPENDENCIES_VAR _u_deps
-                LIBRARIES ${_arg1}
             )
+
             foreach(_file ${_r_deps})
               string(FIND "${_file}" "${vcpkg_installed}" found)
-              if ("${found}" EQUAL 0)
+              list(FIND MY_VAR_VALUE "${_file}" found2)
+              if ("${found}" EQUAL 0 AND "${found2}" EQUAL -1)
                 file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/${destination}" TYPE SHARED_LIBRARY FOLLOW_SYMLINK_CHAIN FILES "${_file}")
+                list(APPEND MY_VAR_VALUE "${_file}")
               endif()
             endforeach()
+
+            set(ENV{MY_VAR} "${MY_VAR_VALUE}")
           ]])
       endforeach()
     endif()

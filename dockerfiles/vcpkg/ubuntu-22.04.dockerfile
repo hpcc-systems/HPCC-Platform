@@ -28,8 +28,6 @@ RUN apt-get install --no-install-recommends -y \
 # RUN make -j
 # RUN make install
 
-WORKDIR /hpcc-dev/HPCC-Platform
+WORKDIR /hpcc-dev
 
-ENTRYPOINT [ "/bin/bash", "-c" ]
-
-CMD []
+ENTRYPOINT ["/bin/bash", "--login", "-c"]
