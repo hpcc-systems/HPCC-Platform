@@ -806,12 +806,19 @@ public:
         wuid.set((const char *) param);
     }
 
-#ifdef _CONTAINERIZED
-    void compileViaK8sJob()
+    void compileViaK8sJob(bool noteDequeued)
     {
+#ifdef _CONTAINERIZED
         Owned<IException> error;
         try
         {
+            {
+                Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid.get());
+                if (noteDequeued)
+                    addTimeStamp(wu, SSTcompilestage, "compile", StWhenDequeued, 0);
+                addTimeStamp(wu, SSTcompilestage, "compile", StWhenK8sLaunched, 0);
+            }
             runK8sJob("compile", wuid, wuid);
         }
         catch (IException *E)
@@ -837,8 +844,8 @@ public:
             workunit->commit();
             workunit.clear();
         }
-    }
 #endif
+    }
 
     virtual void threadmain() override
     {
@@ -846,13 +853,16 @@ public:
 
         DBGLOG("Compile request processing for workunit %s", wuid.get());
         Owned<IPropertyTree> config = getComponentConfig();
-#ifdef _CONTAINERIZED
-        if (!useChildProcesses && !childProcessTimeLimit && !config->hasProp("@workunit"))
+
+        if (isContainerized())
         {
-            compileViaK8sJob();
-            return;
+            if (!useChildProcesses && !childProcessTimeLimit && !config->hasProp("@workunit"))
+            {
+                compileViaK8sJob(true);
+                return;
+            }
         }
-#endif
+
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         workunit.setown(factory->updateWorkUnit(wuid.get()));
         if (!workunit)
@@ -868,6 +878,17 @@ public:
             workunit.clear();
             return;
         }
+
+        if (isContainerized())
+        {
+            if (config->getPropBool("@k8sJob"))
+                addTimeStamp(workunit, SSTcompilestage, "compile", StWhenK8sStarted, 0);
+            else
+                addTimeStamp(workunit, SSTcompilestage, "compile", StWhenDequeued, 0);
+        }
+        else
+            addTimeStamp(workunit, SSTcompilestage, "compile", StWhenDequeued, 0);
+
         CSDSServerStatus serverstatus("ECLCCserverThread");
         serverstatus.queryProperties()->setProp("@cluster", config->queryProp("@name"));
         serverstatus.queryProperties()->setProp("@thread", idxStr.str());
@@ -904,7 +925,7 @@ public:
             {
                 workunit.clear();
                 DBGLOG("Workunit %s local compilation timed out, launching k8s job", wuid.get());
-                compileViaK8sJob();
+                compileViaK8sJob(false);
                 return;
             }
 #endif

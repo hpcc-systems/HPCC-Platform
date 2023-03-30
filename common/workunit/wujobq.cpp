@@ -2140,6 +2140,12 @@ extern bool WORKUNIT_API runWorkUnit(const char *wuid, const char *queueName)
     if (!queue.get()) 
         throw MakeStringException(-1, "Could not create workunit queue");
 
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid);
+        addTimeStamp(wu, SSTglobal, "", StWhenQueued, 0);
+    }
+
     IJobQueueItem *item = createJobQueueItem(wuid);
     queue->enqueue(item);
     PROGLOG("Agent request '%s' enqueued on '%s'", wuid,  agentQueue.str());

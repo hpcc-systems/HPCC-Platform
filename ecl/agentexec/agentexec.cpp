@@ -45,10 +45,9 @@ private:
     const char *apptype;
     Owned<IJobQueue> queue;
     Linked<IPropertyTree> config;
-#ifdef _CONTAINERIZED
-    Owned<IThreadPool> pool;
-#endif
+    Owned<IThreadPool> pool; // for containerized only
     std::atomic<bool> running = { false };
+    bool isThorAgent = false;
 };
 
 //---------------------------------------------------------------------------------
@@ -72,26 +71,31 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     assertex(daliServers);
 
     apptype = config->queryProp("@type");
-    if (!apptype)
+    if (apptype)
+        isThorAgent = streq("thor", apptype);
+    else
         apptype = "hthor";
+
     StatisticCreatorType ctype = SCThthor;
     if (strieq(apptype, "roxie"))
         ctype = SCTroxie;
     else if (strieq(apptype, "thor"))
         ctype = SCTthor;
     setStatisticsComponentName(ctype, agentName, true);
-#ifdef _CONTAINERIZED
-    unsigned poolSize = config->getPropInt("@maxActive", 100);
-    pool.setown(createThreadPool("agentPool", this, NULL, poolSize, INFINITE));
-#endif
+
+    if (isContainerized()) // JCS - the pool approach would also work in bare-metal if it could be configured.
+    {
+        unsigned poolSize = config->getPropInt("@maxActive", 100);
+        pool.setown(createThreadPool("agentPool", this, NULL, poolSize, INFINITE));
+    }
 }
 
 
 CEclAgentExecutionServer::~CEclAgentExecutionServer()
 {
-#ifdef _CONTAINERIZED
-    pool->joinAll(false, INFINITE);
-#endif
+    if (pool)
+        pool->joinAll(false, INFINITE);
+
     if (queue)
         queue->cancelAcceptConversation();
 }
@@ -146,14 +150,16 @@ int CEclAgentExecutionServer::run()
         LocalIAbortHandler abortHandler(*this);
         while (running)
         {
-#ifdef _CONTAINERIZED
-            if (!pool->waitAvailable(10000))
+            if (pool)
             {
-                if (config->getPropInt("@traceLevel", 0) > 2)
-                    DBGLOG("Blocked for 10 seconds waiting for an available agent slot");
-                continue;
+                if (!pool->waitAvailable(10000))
+                {
+                    if (config->getPropInt("@traceLevel", 0) > 2)
+                        DBGLOG("Blocked for 10 seconds waiting for an available agent slot");
+                    continue;
+                }
             }
-#endif
+
             PROGLOG("AgentExec: Waiting on queue(s) '%s'", queueNames.str());
             Owned<IJobQueueItem> item = queue->dequeue();
             if (item.get())
@@ -206,16 +212,20 @@ int CEclAgentExecutionServer::run()
 
 //---------------------------------------------------------------------------------
 
-#ifdef _CONTAINERIZED
+typedef std::tuple<unsigned, const char *, const char *> ThreadCtx;
+
+// NB: WaitThread only used by if pool created (see CEclAgentExecutionServer ctor)
 class WaitThread : public CInterfaceOf<IPooledThread>
 {
 public:
     WaitThread(const char *_dali, const char *_apptype, const char *_queue) : dali(_dali), apptype(_apptype), queue(_queue)
     {
+        isThorAgent = streq("thor", apptype);
     }
     virtual void init(void *param) override
     {
-        wuid.set((const char *) param);
+        auto &context = *static_cast<ThreadCtx *>(param);
+        std::tie(wfid, wuid, graphName) = context;
     }
     virtual bool stop() override
     {
@@ -233,33 +243,31 @@ public:
             StringAttr jobSpecName(apptype);
             StringAttr processName(apptype);
 
-            /* NB: In the case of handling apptype='thor', the queued items is of the form <wuid>/<graphName>
-             */
-            StringAttr graphName;
-            bool isThorJob = streq("thor", apptype);
-            if (isThorJob)
+            if (isThorAgent)
             {
-                StringArray sArray;
-                sArray.appendList(wuid.get(), "/");
-                assertex(2 == sArray.ordinality());
-                wuid.set(sArray.item(0));
-                graphName.set(sArray.item(1));
-
                 // JCSMORE - ideally apptype, image and executable name would all be same.
                 jobSpecName.set("thormanager");
                 processName.set("thormaster_lcr");
             }
             Owned<const IPropertyTree> compConfig = getComponentConfig();
-            if (!compConfig->getPropBool("@useChildProcesses", false))
+            bool useChildProcesses = compConfig->getPropBool("@useChildProcesses");
+            if (isContainerized() && !useChildProcesses)
             {
                 std::list<std::pair<std::string, std::string>> params = { };
                 if (compConfig->getPropBool("@useThorQueue", true))
                     params.push_back({ "queue", queue.get() });
                 StringBuffer jobName(wuid);
-                if (isThorJob)
+                if (isThorAgent)
                 {
-                    params.push_back({ "graphName", graphName.get() });
                     jobName.append('-').append(graphName);
+                    params.push_back({ "graphName", graphName.get() });
+                    params.push_back({ "wfid", std::to_string(wfid) });
+                }
+
+                {
+                    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                    Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+                    addTimeStamp(workunit, wfid, graphName, StWhenK8sLaunched);
                 }
                 runK8sJob(jobSpecName, wuid, jobName, params);
             }
@@ -274,7 +282,7 @@ public:
                 }
                 if (compConfig->getPropBool("@useThorQueue", true))
                     exec.append(" --queue=").append(queue);
-                if (isThorJob)
+                if (isThorAgent)
                     exec.appendf(" --graphName=%s", graphName.get());
                 Owned<IPipeProcess> pipe = createPipeProcess();
                 pipe->setenv("SENTINEL", nullptr);
@@ -304,20 +312,21 @@ public:
         }
     }
 private:
+    unsigned wfid = 0;
     StringAttr wuid;
+    StringAttr graphName;
+    StringAttr scopeName;
     StringAttr dali;
     StringAttr apptype;
     StringAttr queue;
+    bool isThorAgent = false;
 };
-#endif
 
 IPooledThread *CEclAgentExecutionServer::createNew()
 {
-#ifdef _CONTAINERIZED
+    if (nullptr == pool)
+        throwUnexpected();
     return new WaitThread(daliServers, apptype, agentName);
-#else
-    throwUnexpected();
-#endif
 }
 
 bool CEclAgentExecutionServer::onAbort()
@@ -331,10 +340,37 @@ bool CEclAgentExecutionServer::onAbort()
 
 bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
 {
-#ifdef _CONTAINERIZED
-    pool->start((void *) wuid);
-    return true;
-#else
+    unsigned wfid = 0;
+    StringArray sArray;
+    const char *graphName = nullptr;
+    ThreadCtx threadCtx;
+    if (pool)
+    {
+        if (isThorAgent)
+        {
+            // NB: In the case of handling apptype='thor', the queued items is of the form <wfid>/<wuid>/<graphName>
+            // wfid and graphName not needed in other contexts
+            sArray.appendList(wuid, "/");
+            assertex(3 == sArray.ordinality());
+            wfid = atoi(sArray.item(0));
+            wuid = sArray.item(1);
+            graphName = sArray.item(2);
+        }
+        threadCtx = std::make_tuple(wfid, wuid, graphName);
+    }
+
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+        addTimeStamp(workunit, wfid, graphName, StWhenDequeued);
+    }
+
+    if (pool)
+    {
+        pool->start((void *) &threadCtx);
+        return true;
+    }
+
     //build eclagent command line
     StringBuffer command;
 
@@ -376,7 +412,6 @@ bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)
     }
 
     return success && runcode == 0;
-#endif
 }
 
 //---------------------------------------------------------------------------------
