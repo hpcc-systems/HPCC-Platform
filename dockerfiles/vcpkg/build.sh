@@ -38,7 +38,7 @@ function doBuild() {
         --build-arg VCPKG_REF=$VCPKG_REF \
         "$SCRIPT_DIR/." 
 
-    rm $ROOT_DIR/vcpkg/vcpkg
+    rm $ROOT_DIR/vcpkg/vcpkg || true
      
     # Check if cmake config needs to be generated  ---
     # if [ ! -f "$ROOT_DIR/build-$1/CMakeCache.txt" ] 
