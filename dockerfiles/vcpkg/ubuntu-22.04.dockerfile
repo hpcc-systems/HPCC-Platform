@@ -29,3 +29,7 @@ RUN apt-get install --no-install-recommends -y \
 # RUN make install
 
 WORKDIR /hpcc-dev/HPCC-Platform
+
+ENTRYPOINT [ "/bin/bash", "-c" ]
+
+CMD []
