@@ -3,6 +3,7 @@ FROM hpccsystems/platform-build-base-ubuntu-22.04:$VCPKG_REF
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     default-jdk \
+    ninja-build \
     python3-dev \
     r-base \
     r-cran-rcpp \
@@ -11,4 +12,3 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 WORKDIR /hpcc-dev
 
-ENTRYPOINT ["/bin/bash", "--login", "-c"]

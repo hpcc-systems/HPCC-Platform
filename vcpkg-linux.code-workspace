@@ -6,14 +6,16 @@
 	],
 	"settings": {
 		"cmake.configureArgs": [
-			"-DCONTAINERIZED=OFF",
+			"-DCONTAINERIZED=ON",
 			"-DUSE_OPTIONAL=OFF",
 			"-DUSE_CPPUNIT=ON",
 			"-DINCLUDE_PLUGINS=ON",
 			"-DSUPPRESS_V8EMBED=ON",
 			"-DSUPPRESS_REMBED=ON"
 		],
-		"editor.formatOnSave": false
+		"editor.formatOnSave": false,
+		"ecl.launchConfiguration": "not found",
+		"ecl.targetCluster": {}
 	},
 	"extensions": {
 		"recommendations": [
