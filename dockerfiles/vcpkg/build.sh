@@ -27,7 +27,7 @@ echo "USER: $USER"
 
 # docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
-CMAKE_OPTIONS="-G Ninja -DCMAKE_BUILD_TYPE=Debug -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
+CMAKE_OPTIONS="-G \"Ninja\" -DCMAKE_BUILD_TYPE=Debug -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=0 -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
 function doBuild() {
     # Ensure build tools are up to date  ---
@@ -38,15 +38,17 @@ function doBuild() {
         --build-arg VCPKG_REF=$VCPKG_REF \
         "$SCRIPT_DIR/." 
 
+    rm $ROOT_DIR/vcpkg/vcpkg
      
     # Check if cmake config needs to be generated  ---
-    if [ ! -f "$ROOT_DIR/build-$1/CMakeCache.txt" ] 
-    then
+    # if [ ! -f "$ROOT_DIR/build-$1/CMakeCache.txt" ] 
+    # then
         docker run --rm \
             --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
             build-$1:$GITHUB_REF /bin/bash -c \
             "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS}"
-    fi
+    #        docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:5918a7b8 /bin/bash
+    # fi
 
     # Build  (should also update existing config ---
     CONTAINER=$(docker create \
