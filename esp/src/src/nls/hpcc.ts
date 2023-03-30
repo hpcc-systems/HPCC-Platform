@@ -10,6 +10,7 @@ export = {
         AboutHPCCSystemsGraphControl: "About HPCC Systems® Graph Control",
         AboutToLoseSessionInformation: "You are about to log out and lose all session information. Do you wish to continue?",
         Account: "Account",
+        AccountDisabled: "Account Disabled. Contact system administrator.",
         Action: "Action",
         Activate: "Activate",
         ActivateQuery: "Activate Query",
