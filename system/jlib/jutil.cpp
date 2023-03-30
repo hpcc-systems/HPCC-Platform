@@ -57,6 +57,9 @@
 #include "portlist.h"
 
 #include <random>
+#ifdef __APPLE__
+#include <libproc.h>
+#endif
 
 static NonReentrantSpinLock * cvtLock;
 
@@ -3029,6 +3032,29 @@ const char * queryCurrentProcessPath()
     if (processPath.isEmpty())
         return NULL;
     return processPath.str();
+}
+
+StringBuffer &getPidExecutablePath(unsigned pid, StringBuffer &ret)
+{
+#ifdef __linux__
+    VStringBuffer procPath("/proc/%u/exe", pid);
+    char path[PATH_MAX + 1];
+    ssize_t len = readlink(procPath, path, PATH_MAX);
+    if (len == -1)
+        throw makeOsException(errno);
+    ret.append(len, path);
+    return ret;
+#elif defined(__APPLE__)
+	char path[PROC_PIDPATHINFO_MAXSIZE];
+	int ok = proc_pidpath (pid, path, sizeof(path));
+	if ( ok <= 0 )
+        throw makeOsException(errno);
+    return ret.append(path);
+#elif defined(_WIN32)
+    UNIMPLEMENTED;   // I'm sure there are ways to do it but we don't need this function in windows...
+#else
+    UNIMPLEMENTED;
+#endif
 }
 
 bool getPackageFolder(StringBuffer & path)

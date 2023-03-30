@@ -2007,17 +2007,33 @@ public:
 
     bool isPlatformProcess(HANDLE pid)
     {
-        // MORE - may need to cope with other installation locations - perhaps check that the installation location matches the current exe's location? Is there some other way to know the install location?
-        VStringBuffer procPath("/proc/%u/exe", pid);
-        char path[PATH_MAX + 1];
-        ssize_t len = readlink(procPath, path, PATH_MAX);
-        if (len != -1)
+        // We confirm that a child process being executed is one of the platform executables by
+        // checking that its executable location is the same as the current executable
+        // If you ask too fast you get a false positive!
+        try
         {
-            path[len] = 0;
-            return startsWith(path, "/opt/HPCCSystems/bin/");
+            StringBuffer childPath;
+            getPidExecutablePath(pid, childPath);
+            const char* me = queryCurrentProcessPath();
+            if (streq(me, childPath))
+            {
+                // Probably asked too fast...
+                MilliSleep(20);
+                getPidExecutablePath(pid, childPath.clear());
+                if (streq(me, childPath))
+                    return false;
+            }
+            StringBuffer piddrive, pidpath, exedrive, exepath;
+            splitFilename(childPath, &piddrive, &pidpath, nullptr, nullptr);
+            splitFilename(me, &exedrive, &exepath, nullptr, nullptr);
+            DBGLOG("Checking pid path %s vs %s", childPath.str(), me);
+            return streq(piddrive, exedrive) && streq(pidpath, exepath);
         }
-        else
+        catch(IException *E)
+        {
+            EXCLOG(E, "Failed to verify child process path");
             return false;
+        }
     }
 
     void run()
@@ -2170,7 +2186,7 @@ public:
                     VStringBuffer msg("%s=%s\n", secretName, "secret");  // MORE - replace with appropriate call to jsecrets function
                     ssize_t ret = ::write(secretpipe[1], msg, msg.length());
                     if (ret != msg.length())
-                        DBGLOG("Failed to write secret - ::write returned %" I64F "d", (__int64_t) ret);
+                        DBGLOG("Failed to write secret - ::write returned %" I64F "d", (__int64) ret);
                 }
             }
             else

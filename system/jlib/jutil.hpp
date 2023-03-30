@@ -464,6 +464,7 @@ extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const 
 extern jlib_decl bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* category, const char* component, const char* instance, const char* dirToValidate);
 
 extern jlib_decl const char *queryCurrentProcessPath();
+extern jlib_decl StringBuffer &getPidExecutablePath(unsigned pid, StringBuffer &ret);
 
 extern jlib_decl StringBuffer &getFileAccessUrl(StringBuffer &out);
 
