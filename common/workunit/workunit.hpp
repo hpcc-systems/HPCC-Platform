@@ -1735,6 +1735,7 @@ extern WORKUNIT_API const char * getWorkunitActionStr(WUAction action);
 extern WORKUNIT_API WUAction getWorkunitAction(const char * actionStr);
 
 extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, unsigned wfid=0);
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, unsigned wfid, const char * scope, StatisticKind kind);
 extern WORKUNIT_API double getMachineCostRate();
 extern WORKUNIT_API double getThorManagerRate();
 extern WORKUNIT_API double getThorWorkerRate();
@@ -1771,7 +1772,6 @@ inline double calcCost(double ratePerHour, unsigned __int64 ms) { return ratePer
 
 extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IPropertyTree &config);
 
-#ifdef _CONTAINERIZED
 enum class KeepK8sJobs { none, podfailures, all };
 extern WORKUNIT_API KeepK8sJobs translateKeepJobs(const char *keepJobs);
 
@@ -1784,7 +1784,6 @@ extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, 
 
 // returns a vector of {pod-name, node-name} vectors,
 extern WORKUNIT_API std::vector<std::vector<std::string>> getPodNodes(const char *selector);
-#endif
 
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 

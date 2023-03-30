@@ -109,7 +109,7 @@ private:
     Owned<IModularTraceMsgSink>   jlogSink;
     Owned<IModularTraceMsgSink>   consoleSink;
     Owned<IDataMaskingEngine>     maskingEngine;
-    using MaskerStack = std::list<Owned<IDataMaskingProfileContext> >;
+    using MaskerStack = std::list<Owned<IDataMaskingProfileContext>>;
     MaskerStack                   maskerStack;
 public:
     CEsdlScriptContext(IEspContext* _espCtx, IEsdlFunctionRegister* _functionRegister, IDataMaskingEngine* _engine)
@@ -2853,6 +2853,119 @@ public:
     }
 };
 
+class CEsdlTransformOperationUpdateMaskingContext : public CEsdlTransformOperationBase
+{
+    class Update : public CEsdlTransformOperationWithoutChildren
+    {
+    public: // IEsdlTransformOperation
+        virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+        {
+            return true;
+        }
+    public:
+        virtual bool apply(IDataMaskingProfileContext& masker, IXpathContext& sourceContext) const = 0;
+        using CEsdlTransformOperationWithoutChildren::CEsdlTransformOperationWithoutChildren;
+    };
+    class SetProperty : public Update
+    {
+    public:
+        virtual bool apply(IDataMaskingProfileContext& masker, IXpathContext& sourceContext) const override
+        {
+            StringBuffer n, v;
+            return masker.setProperty(m_name.get(n, sourceContext), m_value.get(v, sourceContext));
+        }
+        virtual void toDBGLog() override
+        {
+        #if defined(_DEBUG)
+            DBGLOG(">%s> %s %s=%s", m_traceName.str(), m_tagname.str(), m_name.configValue(), m_value.configValue());
+        #endif
+        }
+    private:
+        XPathLiteralUnion m_name;
+        XPathLiteralUnion m_value;
+    public:
+        SetProperty(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix)
+            : Update(xpp, stag, prefix)
+        {
+            m_name.setRequired(stag, "name", *this);
+            m_value.setRequired(stag, "value", *this);
+        }
+    };
+    class RemoveProperty : public Update
+    {
+    public:
+        virtual bool apply(IDataMaskingProfileContext& target, IXpathContext& sourceContext) const override
+        {
+            StringBuffer n;
+            return target.removeProperty(m_name.get(n, sourceContext));
+        }
+        virtual void toDBGLog() override
+        {
+        #if defined(_DEBUG)
+            DBGLOG(">%s> %s %s", m_traceName.str(), m_tagname.str(), m_name.configValue());
+        #endif
+        }
+    private:
+        XPathLiteralUnion m_name;
+    public:
+        RemoveProperty(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix)
+            : Update(xpp, stag, prefix)
+        {
+            m_name.setRequired(stag, "name", *this);
+        }
+    };
+private:
+    using Updates = std::list<Owned<Update>>;
+    Updates m_updates;
+public:
+    CEsdlTransformOperationUpdateMaskingContext(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix)
+        : CEsdlTransformOperationBase(xpp, stag, prefix)
+    {
+        int type = 0;
+        while((type = xpp.next()) != XmlPullParser::END_TAG)
+        {
+            if (XmlPullParser::START_TAG == type)
+            {
+                StartTag stag;
+                xpp.readStartTag(stag);
+                const char *op = stag.getLocalName();
+                if (isEmptyString(op))
+                    recordError(ESDL_SCRIPT_InvalidOperationAttr, "invalid child operation");
+                if (streq(op, "set"))
+                    m_updates.emplace_back(new SetProperty(xpp, stag, prefix));
+                else if (streq(op, "remove"))
+                    m_updates.emplace_back(new RemoveProperty(xpp, stag, prefix));
+                else
+                {
+                    recordError(ESDL_SCRIPT_InvalidOperationAttr, VStringBuffer("invalid child operation '%s'", op));
+                    xpp.skipSubTreeEx();
+                }
+            }
+        }
+    }
+
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        Owned<IDataMaskingProfileContext> masker(scriptContext->getMasker());
+        if (masker)
+        {
+            for (const Owned<Update>& u : m_updates)
+                u->apply(*masker, *sourceContext);
+        }
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s  >>>>", m_traceName.str(), m_tagname.str());
+        for (const Owned<Update>& u : m_updates)
+            u->toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
 IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, IEsdlOperationTraceMessenger& messenger, IEsdlFunctionRegister *functionRegister, bool canDeclareFunctions)
 {
     StartTag stag;
@@ -2940,6 +3053,8 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
         return new CEsdlTransformOperationTxSummaryTimer(xpp, stag, prefix, functionRegister);
     if (streq(op, "delay"))
         return new CEsdlTransformOperationDelay(xpp, stag, prefix);
+    if (streq(op, "update-masking-context"))
+        return new CEsdlTransformOperationUpdateMaskingContext(xpp, stag, prefix);
     return nullptr;
 }
 

@@ -3809,6 +3809,12 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
                 factory->setTracingLevel(10);
 #endif
                 w = factory->openWorkUnit(wuid.str());
+
+                if (agentTopology->getPropBool("@k8sJob"))
+                {
+                    Owned<IWorkUnit> workunit = &w->lock();
+                    addTimeStamp(workunit, SSTglobal, "", StWhenK8sStarted, 0);
+                }
             }
             else
                 w = standAloneWorkUnit.getClear();

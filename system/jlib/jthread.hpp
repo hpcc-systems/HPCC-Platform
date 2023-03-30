@@ -321,9 +321,28 @@ interface IPipeProcess: extends IInterface
     virtual void notifyTerminated(HANDLE pid,unsigned retcode) = 0; // internal
     virtual HANDLE getProcessHandle() = 0;                          // used to auto kill
     virtual void setenv(const char *var, const char *value) = 0;  // Set a value to be passed in the called process environment
+    virtual void setAllowTrace() = 0;                               // Allow child process to trace me
 };
 
 extern jlib_decl IPipeProcess *createPipeProcess(const char *allowedprograms=NULL);
+
+//--------------------------------------------------------
+
+class jlib_decl PerfTracer
+{
+    Owned<IPipeProcess> pipe;
+    double interval = 0.2;
+    StringBuffer result;
+public:
+    void start();
+    void stop();
+    void traceFor(unsigned seconds);
+    StringBuffer &queryResult() { return result; }
+    void setInterval(double _interval);  // In seconds
+private:
+    void dostart(unsigned seconds);
+    void dostop();
+};
 
 //--------------------------------------------------------
 

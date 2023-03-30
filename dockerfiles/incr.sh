@@ -42,7 +42,7 @@ while getopts “d:fhvlpt:n:u:b:r:a:” opt; do
     r) UPSTREAM=$OPTARG ;;
     f) FORCE=1 ;;
     v) BUILDKIT_PROGRESS=plain ;;
-    h) echo "Usage: incr.sh [options]"
+    h) echo "Usage: incr.sh [options] [prev]"
        echo "    -d <docker-repo>   Specify the repo to publish images to"
        echo "    -f                 Force build from scratch"
        echo "    -b                 Build type (e.g. Debug / Release)"
@@ -55,6 +55,9 @@ while getopts “d:fhvlpt:n:u:b:r:a:” opt; do
        echo "    -u <user>          Specify the build user"
        echo "    -a <pat>           Personal access token for github packages"
        echo "    -v                 use verbose buildkit mode"
+       echo "The optional prev argument indicates a remote base image that will be pulled as the starting point."
+       echo "If not specified, will use the most recent local image, or attempt to deduce the best remote base"
+       echo "from the git history. prev should be in the form (e.g.) 9.0.0-rc1"
        exit
        ;;
   esac
@@ -120,6 +123,12 @@ if [[ -z "$FORCE" ]] ; then
     if [ $? -ne 0 ]; then
       echo "Could not locate docker image based on PREV tag: ${PREV} for docker user: ${DOCKER_REPO}"
       exit
+    fi
+  else
+    if [[ ! "${BUILD_TYPE}" =~ "Release" ]] ; then
+      if [[ ! "${PREV}" =~ "-${BUILD_TYPE}" ]] ; then
+        PREV=${PREV}-${BUILD_TYPE}
+      fi
     fi
   fi
 

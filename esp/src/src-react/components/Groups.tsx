@@ -3,12 +3,14 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
+import { GroupStore, CreateGroupStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { AddGroupForm } from "./forms/AddGroup";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
+import { QuerySortItem } from "src/store/Store";
 
 const logger = scopedLogger("src-react/components/Groups.tsx");
 const wsAccess = new AccessService({ baseUrl: "" });
@@ -18,21 +20,32 @@ const defaultUIState = {
 };
 
 interface GroupsProps {
-    filter?: object;
+    sort?: QuerySortItem;
+    page?: number;
+    store?: GroupStore;
 }
 
+const defaultSort = { attribute: "Name", descending: false };
+
 export const Groups: React.FunctionComponent<GroupsProps> = ({
+    sort = defaultSort,
+    page = 1,
+    store
 }) => {
 
     const [showAddGroup, setShowAddGroup] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const { Grid, selection } = useFluentGrid({
-        data,
-        primaryID: "name",
-        sort: { attribute: "name", descending: false },
+    const gridStore = React.useMemo(() => {
+        return store ? store : CreateGroupStore();
+    }, [store]);
+
+    const { Grid, GridPagination, selection, refreshTable } = useFluentPagedGrid({
+        persistID: "Name",
+        store: gridStore,
+        sort,
+        pageNum: page,
         filename: "groups",
         columns: {
             check: { width: 27, label: " ", selectorType: "checkbox" },
@@ -47,22 +60,6 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
         }
     });
 
-    const refreshData = React.useCallback(() => {
-        wsAccess.GroupQuery({})
-            .then(({ Groups }) => {
-                if (Groups) {
-                    setData(Groups?.Group.map((group, idx) => {
-                        return {
-                            name: group.name,
-                            groupOwner: group.groupOwner,
-                            groupDesc: group.groupDesc
-                        };
-                    }));
-                }
-            })
-            .catch(err => logger.error(err));
-    }, []);
-
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedGroups,
@@ -74,9 +71,9 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             });
 
             wsAccess.GroupAction(request)
-                .then((response) => refreshData())
+                .then((response) => refreshTable())
                 .catch(err => logger.error(err));
-        }, [refreshData, selection])
+        }, [refreshTable, selection])
     });
 
     //  Selection  ---
@@ -89,8 +86,6 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
 
         setUIState(state);
     }, [selection]);
-
-    React.useEffect(() => refreshData(), [refreshData]);
 
     const exportGroups = React.useCallback(() => {
         let groupnames = "";
@@ -107,7 +102,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshData()
+            onClick: () => refreshTable()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -135,14 +130,15 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportGroups()
         },
-    ], [exportGroups, refreshData, selection, setShowDeleteConfirm, uiState]);
+    ], [exportGroups, refreshTable, selection, setShowDeleteConfirm, uiState]);
 
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} overflowButtonProps={{}} />}
             main={<Grid />}
+            footer={<GridPagination />}
         />
-        <AddGroupForm showForm={showAddGroup} setShowForm={setShowAddGroup} refreshGrid={refreshData} />
+        <AddGroupForm showForm={showAddGroup} setShowForm={setShowAddGroup} refreshGrid={refreshTable} />
         <DeleteConfirm />
     </>;
 

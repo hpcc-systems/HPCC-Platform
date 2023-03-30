@@ -156,7 +156,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                         cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
                     }
                     //@ts-ignore
-                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + "; margin-top: 3px]");
+                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + ";" + (!hasChildren ? " width: 16px; height: 16px;" : "") + "]");
                     node.innerHTML = "&nbsp;";
                     return node;
                 }

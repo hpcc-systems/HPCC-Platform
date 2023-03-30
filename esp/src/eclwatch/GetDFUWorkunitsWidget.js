@@ -412,11 +412,11 @@ define([
                     JobName: { label: this.i18n.JobName, width: 500 },
                     ClusterName: { label: this.i18n.Cluster, width: 126 },
                     StateMessage: { label: this.i18n.State, width: 72 },
-                    PercentDone: {
-                        label: this.i18n.PctComplete, width: 90, sortable: false,
+                    PCTDone: {
+                        label: this.i18n.PctComplete, width: 90, sortable: true,
                         renderCell: function (object, value, node, options) {
                             domClass.add(node, "justify-right");
-                            node.innerText = Utility.valueCleanUp(value);
+                            node.innerText = Utility.valueCleanUp(object.PercentDone);
                         }
                     }
                 }

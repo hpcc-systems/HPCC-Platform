@@ -3,14 +3,16 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
+import { UserStore, CreateUserStore } from "src/ws_access";
 import { useConfirm } from "../hooks/confirm";
-import { useFluentGrid } from "../hooks/grid";
+import { useFluentPagedGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { AddUserForm } from "./forms/AddUser";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams, pushUrl } from "../util/history";
+import { QuerySortItem } from "src/store/Store";
 
 const logger = scopedLogger("src-react/components/Users.tsx");
 const wsAccess = new AccessService({ baseUrl: "" });
@@ -25,24 +27,40 @@ const defaultUIState = {
 
 interface UsersProps {
     filter?: { [key: string]: any };
+    sort?: QuerySortItem;
+    page?: number;
+    store?: UserStore;
 }
 
 const emptyFilter = {};
+const defaultSort = { attribute: "username", descending: false };
 
 export const Users: React.FunctionComponent<UsersProps> = ({
-    filter = emptyFilter
+    filter = emptyFilter,
+    sort = defaultSort,
+    page = 1,
+    store
 }) => {
 
     const [showAddUser, setShowAddUser] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const { Grid, selection, copyButtons } = useFluentGrid({
-        data,
-        primaryID: "username",
-        sort: { attribute: "username", descending: false },
+    const query = React.useMemo(() => {
+        return { Name: filter?.username };
+    }, [filter]);
+
+    const gridStore = React.useMemo(() => {
+        return store ? store : CreateUserStore();
+    }, [store]);
+
+    const { Grid, GridPagination, selection, copyButtons, refreshTable } = useFluentPagedGrid({
+        persistID: "username",
+        store: gridStore,
+        sort,
+        query,
+        pageNum: page,
         filename: "users",
         columns: {
             check: { width: 27, selectorType: "checkbox" },
@@ -60,24 +78,6 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         }
     });
 
-    const refreshData = React.useCallback(() => {
-        wsAccess.UserQuery({ Name: filter?.username ?? "" })
-            .then(({ Users }) => {
-                if (Users) {
-                    setData(Users?.User.map((user, idx) => {
-                        return {
-                            username: user.username,
-                            employeeID: user.employeeID,
-                            employeeNumber: user.employeeNumber,
-                            fullname: user.fullname,
-                            passwordexpiration: user.passwordexpiration
-                        };
-                    }));
-                }
-            })
-            .catch(err => logger.error(err));
-    }, [filter]);
-
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.DeleteSelectedUsers,
@@ -90,9 +90,9 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 request["usernames_i" + idx] = item.username;
             });
             wsAccess.UserAction(request)
-                .then(response => refreshData())
+                .then(response => refreshTable())
                 .catch(err => logger.error(err));
-        }, [refreshData, selection])
+        }, [refreshTable, selection])
     });
 
     //  Selection  ---
@@ -105,8 +105,6 @@ export const Users: React.FunctionComponent<UsersProps> = ({
 
         setUIState(state);
     }, [selection]);
-
-    React.useEffect(() => refreshData(), [refreshData]);
 
     const exportUsers = React.useCallback(() => {
         let usernames = "";
@@ -123,7 +121,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshData()
+            onClick: () => refreshTable()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -156,7 +154,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportUsers()
         },
-    ], [exportUsers, refreshData, selection, setShowDeleteConfirm, uiState]);
+    ], [exportUsers, refreshTable, selection, setShowDeleteConfirm, uiState]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -167,12 +165,11 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     return <>
         <HolyGrail
             header={<CommandBar items={buttons} farItems={copyButtons} />}
-            main={
-                <Grid />
-            }
+            main={<Grid />}
+            footer={<GridPagination />}
         />
         <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-        <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshData} />
+        <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable} />
         <DeleteConfirm />
     </>;
 

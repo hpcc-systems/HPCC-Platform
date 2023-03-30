@@ -209,7 +209,7 @@ public:
             if (strieq(compression, "POC") || startsWithIgnoreCase(compression, "POC:"))
                 indexCompressor.setown(new PocIndexCompressor);
             else if (strieq(compression, "inplace") || startsWithIgnoreCase(compression, "inplace:"))
-                indexCompressor.setown(new InplaceIndexCompressor(keyedSize, _helper, compression));
+                indexCompressor.setown(new InplaceIndexCompressor(keyedSize, keyHdr, _helper, compression));
             else
                 throw makeStringExceptionV(0, "Unrecognised index compression format %s", compression);
         }

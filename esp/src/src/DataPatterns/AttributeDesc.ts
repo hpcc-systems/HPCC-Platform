@@ -12,14 +12,12 @@ class AttributeTitle extends Html {
 
         this
             .html(`<span style="
-                color:${config.primaryColor};
                 padding:${p}px;
                 display:inline-block;
                 font-size:${config.secondaryFontSize}px;
                 margin-top:4px;
                 border:${b}px solid ${config.secondaryColor};
                 border-radius:4px;
-                background-color: ${config.offwhiteColor};
                 width: calc(100% - ${(p * 2) + (b * 2)}px);
             ">
                 <i style="
@@ -33,14 +31,12 @@ class AttributeTitle extends Html {
                 Optimal:
             </span>
             <span style="
-                color:${config.primaryColor};
                 padding:4px 8px;
                 display:inline-block;
                 font-size:${config.secondaryFontSize}px;
                 margin-top:4px;
                 border:1px solid ${config.secondaryColor};
                 border-radius:4px;
-                background-color: ${config.offwhiteColor};
                 float:right;
             ">
                 <i style="
@@ -62,6 +58,7 @@ class AttributeSummary extends StyledTable {
         super();
         const fillRate = row.fill_rate === 100 || row.fill_rate === 0 ? row.fill_rate : row.fill_rate.toFixed(1);
         this
+            .fontColor("inherit")
             .data([
                 ["Cardinality", row.cardinality, "(~" + (row.cardinality / row.fill_count * 100).toFixed(0) + "%)"],
                 ["Filled", row.fill_count, "(" + fillRate + "%)"]

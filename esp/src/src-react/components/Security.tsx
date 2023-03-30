@@ -12,6 +12,7 @@ import nlsHPCC from "src/nlsHPCC";
 interface SecurityProps {
     filter?: object;
     tab?: string;
+    page?: number;
     name?: string;
     baseDn?: string;
 }
@@ -19,6 +20,7 @@ interface SecurityProps {
 export const Security: React.FunctionComponent<SecurityProps> = ({
     filter,
     tab = "users",
+    page = 1,
     name,
     baseDn
 }) => {
@@ -30,10 +32,10 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
                 onLinkClick={evt => pushUrl(`/security/${evt.props.itemKey}`)}
             >
                 <PivotItem headerText={nlsHPCC.Users} itemKey="users" style={pivotItemStyle(size)}>
-                    <Users filter={filter} />
+                    <Users filter={filter} page={page} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Groups} itemKey="groups" style={pivotItemStyle(size)}>
-                    <Groups filter={filter} />
+                    <Groups page={page} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Permissions} itemKey="permissions" style={pivotItemStyle(size)}>
                     {!name && !baseDn &&

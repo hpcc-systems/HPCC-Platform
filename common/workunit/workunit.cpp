@@ -12276,7 +12276,6 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     assertex(cw);
     StringAttr clusterName(cw->queryClusterName());
-    cw.clear();
     if (!clusterName.length())
         throw MakeStringException(WUERR_InvalidCluster, "No target cluster specified");
 
@@ -12287,6 +12286,12 @@ extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, 
     if (!queue.get())
         throw MakeStringException(WUERR_InvalidQueue, "Could not create workunit queue");
 
+    {
+        Owned<IWorkUnit> wu = &cw->lock();
+        addTimeStamp(wu, SSTcompilestage, "compile", StWhenQueued, 0);
+    }
+
+    cw.clear();
     IJobQueueItem *item = createJobQueueItem(wuid);
     queue->enqueue(item);
 }
@@ -13883,6 +13888,11 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeTy
     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
+extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, unsigned wfid, const char * scope, StatisticKind kind)
+{
+    addTimeStamp(wu, getScopeType(scope), scope, kind, wfid);
+}
+
 static double getCpuSize(const char *resourceName)
 {
     Owned<IPropertyTree> compConfig = getComponentConfig();
@@ -14154,6 +14164,9 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 
     StringAttr owner(workunit.queryUser());
     int priority = workunit.getPriorityValue();
+
+    VStringBuffer jobName("%u/%s/%s", wfid, wuid.get(), graphName);
+
 #ifdef _CONTAINERIZED
     // NB: If a single agent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
 
@@ -14180,8 +14193,13 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             // or an existing idle Thor listening on the same queue will pick it up.
             VStringBuffer queueName("%s.thor", config.queryProp("@queue"));
             DBGLOG("Queueing wuid=%s, graph=%s, on queue=%s, timelimit=%u seconds", wuid.str(), graphName, queueName.str(), timelimit);
+
+            {
+                Owned<IWorkUnit> w = &workunit.lock();
+                addTimeStamp(w, wfid, graphName, StWhenQueued);
+            }
+
             Owned<IJobQueue> queue = createJobQueue(queueName);
-            VStringBuffer jobName("%s/%s", wuid.get(), graphName);
             IJobQueueItem *item = createJobQueueItem(jobName);
             item->setOwner(owner);
             item->setPriority(priority);
@@ -14350,10 +14368,14 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 
         pollthread.start();
 
+        {
+            Owned<IWorkUnit> w = &workunit.lock();
+            addTimeStamp(w, wfid, graphName, StWhenQueued);
+        }
+
         CCycleTimer elapsedTimer;
         PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
-        VStringBuffer wuidGraph("%s/%s", wuid.str(), graphName);
-        IJobQueueItem* item = createJobQueueItem(wuidGraph.str());
+        IJobQueueItem* item = createJobQueueItem(jobName);
         item->setOwner(owner.str());
         item->setPriority(priority);
         Owned<IConversation> conversation = jq->initiateConversation(item);
@@ -14363,15 +14385,15 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         if (!got)
         {
             if (pollthread.timedout)
-                throw MakeStringException(0, "Query %s failed to start within specified timelimit (%u) seconds", wuidGraph.str(), timelimit);
-            throw MakeStringException(0, "Query %s cancelled (1)", wuidGraph.str());
+                throw MakeStringException(0, "Query %s failed to start within specified timelimit (%u) seconds", jobName.str(), timelimit);
+            throw MakeStringException(0, "Query %s cancelled (1)", jobName.str());
         }
         // get the thor ep from whoever picked up
 
         SocketEndpoint thorMaster;
         MemoryBuffer msg;
         if (!conversation->recv(msg,1000*60))
-            throw MakeStringException(0, "Query %s cancelled (2)", wuidGraph.str());
+            throw MakeStringException(0, "Query %s cancelled (2)", jobName.str());
         thorMaster.deserialize(msg);
         msg.clear();
         SocketEndpoint myep;
@@ -14389,7 +14411,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         }
 
         StringBuffer eps;
-        PROGLOG("Thor on %s running %s", thorMaster.getUrlStr(eps).str(), wuidGraph.str());
+        PROGLOG("Thor on %s running %s", thorMaster.getUrlStr(eps).str(), jobName.str());
         MemoryBuffer reply;
         try
         {
@@ -14420,7 +14442,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
                 if (isException)
                 {
                     Owned<IException> e = deserializeException(reply);
-                    VStringBuffer str("Pausing job %s caused exception", wuidGraph.str());
+                    VStringBuffer str("Pausing job %s caused exception", jobName.str());
                     EXCLOG(e, str.str());
                 }
                 Owned<IWorkUnit> w = &workunit.lock();
@@ -14695,6 +14717,7 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     jobYaml.replaceString("_HPCC_JOBNAME_", jobName.str());
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
+    args.append(" \"--k8sJob=true\"");
     for (const auto &p: extraParams)
     {
         if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // job yaml substitution
@@ -14812,6 +14835,47 @@ std::vector<std::vector<std::string>> getPodNodes(const char *selector)
             }
         }
     }
+}
+
+#else
+KeepK8sJobs translateKeepJobs(const char *keepJobs)
+{
+    throwUnexpected();
+}
+
+bool isActiveK8sService(const char *serviceName)
+{
+    throwUnexpected();
+}
+
+bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)
+{
+    throwUnexpected();
+}
+
+void deleteK8sResource(const char *componentName, const char *job, const char *resource)
+{
+    throwUnexpected();
+}
+
+void waitK8sJob(const char *componentName, const char *resourceType, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob)
+{
+    throwUnexpected();
+}
+
+bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *resourceType, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional, bool autoCleanup)
+{
+    throwUnexpected();
+}
+
+void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)
+{
+    throwUnexpected();
+}
+
+std::vector<std::vector<std::string>> getPodNodes(const char *selector)
+{
+    throwUnexpected();
 }
 
 #endif

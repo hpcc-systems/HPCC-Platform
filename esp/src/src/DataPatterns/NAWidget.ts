@@ -6,9 +6,9 @@ export class NAWidget extends Html {
         super();
         this
             .html(`
-                <b style="line-height:23px;font-size:${config.secondaryFontSize}px;color: rgb(51, 51, 51);">${message}</b>
+                <b style="line-height:23px;font-size:${config.secondaryFontSize}px;">${message}</b>
                 <br/>
-                <i style="font-size:${config.secondaryFontSize}px;color: rgb(51, 51, 51);">${submessage}</i>
+                <i style="font-size:${config.secondaryFontSize}px;">${submessage}</i>
             `)
             .overflowX("hidden")
             .overflowY("hidden")

@@ -81,28 +81,20 @@ interface ITracer : extends IInterface
 class CBaseTracer : public CInterfaceOf<ITracer>
 {
 public:
-    #define do_valog(cat) \
-        va_list arguments; \
-        va_start(arguments, format); \
-        valog(cat, format, arguments); \
-        va_end(arguments)
-
-    virtual void dbglog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCdebugInfo); }
-    virtual void dislog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCoperatorDisaster); }
-    virtual void uerrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCuserError); }
-    virtual void oerrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCoperatorError); }
-    virtual void ierrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCdebugError); }
-    virtual void aerrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCauditError); }
-    virtual void uwarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCuserWarning); }
-    virtual void owarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCoperatorWarning); }
-    virtual void iwarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCdebugWarning); }
-    virtual void proglog(const char* format, ...) const override __attribute__((format(printf, 2, 3))) { do_valog(MCuserProgress); }
-    virtual void log(const LogMsgCategory& category, const char* format, ...) const override __attribute__((format(printf, 3, 4))) { do_valog(category); }
-    virtual void log(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail, const char* format, ...) const override __attribute__((format(printf, 5, 6))) { do_valog(LogMsgCategory(_audience, _class, _detail)); }
-
-    #undef do_valog
+    virtual void dbglog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void dislog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void uerrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void oerrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void ierrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void aerrlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void uwarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void owarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void iwarnlog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void proglog(const char* format, ...) const override __attribute__((format(printf, 2, 3)));
+    virtual void log(const LogMsgCategory& category, const char* format, ...) const override __attribute__((format(printf, 3, 4)));
+    virtual void log(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail, const char* format, ...) const override __attribute__((format(printf, 5, 6)));
 protected:
-    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) const = 0;
+    virtual void valog(const LogMsgCategory& category, const char* format, va_list arguments) const __attribute__((format(printf, 3, 0))) = 0;
 
 public:
     using ITracer::logIsActive;
@@ -118,3 +110,24 @@ public:
     virtual bool proglogIsActive() const override { return logIsActive(MCuserProgress); }
     virtual bool logIsActive(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail) const override { return logIsActive(LogMsgCategory(_audience, _class, _detail)); }
 };
+
+#define do_valog(cat) \
+    va_list arguments; \
+    va_start(arguments, format); \
+    valog(cat, format, arguments); \
+    va_end(arguments)
+
+inline void CBaseTracer::dbglog(const char* format, ...) const { do_valog(MCdebugInfo); }
+inline void CBaseTracer::dislog(const char* format, ...) const { do_valog(MCoperatorDisaster); }
+inline void CBaseTracer::uerrlog(const char* format, ...) const { do_valog(MCuserError); }
+inline void CBaseTracer::oerrlog(const char* format, ...) const { do_valog(MCoperatorError); }
+inline void CBaseTracer::ierrlog(const char* format, ...) const { do_valog(MCdebugError); }
+inline void CBaseTracer::aerrlog(const char* format, ...) const { do_valog(MCauditError); }
+inline void CBaseTracer::uwarnlog(const char* format, ...) const { do_valog(MCuserWarning); }
+inline void CBaseTracer::owarnlog(const char* format, ...) const { do_valog(MCoperatorWarning); }
+inline void CBaseTracer::iwarnlog(const char* format, ...) const { do_valog(MCdebugWarning); }
+inline void CBaseTracer::proglog(const char* format, ...) const { do_valog(MCuserProgress); }
+inline void CBaseTracer::log(const LogMsgCategory& category, const char* format, ...) const { do_valog(category); }
+inline void CBaseTracer::log(LogMsgAudience _audience, LogMsgClass _class, LogMsgDetail _detail, const char* format, ...) const { do_valog(LogMsgCategory(_audience, _class, _detail)); }
+
+#undef do_valog

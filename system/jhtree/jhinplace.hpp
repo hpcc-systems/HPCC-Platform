@@ -130,6 +130,7 @@ public:
     ~InplaceKeyBuildContext();
 
 public:
+    ICompressHandler * compressionHandler = nullptr;
     unsigned numKeyedDuplicates = 0;
     MemoryBuffer uncompressed;
     MemoryAttr compressed;
@@ -145,7 +146,6 @@ public:
 
     virtual void load(CKeyHdr *keyHdr, const void *rawData, offset_t pos, bool needCopy) override;
     virtual int compareValueAt(const char *src, unsigned int index) const override;
-    virtual unsigned __int64 getSequence(unsigned int num) const override;
     virtual int locateGE(const char * search, unsigned minIndex) const override;
     virtual int locateGT(const char * search, unsigned minIndex) const override;
     virtual bool getKeyAt(unsigned int num, char *dest) const override;
@@ -160,8 +160,9 @@ protected:
     unsigned __int64 minPosition = 0;
     size32_t keyLen = 0;
     size32_t keyCompareLen = 0;
+    unsigned __int64 positionScale = 1;
+    byte sizeMask;
     byte bytesPerPosition = 0;
-    bool scaleFposByNodeSize = false;
     bool ownedPayload = false;
 };
 
@@ -172,6 +173,7 @@ public:
     virtual bool fetchPayload(unsigned int num, char *dest) const override;
     virtual size32_t getSizeAt(unsigned int num) const override;
     virtual offset_t getFPosAt(unsigned int num) const override;
+    virtual unsigned __int64 getSequence(unsigned int num) const override;
 };
 
 class jhtree_decl CJHInplaceLeafNode : public CJHInplaceTreeNode
@@ -180,6 +182,7 @@ public:
     virtual bool fetchPayload(unsigned int num, char *dest) const override;
     virtual size32_t getSizeAt(unsigned int num) const override;
     virtual offset_t getFPosAt(unsigned int num) const override;
+    virtual unsigned __int64 getSequence(unsigned int num) const override;
 };
 
 class jhtree_decl CInplaceWriteNode : public CWriteNode
@@ -231,7 +234,7 @@ protected:
 protected:
     InplaceKeyBuildContext & ctx;
     PartialMatchBuilder builder;
-    KeyCompressor lzwcomp;
+    KeyCompressor compressor;
     MemoryBuffer uncompressed;      // Much better if these could be shared by all nodes => refactor
     MemoryAttr compressed;
     UnsignedArray payloadLengths;
@@ -248,7 +251,7 @@ protected:
 class InplaceIndexCompressor : public CInterfaceOf<IIndexCompressor>
 {
 public:
-    InplaceIndexCompressor(size32_t keyedSize, IHThorIndexWriteArg * helper, const char * _compressionName);
+    InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr * keyHdr, IHThorIndexWriteArg * helper, const char * _compressionName);
 
     virtual const char *queryName() const override { return compressionName.str(); }
     virtual CWriteNode *createNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeafNode) const override

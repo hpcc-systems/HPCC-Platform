@@ -2643,6 +2643,15 @@ private:
                     parallelAggregate = 1;
                 topology->setPropInt("@parallelAggregate", parallelAggregate);
             }
+            else if (stricmp(queryName, "control:perf")==0)
+            {
+                unsigned perfTime = (unsigned) control->getPropInt64("@time", 60);
+                PerfTracer perf;
+                double interval = control->getPropReal("@interval", 0.2);
+                perf.setInterval(interval);
+                perf.traceFor(perfTime);
+                reply.append(perf.queryResult().str());
+            }
             else if (stricmp(queryName, "control:pingInterval")==0)
             {
                 unsigned newInterval = (unsigned) control->getPropInt64("@val", 0);

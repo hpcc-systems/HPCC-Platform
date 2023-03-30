@@ -86,7 +86,7 @@ Pass in dict with root and warnings
  {{- end -}}
  {{- range $cname, $ctypes := $ctx.components -}}
   {{- range $id, $component := $ctypes -}}
-   {{- if not $component.disabled -}}
+   {{- if and (kindIs "map" $component) (not $component.disabled) -}}
     {{- $hasResources := "" -}}
     {{- if eq $cname "thor" -}}
      {{- $hasResources = include "hpcc.hasResources" (dict "resources" $component.managerResources) -}}

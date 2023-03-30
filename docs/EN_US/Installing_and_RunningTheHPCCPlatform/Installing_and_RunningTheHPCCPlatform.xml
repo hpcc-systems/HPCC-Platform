@@ -205,11 +205,6 @@
             </listitem>
 
             <listitem>
-              <para><emphasis role="bold">The Six Degrees of Kevin
-              Bacon</emphasis> example</para>
-            </listitem>
-
-            <listitem>
               <para>Read <emphasis role="bold">Using Config Manager</emphasis>
               to learn how to configure an HPCC Systems platform using
               Advanced View.</para>
@@ -1392,11 +1387,6 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         <listitem>
           <para>The <emphasis role="bold">HPCC Systems Data
           Tutorial</emphasis></para>
-        </listitem>
-
-        <listitem>
-          <para><emphasis role="bold">The Six Degrees of Kevin
-          Bacon</emphasis> example</para>
         </listitem>
 
         <listitem>

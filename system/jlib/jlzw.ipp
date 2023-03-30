@@ -55,6 +55,7 @@ public:
     virtual void startblock() override;
     virtual void commitblock() override;
     virtual bool adjustLimit(size32_t newLimit) override;
+    virtual CompressionMethod getCompressionMethod() const override { return COMPRESS_METHOD_LZW; }
 
 protected:
     void flushbuf();
