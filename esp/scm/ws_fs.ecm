@@ -316,6 +316,7 @@ ESPrequest [nil_remove] SprayFixed
 
     string destGroup;
     string destLogicalName;
+    [min_ver("1.25")] int destNumParts(0);
     bool   overwrite;
     bool   replicate;
     int    ReplicateOffset(1);
@@ -369,6 +370,7 @@ ESPrequest [nil_remove] SprayVariable
 
     string destGroup;
     string destLogicalName;
+    [min_ver("1.25")] int destNumParts(0);
     bool   overwrite;
     bool   replicate;
     int    ReplicateOffset(1);

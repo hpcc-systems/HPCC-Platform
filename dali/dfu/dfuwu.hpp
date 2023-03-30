@@ -246,12 +246,12 @@ interface IConstDFUfileSpec: extends IInterface
     virtual bool getWrap() const = 0;
     virtual StringBuffer &getDiffKey(StringBuffer &keyname) const = 0;
     virtual bool getMultiCopy() const = 0;
-    virtual void setNumPartsOverride(unsigned num)=0; // internal use for wrap
+    virtual unsigned getNumPartsOverride() const = 0;
     virtual unsigned numClusters() const = 0;                 // minimum 1
     virtual bool getClusterPartDiskMapSpec(const char* clustername,ClusterPartDiskMapSpec &spec) const = 0;
     virtual StringBuffer &getClusterPartDefaultBaseDir(const char *clustername,StringBuffer &basedir) const = 0; // set by setClusterPartDiskMapping
     virtual IGroup *getGroup(unsigned clustnum) const = 0;
-    virtual void setWindowsOS(bool iswin) =0;
+    virtual void setWindowsOS(bool iswin) = 0;
     virtual bool getWindowsOS(bool &iswin) const =0;
     virtual StringBuffer &getRoxiePrefix(StringBuffer &str) const = 0;   // extra prefix to add to roxie file name
     virtual StringBuffer &getRawDirectory(StringBuffer &str) const = 0;
@@ -279,6 +279,7 @@ interface IDFUfileSpec: extends IConstDFUfileSpec
     virtual void setFromXML(const char *xml) = 0;
     virtual void setCompressed(bool set) = 0;
     virtual void setWrap(bool val) = 0;
+    virtual void setNumPartsOverride(unsigned num) = 0;
     virtual void setReplicateOffset(int val) = 0;           // sets for all clusters
     virtual void setDiffKey(const char *keyname) = 0;
     virtual void setMultiCopy(bool val) = 0;

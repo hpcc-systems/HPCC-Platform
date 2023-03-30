@@ -574,8 +574,8 @@ void testRoxieCopies()
 void test2()
 {
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-    Owned<IConstDFUWorkUnit> wu = factory->openWorkUnit("D20060303-110019",false);
-    IConstDFUfileSpec *destination = wu->queryDestination();
+    Owned<IDFUWorkUnit> wu = factory->updateWorkUnit("D20060303-110019",false);
+    IDFUfileSpec *destination = wu->queryUpdateDestination();
     if (destination->getWrap())
         destination->setNumPartsOverride(51);
     Owned<IFileDescriptor> desc =  destination->getFileDescriptor();

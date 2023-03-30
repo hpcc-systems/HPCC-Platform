@@ -2060,6 +2060,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             destination->setReplicateOffset(repo);
         if (req.getWrap())
             destination->setWrap(true);
+        if (!req.getDestNumParts_isNull() && req.getDestNumParts()>0)
+            destination->setNumPartsOverride(req.getDestNumParts());
 
         IDFUoptions *options = wu->queryUpdateOptions();
         const char * decryptkey = req.getDecrypt();
@@ -2228,7 +2230,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         bool isNull = req.getReplicateOffset_isNull();
         if (!isNull && (repo!=1))
             destination->setReplicateOffset(repo);
-
+        if (!req.getDestNumParts_isNull() && req.getDestNumParts()>0)
+            destination->setNumPartsOverride(req.getDestNumParts());
         options->setReplicate(req.getReplicate());
         options->setOverwrite(req.getOverwrite());             // needed if target already exists
         const char* prefix = req.getPrefix();

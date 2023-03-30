@@ -1274,21 +1274,6 @@ public:
                     oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
                     kind.set(srcFile->queryAttributes().queryProp("@kind"));
 
-                    // keys default wrap for copy
-                    if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
-                        destination->setNumPartsOverride(srcFile->numParts());
-                    else if (isContainerized())
-                    {
-                        StringBuffer clusterName;
-                        destination->getGroupName(0, clusterName);
-                        Owned<IPropertyTree> plane = getStoragePlane(clusterName);
-                        if (plane)
-                        {
-                            if (plane->hasProp("@defaultSprayParts"))
-                                destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
-                        }
-                    }
-
                     if (options->getSubfileCopy())
                         opttree->setPropBool("@compress",srcFile->isCompressed());
 
@@ -1316,6 +1301,37 @@ public:
                         auxfdesc.setown(createMultiCopyFileDescriptor(srcFdesc,destination->getNumParts(0)));
                 }
                 break;
+            }
+            // update numPartsOverride & set subDirPerFilePart
+            bool dirPerPart = false;
+            switch (cmd) {
+            case DFUcmd_copymerge:
+            case DFUcmd_copy:
+            case DFUcmd_move:
+            case DFUcmd_rename:
+            case DFUcmd_replicate:
+            case DFUcmd_import:
+                {
+                    IDFUfileSpec *dst = wu->queryUpdateDestination();
+                    StringBuffer clusterName;
+                    destination->getGroupName(0, clusterName);
+                    Owned<IPropertyTree> plane = getStoragePlane(clusterName);
+                    if (plane)
+                        dirPerPart = plane->getPropBool("@subDirPerFilePart", isContainerized());
+                    // keys default wrap for copy
+                    if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
+                    {
+                        if (destination->getNumPartsOverride())
+                            throw makeStringExceptionV(-1, "DestinationNumPartOverride is provided but %s", destination->getWrap()?"getWrap is true":"is copying a key");
+                        dst->setNumPartsOverride(srcFile->numParts());
+                    }
+                    else if (plane)
+                    {
+                        // use destination defaultSprayParts if requestor doesn't provide num parts
+                        if (plane->hasProp("@defaultSprayParts") && destination->getNumPartsOverride()==0)
+                            dst->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                    }
+                }
             }
             // fill dstfile for commands that need it
             switch (cmd) {
@@ -1352,26 +1368,6 @@ public:
                                         break;
                                 };
                             }
-                        }
-
-                        bool dirPerPart = false;
-                        //MORE: This could be combined with the code that gets defaultSprayParts
-                        if (isContainerized())
-                        {
-                            StringBuffer clusterName;
-                            destination->getGroupName(0, clusterName);
-                            Owned<IPropertyTree> plane = getStoragePlane(clusterName);
-                            if (plane)
-                            {
-                                dirPerPart = plane->getPropBool("@subDirPerFilePart", true);
-                            }
-                        }
-
-                        if (destination->getWrap())
-                        {
-                            Owned<IFileDescriptor> fdesc = source?source->getFileDescriptor():NULL;
-                            if (fdesc)
-                                destination->setNumPartsOverride(fdesc->numParts());
                         }
 
                         if (options->getFailIfNoSourceFile())

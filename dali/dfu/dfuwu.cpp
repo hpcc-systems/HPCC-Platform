@@ -952,17 +952,10 @@ static void printDesc(IFileDescriptor *desc)
 
 class CDFUfileSpec: public CLinkedDFUWUchild, implements IDFUfileSpec
 {
-    unsigned numpartsoverride;
-    mutable DFD_OS os;
+    mutable DFD_OS os = DFD_OSdefault;
     mutable Owned<IPropertyTree> nullattr;
 
 public:
-    CDFUfileSpec()
-    {
-        numpartsoverride = 0;
-        os = DFD_OSdefault;
-    }
-
     IMPLEMENT_DFUWUCHILD;
 
     IFileDescriptor *getFileDescriptor(bool iskey,bool ignorerepeats) const
@@ -1329,7 +1322,7 @@ public:
 
     unsigned getNumParts(unsigned clustnum,bool iskey) const
     {
-        unsigned n = numpartsoverride?numpartsoverride:(unsigned)queryRoot()->getPropInt("@numparts",0);
+        unsigned n = (unsigned) queryRoot()->getPropInt("@numPartsOverride", queryRoot()->getPropInt("@numparts",0));
         if (!n) {
             StringBuffer s;
             SocketEndpoint ep;
@@ -1350,6 +1343,11 @@ public:
             }
         }
         return n;
+    }
+
+    unsigned getNumPartsOverride() const override
+    {
+        return (unsigned) queryRoot()->getPropInt("@numPartsOverride");
     }
 
     void setTitle(const char *val)
@@ -1662,7 +1660,7 @@ public:
 
     void setNumPartsOverride(unsigned num)
     {
-        numpartsoverride = num;
+        queryRoot()->setPropInt("@numPartsOverride",num);
     }
 
 
