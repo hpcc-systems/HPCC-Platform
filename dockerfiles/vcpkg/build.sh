@@ -41,20 +41,22 @@ function doBuild() {
     rm $ROOT_DIR/vcpkg/vcpkg || true
      
     # Check if cmake config needs to be generated  ---
-    if [ ! -f "$ROOT_DIR/build-$1/CMakeCache.txt" ] 
-    then
+    if ! docker volume ls -q -f name=build-$1 | grep -q build-$1; then
         docker run --rm \
             --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
+            --mount source=build-$1,target=/hpcc-dev/build,type=volume \
             build-$1:$GITHUB_REF /bin/bash -c \
-            "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/HPCC-Platform/build-$1 ${CMAKE_OPTIONS}"
-    #        docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached build-ubuntu-22.04:5918a7b8 /bin/bash
+            "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${CMAKE_OPTIONS}"
+        #   docker run --rm -it --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached --mount source=build-$1,target=/hpcc-dev/build,type=volume build-ubuntu-22.04:5918a7b8 /bin/bash
     fi
+
 
     # Build  (should also update existing config ---
     CONTAINER=$(docker create \
         --mount source="$(pwd)",target=/hpcc-dev/HPCC-Platform,type=bind,consistency=cached \
+        --mount source=build-$1,target=/hpcc-dev/build,type=volume \
         build-$1:$GITHUB_REF /bin/bash -c \
-        "cmake --build /hpcc-dev/HPCC-Platform/build-$1 --parallel $(nproc) --target install")
+        "cmake --build /hpcc-dev/build --parallel $(nproc) --target install")
 
     rm $ROOT_DIR/vcpkg/vcpkg || true
 
