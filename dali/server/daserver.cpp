@@ -462,74 +462,70 @@ int main(int argc, const char* argv[])
         serverConfig.setown(loadConfiguration(defaultYaml, argv, "dali", "DALI", DALICONF, nullptr));
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
-        port = serverConfig->getPropInt("@port");
-#ifndef _CONTAINERIZED
-        if (!checkCreateDaemon(argc, argv))
-            return EXIT_FAILURE;
-
-        for (unsigned i=1;i<(unsigned)argc;i++) {
-            if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-                i++; // consumed within checkCreateDaemon(), bump up here
-            }
-            else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
-                server = argv[++i];
-            else if (streq(argv[i],"--port") || streq(argv[i],"-p"))
-                port = atoi(argv[++i]);
-            else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
-                myrank = atoi(argv[++i]);
-            else if (!startsWith(argv[i],"--config"))
-            {
-                usage();
-                return EXIT_FAILURE;
-            }
-        }
-#endif
-
-#ifndef _CONTAINERIZED
-        ILogMsgHandler * fileMsgHandler;
+        StringBuffer dataPath;
+        StringBuffer mirrorPath;
+        if (isContainerized())
         {
+            port = serverConfig->getPropInt("service/@port");
+            setupContainerizedLogMsgHandler();
+
+            serverConfig->getProp("@dataPath", dataPath);
+            /* NB: mirror settings are unlikely to be used in a container setup
+            If detected, set in to legacy location under SDS/ for backward compatibility */
+            serverConfig->getProp("@remoteBackupLocation", mirrorPath);
+            if (mirrorPath.length())
+                serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath);
+        }
+        else
+        {
+            port = serverConfig->getPropInt("@port");
+            if (!checkCreateDaemon(argc, argv))
+                return EXIT_FAILURE;
+
+            for (unsigned i=1;i<(unsigned)argc;i++) {
+                if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+                    i++; // consumed within checkCreateDaemon(), bump up here
+                }
+                else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
+                    server = argv[++i];
+                else if (streq(argv[i],"--port") || streq(argv[i],"-p"))
+                    port = atoi(argv[++i]);
+                else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
+                    myrank = atoi(argv[++i]);
+                else if (!startsWith(argv[i],"--config"))
+                {
+                    usage();
+                    return EXIT_FAILURE;
+                }
+            }
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
             lf->setLogDirSubdir("server");//add to tail of config log dir
             lf->setName("DaServer");//override default filename
             lf->setLocal(true); //only messages from this process should be sent to the server log file
-            fileMsgHandler = lf->beginLogging();
+            lf->beginLogging();
+
+            if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"dali","dali",serverConfig->queryProp("@name"),dataPath))
+                serverConfig->setProp("@dataPath",dataPath.str());
+            else if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath))
+                serverConfig->setProp("@dataPath",dataPath.str());
+            else
+                serverConfig->getProp("@dataPath",dataPath);
+            if (dataPath.length())
+            {
+                RemoteFilename rfn;
+                rfn.setRemotePath(dataPath);
+                if (!rfn.isLocal())
+                {
+                    OERRLOG("if a dataPath is specified, it must be on local machine");
+                    return 0;
+                }
+            }
+            // JCSMORE remoteBackupLocation should not be a property of SDS section really.
+            if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath))
+                serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
         }
-#else
-        setupContainerizedLogMsgHandler();
-#endif
         PROGLOG("Build %s", hpccBuildInfo.buildTag);
 
-        StringBuffer dataPath;
-        StringBuffer mirrorPath;
-#ifdef _CONTAINERIZED
-        serverConfig->getProp("@dataPath", dataPath);
-        /* NB: mirror settings are unlikely to be used in a container setup
-           If detected, set in to legacy location under SDS/ for backward compatibility */
-        serverConfig->getProp("@remoteBackupLocation", mirrorPath);
-        if (mirrorPath.length())
-            serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath);
-#else
-        if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"dali","dali",serverConfig->queryProp("@name"),dataPath))
-            serverConfig->setProp("@dataPath",dataPath.str());
-        else if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"data","dali",serverConfig->queryProp("@name"),dataPath))
-            serverConfig->setProp("@dataPath",dataPath.str());
-        else
-            serverConfig->getProp("@dataPath",dataPath);
-        if (dataPath.length())
-        {
-            RemoteFilename rfn;
-            rfn.setRemotePath(dataPath);
-            if (!rfn.isLocal())
-            {
-                OERRLOG("if a dataPath is specified, it must be on local machine");
-                return 0;
-            }
-        }
-        // JCSMORE remoteBackupLocation should not be a property of SDS section really.
-        if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath))
-            serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
-
-#endif
         if (dataPath.length())
         {
             addPathSepChar(dataPath); // ensures trailing path separator
