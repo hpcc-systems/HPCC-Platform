@@ -26,7 +26,7 @@
 
           <entry>Optional. A STRING containing a username to use for
           authenticated access to the ESP process. If omitted, it indicates
-          that no user authentication is required. </entry>
+          that no user authentication is required.</entry>
         </row>
 
         <row>
@@ -51,10 +51,12 @@
   </informaltable>
 
   <para>The <emphasis role="bold">GetEspUrl </emphasis>function returns the
-  full URL to an ESP server process. </para>
+  full URL to an ESP server process.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">EspAddress := STD.File.GetEspUrl
+  <programlisting format="linespecific">IMPORT STD;
+EspAddress := STD.File.GetEspUrl();
+EspAddress;
 </programlisting>
 </sect1>
