@@ -46,6 +46,7 @@ private:
     StringAttr queryName;
     StringArray pathNodes;
     StringArray *validTargets;
+    Linked<IProperties> targetAliases;
     Owned<IProperties> parameters;
     Owned<IProperties> form;
     Owned<IProperties> reqHeaders;
@@ -63,7 +64,7 @@ private:
     void parseURL();
 
 public:
-    HttpHelper(StringArray *_validTargets) : method(HttpMethod::NONE), validTargets(_validTargets)  {parameters.setown(createProperties(true));}
+    HttpHelper(StringArray *_validTargets, IProperties *_targetAliases) : method(HttpMethod::NONE), validTargets(_validTargets), targetAliases(_targetAliases)  {parameters.setown(createProperties(true));}
     inline bool isHttp() { return method!=HttpMethod::NONE; }
     inline bool isHttpGet(){ return method==HttpMethod::GET; }
     inline bool allowKeepAlive()
@@ -116,7 +117,15 @@ public:
     bool getTrim() {return parameters->getPropBool(".trim", true); /*http currently defaults to true, maintain compatibility */}
     void setHttpMethod(HttpMethod _method) { method = _method; }
     const char *queryAuthToken() { return authToken.str(); }
-    const char *queryTarget() { return (pathNodes.length()) ? pathNodes.item(0) : NULL; }
+    const char *queryTarget()
+    {
+        if (!pathNodes.length())
+            return nullptr;
+        const char *target = pathNodes.item(0);
+        if (strieq("any", target)) //roxie searches all querysets if target is empty, but for intuitive HTTP-GET URLs especially, treat 'any' as the same as empty
+            return "";
+        return target;
+    }
     const char *queryQueryName()
     {
         if (!queryName.isEmpty())
@@ -201,22 +210,33 @@ public:
         return getContentTypeMlFormat();
     }
     IProperties *queryUrlParameters(){return parameters;}
-    bool validateTarget(const char *target)
+    bool validateHttpGetTarget(const char *target)
     {
         if (!target)
             return false;
-        if (validTargets && validTargets->contains(target))
+        if (!*target) //empty or "any" target will search all targets for query, "any" would have already been translated to ""
             return true;
+        if (validTargets)
+        {
+            if (validTargets->contains(target))
+                return true;
+            if (targetAliases)
+            {
+                const char *aliasedTarget = targetAliases->queryProp(target);
+                if (!isEmptyString(aliasedTarget) && validTargets->contains(aliasedTarget))
+                    return true;
+            }
+        }
         if (strieq(target, "control") && (isHttpGet() || isFormPost()))
             return true;
         return false;
     }
-    inline void checkTarget()
+    inline void checkHttpGetTarget()
     {
         const char *target = queryTarget();
-        if (!target || !*target)
+        if (!target)
             throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not specified");
-        else if (!validateTarget(target))
+        else if (!validateHttpGetTarget(target))
             throw MakeStringException(THORHELPER_DATA_ERROR, "HTTP-GET Target not found");
     }
 
@@ -229,7 +249,7 @@ public:
             contentType.set("text/xml"); //backward compatible.  Some clients have a bug where XML is sent as "form-urlenncoded"
             return;
         }
-        checkTarget();
+        checkHttpGetTarget(); //Form post is similar to an HTTP-GET in that the target and query name are from the URL
         if (!form)
             form.setown(createProperties(false));
         parseHttpParameterString(form, content);
