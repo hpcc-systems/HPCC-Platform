@@ -15,12 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-#include "xslprocessor.hpp" 
+#include "xslprocessor.hpp"
 
-SCMenum ThresholdType
+ESPEnum ThresholdType : int
 {
-    THRESHOLD_PERCENTAGE,
-    THRESHOLD_MB
+    THRESHOLD_PERCENTAGE(0, "THRESHOLD_PERCENTAGE"),
+    THRESHOLD_MB(1, "THRESHOLD_MB")
 };
 
 ESPStruct [nil_remove] DiskUsage
@@ -158,7 +158,7 @@ ESPstruct ProcessInfo
     string  Description;
     string  Parameter;
 };
-   
+
 ESPStruct [nil_remove] ComponentInfo
 {
     int Condition;
@@ -195,7 +195,7 @@ ESPstruct MachineInfoEx
 };
 
 
-ESPresponse [encode(0), exceptions_inline] GetMachineInfoResponse 
+ESPresponse [encode(0), exceptions_inline] GetMachineInfoResponse
 {
     ESPstruct RequestInfoStruct     RequestInfo;
     ESParray<string>                Columns;
@@ -234,7 +234,7 @@ ESPrequest MetricsRequest
    [min_ver("1.07")] bool   AutoUpdate(true);
 };
 
-ESPresponse [encode(0), exceptions_inline] MetricsResponse 
+ESPresponse [encode(0), exceptions_inline] MetricsResponse
 {
     string FieldInformation;
     string Metrics;
@@ -268,7 +268,7 @@ ESPrequest StartStopBeginRequest
     [min_ver("1.08")] ThresholdType DiskThresholdType;
 };
 
-ESPresponse [exceptions_inline] StartStopBeginResponse 
+ESPresponse [exceptions_inline] StartStopBeginResponse
 {
     string Addresses;
     string Key1;
@@ -317,7 +317,7 @@ ESPstruct StartStopResult
     int    OS;
 };
 
-ESPresponse [encode(0), exceptions_inline] StartStopResponse 
+ESPresponse [encode(0), exceptions_inline] StartStopResponse
 {
     ESParray<ESPstruct StartStopResult> StartStopResults;
     bool Stop;
@@ -354,7 +354,7 @@ ESPstruct TargetClusterInfo
     ESParray<ESPstruct MachineInfoEx> Processes;
 };
 
-ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse 
+ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
 {
     ESParray<string>                        Columns;
     ESPstruct RequestInfoStruct             RequestInfo;
@@ -392,7 +392,7 @@ ESPrequest [nil_remove] GetComponentStatusRequest
 {
 };
 
-ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentStatusResponse 
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentStatusResponse
 {
     int StatusCode;
     string Status;
@@ -414,7 +414,7 @@ ESPrequest [nil_remove] UpdateComponentStatusRequest
     ESParray<ESPstruct ComponentStatus, ComponentStatus> ComponentStatusList;
 };
 
-ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResponse 
+ESPresponse [encode(0), nil_remove, exceptions_inline] UpdateComponentStatusResponse
 {
     int StatusCode;
     string Status;
@@ -426,7 +426,7 @@ ESPrequest [nil_remove] GetComponentUsageRequest
     [min_ver("1.15")] bool BypassCachedResult(false);
 };
 
-ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentUsageResponse 
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetComponentUsageResponse
 {
     ESParray<ESPstruct ComponentUsage> ComponentUsages;
     [min_ver("1.17")] string UsageTime;
@@ -438,7 +438,7 @@ ESPrequest [nil_remove] GetTargetClusterUsageRequest
     [min_ver("1.15")] bool BypassCachedResult(false);
 };
 
-ESPresponse [encode(0), nil_remove, exceptions_inline] GetTargetClusterUsageResponse 
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetTargetClusterUsageResponse
 {
     ESParray<ESPstruct TargetClusterUsage> TargetClusterUsages;
     [min_ver("1.17")] string UsageTime;
@@ -450,7 +450,7 @@ ESPrequest [nil_remove] GetNodeGroupUsageRequest
     [min_ver("1.15")] bool BypassCachedResult(false);
 };
 
-ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse 
+ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse
 {
     ESParray<ESPstruct NodeGroupUsage> NodeGroupUsages;
     [min_ver("1.17")] string UsageTime;
@@ -462,10 +462,10 @@ ESPservice [auth_feature("DEFERRED"), version("1.18")] ws_machine
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);
 
-    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetMachineInfo(GetMachineInfoRequest, GetMachineInfoResponse);
 
-    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/machines.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetMachineInfoEx(GetMachineInfoRequestEx, GetMachineInfoResponseEx);
 
     ESPmethod GetComponentStatus(GetComponentStatusRequest, GetComponentStatusResponse);
@@ -475,7 +475,7 @@ ESPservice [auth_feature("DEFERRED"), version("1.18")] ws_machine
     ESPmethod [min_ver("1.14")] GetTargetClusterUsage(GetTargetClusterUsageRequest, GetTargetClusterUsageResponse);
     ESPmethod [min_ver("1.14")] GetNodeGroupUsage(GetNodeGroupUsageRequest, GetNodeGroupUsageResponse);
 
-    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")] 
+    ESPmethod [resp_xsl_default("./smc_xslt/ws_machine/metrics.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetMetrics(MetricsRequest, MetricsResponse);
 };
 
