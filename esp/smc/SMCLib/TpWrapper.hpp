@@ -45,6 +45,12 @@
 #include "sacmd.hpp"
 #include "jsmartsock.ipp"
 
+enum OS_TYPE {
+    OS_WINDOWS,
+    OS_SOLARIS,
+    OS_LINUX
+};
+
 using std::set;
 using std::string;
 
@@ -126,9 +132,9 @@ using std::string;
 
 #define SDS_LOCK_TIMEOUT 30000
 
-class TPWRAPPER_API CTpWrapper : public CInterface  
+class TPWRAPPER_API CTpWrapper : public CInterface
 {
-    
+
 private:
     void setAttPath(StringBuffer& Path,const char* PathToAppend,const char* AttName,const char* AttValue,StringBuffer& returnStr);
     void getAttPath(const char* Path,StringBuffer& returnStr);
@@ -158,7 +164,7 @@ public:
     void getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList);
     void getGroupList(double espVersion, const char* kindReq, IArrayOf<IEspTpGroup> &Groups);
     void getCluster(const char* ClusterType,IPropertyTree& returnRoot);
-    void getClusterMachineList(double clientVersion, const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory, 
+    void getClusterMachineList(double clientVersion, const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory,
                                         IArrayOf<IEspTpMachine> &MachineList, bool& hasThorSpareProcess, const char* ClusterName = NULL);
     void getMachineList(double clientVersion, const char* MachineType, const char* MachinePath, const char* Status,
         const char* Directory, IArrayOf<IEspTpMachine>& MachineList, set<string>* pMachineNames=nullptr);
@@ -234,4 +240,3 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
 extern TPWRAPPER_API SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const char * dropZoneName, const char * dropZonePath, const char * dropZoneHost);
 
 #endif //_ESPWIZ_TpWrapper_HPP__
-

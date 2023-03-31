@@ -83,7 +83,7 @@ ESPStruct [nil_remove] TpGroup
 };
 
 //  ===========================================================================
-ESPStruct TpDali        
+ESPStruct TpDali
 {
     string Name;
     string Description;
@@ -98,7 +98,7 @@ ESPStruct TpDali
 
 };
 //  ===========================================================================
-ESPStruct TpEclServer   
+ESPStruct TpEclServer
 {
     string Name;
     string Description;
@@ -110,7 +110,7 @@ ESPStruct TpEclServer
 
 };
 //  ===========================================================================
-ESPStruct TpEclAgent    
+ESPStruct TpEclAgent
 {
     string Name;
     string Description;
@@ -130,7 +130,7 @@ ESPStruct TpAgentExec
 
 };
 //  ===========================================================================
-ESPStruct TpEclScheduler    
+ESPStruct TpEclScheduler
 {
     string Name;
     string Description;
@@ -420,9 +420,9 @@ ESPresponse [exceptions_inline,encode(0)] TpClusterInfoResponse
 };
 
 
-SCMenum TpMachineType
+ESPenum TpMachineType : int
 {
-    TPMACHINECLUSTER
+    TPMACHINECLUSTER(0, "TPMACHINECLUSTER")
 };
 ESPrequest [] TpMachineQueryRequest
 {
@@ -434,7 +434,7 @@ ESPrequest [] TpMachineQueryRequest
     string Path;
     //installation path for corresponding component for monitoring processes
     string Directory;
-    string LogDirectory; 
+    string LogDirectory;
 };
 
 
@@ -580,13 +580,6 @@ ESPrequest [nil_remove] SystemLogRequest
 ESPresponse [exceptions_inline] SystemLogResponse
 {
     [http_content("application/octet-stream")] binary thefile;
-};
-
-SCMenum OS_TYPE
-{
-    OS_WINDOWS, 
-    OS_SOLARIS, 
-    OS_LINUX
 };
 
 ESPrequest TpGetComponentFileRequest
