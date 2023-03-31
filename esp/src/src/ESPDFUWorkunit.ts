@@ -171,11 +171,8 @@ const Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignor
             "JobNameOrig": this.JobName
         };
 
-        const context = this;
-        FileSpray.UpdateDFUWorkunit({
+        return FileSpray.UpdateDFUWorkunit({
             request: outerRequest
-        }).then(function (response) {
-            context.refresh();
         });
     },
     submit(target) {

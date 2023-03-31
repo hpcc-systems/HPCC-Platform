@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
@@ -33,6 +33,9 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [showPublishForm, setShowPublishForm] = React.useState(false);
     const [showZapForm, setShowZapForm] = React.useState(false);
     const [showThorSlaveLogs, setShowThorSlaveLogs] = React.useState(false);
+
+    const [showMessageBar, setShowMessageBar] = React.useState(false);
+    const dismissMessageBar = React.useCallback(() => setShowMessageBar(false), []);
 
     React.useEffect(() => {
         setJobname(workunit?.Jobname);
@@ -85,7 +88,15 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     Jobname: jobname,
                     Description: description,
                     Protected: _protected
-                }).catch(err => logger.error(err));
+                })
+                    .then(_ => {
+                        setShowMessageBar(true);
+                        const t = window.setTimeout(function () {
+                            setShowMessageBar(false);
+                            window.clearTimeout(t);
+                        }, 2400);
+                    })
+                    .catch(err => logger.error(err));
             }
         },
         {
@@ -163,6 +174,15 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                         <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                             <Sticky stickyPosition={StickyPositionType.Header}>
                                 <CommandBar items={buttons} />
+                                {showMessageBar &&
+                                    <MessageBar
+                                        messageBarType={MessageBarType.success}
+                                        dismissButtonAriaLabel={nlsHPCC.Close}
+                                        onDismiss={dismissMessageBar}
+                                    >
+                                        {nlsHPCC.SuccessfullySaved}
+                                    </MessageBar>
+                                }
                             </Sticky>
                             <Sticky stickyPosition={StickyPositionType.Header}>
                                 <WorkunitPersona wuid={wuid} />
