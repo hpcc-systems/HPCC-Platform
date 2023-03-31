@@ -173,7 +173,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                             <TableGroup fields={{
                                 "wuid": { label: nlsHPCC.WUID, type: "string", value: wuid, readonly: true },
                                 "action": { label: nlsHPCC.Action, type: "string", value: workunit?.ActionEx, readonly: true },
-                                "state": { label: nlsHPCC.State, type: "string", value: workunit?.State, readonly: true },
+                                "state": { label: nlsHPCC.State, type: "string", value: workunit?.State + (workunit?.StateEx ? ` (${workunit.StateEx})` : ""), readonly: true },
                                 "owner": { label: nlsHPCC.Owner, type: "string", value: workunit?.Owner, readonly: true },
                                 "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
                                 "description": { label: nlsHPCC.Description, type: "string", value: description },
