@@ -63,7 +63,7 @@ interface ScopesProps {
     scope?: any;
 }
 
-const emptyFilter = {};
+const emptyFilter: { [key: string]: any } = {};
 
 const mergeFileData = (DFULogicalFiles, files) => {
     const data = [];
@@ -83,7 +83,7 @@ const mergeFileData = (DFULogicalFiles, files) => {
 
 export const Scopes: React.FunctionComponent<ScopesProps> = ({
     filter = emptyFilter,
-    scope
+    scope = "."
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
@@ -104,24 +104,25 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const [, { currencyCode }] = useBuildInfo();
 
     const refreshData = React.useCallback(() => {
+        if (!scope) return;
         if (scope === ".") {
-            setScopePath([]);
             dfuService.DFUFileView({ Scope: "" }).then(async ({ DFULogicalFiles }) => {
                 const rootFiles = await dfuService.DFUFileView({ Scope: "." });
                 const files = rootFiles?.DFULogicalFiles?.DFULogicalFile ?? [];
                 setData(mergeFileData(DFULogicalFiles, files));
+                setScopePath([]);
             });
         } else {
-            setScopePath(scope.split("::"));
             dfuService.DFUFileView({ Scope: scope }).then(({ DFULogicalFiles }) => {
                 let files = DFULogicalFiles?.DFULogicalFile?.filter(file => !file.isDirectory) ?? [];
                 if (filter.Owner === currentUser?.username) {
                     files = files.filter(file => file.Owner === currentUser?.username);
                 }
                 setData(mergeFileData(DFULogicalFiles, files));
+                setScopePath(scope.split("::"));
             });
         }
-    }, [currentUser, filter.Owner, scope]);
+    }, [currentUser.username, filter.Owner, scope]);
 
     React.useEffect(() => {
         refreshData();
