@@ -1961,12 +1961,7 @@ FUNCTIONMACRO|MACRO {
                             msg.append("hex data can only contains 0-9a-fA-F: ");
                             msg.append(CUR_TOKEN_TEXT);
                             lexer->reportError(returnToken, ERR_HEXDATA_ILL, "%s", msg.str());
-
-                            // recovering
-                            char data[2], str[3] = "00";
-
-                            hex2str((char*)data, (char*)str, 2);
-                            returnToken.setExpr(createConstant(createDataValue(data, 2)));
+                            returnToken.setExpr(createConstant(createDataValue(nullptr, 0U)));
                         }
                         return (DATA_CONST);
                     }
