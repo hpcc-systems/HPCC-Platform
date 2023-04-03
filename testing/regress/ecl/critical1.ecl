@@ -71,5 +71,9 @@ SEQUENTIAL(
     EVALUATE(datasetOutsideCritical),
     processInput(datasetOutsideCritical, prefix+'tagged'),
     OUTPUT(sortedds_cnt-dedupds_cnt,NAMED('DuplicateIdCount') ), // This should be zero
-    Std.File.DeleteSuperFile(idFileName)
+
+    // Clean-up
+    Std.File.DeleteSuperFile(idFileName),
+    Std.File.DeleteLogicalFile(idFilename + '_initial'),
+    Std.File.DeleteLogicalFile(idFilename + WORKUNIT),
 );
