@@ -290,7 +290,8 @@ export const CommandMessages = {
     12: "Server",
     13: "Monitor",
     14: "Copy Merge",
-    15: "Super Copy"
+    15: "Super Copy",
+    16: "Publish"
 };
 
 export const FormatMessages = {
