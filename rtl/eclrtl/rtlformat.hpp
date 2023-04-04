@@ -317,6 +317,124 @@ private:
     bool final=false;
 };
 
+class ECLRTL_API CFormEncodedWriter : implements IXmlWriterExt, public CInterface
+{
+public:
+    CFormEncodedWriter(unsigned _flags, IXmlStreamFlusher *_flusher);
+    ~CFormEncodedWriter();
+    IMPLEMENT_IINTERFACE;
+
+    void prepareBeginArray(const char *fieldname);
+
+    virtual void outputInlineXml(const char *text) override {}
+    virtual void outputInline(const char* text) override {}
+    virtual void outputQuoted(const char *text) override;
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname) override;
+    virtual void outputString(unsigned len, const char *field, const char *fieldname) override;
+    virtual void outputBool(bool field, const char *fieldname) override;
+    virtual void outputData(unsigned len, const void *field, const char *fieldname) override;
+    virtual void outputInt(__int64 field, unsigned size, const char *fieldname) override;
+    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname) override;
+    virtual void outputReal(double field, const char *fieldname) override;
+    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override;
+    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override;
+    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) override;
+    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) override;
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren) override;
+    virtual void outputEndDataset(const char *dsname) override;
+    virtual void outputBeginNested(const char *fieldname, bool nestChildren) override;
+    virtual void outputEndNested(const char *fieldname) override;
+    virtual void outputBeginArray(const char *fieldname) override;
+    virtual void outputEndArray(const char *fieldname) override;
+    virtual void outputSetAll();
+    virtual void outputXmlns(const char *name, const char *uri) override {}
+    virtual void outputNumericString(const char *field, const char *fieldname) override;
+
+    //IXmlWriterExt
+    virtual IXmlWriterExt & clear() override;
+    virtual unsigned length() const override            { return out.length(); }
+    virtual const char * str() const override                           { return out.str(); }
+    virtual void finalize() override                                {}
+    virtual void checkDelimiter() override                          {}
+    virtual void rewindTo(IInterface *location) override {}
+    virtual IInterface *saveLocation() const override { return nullptr; }
+    virtual void cutFrom(IInterface *location, StringBuffer& databuf) override {};
+
+    void outputBeginRoot() {}
+    void outputEndRoot() {}
+    virtual void flushContent(bool close) override { flush(close); }
+
+protected:
+    inline void flush(bool isClose)
+    {
+        if (flusher)
+            flusher->flushXML(out, isClose);
+    }
+
+    enum class ContainerType { SIMPLE, SET, DATASET };
+
+    class CFormEncodedWriterItem : public CInterface
+    {
+    public:
+        CFormEncodedWriterItem(CIArrayOf<CFormEncodedWriterItem> &nested, const char *_name, ContainerType _containerType, unsigned flags) : name(_name), containerType(_containerType)
+        {
+            if (nested.length())
+            {
+                //the nested structure is all flattened into the names of the Form fields dataset[1][lastname]=doe, dataset[1][firstname]=john
+                //  therefore we inherit the name of the previous, ending an array or dataset removes the previous entry
+                CFormEncodedWriterItem &parent = nested.tos();
+                path.append(parent.path);
+                if (parent.containerType != ContainerType::SIMPLE)
+                {
+                    if (flags & XWFhpccformenc)
+                        path.append('.').append(parent.idx);
+                    else
+                        path.append('[').append(parent.idx).append(']');
+                }
+            }
+            StringArray pathnodes;
+            pathnodes.appendList(_name, "/");
+            ForEachItemIn(i, pathnodes)
+            {
+                const char * node = pathnodes.item(i);
+                if (path.isEmpty())
+                    path.append(node);
+                else
+                {
+                    if (flags & XWFbracketformenc)
+                        path.append('[').append(node).append(']');
+                    else
+                        path.append('.').append(node);
+                }
+            }
+        }
+
+        StringBuffer path;
+        StringAttr name;
+        ContainerType containerType = ContainerType::SIMPLE;
+        int idx = 0; //row or array item count
+    };
+
+    void updateCurrentScalarItemInfo(const char *name);
+    const char *checkUseFieldName(const char *name){ return (curUseFieldName) ? name : nullptr; }
+
+    void itemPathBeginNested(const char *name);
+    void itemPathEndNested(const char *name);
+    void itemPathBeginArray(const char *name, bool isDataset);
+    void itemPathEndArray(const char *name);
+
+    bool childIsArrayItem(const char *name);
+
+    IXmlStreamFlusher *flusher;
+    CIArrayOf<CFormEncodedWriterItem> nested;
+    StringBuffer out;
+    unsigned flags;
+    int curIdx = 0;
+    bool curUseFieldName = true;
+    const char *curItemPath = nullptr;
+};
+
+
 class ECLRTL_API CPropertyTreeWriter : public CSimpleInterfaceOf<IXmlWriter>
 {
 public:
@@ -389,7 +507,7 @@ public:
     virtual void outputData(unsigned len, const void *field, const char *fieldname);
 };
 
-enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSONObject, WTJSONRootless} ;
+enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSONObject, WTJSONRootless, WTFormUrlEncoded} ;
 ECLRTL_API CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 ECLRTL_API IXmlWriterExt * createIXmlWriterExt(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 

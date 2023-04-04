@@ -18026,13 +18026,33 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         instance->addAttribute(WaServiceName, serviceName);
     }
 
-    bool isJSON = false;
+    enum class ReqFormat { NONE, XML, JSON, FORM_ENCODED };
+
+    StringBuffer formEncodingNotation;
+    ReqFormat reqFormat = ReqFormat::NONE;
     IHqlExpression * markupAttr = expr->queryAttribute(xmlAtom);
-    if (!markupAttr)
+    if (markupAttr)
+        reqFormat = ReqFormat::XML;
+    else
     {
         markupAttr = expr->queryAttribute(jsonAtom);
         if (markupAttr)
-            isJSON = true;
+            reqFormat = ReqFormat::JSON;
+    }
+    if (!markupAttr)
+    {
+        IHqlExpression * formEncodedAttr = expr->queryAttribute(formEncodedAtom);
+        if (formEncodedAttr) //FORMENCODED doesn't carry "mark up related" child attributes
+        {
+            reqFormat = ReqFormat::FORM_ENCODED;
+            IHqlExpression * notation = formEncodedAttr->queryChild(0);
+            if (notation)
+            {
+                getStringValue(formEncodingNotation, notation, nullptr);
+                if (!strieq(formEncodingNotation, "dot") && !strieq(formEncodingNotation, "esp") && !strieq(formEncodingNotation, "bracket"))
+                    throwError1(HQLERR_UnsupportedFormEncNotation, formEncodingNotation.str());
+            }
+        }
     }
 
     if (markupAttr)
@@ -18133,13 +18153,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
     bool usesContents = false;
     bool hasXpathHints = false;
+    StringBuffer xpathHints;
+    if (formEncodingNotation.length())
+    {
+        appendXMLOpenTag(xpathHints, "Hints");
+        appendXMLTag(xpathHints, "formnotation", formEncodingNotation.str());
+    }
     if (!isSink)
     {
         //virtual IXmlToRowTransformer * queryTransformer()
         doBuildXmlReadMember(*instance, expr, "queryInputTransformer", usesContents);
 
         //virtual const char * getInputIteratorPath()
-        StringBuffer xpathHints;
         IHqlExpression * xpath = expr->queryAttribute(xpathAtom);
         if (xpath)
         {
@@ -18147,8 +18172,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
             if (xpath->numChildren()>1)
             {
-                hasXpathHints = true;
-                appendXMLOpenTag(xpathHints, "Hints");
+                if (xpathHints.isEmpty())
+                    appendXMLOpenTag(xpathHints, "Hints");
                 ForEachChildFrom(i, xpath, 1)
                 {
                     StringBuffer name, value;
@@ -18156,9 +18181,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
                     getHintNameValue(folded, name, value);
                     appendXMLTag(xpathHints, name.str(), value.str());
                 }
-                appendXMLCloseTag(xpathHints, "Hints");
-                OwnedHqlExpr xpathHintsExpr = createConstant(createStringValue(xpathHints.str(), xpathHints.length()));
-                doBuildVarStringFunction(instance->startctx, "getXpathHintsXml", xpathHintsExpr);
             }
         }
 
@@ -18175,6 +18197,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             associateLocalFailure(func.ctx, "except");
             buildTransformBody(func.ctx, onFailTransform, dataset, NULL, expr, selSeq);
         }
+    }
+    if (xpathHints.length())
+    {
+        hasXpathHints = true;
+        appendXMLCloseTag(xpathHints, "Hints");
+        OwnedHqlExpr xpathHintsExpr = createConstant(createStringValue(xpathHints.str(), xpathHints.length()));
+        doBuildVarStringFunction(instance->startctx, "getXpathHintsXml", xpathHintsExpr);
     }
     //virtual unsigned getFlags()
     {
@@ -18206,17 +18235,24 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         if (usesContents)
             flags.append("|SOAPFusescontents");
         if (markupAttr)
-            flags.append("|SOAPFmarkupinfo");
-        if (hasXpathHints)
-            flags.append("|SOAPFxpathhints");
-        if (markupAttr)
         {
+            flags.append("|SOAPFmarkupinfo");
             if (markupAttr->hasAttribute(noRootAtom))
                 flags.append("|SOAPFnoroot");
-            if (isJSON)
-                flags.append("|SOAPFjson");
-            else
+        }
+        if (hasXpathHints)
+            flags.append("|SOAPFxpathhints");
+        switch (reqFormat)
+        {
+            case ReqFormat::XML:
                 flags.append("|SOAPFxml");
+                break;
+            case ReqFormat::JSON:
+                flags.append("|SOAPFjson");
+                break;
+            case ReqFormat::FORM_ENCODED:
+                flags.append("|SOAPFformEncoded");
+                break;
         }
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);

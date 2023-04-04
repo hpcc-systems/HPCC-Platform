@@ -7732,7 +7732,7 @@ inline bool hasHttpMarkupFlag(IHqlExpression *flags)
 {
     if (!flags)
         return false;
-    return (queryAttributeInList(jsonAtom, flags)!=nullptr || queryAttributeInList(xmlAtom, flags)!=nullptr);
+    return (queryAttributeInList(jsonAtom, flags)!=nullptr || queryAttributeInList(xmlAtom, flags)!=nullptr || queryAttributeInList(formEncodedAtom, flags)!=nullptr);
 }
 
 IHqlExpression * HqlGram::processHttpMarkupFlag(__int64 op)
@@ -11519,6 +11519,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOK_FIXED: msg.append("FIXED"); break;
     case FLAT: msg.append("FLAT"); break;
     case FORMAT_ATTR: msg.append("FORMAT"); break;
+    case FORMENCODED: msg.append("FORMENCODED"); break;
     case FORWARD: msg.append("FORWARD"); break;
     case FROM: msg.append("FROM"); break;
     case FROMUNICODE: msg.append("FROMUNICODE"); break;
