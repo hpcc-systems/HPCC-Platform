@@ -6307,7 +6307,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec colwidth="180.50pt" />
 
             <colspec />
 
@@ -6315,7 +6315,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
               <row>
                 <entry><emphasis>Options</emphasis></entry>
 
-                <entry></entry>
+                <entry> </entry>
               </row>
 
               <row>
@@ -6346,7 +6346,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec colwidth="180.50pt" />
 
             <colspec />
 
@@ -6354,7 +6354,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
               <row>
                 <entry><emphasis>Options</emphasis></entry>
 
-                <entry></entry>
+                <entry> </entry>
               </row>
 
               <row>
@@ -6383,7 +6383,7 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
-            <colspec colwidth="80.50pt" />
+            <colspec colwidth="180.50pt" />
 
             <colspec />
 
