@@ -6737,7 +6737,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
         OwnedHqlExpr transformed = hoister.transformRoot(expr);
         sanityCheckTransformation("ActivityInvariantHoister", expr, transformed);
         transformed.swap(expr);
-        translator.traceExpression("AfterInvariant Child", expr);
+        translator.traceExpression("AfterInvariantHoister", expr);
     }
 
     //Ensure that each action generates a unique activity.  If duplicate activities are shared it is impossible to know
@@ -6776,7 +6776,7 @@ static IHqlExpression * doResourceGraph(BuildCtx * ctx, HqlCppTranslator & trans
         OwnedHqlExpr transformed = hoister.transformRoot(expr);
         sanityCheckTransformation("ActivityInvariantHoister", expr, transformed);
         transformed.swap(expr);
-        translator.traceExpression("AfterInvariant Child", expr);
+        translator.traceExpression("AfterInvariantHoister", expr);
     }
 
     {
@@ -6823,7 +6823,7 @@ IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpressi
         ActivityInvariantHoister hoister(options);
         HqlExprArray hoisted;
         expr.setown(hoister.transformRoot(expr));
-        translator.traceExpression("AfterInvariant Child", expr);
+        translator.traceExpression("AfterInvariantHoister", expr);
     }
 
     HqlExprArray transformed;

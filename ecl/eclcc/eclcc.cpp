@@ -395,7 +395,6 @@ protected:
     unsigned optThreads = 0;
     unsigned batchPart = 0;
     unsigned batchSplit = 1;
-    unsigned optLogDetail = 0;
     unsigned optMonitorInterval = 60;
     unsigned optMaxErrors = 0;
     unsigned optDaliTimeout = 30000;
@@ -701,7 +700,7 @@ void EclCC::loadOptions()
     {
         Owned<ILogMsgHandler> handler = getHandleLogMsgHandler(stdout);
         handler->setMessageFields(MSGFIELD_STANDARD);
-        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, optLogDetail ? optLogDetail : DefaultDetail, true);
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, DefaultDetail, true);
         queryLogMsgManager()->addMonitor(handler, filter);
     }
 #ifndef _CONTAINERIZED
@@ -715,7 +714,7 @@ void EclCC::loadOptions()
             if (optLogfile.length())
             {
                 StringBuffer lf;
-                openLogFile(lf, optLogfile, optLogDetail, false);
+                openLogFile(lf, optLogfile, 0, false);
                 if (logVerbose)
                     fprintf(stdout, "Logging to '%s'\n",lf.str());
             }
@@ -2629,6 +2628,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
     StringAttr tempArg;
     bool tempBool;
     bool showHelp = false;
+    unsigned tempUnsigned;
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
@@ -2852,7 +2852,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optNoBundles, "--nobundles"))
         {
         }
-        else if (iter.matchOption(optLogDetail, "--logdetail"))
+        else if (iter.matchOption(tempUnsigned, "--logdetail")) // Now ignored
         {
         }
         else if (iter.matchOption(optMonitorInterval, "--monitorinterval"))

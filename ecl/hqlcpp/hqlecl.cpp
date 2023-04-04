@@ -845,7 +845,7 @@ static void processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, H
 {
     NewThorStoredReplacer transformer(translator, wu, ctxCallback);
 
-    translator.traceExpression("before process meta commands", query.expr);
+    translator.traceExpression("beforeStoredReplacer", query.expr);
 
     transformer.analyse(query.expr);
     if (transformer.needToTransform())

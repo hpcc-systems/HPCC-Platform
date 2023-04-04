@@ -54,6 +54,8 @@
 #include "hqlinline.hpp"
 #include "hqlusage.hpp"
 
+#include <algorithm>
+
 #ifdef _DEBUG
 //#define ADD_ASSIGNMENT_COMMENTS
 //#define ADD_RESOURCE_AS_CPP_COMMENT
@@ -1457,6 +1459,22 @@ IHqlCppInstance * createCppInstance(IWorkUnit *wu, const char * wupathname)
 
 //===========================================================================
 
+bool HqlCppOptions::queryTrace(const char * option) const
+{
+    if (option)
+    {
+        //Allow specific options to override traceAll
+        std::string search(option);
+        toLower(search);
+        auto match = traceOptions.find(search);
+        if (match != traceOptions.cend())
+            return match->second;
+    }
+    return traceAll;
+}
+
+//===========================================================================
+
 
 #include "hqlcppsys.ecl"
 
@@ -1900,6 +1918,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.irOptions, "irOptions", EclIR::TIRexpandSimpleTypes),
         DebugOption(options.allowStaticRegex, "allowStaticRegex", true),
         DebugOption(options.defaultStaticRegex, "defaultStaticRegex", targetRoxie()),   // Roxie queries are loaded once, and shared.  It makes sense to only compile once.
+        DebugOption(options.traceAll, "traceAll", false),
     };
 
     //get options values from workunit
@@ -1919,6 +1938,11 @@ void HqlCppTranslator::cacheOptions()
                 debugOptions[x].setValue(val.str());
                 break;
             }
+        }
+        if ((x == numDebugOptions) && startsWith(name.str(), "trace"))
+        {
+            //Debug value names are always lower-cased - so the entry in the hash table will be lower-case
+            options.traceOptions.emplace(std::string(name.str() + 5), strToBool(val.str()));
         }
     }
 

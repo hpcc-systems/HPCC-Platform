@@ -24,6 +24,7 @@
 #include "jio.hpp"
 #include "jstream.hpp"
 #include "jbuff.hpp"
+#include <string>
 
 // A Java compatible String and StringBuffer class - useful for dynamic strings.
 #ifdef _DEBUG
@@ -576,6 +577,8 @@ inline StringBuffer& operator << (StringBuffer& s, const TValue& value)
 {
     return s.append(value);
 }
+
+extern jlib_decl void toLower(std::string & value);
 
 extern jlib_decl bool checkUnicodeLiteral(char const * str, unsigned length, unsigned & ep, StringBuffer & msg);
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);

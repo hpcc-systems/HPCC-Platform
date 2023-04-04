@@ -774,7 +774,7 @@ protected:
                 {
                     bool createSubQueryBeforeAll = forceRoot;
                     spotter.transformAll(pending, createSubQueryBeforeAll);
-                    translator.traceExpressions("spotted child", pending);
+                    translator.traceExpressions("afterSpottedChild", pending);
                 }
             }
             processed = true;
@@ -1398,7 +1398,7 @@ void HqlCppTranslator::filterExpandAssignments(BuildCtx & ctx, TransformBuilder 
 
     if (options.spotCSE)
         expr.setown(spotScalarCSE(expr, NULL, queryOptions().spotCseInIfDatasetConditions));
-    traceExpression("transform cse", expr);
+    traceExpression("afterTransformCse", expr);
 
 //  expandAliases(ctx, expr);
     doFilterAssignments(ctx, builder, assigns, expr);
@@ -6989,7 +6989,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 break;
             case no_keyedlimit:
                 {
-                    traceExpression("keyed fail", expr);
+                    traceExpression("keyedFail", expr);
                     StringBuffer s;
                     getExprECL(expr->queryChild(1), s);
                     throwError1(HQLERR_KeyedLimitNotKeyed, s.str());
@@ -9730,7 +9730,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     checkNormalized(resourced);
 
     resourced.setown(convertSetResultToExtract(resourced));
-    traceExpression("After ConvertSetResultToExtract", resourced);
+    traceExpression("AfterConvertSetResultToExtract", resourced);
     checkNormalized(resourced);
 
     if (true)
@@ -10343,7 +10343,7 @@ void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name,
 {
     OwnedHqlExpr exprToCrc = createComma(LINK(record), getSizetConstant(payloadSize));
 
-    traceExpression("crc:", exprToCrc);
+    traceExpression("exprCrc", exprToCrc);
     OwnedHqlExpr crc = getSizetConstant(getExpressionCRC(exprToCrc));
     doBuildUnsignedFunction(ctx, name, crc);
 }
@@ -19474,18 +19474,17 @@ static void logECL(const LogMsgCategory & category, size32_t len, const char * e
 }
 
 
-void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr, unsigned level)
+void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr)
 {
     if (!expr)
         return;
 
     checkAbort();
 
-    LogMsgCategory MCtraceExpr = MCdebugInfo(level);
-    LOG(MCtraceExpr, unknownJob, "Tracing expressions: %s", title);
-    if(REJECTLOG(MCtraceExpr))
+    if (!queryTrace(title))
         return;
 
+    LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
     if (options.traceIR)
     {
         EclIR::dbglogIR(expr);
@@ -19494,27 +19493,25 @@ void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr
     {
         StringBuffer s;
         processedTreeToECL(expr, s);
-        logECL(MCtraceExpr, s.length(), s.str());
+        logECL(MCdebugInfo, s.length(), s.str());
     }
 }
 
 
-void HqlCppTranslator::traceExpressions(const char * title, HqlExprArray & exprs, unsigned level)
+void HqlCppTranslator::traceExpressions(const char * title, HqlExprArray & exprs)
 {
     OwnedHqlExpr compound = createComma(exprs);
-    traceExpression(title, compound, level);
+    traceExpression(title, compound);
 }
 
 void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & workflow)
 {
     checkAbort();
 
-    // DBGLOG("%s",title);
-    static constexpr LogMsgCategory MCtraceExpr = MCdebugInfo(500);
-    LOG(MCtraceExpr, unknownJob, "Tracing expressions: %s", title);
-    if(REJECTLOG(MCtraceExpr))
+    if (!queryTrace(title))
         return;
 
+    LOG(MCdebugInfo, unknownJob, "Tracing expressions: %s", title);
     ForEachItemIn(idx1, workflow)
     {
         WorkflowItem & cur = workflow.item(idx1);
@@ -19522,7 +19519,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 
         if (compound)
         {
-            LOG(MCtraceExpr, unknownJob, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
+            LOG(MCdebugInfo, unknownJob, "%s: #%d: id[%d]", title, idx1, cur.queryWfid());
 
             if (options.traceIR)
             {
@@ -19532,7 +19529,7 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
             {
                 StringBuffer s;
                 processedTreeToECL(compound, s);
-                logECL(MCtraceExpr, s.length(), s.str());
+                logECL(MCdebugInfo, s.length(), s.str());
             }
         }
     }

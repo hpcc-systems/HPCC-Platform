@@ -25,6 +25,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include <algorithm>
 
 #include "jstring.hpp"
 #include "jexcept.hpp"
@@ -2582,6 +2583,16 @@ bool clipStrToBool(const char * text)
 {
     return clipStrToBool(strlen(text), text);
 }
+
+
+void toLower(std::string & value)
+{
+    //Ugly.  Because we overload tolower in windows the std::transform resolution fails.
+    //Therefore assign the function to a variable to force the disambiguation.
+    int (*func)(int) = tolower;
+    std::transform(value.cbegin(), value.cend(), value.begin(), func);
+}
+
 
 
 StringBuffer & ncnameEscape(char const * in, StringBuffer & out)

@@ -8033,7 +8033,7 @@ IHqlExpression * ScalarGlobalTransformer::createTransformed(IHqlExpression * exp
         if (!extra->alreadyGlobal && isComplex(expr, false))
         {
 #ifdef _DEBUG
-        translator.traceExpression("Mark as global", expr);
+            translator.traceExpression("markAsGlobal", expr);
 #endif
             //mark as global, so isComplex() can take it into account.
             extra->alreadyGlobal = true;
@@ -8480,7 +8480,7 @@ void migrateExprToNaturalLevel(WorkflowItem & cur, IWorkUnit * wu, HqlCppTransla
         translator.checkNormalized(exprs);
     }
 
-    translator.traceExpressions("m0", exprs);
+    translator.traceExpressions("beforeMigrateGlobals", exprs);
 
     checkGlobalActionsIndependentOfScope(translator, exprs);
 
@@ -8511,7 +8511,7 @@ void migrateExprToNaturalLevel(WorkflowItem & cur, IWorkUnit * wu, HqlCppTransla
 
     translator.checkNormalized(exprs);
 
-    translator.traceExpressions("m1", exprs);
+    translator.traceExpressions("beforeMigrateScope", exprs);
 
     if (options.allowScopeMigrate) // && !options.minimizeWorkunitTemporaries)
     {
@@ -8524,7 +8524,7 @@ void migrateExprToNaturalLevel(WorkflowItem & cur, IWorkUnit * wu, HqlCppTransla
         translator.checkNormalized(exprs);
     }
 
-    translator.traceExpressions("m2", exprs);
+    translator.traceExpressions("afterMigrateScope", exprs);
 }
 
 void expandGlobalDatasets(WorkflowArray & array, IWorkUnit * wu, HqlCppTranslator & translator)
@@ -11360,7 +11360,7 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
     ForEachItemIn(iInit, exprs)
         queryLocationIndependent(&exprs.item(iInit));
 
-    translator.traceExpressions("before annotation normalize", exprs);
+    translator.traceExpressions("beforeAnnotationNormalize", exprs);
 
     AnnotationNormalizerTransformer normalizer;
     HqlExprArray transformed;
@@ -13853,7 +13853,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         replaceArray(exprs, transformed);
     }
 
-    translator.traceExpressions("before scope tag", exprs);
+    translator.traceExpressions("beforeScopeTag", exprs);
 
     {
         HqlScopeTagger normalizer(translator.queryErrorProcessor(), translator.queryLocalOnWarningMapper());
@@ -13865,7 +13865,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
     if (translator.queryOptions().normalizeLocations)
         normalizeAnnotations(translator, exprs);
 
-    translator.traceExpressions("after scope tag", exprs);
+    translator.traceExpressions("afterScopeTag", exprs);
     {
         DFSLayoutTransformer transformer(translator.queryErrorProcessor(), translator.queryCallback(), translator.queryOptions());
         HqlExprArray transformed;
@@ -14096,7 +14096,7 @@ IHqlExpression * HqlCppTranslator::separateLibraries(IHqlExpression * query, Hql
     HqlExprArray exprs;
     query->unwindList(exprs, no_comma);
 
-    traceExpressions("before transform graph for generation", exprs);
+    traceExpressions("beforeEmbeddedLibraries", exprs);
     //Remove any meta entries from the tree.
     ForEachItemInRev(i, exprs)
         if (exprs.item(i).getOperator() == no_setmeta)
@@ -14116,7 +14116,7 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
     //Ensure the incoming query will be freed up when no longer used
     query.expr.clear();
 
-    traceExpressions("before transform graph for generation", exprs);
+    traceExpressions("beforeTransformForGeneration", exprs);
     //Don't change the engine if libraries are involved, otherwise things will get very confused.
 
     {
@@ -14128,12 +14128,9 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
         checkWorkflowDuplication(exprs);
 
     {
-        traceExpressions("before normalize", exprs);
+        traceExpressions("beforeNormalize", exprs);
         normalizeHqlTree(*this, exprs);
     }
-
-    if (wu()->getDebugValueBool("dumpIR", false))
-        EclIR::dbglogIR(exprs);
 
     checkNormalized(exprs);
 #ifdef PICK_ENGINE_EARLY
@@ -14148,12 +14145,12 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
 
     allocateSequenceNumbers(exprs);                                             // Added to all expressions/output statements etc.
 
-    traceExpressions("allocate Sequence", exprs);
+    traceExpressions("afterAllocateSequence", exprs);
 
     if (options.transformNestedSequential)
     {
         transformNestedSequential(exprs);
-        traceExpressions("transformNestedSequential", exprs);
+        traceExpressions("afterNestedSequential", exprs);
     }
 
     checkNormalized(exprs);
@@ -14162,12 +14159,10 @@ void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQuer
 
 void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
 {
-    traceExpressions("begin transformGraphForGeneration", exprs);
+    traceExpressions("beforeGlobalOptimizations", exprs);
     checkNormalized(exprs);
 
-    {
-        substituteClusterSize(exprs);
-    }
+    substituteClusterSize(exprs);
 
     {
         HqlExprArray folded;
@@ -14184,7 +14179,7 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
         replaceArray(exprs, folded);
     }
 
-    traceExpressions("after global fold", exprs);
+    traceExpressions("afterGlobalFold", exprs);
     checkNormalized(exprs);
 
     if (options.globalOptimize)
@@ -14207,7 +14202,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     {
         LeftRightTransformer normalizer;
         normalizer.process(curWorkflow.queryExprs());
-        //traceExpressions("after implicit alias", workflow);
+        //traceExpressions("afterImplicitAlias", workflow);
     }
 #endif
 
@@ -14215,7 +14210,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
     {
         ImplicitAliasTransformer normalizer;
         normalizer.process(curWorkflow.queryExprs());
-        //traceExpressions("after implicit alias", workflow);
+        //traceExpressions("afterImplicitAlias", workflow);
     }
 
     {
@@ -14362,7 +14357,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     ForEachItemIn(i2, workflow)
     {
         WorkflowItem & curWorkflow = workflow.item(i2);
-        traceExpressions("before convert to logical", curWorkflow);
+        traceExpressions("beforeConvertLogicalToActivities", curWorkflow);
 
         convertLogicalToActivities(curWorkflow);                                           // e.g., merge disk reads, transform group, all to sort etc.
 
@@ -14376,7 +14371,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
                 noteFinishedTiming("compile:transform:check dependency", startCycles);
         }
 
-        traceExpressions("end transformGraphForGeneration", curWorkflow);
+        traceExpressions("afterTransformGraphForGeneration", curWorkflow);
         checkNormalized(curWorkflow);
     }
     return true;
