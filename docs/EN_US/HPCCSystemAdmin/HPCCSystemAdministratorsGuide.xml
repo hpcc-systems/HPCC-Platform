@@ -1818,17 +1818,17 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       <title>System Tools and Controls</title>
 
       <sect2 id="SA-RoxieControlCmds">
-        <title>Roxie Control Commands</title>
+        <title>Control Commands</title>
 
-        <para>There are a Roxie controls can be run through the <emphasis>ecl
-        roxie</emphasis> CLI which goes through ESP to forward the control
-        commands to roxie on the backend.</para>
+        <para>There are control commands which can be run through the
+        <emphasis>ecl</emphasis> CLI which goes through ESP to forward the
+        control commands to components on the backend.</para>
 
         <sect3 id="CT-CheckMemIndivNodes">
           <title>Roxie Memlock Status on Individual Nodes</title>
 
           <para>The <emphasis>ecl roxie getmemlocked</emphasis> ecl CLI
-          command is the best way to check if Roxie memory is locked. If you
+          command is one way to check if the Roxie memory is locked. If you
           wanted to check for locks on individual Roxie nodes, and if you can
           access those nodes. Use the command:</para>
 

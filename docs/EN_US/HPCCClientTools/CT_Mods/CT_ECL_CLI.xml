@@ -6406,25 +6406,13 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
 
         <para>The <emphasis>ecl roxie getmemlocked</emphasis> command
         retrieves the Roxie heap memory lock status. You can run the ECL
-        command-line on any host as long as it knows which ESP to connect to.
-        This is the ‘best’ way to check if Roxie memory is locked.</para>
+        command-line on any host as long as it is configured to connect to the
+        appropriate ESP.</para>
 
         <para>Examples:</para>
 
         <programlisting>ecl roxie getmemlocked mycluster
 </programlisting>
-
-        <sect3>
-          <title>Manual Memory Lock</title>
-
-          <para>If running the latest point release of the HPCC Systems
-          platform, version 8.6 or later, and you want memory locked on Roxie
-          start up. Add the following to the <emphasis
-          role="strong">environment.xml</emphasis> in the RoxieCluster
-          section.</para>
-
-          <programlisting>    heapLockMemory="true"</programlisting>
-        </sect3>
       </sect2>
     </sect1>
   </chapter>
