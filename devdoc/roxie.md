@@ -153,3 +153,40 @@ objects, which means:
 -	The actual file connected to can be switched out in the background, to handle the case
     where a file read from a remote location becomes unavailable, and to switch to reading
     from a local location after a background file copy operation completes.
+
+## New IBYTI mode
+
+Original IBYTI implementation allocated a thread (from the pool) to each incoming query packet, but some
+will block for a period to allow an IBYTI to arrive to avoid unnecessary work. It was done this way for 
+historical reasons - mainly that the addition of the delay was after the initial IBYTI implementation, so 
+that in the very earliest versions there was no priority given to any particular subchannel and all would
+start processing at the same time if they had capacity to do so.
+
+This implementation does not seem particularly smart - in particular it's typing up worker threads even
+though they are not actually working, and may result in the throughput of the Roxie agent being reduced. For
+that reason an alternative implementation (controlled by the NEW_IBYTI flag) was created during the cloud
+transition which tracks what incoming packets are waiting for IBYTI expiry via a separate queue, and they are
+only allocated to a worker thread once the IBYTI delay times out.
+
+So far the NEW_IBYTI flag has only been set on containerized systems (simply to avoid rocking the boat on the
+bare-metal systems), but we may turn on in bare metal too going forward (and if so, the old version of the code
+can be removed sooner or later).
+
+
+## Testing Roxie code
+
+Sometimes when developing/debugging Roxie features, it's simplest to run a standalone executable. Using server mode
+may be useful if wanting to debug server/agent traffic messaging.
+
+For example, to test IBYTI behaviour on a single node, use
+
+    ./a.out --server --port=9999 --traceLevel=1 --logFullQueries=1 --expert.addDummyNode --roxieMulticastEnabled=0 --traceRoxiePackets=1
+
+Having first compiled a suitable bit of ECL into a.out. I have found a snippet like this quite handy:
+
+    rtl := SERVICE
+     unsigned4 sleep(unsigned4 _delay) : eclrtl,action,library='eclrtl',entrypoint='rtlSleep';
+    END;
+    
+    d := dataset([{rtl.sleep(5000)}], {unsigned a});
+    allnodes(d)+d;
