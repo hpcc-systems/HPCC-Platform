@@ -22,4 +22,6 @@ data10 name2 := (data)'name2' : stored('name2');
 name;
 name2;
 
+output(x'0123456789');
+output(x'123456789');
 

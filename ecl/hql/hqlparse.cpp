@@ -242,6 +242,13 @@ __uint64 HqlLex::str2uint64(unsigned len, const char * digits, unsigned base)
 
 void HqlLex::hex2str(char * target, const char * digits, unsigned len)
 {
+  if (len & 1)
+  {
+    //If there are an odd number of digits, process the odd digit as a leading digit.
+    *target++ = hex2digit(*digits++);
+    len--;
+  }
+
   while (len)
   {
     *target++ = (hex2digit(digits[0]) << 4) | hex2digit(digits[1]);
