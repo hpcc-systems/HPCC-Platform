@@ -90,3 +90,23 @@ void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySp
     }
     memorySpecifications["recommendedMaxMemory"] = recommendedMaxMemory;
 }
+
+void getAllowedPipePrograms(const IPropertyTree *config, StringBuffer &allowedPrograms)
+{
+    if (isContainerized())
+    {
+        Owned<IPropertyTreeIterator> iter = config->getElements("allowedPipePrograms");
+        if (iter->first())
+        {
+            while (true)
+            {
+                allowedPrograms.append(iter->query().queryProp(nullptr));
+                if (!iter->next())
+                    break;
+                allowedPrograms.append(',');
+            }
+        }
+    }
+    else
+        config->getProp("@allowedPipePrograms", allowedPrograms);
+}

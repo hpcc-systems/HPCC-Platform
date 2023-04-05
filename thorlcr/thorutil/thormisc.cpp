@@ -52,6 +52,7 @@
 #include "rtlformat.hpp"
 #include "rmtfile.hpp"
 #include "roxiestream.hpp"
+#include "hpccconfig.hpp"
 
 
 #define SDS_LOCK_TIMEOUT 30000
@@ -1568,6 +1569,8 @@ void checkAndDumpAbortInfo(const char *cmd)
 {
     try
     {
+        bool validateAllowedPrograms = true;
+        StringBuffer allowedPipePrograms;
         StringBuffer dumpInfoCmd(cmd);
         if (dumpInfoCmd.length())
         {
@@ -1584,11 +1587,17 @@ void checkAndDumpAbortInfo(const char *cmd)
                 exePath.append("process-name-unknown");
             unsigned pid = GetCurrentProcessId();
             dumpInfoCmd.appendf(" %s %u %s %u", myInstanceName, myBasePort, exePath.str(), pid);
+
+            // only allow custom command if listed as allowedPipeProgram. NB: default is "" (none) above.
+            getAllowedPipePrograms(globals, allowedPipePrograms);
         }
         else
+        {
             getDebuggerGetStacksCmd(dumpInfoCmd);
+            validateAllowedPrograms = false; // explicitly allow default through
+        }
         StringBuffer cmdOutput;
-        unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", globals->queryProp("@allowedPipePrograms"));
+        unsigned retCode = getCommandOutput(cmdOutput, dumpInfoCmd, "slave dump info", validateAllowedPrograms ? allowedPipePrograms.str() : nullptr);
         PROGLOG("\n%s, return code = %u\n%s\n", dumpInfoCmd.str(), retCode, cmdOutput.str());
     }
     catch (IException *e)

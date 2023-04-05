@@ -1461,6 +1461,9 @@
         },
         "preferredDataReadPlanes": {
           "$ref" : "#/definitions/preferredDataReadPlanes"
+        },
+        "allowedPipePrograms": {
+          "$ref" : "#/definitions/allowedPipePrograms"
         }
       }
     },
@@ -2356,6 +2359,9 @@
         },
         "preferredDataReadPlanes": {
           "$ref" : "#/definitions/preferredDataReadPlanes"
+        },
+        "allowedPipePrograms": {
+          "$ref" : "#/definitions/allowedPipePrograms"
         }
       }
     },
@@ -2944,6 +2950,11 @@
     },
     "preferredDataReadPlanes": {
       "description": "A list of planes that will take precedence to read from if logical files reside on mutiple planes",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "allowedPipePrograms": {
+      "description": "Permitted list of programs that can be used by the ECL PIPE directive",
       "type": "array",
       "items": { "type": "string" }
     }
