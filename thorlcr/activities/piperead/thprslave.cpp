@@ -15,7 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
+#include <string>
+
 #include "jio.hpp"
+
+#include "hpccconfig.hpp"
 
 #include "thorpipe.hpp"
 #include "thbufdef.hpp"
@@ -170,7 +174,9 @@ public:
         pipeFinished = true;
         retcode = 0;
         flags = 0;
-        pipe.setown(createPipeProcess(globals->queryProp("@allowedPipePrograms")));
+        StringBuffer allowedPipePrograms;
+        getAllowedPipePrograms(allowedPipePrograms, true);
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         pipeStream = new CPipeStream(this);
     }
     ~CPipeSlaveBase()

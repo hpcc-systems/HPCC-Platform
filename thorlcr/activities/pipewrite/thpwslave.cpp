@@ -15,10 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
+#include <string>
 
 #include "jio.hpp"
 #include "jtime.hpp"
 #include "jfile.ipp"
+
+#include "hpccconfig.hpp"
 
 #include "thorpipe.hpp"
 #include "thpwslave.ipp"
@@ -40,7 +43,9 @@ public:
     CPipeWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
         helper = static_cast <IHThorPipeWriteArg *> (queryHelper());
-        pipe.setown(createPipeProcess(globals->queryProp("@allowedPipePrograms")));
+        StringBuffer allowedPipePrograms;
+        getAllowedPipePrograms(allowedPipePrograms, true);
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         pipeOpen = false;
         recreate = helper->recreateEachRow();
         setRequireInitData(false);

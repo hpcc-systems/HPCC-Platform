@@ -368,6 +368,7 @@ extern bool fastLaneQueue;
 extern unsigned mtu_size;
 extern StringBuffer fileNameServiceDali;
 extern StringBuffer roxieName;
+extern StringBuffer allowedPipePrograms;
 #ifdef _CONTAINERIZED
 extern StringBuffer defaultPlane;
 extern StringBuffer defaultIndexBuildPlane;
