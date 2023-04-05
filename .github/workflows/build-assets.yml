@@ -96,6 +96,8 @@ jobs:
           - os: centos-8
           - os: centos-7
           - os: amazonlinux
+          - os: ubuntu-20.04
+            ln: true
           - os: centos-7
             ln: true
       fail-fast: false
