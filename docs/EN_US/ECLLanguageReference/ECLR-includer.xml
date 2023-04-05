@@ -38,14 +38,14 @@
       the user, as available; otherwise, the CC BY-ND 3.0 Unported (<ulink
       url="https://creativecommons.org/licenses/by-nd/3.0/">https://creativecommons.org/licenses/by-nd/3.0/</ulink>).</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <releaseinfo>© 2021 HPCC Systems<superscript>®</superscript>. All rights
+    <releaseinfo>© 2023 HPCC Systems<superscript>®</superscript>. All rights
     reserved. Except where otherwise noted, ECL Language Reference content
     licensed under Creative Commons public license.</releaseinfo>
 

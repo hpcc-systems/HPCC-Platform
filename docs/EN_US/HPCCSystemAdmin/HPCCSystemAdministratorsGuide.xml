@@ -1843,11 +1843,12 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
           <para>The VmLck value should match the memsize=roxie log
           line:</para>
 
-          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated for the pool 
+          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
          - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
 
           <para>Which is found in the environment.xml's RoxieCluster setting
-          for <emphasis role="strong">totalMemoryLimit</emphasis>:</para>
+          or in the helm values.yaml Roxie section for <emphasis
+          role="strong">totalMemoryLimit</emphasis>:</para>
 
           <programlisting>    totalMemoryLimit="5368709120"</programlisting>
         </sect3>
