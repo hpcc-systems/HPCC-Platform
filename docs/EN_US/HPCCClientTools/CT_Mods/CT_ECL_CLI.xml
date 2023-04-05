@@ -8378,6 +8378,120 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
             </tgroup>
           </informaltable></para>
       </sect2>
+
+      <sect2 id="CT-RCTL-MEMLOCK" role="brk">
+        <title>ecl roxie memlock</title>
+
+        <para><emphasis role="bold">ecl roxie memlock
+        &lt;process_cluster&gt;</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="180.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>process_cluster</emphasis></entry>
+
+                <entry>The Roxie process cluster to memlock</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The <emphasis>ecl roxie memlock</emphasis> command locks Roxie
+        heap memory. This helps to prevent intermittent slow queries by
+        ensuring that the operating system does not swap the memory
+        out.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie memlock mycluster
+</programlisting>
+      </sect2>
+
+      <sect2 id="CT-CTL-MEMUNLOCK" role="brk">
+        <title>ecl roxie memunlock</title>
+
+        <para><emphasis role="bold">ecl roxie memunlock
+        &lt;process_cluster&gt;</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="180.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>process_cluster</emphasis></entry>
+
+                <entry>The Roxie process cluster to memunlock</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The <emphasis>ecl roxie memunlock</emphasis> command unlocks
+        Roxie heap memory.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie memunlock mycluster
+</programlisting>
+      </sect2>
+
+      <sect2 id="CT-RCTL-GETMEMLOCK" role="brk">
+        <title>ecl roxie getmemlocked</title>
+
+        <para><emphasis role="bold">ecl roxie getmemlocked
+        &lt;process_cluster&gt;</emphasis></para>
+
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="180.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>Options</emphasis></entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>process_cluster</emphasis></entry>
+
+                <entry>The Roxie process cluster to getmemlocked
+                status</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The <emphasis>ecl roxie getmemlocked</emphasis> command
+        retrieves the Roxie heap memory lock status.</para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie getmemlocked mycluster
+</programlisting>
+      </sect2>
     </sect1>
   </chapter>
 </book>

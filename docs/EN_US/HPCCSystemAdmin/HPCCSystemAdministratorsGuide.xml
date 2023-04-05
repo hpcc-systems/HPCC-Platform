@@ -1838,9 +1838,75 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
                 xpointer="xpointer(//*[@id='CassandraWUStorage'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
-                xpointer="xpointer(//*[@id='wutool'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <sect1 id="SA-ControlsANDTools">
+      <title>System Tools and Controls</title>
+
+      <sect2 id="SA-RoxieControlCmds">
+        <title>Control Commands</title>
+
+        <para>There are control commands which can be run through the
+        <emphasis>ecl</emphasis> CLI which goes through ESP to forward the
+        control commands to components on the backend.</para>
+
+        <sect3 id="CT-CheckMemIndivNodes">
+          <title>Roxie Memlock Status on Individual Nodes</title>
+
+          <para>The <emphasis>ecl roxie getmemlocked</emphasis> ecl CLI
+          command is one way to check if the Roxie memory is locked. If you
+          wanted to check for locks on individual Roxie nodes, and if you can
+          access those nodes. Use the command:</para>
+
+          <programlisting>$ cat /proc/`pidof roxie`/status | grep VmLck</programlisting>
+
+          <para>Which returns something like:</para>
+
+          <programlisting>VmLck:   5242880 kB</programlisting>
+
+          <para>If the VmLck value is 0 then memory is not locked.</para>
+
+          <para>The VmLck value should match the memsize=roxie log
+          line:</para>
+
+          <para><programlisting>00000015 PRG 2022-07-07 12:10:35.754 77841 77841 "RoxieMemMgr: 20480 Pages successfully allocated  
+         - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
+
+          <para>Which is found in the environment.xml's RoxieCluster setting
+          or in the helm values.yaml Roxie section for <emphasis
+          role="strong">totalMemoryLimit</emphasis>:</para>
+
+          <programlisting>    totalMemoryLimit="5368709120"</programlisting>
+        </sect3>
+
+        <sect3 id="CT-resource-limits">
+          <title>Resource Limits</title>
+
+          <para>There is also a resource limit set by default at install time
+          that increases the amount of memory allowed to be locked:</para>
+
+          <programlisting>hpcc soft memlock unlimited</programlisting>
+
+          <para>and</para>
+
+          <programlisting>hpcc hard memlock unlimited</programlisting>
+
+          <para>Without this the limit will not be large enough to lock the
+          memory sizes used by a typical Roxie.</para>
+
+          <para>You can also check this limit with a shell command:</para>
+
+          <programlisting>ulimit -l</programlisting>
+
+          <para>Be sure to run this command as the <emphasis>hpcc</emphasis>
+          user.</para>
+        </sect3>
+
+        <!--ADD-ecl-Roxie-Control-CMD-HERE-IF-->
+      </sect2>
+
+      <xi:include href="HPCCSystemAdmin/SA-Mods/WUTool.xml"
+                  xpointer="xpointer(//*[@id='wutool'])"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
 
     <sect1 id="Redefining_Thor_Nodes">
       <title>Redefining nodes in a Thor Cluster</title>
