@@ -153,6 +153,11 @@ EXPORT TestDate := MODULE
     ASSERT(Date.SecondsFromParts(1999,2,1,12,34,56,FALSE) = 917872496);     // UTC
     ASSERT(Date.SecondsFromParts(1965,2,17,0,0,0,FALSE) = -153705600);      // UTC
 
+    // HPCC-23685
+    ASSERT(Date.SecondsFromParts(2020,3,8,1,0,0,FALSE) = 1583629200);
+    ASSERT(Date.SecondsFromParts(2020,3,8,2,0,0,FALSE) = 1583632800);
+    ASSERT(Date.SecondsFromParts(2020,3,8,3,0,0,FALSE) = 1583636400);
+
     // UTC vs. local round-trip testing
     ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).year = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).year);
     ASSERT(ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,FALSE),FALSE)).month = ROW(Std.Date.CreateDateTimeFromSeconds(Std.Date.SecondsFromParts(1999,2,1,12,34,56,TRUE),TRUE)).month);
