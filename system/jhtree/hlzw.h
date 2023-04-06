@@ -30,10 +30,10 @@ public:
     KeyCompressor() {}
     ~KeyCompressor();
     void open(void *blk,int blksize, bool isVariable, bool rowcompression);
-    void open(void *blk,int blksize,bool _isVariable, ICompressHandler * compressionHandler);
+    void open(void *blk,int blksize, ICompressHandler * compressionHandler, bool _isVariable, size32_t fixedRowSize);
 
     int writekey(offset_t fPtr,const char *key,unsigned datalength, unsigned __int64 sequence);
-    bool write(const char * data, size32_t datalength);
+    bool write(const void * data, size32_t datalength);
 
     void openBlob(void *blk,int blksize);
     unsigned writeBlob(const char *data, unsigned datalength);
@@ -49,6 +49,7 @@ protected:
     ICompressor *comp = nullptr;
     void *bufp = nullptr;
     unsigned curOffset = 0;
+    size32_t fixedRowSize = 0;
     int bufl = 0;
     bool isVariable = false;
     bool isBlob = false;
