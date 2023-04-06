@@ -1066,15 +1066,15 @@ const CJHSearchNode *CKeyIndex::getRootNode() const
 {
     offset_t rootPos = keyHdr->getRootFPos();
     Linked<CNodeCache> nodeCache = queryNodeCache();
-    //The root node is currently a branch - but it may change - so check the branch depth for this index
+    // The root node may be a branch or a leaf (on TLK nodes)
     NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
     Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, type, NULL, isTopLevelKey());
 
     // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
     // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
     // CKeyIndex directly to the (single) leaf.
-    // It might also be ok to do this for non TLK indexes though it will be much less common, and has not been tested
-    // We should also consider making a change so that this extra layer is not generated - but skipping it here means older 
+    // You might think it would be ok to do this for non TLK indexes, but it will not work without changes elsewhere.
+    // This extra layer is no longer generated for TLKs unless required, but skipping it here means older 
     // indexes benefit too.
     if (root && isTopLevelKey() && !root->isLeaf() && root->getNumKeys()==1)
     {
