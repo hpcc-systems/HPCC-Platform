@@ -1030,6 +1030,24 @@ static void getMaskingPropertyAwareness(xmlXPathParserContextPtr ctxt, int nargs
     xmlXPathReturnNumber(ctxt, (int)availability);
 }
 
+static void isTraceEnabled(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = queryEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 0)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlXPathReturnBoolean(ctxt, scriptContext->isTraceEnabled());
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -1058,6 +1076,7 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "getMaskValueBehavior", (void *)getMaskValueBehavior);
     xpathContext->registerFunction(uri, "canMaskContent", (void *)canMaskContent);
     xpathContext->registerFunction(uri, "getMaskingPropertyAwareness", (void *)getMaskingPropertyAwareness);
+    xpathContext->registerFunction(uri, "isTraceEnabled", (void *)isTraceEnabled);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)

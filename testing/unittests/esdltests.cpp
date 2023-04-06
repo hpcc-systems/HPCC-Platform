@@ -2103,7 +2103,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
                 pattern: '='
             - name: 'sometimes-restricted'
               memberOf:
-              - name: somethimes
+              - name: sometimes
               - name: 'sometimes-unconditional'
               maskStyle:
               - name: alternate
@@ -2164,6 +2164,33 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         <es:trace skip_mask="true()" select="canMaskContent('xml')"/>
         <es:trace skip_mask="true()" select="canMaskContent('json')"/>
         <es:trace skip_mask="true()" select="canMaskContent('yaml')"/>
+        <!-- trace state scope -->
+        <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+        <es:trace-options-scope enabled="false()">
+          <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+          <es:set-trace-options enabled="true()"/>
+          <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+          <es:set-trace-options enabled="false()"/>
+          <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+        </es:trace-options-scope>
+        <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+        <es:trace-options-scope enabled="false()" locked="true()">
+          <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+          <es:set-trace-options enabled="true()"/>
+          <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+          <es:set-trace-options enabled="false()"/>
+          <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+        </es:trace-options-scope>
+        <es:trace skip_mask="true()" select="isTraceEnabled()"/>
+        <!-- masking context scope -->
+        <es:trace-value select="foo" value_type="sometimes-restricted"/>
+        <es:masking-context-scope>
+          <es:update-masking-context>
+            <set name="valuetype-set" value="sometimes"/>
+          </es:update-masking-context>
+          <es:trace-value select="foo" value_type="sometimes-restricted"/>
+        </es:masking-context-scope>
+        <es:trace-value select="foo" value_type="sometimes-restricted"/>
       </es:CustomRequestTransform>
       )!!";
       History expected({
@@ -2198,6 +2225,15 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         { MCuserInfo, "true" },
         { MCuserInfo, "true" },
         { MCuserInfo, "false" },
+        // trace state scope
+        { MCuserInfo, "true" },
+        { MCuserInfo, "true" },
+        { MCuserInfo, "true" },
+        { MCuserInfo, "true" },
+        // masking context scope
+        { MCuserInfo, "foo" },
+        { MCuserInfo, "***" },
+        { MCuserInfo, "foo" },
       });
 
       try {
