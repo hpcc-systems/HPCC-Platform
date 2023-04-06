@@ -820,7 +820,8 @@ private:
     Linked<ClientCertificate> clientCert;
 
     static CriticalSection secureContextCrit;
-    static Owned<ISecureSocketContext> secureContext;
+    static Owned<ISecureSocketContext> tlsSecureContext;
+    static Owned<ISecureSocketContext> localMtlsSecureContext;
 
     Owned<ISecureSocketContext> customSecureContext;
 
@@ -1137,7 +1138,9 @@ public:
     ISecureSocketContext *ensureStaticSecureContext()
     {
         CriticalBlock b(secureContextCrit);
-        return ensureSecureContext(secureContext);
+        if (localClientCert)
+            return ensureSecureContext(localMtlsSecureContext);
+        return ensureSecureContext(tlsSecureContext);
     }
     ISecureSocket *createSecureSocket(ISocket *sock, const char *fqdn = nullptr)
     {
@@ -1265,7 +1268,9 @@ protected:
 };
 
 CriticalSection CWSCHelper::secureContextCrit;
-Owned<ISecureSocketContext> CWSCHelper::secureContext; // created on first use
+Owned<ISecureSocketContext> CWSCHelper::tlsSecureContext; // created on first use
+Owned<ISecureSocketContext> CWSCHelper::localMtlsSecureContext; // created on first use
+
 
 //=================================================================================================
 
