@@ -237,7 +237,7 @@ if endCluster is not called it will assume only one cluster and not replicated
     virtual void setPart(unsigned idx, INode *node, const char *filename, IPropertyTree *pt=NULL) = 0;
     virtual void endCluster(ClusterPartDiskMapSpec &map)=0;
 
-    virtual void setTraceName(const char *trc) = 0;                             // name used for progress reports, errors etc
+    virtual void setTraceName(const char *trc, bool normalize=true) = 0;        // name used for progress reports, errors etc
 
     virtual unsigned numParts() = 0;                                            // number of separate parts
     virtual unsigned numCopies(unsigned partidx) = 0;                           // number of copies
