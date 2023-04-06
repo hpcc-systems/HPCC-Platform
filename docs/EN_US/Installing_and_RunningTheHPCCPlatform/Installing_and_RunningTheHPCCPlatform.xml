@@ -2123,10 +2123,6 @@ sudo /etc/init.d/hpcc-init -c esp start
       </sect2>
     </sect1>
 
-    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
-                xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
     <sect1 id="Running-HPCC-Tools-Under-WINE">
       <title>Running the ECL IDE under WINE</title>
 
