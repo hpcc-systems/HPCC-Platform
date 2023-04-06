@@ -101,6 +101,7 @@
                     <input id="username" type="text" name="username" placeholder="username" class="loginStr" autofocus></input>
                     <input id="password" type="password" name="password" placeholder="password" class="loginStr"></input>
                     <p id="hidden_msg" class="loginStr"></p>
+                    <p id="disabled_msg" class="loginStr"></p>
                     <button class="loginStr" id="button" type="submit"></button>
                 </form>
             </div>
@@ -113,6 +114,7 @@
                 ready(function () {
                     var loginStr = document.getElementById("loginStr");
                     var error = document.getElementById("hidden_msg");
+                    var disabled = document.getElementById('disabled_msg');
                     var username = document.getElementById("username");
                     var password = document.getElementById("password");
                     var button = document.getElementById("button");
@@ -121,6 +123,7 @@
 
                     loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
                     error.innerHTML = nlsHPCC.InvalidUsernamePassword;
+                    disabled.innerhtml = nlsHPCC.AccountDisabled;
                     username.innerHTML = nlsHPCC.Username;
                     password.innerHTML = nlsHPCC.Password;
                     button.innerHTML = nlsHPCC.Login;
@@ -147,6 +150,10 @@
                         var element = document.getElementById('hidden_msg');
                         element.style.display = "inline-block";
                         deleteCookie('ESPAuthenticationMSG', '', 0);
+                    } else if (document.cookie.indexOf("ESPUserAcctError") > -1) {
+                        var element = document.getElementById('disabled_msg');
+                        element.style.display = "inline-block";
+                        deleteCookie('ESPUserAcctError', '', 0);
                     }
                 });
             }

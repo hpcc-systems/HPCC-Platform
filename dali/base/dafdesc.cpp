@@ -1796,12 +1796,17 @@ public:
         doSetPart(idx,ep,localname.str(),pt);
     }
 
-    void setTraceName(const char *trc)
+    void setTraceName(const char *trc, bool normalize)
     {
-        CDfsLogicalFileName logicalName;
-        logicalName.setAllowWild(true); // for cases where IFileDescriptor used to point to external files (e.g. during spraying)
-        logicalName.set(trc); // normalize
-        tracename.set(logicalName.get());
+        if (normalize)
+        {
+            CDfsLogicalFileName logicalName;
+            logicalName.setAllowWild(true); // for cases where IFileDescriptor used to point to external files (e.g. during spraying)
+            logicalName.set(trc); // normalize
+            tracename.set(logicalName.get());
+        }
+        else
+            tracename.set(trc);
         if (!queryProperties().hasProp("@lfnHash"))
         {
             lfnHash = getFilenameHash(tracename.length(), tracename.str());
