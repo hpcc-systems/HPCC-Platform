@@ -2671,7 +2671,7 @@ public:
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
                 // Unfortunately this is bad news for dropping packets
-                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
+                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like UNLOAD?
 
                 Owned<const ITopologyServer> topology = getTopology();
                 const std::vector<unsigned> channels = topology->queryChannels();
@@ -2714,7 +2714,7 @@ public:
 #endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
-                if (acknowledgeAllRequests)
+                if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) != ROXIE_PING)
                 {
 #ifdef DEBUG
                     if (testAgentFailure & 0x1 && !retries)
@@ -3569,7 +3569,10 @@ public:
                         DBGLOG("PING reply channel=%d, time %d", header->channel, elapsed); // DBGLOG is slower than the pings so be careful!
                 }
                 else
-                    DBGLOG("PING reply, garbled result");
+                {
+                    StringBuffer s;
+                    DBGLOG("PING reply, garbled result %s", header->toString(s).str());
+                }
                 ReleaseRoxieRow(answer);
             }
             else if (!anyActivity)
