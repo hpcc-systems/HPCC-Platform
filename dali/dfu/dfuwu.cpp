@@ -809,11 +809,11 @@ public:
             ret->setDefaultDir(s.str());
         }
         if (getTitle(s.clear()).length())
-            ret->setTraceName(s.str());
+            ret->setTraceName(s.str(), false);
         else if (getLogicalName(s).length())
             ret->setTraceName(s.str());
         else if (getFileMask(s).length())
-            ret->setTraceName(s.str());
+            ret->setTraceName(s.str(), false);
         bool initdone = false;
         StringBuffer partmask;
         if (getFileMask(partmask).length())
