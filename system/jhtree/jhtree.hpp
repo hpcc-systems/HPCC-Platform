@@ -97,7 +97,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual IKeyCursor *getCursor(const IIndexFilterList *filter, bool logExcessiveSeeks) = 0;
     virtual size32_t keySize() = 0;
     virtual bool isFullySorted() = 0;
-    virtual bool isTopLevelKey() = 0;
+    virtual bool isTopLevelKey() const = 0;
     virtual __uint64 getPartitionFieldMask() = 0;
     virtual unsigned numPartitions() = 0;
     virtual unsigned getFlags() = 0;

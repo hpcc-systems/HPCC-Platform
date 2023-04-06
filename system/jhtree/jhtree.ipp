@@ -75,9 +75,9 @@ enum request { LTE, GTE };
 // INodeLoader impl.
 interface INodeLoader
 {
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) = 0;
-    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) = 0;
-    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const = 0;
+    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) const = 0;
+    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) const = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -99,20 +99,21 @@ protected:
     CKeyHdr *keyHdr;
     CNodeCache *cache;
     const CJHSearchNode *rootNode;
-    RelaxedAtomic<unsigned> keySeeks;
-    RelaxedAtomic<unsigned> keyScans;
-    offset_t latestGetNodeOffset;
+    mutable RelaxedAtomic<unsigned> keySeeks;
+    mutable RelaxedAtomic<unsigned> keyScans;
+    mutable offset_t latestGetNodeOffset;  // NOT SAFE but only used by keydiff
 
-    CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy);
+    CJHTreeNode *_loadNode(char *nodeData, offset_t pos, bool needsCopy) const;
     CJHTreeNode *_createNode(const NodeHdr &hdr) const;
-    const CJHSearchNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
+    const CJHSearchNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx) const;
     const CJHTreeBlobNode *getBlobNode(offset_t nodepos, IContextLogger *ctx);
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
     void init(KeyHdr &hdr, bool isTLK);
     void loadBloomFilters();
-    
+    const CJHSearchNode *getRootNode() const;
+ 
 public:
     IMPLEMENT_IINTERFACE;
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -123,7 +124,7 @@ public:
     virtual size32_t keySize();
     virtual bool hasPayload();
     virtual size32_t keyedSize();
-    virtual bool isTopLevelKey() override;
+    virtual bool isTopLevelKey() const override;
     virtual bool isFullySorted() override;
     virtual __uint64 getPartitionFieldMask() override;
     virtual unsigned numPartitions() override;
@@ -152,9 +153,9 @@ public:
     virtual offset_t queryFirstBranchOffset() override;
 
  // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override = 0;  // Must be implemented in derived classes
-    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) override;
-    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override = 0;  // Must be implemented in derived classes
+    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) const override;
+    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) const override;
 
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
@@ -169,7 +170,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
@@ -185,7 +186,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override;
+    virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) const override;
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
