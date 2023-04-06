@@ -163,6 +163,7 @@ class fxppParserTests : public CppUnit::TestFixture
     {
       bool expectSuccess = true;
       bool supportNamespaces = true;
+      bool requestNamespaces = false;
       bool useAssistant = true;
       bool useExternalDetector = true;
       bool useExternalLoader = true;
@@ -215,10 +216,132 @@ class fxppParserTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testSkipRoot);
         CPPUNIT_TEST(testSkipChild);
         CPPUNIT_TEST(testSkipMalformed);
+        CPPUNIT_TEST(testRequestNamespaces);
     CPPUNIT_TEST_SUITE_END();
 
 public:
     fxppParserTests(){}
+
+    void testRequestNamespaces()
+    {
+      bool failed = false;
+      if (!checkRequestNamespace("ns", "hpcc:test:esp:xpp:prefix"))
+        failed = true;
+      if (!checkRequestNamespace(nullptr, "hpcc:test:esp:xpp:default"))
+        failed = true;
+      if (failed)
+      {
+        fprintf(stdout, "\n");
+        CPPUNIT_ASSERT(false);
+      }
+    }
+
+    bool checkRequestNamespace(const char* prefix, const char* uri)
+    {
+      StringBuffer test("request-namespace");
+      StringBuffer tag("UnitTest");
+      StringBuffer nsAttr("xmlns");
+      StringBuffer attr("foo");
+      if (!isEmptyString(prefix))
+      {
+        test.appendf("-%s", prefix);
+        tag.insert(0, ":");
+        tag.insert(0, prefix);
+        nsAttr.appendf(":%s", prefix);
+        attr.insert(0, ":");
+        attr.insert(0, prefix);
+      }
+      TestConfig cfg(test);
+      cfg.useAssistant = false;
+      cfg.requestNamespaces = true;
+      VStringBuffer input("<%s %s=\"%s\" %s=\"bar\"></%s>", tag.str(), nsAttr.str(), uri, attr.str(), tag.str());
+      StringBuffer output;
+
+      std::unique_ptr<IFragmentedXmlPullParser> parser(createParser(cfg));
+      StartTag stag;
+      EndTag etag;
+      int type;
+      bool failed = false;
+
+      parser->setInput(input, input.length());
+      while ((type = parser->next()) != IXmlPullParser::END_DOCUMENT)
+      {
+        switch (type)
+        {
+        case IXmlPullParser::START_TAG:
+          parser->readStartTag(stag);
+          output.appendf("<%s", stag.getQName());
+          for (int i = 0, n = stag.getLength(); i < n; i++)
+            output.appendf(" %s=\"%s\"", stag.getRawName(i), stag.getValue(i));
+          output.append(">");
+          if (!streq(stag.getLocalName(), "UnitTest"))
+          {
+            fprintf(stdout, "\nTest(%s) unexpected local start tag - '%s' instead of '%s'", cfg.name, stag.getLocalName(), "UnitTest");
+            failed = true;
+          }
+          if (!streq(stag.getUri(), uri))
+          {
+            fprintf(stdout, "\nTest(%s) start tag uri mismatch - '%s' instead of '%s'", cfg.name, stag.getUri(), uri);
+            failed = true;
+          }
+          if (stag.getLength() != 2)
+          {
+            fprintf(stdout, "\nTest(%s) attribute count mismatch - %d instead of %d", cfg.name, stag.getLength(), 2);
+            failed = true;
+          }
+          else
+          {
+            if (!isEmptyString(prefix))
+            {
+              if (!streq(stag.getLocalName(0), prefix))
+              {
+                fprintf(stdout, "\nTest(%s) unexpected local attribute name - '%s' instead of '%s'", cfg.name, stag.getLocalName(0), prefix);
+                failed = true;
+              }
+            }
+            else
+            {
+              if (!streq(stag.getLocalName(0), "xmlns"))
+              {
+                fprintf(stdout, "\nTest(%s) unexpected local attribute name - '%s' instead of '%s'", cfg.name, stag.getLocalName(0), "xmlns");
+                failed = true;
+              }
+            }
+            if (!streq(stag.getURI(0), uri))
+            {
+              fprintf(stdout, "\nTest(%s) namespace attribute uri mismatch - '%s' instead of '%s'", cfg.name, stag.getURI(0), uri);
+              failed = true;
+            }
+            if (!streq(stag.getLocalName(1), "foo"))
+            {
+              fprintf(stdout, "\nTest(%s) unexpected local attribute name - '%s' instead of '%s'", cfg.name, stag.getLocalName(1), "foo");
+              failed = true;
+            }
+          }
+          break;
+        case IXmlPullParser::END_TAG:
+          parser->readEndTag(etag);
+          output.appendf("</%s>", etag.getQName());
+          if (!streq(etag.getLocalName(), "UnitTest"))
+          {
+            fprintf(stdout, "\nTest(%s) unexpected local end tag - '%s' instead of '%s'", cfg.name, etag.getLocalName(), "UnitTest");
+            failed = true;
+          }
+          if (!streq(stag.getUri(), uri))
+          {
+            fprintf(stdout, "\nTest(%s) end tag uri mismatch - '%s' instead of '%s'", cfg.name, etag.getUri(), uri);
+            failed = true;
+          }
+          break;
+        }
+      }
+      if (!streq(input, output))
+      {
+        fprintf(stdout, "\nTest(%s) input not equal to output:\n    in:  '%s'\n    out: '%s'", cfg.name, input.str(), output.str());
+        failed = true;
+      }
+      return !failed;
+    }
 
     void testSkipDocument()
     {
@@ -670,6 +793,7 @@ public:
       }
       IFragmentedXmlPullParser* parser = fxpp::createParser();
       parser->setSupportNamespaces(cfg.supportNamespaces);
+      parser->setRequestNamespaces(cfg.requestNamespaces);
       parser->setAssistant(assistant.getClear());
       return parser;
     }
@@ -868,6 +992,7 @@ public:
         try
         {
           baseParser->setSupportNamespaces(cfg.supportNamespaces);
+          baseParser->setRequestNamespaces(cfg.requestNamespaces);
           baseParser->setInput(equivalentInput, int(strlen(equivalentInput)));
           parse(cfg.name, *baseParser, equivalentOutput);
         }
