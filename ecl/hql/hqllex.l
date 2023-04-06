@@ -1659,8 +1659,8 @@ FUNCTIONMACRO|MACRO {
                             int len = endpos-startpos;
                             Owned<IValue> unicodeValue;
                             // Special handling required for trailing \ char which suppresses the following linefeed, as unicode unescape does not handle it
-                            StringBuffer source(len, lexer->yyBuffer+startpos);
-                            source.replaceString("\\\n","");
+                            StringBuffer source;
+                            lexer->stripSlashNewline(returnToken, source, len, lexer->yyBuffer+startpos);
                             if (isUtf8)
                             {
                                 size32_t chars = rtlUtf8Length(source.length(), source.str());

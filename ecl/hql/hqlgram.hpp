@@ -1223,6 +1223,8 @@ class HqlLex
 
     private:
         static void doEnterEmbeddedMode(yyscan_t yyscanner);
+        void stripSlashNewline(attribute & returnToken, StringBuffer & target, size_t len, const char * data);
+
         void declareXmlSymbol(const attribute & errpos, const char *name);
         bool lookupXmlSymbol(const attribute & errpos, const char *name, StringBuffer &value);
         void setXmlSymbol(const attribute & errpos, const char *name, const char *value, bool append);
