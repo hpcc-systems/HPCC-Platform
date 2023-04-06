@@ -382,13 +382,13 @@ time_t tlMKTime(struct tm* timeInfoPtr, bool inLocalTimeZone)
         the_time += (tlLocalTimeZoneDiffIn100nsIntervals() / _onesec_in100ns);
     }
     #else
-    // Get the initial time components; note that mktime assumes local time
-    the_time = mktime(timeInfoPtr);
-
-    if (!inLocalTimeZone)
+    if (inLocalTimeZone)
     {
-        // Adjust for time zone offset
-        the_time += timeInfoPtr->tm_gmtoff;
+        the_time = mktime(timeInfoPtr);
+    }
+    else
+    {
+        the_time = timegm(timeInfoPtr);
     }
     #endif
 
@@ -661,10 +661,10 @@ TIMELIB_API void TIMELIB_CALL tlSecondsToString(size32_t &__lenResult, char* &__
 TIMELIB_API __int64 TIMELIB_CALL tlStringToSeconds(size32_t lenS, const char* s, const char* fmtin, bool is_local_time)
 {
     struct tm       timeInfo;
-    
+
     memset(&timeInfo, 0, sizeof(timeInfo));
     timeInfo.tm_isdst = -1;
-    
+
     if (simple_strptime(lenS, s, fmtin, &timeInfo))
     {
         return static_cast<__int64>(tlMKTime(&timeInfo, is_local_time));
@@ -773,7 +773,7 @@ TIMELIB_API __int64 TIMELIB_CALL tlAdjustSeconds(__int64 seconds, short year_del
     time_t          theTime = seconds;
     time_t          result = 0;
 
-    tlLocalTime_r(&theTime, &timeInfo);
+    tlGMTime_r(&theTime, &timeInfo);
 
     timeInfo.tm_year += year_delta;
     timeInfo.tm_mon += month_delta;
