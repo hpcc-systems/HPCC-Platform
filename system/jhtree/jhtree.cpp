@@ -760,7 +760,7 @@ public:
         setBlobCacheMem(maxBlobMem);
         // note that each index caches the last blob it unpacked so that sequential blobfetches are still ok
     }
-    const CJHTreeNode *getNode(INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
+    const CJHTreeNode *getNode(const INodeLoader *key, unsigned keyID, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK);
     void getCacheInfo(ICacheInfoRecorder &cacheInfo);
 
 
@@ -1062,6 +1062,29 @@ CKeyIndex::CKeyIndex(unsigned _iD, const char *_name) : name(_name)
     latestGetNodeOffset = 0;
 }
 
+const CJHSearchNode *CKeyIndex::getRootNode() const
+{
+    offset_t rootPos = keyHdr->getRootFPos();
+    Linked<CNodeCache> nodeCache = queryNodeCache();
+    //The root node is currently a branch - but it may change - so check the branch depth for this index
+    NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
+    Owned<const CJHSearchNode> root = (const CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, type, NULL, isTopLevelKey());
+
+    // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
+    // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
+    // CKeyIndex directly to the (single) leaf.
+    // It might also be ok to do this for non TLK indexes though it will be much less common, and has not been tested
+    // We should also consider making a change so that this extra layer is not generated - but skipping it here means older 
+    // indexes benefit too.
+    if (root && isTopLevelKey() && !root->isLeaf() && root->getNumKeys()==1)
+    {
+        Owned<const CJHSearchNode> oldRoot = root;
+        rootPos = root->getFPosAt(0);
+        root.setown((const CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, NodeLeaf, NULL, true));
+    }
+    return root.getClear();
+}
+
 void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
 {
     if (isTLK)
@@ -1074,25 +1097,7 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
     try
     {
         keyHdr->load(hdr);
-        offset_t rootPos = keyHdr->getRootFPos();
-        Linked<CNodeCache> nodeCache = queryNodeCache();
-
-        //The root node is currently a branch - but it may change - so check the branch depth for this index
-        NodeType type = getBranchDepth() != 0 ? NodeBranch : NodeLeaf;
-        rootNode = (CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, type, NULL, isTLK);
-
-        // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
-        // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
-        // CKeyIndex directly to the (single) leaf.
-        // It might also be ok to do this for non TLK indexes though it will be much less common, and has not been tested
-        // We should also consider making a change so that this extra layer is not generated - but skipping it here means older 
-        // indexes benefit too.
-        if (rootNode && isTopLevelKey() && !rootNode->isLeaf() && rootNode->getNumKeys()==1)
-        {
-            Owned<const CJHSearchNode> oldRoot = rootNode;
-            rootPos = rootNode->getFPosAt(0);
-            rootNode = (CJHSearchNode *) nodeCache->getNode(this, iD, rootPos, NodeLeaf, NULL, isTLK);
-        }
+        rootNode = getRootNode();
         loadBloomFilters();
     }
     catch (IKeyException *ke)
@@ -1131,7 +1136,7 @@ CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_na
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos)
+const CJHTreeNode *CMemKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos) const
 {
     nodesLoaded++;
     if (pos + keyHdr->getNodeSize() > io->fileSize())
@@ -1168,7 +1173,7 @@ CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool
     init(hdr, isTLK);
 }
 
-const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos)
+const CJHTreeNode *CDiskKeyIndex::loadNode(cycle_t * fetchCycles, offset_t pos) const
 {
     nodesLoaded++;
     unsigned nodeSize = keyHdr->getNodeSize();
@@ -1233,7 +1238,7 @@ CJHTreeNode *CKeyIndex::_createNode(const NodeHdr &nodeHdr) const
     }
 }
 
-CJHTreeNode *CKeyIndex::_loadNode(char *nodeData, offset_t pos, bool needsCopy)
+CJHTreeNode *CKeyIndex::_loadNode(char *nodeData, offset_t pos, bool needsCopy) const
 {
     try
     {
@@ -1255,7 +1260,7 @@ CJHTreeNode *CKeyIndex::_loadNode(char *nodeData, offset_t pos, bool needsCopy)
     }
 }
 
-bool CKeyIndex::isTopLevelKey()
+bool CKeyIndex::isTopLevelKey() const
 {
     return (keyHdr->getKeyType() & HTREE_TOPLEVEL_KEY) != 0;
 }
@@ -1280,7 +1285,7 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
     return new CKeyCursor(*this, filter, logExcessiveSeeks);
 }
 
-const CJHSearchNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx)
+const CJHSearchNode *CKeyIndex::getNode(offset_t offset, NodeType type, IContextLogger *ctx) const
 { 
     latestGetNodeOffset = offset;
     const CJHTreeNode *node = cache->getNode(this, iD, offset, type, ctx, isTopLevelKey());
@@ -1496,7 +1501,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
     return false;
 }
 
-const CJHSearchNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
+const CJHSearchNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats) const
 {
     keySeeks++;
     stats.seeks++;
@@ -1527,7 +1532,7 @@ const CJHSearchNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     return cur;
 }
 
-const CJHSearchNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
+const CJHSearchNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats) const
 {
     keySeeks++;
     stats.seeks++;
@@ -2428,7 +2433,7 @@ public:
     virtual size32_t keySize() { return checkOpen().keySize(); }
     virtual size32_t keyedSize() { return checkOpen().keyedSize(); }
     virtual bool hasPayload() { return checkOpen().hasPayload(); }
-    virtual bool isTopLevelKey() override { return checkOpen().isTopLevelKey(); }
+    virtual bool isTopLevelKey() const override { return checkOpen().isTopLevelKey(); }
     virtual bool isFullySorted() override { return checkOpen().isFullySorted(); }
     virtual __uint64 getPartitionFieldMask() { return checkOpen().getPartitionFieldMask(); }
     virtual unsigned numPartitions() { return checkOpen().numPartitions(); }
@@ -2544,7 +2549,7 @@ void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
 constexpr unsigned numLoadCritSects = 64;
 static CriticalSection loadCs[numLoadCritSects];
 
-const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
+const CJHTreeNode *CNodeCache::getNode(const INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
     // Also one cache per key would surely be faster, and could still use a global total
