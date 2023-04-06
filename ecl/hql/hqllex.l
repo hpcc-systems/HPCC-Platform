@@ -1914,9 +1914,9 @@ FUNCTIONMACRO|MACRO {
                         setupdatepos;
                         if (likely(lookupFlags & LEXstring))
                         {
-                            unsigned len = (CUR_TOKEN_LENGTH-3)/2;    // round sign
-                            char *data =(char *)malloc(len+1);
-                            hex2str(data, (char *)CUR_TOKEN_TEXT+2, CUR_TOKEN_LENGTH-3);
+                            unsigned len = (CUR_TOKEN_LENGTH-3+1)/2;
+                            char *data =(char *)malloc(len);
+                            hex2str(data, (const char *)CUR_TOKEN_TEXT+2, CUR_TOKEN_LENGTH-3);
                             returnToken.setExpr(createConstant(createDataValue(data, len)));
                             free(data);
                         }
@@ -1929,18 +1929,13 @@ FUNCTIONMACRO|MACRO {
 
                         if (likely(lookupFlags & LEXstring))
                         {
-                            lexer->reportWarning(CategorySyntax, returnToken, ERR_HEXDATA_ODDDIGITS,"hex data must have even number of hex digits");
-                            char* str = (char*)malloc(CUR_TOKEN_LENGTH-1);
-                            str[0] = '0'; // add a leading zero
-                            strncpy(str+1,(char*)CUR_TOKEN_TEXT+2,CUR_TOKEN_LENGTH-3);
-                            str[CUR_TOKEN_LENGTH-2] = 0;
-                            unsigned len = (CUR_TOKEN_LENGTH-2)/2;    // round sign
-                            char *data =(char *)malloc(len+1);
-
-                            hex2str(data, str, CUR_TOKEN_LENGTH-2);
+                            //Could common up, because except for this warning this code is identical to the token above...
+                            lexer->reportWarning(CategorySyntax, returnToken, ERR_HEXDATA_ODDDIGITS,"hex data should have an even number of hex digits");
+                            unsigned len = (CUR_TOKEN_LENGTH-3+1)/2;    // round up
+                            char *data =(char *)malloc(len);
+                            hex2str(data, CUR_TOKEN_TEXT+2, CUR_TOKEN_LENGTH-3);
                             returnToken.setExpr(createConstant(createDataValue(data, len)));
                             free(data);
-                            free(str);
                         }
                         return (DATA_CONST);
                     }
