@@ -1160,6 +1160,27 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                     prog->formatSummaryMessage(prgmsg.clear());
                     resultWU->setSummaryMessage(prgmsg.str());
                 }
+                if (version >= 1.25)
+                {
+                    if (req.getIncludeTransferRate())
+                    {
+                        resultWU->setKbPerSec(prog->getKbPerSec());
+                        resultWU->setKbPerSecAve(prog->getKbPerSecAve());
+                    }
+                    if (req.getIncludeTimings())
+                    {
+                        CDateTime startAt, stopAt;
+                        prog->getTimeStarted(startAt);
+                        prog->getTimeStopped(stopAt);
+
+                        StringBuffer s;
+                        resultWU->setTimeStarted(startAt.getString(s));
+                        resultWU->setTimeStopped(stopAt.getString(s.clear()));
+                        unsigned secs = prog->getSecsLeft();
+                        if (secs > 0)
+                            resultWU->setSecsLeft(secs);
+                    }
+                }
             }
             result.append(*resultWU.getLink());
             itr->next();
