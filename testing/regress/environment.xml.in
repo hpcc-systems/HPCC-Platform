@@ -728,7 +728,8 @@
              throttleCPULimit="75"
              throttleDelayMs="5000"/>
   </DafilesrvProcess>
-  <ThorCluster autoAffinity="true"
+  <ThorCluster allowedPipePrograms="*"
+               autoAffinity="true"
                autoCopyBackup="false"
                build="_"
                buildSet="thor"
