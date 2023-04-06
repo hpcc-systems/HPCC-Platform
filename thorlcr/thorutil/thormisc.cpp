@@ -1589,7 +1589,7 @@ void checkAndDumpAbortInfo(const char *cmd)
             dumpInfoCmd.appendf(" %s %u %s %u", myInstanceName, myBasePort, exePath.str(), pid);
 
             // only allow custom command if listed as allowedPipeProgram. NB: default is "" (none) above.
-            getAllowedPipePrograms(globals, allowedPipePrograms);
+            getAllowedPipePrograms(allowedPipePrograms, false);
         }
         else
         {

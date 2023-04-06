@@ -175,7 +175,7 @@ public:
         retcode = 0;
         flags = 0;
         StringBuffer allowedPipePrograms;
-        getAllowedPipePrograms(globals, allowedPipePrograms);
+        getAllowedPipePrograms(allowedPipePrograms, true);
         pipe.setown(createPipeProcess(allowedPipePrograms));
         pipeStream = new CPipeStream(this);
     }

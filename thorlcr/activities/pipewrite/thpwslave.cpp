@@ -44,7 +44,7 @@ public:
     {
         helper = static_cast <IHThorPipeWriteArg *> (queryHelper());
         StringBuffer allowedPipePrograms;
-        getAllowedPipePrograms(globals, allowedPipePrograms);
+        getAllowedPipePrograms(allowedPipePrograms, true);
         pipe.setown(createPipeProcess(allowedPipePrograms));
         pipeOpen = false;
         recreate = helper->recreateEachRow();

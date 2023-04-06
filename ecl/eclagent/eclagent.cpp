@@ -3822,7 +3822,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], Owned<ILocalWor
             if (w)
             {
                 StringBuffer allowedPipePrograms;
-                getAllowedPipePrograms(agentTopology, allowedPipePrograms);
+                getAllowedPipePrograms(allowedPipePrograms, true);
                 EclAgent agent(w, wuid.str(), agentTopology->getPropBool("@ignoreVersion", false), agentTopology->getPropBool("@resetWorkflow", false), agentTopology->getPropBool("@noRetry", false), logfilespec.str(),
                                allowedPipePrograms, query.getClear(), logMsgHandler);
                 const bool isRemoteWorkunit = !isEmptyString(daliServers);

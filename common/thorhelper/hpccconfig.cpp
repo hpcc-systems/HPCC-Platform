@@ -91,22 +91,63 @@ void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySp
     memorySpecifications["recommendedMaxMemory"] = recommendedMaxMemory;
 }
 
-void getAllowedPipePrograms(const IPropertyTree *config, StringBuffer &allowedPrograms)
+static unsigned pipeProgramUpdateHookCBId = 0;
+static const char *builtInPrograms = "roxiepipe"; // csv list
+static StringBuffer allowedPipePrograms, allowedPipeProgramsWithBuiltIns;
+static CriticalSection allowedPipeCS;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    if (isContainerized())
+    auto updateFunc = [&](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        Owned<IPropertyTreeIterator> iter = config->getElements("allowedPipePrograms");
-        if (iter->first())
+        StringArray builtInList, configuredList, combinedList;
+        builtInList.appendListUniq(builtInPrograms, ",");
+
+        Owned<IPropertyTree> config = getComponentConfig();
+        // NB: containerized config supports a different format
+        if (isContainerized())
         {
-            while (true)
+            Owned<IPropertyTreeIterator> iter = config->getElements("allowedPipePrograms");
+            ForEach(*iter)
+                configuredList.appendUniq(iter->query().queryProp(nullptr));
+        }
+        else
+            configuredList.appendListUniq(config->queryProp("@allowedPipePrograms"), ",");
+        
+        ForEachItemIn(b, builtInList)
+            combinedList.appendUniq(builtInList.item(b));
+        ForEachItemIn(c, configuredList)
+            combinedList.appendUniq(configuredList.item(c));
+
+        ForEachItemIn(i, combinedList)
+        {
+            if (streq("*", combinedList.item(i)))
             {
-                allowedPrograms.append(iter->query().queryProp(nullptr));
-                if (!iter->next())
-                    break;
-                allowedPrograms.append(',');
+                // disregard all others
+                CriticalBlock block(allowedPipeCS);
+                allowedPipePrograms.set("*");
+                allowedPipeProgramsWithBuiltIns.set(allowedPipePrograms);
+                return;
             }
         }
-    }
+        CriticalBlock block(allowedPipeCS);
+        builtInList.getString(allowedPipePrograms.clear(), ",");
+        combinedList.getString(allowedPipeProgramsWithBuiltIns.clear(), ",");
+    };
+    pipeProgramUpdateHookCBId = installConfigUpdateHook(updateFunc, true);
+    return true;
+}
+
+MODULE_EXIT()
+{
+    removeConfigUpdateHook(pipeProgramUpdateHookCBId);
+}
+
+void getAllowedPipePrograms(StringBuffer &allowedPrograms, bool addBuiltInPrograms)
+{
+    CriticalBlock block(allowedPipeCS);
+    if (addBuiltInPrograms)
+        allowedPrograms.append(allowedPipeProgramsWithBuiltIns);
     else
-        config->getProp("@allowedPipePrograms", allowedPrograms);
+        allowedPrograms.append(allowedPipePrograms);
 }

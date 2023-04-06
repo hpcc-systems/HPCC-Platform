@@ -30,7 +30,7 @@ interface IPropertyTree;
 typedef std::function<bool(const char *prop, StringBuffer &result)> GetJobValueFunction;
 extern THORHELPER_API void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySpecifications, const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction);
 
-extern THORHELPER_API void getAllowedPipePrograms(const IPropertyTree *config, StringBuffer &allowedPrograms);
+extern THORHELPER_API void getAllowedPipePrograms(StringBuffer &allowedPrograms, bool addBuiltInPrograms);
 
 #endif // _HPCCCONFIG_HPP_
 
