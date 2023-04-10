@@ -149,6 +149,39 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
     return nullptr;
 }
 
+static const char * skipLeadingPathSepChars(const char * str)
+{
+    while (*str && isPathSepChar(*str))
+        str++;
+    return str;
+}
+
+StringBuffer & getDropZoneRelativePath(const char * dropZoneName, const char * dropZonePath, StringBuffer & relativePath)
+{
+    Owned<IPropertyTree> dropZonePlane = getDropZonePlane(dropZoneName);
+    if (!dropZonePlane)
+        throw makeStringExceptionV(-1, "DropZone %s not found.", dropZoneName);
+
+    StringBuffer prefix(dropZonePlane->queryProp("@prefix"));
+    addPathSepChar(prefix);                                     //ex.: '/var/lib/HPCCSystems/mydropzone/'
+    unsigned lenPrefix = prefix.length();
+    if (strlen(dropZonePath) == lenPrefix - 1)
+    {
+        if (!strncmp(dropZonePath, prefix, lenPrefix - 1))      //ex.: '/var/lib/HPCCSystems/mydropzone'
+            return relativePath;
+    }
+    else
+    {
+        if (startsWith(dropZonePath, prefix))
+        {
+            if (strlen(dropZonePath) == lenPrefix)
+                return relativePath;
+            return relativePath.append(skipLeadingPathSepChars(dropZonePath + lenPrefix));
+        }
+    }
+    return relativePath.append(skipLeadingPathSepChars(dropZonePath));
+}
+
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
 {
     switch (kind) {
@@ -1127,13 +1160,14 @@ static void convertPosixPathToLfn(StringBuffer &str,const char *path)
 
 void CDfsLogicalFileName::setPlaneExternal(const char *plane,const char *path)
 {
-    if (isEmptyString(path))
-        return;
-    if (isPathSepChar(path[0])&&(path[0]==path[1]))
-        throw makeStringExceptionV(-1,"Invalid path %s.",path);
     StringBuffer str(PLANE_SCOPE "::");
     str.append(plane);
-    convertPosixPathToLfn(str,path);
+    if (!isEmptyString(path))
+    {
+        if (isPathSepChar(path[0])&&(path[0]==path[1]))
+            throw makeStringExceptionV(-1,"Invalid path %s.",path);
+        convertPosixPathToLfn(str,path);
+    }
     set(str.str());
 }
 

@@ -967,6 +967,8 @@ public:
 
     IFileDescriptor *getFileDescriptor(bool iskey,bool ignorerepeats) const
     {
+        StringBuffer planeName;
+        getPlaneName(planeName);
         unsigned nc = numClusters();
         unsigned n=nc?getNumParts(0,iskey):0;
         if (!n) {
@@ -990,7 +992,14 @@ public:
                 userdesc->set(username.str(),password.str());
                 Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn,userdesc,AccessMode::tbdRead,false,false,nullptr,defaultPrivilegedUser);
                 if (file)
-                    return file->getFileDescriptor();
+                {
+                    if (planeName.isEmpty())
+                        return file->getFileDescriptor();
+
+                    Owned<IFileDescriptor> ret = file->getFileDescriptor();
+                    ret->setPlaneName(planeName.str());
+                    return ret.getClear();
+                }
             }
             StringBuffer s;
             SocketEndpoint ep;
@@ -1018,6 +1027,8 @@ public:
             ret->setTraceName(s.str());
         else if (getFileMask(s).length())
             ret->setTraceName(s.str(), false);
+        if (!planeName.isEmpty())
+            ret->setPlaneName(planeName.str());
         bool initdone = false;
         StringBuffer partmask;
         if (getFileMask(partmask).length())
@@ -1092,6 +1103,11 @@ public:
                 getLFNDirectoryUsingBaseDir(str, lfn.get(), baseoverride.str());
             }
         }
+        return str;
+    }
+    StringBuffer &getPlaneName(StringBuffer &str)const
+    {
+        queryRoot()->getProp("@planeName",str);
         return str;
     }
     StringBuffer &getLogicalName(StringBuffer &str)const
@@ -1360,6 +1376,11 @@ public:
     void setDirectory(const char *val)
     {
         queryRoot()->setProp("@directory",val);
+
+    }
+    void setPlaneName(const char *val)
+    {
+        queryRoot()->setProp("@planeName",val);
 
     }
     void setLogicalName(const char *val)

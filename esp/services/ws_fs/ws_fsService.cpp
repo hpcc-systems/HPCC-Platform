@@ -1920,7 +1920,8 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
             if (sourceIPReq.isEmpty())
                 throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
             Owned<IPropertyTree> plane = getAndValidateDropZone(sourcePath, sourceIPReq);
-            sourcePlaneReq.append(plane->queryProp("@name"));
+            if (plane) //The plane may not be found in bare-metal.
+                sourcePlaneReq.append(plane->queryProp("@name"));
         }
     }
     getStandardPosixPath(sourcePathReq, sourcePath.str());
@@ -2307,6 +2308,7 @@ void CFileSprayEx::checkDZScopeAccessAndSetSpraySourceDFUFileSpec(IEspContext &c
         rmfn.setEp(ep);
         rmfn.append(fnamebuf.str());
         srcDFUfileSpec->setMultiFilename(rmfn);
+        srcDFUfileSpec->setPlaneName(srcPlane);
     }
     else
     {   //this block is copied from the code before PR https://github.com/hpcc-systems/HPCC-Platform/pull/17144.
@@ -2490,6 +2492,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             if (umask.length())
                 options->setUMask(umask.str());
             destination->setSingleFilename(rfn);
+            destination->setPlaneName(destPlane);
         }
         else
         {   //Not sure there exists any use case for despraying a file using the dstxml. JIRA-29339 is created to check

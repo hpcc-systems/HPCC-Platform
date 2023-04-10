@@ -1037,6 +1037,7 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
     Owned<IStoragePlane> remoteStoragePlane;
     bool setupdone;
     byte version;
+    StringAttr planeName;
 
     IFileDescriptor &querySelf()
     {
@@ -2160,6 +2161,14 @@ public:
     {
         queryProperties().setPropInt("@flags", static_cast<int>(flags));
         fileFlags = flags;
+    }
+    virtual StringBuffer &getPlaneName(StringBuffer &str) override
+    {
+        return str.append(planeName.get());
+    }
+    virtual void setPlaneName(const char *name) override
+    {
+        planeName.set(name);
     }
 };
 

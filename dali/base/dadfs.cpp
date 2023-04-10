@@ -11838,9 +11838,23 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
                 for (unsigned k=0;k<localpath.length();k++)
                     if ((localpath.charAt(k)=='?')||(localpath.charAt(k)=='*'))
                         localpath.setCharAt(k,'_');
-                CDfsLogicalFileName dlfn;
-                dlfn.setExternal(rfn.queryEndpoint(),localpath.str());
-                SecAccessFlags perm = getScopePermissions(dlfn.get(),user,auditflags);
+
+                SecAccessFlags perm = SecAccess_None;
+                StringBuffer planeName;
+                fdesc->getPlaneName(planeName);
+                if (!planeName.isEmpty())
+                {
+                    StringBuffer relativePath,dir;
+                    getDropZoneRelativePath(planeName,localpath,relativePath);
+                    splitFilename(relativePath,&dir,&dir,nullptr,nullptr);
+                    perm = getDropZoneScopePermissions(planeName.str(),dir.str(),user,auditflags);
+                }
+                else
+                {
+                    CDfsLogicalFileName dlfn;
+                    dlfn.setExternal(rfn.queryEndpoint(),localpath.str());
+                    perm = getScopePermissions(dlfn.get(),user,auditflags);
+                }
                 if (perm < retPerms) {
                     retPerms = perm;
                     if (retPerms == SecAccess_None)
