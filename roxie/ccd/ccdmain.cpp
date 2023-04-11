@@ -462,8 +462,24 @@ void readStaticTopology()
     unsigned numNodes = topology->getCount("./RoxieServerProcess");
     if (!numNodes && localAgent)
     {
-        topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
-        numNodes = 1;
+        if (topology->getPropBool("expert/@addDummyNode", false))
+        {
+            // Special config for testing some multinode things on a single node
+            topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
+            topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", "192.0.2.0");  // A non-existent machine (this address is reserved for documentation)
+            numNodes = 2;
+            localAgent = false;
+            topology->setPropInt("@numChannels", 2);
+            numChannels = 2;
+            topology->setPropInt("@numDataCopies", 2);
+            topology->setPropInt("@channelsPerNode", 2);
+            topology->setProp("@agentConfig", "cyclic");
+        }
+        else if (localAgent)
+        {
+            topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
+            numNodes = 1;
+        }
     }
     Owned<IPropertyTreeIterator> roxieServers = topology->getElements("./RoxieServerProcess");
 

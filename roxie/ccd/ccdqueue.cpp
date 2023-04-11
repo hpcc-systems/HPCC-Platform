@@ -2264,7 +2264,7 @@ public:
         if (doTrace(traceRoxiePackets))
         {
             StringBuffer s;
-            DBGLOG("Adding delayed packet %s", packet->queryHeader().toString(s).str());
+            DBGLOG("Adding delayed packet %s expires in %u ms", packet->queryHeader().toString(s).str(), expires - msTick());
         }
         newEntry->prev = tail;
         if (tail)
@@ -2297,7 +2297,7 @@ public:
                 if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer s;
-                    DBGLOG("No IBYTI received yet for delayed packet %s", header.toString(s).str());
+                    DBGLOG("No IBYTI received in time for delayed packet %s - enqueuing", header.toString(s).str());
                 }
                 unsigned __int64 IBYTIdelay = nsTick()-packet->queryEnqueuedTimeStamp();
                 if (header.activityId & ROXIE_SLA_PRIORITY)

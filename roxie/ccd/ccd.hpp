@@ -56,9 +56,7 @@
 
 // Have not yet tested impact of new IBYTI handling in non-containerized systems
 
-#ifdef _CONTAINERIZED
 #define NEW_IBYTI
-#endif
 
 #if defined(_CONTAINERIZED) || defined (NEW_IBYTI)
 // Both containerized mode and new IBYTI mode assume subchannels are passed in header.
