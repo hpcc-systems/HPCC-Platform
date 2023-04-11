@@ -21,6 +21,7 @@
 //version useEmbedded=false,noSeek=false
 
 import setup;
+import Std.File AS FileServices;
 
 useEmbedded := #IFDEFINED(root.useEmbedded, false);
 noSeek := #IFDEFINED(root.noSeek, false);
@@ -84,4 +85,7 @@ j := JOIN(lhs, i, LEFT.uid=RIGHT.uid, KEEP(1));
 SEQUENTIAL(
  BUILD(i, OVERWRITE);
  OUTPUT(count(nofold(j)) - numParents);
+
+ // Clean-up
+ FileServices.DeleteLogicalFile(prefix+'anindex'+IF(useEmbedded,'e','l')),
 );
