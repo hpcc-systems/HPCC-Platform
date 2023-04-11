@@ -6104,182 +6104,239 @@ inline bool isSanitizedAndHidden(const char *val, byte flags, bool attribute)
     return false;
 }
 
-static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned flags)
+class ParallelXMLWriter 
 {
-    const char *name = tree->queryName();
-    if (!name) name = "__unnamed__";
-    bool isBinary = tree->isBinary(NULL);
-    bool inlinebody = true;
-    if (flags & XML_Embed) writeCharsNToStream(out, ' ', indent);
-    writeCharToStream(out, '<');
-    writeStringToStream(out, name);
-    Owned<IAttributeIterator> it = tree->getAttributes(true);
+public:
 
-    if (it->first())
+    IIOStream &out;
+    unsigned flags;
+    const IPropertyNodeVisitor *splitVisitor;
+
+    std::vector<const IPropertyTree *> stack;
+
+    ParallelXMLWriter(IIOStream &_out, unsigned _flags, const IPropertyNodeVisitor *_splitVisitor)
+        : out(_out), flags(_flags), splitVisitor(_splitVisitor) 
+    { 
+    }
+
+    ParallelXMLWriter(const std::vector<const IPropertyTree *> & _stack, IIOStream &_out, unsigned _flags, const IPropertyNodeVisitor *_splitVisitor)
+        : out(_out), flags(_flags), splitVisitor(_splitVisitor), stack(_stack) 
+    { 
+    }
+
+    void _toXML(const IPropertyTree *tree, unsigned indent)
     {
-        unsigned attributeindent = indent+2+(size32_t)strlen(name);
-        bool first = true;
-
-        do
+        StringBuffer filename;
+        IPropertyNodeVisitor::VisitorAction action = IPropertyNodeVisitor::NoSplit;
+        if (splitVisitor) 
         {
-            const char *key = it->queryName();
-            if (!isBinary || stricmp(key, "@xsi:type")!=0)
-            {
-                if (first)
-                {
-                    if (flags & XML_LineBreak) inlinebody = false;
-                    first = false;
-                    writeCharToStream(out, ' ');
-                }
-                else if ((flags & XML_LineBreakAttributes) && it->count() > 3)
-                {
-                    writeStringToStream(out, "\n");
-                    writeCharsNToStream(out, ' ', attributeindent);
-                }
-                else
-                    writeCharToStream(out, ' ');
+            stack.push_back(tree);
+            action = splitVisitor->visit(stack, filename);
+            if (action == IPropertyNodeVisitor::Skip)
+                return;
 
-                writeStringToStream(out, key+1);
-                if (flags & XML_SingleQuoteAttributeValues)
-                    writeStringToStream(out, "='");
-                else
-                    writeStringToStream(out, "=\"");
-                const char *val = it->queryValue();
-                if (val)
+            if (action == IPropertyNodeVisitor::Split && indent > 0)
+            {
+                OwnedIFile ifile = createIFile(filename);
+                Owned<IFileIO> io = ifile->open(IFOcreate);
+                Owned<IFileIOStream> childOut = createBufferedIOStream(io);
+
+                ParallelXMLWriter writer(stack, *childOut, flags, splitVisitor);
+                writer._toXML(tree, 0);
+            }
+        }
+
+        const char *name = tree->queryName();
+        if (!name) name = "__unnamed__";
+        bool isBinary = tree->isBinary(NULL);
+        bool inlinebody = true;
+        if (flags & XML_Embed) writeCharsNToStream(out, ' ', indent);
+        writeCharToStream(out, '<');
+        writeStringToStream(out, name);
+        if (action == IPropertyNodeVisitor::Split && indent > 0)
+        {
+            writeCharToStream(out, ' ');
+            writeStringToStream(out, "__filename=\"");
+            writeStringToStream(out, filename);
+            writeStringToStream(out, "\"/>");
+            if (flags & XML_LineBreak)
+                writeStringToStream(out, "\n");
+            return;
+        }
+        Owned<IAttributeIterator> it = tree->getAttributes(true);
+
+        if (it->first())
+        {
+            unsigned attributeindent = indent+2+(size32_t)strlen(name);
+            bool first = true;
+
+            do
+            {
+                const char *key = it->queryName();
+                if (!isBinary || stricmp(key, "@xsi:type")!=0)
                 {
-                    if (isSanitizedAndHidden(val, flags, true))
-                        writeCharsNToStream(out, '*', strlen(val));
+                    if (first)
+                    {
+                        if (flags & XML_LineBreak) inlinebody = false;
+                        first = false;
+                        writeCharToStream(out, ' ');
+                    }
+                    else if ((flags & XML_LineBreakAttributes) && it->count() > 3)
+                    {
+                        writeStringToStream(out, "\n");
+                        writeCharsNToStream(out, ' ', attributeindent);
+                    }
                     else
-                        encodeXML(val, out, ENCODE_NEWLINES, (unsigned)-1, true);
+                        writeCharToStream(out, ' ');
+
+                    writeStringToStream(out, key+1);
+                    if (flags & XML_SingleQuoteAttributeValues)
+                        writeStringToStream(out, "='");
+                    else
+                        writeStringToStream(out, "=\"");
+                    const char *val = it->queryValue();
+                    if (val)
+                    {
+                        if (isSanitizedAndHidden(val, flags, true))
+                            writeCharsNToStream(out, '*', strlen(val));
+                        else
+                            encodeXML(val, out, ENCODE_NEWLINES, (unsigned)-1, true);
+                    }
+
+                    if (flags & XML_SingleQuoteAttributeValues)
+                        writeCharToStream(out, '\'');
+                    else
+                        writeCharToStream(out, '"');
                 }
-
-                if (flags & XML_SingleQuoteAttributeValues)
-                    writeCharToStream(out, '\'');
-                else
-                    writeCharToStream(out, '"');
             }
+            while (it->next());
         }
-        while (it->next());
-    }
-    Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & XML_SortTags) ? iptiter_sort : iptiter_null);
-    MemoryBuffer thislevelbin;
-    StringBuffer _thislevel;
-    const char *thislevel = NULL; // to avoid uninitialized warning
-    bool empty;
-    if (isBinary)
-    {
-        if (flags & XML_LineBreak) inlinebody = false;
-        writeStringToStream(out, " xsi:type=\"SOAP-ENC:base64\"");
-        empty = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
-    }
-    else
-    {
-        if (tree->isCompressed(NULL))
+        Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & XML_SortTags) ? iptiter_sort : iptiter_null);
+        MemoryBuffer thislevelbin;
+        StringBuffer _thislevel;
+        const char *thislevel = NULL; // to avoid uninitialized warning
+        bool empty;
+        if (isBinary)
         {
-            empty = false; // can't be empty if compressed;
-            verifyex(tree->getProp(NULL, _thislevel));
-            thislevel = _thislevel.str();
+            if (flags & XML_LineBreak) inlinebody = false;
+            writeStringToStream(out, " xsi:type=\"SOAP-ENC:base64\"");
+            empty = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
         }
         else
-            empty = (NULL == (thislevel = tree->queryProp(NULL)));
-    }
-    if (sub->first())
-    {
-        if (flags & XML_LineBreak) inlinebody = false;
-    }
-    else if (empty && !(flags & XML_Sanitize))
-    {
-        if (flags & XML_LineBreak)
-            writeStringToStream(out, "/>\n");
-        else
-            writeStringToStream(out, "/>");
-        return;
-    }
-    writeCharToStream(out, '>');
-    if (!inlinebody)
-        writeStringToStream(out, "\n");
-
-    for(; sub->isValid(); sub->next())
-        _toXML(&sub->query(), out, indent+1, flags);
-    if (!empty)
-    {
-        if (!inlinebody)
-            writeCharsNToStream(out, ' ', indent+1);
-        if (flags & XML_Sanitize)
         {
-            // NOTE - we don't output anything for binary.... is that ok?
-            if (thislevel)
+            if (tree->isCompressed(NULL))
             {
-                if (isHiddenWhenSanitized(thislevel))
-                    writeCharsNToStream(out, '*', strlen(thislevel));
-                else
-                    writeStringToStream(out, thislevel);
+                empty = false; // can't be empty if compressed;
+                verifyex(tree->getProp(NULL, _thislevel));
+                thislevel = _thislevel.str();
             }
+            else
+                empty = (NULL == (thislevel = tree->queryProp(NULL)));
         }
-        else if (isBinary)
+        if (sub->first())
         {
-            if (flags & XML_NoBinaryEncode64)
+            if (flags & XML_LineBreak) inlinebody = false;
+        }
+        else if (empty && !(flags & XML_Sanitize))
+        {
+            if (flags & XML_LineBreak)
+                writeStringToStream(out, "/>\n");
+            else
+                writeStringToStream(out, "/>");
+            return;
+        }
+        writeCharToStream(out, '>');
+        if (!inlinebody)
+            writeStringToStream(out, "\n");
+
+        for(; sub->isValid(); sub->next())
+            _toXML(&sub->query(), indent+1);
+        if (!empty)
+        {
+            if (!inlinebody)
+                writeCharsNToStream(out, ' ', indent+1);
+            if (flags & XML_Sanitize)
+            {
+                // NOTE - we don't output anything for binary.... is that ok?
+                if (thislevel)
+                {
+                    if (isHiddenWhenSanitized(thislevel))
+                        writeCharsNToStream(out, '*', strlen(thislevel));
+                    else
+                        writeStringToStream(out, thislevel);
+                }
+            }
+            else if (isBinary)
+            {
+                if (flags & XML_NoBinaryEncode64)
+                {
+                    if (flags & XML_NoEncode)
+                    {
+                        out.write(thislevelbin.length(), thislevelbin.toByteArray());
+                    }
+                    else
+                    {
+                        const char * buff = static_cast<const char *>(thislevelbin.toByteArray());
+                        const unsigned len = thislevelbin.length();
+                        unsigned prefix = 0;
+                        while ((prefix < len) && isspace(buff[prefix]))
+                            prefix++;
+                        encodeXML(buff, out, ENCODE_WHITESPACE, prefix, true);
+                        if (prefix != len) {    // check not all spaces
+                            unsigned suffix = len;
+                            while (isspace(buff[suffix-1]))
+                                suffix--;
+                            encodeXML(buff+prefix, out, 0, suffix-prefix, true);
+                            encodeXML(buff+suffix, out, ENCODE_WHITESPACE, len-suffix, true);
+                        }
+                    }
+                }
+                else
+                    JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), out, true);
+            }
+            else
             {
                 if (flags & XML_NoEncode)
                 {
-                    out.write(thislevelbin.length(), thislevelbin.toByteArray());
+                    writeStringToStream(out, thislevel);
                 }
                 else
                 {
-                    const char * buff = static_cast<const char *>(thislevelbin.toByteArray());
-                    const unsigned len = thislevelbin.length();
-                    unsigned prefix = 0;
-                    while ((prefix < len) && isspace(buff[prefix]))
-                        prefix++;
-                    encodeXML(buff, out, ENCODE_WHITESPACE, prefix, true);
-                    if (prefix != len) {    // check not all spaces
-                        unsigned suffix = len;
-                        while (isspace(buff[suffix-1]))
-                            suffix--;
-                        encodeXML(buff+prefix, out, 0, suffix-prefix, true);
-                        encodeXML(buff+suffix, out, ENCODE_WHITESPACE, len-suffix, true);
+                    const char *m = thislevel;
+                    const char *p = m;
+                    while (isspace(*p)) 
+                        p++;
+                    encodeXML(m, out, ENCODE_WHITESPACE, p-m, true);
+                    if (*p) {   // check not all spaces
+                        const char *s = p+strlen(p);
+                        while (isspace(*(s-1)))
+                            s--;
+                        assertex(s>p);
+                        encodeXML(p, out, 0, s-p, true);
+                        encodeXML(s, out, ENCODE_WHITESPACE, (unsigned)-1, true);
                     }
                 }
+
+                if (!inlinebody)
+                    writeStringToStream(out, "\n");
             }
-            else
-                JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), out, true);
         }
+        if (!inlinebody)
+            writeCharsNToStream(out, ' ', indent);
+
+        writeStringToStream(out, "</");
+        writeStringToStream(out, name);
+        if (flags & XML_LineBreak)
+            writeStringToStream(out, ">\n");
         else
-        {
-            if (flags & XML_NoEncode)
-            {
-                writeStringToStream(out, thislevel);
-            }
-            else
-            {
-                const char *m = thislevel;
-                const char *p = m;
-                while (isspace(*p)) 
-                    p++;
-                encodeXML(m, out, ENCODE_WHITESPACE, p-m, true);
-                if (*p) {   // check not all spaces
-                    const char *s = p+strlen(p);
-                    while (isspace(*(s-1)))
-                        s--;
-                    assertex(s>p);
-                    encodeXML(p, out, 0, s-p, true);
-                    encodeXML(s, out, ENCODE_WHITESPACE, (unsigned)-1, true);
-                }
-            }
-
-            if (!inlinebody)
-                writeStringToStream(out, "\n");
-        }
+            writeCharToStream(out, '>');
     }
-    if (!inlinebody)
-        writeCharsNToStream(out, ' ', indent);
+};
 
-    writeStringToStream(out, "</");
-    writeStringToStream(out, name);
-    if (flags & XML_LineBreak)
-        writeStringToStream(out, ">\n");
-    else
-        writeCharToStream(out, '>');
+static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned flags)
+{
+    ParallelXMLWriter xmlout(out, flags, nullptr);
+    xmlout._toXML(tree, indent);
 }
 
 class CStringBufferMarkupIOAdapter : public CInterfaceOf<IIOStream>
@@ -6322,6 +6379,20 @@ void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, u
 {
     OwnedIFile ifile = createIFile(filename);
     saveXML(*ifile, tree, indent, flags);
+}
+
+void saveMultipleXML(IIOStream &stream, const IPropertyTree *tree, IPropertyNodeVisitor *splitVisitor, unsigned indent, unsigned flags)
+{
+    ParallelXMLWriter xmlout(stream, flags, splitVisitor);
+    xmlout._toXML(tree, indent);
+}
+
+void saveMultipleXML(const char *filename, const IPropertyTree *tree, IPropertyNodeVisitor *splitVisitor, unsigned indent, unsigned flags) 
+{
+    OwnedIFile ifile = createIFile(filename);
+    Owned<IFileIO> io = ifile->open(IFOcreate);
+    Owned<IFileIOStream> stream = createBufferedIOStream(io);
+    saveMultipleXML(*stream, tree, splitVisitor, indent, flags);
 }
 
 void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned flags)

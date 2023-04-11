@@ -32,6 +32,7 @@
 #include "jqueue.hpp"
 #include "jregexp.hpp"
 #include "jutil.hpp"
+#include "jptree.hpp"
 
 #include "unittests.hpp"
 
@@ -1400,6 +1401,7 @@ class JlibIPTTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testMergeConfig);
         CPPUNIT_TEST(testRemoveReuse);
         CPPUNIT_TEST(testSpecialTags);
+        CPPUNIT_TEST(testSaveMarkup);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -2284,6 +2286,22 @@ Nothing_toEncodeHere:
             throw;
         }
     }
+
+    void testSaveMarkup() 
+    {
+        const char * test="<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<root>"
+        "<a>1</a>"
+        "<b>"
+        "<e>2</e>"
+        "<f>3</f>"
+        "</b>"
+        "<c>3</c>"
+        "</root>";
+        auto tree = createPTreeFromXMLString(test);
+        saveXML("test.xml", tree, 0, XML_Format);
+
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(JlibIPTTest);
@@ -2975,6 +2993,8 @@ class BlockedTimingTests : public CppUnit::TestFixture
             printf("%" I64F "u %" I64F "u\n", blockTime-expected, postBlockTime-blockTime);
     }
 };
+
+
 
 CPPUNIT_TEST_SUITE_REGISTRATION( BlockedTimingTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( BlockedTimingTests, "BlockedTimingTests" );
