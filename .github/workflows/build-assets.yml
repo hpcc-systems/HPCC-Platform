@@ -92,6 +92,8 @@ jobs:
           - os: ubuntu-22.04
             container: true
           - os: ubuntu-22.04
+          - os: ubuntu-22.04
+            documentation: true
           - os: ubuntu-20.04
           - os: centos-8
           - os: centos-7
@@ -154,7 +156,7 @@ jobs:
             build-${{ matrix.os }}:latest
 
       - name: CMake Packages
-        if: ${{ !matrix.container && !matrix.ln }}
+        if: ${{ !matrix.container && !matrix.ln && !matrix.documentation }}
         run: |
           mkdir -p ${{ needs.preamble.outputs.folder_build }}
           echo "${{ secrets.SIGNING_SECRET }}" > ${{ needs.preamble.outputs.folder_build }}/private.key
@@ -183,6 +185,18 @@ jobs:
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build ${{ needs.preamble.outputs.cmake_docker_config }} -DSIGN_MODULES_PASSPHRASE=${{ secrets.SIGN_MODULES_PASSPHRASE }} -DSIGN_MODULES_KEYID=${{ secrets.SIGN_MODULES_KEYID }} -DINCLUDE_PLUGINS=ON -DCONTAINERIZED=ON -DSUPPRESS_REMBED=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_SPARK=ON -DCPACK_STRIP_FILES=ON" 
           docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "${{ needs.preamble.outputs.gpg_import }} && cmake --build /hpcc-dev/build --parallel $(nproc) --target package"
 
+      - name: CMake documentation
+        if: ${{ matrix.documentation }}
+        run: |
+          mkdir -p {${{needs.preamble.outputs.folder_build }},EN_US,PT_BR}
+          sudo rm -f ${{ needs.preamble.outputs.folder_build }}/CMakeCache.txt
+          sudo rm -rf ${{ needs.preamble.outputs.folder_build }}/CMakeFiles
+          docker_label=build-${{ matrix.os }}:latest
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake -S /hpcc-dev/HPCC-Platform -B /hpcc-dev/build -DMAKE_DOCS_ONLY=ON -DUSE_NATIVE_LIBRARIES=ON -DDOCS_AUTO=ON -DDOC_LANGS=ALL"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cmake --build /hpcc-dev/build --parallel $(nproc) --target all"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cd /hpcc-dev/build/Release/docs/EN_US && zip ALL_HPCC_DOCS_EN_US-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
+          docker run --rm --mount ${{ needs.preamble.outputs.mount_platform }} --mount ${{ needs.preamble.outputs.mount_build }} $docker_label "cd /hpcc-dev/build/Release/docs/PT_BR && zip ALL_HPCC_DOCS_PT_BR-${{ needs.preamble.outputs.community_tag }}.zip *.pdf"
+
       - name: Upload Assets
         uses: ncipollo/release-action@v1.12.0
         if: ${{ !matrix.ln }}
@@ -190,7 +204,7 @@ jobs:
           allowUpdates: true
           generateReleaseNotes: false
           prerelease: ${{ contains(github.ref, '-rc') }}
-          artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm"
+          artifacts: "${{ needs.preamble.outputs.folder_build }}/*.deb,${{ needs.preamble.outputs.folder_build }}/*.rpm,${{ needs.preamble.outputs.folder_build }}/Release/docs/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/EN_US/*.zip,${{ needs.preamble.outputs.folder_build }}/Release/docs/PT_BR/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/EclipseHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/EN_US/HTMLHelp/*.zip,${{ needs.preamble.outputs.folder_build }}/docs/PT_BR/HTMLHelp/*.zip"
 
       - name: CMake LN Packages
         if: ${{ matrix.ln }}
