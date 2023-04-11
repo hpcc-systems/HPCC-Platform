@@ -101,22 +101,32 @@ fetch_build_type() {
     echo $(run "grep 'CMAKE_BUILD_TYPE:' /hpcc-dev/build/CMakeCache.txt | cut -d '=' -f 2")
 }
 
+md5_hash() {
+    if command -v md5sum > /dev/null; then
+        # Use md5sum on Linux
+        md5sum "$1" | cut -d ' ' -f 1
+    else
+        # Use md5 on macOS
+        md5 -r "$1" | cut -d ' ' -f 1
+    fi
+}
+
 calc_diffs() {
     init_hpcc_src
     local rsync_tmp_basename=$(basename "$RSYNC_TMP_FILE")
-    run "git ls-files --modified --exclude-standard" > $rsync_tmp_basename
-    run "rsync -av --delete --delete-after --files-from=/hpcc-dev/HPCC-Platform-local/$rsync_tmp_basename /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
+    run "git ls-files --modified --exclude-standard" > $RSYNC_TMP_FILE
+    run "rsync -av --delete --files-from=/hpcc-dev/HPCC-Platform-local/$rsync_tmp_basename /hpcc-dev/HPCC-Platform-local/ /hpcc-dev/HPCC-Platform/"
 
     pushd $ROOT_DIR >/dev/null
-    git status --short | grep '^ M' | cut -c4- >> $rsync_tmp_basename
+    git status --short | grep '^ M' | cut -c4- > $RSYNC_TMP_FILE
     local tmp=$(mktemp)
     echo "$GIT_REF" > $tmp
     while read file; do
         if [ -f "$file" ]; then
-            md5sum "$file" | cut -d ' ' -f 1 >> $tmp
+            md5_hash "$file" >> $tmp
         fi
-    done < $rsync_tmp_basename
-    local crc=$(md5sum $tmp | cut -d ' ' -f 1)
+    done < $RSYNC_TMP_FILE
+    local crc=$(md5_hash "$tmp")
     rm $tmp
     popd >/dev/null
     echo $crc
@@ -164,7 +174,7 @@ build() {
 
     create_platform_core_image $base
 
-    RSYNC_TMP_FILE=$(mktemp -p $ROOT_DIR)
+    RSYNC_TMP_FILE=$(mktemp "$ROOT_DIR/tempfile.XXXXXX")
 
     local crc=$(calc_diffs | tail -1)
 

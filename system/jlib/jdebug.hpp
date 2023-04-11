@@ -225,6 +225,49 @@ private:
     unsigned start;
 };
 
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+  There are many situations where you want to report or check something periodically.  This class encapsulates the code
+  to perform the check.
+  The constructor has an option to indicate whether the first hasElapsed call should return true, or be suppressed.
+*/
+class PeriodicTimer
+{
+public:
+    PeriodicTimer() = default;
+    PeriodicTimer(unsigned ms, bool suppressFirst)
+    {
+        reset(ms, suppressFirst);
+    }
+
+    bool hasElapsed()
+    {
+        return hasElapsed(get_cycles_now());
+    }
+
+    bool hasElapsed(cycle_t nowCycles)
+    {
+        if ((nowCycles - lastElapsedCycles) < timePeriodCycles)
+            return false;
+
+        lastElapsedCycles = nowCycles;
+        return true;
+    }
+
+    void reset(unsigned ms, bool suppressFirst)
+    {
+        timePeriodCycles = nanosec_to_cycle((__int64)ms * 1000000);
+        lastElapsedCycles = get_cycles_now();
+        if (!suppressFirst)
+            lastElapsedCycles -= timePeriodCycles;
+    }
+
+protected:
+    cycle_t timePeriodCycles = 0;
+    cycle_t lastElapsedCycles = 0;
+};
+
 
 //---------------------------------------------------------------------------------------------------------------------
 

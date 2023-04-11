@@ -303,23 +303,24 @@ void openMulticastSocket()
 {
     if (!multicastSocket)
     {
+        const char *desc = roxieMulticastEnabled ? "multicast" : "UDP";
         multicastSocket.setown(ISocket::udp_create(ccdMulticastPort));
         if (multicastTTL)
         {
             multicastSocket->set_ttl(multicastTTL);
-            DBGLOG("Roxie: multicastTTL: %u", multicastTTL);
+            DBGLOG("Roxie: %s TTL: %u", desc, multicastTTL);
         }
         else
-            DBGLOG("Roxie: multicastTTL not set");
+            DBGLOG("Roxie: %s TTL not set", desc);
         multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
         size32_t actualSize = multicastSocket->get_receive_buffer_size();
         if (actualSize < udpMulticastBufferSize)
         {
-            DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
+            DBGLOG("Roxie: %s socket buffer size could not be set (requested=%d actual %d)", desc, udpMulticastBufferSize, actualSize);
             throwUnexpected();
         }
         if (doTrace(TraceFlags::Always))
-            DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", ccdMulticastPort, udpMulticastBufferSize, actualSize);
+            DBGLOG("Roxie: %s socket created port=%d sockbuffsize=%d actual %d", desc, ccdMulticastPort, udpMulticastBufferSize, actualSize);
         if (roxieMulticastEnabled && !localAgent)
         {
             Owned<const ITopologyServer> topology = getTopology();
@@ -2721,7 +2722,7 @@ public:
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
                 // Unfortunately this is bad news for dropping packets
-                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
+                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like UNLOAD?
 
                 Owned<const ITopologyServer> topology = getTopology();
                 const std::vector<unsigned> channels = topology->queryChannels();
@@ -2764,7 +2765,7 @@ public:
 #endif
                 Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
-                if (acknowledgeAllRequests)
+                if (acknowledgeAllRequests && (header.activityId & ~ROXIE_PRIORITY_MASK) != ROXIE_PING)
                 {
 #ifdef DEBUG
                     if (testAgentFailure & 0x1 && !retries)
@@ -3633,7 +3634,10 @@ public:
                         DBGLOG("PING reply channel=%d, time %d", header->channel, elapsed); // DBGLOG is slower than the pings so be careful!
                 }
                 else
-                    DBGLOG("PING reply, garbled result");
+                {
+                    StringBuffer s;
+                    DBGLOG("PING reply, garbled result %s", header->toString(s).str());
+                }
                 ReleaseRoxieRow(answer);
             }
             else if (!anyActivity)

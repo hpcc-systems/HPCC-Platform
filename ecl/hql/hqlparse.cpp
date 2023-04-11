@@ -2004,6 +2004,14 @@ int HqlLex::processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, 
                 finger++;
                 continue;  // A \ at end of line in a multiline constant means remove the end-of-line
             }
+            else if (next == '\r')
+            {
+                if (finger[2] == '\n')
+                    finger += 2;
+                else
+                    finger++;
+                continue;  // A \ at end of line in a multiline constant means remove the end-of-line
+            }
             else if (next == 'a')
             {
                 next = '\a';
@@ -2083,6 +2091,14 @@ int HqlLex::processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, 
             }
             *bf++ = next;
         }
+        else if (next == '\r')
+        {
+            //Convert \r\n to \n and \r to \n
+            next = finger[1];
+            if (next == '\n')
+                finger++;
+            *bf++ = '\n';
+        }
         else if (next == '\'' && !isMultiline)
         {
             returnToken.setPosition(yyLineNo, oldColumn+delta, oldPosition+delta, querySourcePath());
@@ -2151,6 +2167,50 @@ int HqlLex::processStringLiteral(attribute & returnToken, char *CUR_TOKEN_TEXT, 
         return (STRING_CONST);
     }
     throwUnexpected();
+}
+
+
+void HqlLex::stripSlashNewline(attribute & returnToken, StringBuffer & target, size_t len, const char * text)
+{
+    target.ensureCapacity(len);
+    for (size_t i = 0; i < len; i++)
+    {
+        char cur = text[i];
+        if (cur == '\\')
+        {
+            if (i+1 < len)
+            {
+                byte next = text[i+1];
+                if (next == '\n')
+                {
+                    i++;
+                    continue;
+                }
+                if (next == '\r')
+                {
+                    i++;
+                    if ((i+1) < len && text[i+1] == '\n')
+                        i++;
+                    continue;
+                }
+            }
+            else
+            {
+                StringBuffer msg("Cannot terminate a string with escape char '\\': ");
+                msg.append(len, text);
+                reportError(returnToken, RRR_ESCAPE_ENDWITHSLASH, "%s", msg.str());
+            }
+        }
+        else if (cur == '\r')
+        {
+            //Normalize unusual end of line sequences
+            if ((i+1 < len) && (text[i+1] == '\n'))
+                i++;
+            cur = '\n';
+        }
+
+        target.append(cur);
+    }
 }
 
 //====================================== Error Reporting  ======================================

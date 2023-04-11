@@ -1785,7 +1785,11 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
     }
 
     ForEachItemIn(i, cursors)
-        ctx.associate(cursors.item(i));
+    {
+        BoundRow & cur = cursors.item(i);
+        //Rebind the cursors into the local context - so that accessor helper classes will be generated if required.
+        translator.bindTableCursor(ctx, cur.queryDataset(), cur.queryBound(), cur.querySide(), cur.querySelSeq());
+    }
 }
 
 void SourceBuilder::checkDependencies(BuildCtx & ctx, IHqlExpression * expr)

@@ -30,6 +30,44 @@
 #include <fxpp/FragmentedXmlPullParser.hpp>
 using namespace xpp;
 
+class EsdlScriptMaskerScope
+{
+private:
+    IEsdlScriptContext* scriptContext = nullptr;
+public:
+    EsdlScriptMaskerScope(IEsdlScriptContext* _scriptContext)
+        : scriptContext(_scriptContext)
+    {
+        if (scriptContext)
+            scriptContext->pushMaskerScope();
+        else
+            throw makeStringException(-1, "EsdlScriptMaskerScope failure - missing context");
+    }
+    ~EsdlScriptMaskerScope()
+    {
+        scriptContext->popMaskerScope();
+    }
+};
+
+class EsdlScriptTraceOptionsScope
+{
+private:
+    IEsdlScriptContext* scriptContext = nullptr;
+public:
+    EsdlScriptTraceOptionsScope(IEsdlScriptContext* _scriptContext)
+        : scriptContext(_scriptContext)
+    {
+        if (scriptContext)
+            scriptContext->pushTraceOptionsScope();
+        else
+            throw makeStringException(-1, "EsdlScriptTraceOptionsScope failure - missing context");
+    }
+    ~EsdlScriptTraceOptionsScope()
+    {
+         scriptContext->popTraceOptionsScope();
+    }
+};
+
 class CEsdlScriptContext : public CInterfaceOf<IEsdlScriptContext>
 {
 public: // ISectionalXmlDocModel
@@ -78,27 +116,99 @@ public: // IEsdlScriptContext
             tracerRef().uwarnlog("enable masking request not completed - no masking engine");
             return false;
         }
-        if (maskingEnabled())
+        if (!maskerScopes.empty() && maskerScopes.back())
         {
             domainId = (isEmptyString(domainId) ? maskingEngine->inspector().queryDefaultDomain() : domainId);
             version = (0 == version ? maskingEngine->inspector().queryDefaultVersion() : version);
-            IDataMaskingProfileContext* ctx = maskerStack.front();
-            if (ctx->inspector().acceptsDomain(domainId) && ctx->queryVersion() == version)
+            IDataMaskingProfileContext* masker = maskerScopes.back();
+            if (masker->inspector().acceptsDomain(domainId) && masker->queryVersion() == version)
                 return true;
-            tracerRef().uwarnlog("enable masking request using %s:%hhu not completed - already enabled using %s:%hhu", domainId, version, ctx->queryDomain(), ctx->queryVersion());
+            tracerRef().uwarnlog("enable masking request using %s:%hhu not completed - already enabled using %s:%hhu", domainId, version, masker->queryDomain(), masker->queryVersion());
             return false;
         }
-        Owned<IDataMaskingProfileContext> ctx(maskingEngine->getContext(domainId, version, tracer));
-        if (!ctx)
+        Owned<IDataMaskingProfileContext> masker(maskingEngine->getContext(domainId, version, tracer));
+        if (!masker)
         {
             tracerRef().uwarnlog("enable masking request not completed - no context for '%s:%hhu'", domainId, version);
             return false;
         }
-        maskerStack.emplace_back(ctx.getClear());
-        return maskingEnabled();
+        if (maskerScopes.empty())
+            maskerScopes.emplace_back(masker.getLink());
+        else
+            maskerScopes.back().setown(masker.getClear());
+        return true;
     }
-    virtual bool maskingEnabled() const override { return !maskerStack.empty(); }
-    virtual IDataMaskingProfileContext* getMasker() const override { return maskerStack.empty() ? nullptr : maskerStack.back().getLink(); }
+
+    virtual bool maskingEnabled() const override
+    {
+        return (!maskerScopes.empty() && maskerScopes.back() != nullptr);
+    }
+
+    virtual IDataMaskingProfileContext* getMasker() const override
+    {
+        if (!maskerScopes.empty())
+            return maskerScopes.back().getLink();
+        return nullptr;
+    }
+
+    virtual void setTraceOptions(bool enabled, bool locked) override
+    {
+        if (traceOptionsScopes.empty())
+            traceOptionsScopes.emplace_back(enabled, locked);
+        else
+        {
+            TraceOptionsScope& entry = traceOptionsScopes.back();
+            if (!entry.second)
+            {
+                entry.first = enabled;
+                entry.second = locked;
+            }
+        }
+    }
+
+    virtual bool isTraceEnabled() const override
+    {
+        return (!traceOptionsScopes.empty() && traceOptionsScopes.back().first);
+    }
+
+    virtual bool isTraceLocked() const override
+    {
+        return (!traceOptionsScopes.empty() && traceOptionsScopes.back().second);
+    }
+
+protected:
+    virtual void pushMaskerScope() override
+    {
+        if (maskerScopes.empty())
+            maskerScopes.emplace_back(nullptr);
+        else if (maskerScopes.back())
+            maskerScopes.emplace_back(maskerScopes.back()->clone());
+        else
+            maskerScopes.emplace_back(nullptr);
+    }
+
+    virtual void popMaskerScope() override
+    {
+        if (maskerScopes.empty())
+            throw makeStringException(-1, "popMaskerScope failed - unbalanced push");
+        maskerScopes.pop_back();
+    }
+
+    virtual void pushTraceOptionsScope() override
+    {
+        if (traceOptionsScopes.empty())
+            throw makeStringException(-1, "pushTraceOptionsScope failed - empty stack");
+        TraceOptionsScope& parent = traceOptionsScopes.back();
+        traceOptionsScopes.emplace_back(parent.first, parent.second);
+    }
+
+    virtual void popTraceOptionsScope() override
+    {
+        if (maskerScopes.empty())
+            throw makeStringException(-1, "popTraceOptionsScope failed - unbalanced push");
+        traceOptionsScopes.pop_back();
+    }
+
 private:
     Owned<IEspContext>            espCtx;
     IEsdlFunctionRegister*        functionRegister = nullptr;
@@ -109,8 +219,12 @@ private:
     Owned<IModularTraceMsgSink>   jlogSink;
     Owned<IModularTraceMsgSink>   consoleSink;
     Owned<IDataMaskingEngine>     maskingEngine;
-    using MaskerStack = std::list<Owned<IDataMaskingProfileContext>>;
-    MaskerStack                   maskerStack;
+    using MaskerScope = Owned<IDataMaskingProfileContext>;
+    using MaskerScopeStack = std::list<MaskerScope>;
+    using TraceOptionsScope = std::pair<bool, bool>;
+    using TraceOptionsScopeStack = std::list<TraceOptionsScope>;
+    MaskerScopeStack              maskerScopes;
+    TraceOptionsScopeStack        traceOptionsScopes;
 public:
     CEsdlScriptContext(IEspContext* _espCtx, IEsdlFunctionRegister* _functionRegister, IDataMaskingEngine* _engine)
         : functionRegister(_functionRegister)
@@ -123,6 +237,10 @@ public:
         tracer.setown(new CModularTracer());
         jlogSink.setown(tracer->getSink());
         maskingEngine.setown(_engine);
+        traceOptionsScopes.emplace_back(true, false);
+    }
+    ~CEsdlScriptContext()
+    {
     }
 };
 
@@ -1640,6 +1758,9 @@ public:
 
     virtual bool exec(CriticalSection *crit, IInterface *preparedForAsync, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
+        if (!scriptContext->isTraceEnabled())
+            return true;
+
         OptionalCriticalBlock block(crit);
 
         try
@@ -2966,6 +3087,130 @@ public:
     }
 };
 
+class CEsdlTransformOperationMaskingContextScope : public CEsdlTransformOperationWithChildren
+{
+public:
+    CEsdlTransformOperationMaskingContextScope(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix, IEsdlFunctionRegister* functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
+    {
+    }
+
+    virtual ~CEsdlTransformOperationMaskingContextScope()
+    {
+    }
+
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        EsdlScriptMaskerScope maskerScope(scriptContext);
+        processChildren(scriptContext, targetContext, sourceContext);
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s  >>>>", m_traceName.str(), m_tagname.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+class CEsdlTransformOperationSetTraceOptions : public CEsdlTransformOperationWithoutChildren
+{
+private:
+    Owned<ICompiledXpath> m_enabled;
+    Owned<ICompiledXpath> m_locked;
+
+public:
+    CEsdlTransformOperationSetTraceOptions(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix)
+        : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        const char* enabled = stag.getValue("enabled");
+        if (!isEmptyString(enabled))
+            m_enabled.setown(compileXpath(enabled));
+
+        const char* locked = stag.getValue("locked");
+        if (!isEmptyString(locked))
+            m_locked.setown(compileXpath(locked));
+        
+        if (!m_enabled && !m_locked)
+            recordError(ESDL_SCRIPT_MissingOperationAttr, "missing all options");
+    }
+
+    ~CEsdlTransformOperationSetTraceOptions()
+    {
+    }
+
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        bool locked = scriptContext->isTraceLocked();
+        if ((m_enabled || m_locked) && !locked)
+        {
+            bool enabled = (m_enabled ? sourceContext->evaluateAsBoolean(m_enabled) : scriptContext->isTraceEnabled());
+            if (m_locked)
+                locked = sourceContext->evaluateAsBoolean(m_locked);
+            scriptContext->setTraceOptions(enabled, locked);
+        }
+        return true;
+    }
+
+    virtual void toDBGLog() override
+    {
+        #if defined(_DEBUG)
+            DBGLOG(">%s> %s", m_traceName.str(), m_tagname.str());
+        #endif
+    }
+};
+
+class CEsdlTransformOperationTraceOptionsScope : public CEsdlTransformOperationWithChildren
+{
+private:
+    Owned<ICompiledXpath> m_enabled;
+    Owned<ICompiledXpath> m_locked;
+
+public:
+    CEsdlTransformOperationTraceOptionsScope(IXmlPullParser& xpp, StartTag& stag, const StringBuffer& prefix, IEsdlFunctionRegister* functionRegister)
+        : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, functionRegister, nullptr)
+    {
+        const char* enabled = stag.getValue("enabled");
+        if (!isEmptyString(enabled))
+            m_enabled.setown(compileXpath(enabled));
+
+        const char* locked = stag.getValue("locked");
+        if (!isEmptyString(locked))
+            m_locked.setown(compileXpath(locked));
+    }
+
+    virtual ~CEsdlTransformOperationTraceOptionsScope()
+    {
+    }
+
+    virtual bool exec(CriticalSection* crit, IInterface* preparedForAsync, IEsdlScriptContext* scriptContext, IXpathContext* targetContext, IXpathContext* sourceContext) override
+    {
+        EsdlScriptTraceOptionsScope traceOptionsScope(scriptContext);
+        bool locked = scriptContext->isTraceLocked();
+        if ((m_enabled || m_locked) && !locked)
+        {
+            bool enabled = (m_enabled ? sourceContext->evaluateAsBoolean(m_enabled) : scriptContext->isTraceEnabled());
+            if (m_locked)
+                locked = sourceContext->evaluateAsBoolean(m_locked);
+            scriptContext->setTraceOptions(enabled, locked);
+        }
+        processChildren(scriptContext, targetContext, sourceContext);
+        return true;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s  >>>>", m_traceName.str(), m_tagname.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
 IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, IEsdlOperationTraceMessenger& messenger, IEsdlFunctionRegister *functionRegister, bool canDeclareFunctions)
 {
     StartTag stag;
@@ -3055,6 +3300,12 @@ IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const
         return new CEsdlTransformOperationDelay(xpp, stag, prefix);
     if (streq(op, "update-masking-context"))
         return new CEsdlTransformOperationUpdateMaskingContext(xpp, stag, prefix);
+    if (streq(op, "masking-context-scope"))
+        return new CEsdlTransformOperationMaskingContextScope(xpp, stag, prefix, functionRegister);
+    if (streq(op, "set-trace-options"))
+        return new CEsdlTransformOperationSetTraceOptions(xpp, stag, prefix);
+    if (streq(op, "trace-options-scope"))
+        return new CEsdlTransformOperationTraceOptionsScope(xpp, stag, prefix, functionRegister);
     return nullptr;
 }
 

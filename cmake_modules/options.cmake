@@ -92,6 +92,7 @@ option(INCLUDE_CONFIG_MANAGER "Build config manager" ON)
 option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
 option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
 option(USE_ADDRESS_SANITIZER "Use address sanitizer to spot leaks" OFF)
+option(INSTALL_VCPKG_CATALOG "Install vcpkg-catalog.txt" ON)
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
     set ( CMAKE_BUILD_TYPE "Release" )

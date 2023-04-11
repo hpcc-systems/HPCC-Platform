@@ -16,8 +16,7 @@
 ##############################################################################*/
 
 //class=spray
-//nothor
-//nohthor
+
 
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
@@ -161,7 +160,15 @@ FileServices.Copy(prefix + 'testfile_cmp',   // sourceLogicalName
    OUTPUT(compareDatasets(outdata,copiedcmp2)),
    OUTPUT(compareDatasets(outdata,copiedcmp3)),
    OUTPUT(compareDatasets(outdata,copiedcmp4)),
-   OUTPUT(compareDatasets(outdata,copiedexp))
-           
+   OUTPUT(compareDatasets(outdata,copiedexp)),
+   
+   // Clean-up
+  FileServices.DeleteLogicalFile(prefix + 'testfile_exp'),
+  FileServices.DeleteLogicalFile(prefix + 'testfile_cmp'),
+  FileServices.DeleteLogicalFile(prefix + 'testfile_exp_copy_cmp'),
+  FileServices.DeleteLogicalFile(prefix + 'testfile_cmp_copy_cmp'),
+  FileServices.DeleteLogicalFile(prefix + 'testfile_cmp_copy_cmp2'),
+  FileServices.DeleteLogicalFile(prefix + 'testfile_cmp_copy_cmp3'),
+  FileServices.DeleteLogicalFile(prefix + 'testfile_cmp_copy_exp')
  );
 

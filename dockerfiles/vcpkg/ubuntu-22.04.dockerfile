@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ninja-build \
     python3-dev \
     rsync \
+    fop \
+    libsaxonb-java \
     r-base \
     r-cran-rcpp \
     r-cran-rinside \

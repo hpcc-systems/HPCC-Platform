@@ -239,15 +239,22 @@ void WsWuInfo::readWorkunitComponentLogs(const char* outFile, unsigned maxLogRec
     else if (logFormat == LOGACCESS_LOGFORMAT_xml)
         writeStringToStream(*outIOS, "<lines>");
 
-    while (logReader->readLogEntries(logcontent.clear(), recsRead))
+    bool moreToRead = false;
+    do
     {
-        if (logFormat == LOGACCESS_LOGFORMAT_json && totalRecsRead > 0 && recsRead > 0)
+        moreToRead = logReader->readLogEntries(logcontent.clear(), recsRead);
+
+        if (recsRead > 0)
         {
-            writeCharToStream(*outIOS, ',');
+            if (logFormat == LOGACCESS_LOGFORMAT_json && totalRecsRead > 0)
+            {
+                writeCharToStream(*outIOS, ',');
+            }
+            totalRecsRead += recsRead;
+            writeStringToStream(*outIOS, logcontent.str());
         }
-        totalRecsRead += recsRead;
-        writeStringToStream(*outIOS, logcontent.str());
     }
+    while (moreToRead == true);
 
     if (totalRecsRead == maxLogRecords) //Warn of possible truncation
     {
@@ -407,16 +414,22 @@ unsigned WsWuInfo::sendComponentLogContent(IEspContext* context, IRemoteLogAcces
     StringBuffer logContent;
     unsigned totalRecsRead = 0;
     unsigned recsRead = 0;
-    while (logReader->readLogEntries(logContent.clear(), recsRead))
+    bool moreToRead = false;
+    do
     {
-        if (options.logFormat == LOGACCESS_LOGFORMAT_json && totalRecsRead > 0 && recsRead > 0)
-        {
-            StringBuffer s(',');
-            flusher->flushXML(s, false);
-        }
+        moreToRead = logReader->readLogEntries(logContent.clear(), recsRead);
 
-        totalRecsRead += recsRead;
-        flusher->flushXML(logContent, false);
+        if (recsRead > 0)
+        {
+            if (options.logFormat == LOGACCESS_LOGFORMAT_json && totalRecsRead > 0)
+            {
+                StringBuffer s(',');
+                flusher->flushXML(s, false);
+            }
+
+            totalRecsRead += recsRead;
+            flusher->flushXML(logContent, false);
+        }
 
         if (abortCallback.abortRequested())
         {
@@ -424,6 +437,8 @@ unsigned WsWuInfo::sendComponentLogContent(IEspContext* context, IRemoteLogAcces
             break;
         }
     }
+    while (moreToRead == true);
+
     return totalRecsRead;
 }
 

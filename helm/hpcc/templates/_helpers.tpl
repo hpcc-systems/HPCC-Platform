@@ -2184,3 +2184,19 @@ Pass in dict with resources object
  {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Pass in dict with root and me
+Fills "result" dictionary with "planeCategories" and "namedPlanes"
+*/}}
+{{- define "hpcc.getEnginePlanes" -}}
+{{- $planeCategories := list "lz" "data" "remote" "dll" "debug" -}}
+{{- $namedPlanes := list -}}
+{{- if not .me.spillPlane -}}
+ {{- $namedPlanes = append $namedPlanes (include "hpcc.getDefaultSpillPlane" .root) -}}
+{{- else -}}
+ {{- $namedPlanes = append $namedPlanes .me.spillPlane -}}
+{{- end -}}
+{{- $_ := set .result "planeCategories" $planeCategories -}}
+{{- $_ := set .result "namedPlanes" $namedPlanes -}}
+{{- end -}}
