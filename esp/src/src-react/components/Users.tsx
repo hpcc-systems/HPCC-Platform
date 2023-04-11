@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { SizeMe } from "react-sizeme";
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
@@ -162,15 +163,23 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
 
-    return <>
-        <HolyGrail
-            header={<CommandBar items={buttons} farItems={copyButtons} />}
-            main={<Grid />}
-            footer={<GridPagination />}
-        />
-        <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
-        <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable} />
-        <DeleteConfirm />
-    </>;
+    return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={
+            <>
+                <SizeMe monitorHeight>{({ size }) =>
+                    <div style={{ width: "100%", height: "100%" }}>
+                        <div style={{ position: "absolute", width: "100%", height: `${size.height}px` }}>
+                            <Grid height={`${size.height}px`} />
+                        </div>
+                    </div>
+                }</SizeMe>
+                <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable} />
+                <DeleteConfirm />
+            </>
+        }
+        footer={<GridPagination />}
+    />;
 
 };
