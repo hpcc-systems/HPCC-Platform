@@ -43,6 +43,7 @@
 #include "ccdlistener.hpp"
 #include "ccdsnmp.hpp"
 #include "thorplugin.hpp"
+#include "hpccconfig.hpp"
 #include "udpsha.hpp"
 
 #if defined (__linux__)
@@ -184,6 +185,7 @@ bool fastLaneQueue;
 unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some header room too
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
+StringBuffer allowedPipePrograms;
 #ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
 StringBuffer defaultIndexBuildPlane;
@@ -1163,6 +1165,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         setRemoteFileTimeouts(dafilesrvLookupTimeout, 0);
         topology->getProp("@daliServers", fileNameServiceDali);
+        getAllowedPipePrograms(allowedPipePrograms, true);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);

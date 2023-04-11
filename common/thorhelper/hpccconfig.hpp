@@ -24,6 +24,10 @@
 #define THORHELPER_API DECL_IMPORT
 #endif
 
+#include <functional>
+#include <string>
+#include <unordered_map>
+
 extern THORHELPER_API bool getService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound);
 
 interface IPropertyTree;
