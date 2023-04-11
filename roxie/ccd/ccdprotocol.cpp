@@ -1775,6 +1775,7 @@ readAnother:
             return;
         }
 
+        PerfTracer perf;
         IContextLogger &logctx = *msgctx->queryLogContext();
         bool isHTTP = httpHelper.isHttp();
         if (isHTTP)
@@ -2042,6 +2043,8 @@ readAnother:
                                 protocolFlags |= HPCC_PROTOCOL_TRIM;
                             msgctx->setIntercept(queryPT->getPropBool("@log", false));
                             msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
+                            if (queryPT->getPropBool("@perf", false))
+                                perf.start();
                         }
 
                         msgctx->noteQueryActive();
@@ -2136,6 +2139,14 @@ readAnother:
             {
                 if (client && !isHTTP && !isStatus)
                 {
+                    if (queryPT->getPropBool("@perf", false))
+                    {
+                        perf.stop();
+                        StringBuffer &perfInfo = perf.queryResult();
+                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                        response.startDataset("PerfTrace", NULL, (unsigned) -1);
+                        response.flushXML(perfInfo, true);
+                    }
                     if (msgctx->getIntercept())
                     {
                         FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
