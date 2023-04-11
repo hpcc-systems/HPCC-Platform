@@ -202,8 +202,8 @@
        <expert>
         <xsl:copy-of select="/Environment/Software/Global/@*"/>
        </expert>
+       <xsl:copy-of select="/Environment/Hardware/cost"/>
       </global>
-      <xsl:copy-of select="/Environment/Hardware/cost"/>
       @XSL_PLUGIN_DEFINITION@
       <Debug>
         <xsl:for-each select="Debug/@*">

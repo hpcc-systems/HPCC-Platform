@@ -67,7 +67,9 @@
                 <xsl:apply-templates select="$espProcess"/>
                 <xsl:copy-of select="/Environment/Software/Directories"/>
             </Software>
-            <xsl:copy-of select="/Environment/Hardware/cost"/>
+            <global>
+                <xsl:copy-of select="/Environment/Hardware/cost"/>
+            </global>
         </xsl:copy>
     </xsl:template>
 
