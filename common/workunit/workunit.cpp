@@ -14184,7 +14184,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 
         // NB: executeGraphOnLingeringThor looks for existing Thor instance that has been used for the same job,
         // and communicates with it directly
-        if (!multiJobLinger && executeGraphOnLingeringThor(workunit, graphName))
+        if (!multiJobLinger && executeGraphOnLingeringThor(workunit, wfid, graphName))
             PROGLOG("Existing lingering Thor handled graph: %s", graphName);
         else
         {
@@ -14495,7 +14495,7 @@ TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<Trace
 }
 
 #ifdef _CONTAINERIZED
-bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)
+bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName)
 {
     // NB: this routine is not used in a multiJobLinger mode Thor.
 
@@ -14556,7 +14556,7 @@ bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName
 
                 Owned<INode> masterNode = createINode(instanceName);
                 CMessageBuffer msg;
-                VStringBuffer jobStr("%s/%s", workunit.queryWuid(), graphName?graphName:"");
+                VStringBuffer jobStr("%u/%s/%s", wfid, workunit.queryWuid(), graphName?graphName:"");
                 msg.append(jobStr);
                 if (queryWorldCommunicator().sendRecv(msg, masterNode, MPTAG_THOR, 10000))
                 {
@@ -14848,7 +14848,7 @@ bool isActiveK8sService(const char *serviceName)
     throwUnexpected();
 }
 
-bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName)
+bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, unsigned wfid, const char *graphName)
 {
     throwUnexpected();
 }
