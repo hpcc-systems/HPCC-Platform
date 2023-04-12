@@ -475,13 +475,14 @@ export function checkError(response, sourceMethod, showOkMsg) {
             Source: "WsAccess." + sourceMethod,
             Exceptions: [{ Message: retMsg }]
         });
+        logger.error(retMsg);
     } else if (showOkMsg && retMsg) {
         topic.publish("hpcc/brToaster", {
             Severity: "Message",
             Source: "WsAccess." + sourceMethod,
             Exceptions: [{ Message: retMsg }]
         });
-
+        logger.info(retMsg);
     }
 }
 
