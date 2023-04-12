@@ -63,6 +63,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
 }) => {
 
     const [emailDisabled, setEmailDisabled] = React.useState(true);
+    const [logAccessorMessage, setLogAccessorMessage] = React.useState("");
 
     const { handleSubmit, control, reset } = useForm<ZAPDialogValues>({ defaultValues });
 
@@ -106,17 +107,22 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         link.remove();
 
                         closeForm();
+
+                        if (logAccessorMessage !== "") {
+                            logger.warning(logAccessorMessage);
+                        }
                     })
                     .catch(err => logger.error(err))
                     ;
             },
             logger.info
         )();
-    }, [closeForm, handleSubmit]);
+    }, [closeForm, handleSubmit, logAccessorMessage]);
 
     React.useEffect(() => {
         WsWorkunits.WUGetZAPInfo({ request: { WUID: wuid } }).then(response => {
             setEmailDisabled(response?.WUGetZAPInfoResponse?.EmailTo === null);
+            setLogAccessorMessage(response?.WUGetZAPInfoResponse?.Message ?? "");
             const newValues = { ...defaultValues, ...response?.WUGetZAPInfoResponse, ...{ Wuid: wuid } };
             for (const key in newValues) {
                 if (newValues[key] === null) {
