@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { PrimaryButton, IconButton, IIconProps, Link, Dropdown, IDropdownOption, TextField, useTheme } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { mergeStyleSets } from "@fluentui/style-utilities";
 import { ECLEditor, IPosition } from "@hpcc-js/codemirror";
@@ -14,6 +15,8 @@ import { TabbedResults } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
 import { TargetClusterOption, TargetClusterTextField } from "./forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
+
+const logger = scopedLogger("../components/ECLPlayground.tsx");
 
 interface ECLPlaygroundProps {
     wuid?: string;
@@ -201,14 +204,9 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
     const [queryNameErrorMsg, setQueryNameErrorMsg] = React.useState("");
     const [showSubmitBtn, setShowSubmitBtn] = React.useState(true);
 
-    const submitWU = React.useCallback(async () => {
-        const wu = await Workunit.create({ baseUrl: "" });
-
-        await wu.update({ QueryText: editor.ecl() });
-        await wu.submit(cluster);
-
-        wu.watchUntilComplete(changes => {
-            setWuState(wu.State);
+    const playgroundResults = React.useCallback((wu, action = "submit") => {
+        setWuState(wu.State);
+        if (document.location.hash.includes("play")) {
             if (wu.isFailed()) {
                 pushUrl(`/play/${wu.Wuid}`);
                 setWorkunit(wu);
@@ -216,11 +214,28 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 setOutputMode(OutputMode.ERRORS);
             } else if (wu.isComplete()) {
                 pushUrl(`/play/${wu.Wuid}`);
+                if (action === "publish") {
+                    wu.publish(queryName);
+                    setWuState("Published");
+                }
                 setWorkunit(wu);
                 setOutputMode(OutputMode.RESULTS);
             }
-        });
-    }, [cluster, editor, setOutputMode, setWorkunit]);
+        } else {
+            if (wu.isComplete()) {
+                logger.info(`${nlsHPCC.Playground} ${nlsHPCC.Finished} (${wu.Wuid})`);
+            }
+        }
+    }, [editor, queryName, setOutputMode, setWorkunit]);
+
+    const submitWU = React.useCallback(async () => {
+        const wu = await Workunit.create({ baseUrl: "" });
+
+        await wu.update({ QueryText: editor.ecl() });
+        await wu.submit(cluster);
+
+        wu.watchUntilComplete(changes => playgroundResults(wu));
+    }, [cluster, editor, playgroundResults]);
 
     const publishWU = React.useCallback(async () => {
         if (queryName === "") {
@@ -234,23 +249,9 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
             await wu.update({ QueryText: editor.ecl() });
             await wu.submit(cluster, WUUpdate.Action.Compile);
 
-            wu.watchUntilComplete(changes => {
-                setWuState(wu.State);
-                if (wu.isFailed()) {
-                    pushUrl(`/play/${wu.Wuid}`);
-                    setWorkunit(wu);
-                    displayErrors(wu, editor);
-                    setOutputMode(OutputMode.ERRORS);
-                } else if (wu.isComplete()) {
-                    pushUrl(`/play/${wu.Wuid}`);
-                    wu.publish(queryName);
-                    setWorkunit(wu);
-                    setWuState("Published");
-                    setOutputMode(OutputMode.RESULTS);
-                }
-            });
+            wu.watchUntilComplete(changes => playgroundResults(wu, "publish"));
         }
-    }, [cluster, editor, queryName, setOutputMode, setWorkunit, setQueryNameErrorMsg]);
+    }, [cluster, editor, playgroundResults, queryName, setQueryNameErrorMsg]);
 
     const handleKeyUp = React.useCallback((evt) => {
         switch (evt.key) {
