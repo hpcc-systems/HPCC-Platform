@@ -605,7 +605,7 @@ public:
             }
             else // Legacy mode - recently cloned files should have the extra info
             {
-                if (traceLevel > 1)
+                if (doTrace(traceRoxieFiles))
                     DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
                 Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, AccessMode::readRandom, isPrivilegedUser);
                 if (cloneFile)
@@ -620,7 +620,7 @@ public:
         }
         catch (IException *E)
         {
-            if (traceLevel > 3)
+            if (doTrace(traceRoxieFiles))
                 EXCLOG(E);
             E->Release();  // Any failure means act as if no remote info
         }
@@ -643,7 +643,7 @@ public:
             }
             if (cacheIt)
                 cacheDistributedFile(logicalName, dfsFile);
-            if (traceLevel > 1)
+            if (doTrace(traceRoxieFiles))
                 DBGLOG("Dali lookup %s returned %s in %u ms", logicalName, dfsFile != NULL ? "match" : "NO match", msTick()-start);
             return dfsFile.getClear();
         }

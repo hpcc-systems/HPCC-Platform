@@ -114,7 +114,7 @@ public:
             }
 #endif /* GLIBC */
             if (traceLevel)
-                traceAffinity(&cpuMask);
+                traceAffinitySettings(&cpuMask);
         }
 #endif
     }
@@ -168,14 +168,14 @@ public:
                         }
                     }
                 }
-                if (traceLevel > 3)
-                    traceAffinity(&threadMask);
+                if (doTrace(traceAffinity))
+                    traceAffinitySettings(&threadMask);
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &threadMask);
             }
             else
             {
-                if (traceLevel > 3)
-                    traceAffinity(&cpuMask);
+                if (doTrace(traceAffinity))
+                    traceAffinitySettings(&cpuMask);
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuMask);
             }
         }
@@ -195,7 +195,7 @@ protected:
     static unsigned lastCore;
 
 private:
-    static void traceAffinity(cpu_set_t *mask)
+    static void traceAffinitySettings(cpu_set_t *mask)
     {
         StringBuffer trace;
         for (unsigned core = 0; core < CPU_SETSIZE; core++)
@@ -295,7 +295,7 @@ public:
         {
             ssock.setown(secureContext->createSecureSocket(base));
             int loglevel = SSLogMin;
-            if (traceLevel > 2)
+            if (doTrace(traceRoxieSockets))
                 loglevel = SSLogMax;
             int status = ssock->secure_accept(loglevel);
             if (status < 0)
@@ -1731,7 +1731,7 @@ readAnother:
                 client->querySocket()->getPeerAddress(peer);
                 if (!client->readBlocktms(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
-                    if (traceLevel > 8)
+                    if (doTrace(traceRoxieSockets, TraceFlags::Max))
                     {
                         StringBuffer b;
                         DBGLOG("No data reading query from socket");
@@ -1765,7 +1765,7 @@ readAnother:
                         break;
                 }
             }
-            if (traceLevel > 0 && !expectedError)
+            if (doTrace(traceRoxieSockets) && !expectedError)
             {
                 StringBuffer b;
                 IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());

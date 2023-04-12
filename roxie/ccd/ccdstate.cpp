@@ -400,7 +400,7 @@ static Owned<KeptLowerCaseAtomTable> daliMisses;
 static void noteDaliMiss(const char *filename)
 {
     CriticalBlock b(daliMissesCrit);
-    if (traceLevel > 9)
+    if (doTrace(traceRoxieFiles, TraceFlags::Max))
         DBGLOG("noteDaliMiss %s", filename);
     daliMisses->addAtom(filename);
 }
@@ -461,7 +461,7 @@ protected:
         unsigned hash = hashcz((const unsigned char *) fileName, 0x811C9DC5);
         CriticalBlock b(daliLookupCrits[hash % NUM_DALI_CRITS]);
         // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
-        if (traceLevel > 9)
+        if (doTrace(traceRoxieFiles, TraceFlags::Max))
             DBGLOG("resolveLFNusingDaliOrLocal %s %d %d %x %d", fileName, useCache, cacheResult, (unsigned)accessMode, alwaysCreate);
         IResolvedFile* result = NULL;
         if (useCache)
@@ -520,7 +520,7 @@ protected:
         }
         if (cacheResult)
         {
-            if (traceLevel > 9)
+            if (doTrace(traceRoxieFiles, TraceFlags::Max))
                 DBGLOG("resolveLFNusingDaliOrLocal %s - cache add %d", fileName, result != NULL);
             if (result)
                 daliFiles.addCache(fileName, result);
@@ -3067,7 +3067,7 @@ extern void loadPlugins()
     DBGLOG("Preloading plugins from %s", pluginDirectory.str());
     if (pluginDirectory.length())
     {
-        plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);
+        plugins = new SafePluginMap(&PluginCtx, traceLevel);
         if (topology->hasProp("preload"))
         {
             Owned<IPropertyTreeIterator> preloads = topology->getElements("preload");

@@ -152,9 +152,6 @@ public:
                 if (callback->wait(5000))
                     break;
             }
-            if (traceLevel > 6)
-                { StringBuffer s; DBGLOG("Processing information from Roxie server in response to %s", newHeader.toString(s).str()); }
-
             MemoryBuffer &serverData = callback->queryData();
             deserialize(serverData);
         }

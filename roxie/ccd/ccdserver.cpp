@@ -2510,16 +2510,12 @@ public:
         {
             if (preload && !paused && noThread)
             {
-                if (traceLevel > 4)
-                    DBGLOG("Preload fetching first %d records", preload);
                 if (groupAtOnce)
                     pullGroups(preload);
                 else
                     pullRecords(preload);
                 if (eof)
                 {
-                    if (traceLevel > 4)
-                        DBGLOG("No need to start puller after preload");
                     helper->processDone();
                 }
             }

@@ -80,11 +80,13 @@ constexpr TraceFlags traceSubscriptions = TraceFlags::flag4;
 constexpr TraceFlags traceRoxieFiles = TraceFlags::flag5;
 constexpr TraceFlags traceRoxieActiveQueries = TraceFlags::flag6;
 constexpr TraceFlags traceRoxiePackets = TraceFlags::flag7;
-constexpr TraceFlags traceIBYTIfails = TraceFlags::flag8;
+constexpr TraceFlags traceIBYTI = TraceFlags::flag8;
 constexpr TraceFlags traceRoxiePings = TraceFlags::flag9;
 constexpr TraceFlags traceLimitExceeded = TraceFlags::flag10;
 constexpr TraceFlags traceRoxiePrewarm = TraceFlags::flag11;
 constexpr TraceFlags traceMissingOptFiles = TraceFlags::flag12;
+constexpr TraceFlags traceAffinity = TraceFlags::flag13;
+constexpr TraceFlags traceRoxieSockets = TraceFlags::flag14;
 
 
 //========================================================================================= 
@@ -103,11 +105,13 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceRoxieFiles),
     TRACEOPT(traceRoxieActiveQueries),
     TRACEOPT(traceRoxiePackets),
-    TRACEOPT(traceIBYTIfails),
+    TRACEOPT(traceIBYTI),
     TRACEOPT(traceRoxiePings),
     TRACEOPT(traceLimitExceeded),
     TRACEOPT(traceRoxiePrewarm),
-    TRACEOPT(traceMissingOptFiles)
+    TRACEOPT(traceMissingOptFiles),
+    TRACEOPT(traceAffinity),
+    TRACEOPT(traceRoxieSockets)
 };
 
 interface IPropertyTree;

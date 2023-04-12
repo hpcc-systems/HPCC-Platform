@@ -953,7 +953,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 cidtSleep.wait(cacheReportPeriodSeconds * 1000);
                 if (closing)
                     break;
-                if (traceLevel>8)
+                if (doTrace(traceRoxieFiles, TraceFlags::Max))
                     DBGLOG("Cache info dump");
 
                 // Note - cache info is stored in the DLLSERVER persistent area - which we should perhaps consider renaming
@@ -1943,7 +1943,6 @@ public:
             cacheRootDirectory.append(dllserver_root);
         }
 
-        unsigned cacheWarmTraceLevel = topology->getPropInt("@cacheWarmTraceLevel", traceLevel);
         VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", cacheRootDirectory.str(), roxieName.str(), channel);
         StringBuffer cacheInfo;
         try
@@ -1952,7 +1951,7 @@ public:
             {
 #ifndef _WIN32
                 StringBuffer output;
-                VStringBuffer command("ccdcache %s -t %u", cacheFileName.str(), cacheWarmTraceLevel);
+                VStringBuffer command("ccdcache %s -t %u", cacheFileName.str(), doTrace(traceRoxiePrewarm, TraceFlags::Max) ? 2 : (doTrace(traceRoxiePrewarm) ? 1 : 0));
                 unsigned retcode = runExternalCommand(nullptr, output, output, command, nullptr, ".", nullptr);
                 if (output.length())
                 {
@@ -2903,7 +2902,7 @@ public:
                 const char *subname = subNames.item(idx);
                 if (fileMode!=actualMode)
                 {
-                    if (traceLevel>0)
+                    if (traceLevel && traceTranslations)
                         DBGLOG("In query %s: Not translating %s as file type does not match", queryName, subname);
                 }
                 else if (projectedFormatCrc != 0) // projectedFormatCrc is currently 0 for csv/xml which should not create translators.
@@ -2958,7 +2957,7 @@ public:
                         else
                         {
                             translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
-                            if (traceLevel>0 && traceTranslations)
+                            if (traceLevel && traceTranslations)
                             {
                                 DBGLOG("In query %s: Record layout translator created for %s", queryName, subname);
                                 translator->describe();
