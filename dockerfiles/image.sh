@@ -43,8 +43,8 @@ finalize_platform_core_image() {
     local cmd=$2
     local image_name=platform-core:$MODE
     echo "--- Finalize '$image_name' image ---"
-    if [ "$ACTION" == "incr" ] && [[ $(docker images -q hpccsystems/platform-core:$MODE-incr-prev 2> /dev/null) ]]; then
-        local image_name=hpccsystems/platform-core:$MODE-incr-prev
+    if [ "$ACTION" == "incr" ] && [[ $(docker images -q incr-core:$MODE 2> /dev/null) ]]; then
+        local image_name=incr-core:$MODE
         echo "--- Incremental '$image_name' image ---"
     fi
     CONTAINER=$(docker run -d \
@@ -56,7 +56,7 @@ finalize_platform_core_image() {
     docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
     docker stop $CONTAINER
     docker rm $CONTAINER
-    docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc hpccsystems/platform-core:$MODE-incr-prev
+    docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc incr-core:$MODE
 }
 
 clean() {
