@@ -209,6 +209,7 @@ enum ipt_flags
 };
 
 jlib_decl IPTreeMaker *createPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
+jlib_decl IPTreeMaker *createMultiPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IPTreeMaker *createRootLessPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IPTreeReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace, size32_t bufSize=0);
 jlib_decl IPTreeReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace);
@@ -275,6 +276,23 @@ jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned ind
 jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void printXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 jlib_decl void dbglogXML(const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+
+interface IPropertyNodeVisitor
+{
+    enum VisitorAction 
+    {
+        NoSplit,    // don't split the tree
+        Split,      // split the tree into multiple trees
+        SplitOnly,  // split the tree into multiple trees, but don't split children
+        Skip,       // skip this node
+        NeverSplit  // don't split the tree or any of its children
+    };
+
+    virtual VisitorAction visit(const char *element, const std::vector<const IPropertyTree*> &stack, StringBuffer &filename) const = 0;
+};
+
+jlib_decl void saveMultipleXML(IIOStream &stream, const IPropertyTree *tree, IPropertyNodeVisitor *splitVisitor, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void saveMultipleXML(const char *filename, const IPropertyTree *tree, IPropertyNodeVisitor *splitVisitor, unsigned indent = 0, unsigned flags=XML_Format);
 
 #define JSON_SortTags XML_SortTags
 #define JSON_Format   0x02
