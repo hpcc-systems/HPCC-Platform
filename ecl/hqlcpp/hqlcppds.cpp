@@ -720,13 +720,13 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
     StringBuffer tablename;
     getExprIdentifier(tablename, expr);
 
-    traceExpression("Dataset not found", expr);
+    traceExpression("DatasetNotFound", expr);
 
     RowAssociationIterator iter(ctx);
     ForEach(iter)
     {
         BoundRow & cur = iter.get();
-        traceExpression("BoundCursor:", cur.querySelector());
+        traceExpression("BoundCursor", cur.querySelector());
     }
     throwError1(HQLERR_DatasetNotActive, tablename.str());
     return NULL; //remove warning about control paths
@@ -1746,9 +1746,9 @@ unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, bool isParalle
     subctx.addGroup();
 
     IHqlExpression * query = childQuery->queryChild(2);
-    translator.traceExpression("Before Loop resource", query);
+    translator.traceExpression("BeforeLoopResource", query);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop, unlimitedResources);
-    translator.traceExpression("After Loop resource", resourced);
+    translator.traceExpression("AfterLoopResource", resourced);
 
     //Add a flag to indicate multi instance
     if (isParallel)
@@ -1880,7 +1880,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         traceExpression("AfterOptimizeSub", resourced);
     }
 
-    traceExpression("BeforeResourcing Child", resourced);
+    traceExpression("BeforeResourcingChild", resourced);
     HqlExprCopyArray activeRows;
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)
@@ -1891,7 +1891,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         resourced.setown(resourceNewChildGraph(ctx, *this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
     checkNormalized(ctx, resourced);
-    traceExpression("AfterResourcing Child", resourced);
+    traceExpression("AfterResourcingChild", resourced);
     
     resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false, isInsideChildQuery));
     if (options.optimizeSpillProject)

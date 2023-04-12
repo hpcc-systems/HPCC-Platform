@@ -3351,7 +3351,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
                 if (expr->getOperator() == no_table)
                     transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
                 OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
-                traceExpression("after disk optimize", optimized);
+                traceExpression("afterDiskOptimize", optimized);
                 return doBuildActivityDiskRead(ctx, optimized);
             }
         }
@@ -3368,7 +3368,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
             if (expr->getOperator() == no_table)
                 transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
             OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
-            traceExpression("after disk optimize", optimized);
+            traceExpression("afterDiskOptimize", optimized);
             return doBuildActivityDiskRead(ctx, optimized);
         }
     }
@@ -4242,7 +4242,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexRead(BuildCtx & ctx, IHql
     if (optimized->getOperator() != no_compound_indexread)
         optimized.setown(createDataset(no_compound_indexread, LINK(optimized)));
 
-    traceExpression("before index read", optimized);
+    traceExpression("beforeIndexRead", optimized);
     assertex(tableExpr->getOperator() == no_newkeyindex);
     NewIndexReadBuilder info(*this, tableExpr, tableExpr->queryChild(3));
     info.deduceIndexRecords();
@@ -4310,7 +4310,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexNormalize(BuildCtx & ctx,
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, HOOfold);
-    traceExpression("after optimize", optimized);
+    traceExpression("afterOptimizeIndexNormalize", optimized);
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)

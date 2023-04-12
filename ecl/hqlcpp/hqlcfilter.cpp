@@ -947,9 +947,9 @@ void CppFilterExtractor::spotSegmentCSE(BuildCtx & ctx)
 
     HqlExprArray associated;
     IHqlExpression * selector = tableExpr->queryNormalizedSelector();
-    translator.traceExpressions("before seg spot", conditions);
+    translator.traceExpressions("beforeSegmentCse", conditions);
     spotScalarCSE(conditions, associated, NULL, selector, translator.queryOptions().spotCseInIfDatasetConditions);
-    translator.traceExpressions("after seg spot", conditions);
+    translator.traceExpressions("afterSegmentCse", conditions);
 
     unsigned curCond = 0;
     ForEachItemIn(i, conditions)
