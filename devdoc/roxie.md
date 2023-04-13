@@ -190,3 +190,47 @@ Having first compiled a suitable bit of ECL into a.out. I have found a snippet l
     
     d := dataset([{rtl.sleep(5000)}], {unsigned a});
     allnodes(d)+d;
+
+## Cache prewarm
+
+Roxie (optionally) maintains a list of the most recently accessed file pages (in a circular buffer), and flushes this information
+periodically to text files that will persist from one run of Roxie to the next. On startup, these files are processed and the
+relevant pages preloaded into the linux page cache to ensure that the "hot" pages are already available and maximum performance is
+available immediately once the Roxie is brought online, rather than requiring a replay of a "typical" query set to heat the cache
+as used to be done. In particular this should allow a node to be "warm" before being added to the cluster when autoscaling.
+
+There are some questions outstanding about how this operates that may require empirical testing to answer. Firstly, how does this
+interact with volumes mounted via k8s pvc's, and in particular with cloud billing systems that charge per read. Will the reads
+that are done to warm the cache be done in large chunks, or will they happen one linux page at a time? The code at the Roxie level
+operates by memory-mapping the file then touching a byte within each linux page that we want to be "warm", but does the linux paging
+subsystem fetch larger blocks? Do huge pages play a part here?
+
+Secondly, the prewarm is actually done by a child process (ccdcache), but the parent process is blocked while it happens. It would
+probably make sense to at allow at least some of the other startup operations of the parent process to proceed in parallel. There
+are two reasons why the cache prewarm is done using a child process. Firstly is to allow there to be a standalone way to prewarm
+prior to launching a Roxie, which might be useful for automation in some bare-metal systems. Secondly, because there is a possibility
+of segfaults resulting from the prewarm if the file has changed size since the cache warming was done, it is easier to contain, capture,
+and recover from such faults in a child process than it would be inside Roxie. However, it would probably be possible to avoid these
+segfaults (by checking more carefully against file size before trying to warm a page, for example) and then link the code into Roxie
+while still keeping the code common with the standalone executable version.
+
+Thirdly, need to check that the prewarm is complete before adding a new agent to the topology. This is especially relevant if we make
+any change to do the prewarm asynchronously.
+
+Fourthly, there are potential race conditions when reading/writing the file containing cache information, since this file may be written
+by any agent operating on the same channel, at any time.
+
+Fifthly, how is the amount of information tracked decided? It should be at least related to the amount of memory available to the linux
+page cache, but that's not a completely trivial thing to calculate. Should we restrict to the most recent N when outputting, where N is
+calculated from, for example /proc/meminfo's Active(file) value? Unfortunately on containerized sytems that reflects the host, but perhaps
+/sys/fs/cgroup/memory.stat can be used instead? 
+
+When deciding how much to track, we can pick an upper limit from the pod's memory limit. This could be read from /sys/fs/cgroup/memory.max
+though we currently read from the config file instead. We should probably (a) subtract the roxiemem size from that and (b) think about
+a value that will work on bare-metal and fusion too. However, because we don't dedup the entries in the circular buffer used for tracking
+hot pages until the info is flushed, the appropriate size is not really the same as the memory size.
+
+We track all reads by page, and before writing also add all pages in the jhtree cache with info about the node type. Note that a hit in the
+jhtree page cache won't be noted as a read OTHER than via this last-minute add.
+
+
