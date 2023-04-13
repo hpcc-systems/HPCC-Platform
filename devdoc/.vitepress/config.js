@@ -33,6 +33,7 @@ export default {
                     { text: 'Development Guide', link: '/devdoc/Development' },
                     { text: 'C++ Style Guide', link: '/devdoc/StyleGuide' },
                     { text: 'ECL Style Guide', link: '/ecllibrary/StyleGuide.html' },
+                    { text: 'Writing Developer Documentation', link: '/devdoc/DevDocs' },
                 ]
             },
             {
