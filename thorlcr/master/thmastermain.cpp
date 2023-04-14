@@ -1149,7 +1149,7 @@ int main( int argc, const char *argv[]  )
             {
                 try
                 {
-                    deleteK8sResource("thorworker", cloudJobName, "networkpolicy");
+                    deleteK8sResource("thorworker", "networkpolicy", cloudJobName);
                 }
                 catch (IException *e)
                 {
