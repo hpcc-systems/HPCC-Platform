@@ -190,7 +190,6 @@ Pass in root as .
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
 {{- $security := .Values.security | default dict -}}
-deploymentName: {{ (include "hpcc.fullname" (dict "root" $)) }}
 mtls: {{ (include "hpcc.isMtlsEnabled" (dict "root" $)) }}
 imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
 singleNode: {{ .Values.global.singleNode | default false }}
@@ -2145,6 +2144,7 @@ spec:
 {{- end -}}
 
 {{/*
+<<<<<<< HEAD
 Generate a list of warnings
 Pass in dict with root
 */}}
@@ -2183,9 +2183,7 @@ Pass in dict with resources object
   true
  {{- end -}}
 {{- end -}}
-{{- end -}}
-
-{{/*
+=======
 Pass in dict with root and me
 Fills "result" dictionary with "planeCategories" and "namedPlanes"
 */}}
@@ -2199,4 +2197,5 @@ Fills "result" dictionary with "planeCategories" and "namedPlanes"
 {{- end -}}
 {{- $_ := set .result "planeCategories" $planeCategories -}}
 {{- $_ := set .result "namedPlanes" $namedPlanes -}}
+>>>>>>> origin/candidate-8.10.x
 {{- end -}}
