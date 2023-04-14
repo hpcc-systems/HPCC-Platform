@@ -111,7 +111,7 @@ private:
     }
 };
 
-IEspSecureContext* createHttpSecureContext(CHttpRequest* request)
+IEspSecureContextEx* createHttpSecureContext(CHttpRequest* request)
 {
     return new CHttpSecureContext(request);
 }

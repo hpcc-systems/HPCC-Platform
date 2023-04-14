@@ -102,6 +102,7 @@ typedef enum LogRequest_
 
 class CTxSummary;
 interface IEspSecureContext;
+interface IEspSecureContextEx;
 class CumulativeTimer;
 
 interface IEspContext : extends IInterface
@@ -211,6 +212,7 @@ interface IEspContext : extends IInterface
     virtual StringBuffer& getAcceptLanguage(StringBuffer& acceptLanguage) = 0;
 
     virtual IEspSecureContext* querySecureContext() = 0;
+    virtual IEspSecureContextEx* querySecureContextEx() = 0;
     virtual void setHTTPMethod(const char *method) = 0;
     virtual void setServiceMethod(const char *method) = 0;
 

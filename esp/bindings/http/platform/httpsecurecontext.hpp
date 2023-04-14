@@ -29,6 +29,6 @@ enum HttpPropertyType
     HTTP_PROPERTY_TYPE_REMOTE_ADDRESS,
 };
 
-esp_http_decl IEspSecureContext* createHttpSecureContext(CHttpRequest* request);
+esp_http_decl IEspSecureContextEx* createHttpSecureContext(CHttpRequest* request);
 
 #endif // HTTPSECURECONTEXT_HPP
