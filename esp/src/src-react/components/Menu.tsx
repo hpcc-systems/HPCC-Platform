@@ -223,9 +223,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     }, [hashPath]);
 
     const altSubNav = React.useMemo(() => {
-        const parts = hashPath.split("/");
-        parts.shift();
-        return parts.shift();
+        return `/${hashPath?.split("/")[1]}`;
     }, [hashPath]);
 
     const [logsDisabled, setLogsDisabled] = React.useState(true);
