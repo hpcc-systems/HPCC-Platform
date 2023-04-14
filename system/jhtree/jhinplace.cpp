@@ -2360,8 +2360,6 @@ class InplaceIndexTest : public CppUnit::TestFixture
             };
             find(entry, callback);
         }
-
-        exit(0);
     }
 
     void find(const char * search, std::function<void(const char *)> callback)
