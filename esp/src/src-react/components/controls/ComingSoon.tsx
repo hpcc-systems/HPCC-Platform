@@ -2,6 +2,7 @@ import * as React from "react";
 import { IStyle, Toggle } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { ModernMode } from "src/BuildInfo";
+import * as Utility from "src/Utility";
 import { useUserStore } from "../../hooks/store";
 
 const legacyIndex = {};
@@ -26,15 +27,15 @@ const modernIndex = {};
     ["#/stub/RoxieQueries-DL/PackageMaps", "#/packagemaps"],
     ["#/stub/RoxieQueries", "#/queries"],
 
-    ["#/stub/OPS-DL/Topology", "#/topology-bare-metal"],
-    ["#/stub/OPS-DL/DiskUsage", "#/diskusage"],
-    ["#/stub/OPS-DL/TargetClustersQuery", "#/clusters"],
-    ["#/stub/OPS-DL/ClusterProcessesQuery", "#/processes"],
-    ["#/stub/OPS-DL/SystemServersQuery", "#/servers"],
-    ["#/stub/OPS-DL/Permissions", "#/security"],
-    ["#/stub/OPS-DL/DESDL", "#/desdl"],
-    ["#/stub/OPS-DL/LogVisualization", "#/topology-bare-metal"],
-    ["#/stub/OPS", "#/topology-bare-metal"],
+    ["#/stub/OPS-DL/Topology", "#/operations"],
+    ["#/stub/OPS-DL/DiskUsage", "#/operations/diskusage"],
+    ["#/stub/OPS-DL/TargetClustersQuery", "#/operations/clusters"],
+    ["#/stub/OPS-DL/ClusterProcessesQuery", "#/operations/processes"],
+    ["#/stub/OPS-DL/SystemServersQuery", "#/operations/servers"],
+    ["#/stub/OPS-DL/Permissions", `#/${Utility.opsRouteCategory}/security`],
+    ["#/stub/OPS-DL/DESDL", `#/${Utility.opsRouteCategory}/desdl`],
+    ["#/stub/OPS-DL/LogVisualization", "#/operations"],
+    ["#/stub/OPS", "#/operations"],
 ].forEach(row => {
     legacyIndex[row[0]] = row[1];
     modernIndex[row[1]] = row[0];
