@@ -2686,6 +2686,9 @@ public:
             {
                 compressed.clear();
                 ICompressHandler &handler = iter->query();
+                //Ignore unusual compressors with no expanders...
+                if (strieq(handler.queryType(), "randrow"))
+                    continue;
                 Owned<ICompressor> compressor = handler.getCompressor(streq("AES", handler.queryType()) ? aesKey: nullptr);
 
                 CCycleTimer timer;

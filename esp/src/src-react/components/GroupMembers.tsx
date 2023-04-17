@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
 import { GroupMemberStore, CreateGroupMemberStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
@@ -57,7 +58,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             username: {
                 label: nlsHPCC.UserName,
                 formatter: React.useCallback(function (_name, idx) {
-                    return <Link href={`#/security/users/${_name}`}>{_name}</Link>;
+                    return <Link href={`#/${Utility.opsRouteCategory}/security/users/${_name}`}>{_name}</Link>;
                 }, [])
             },
             employeeID: { label: nlsHPCC.EmployeeID },
@@ -107,10 +108,10 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/security/users/${selection[0].username}`);
+                    pushUrl(`/${Utility.opsRouteCategory}/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/security/users/${user?.username}`, "_blank");
+                        window.open(`#/${Utility.opsRouteCategory}/security/users/${user?.username}`, "_blank");
                     });
                 }
             }

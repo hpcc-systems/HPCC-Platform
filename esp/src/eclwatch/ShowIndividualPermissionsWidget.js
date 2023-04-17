@@ -242,6 +242,7 @@ define([
                 lang.mixin(request, {
                     action: "update",
                     account_type: "1",
+                    rname: this.params.Name,
                     BasednName: this.params.Basedn
                 });
                 WsAccess.PermissionAction({
@@ -264,6 +265,7 @@ define([
                 var request = {
                     ActionType: "delete",
                     BasednName: this.params.Basedn,
+                    rname: this.params.Name,
                     "account_name": selection[0].account_name
                 };
                 WsAccess.PermissionAction({

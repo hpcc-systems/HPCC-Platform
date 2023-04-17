@@ -5,6 +5,7 @@ define([
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
+    "dojo/topic",
 
     "dijit/registry",
 
@@ -42,7 +43,7 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, nlsHPCCMod, dom, domAttr, domClass,
+], function (declare, lang, nlsHPCCMod, dom, domAttr, domClass, topic,
     registry,
     Clippy,
     srcReact,
@@ -82,6 +83,8 @@ define([
         logDate: null,
         clusterGroup: null,
         maxSlaves: null,
+
+        logAccessorMessage: "",
 
         prevState: "",
 
@@ -144,6 +147,7 @@ define([
         },
 
         _onSubmitDialog: function () {
+            var context = this;
             var includeSlaveLogsCheckbox = this.includeSlaveLogsCheckbox.get("checked");
             if (this.zapForm.validate()) {
                 //WUCreateAndDownloadZAPInfo is not a webservice so relying on form to submit.
@@ -152,6 +156,15 @@ define([
                 this.zapForm.set("action", "/WsWorkunits/WUCreateAndDownloadZAPInfo");
                 this.zapDialog.hide();
                 this.checkThorLogStatus();
+                if (this.logAccessorMessage !== "") {
+                    topic.publish("hpcc/brToaster", {
+                        Severity: "Warning",
+                        Source: "WsWorkunits/WUCreateAndDownloadZAPInfo",
+                        Exceptions: [{
+                            Message: context.logAccessorMessage,
+                        }]
+                    });
+                }
             }
         },
 
@@ -284,6 +297,8 @@ define([
                     context.thorIPAddress = response.WUGetZAPInfoResponse.ThorIPAddress;
                     context.emailTo = response.WUGetZAPInfoResponse.EmailTo;
                     context.emailFrom = response.WUGetZAPInfoResponse.EmailFrom;
+
+                    context.logAccessorMessage = response.WUGetZAPInfoResponse?.Message ?? "";
                 }
             });
         },

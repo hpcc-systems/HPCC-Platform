@@ -12,6 +12,7 @@ import { AddGroupForm } from "./forms/AddGroup";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { QuerySortItem } from "src/store/Store";
+import * as Utility from "src/Utility";
 
 const logger = scopedLogger("src-react/components/Groups.tsx");
 const wsAccess = new AccessService({ baseUrl: "" });
@@ -53,7 +54,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             name: {
                 label: nlsHPCC.GroupName,
                 formatter: function (_name, idx) {
-                    return <Link href={`#/security/groups/${_name}`}>{_name}</Link>;
+                    return <Link href={`#/${Utility.opsRouteCategory}/security/groups/${_name}`}>{_name}</Link>;
                 }
             },
             groupOwner: { label: nlsHPCC.ManagedBy },
@@ -110,10 +111,10 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/security/groups/${selection[0].name}`);
+                    pushUrl(`/${Utility.opsRouteCategory}/security/groups/${selection[0].name}`);
                 } else {
                     selection.forEach(group => {
-                        window.open(`#/security/groups/${group.name}`, "_blank");
+                        window.open(`#/${Utility.opsRouteCategory}/security/groups/${group.name}`, "_blank");
                     });
                 }
             }

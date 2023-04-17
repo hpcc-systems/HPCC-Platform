@@ -4,6 +4,7 @@ import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { TableGroup } from "./forms/Groups";
@@ -100,7 +101,7 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
         <Pivot
             overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
             onLinkClick={evt => {
-                pushUrl(`/security/users/${user?.username}/${evt.props.itemKey}`);
+                pushUrl(`/${Utility.opsRouteCategory}/security/users/${user?.username}/${evt.props.itemKey}`);
             }}
         >
             <PivotItem headerText={user?.username} itemKey="summary" style={pivotItemStyle(size)} >

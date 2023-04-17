@@ -43,8 +43,8 @@ finalize_platform_core_image() {
     local cmd=$2
     local image_name=platform-core:$MODE
     echo "--- Finalize '$image_name' image ---"
-    if [ "$ACTION" == "incr" ] && [[ $(docker images -q hpccsystems/platform-core:$MODE-incr-prev 2> /dev/null) ]]; then
-        local image_name=hpccsystems/platform-core:$MODE-incr-prev
+    if [ "$ACTION" == "incr" ] && [[ $(docker images -q incr-core:$MODE 2> /dev/null) ]]; then
+        local image_name=incr-core:$MODE
         echo "--- Incremental '$image_name' image ---"
     fi
     CONTAINER=$(docker run -d \
@@ -56,7 +56,30 @@ finalize_platform_core_image() {
     docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
     docker stop $CONTAINER
     docker rm $CONTAINER
-    docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc hpccsystems/platform-core:$MODE-incr-prev
+    docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc incr-core:$MODE
+}
+
+finalize_platform_core_image_from_deb() {
+    local deb_file=$(readlink -f $DEB_FILE)
+
+    local filename_full=$(basename "$DEB_FILE")  # get the filename with extension
+    local filename_no_ext="${filename_full%.*}"  # remove the extension
+    local filename="${filename_no_ext##*/}"      # remove the path
+    prefix="hpccsystems-platform-"
+    if [[ $filename == $prefix* ]]; then
+        filename="${filename#$prefix}"           # remove the prefix
+    fi
+
+    local image_name=platform-core:$MODE
+    echo "--- Finalize '$filename' image ---"
+    CONTAINER=$(docker run -d \
+        --mount source=$deb_file,target=/tmp/hpcc.deb,type=bind \
+        --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
+        $image_name "tail -f /dev/null")
+    docker exec --user root $CONTAINER /bin/bash -c "dpkg -i /tmp/hpcc.deb && apt-get install -f -y"
+    docker exec --user root $CONTAINER /bin/bash -c "eclcc -pch"
+    docker commit $CONTAINER hpccsystems/platform-core:$filename
+    docker stop $CONTAINER
 }
 
 clean() {
@@ -155,7 +178,7 @@ check_cache() {
 build() {
     create_build_image
     if [ "$MODE" = "release" ]; then
-        local base=ubuntu:jammy-20230308
+        local base=$RELEASE_BASE_IMAGE
         local build_type="Release"
         local cmake_options="-DCMAKE_BUILD_TYPE=$build_type"
     elif [ "$MODE" = "debug" ]; then
@@ -211,6 +234,17 @@ incr() {
     build
 }
 
+install() {
+    if [ ! -e $DEB_FILE ]; then
+        echo "File does not exist"
+        exit 2
+    fi
+    MODE=release
+    create_platform_core_image $RELEASE_BASE_IMAGE
+
+    finalize_platform_core_image_from_deb $DEB_FILE
+}
+
 function cleanup() {
     rm $RSYNC_TMP_FILE 2> /dev/null || true
 }
@@ -238,6 +272,7 @@ usage() {
     echo "  clean          remove all build artifacts"
     echo "  build          build the project"
     echo "  incr           perform an incremental build (faster version of 'build -m debug')"
+    echo "  install <file> install from a local deb file"
     echo "  status         display environment variables"
     echo "  -m, --mode     specify the build mode (debug or release)"
     echo "                 default mode is release"
@@ -248,7 +283,9 @@ usage() {
 ACTION=
 MODE=release
 RECONFIGURE=0
+DEB_FILE=""
 BUILD_OS="ubuntu-22.04"
+RELEASE_BASE_IMAGE="ubuntu:jammy-20230308" # Matches vcpkg base image (does not need to be an exact match)
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]
@@ -267,6 +304,12 @@ case $key in
     incr)
         ACTION=incr
         shift # past argument
+        ;;
+    install)
+        ACTION=install
+        DEB_FILE="$2"
+        shift # past argument
+        shift # past value
         ;;
     status)
         ACTION=status
@@ -305,6 +348,9 @@ case $ACTION in
         ;;
     incr)
         incr
+        ;;
+    install)
+        install
         ;;
     status)
         status

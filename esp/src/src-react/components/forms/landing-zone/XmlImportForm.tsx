@@ -235,7 +235,6 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                                             name={fieldName}
                                             onChange={onChange}
                                             value={value}
-                                            placeholder={nlsHPCC.RequiredForFixedSpray}
                                             errorMessage={error && error?.message}
                                         />}
                                 />

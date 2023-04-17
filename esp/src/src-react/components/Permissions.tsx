@@ -4,6 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
 import { DojoGrid, selector, tree } from "./DojoGrid";
@@ -55,7 +56,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             label: nlsHPCC.Name,
             formatter: function (_name, idx) {
                 if (idx.__hpcc_parent) {
-                    return `<a href="#/security/permissions/${_name}/${idx.__hpcc_parent.name}">${_name}</a>`;
+                    return `<a href="#/${Utility.opsRouteCategory}/security/permissions/${_name}/${idx.__hpcc_parent.name}">${_name}</a>`;
                 } else {
                     return _name;
                 }
@@ -197,11 +198,11 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                         onClick: () => setShowDisableScopesConfirm(true),
                         disabled: !scopeScansEnabled
                     },
-                    { key: "fileScopeDefaults", text: nlsHPCC.FileScopeDefaultPermissions, onClick: (evt, item) => pushUrl("/security/permissions/_/File%20Scopes"), disabled: !uiState.fileScope },
-                    { key: "workunitScopeDefaults", text: nlsHPCC.WorkUnitScopeDefaultPermissions, onClick: (evt, item) => pushUrl("/security/permissions/_/Workunit%20Scopes"), disabled: !uiState.workunitScope },
-                    { key: "physicalFiles", text: nlsHPCC.PhysicalFiles, onClick: (evt, item) => pushUrl("/security/permissions/file/File%20Scopes"), disabled: !uiState.fileScope },
+                    { key: "fileScopeDefaults", text: nlsHPCC.FileScopeDefaultPermissions, onClick: (evt, item) => pushUrl(`/${Utility.opsRouteCategory}/security/permissions/_/File%20Scopes`), disabled: !uiState.fileScope },
+                    { key: "workunitScopeDefaults", text: nlsHPCC.WorkUnitScopeDefaultPermissions, onClick: (evt, item) => pushUrl(`/${Utility.opsRouteCategory}/security/permissions/_/Workunit%20Scopes`), disabled: !uiState.workunitScope },
+                    { key: "physicalFiles", text: nlsHPCC.PhysicalFiles, onClick: (evt, item) => pushUrl(`/${Utility.opsRouteCategory}/security/permissions/file/File%20Scopes`), disabled: !uiState.fileScope },
                     { key: "checkFilePermissions", text: nlsHPCC.CheckFilePermissions, disabled: !uiState.fileScope },
-                    { key: "codeGenerator", text: nlsHPCC.CodeGenerator, onClick: (evt, item) => pushUrl(`/security/permissions/_/${modulesDn}`), disabled: !uiState.repositoryModule },
+                    { key: "codeGenerator", text: nlsHPCC.CodeGenerator, onClick: (evt, item) => pushUrl(`/${Utility.opsRouteCategory}/security/permissions/_/${modulesDn}`), disabled: !uiState.repositoryModule },
                 ],
             },
         },

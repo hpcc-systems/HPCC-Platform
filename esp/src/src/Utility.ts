@@ -6,6 +6,7 @@ import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
 import { darkTheme } from "../src-react/themes";
 import nlsHPCC from "src/nlsHPCC";
+import { cmake_build_type, containerized } from "src/BuildInfo";
 
 declare const dojoConfig;
 declare const ActiveXObject;
@@ -1178,3 +1179,9 @@ export function wrapStringWithTag(string, tag = "span") {
 export function isSpill(sourceKind: string, targetKind: string): boolean {
     return sourceKind === "2" || targetKind === "71";
 }
+
+export const opsRouteCategory = (cmake_build_type !== "Debug") ?
+    // not a Debug build, check if containerized
+    ((containerized) ? "topology" : "operations") :
+    // Debug build, use first segment of current hash after #
+    document.location.hash.indexOf("stub") > -1 ? "operations" : document.location.hash.split("/")[1];

@@ -24,33 +24,38 @@ The user should populate the following values in order to create a new Azure Log
 
 #### b - Execute enable-loganalytics.sh
 
-This helper script attempts to create new Azure LogAnalytics workspace (user can provide pre-existing), associates the workspace with the target AKS cluster, and enables the Azure Log Analytics feature.This script is dependant on the values provided in the previous step
+This helper script attempts to create new Azure LogAnalytics workspace (user can provide pre-existing), associates the workspace with the target AKS cluster, and enables the Azure Log Analytics feature. This script is dependant on the values provided in the previous step.
 
 ### 2 - Configure HPCC logAccess
 The logAccess feature allows HPCC to query and package relevant logs for various features such as ZAP report, WorkUnit helper logs, ECLWatch log viewer, etc.
 
 #### a - Procure AAD registered application
-Azure requires an Azure Active Directory registered application in order to broker Log Analytics API access. See official documentation:
+Azure requires an Azure Active Directory registered application in order to broker Log Analytics API access. The registered application should be assigned Log Analytics roles. See official documentation:
 https://docs.microsoft.com/en-us/power-apps/developer/data-platform/walkthrough-register-app-azure-active-directory
 
-Depending on your Azure subscription structure, it might be necessary to request this from a subscription administrator.
+Depending on your Azure subscription structure, it might be necessary to request this from a tenant/subscription administrator.
 
-#### b - Provide AAD registered application inforation
-HPCC logAccess requires access to the AAD Tenant, client, token, and target workspace ID via secure secret object.
+The Registered Application must provide a 'client secret' which is used to gain access to the Log Analytics API.
+
+#### b - Provide AAD registered application inforation and target ALA Workspace 
+HPCC logAccess requires access to the AAD Tenant ID, client ID, and secret which are provided by the registered app from section '2.a' above. The target workspace ID is also required, and can be retrieved after the step in section '1.b' is successfully completed. Those four values must be provided via a secure secret object.
+
 The secret is expected to be in the 'esp' category, and be named 'azure-logaccess'.
-The following kv pairs are supported
-- aad-tenant-id
-- aad-client-id
-- aad-client-secret
-- ala-workspace-id
+The following key-value pairs are required (key names must be spelled exactly as shown here)
+- **aad-tenant-id** - This should contain the Tenant ID of the AAD registered application
+- **aad-client-id** - This is the AAD registered application ID (Ensure it has Log Analytics access roles)
+- **aad-client-secret** - This is a secret provided by the AAD registered app for Log Analytics access
+- **ala-workspace-id** - The ID of the Azure Log Analytics workspace which contains the HPCC component logs
 
-The included 'create-azure-logaccess-secret.sh' helper can be used to create the necessary secret
-Example manual secret creation command (assuming ./secrets-templates contains a file named exactly as the above keys):
+The included 'create-azure-logaccess-secret.sh' helper can be used to create the necessary secret.
+
+Example scripted secret creation command (assuming ./secrets-templates contains a file named exactly as the above keys):
 ```console
   create-azure-logaccess-secret.sh .HPCC-Platform/helm/examples/azure/log-analytics/secrets-templates/
 ```
 
 Otherwise, users can create the secret manually.
+
 Example manual secret creation command (assuming ./secrets-templates contains a file named exactly as the above keys):
 ```console
   kubectl create secret generic azure-logaccess --from-file=HPCC-Platform/helm/examples/azure/log-analytics/secrets-templates/
@@ -63,4 +68,3 @@ Example use:
 ```console
   helm install myhpcc hpcc/hpcc -f HPCC-Platform/helm/examples/azure/log-analytics/loganalytics-hpcc-logaccess.yaml
 ```
-

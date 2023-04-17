@@ -14,6 +14,7 @@ import { Fields } from "./forms/Fields";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams, pushUrl } from "../util/history";
 import { QuerySortItem } from "src/store/Store";
+import * as Utility from "src/Utility";
 
 const logger = scopedLogger("src-react/components/Users.tsx");
 const wsAccess = new AccessService({ baseUrl: "" });
@@ -69,7 +70,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 width: 180,
                 label: nlsHPCC.Username,
                 formatter: React.useCallback(function (_name, idx) {
-                    return <Link href={`#/security/users/${_name}`}>{_name}</Link>;
+                    return <Link href={`#/${Utility.opsRouteCategory}/security/users/${_name}`}>{_name}</Link>;
                 }, [])
             },
             employeeID: { width: 180, label: nlsHPCC.EmployeeID },
@@ -134,10 +135,10 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/security/users/${selection[0].username}`);
+                    pushUrl(`/${Utility.opsRouteCategory}/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/security/users/${user?.username}`, "_blank");
+                        window.open(`#/${Utility.opsRouteCategory}/security/users/${user?.username}`, "_blank");
                     });
                 }
             }

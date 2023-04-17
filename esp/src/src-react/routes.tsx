@@ -2,7 +2,7 @@ import * as React from "react";
 import { Route, RouterContext } from "universal-router";
 import { initialize, parsePage, parseSearch, parseSort, pushUrl, replaceUrl } from "./util/history";
 
-export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "topology-bare-metal";
+export type MainNav = "activities" | "workunits" | "files" | "queries" | "topology" | "operations";
 
 export interface RouteEx<R = any, C extends RouterContext = RouterContext> extends Route<R, C> {
     mainNav: MainNav[];
@@ -171,6 +171,18 @@ export const routes: RoutesEx = [
             { path: "/services", action: (ctx, params) => import("./components/Services").then(_ => <_.Services />) },
             { path: "/logs", action: (ctx) => import("./components/Logs").then(_ => <_.Logs filter={parseSearch(ctx.search) as any} />) },
             {
+                path: "/security",
+                children: [
+                    { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} page={parsePage(ctx.search)} />) },
+                    { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} page={parsePage(ctx.search)} />) },
+                    { path: "/users/:username", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} />) },
+                    { path: "/users/:username/:Tab", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} tab={params.Tab as string} />) },
+                    { path: "/groups/:name", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} />) },
+                    { path: "/groups/:name/:Tab", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} tab={params.Tab as string} />) },
+                    { path: "/permissions/:Name/:BaseDn", action: (ctx, params) => import("./components/Security").then(_ => <_.Security tab="permissions" name={params.Name as string} baseDn={params.BaseDn as string} />) },
+                ]
+            },
+            {
                 path: "/daliadmin",
                 children: [
                     { path: "", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin />) },
@@ -180,70 +192,43 @@ export const routes: RoutesEx = [
         ]
     },
     {
-        mainNav: ["topology"],
-        path: "/daliadmin",
+        mainNav: ["operations"],
+        path: "/operations",
         children: [
-            { path: "", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin />) },
-            { path: "/:Tab", action: (ctx, params) => import("./components/DaliAdmin").then(_ => <_.DaliAdmin tab={params.Tab as string} />) },
-        ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/topology-bare-metal",
-        action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TopologyWidget" />)
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/diskusage", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DiskUsageWidget" />)
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/clusters", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TargetClustersQueryWidget" />)
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/clusters",
-        children: [
-            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
-            { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
-        ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />)
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />)
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/machines",
-        children: [
+            { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TopologyWidget" />) },
+            { path: "/diskusage", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DiskUsageWidget" />) },
+            {
+                path: "/clusters",
+                children: [
+                    { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TargetClustersQueryWidget" />) },
+                    { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
+                    { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
+                ]
+            },
+            { path: "/processes", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ClusterProcessesQueryWidget" />) },
+            { path: "/servers", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="SystemServersQueryWidget" />) },
             { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
-        ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/security",
-        children: [
-            { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} page={parsePage(ctx.search)} />) },
-            { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} page={parsePage(ctx.search)} />) },
-            { path: "/users/:username", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} />) },
-            { path: "/users/:username/:Tab", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} tab={params.Tab as string} />) },
-            { path: "/groups/:name", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} />) },
-            { path: "/groups/:name/:Tab", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} tab={params.Tab as string} />) },
-            { path: "/permissions/:Name/:BaseDn", action: (ctx, params) => import("./components/Security").then(_ => <_.Security tab="permissions" name={params.Name as string} baseDn={params.BaseDn as string} />) },
-        ]
-    },
-    {
-        mainNav: ["topology-bare-metal"],
-        path: "/desdl",
-        children: [
-            { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },
-            { path: "/:Tab", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL tab={params.Tab as string} />) },
-            { path: "/bindings/:Name", action: (ctx, params) => import("./components/DESDLBindingDetails").then(_ => <_.DESDLBindingDetails name={params.Name as string} />) },
-            { path: "/bindings/:Name/:Tab", action: (ctx, params) => import("./components/DESDLBindingDetails").then(_ => <_.DESDLBindingDetails name={params.Name as string} tab={params.Tab as string} />) },
+            {
+                path: "/security",
+                children: [
+                    { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} page={parsePage(ctx.search)} />) },
+                    { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} page={parsePage(ctx.search)} />) },
+                    { path: "/users/:username", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} />) },
+                    { path: "/users/:username/:Tab", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} tab={params.Tab as string} />) },
+                    { path: "/groups/:name", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} />) },
+                    { path: "/groups/:name/:Tab", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} tab={params.Tab as string} />) },
+                    { path: "/permissions/:Name/:BaseDn", action: (ctx, params) => import("./components/Security").then(_ => <_.Security tab="permissions" name={params.Name as string} baseDn={params.BaseDn as string} />) },
+                ]
+            },
+            {
+                path: "/desdl",
+                children: [
+                    { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },
+                    { path: "/:Tab", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL tab={params.Tab as string} />) },
+                    { path: "/bindings/:Name", action: (ctx, params) => import("./components/DESDLBindingDetails").then(_ => <_.DESDLBindingDetails name={params.Name as string} />) },
+                    { path: "/bindings/:Name/:Tab", action: (ctx, params) => import("./components/DESDLBindingDetails").then(_ => <_.DESDLBindingDetails name={params.Name as string} tab={params.Tab as string} />) },
+                ]
+            }
         ]
     },
     {

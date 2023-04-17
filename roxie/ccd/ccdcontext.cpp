@@ -2931,7 +2931,7 @@ public:
         {
 #ifdef _CONTAINERIZED
             // signal to any lingering Thor's that job is complete and they can quit before timeout.
-            executeGraphOnLingeringThor(*workUnit, nullptr);
+            executeGraphOnLingeringThor(*workUnit, 0, nullptr);
 #endif
 
             if (options.failOnLeaks && !failed)
