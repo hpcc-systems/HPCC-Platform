@@ -4441,6 +4441,70 @@ IFileIOStream * createBufferedIOStreamFromFile(const char *fileNameWithPath, IFO
     return createBufferedIOStream(iFileIO, bufsize);
 }
 
+IFileIOStream *createProgressIFileIOStream(IFileIOStream *iFileIOStream, offset_t totalSize, const char *msg, unsigned periodSecs)
+{
+    class CProgressIFileIOStream : public CSimpleInterfaceOf<IFileIOStream>
+    {
+        Linked<IFileIOStream> iFileIOStream;
+        offset_t totalSize = 0;
+        StringAttr msg;
+        void log(double pct)
+        {
+            PROGLOG("%s - %.2f%% complete", msg.get(), pct);
+        }
+        PeriodicTimer periodTimer;
+    public:
+        CProgressIFileIOStream(IFileIOStream *_iFileIOStream, offset_t _totalSize, const char *_msg, unsigned periodSecs)
+            : iFileIOStream(_iFileIOStream), totalSize(_totalSize), msg(_msg), periodTimer(periodSecs*1000, true)
+        {
+        }
+        ~CProgressIFileIOStream()
+        {
+            offset_t pos = iFileIOStream->tell();
+            if (pos == totalSize)
+                log(100.0);
+        }
+        // implements ISimpleReadStream
+        virtual size32_t read(size32_t max_len, void * data) override
+        {
+            if (periodTimer.hasElapsed())
+            {
+                offset_t pos = iFileIOStream->tell();
+                double pct = ((double)pos) / totalSize * 100;
+                log(pct);
+            }
+            return iFileIOStream->read(max_len, data);
+        }
+        // implements IIOStream
+        virtual void flush() override
+        {
+            throwUnexpected();
+        }
+        virtual size32_t write(size32_t len, const void * data) override
+        {
+            throwUnexpected();
+        }
+        // implements IFileIOStream
+        virtual void seek(offset_t pos, IFSmode origin) override
+        {
+            return iFileIOStream->seek(pos, origin);
+        }
+        virtual offset_t size() override
+        {
+            return iFileIOStream->size();
+        }
+        virtual offset_t tell() override
+        {
+            return iFileIOStream->tell();
+        }
+        virtual unsigned __int64 getStatistic(StatisticKind kind) override
+        {
+            return iFileIOStream->getStatistic(kind);
+        }
+    };
+    return new CProgressIFileIOStream(iFileIOStream, totalSize, msg, periodSecs);
+}
+
 IReadSeq *createReadSeq(IFileIOStream * stream, offset_t offset, size32_t size)
 {
     return new CIOStreamReadWriteSeq(stream, offset, size);

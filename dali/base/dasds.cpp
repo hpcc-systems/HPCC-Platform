@@ -4794,7 +4794,7 @@ void initializeInternals(IPropertyTree *root)
     root->addPropTree("Status/Servers",createPTree());
 }
 
-IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigned crcValidation, bool logErrorsOnly=false, const bool *abort=NULL)
+IPropertyTree *loadStore(const char *storeFilename, unsigned edition, IPTreeMaker *iMaker, unsigned crcValidation, bool logErrorsOnly=false, const bool *abort=NULL)
 {
     CHECKEDCRITICALBLOCK(loadStoreCrit, fakeCritTimeout);
     CHECKEDCRITICALBLOCK(saveStoreCrit, fakeCritTimeout);
@@ -4805,9 +4805,11 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         OwnedIFileIO iFileIOStore = iFileStore->open(IFOread);
         if (!iFileIOStore)
             throw MakeSDSException(SDSExcpt_OpenStoreFailed, "%s", storeFilename);
-
+        offset_t fSize = iFileIOStore->size();
+        PROGLOG("Loading store %u (size=%.2f MB, storedCrc=%x)", edition, ((double)fSize) / 0x100000, crcValidation);
         Owned<IFileIOStream> fstream = createIOStream(iFileIOStore);
-        Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
+        OwnedIFileIOStream progressedIFileIOStream = createProgressIFileIOStream(fstream, fSize, "Load progress", 60);
+        Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(progressedIFileIOStream);
         Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
         root.setown((CServerRemoteTree *) createPTree(*ios, ipt_none, ptr_ignoreWhiteSpace, iMaker));
         ios.clear();
@@ -5055,6 +5057,7 @@ public:
             SDSManager->dataRWLock.unlockRead();
     }
 };
+
 
 class CStoreHelper : implements IStoreHelper, public CInterface
 {
@@ -5346,6 +5349,8 @@ public:
         Owned<IFileIO> iFileIO = iFile->open(IFOread);
         if (!iFileIO) // no delta to load
             return true;
+        offset_t fSize = iFileIO->size();
+        PROGLOG("Loading delta: %s (size=%.2f MB)", filename, ((double)fSize) / 0x100000);
         MemoryBuffer tmp;
         char *ptr = (char *) tmp.reserveTruncate(strlen(deltaHeader));
         unsigned embeddedCrc = 0;
@@ -5383,7 +5388,8 @@ public:
         }
         OwnedIFileIOStream iFileIOStream = createIOStream(iFileIO);
         iFileIOStream->seek(pos, IFSbegin);
-        Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(iFileIOStream); // crc *rest* of stream
+        OwnedIFileIOStream progressedIFileIOStream = createProgressIFileIOStream(iFileIOStream, fSize, "Load progress", 60);
+        Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(progressedIFileIOStream); // crc *rest* of stream
         Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
         bool noErrors;
         Owned<IException> deltaE;
@@ -5427,7 +5433,6 @@ public:
                 if (!iFile->exists())
                     break;
             }
-            PROGLOG("Loading delta: %s", filename.get());
 
             bool noError;
             Owned<IException> deltaE;
@@ -6024,8 +6029,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         StringBuffer storeFilename(dataPath);
         iStoreHelper->getCurrentStoreFilename(storeFilename, &crc);
 
-        LOG(MCdebugInfo, unknownJob, "loading store %d, storedCrc=%x", iStoreHelper->queryCurrentEdition(), crc);
-        root = (CServerRemoteTree *)::loadStore(storeFilename.str(), &treeMaker, crc, false, abort);
+        root = (CServerRemoteTree *)::loadStore(storeFilename.str(), iStoreHelper->queryCurrentEdition(), &treeMaker, crc, false, abort);
         if (!root)
         {
             StringBuffer s(storeName);
@@ -6042,7 +6046,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             if (deltaE.get())
                 throw LINK(deltaE);
         }
-        LOG(MCdebugInfo, unknownJob, "store loaded");
+        LOG(MCdebugInfo, unknownJob, "store and deltas loaded");
         const char *environment = config.queryProp("@environment");
 
         if (environment && *environment)
