@@ -35,46 +35,6 @@ void CWsFileIOEx::init(IPropertyTree *cfg, const char *process, const char *serv
     tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
 }
 
-void CWsFileIOEx::validateDropZoneAccess(IEspContext &context, const char *targetDZNameOrHost, const char *hostReq, SecAccessFlags permissionReq,
-    const char *fileNameWithRelPath, CDfsLogicalFileName &dlfn)
-{
-    if (containsRelPaths(fileNameWithRelPath)) //Detect a path like: a/../../../f
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", fileNameWithRelPath);
-
-    Owned<IPropertyTree> dropZone = getDropZonePlane(targetDZNameOrHost);
-    if (!dropZone) //The targetDZNameOrHost could be a dropzone host.
-    {
-        dropZone.setown(findDropZonePlane(nullptr, targetDZNameOrHost, true, true));
-    }
-    else if (!isEmptyString(hostReq))
-    {
-        if (!isHostInPlane(dropZone, hostReq, true))
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host %s is not valid DropZone plane %s", hostReq, targetDZNameOrHost);
-    }
-
-    //make sure a relative dropzone path
-    StringBuffer s;
-    const char* prefix = dropZone->queryProp("@prefix");
-    if (hasPrefix(fileNameWithRelPath, prefix, true))
-    {
-        const char* p = fileNameWithRelPath + strlen(prefix);
-        if (!*p || !isPathSepChar(p[0]))
-            addPathSepChar(s);
-        s.append(p);
-        fileNameWithRelPath = s.str();
-    }
-
-    const char *dropZoneName = dropZone->queryProp("@name");
-    dlfn.setPlaneExternal(dropZoneName, fileNameWithRelPath);
-
-    Owned<IUserDescriptor> userDesc = createUserDescriptor();
-    userDesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-    SecAccessFlags permission = queryDistributedFileDirectory().getDLFNPermissions(dlfn, userDesc);
-    if (permission < permissionReq)
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Access Required.",
-            dropZoneName, fileNameWithRelPath, context.queryUserId(), getSecAccessFlagName(permission), getSecAccessFlagName(permissionReq));
-}
-
 bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req, IEspCreateFileResponse &resp)
 {
     context.ensureFeatureAccess(FILE_IO_URL, SecAccess_Write, ECLWATCH_ACCESS_TO_FILE_DENIED, "WsFileIO::CreateFile: Permission denied");

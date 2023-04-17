@@ -1882,7 +1882,7 @@ IPropertyTree *CFileSprayEx::getAndValidateDropZone(const char *path, const char
 }
 
 void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcPlane,
-    StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
+    StringBuffer& sourcePlaneReq, StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
 {
     StringBuffer sourcePath(srcPath);
     sourcePath.trim();
@@ -1910,6 +1910,7 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
                 sourcePath.append(s);
             }
             getDropZoneHost(srcPlane, dropZone, sourceIPReq);
+            sourcePlaneReq.append(srcPlane);
         }
         else
         {
@@ -1917,6 +1918,7 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
             if (sourceIPReq.isEmpty())
                 throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
             Owned<IPropertyTree> plane = getAndValidateDropZone(sourcePath, sourceIPReq);
+            sourcePlaneReq.append(plane->queryProp("@name"));
         }
     }
     getStandardPosixPath(sourcePathReq, sourcePath.str());
@@ -1964,9 +1966,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
-        StringBuffer sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourceIPReq, sourcePathReq);
-        const char* srcip = sourceIPReq.str();
+        StringBuffer sourcePlaneReq, sourceIPReq, sourcePathReq;
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(isEmptyString(destname))
@@ -2005,24 +2006,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
-        if(srcxml.length() == 0)
-        {
-            RemoteMultiFilename rmfn;
-            SocketEndpoint ep(srcip);
-            if (ep.isNull())
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "SprayFixed to %s: cannot resolve source network IP from %s.", destname, srcip);
-
-            rmfn.setEp(ep);
-            StringBuffer fnamebuf(srcfile);
-            fnamebuf.trim();
-            rmfn.append(fnamebuf.str());    // handles comma separated files
-            source->setMultiFilename(rmfn);
-        }
-        else
-        {
-            srcxml.append('\0');
-            source->setFromXML((const char*)srcxml.toByteArray());
-        }
+        checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
 
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         bool nosplit = req.getNosplit();
@@ -2147,9 +2131,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             gName.append(destNodeGroup);
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
-        StringBuffer sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourceIPReq, sourcePathReq);
-        const char* srcip = sourceIPReq.str();
+        StringBuffer sourcePlaneReq, sourceIPReq, sourcePathReq;
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(isEmptyString(destname))
@@ -2182,24 +2165,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         IDFUoptions *options = wu->queryUpdateOptions();
 
-        if(srcxml.length() == 0)
-        {
-            RemoteMultiFilename rmfn;
-            SocketEndpoint ep(srcip);
-            if (ep.isNull())
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "SprayVariable to %s: cannot resolve source network IP from %s.", destname, srcip);
-
-            rmfn.setEp(ep);
-            StringBuffer fnamebuf(srcfile);
-            fnamebuf.trim();
-            rmfn.append(fnamebuf.str());    // handles comma separated files
-            source->setMultiFilename(rmfn);
-        }
-        else
-        {
-            srcxml.append('\0');
-            source->setFromXML((const char*)srcxml.toByteArray());
-        }
+        checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
 
@@ -2304,6 +2270,49 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
     }
 
     return true;
+}
+
+void CFileSprayEx::checkDZScopeAccessAndSetSpraySourceDFUFileSpec(IEspContext &context, const char *srcPlane, const char *srcHost,
+    const char *srcFile, MemoryBuffer &srcXML, IDFUfileSpec *srcDFUfileSpec)
+{
+    if(srcXML.length() == 0)
+    {
+        //Both srcPlane and srcHost are validated in readAndCheckSpraySourceReq().
+        StringBuffer fnamebuf(srcFile);
+        fnamebuf.trim();
+        StringArray files;
+        files.appendList(fnamebuf, ","); // handles comma separated files
+        ForEachItemIn(i, files)
+        {
+            const char *file = files.item(i);
+            if (isEmptyString(file))
+                continue;
+
+            //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
+            //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
+
+            SecAccessFlags permission = getDZFileScopePermissions(context, srcPlane, file, srcHost);
+            if (permission < SecAccess_Read)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
+                    srcPlane, file, context.queryUserId(), getSecAccessFlagName(permission));
+        }
+
+        SocketEndpoint ep(srcHost);
+        if (ep.isNull())
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Cannot resolve source network IP from %s.", srcHost);
+
+        RemoteMultiFilename rmfn;
+        rmfn.setEp(ep);
+        rmfn.append(fnamebuf.str());
+        srcDFUfileSpec->setMultiFilename(rmfn);
+    }
+    else
+    {   //this block is copied from the code before PR https://github.com/hpcc-systems/HPCC-Platform/pull/17144.
+        //Not sure there exists any use case for spraying a file using the srcXML. JIRA-29339 is created to check
+        //whether this is completely legacy. If it is, it may be removed to make the code a lot clearer.
+        srcXML.append('\0');
+        srcDFUfileSpec->setFromXML((const char*)srcXML.toByteArray());
+    }
 }
 
 bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspReplicateResponse &resp)
@@ -2458,6 +2467,11 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             if (!isEmptyString(destPlane))
                 getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask, destip);
 
+            SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
+            if (permission < SecAccess_Write)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
+                    isEmptyString(destPlane) ? destip : destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+
             RemoteFilename rfn;
             SocketEndpoint ep(destip.str());
             if (ep.isNull())
@@ -2473,7 +2487,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             destination->setSingleFilename(rfn);
         }
         else
-        {
+        {   //Not sure there exists any use case for despraying a file using the dstxml. JIRA-29339 is created to check
+            //whether this is completely legacy. If it is, it may be removed to make the code a lot clearer.
             dstxml.append('\0');
             destination->setFromXML((const char*)dstxml.toByteArray());
         }
@@ -2897,7 +2912,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 Owned<IPropertyTree> plane = findDropZonePlane(sPath, netaddr, true, true);
                 dropZoneName = plane->queryProp("@name");
             }
-            SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, sPath, nullptr);
+            SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, sPath, nullptr);
             if (permission < SecAccess_Read)
                 throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
                     dropZoneName, sPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
@@ -3007,7 +3022,7 @@ void CFileSprayEx::addPhysicalFile(IEspContext& context, IDirectoryIterator* di,
 bool CFileSprayEx::searchDropZoneFiles(IEspContext& context, const char* dropZoneName, const char* server,
     const char* dir, const char* relDir, const char* nameFilter, IArrayOf<IConstPhysicalFileStruct>& files, unsigned& filesFound)
 {
-    if (getDropZoneScopePermissions(context, dropZoneName, dir, server) < SecAccess_Read)
+    if (getDZPathScopePermissions(context, dropZoneName, dir, server) < SecAccess_Read)
         return false;
 
     RemoteFilename rfn;
@@ -3230,7 +3245,7 @@ void CFileSprayEx::getPhysicalFiles(IEspContext &context, const char *dropZoneNa
         if (dropZoneName && di->isDir())
         {
             VStringBuffer fullPath("%s%s", path, fileName.str());
-            if (getDropZoneScopePermissions(context, dropZoneName, fullPath, nullptr) < SecAccess_Read)
+            if (getDZPathScopePermissions(context, dropZoneName, fullPath, nullptr) < SecAccess_Read)
                 continue;
         }
 
@@ -3340,7 +3355,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
             Owned<IPropertyTree> plane = findDropZonePlane(directoryStr, netAddress, true, true);
             dzName = plane->queryProp("@name");
         }
-        if (getDropZoneScopePermissions(context, dzName, directoryStr, nullptr) < SecAccess_Read)
+        if (getDZPathScopePermissions(context, dzName, directoryStr, nullptr) < SecAccess_Read)
             return false;
 
         bool directoryOnly = req.getDirectoryOnly();
@@ -3482,7 +3497,7 @@ void CFileSprayEx::checkDropZoneFileScopeAccess(IEspContext &context, const char
         Owned<IPropertyTree> plane = findDropZonePlane(dropZonePath, netAddress, true, true);
         dropZoneName = plane->queryProp("@name");
     }
-    SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, dropZonePath, nullptr);
+    SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, dropZonePath, nullptr);
     if (permission < accessReq)
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Permission Required.",
             dropZoneName, dropZonePath, accessReqName, context.queryUserId(), getSecAccessFlagName(permission));
@@ -3526,7 +3541,7 @@ void CFileSprayEx::checkDropZoneFileScopeAccess(IEspContext &context, const char
 
         StringBuffer fullPath(dropZonePath);
         addPathSepChar(fullPath).append(pathToCheck);
-        SecAccessFlags permission = getDropZoneScopePermissions(context, dropZoneName, fullPath, nullptr);
+        SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, fullPath, nullptr);
         if (permission < accessReq)
         {
             uniquePath.setValue(pathToCheck.str(), false); //add a path denied
