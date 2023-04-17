@@ -1651,7 +1651,7 @@ public:
     void close()
     {
         header->rowofs[0] = (unsigned short)diffbuf.length();
-        ASSERT((size32_t)(header->totsize+header->firstrlesize)<=max);
+        ASSERT((size32_t)(header->totsize+header->firstrlesize)<=max || max == 0);
         unsigned short hofs = header->hsize();
         ASSERT(header->totsize==hofs+diffbuf.length());
         if (outBufMb)
@@ -1661,9 +1661,12 @@ public:
             outBufMb = NULL;
         }
         byte *out = (byte *)outbuf+hofs;
-        memcpy(out,diffbuf.toByteArray(),diffbuf.length());
-        out += diffbuf.length();
-        diffbuf.clear();
+        if (diffbuf.length())
+        {
+            memcpy(out,diffbuf.toByteArray(),diffbuf.length());
+            out += diffbuf.length();
+            diffbuf.clear();
+        }
         memcpy(out,firstrle.bufferBase(),header->firstrlesize);
         header->totsize += header->firstrlesize;
         firstrle.clear();
