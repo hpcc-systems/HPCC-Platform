@@ -21,21 +21,23 @@ fi
 scriptdir=$(dirname -- "$( readlink -f -- ""$0""; )")
 hpccdir=$scriptdir/../..
 gitroot="${gitroot/#\~/$HOME}"
+version=candidate-$1
+shift
 
-echo Create new RC candidate-$1
+echo Create new RC $version
 
 for f in $all ; do
    cd $gitroot/$f
    git fetch origin
-   git checkout candidate-$1
+   git checkout $version
    if [ $? -ne 0 ]; then
-      echo "Target branch candidate-$1 failed to check out"
+      echo "Target branch $version failed to check out"
       exit 1
    fi
 
-   git merge origin/candidate-$1 --ff-only
+   git merge origin/$version --ff-only
    if [ $? -ne 0 ]; then
-      echo "Target branch candidate-$1 is inconsistent with origin/candidate-$1"
+      echo "Target branch $version is inconsistent with origin/$version"
       exit 1
    fi
    git submodule update --recursive --init --force
@@ -47,5 +49,5 @@ read -n 1 -s
 for f in $all ; do
    cd $gitroot/$f
    echo "Process $f"
-   $hpccdir/cmake_modules/go_rc.sh
+   $hpccdir/cmake_modules/go_rc.sh $*
 done
