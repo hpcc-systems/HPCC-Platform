@@ -4,7 +4,7 @@ import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
-import * as Utility from "src/Utility";
+import { useBuildInfo } from "../hooks/platform";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { TableGroup } from "./forms/Groups";
@@ -22,6 +22,8 @@ export const GroupDetails: React.FunctionComponent<GroupDetailsProps> = ({
     name,
     tab = "summary"
 }) => {
+
+    const [, { opsCategory }] = useBuildInfo();
 
     const [groupName, setGroupName] = React.useState(name);
     const [showError, setShowError] = React.useState(false);
@@ -59,7 +61,7 @@ export const GroupDetails: React.FunctionComponent<GroupDetailsProps> = ({
         <Pivot
             overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
             onLinkClick={evt => {
-                pushUrl(`/${Utility.opsRouteCategory}/security/groups/${groupName}/${evt.props.itemKey}`);
+                pushUrl(`/${opsCategory}/security/groups/${groupName}/${evt.props.itemKey}`);
             }}
         >
             <PivotItem headerText={groupName} itemKey="summary" style={pivotItemStyle(size)} >

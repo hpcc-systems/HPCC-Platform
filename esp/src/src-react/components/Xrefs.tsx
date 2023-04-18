@@ -5,10 +5,10 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 import nlsHPCC from "src/nlsHPCC";
-import * as Utility from "src/Utility";
 
 const logger = scopedLogger("src-react/components/Xrefs.tsx");
 
@@ -21,6 +21,8 @@ interface XrefsProps {
 
 export const Xrefs: React.FunctionComponent<XrefsProps> = ({
 }) => {
+
+    const [, { opsCategory }] = useBuildInfo();
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
@@ -126,10 +128,10 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/${Utility.opsRouteCategory}/security/users/${selection[0].username}`);
+                    pushUrl(`/${opsCategory}/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/${Utility.opsRouteCategory}/security/users/${user.username}`, "_blank");
+                        window.open(`#/${opsCategory}/security/users/${user.username}`, "_blank");
                     });
                 }
             }
@@ -144,7 +146,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             key: "generate", text: nlsHPCC.Generate,
             onClick: () => setShowGenerateConfirm(true)
         }
-    ], [refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
+    ], [opsCategory, refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
