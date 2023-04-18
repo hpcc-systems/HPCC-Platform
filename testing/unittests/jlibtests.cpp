@@ -33,6 +33,7 @@
 #include "jqueue.hpp"
 #include "jregexp.hpp"
 #include "jutil.hpp"
+#include "junicode.hpp"
 
 #include "unittests.hpp"
 
@@ -2978,6 +2979,66 @@ class BlockedTimingTests : public CppUnit::TestFixture
 CPPUNIT_TEST_SUITE_REGISTRATION( BlockedTimingTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( BlockedTimingTests, "BlockedTimingTests" );
 
+
+
+
+class JLibUnicodeTest : public CppUnit::TestFixture
+{
+public:
+    CPPUNIT_TEST_SUITE(JLibUnicodeTest);
+        CPPUNIT_TEST(testConversions);
+    CPPUNIT_TEST_SUITE_END();
+
+protected:
+
+    void testConvert(UTF32 codepoint, UtfReader::UtfFormat readFormat, unsigned (*writeFunc)(void * vtarget, unsigned maxLength, UTF32 ch))
+    {
+        constexpr unsigned maxlen = 8;
+        byte temp[maxlen];
+        unsigned len;
+        len = writeFunc(temp, maxlen, codepoint);
+
+        UtfReader reader(readFormat, false);
+        reader.set(len, temp);
+        UTF32 value = reader.next();
+        ASSERT_EQUAL(codepoint, value);
+    }
+
+    void testConvertUtf8(UTF32 codepoint)
+    {
+        constexpr unsigned maxlen = 8;
+        byte temp[maxlen];
+        unsigned len;
+        len = writeUtf8(temp, maxlen, codepoint);
+        const byte * data = temp;
+        UTF32 value = readUtf8Character(len, data);
+        ASSERT_EQUAL(codepoint, value);
+        ASSERT_EQUAL(len, (unsigned)(data - temp));
+    }
+
+    void testConvert(UTF32 codepoint)
+    {
+        testConvertUtf8(codepoint);
+        testConvert(codepoint, UtfReader::Utf8, writeUtf8);
+        testConvert(codepoint, UtfReader::Utf16le, writeUtf16le);
+        testConvert(codepoint, UtfReader::Utf16be, writeUtf16be);
+        testConvert(codepoint, UtfReader::Utf32le, writeUtf32le);
+        testConvert(codepoint, UtfReader::Utf32be, writeUtf32be);
+    }
+
+    void testConversions()
+    {
+        unsigned range = 10;
+        for (unsigned low : { 0U, 0x80U, 100U, 0x7fU, 0x7ffU, 0xffffU, 0x0010FFFFU-(range-1U) })
+        {
+            for (unsigned delta = 0; delta < 10; delta++)
+                testConvert(low + delta);
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JLibUnicodeTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JLibUnicodeTest, "JLibUnicodeTest" );
 
 
 #endif // _USE_CPPUNIT
