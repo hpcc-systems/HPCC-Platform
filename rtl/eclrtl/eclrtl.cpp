@@ -3663,7 +3663,7 @@ bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen,
     else
     {
         out = (char *)rtlRealloc(tempBuffer, len);
-        if (!out)
+        if (!out && len)
             out = tempBuffer;
     }
     return U_SUCCESS(err) != FALSE;
