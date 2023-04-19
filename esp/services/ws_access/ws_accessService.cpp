@@ -2075,44 +2075,24 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
             resp.setPrefix(req.getPrefix());
         }
         SecResourceType rtype = str2type(basednReq->getRtype());
-        Owned<IMultiException> me = MakeMultiException("onResourceDelete");
-        try
+
+        for(unsigned i = 0; i < names.length(); i++)
         {
-            for(unsigned i = 0; i < names.length(); i++)
-            {
-                const char* name = names.item(i);
+            const char* name = names.item(i);
 
-                if(name == NULL || *name == '\0')
-                    continue;
+            if(name == NULL || *name == '\0')
+                continue;
 
-                StringBuffer namebuf(name);
-                if(rtype == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
-                    namebuf.insert(0, "repository.");
+            StringBuffer namebuf(name);
+            if(rtype == RT_MODULE && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
+                namebuf.insert(0, "repository.");
 
-                const char* prefix = req.getPrefix();
-                if(prefix && *prefix)
-                    namebuf.insert(0, prefix);
+            const char* prefix = req.getPrefix();
+            if(prefix && *prefix)
+                namebuf.insert(0, prefix);
 
-                try
-                {
-                    secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn(), context.querySecureContext());
-                }
-                catch(IException* e)
-                {
-                    me->append(*e);
-                }
-            }
+            secmgr->deleteResource(rtype, namebuf.str(), basednReq->getBasedn(), context.querySecureContext());
         }
-
-        catch(...)
-        {
-            resp.setRetcode(-1);
-            resp.setRetmsg("Unknown error");
-            return false;
-        }
-
-        if(me->ordinality())
-            throw me.getLink();
 
         resp.setRetcode(0);
     }
