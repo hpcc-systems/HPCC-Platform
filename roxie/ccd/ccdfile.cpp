@@ -703,6 +703,11 @@ public:
     void sortAndDedup()
     {
         // NOTE: single-threaded
+        // It's unfortunate that this is done by sorting the entire set, as it means we can't say
+        // "limit the result to most recent N bytes", where N is what is being reported as hot by the OS. 
+        // Though it's debatable whether such a limit would be useful given the way accounting is done, allocating
+        // cache usage to the first pod to request a given page.
+
         unsigned sortSize;
         if (recentReadHead > recentReadSize)
             sortSize = recentReadSize;
@@ -1346,14 +1351,43 @@ public:
             offset_t cacheTrackSize = compConfig->getPropInt64("@cacheTrackSize", (offset_t) -1);
             if (cacheTrackSize == (offset_t) -1)
             {
-                const char *memLimit = compConfig->queryProp("resources/limits/@memory");
+                const char *memLimit = nullptr;
+#ifdef __linux__                        
+                StringBuffer contents;
+                try
+                {
+                    // In theory this limit should be useful on "bare-metal" on VM systems...
+                    contents.loadFile("/sys/fs/cgroup/memory.max");
+                    memLimit = contents.str();
+                }
+                catch (IException *E)
+                {
+                    E->Release();
+                }
+#endif
                 if (!memLimit)
-                    memLimit = compConfig->queryProp("resources/requests/@memory");
+                {
+                    if (isContainerized())
+                    {
+                        memLimit = compConfig->queryProp("resources/limits/@memory");
+                        if (!memLimit)
+                            memLimit = compConfig->queryProp("resources/requests/@memory");
+                    }
+                    else
+                    {
+                        // MORE - can we pick up from /proc/meminfo MemTotal: line? Is it useful to do so?
+                    }
+                }
                 if (memLimit)
                 {
                     try
                     {
                         cacheTrackSize = friendlyStringToSize(memLimit);
+                        offset_t roxiemem = roxiemem::getTotalMemoryLimit();
+                        if (cacheTrackSize > roxiemem)
+                            cacheTrackSize -= roxiemem;
+                        else
+                            cacheTrackSize = 0;
                     }
                     catch (IException *E)
                     {
@@ -1365,7 +1399,7 @@ public:
                 else
                     cacheTrackSize = 0x10000 * (1<<CacheInfoEntry::pageBits);
             }
-            if (cacheTrackSize)
+            if (cacheTrackSize && cacheTrackSize != (offset_t) -1)
                 activeCacheReportingBuffer = new CacheReportingBuffer(cacheTrackSize);
         }
     }
