@@ -2790,20 +2790,33 @@ void CJobBase::init()
 
     logctx.setown(new CThorContextLogger());
 
+    // helpers to preserve legacy behaviour of a few 'expert' properties that could be set as attributes directly under ThorCluster
+    auto getLegacyExpertSettingBool = [this](const char *property, bool dft)
+    {
+        VStringBuffer globalProp("@%s", property);
+        return getOptBool(property, globals->getPropBool(globalProp, dft));
+    };
+    auto getLegacyExpertSettingUInt = [this](const char *property, unsigned dft)
+    {
+        VStringBuffer globalProp("@%s", property);
+        return getOptUInt(property, (unsigned)globals->getPropInt(globalProp, dft));
+    };
+
     // global setting default on, can be overridden by #option
-    timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
-    maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", 0); // NB: 0 means system decides
+    timeActivities = getLegacyExpertSettingBool(THOROPT_TIME_ACTIVITIES, true);
+    maxActivityCores = getOptUInt(THOROPT_MAX_ACTIVITY_CORES, 0); // NB: 0 means system decides
     if (0 == maxActivityCores)
         maxActivityCores = getAffinityCpus();
     pausing = false;
     resumed = false;
 
-    crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
-    usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
-    memorySpillAtPercentage = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    failOnLeaks = getOptBool("failOnLeaks");
+    crcChecking = getLegacyExpertSettingBool(THOROPT_THOR_ROWCRC, false);
+    usePackedAllocator = getLegacyExpertSettingBool(THOROPT_THOR_PACKEDALLOCATOR, true);
+    memorySpillAtPercentage = getLegacyExpertSettingUInt(THOROPT_MEMORY_SPILL_AT, 80);
+
+    failOnLeaks = getOptBool(THOROPT_FAIL_ON_LEAKS);
     maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
-    soapTraceLevel = getOptInt("soapTraceLevel", 1);
+    soapTraceLevel = getOptInt(THOROPT_SOAP_TRACE_LEVEL, 1);
 
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
