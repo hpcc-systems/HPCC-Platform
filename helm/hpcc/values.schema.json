@@ -2783,6 +2783,10 @@
         "keyColumn": {
           "description" : "Name of join key column",
           "type": "string"
+        },
+        "disableJoins": {
+          "description" : "Disables expensive table join operations",
+          "type": "boolean"
         }
       }
     },
