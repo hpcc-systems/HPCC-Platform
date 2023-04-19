@@ -1437,11 +1437,8 @@ public:
         //This should only be called after onStart has been called on the helper
         assertex(!createPending);
         assertex(state==STATEstarted);
-        unsigned startlen = out.length();
         basehelper.serializeCreateContext(out);
         basehelper.serializeStartContext(out);
-        if (queryTraceLevel() > 10)
-            CTXLOG("serializeCreateStartContext for %d added %d bytes", activityId, out.length()-startlen);
     }
 
     virtual void serializeExtra(MemoryBuffer &out) {}
@@ -3884,7 +3881,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             {
                 if (continuation->isDelayed() && canDefer)
                 {
-                    if (adaptor.activity.queryLogCtx().queryTraceLevel() > 10)
+                    if (doTrace(traceSmartStepping, TraceFlags::Max))
                         adaptor.activity.queryLogCtx().CTXLOG("Deferring continuation");
                     deferredContinuation = true;
                 }
@@ -3908,7 +3905,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                             topEntry.packet->Release();
                             topEntry.packet = continuation;
                             continuation->setDelayed(false);
-                            if (adaptor.activity.queryLogCtx().queryTraceLevel() > 10)
+                            if (doTrace(traceSmartStepping, TraceFlags::Max))
                                 adaptor.activity.queryLogCtx().CTXLOG("About to send continuation, from doContinuation");
                             ROQ->sendPacket(continuation->queryPacket(), adaptor.activity.queryLogCtx());
                             adaptor.sentsome.signal();
@@ -4041,8 +4038,6 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             }
             if (allDelayed && sendIdx != (unsigned) -1)
             {
-                if (activity.queryLogCtx().queryTraceLevel() > 10)
-                    activity.queryLogCtx().CTXLOG("About to send debug-deferred from next");
                 pending.item(sendIdx).setDelayed(false);
                 ROQ->sendPacket(pending.item(sendIdx).queryPacket(), activity.queryLogCtx());
                 sentsome.signal();
@@ -4056,8 +4051,6 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 IRoxieServerQueryPacket &p = pending.item(idx);
                 if (p.isDelayed())
                 {
-                    if (activity.queryLogCtx().queryTraceLevel() > 10)
-                        activity.queryLogCtx().CTXLOG("About to send deferred start from next");
                     p.setDelayed(false);
                     ROQ->sendPacket(p.queryPacket(), activity.queryLogCtx());
                     sentsome.signal();
@@ -4760,7 +4753,7 @@ public:
 
     const void * nextRowGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        if (activity.queryLogCtx().queryTraceLevel() > 20)
+        if (doTrace(traceSmartStepping, TraceFlags::Max))
         {
             StringBuffer recstr;
             unsigned i;
@@ -4780,7 +4773,7 @@ public:
                 if (p.isDelayed())
                 {
                     p.setDelayed(false);
-                    if (activity.queryLogCtx().queryTraceLevel() > 10)
+                    if (doTrace(traceSmartStepping, TraceFlags::Max))
                         activity.queryLogCtx().CTXLOG("About to send deferred start from nextRowGE, setting requireExact to %d", !stepExtra.returnMismatches());
                     MemoryBuffer serializedSkip;
                     activity.serializeSkipInfo(serializedSkip, seekLen, rawSeek, numFields, seek, stepExtra);
@@ -4816,10 +4809,6 @@ public:
     {
         // If we are merging then we need to do a heapsort on all 
         SimpleActivityTimer t(totalCycles, timeActivities);
-        if (activity.queryLogCtx().queryTraceLevel() > 10)
-        {
-            activity.queryLogCtx().CTXLOG("CRemoteResultAdaptor::nextRow()");
-        }
         for (;;)
         {
             checkDelayed();
@@ -4872,7 +4861,7 @@ public:
             {
                 pending.remove(0);
                 allread = true;
-                if (activity.queryLogCtx().queryTraceLevel() > 5)
+                if (doTrace(traceRoxiePackets))
                     activity.queryLogCtx().CTXLOG("All read on ruid %x", ruid);
                 return false;
             }
@@ -21974,8 +21963,6 @@ public:
     {
         if (isUnused && !CRoxieServerInternalSinkFactory::isSink())
         {
-            if (_ctx->queryTraceLevel() > 2)
-                DBGLOG("Workunit write %u is unused - create null activity", id);
             //Create a null sink activity that is always executed to ensure that stop() is called on the input.
             return createRoxieServerNullSinkActivity(_ctx, this, _probeManager);
         }
@@ -23574,7 +23561,7 @@ public:
                                     tlk->setLayoutTranslator(nullptr);
                             }
                             createSegmentMonitors(tlk);
-                            if (queryTraceLevel() > 3 || ctx->queryProbeManager())
+                            if (doTrace(traceFilters) || ctx->queryProbeManager())
                             {
                                 StringBuffer out;
                                 tlk->describeFilter(out);
@@ -24307,7 +24294,7 @@ public:
             }
             indexHelper.createSegmentMonitors(tlk);
             tlk->finishSegmentMonitors();
-            if (queryTraceLevel() > 3 || ctx->queryProbeManager())
+            if (doTrace(traceFilters) || ctx->queryProbeManager())
             {
                 StringBuffer out;
                 tlk->describeFilter(out);
@@ -27810,8 +27797,6 @@ protected:
         }
         virtual IActivityGraph * queryChildGraph(unsigned  id)
         {
-            if (queryTraceLevel() > 10)
-                CTXLOG("resolveChildGraph %d", id);
             IActivityGraph *childGraph = childGraphs.getValue(id);
             assertex(childGraph);
             return childGraph;

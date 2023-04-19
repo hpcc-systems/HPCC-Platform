@@ -3459,7 +3459,7 @@ public:
 
     virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) override
     {
-        if (logctx.queryTraceLevel() > 5)
+        if (doTrace(traceRoxieFiles))
         {
             StringBuffer s;
             logctx.CTXLOG("lookupDynamicFile %s for packet %s", lfn, header->toString(s).str());

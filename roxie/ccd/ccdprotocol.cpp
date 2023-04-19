@@ -295,7 +295,7 @@ public:
         {
             ssock.setown(secureContext->createSecureSocket(base));
             int loglevel = SSLogMin;
-            if (doTrace(traceRoxieSockets))
+            if (doTrace(traceSockets))
                 loglevel = SSLogMax;
             int status = ssock->secure_accept(loglevel);
             if (status < 0)
@@ -1731,7 +1731,7 @@ readAnother:
                 client->querySocket()->getPeerAddress(peer);
                 if (!client->readBlocktms(rawText.clear(), readWait, &httpHelper, continuationNeeded, isStatus, global->maxBlockSize))
                 {
-                    if (doTrace(traceRoxieSockets, TraceFlags::Max))
+                    if (doTrace(traceSockets, TraceFlags::Max))
                     {
                         StringBuffer b;
                         DBGLOG("No data reading query from socket");
@@ -1765,7 +1765,7 @@ readAnother:
                         break;
                 }
             }
-            if (doTrace(traceRoxieSockets) && !expectedError)
+            if (doTrace(traceSockets) && !expectedError)
             {
                 StringBuffer b;
                 IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());

@@ -65,6 +65,22 @@ enum class TraceFlags : unsigned
     flag12 = 0x2000,
     flag13 = 0x4000,
     flag14 = 0x8000,
+    flag15 = 0x10000,
+    flag16 = 0x20000,
+    flag17 = 0x40000,
+    flag18 = 0x80000,
+    flag19 = 0x100000,
+    flag20 = 0x200000,
+    flag21 = 0x400000,
+    flag22 = 0x800000,
+    flag23 = 0x1000000,
+    flag24 = 0x2000000,
+    flag25 = 0x4000000,
+    flag26 = 0x8000000,
+    flag27 = 0x10000000,
+    flag28 = 0x20000000,
+    flag29 = 0x40000000,
+    flag30 = 0x80000000
 };
 BITMASK_ENUM(TraceFlags);
 
@@ -72,21 +88,28 @@ BITMASK_ENUM(TraceFlags);
 
 // Common to several engines
 constexpr TraceFlags traceHttp = TraceFlags::flag1;
+constexpr TraceFlags traceSockets = TraceFlags::flag2;
+constexpr TraceFlags traceCassandra = TraceFlags::flag3;
+constexpr TraceFlags traceMongoDB = TraceFlags::flag4;
+constexpr TraceFlags traceCouchbase = TraceFlags::flag5;
+constexpr TraceFlags traceFilters = TraceFlags::flag6;
+constexpr TraceFlags traceKafka = TraceFlags::flag7;
 
 // Specific to Roxie
-constexpr TraceFlags traceRoxieLock = TraceFlags::flag2;
-constexpr TraceFlags traceQueryHashes = TraceFlags::flag3;
-constexpr TraceFlags traceSubscriptions = TraceFlags::flag4;
-constexpr TraceFlags traceRoxieFiles = TraceFlags::flag5;
-constexpr TraceFlags traceRoxieActiveQueries = TraceFlags::flag6;
-constexpr TraceFlags traceRoxiePackets = TraceFlags::flag7;
-constexpr TraceFlags traceIBYTI = TraceFlags::flag8;
-constexpr TraceFlags traceRoxiePings = TraceFlags::flag9;
-constexpr TraceFlags traceLimitExceeded = TraceFlags::flag10;
-constexpr TraceFlags traceRoxiePrewarm = TraceFlags::flag11;
-constexpr TraceFlags traceMissingOptFiles = TraceFlags::flag12;
-constexpr TraceFlags traceAffinity = TraceFlags::flag13;
-constexpr TraceFlags traceRoxieSockets = TraceFlags::flag14;
+constexpr TraceFlags traceRoxieLock = TraceFlags::flag16;
+constexpr TraceFlags traceQueryHashes = TraceFlags::flag17;
+constexpr TraceFlags traceSubscriptions = TraceFlags::flag18;
+constexpr TraceFlags traceRoxieFiles = TraceFlags::flag19;
+constexpr TraceFlags traceRoxieActiveQueries = TraceFlags::flag20;
+constexpr TraceFlags traceRoxiePackets = TraceFlags::flag21;
+constexpr TraceFlags traceIBYTI = TraceFlags::flag22;
+constexpr TraceFlags traceRoxiePings = TraceFlags::flag23;
+constexpr TraceFlags traceLimitExceeded = TraceFlags::flag24;
+constexpr TraceFlags traceRoxiePrewarm = TraceFlags::flag25;
+constexpr TraceFlags traceMissingOptFiles = TraceFlags::flag26;
+constexpr TraceFlags traceAffinity = TraceFlags::flag27;
+constexpr TraceFlags traceSmartStepping = TraceFlags::flag28;
+
 
 
 //========================================================================================= 
@@ -99,6 +122,13 @@ struct TraceOption { const char * name; TraceFlags value; };
 
 constexpr std::initializer_list<TraceOption> roxieTraceOptions
 { 
+    TRACEOPT(traceHttp),
+    TRACEOPT(traceSockets),
+    TRACEOPT(traceCassandra),
+    TRACEOPT(traceMongoDB),
+    TRACEOPT(traceCouchbase),
+    TRACEOPT(traceFilters),
+    TRACEOPT(traceKafka),
     TRACEOPT(traceRoxieLock), 
     TRACEOPT(traceQueryHashes), 
     TRACEOPT(traceSubscriptions),
@@ -111,7 +141,7 @@ constexpr std::initializer_list<TraceOption> roxieTraceOptions
     TRACEOPT(traceRoxiePrewarm),
     TRACEOPT(traceMissingOptFiles),
     TRACEOPT(traceAffinity),
-    TRACEOPT(traceRoxieSockets)
+    TRACEOPT(traceSmartStepping),
 };
 
 interface IPropertyTree;
