@@ -288,17 +288,17 @@ public:
     {
         return ctx->queryLocalId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller)
     {
-        ctx->setHttpIdHeaders(global, caller);
+        ctx->setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const
     {
-        return ctx->queryGlobalIdHttpHeader();
+        return ctx->queryGlobalIdHttpHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return ctx->queryCallerIdHttpHeader();
+        return ctx->queryCallerIdHttpHeaderName();
     }
     virtual const QueryOptions &queryOptions() const
     {
@@ -1355,30 +1355,30 @@ public:
         if (ctx)
             ctx->setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
         return ctx ? ctx->queryGlobalId() : nullptr;
     }
-    virtual const char *queryCallerId() const override
+    virtual const char *queryCallerId() const override 
     {
         return ctx ? ctx->queryCallerId() : nullptr;
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
         return ctx ? ctx->queryLocalId() : nullptr;
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
         if (ctx)
-            ctx->setHttpIdHeaders(global, caller);
+            ctx->setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return ctx ? ctx->queryGlobalIdHttpHeader() : "HPCC-Global-Id";
+        return ctx ? ctx->queryGlobalIdHttpHeaderName() : "HPCC-Global-Id";
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return ctx ? ctx->queryCallerIdHttpHeader() : "HPCC-Caller-Id";
+        return ctx ? ctx->queryCallerIdHttpHeaderName() : "HPCC-Caller-Id";
     }
 
     virtual bool isPassThrough()

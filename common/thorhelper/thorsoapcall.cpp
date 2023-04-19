@@ -1809,11 +1809,11 @@ private:
 #endif
         if (!isEmptyString(master->logctx.queryGlobalId()))
         {
-            if (!httpHeaderBlockContainsHeader(httpheaders, master->logctx.queryGlobalIdHttpHeader()))
-                request.append(master->logctx.queryGlobalIdHttpHeader()).append(": ").append(master->logctx.queryGlobalId()).append("\r\n");
+            if (!httpHeaderBlockContainsHeader(httpheaders, master->logctx.queryGlobalIdHttpHeaderName()))
+                request.append(master->logctx.queryGlobalIdHttpHeaderName()).append(": ").append(master->logctx.queryGlobalId()).append("\r\n");
 
-            if (!isEmptyString(master->logctx.queryLocalId()) && !httpHeaderBlockContainsHeader(httpheaders, master->logctx.queryCallerIdHttpHeader()))
-                request.append(master->logctx.queryCallerIdHttpHeader()).append(": ").append(master->logctx.queryLocalId()).append("\r\n");  //our localId is reciever's callerId
+            if (!isEmptyString(master->logctx.queryLocalId()) && !httpHeaderBlockContainsHeader(httpheaders, master->logctx.queryCallerIdHttpHeaderName()))
+                request.append(master->logctx.queryCallerIdHttpHeaderName()).append(": ").append(master->logctx.queryLocalId()).append("\r\n");  //our localId is reciever's callerId
         }
 
         if (master->wscType == STsoap)

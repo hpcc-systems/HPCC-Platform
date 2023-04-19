@@ -15,10 +15,45 @@
     limitations under the License.
 ############################################################################## */
 
-
-
 #ifndef JTRACE_HPP
 #define JTRACE_HPP
+
+class jlib_decl LogTrace
+{
+private:
+    StringAttr   globalId;
+    StringAttr   callerId;
+    StringAttr   localId;
+
+    StringAttr   globalIdHTTPHeaderName = "HPCC-Global-Id";
+    StringAttr   callerIdHTTPHeaderName = "HPCC-Caller-Id";
+
+    const char* assignLocalId();
+
+public:
+
+    LogTrace() {};
+    LogTrace(const char * globalId);
+
+    const char* queryGlobalId() const;
+    const char* queryCallerId() const;
+    const char* queryLocalId() const;
+    const char* queryGlobalIdHTTPHeaderName() const { return globalIdHTTPHeaderName.get(); }
+    const char* queryCallerIdHTTPHeaderName() const { return callerIdHTTPHeaderName.get(); }
+
+    void setHttpIdHeaderNames(const char *global, const char *caller)
+    {
+        if (!isEmptyString(global))
+            globalIdHTTPHeaderName.set(global);
+        if (!isEmptyString(caller))
+            callerIdHTTPHeaderName.set(caller);
+    }
+
+    //can these be private with abstract methods exposed to create/set these values?
+    void setGlobalId(const char* id);
+    void setCallerId(const char* id);
+    void setLocalId(const char* id);
+};
 
 /*
   To use feature-level tracing flags, protect the tracing with a test such as:

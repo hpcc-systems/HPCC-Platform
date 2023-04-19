@@ -2126,7 +2126,7 @@ void EclAgent::runProcess(IEclProcess *process)
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
     if (agentTopology->hasProp("@httpGlobalIdHeader"))
-        updateDummyContextLogger().setHttpIdHeaders(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
+        updateDummyContextLogger().setHttpIdHeaderNames(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
 
     if (queryWorkUnit()->hasDebugValue("GlobalId"))
     {

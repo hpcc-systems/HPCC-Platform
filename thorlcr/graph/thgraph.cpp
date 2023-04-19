@@ -30,6 +30,7 @@
 #include "thorport.hpp"
 #include "roxiehelper.hpp"
 #include "hpccconfig.hpp"
+#include "jtrace.hpp"
 
 
 
@@ -2635,18 +2636,14 @@ public:
 class CThorContextLogger : implements IContextLogger, public CSimpleInterface
 {
     unsigned traceLevel = 1;
-    StringAttr globalIdHeader;
-    StringAttr callerIdHeader;
-    StringAttr globalId;
-    StringAttr callerId;
-    StringBuffer localId;
+    LogTrace logTrace;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CThorContextLogger()
     {
         if (globals->hasProp("@httpGlobalIdHeader"))
-            setHttpIdHeaders(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
+            setHttpIdHeaderNames(globals->queryProp("@httpGlobalIdHeader"), globals->queryProp("@httpCallerIdHeader"));
     }
     virtual void CTXLOG(const char *format, ...) const override  __attribute__((format(printf,2,3))) 
     {
@@ -2689,41 +2686,36 @@ public:
     }
     virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
-        globalId.set(id);
-        appendGloballyUniqueId(localId.clear());
+        logTrace.setGlobalId(id);
     }
     virtual void setCallerId(const char *id) override
     {
-        callerId.set(id);
+        logTrace.setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
-        return globalId.get();
+        return logTrace.queryGlobalId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
-        return localId.str();
+        return logTrace.queryLocalId();
     }
     virtual const char *queryCallerId() const override
     {
-        return callerId.str();
+        return logTrace.queryCallerId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
-        if (global && *global)
-            globalIdHeader.set(global);
-        if (caller && *caller)
-            callerIdHeader.set(caller);
+        logTrace.setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return globalIdHeader.str();
+        return logTrace.queryGlobalIdHTTPHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return callerIdHeader.str();
+        return logTrace.queryCallerIdHTTPHeaderName();
     }
-
 };
 
 ////
