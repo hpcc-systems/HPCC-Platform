@@ -2801,6 +2801,10 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
     {
         return getDefaultPlaneDirectory(dirout, "@spillPlane", "spill");
     }
+    if (streq(category, "debug"))
+    {
+        return getDefaultPlaneDirectory(dirout, "@debugPlane", "debug");
+    }
     if (streq(category, "temp"))
     {
         if (getDefaultPlaneDirectory(dirout, "@tempPlane", "temp"))
