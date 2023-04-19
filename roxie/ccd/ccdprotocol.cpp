@@ -22,6 +22,7 @@
 #include "rtlcommon.hpp"
 
 #include "roxie.hpp"
+#include "ccd.hpp"
 #include "roxiehelper.hpp"
 #include "ccdprotocol.hpp"
 #include "securesocket.hpp"
@@ -1776,7 +1777,7 @@ readAnother:
         }
 
         PerfTracer perf;
-        IContextLogger &logctx = *msgctx->queryLogContext();
+        IRoxieContextLogger &logctx = static_cast<IRoxieContextLogger&>(*msgctx->queryLogContext());
         bool isHTTP = httpHelper.isHttp();
         if (isHTTP)
         {
@@ -2159,6 +2160,15 @@ readAnother:
                         response.startDataset("Statistics", NULL, (unsigned) -1);
                         VStringBuffer xml(" <wuid>%s</wuid>\n", statsWuid.str());
                         response.flushXML(xml, true);
+                    }
+                    if (queryPT->getPropBool("@summaryStats", alwaysSendSummaryStats))
+                    {
+                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                        response.startDataset("SummaryStats", NULL, (unsigned) -1);
+                        VStringBuffer s(" COMPLETE: %s %s complete in %u msecs memory=%u Mb agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d", queryName.get(), uid, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
+                        logctx.getStats(s).newline();
+                        response.flushXML(s, true);
+
                     }
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));

@@ -311,6 +311,7 @@ extern bool alwaysTrustFormatCrcs;
 extern bool allFilesDynamic;
 extern bool lockSuperFiles;
 extern bool logFullQueries;
+extern bool alwaysSendSummaryStats;
 extern bool blindLogging;
 extern bool debugPermitted;
 extern bool useRemoteResources;

@@ -129,6 +129,7 @@ bool doIbytiDelay = true;
 bool copyResources;
 bool chunkingHeap = true;
 bool logFullQueries;
+bool alwaysSendSummaryStats = false;
 bool blindLogging = false;
 bool debugPermitted = true;
 bool checkCompleted = true;
@@ -969,6 +970,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);
         logFullQueries = topology->getPropBool("@logFullQueries", false);
+        alwaysSendSummaryStats = topology->getPropBool("expert/@alwaysSendSummaryStats", alwaysSendSummaryStats);
         debugPermitted = topology->getPropBool("@debugPermitted", true);
         blindLogging = topology->getPropBool("@blindLogging", false);
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
