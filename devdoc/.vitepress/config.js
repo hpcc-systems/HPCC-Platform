@@ -35,6 +35,7 @@ export default {
                     { text: 'ECL Style Guide', link: '/ecllibrary/StyleGuide.html' },
                     { text: 'Code Submission Guidelines', link: '/devdoc/CodeSubmissions' },
                     { text: 'Code Review Guidelines', link: '/devdoc/CodeReviews' },
+                    { text: 'Writing Developer Documentation', link: '/devdoc/DevDocs' },
                 ]
             },
             {

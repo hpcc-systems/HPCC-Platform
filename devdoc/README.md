@@ -14,6 +14,7 @@ These documents are generated from Markdown by VitePress.  See [VitePress Markdo
 -   [Wiki](https://github.com/hpcc-systems/HPCC-Platform/wiki):  GitHub wiki for HPCC-Platform
 -   [Code Submission Guidelines](CodeSubmissions.md):  Guidelines for submitting PRs
 -   [Code Review Guidelines](CodeReviews.md):  Guidelines for reviewing submissions PRs
+-   [Writing Developer Documentation](DevDocs.md): How to ensure your documentation works well with VitePress
 
 ## Implementation details for different parts of the system
 

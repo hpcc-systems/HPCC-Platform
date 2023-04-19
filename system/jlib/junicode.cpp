@@ -21,7 +21,7 @@
 #include "jerror.hpp"
 #include "junicode.hpp"
 
-/* Based on code extracted from the following source...  Changed quite signficantly */
+/* Based on code extracted from the following source...  Changed quite significantly */
 
 /*
  * Copyright 2001 Unicode, Inc.
@@ -299,6 +299,8 @@ UTF32 UtfReader::next8()
      * The cases all fall through. See "Note A" below.
      */
     UTF32 ch = 0;
+    //The following code does not mask the bits from the incoming bytes as you would expect.
+    //Instead all the extra bits are subtracted away at the end of the function.
     switch (extraBytesToRead) {
         case 3: ch += *source++; ch <<= 6; // fallthrough
         case 2: ch += *source++; ch <<= 6; // fallthrough
@@ -328,6 +330,8 @@ UTF32 readUtf8Character(unsigned len, const byte * & cur)
      * The cases all fall through. See "Note A" below.
      */
     UTF32 ch = 0;
+    //The following code does not mask the bits from the incoming bytes as you would expect.
+    //Instead all the extra bits are subtracted away at the end of the function.
     switch (extraBytesToRead) {
         case 3: ch += *source++; ch <<= 6; // fallthrough
         case 2: ch += *source++; ch <<= 6; // fallthrough

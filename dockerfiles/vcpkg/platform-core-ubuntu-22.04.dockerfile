@@ -29,6 +29,7 @@ RUN apt-get clean -y && \
     apt-get update -y && \
     apt-get install --no-install-recommends -y \
     default-jdk \
+    elfutils \
     expect \
     g++ \
     git \

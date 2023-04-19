@@ -17,7 +17,20 @@ globals() {
 
     CMAKE_OPTIONS="-G Ninja -DVCPKG_FILES_DIR=/hpcc-dev -DCPACK_THREADS=$(docker info --format '{{.NCPU}}') -DUSE_OPTIONAL=OFF -DCONTAINERIZED=ON -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON"
 
-    HPCC_BUILD="hpcc_build_$MODE"
+    if [ "$TAG_BUILD" -eq 1 ]; then
+        HPCC_BUILD="hpcc_build_$MODE-$GIT_BRANCH"
+        if ! docker volume inspect "$HPCC_BUILD" >/dev/null 2>&1; then
+            if docker volume inspect "hpcc_build_$MODE" >/dev/null 2>&1; then
+                docker volume create --name "$HPCC_BUILD"
+                docker container run --rm -it \
+                    -v "hpcc_build_$MODE":/from \
+                    -v "$HPCC_BUILD":/to \
+                    alpine ash -c "cd /from ; cp -av . /to"
+            fi
+        fi        
+    else
+        HPCC_BUILD="hpcc_build_$MODE"
+    fi
 }
 
 create_build_image() {
@@ -230,7 +243,8 @@ build() {
 }
 
 incr() {
-    MODE=debug
+    MODE="debug"
+    globals
     build
 }
 
@@ -276,16 +290,19 @@ usage() {
     echo "  status         display environment variables"
     echo "  -m, --mode     specify the build mode (debug or release)"
     echo "                 default mode is release"
+    echo "  -t, --tag      tag the build volume with the current branch ref"
+    echo "                 will preserve build state per branch"
     echo "  -r, --reconfigure reconfigure CMake before building"
 }
 
 # Set default values
 ACTION=
-MODE=release
+MODE="release"
 RECONFIGURE=0
 DEB_FILE=""
 BUILD_OS="ubuntu-22.04"
 RELEASE_BASE_IMAGE="ubuntu:jammy-20230308" # Matches vcpkg base image (does not need to be an exact match)
+TAG_BUILD=0
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]
@@ -319,6 +336,10 @@ case $key in
         MODE="$2"
         shift # past argument
         shift # past value
+        ;;
+    -t|--tag)
+        TAG_BUILD=1
+        shift # past argument
         ;;
     -r|--reconfigure)
         RECONFIGURE=1
