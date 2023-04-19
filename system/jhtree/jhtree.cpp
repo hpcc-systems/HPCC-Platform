@@ -1098,7 +1098,6 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK)
     {
         keyHdr->load(hdr);
         rootNode = getRootNode();
-        loadBloomFilters();
     }
     catch (IKeyException *ke)
     {
@@ -1331,7 +1330,7 @@ const CJHTreeBlobNode *CKeyIndex::getBlobNode(offset_t nodepos, IContextLogger *
     cycle_t readCycles = 0;
     cycle_t fetchCycles = 0;
     {
-        CriticalBlock b(blobCacheCrit);
+        CriticalBlock b(cacheCrit);
         if (nodepos != cachedBlobNodePos)
         {
 
@@ -1419,7 +1418,10 @@ void CKeyIndex::loadBloomFilters()
 {
     offset_t bloomAddr = keyHdr->getHdrStruct()->bloomHead;
     if (!bloomAddr || bloomAddr == static_cast<offset_t>(-1))
+    {
+        bloomFiltersLoaded = true;
         return; // indexes created before introduction of bloomfilter would have FFFF... in this space
+    }
 
     while (bloomAddr)
     {
@@ -1446,10 +1448,19 @@ void CKeyIndex::loadBloomFilters()
         bloomFilters.append(*new IndexBloomFilter(numHashes, bloomTableSize, (byte *) bloomTable.detach(), fields));
     }
     bloomFilters.sort(IndexBloomFilter::compare);
+    bloomFiltersLoaded = true;
 }
 
 bool CKeyIndex::bloomFilterReject(const IIndexFilterList &segs) const
 {
+    if (segs.isUnfiltered())
+        return false;
+    if (!bloomFiltersLoaded)
+    {
+        CriticalBlock b(cacheCrit);
+        if (!bloomFiltersLoaded)
+            const_cast<CKeyIndex *>(this)->loadBloomFilters();
+    }
     ForEachItemIn(idx, bloomFilters)
     {
         IndexBloomFilter &filter = bloomFilters.item(idx);

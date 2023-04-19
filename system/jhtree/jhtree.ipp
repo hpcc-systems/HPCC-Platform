@@ -91,9 +91,10 @@ private:
 protected:
     unsigned iD;
     StringAttr name;
-    CriticalSection blobCacheCrit;
+    mutable CriticalSection cacheCrit;
     Owned<const CJHTreeBlobNode> cachedBlobNode;
     CIArrayOf<IndexBloomFilter> bloomFilters;
+    std::atomic<bool> bloomFiltersLoaded = {0};
     offset_t cachedBlobNodePos;
 
     CKeyHdr *keyHdr;
