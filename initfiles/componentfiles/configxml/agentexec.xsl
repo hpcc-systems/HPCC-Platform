@@ -124,8 +124,8 @@
        <expert>
         <xsl:copy-of select="/Environment/Software/Global/@*"/>
        </expert>
+       <xsl:copy-of select="/Environment/Hardware/cost"/>
       </global>
-      <xsl:copy-of select="/Environment/Hardware/cost"/>
     </agentexec>
   </xsl:template>
 
