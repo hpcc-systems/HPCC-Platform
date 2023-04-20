@@ -95,6 +95,26 @@ static CriticalSection physicalChange;
 
 #define MDFS_GET_FILE_TREE_V2 ((unsigned)1)
 
+#ifdef NULL_DALIUSER_STACKTRACE
+
+static void logNullUser(const char * func, int line = __LINE__)
+{
+    const double nullUserLogMinutes = 60;	//log NULL user requests no more than once this often
+    static time_t lastNullUserLogEntry = (time_t)NULL;
+    static CriticalSection nullUserLogCS;
+
+    CriticalBlock block(nullUserLogCS);
+    time_t timeNow = time(nullptr);
+    if (difftime(timeNow, lastNullUserLogEntry) >= nullUserLogMinutes)
+    {
+        IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp %s line %d", func, line);
+        PrintStackReport();
+        lastNullUserLogEntry = timeNow;
+    }
+}
+
+#endif
+
 static int strcompare(const void * left, const void * right)
 {
     const char * l = (const char *)left;
@@ -1341,9 +1361,7 @@ static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *us
             user->getUserName(sb);
         if (sb.length()==0)
         {
-            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor() %d",__LINE__);
-            //following debug code to be removed
-            PrintStackReport();
+            logNullUser("setUserDescriptor()");
         }
 #endif
         user = queryDistributedFileDirectory().queryDefaultUser();
@@ -1359,9 +1377,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
         if (!user)
         {
 #ifdef NULL_DALIUSER_STACKTRACE
-            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp getScopePermissions() line %d",__LINE__);
-            //following debug code to be removed
-            PrintStackReport();
+            logNullUser("getScopePermissions()");
 #endif
             user = queryDistributedFileDirectory().queryDefaultUser();
         }
@@ -1392,8 +1408,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
 #ifdef NULL_DALIUSER_STACKTRACE
     if (!user)
     {
-        IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp checkLogicalScope() line %d",__LINE__);
-        PrintStackReport();
+        logNullUser("checkLogicalScope()");
     }
 #endif
 
@@ -8905,9 +8920,7 @@ void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     if (!user)
     {
 #ifdef NULL_DALIUSER_STACKTRACE
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp CDistributedFileDirectory::renamePhysical %d",__LINE__);
-        //following debug code to be removed
-        PrintStackReport();
+        logNullUser("DistributedFileDirectory::renamePhysical()");
 #endif
         user = defaultudesc.get();
     }
@@ -11355,8 +11368,7 @@ IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const 
 #ifdef NULL_DALIUSER_STACKTRACE
     else
     {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getDFAttributesIterator() line %d",__LINE__);
-        PrintStackReport();
+        logNullUser("CDistributedFileDirectory::getDFAttributesIterator()");
     }
 #endif
 
@@ -11488,8 +11500,7 @@ void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn,IUserD
 #ifdef NULL_DALIUSER_STACKTRACE
     else
     {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setFileAccessed() line %d",__LINE__);
-        PrintStackReport();
+        logNullUser("setFileAccessed()");
     }
 #endif
     if (foreigndali)
@@ -11536,8 +11547,7 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDe
 #ifdef NULL_DALIUSER_STACKTRACE
     else
     {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setFileProtect() line %d",__LINE__);
-        PrintStackReport();
+        logNullUser("CDistributedFileDirectory::setFileProtect()");
     }
 #endif
     if (foreigndali)
@@ -11602,8 +11612,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
         {
             mb.append(false);
 #ifdef NULL_DALIUSER_STACKTRACE
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
-            PrintStackReport();
+            logNullUser("CDistributedFileDirectory::getFileTree()");
 #endif
         }
     }
@@ -11616,8 +11625,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
 #ifdef NULL_DALIUSER_STACKTRACE
         else
         {
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
-            PrintStackReport();
+            logNullUser("getFileTree(2)");
         }
 #endif
     }
