@@ -247,26 +247,27 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
             long response_code;
             curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &response_code);
 
+            StringBuffer message;
             switch (response_code)
             {
             case 400L:
-                throw makeStringExceptionV(-1, "%s KQL response: Error (400): Request is badly formed and failed (permanently)", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL response: Error (400): Request is badly formed and failed (permanently): '%s'", COMPONENT_NAME, curlErrBuffer);
             case 401L:
-                throw makeStringExceptionV(-1, "%s KQL response: Error (401): Unauthorized - Client needs to authenticate first.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL response: Error (401): Unauthorized - Client needs to authenticate first: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 403L:
-                throw makeStringExceptionV(-1, "%s KQL response: Error (403): Forbidden - Client request is denied.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL response: Error (403): Forbidden - Client request is denied: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 404L:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (404): NotFound - Request references a non-existing entity. Ensure configured WorkspaceID (%s) is valid!", COMPONENT_NAME, workspaceID);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (404): NotFound - Request references a non-existing entity. Ensure configured WorkspaceID is valid!: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 413:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (413): PayloadTooLarge - Request payload exceeded limits.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (413): PayloadTooLarge - Request payload exceeded limits: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 429:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (429): TooManyRequests - Request has been denied because of throttling.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (429): TooManyRequests - Request has been denied because of throttling: '%s'", COMPONENT_NAME, curlErrBuffer);
             case 504:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (504): Timeout - Request has timed out.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (504): Timeout - Request has timed out: '%s'", COMPONENT_NAME, (curlErrBuffer[0] ? curlErrBuffer : "" ));
             case 520:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (520): Azure ServiceError - Service found an error while processing the request.", COMPONENT_NAME);
+                throw makeStringExceptionV(-1,"%s KQL request: Error (520): Azure ServiceError - Service found an error while processing the request: '%s'", COMPONENT_NAME, curlErrBuffer);
             default:
-                throw makeStringExceptionV(-1, "%s KQL request: Error (%d): %s", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "<unknown>"));
+                throw makeStringExceptionV(-1,"%s KQL request: Error (%d): '%s'", COMPONENT_NAME, curlResponseCode, (curlErrBuffer[0] ? curlErrBuffer : "Unknown Error"));
             }
         }
         else if (readBuffer.length() == 0)
