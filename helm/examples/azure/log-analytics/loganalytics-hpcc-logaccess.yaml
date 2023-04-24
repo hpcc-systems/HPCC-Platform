@@ -27,6 +27,7 @@ global:
       searchColumn: "Name"
       keyColumn: "ContainerID"
       timeStampColumn: "TimeGenerated"
+      disableJoins: false #Potentially expensive join operations needed to fetch a certain column can be disabled
     - type: "audience"
       searchColumn: "hpcc_log_audience"
     - type: "class"
