@@ -12,6 +12,7 @@ import { ModernMode } from "src/BuildInfo";
 
 import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
+import { useBuildInfo } from "../hooks/platform";
 import { useGlobalStore, useUserStore } from "../hooks/store";
 import { useMyAccount, useUserSession } from "../hooks/user";
 import { replaceUrl } from "../util/history";
@@ -40,6 +41,8 @@ interface DevTitleProps {
 
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
+
+    const [, { opsCategory }] = useBuildInfo();
     const theme = useTheme();
     const { userSession, setUserSession, deleteUserSession } = useUserSession();
     const toolbarThemeDefaults = { active: false, text: "", color: theme.palette.themeLight };
@@ -72,9 +75,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const onTechPreviewClick = React.useCallback(
         (ev?: React.MouseEvent<HTMLButtonElement>, item?: IContextualMenuItem): void => {
             setModernMode(String(false));
-            switchTechPreview(false);
+            switchTechPreview(false, opsCategory);
         },
-        [setModernMode]
+        [opsCategory, setModernMode]
     );
 
     const [logCount, setLogCount] = React.useState(0);

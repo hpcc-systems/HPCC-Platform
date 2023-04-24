@@ -3,11 +3,11 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
-import * as Utility from "src/Utility";
 import { GroupMemberStore, CreateGroupMemberStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { GroupAddUserForm } from "./forms/GroupAddUser";
@@ -35,6 +35,8 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
     store
 }) => {
 
+    const [, { opsCategory }] = useBuildInfo();
+
     const [showAdd, setShowAdd] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
@@ -58,8 +60,8 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             username: {
                 label: nlsHPCC.UserName,
                 formatter: React.useCallback(function (_name, idx) {
-                    return <Link href={`#/${Utility.opsRouteCategory}/security/users/${_name}`}>{_name}</Link>;
-                }, [])
+                    return <Link href={`#/${opsCategory}/security/users/${_name}`}>{_name}</Link>;
+                }, [opsCategory])
             },
             employeeID: { label: nlsHPCC.EmployeeID },
             employeeNumber: { label: nlsHPCC.EmployeeNumber },
@@ -108,10 +110,10 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/${Utility.opsRouteCategory}/security/users/${selection[0].username}`);
+                    pushUrl(`/${opsCategory}/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/${Utility.opsRouteCategory}/security/users/${user?.username}`, "_blank");
+                        window.open(`#/${opsCategory}/security/users/${user?.username}`, "_blank");
                     });
                 }
             }
@@ -125,7 +127,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true)
         },
-    ], [refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
+    ], [refreshTable, opsCategory, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     return <>
         <HolyGrail

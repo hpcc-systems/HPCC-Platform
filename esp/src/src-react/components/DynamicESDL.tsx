@@ -7,6 +7,7 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/store/Memory";
 import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import * as WsESDLConfig from "src/WsESDLConfig";
@@ -42,6 +43,8 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
     tab = "bindings"
 }) => {
 
+    const [, { opsCategory }] = useBuildInfo();
+
     const [showAddBinding, setShowAddBinding] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
@@ -73,7 +76,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
                         img = Utility.getImageHTML("machine.png") + nlsHPCC.Port + ":";
                     } else if (row.type === "binding") {
                         img = Utility.getImageHTML("sync.png");
-                        name = `<a href="#/desdl/bindings/${name}">${name}</a>`;
+                        name = `<a href="#/${opsCategory}/desdl/bindings/${name}">${name}</a>`;
                     }
                     return img + "&nbsp;" + name;
                 },
@@ -193,10 +196,10 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/desdl/bindings/${selection[0].Name}`);
+                    pushUrl(`/${opsCategory}/desdl/bindings/${selection[0].Name}`);
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/desdl/bindings/${selection[i].Name}`, "_blank");
+                        window.open(`#/${opsCategory}/desdl/bindings/${selection[i].Name}`, "_blank");
                     }
                 }
             }
@@ -210,7 +213,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
             key: "delete", text: nlsHPCC.DeleteBinding, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true),
         }
-    ], [refreshGrid, selection, setShowDeleteConfirm, uiState]);
+    ], [opsCategory, refreshGrid, selection, setShowDeleteConfirm, uiState]);
 
     React.useEffect(() => {
         if (tab !== "bindings") return;
@@ -232,7 +235,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
         <SizeMe monitorHeight>{({ size }) =>
             <Pivot
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
-                onLinkClick={evt => pushUrl(`/desdl/${evt.props.itemKey}`)}
+                onLinkClick={evt => pushUrl(`/${opsCategory}/desdl/${evt.props.itemKey}`)}
             >
                 <PivotItem headerText={nlsHPCC.title_DESDL} itemKey="bindings" style={pivotItemStyle(size)} >
                     <HolyGrail

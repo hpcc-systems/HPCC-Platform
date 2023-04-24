@@ -160,6 +160,7 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.Services, itemKey: "/topology/services" },
         { headerText: nlsHPCC.Logs, itemKey: "/topology/logs" },
         { headerText: nlsHPCC.Security + " (L)", itemKey: "/topology/security" },
+        { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/topology/desdl" },
         { headerText: nlsHPCC.DaliAdmin, itemKey: "/topology/daliadmin" },
     ],
     "operations": [
@@ -186,7 +187,8 @@ for (const key in subMenuItems) {
 }
 
 function subNavSelectedKey(hashPath) {
-    return !!subNavIdx[hashPath] ? hashPath : null;
+    const hashCategory = hashPath.split("/").slice(0, 3).join("/");
+    return !!subNavIdx[hashCategory] ? hashCategory : null;
 }
 
 const handleLinkClick = (item?: PivotItem) => {

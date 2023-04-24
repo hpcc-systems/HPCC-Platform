@@ -2,6 +2,7 @@ import * as React from "react";
 import { CommandBar, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useConfirm } from "../hooks/confirm";
+import { useBuildInfo } from "../hooks/platform";
 import { TableGroup } from "./forms/Groups";
 import * as WsESDLConfig from "src/WsESDLConfig";
 import nlsHPCC from "src/nlsHPCC";
@@ -18,6 +19,8 @@ interface DESDLBindingSummaryProps {
 
 export const DESDLBindingSummary: React.FunctionComponent<DESDLBindingSummaryProps> = (props) => {
 
+    const [, { opsCategory }] = useBuildInfo();
+
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
         message: nlsHPCC.YouAreAboutToDeleteBinding,
@@ -25,12 +28,12 @@ export const DESDLBindingSummary: React.FunctionComponent<DESDLBindingSummaryPro
             WsESDLConfig.DeleteESDLBinding({ request: { Id: props.bindingName } })
                 .then(({ DeleteESDLRegistryEntryResponse }) => {
                     if (DeleteESDLRegistryEntryResponse?.status?.Code === 0) {
-                        replaceUrl("/desdl/bindings");
+                        replaceUrl(`/${opsCategory}/desdl/bindings`);
                     }
                 })
                 .catch(err => logger.error(err))
                 ;
-        }, [props.bindingName])
+        }, [opsCategory, props.bindingName])
     });
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

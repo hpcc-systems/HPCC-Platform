@@ -3,11 +3,11 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "
 import { AccessService } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
-import * as Utility from "src/Utility";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { UserAddGroupForm } from "./forms/UserAddGroup";
 
@@ -26,6 +26,8 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
     username,
 }) => {
 
+    const [, { opsCategory }] = useBuildInfo();
+
     const [showAdd, setShowAdd] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [data, setData] = React.useState<any[]>([]);
@@ -42,7 +44,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
                 label: nlsHPCC.GroupName,
                 formatter: function (_name, idx) {
                     _name = _name.replace(/[^-_a-zA-Z0-9\s]+/g, "");
-                    return <Link href={`#/${Utility.opsRouteCategory}/security/groups/${_name}`}>{_name}</Link>;
+                    return <Link href={`#/${opsCategory}/security/groups/${_name}`}>{_name}</Link>;
                 }
             }
         }
@@ -96,10 +98,10 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/${Utility.opsRouteCategory}/security/groups/${selection[0].name}`);
+                    pushUrl(`/${opsCategory}/security/groups/${selection[0].name}`);
                 } else {
                     selection.forEach(group => {
-                        window.open(`#/${Utility.opsRouteCategory}/security/groups/${group?.name}`, "_blank");
+                        window.open(`#/${opsCategory}/security/groups/${group?.name}`, "_blank");
                     });
                 }
             }
@@ -113,7 +115,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
             onClick: () => setShowDeleteConfirm(true)
         },
-    ], [refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
+    ], [opsCategory, refreshData, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     return <>
         <HolyGrail

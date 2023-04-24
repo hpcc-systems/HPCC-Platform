@@ -8,11 +8,11 @@ import { GroupStore, CreateGroupStore } from "src/ws_access";
 import { ShortVerticalDivider } from "./Common";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { AddGroupForm } from "./forms/AddGroup";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { QuerySortItem } from "src/store/Store";
-import * as Utility from "src/Utility";
 
 const logger = scopedLogger("src-react/components/Groups.tsx");
 const wsAccess = new AccessService({ baseUrl: "" });
@@ -35,6 +35,8 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
     store
 }) => {
 
+    const [, { opsCategory }] = useBuildInfo();
+
     const [showAddGroup, setShowAddGroup] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
@@ -54,7 +56,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             name: {
                 label: nlsHPCC.GroupName,
                 formatter: function (_name, idx) {
-                    return <Link href={`#/${Utility.opsRouteCategory}/security/groups/${_name}`}>{_name}</Link>;
+                    return <Link href={`#/${opsCategory}/security/groups/${_name}`}>{_name}</Link>;
                 }
             },
             groupOwner: { label: nlsHPCC.ManagedBy },
@@ -111,10 +113,10 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/${Utility.opsRouteCategory}/security/groups/${selection[0].name}`);
+                    pushUrl(`/${opsCategory}/security/groups/${selection[0].name}`);
                 } else {
                     selection.forEach(group => {
-                        window.open(`#/${Utility.opsRouteCategory}/security/groups/${group.name}`, "_blank");
+                        window.open(`#/${opsCategory}/security/groups/${group.name}`, "_blank");
                     });
                 }
             }
@@ -132,7 +134,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportGroups()
         },
-    ], [exportGroups, refreshTable, selection, setShowDeleteConfirm, uiState]);
+    ], [exportGroups, opsCategory, refreshTable, selection, setShowDeleteConfirm, uiState]);
 
     return <>
         <HolyGrail

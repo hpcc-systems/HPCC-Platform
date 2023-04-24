@@ -7,6 +7,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { UserStore, CreateUserStore } from "src/ws_access";
 import { useConfirm } from "../hooks/confirm";
 import { useFluentPagedGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { ShortVerticalDivider } from "./Common";
 import { AddUserForm } from "./forms/AddUser";
 import { Filter } from "./forms/Filter";
@@ -14,7 +15,6 @@ import { Fields } from "./forms/Fields";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams, pushUrl } from "../util/history";
 import { QuerySortItem } from "src/store/Store";
-import * as Utility from "src/Utility";
 
 const logger = scopedLogger("src-react/components/Users.tsx");
 const wsAccess = new AccessService({ baseUrl: "" });
@@ -34,7 +34,7 @@ interface UsersProps {
     store?: UserStore;
 }
 
-const emptyFilter = {};
+const emptyFilter: { [key: string]: any } = {};
 const defaultSort = { attribute: "username", descending: false };
 
 export const Users: React.FunctionComponent<UsersProps> = ({
@@ -43,6 +43,8 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     page = 1,
     store
 }) => {
+
+    const [, { opsCategory }] = useBuildInfo();
 
     const [showAddUser, setShowAddUser] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
@@ -70,8 +72,8 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 width: 180,
                 label: nlsHPCC.Username,
                 formatter: React.useCallback(function (_name, idx) {
-                    return <Link href={`#/${Utility.opsRouteCategory}/security/users/${_name}`}>{_name}</Link>;
-                }, [])
+                    return <Link href={`#/${opsCategory}/security/users/${_name}`}>{_name}</Link>;
+                }, [opsCategory])
             },
             employeeID: { width: 180, label: nlsHPCC.EmployeeID },
             employeeNumber: { width: 180, label: nlsHPCC.EmployeeNumber },
@@ -135,10 +137,10 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
                 if (selection.length === 1) {
-                    pushUrl(`/${Utility.opsRouteCategory}/security/users/${selection[0].username}`);
+                    pushUrl(`/${opsCategory}/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/${Utility.opsRouteCategory}/security/users/${user?.username}`, "_blank");
+                        window.open(`#/${opsCategory}/security/users/${user?.username}`, "_blank");
                     });
                 }
             }
@@ -156,7 +158,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportUsers()
         },
-    ], [exportUsers, refreshTable, selection, setShowDeleteConfirm, uiState]);
+    ], [exportUsers, opsCategory, refreshTable, selection, setShowDeleteConfirm, uiState]);
 
     //  Filter  ---
     const filterFields: Fields = {};

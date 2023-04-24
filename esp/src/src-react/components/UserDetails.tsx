@@ -4,7 +4,7 @@ import { SizeMe } from "react-sizeme";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
-import * as Utility from "src/Utility";
+import { useBuildInfo } from "../hooks/platform";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { TableGroup } from "./forms/Groups";
@@ -22,6 +22,8 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
     username,
     tab = "summary"
 }) => {
+
+    const [, { opsCategory }] = useBuildInfo();
 
     const [user, setUser] = React.useState<any>();
     const [employeeID, setEmployeeID] = React.useState("");
@@ -101,7 +103,7 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
         <Pivot
             overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
             onLinkClick={evt => {
-                pushUrl(`/${Utility.opsRouteCategory}/security/users/${user?.username}/${evt.props.itemKey}`);
+                pushUrl(`/${opsCategory}/security/users/${user?.username}/${evt.props.itemKey}`);
             }}
         >
             <PivotItem headerText={user?.username} itemKey="summary" style={pivotItemStyle(size)} >
