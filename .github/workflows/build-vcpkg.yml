@@ -35,7 +35,6 @@ jobs:
       matrix:
         os:
           [
-            "ubuntu-18.04",
             "ubuntu-20.04",
             "ubuntu-22.04",
             "windows-2019",
@@ -44,13 +43,6 @@ jobs:
             "macos-12",
           ]
         include:
-          - os: "ubuntu-18.04"
-            triplet: "x64-linux"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=Release -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
-            event_name: "schedule"
           - os: "ubuntu-20.04"
             triplet: "x64-linux"
             mono: "mono"
