@@ -399,6 +399,8 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         request->getParameter("Path", pathStr);
         request->getParameter("Name", nameStr);
         request->getParameter("DropZoneName", dropZoneName);
+        if (containsRelPaths(nameStr))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid name %s", nameStr.str());
 
         SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, pathStr, netAddressStr);
         if (permission < SecAccess_Read)
