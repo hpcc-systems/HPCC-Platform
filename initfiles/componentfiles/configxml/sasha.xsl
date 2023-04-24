@@ -89,6 +89,7 @@
                 <expert>
                     <xsl:copy-of select="/Environment/Software/Globals/@* | /Environment/Software/Globals/*"/>
                 </expert>
+                <xsl:copy-of select="/Environment/Hardware/cost"/>
             </global>
 
             <xsl:element name="LDS">
