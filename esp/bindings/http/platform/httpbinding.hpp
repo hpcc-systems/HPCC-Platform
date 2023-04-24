@@ -111,6 +111,7 @@ interface IEspWsdlSections
 //  virtual MethodInfoArray & queryQualifiedNames(IEspContext& ctx)=0;
     virtual int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)=0;
     virtual int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
+    virtual int getXmlFilename(StringBuffer &filename)=0;
     virtual int getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
     virtual int getWsdlPorts(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
     virtual int getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
@@ -344,6 +345,7 @@ public:
 //  MethodInfoArray &queryQualifiedNames(IEspContext& ctx) { m_methods.popAll(); getQualifiedNames(ctx,m_methods); return m_methods;};
 
     int getXsdDefinition(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda){return 0;};
+    int getXmlFilename(StringBuffer &filename) {return 0;};
     int getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
     int getWsdlPorts(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
     int getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda);
@@ -427,9 +429,21 @@ public:
 
     static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);
 
+    virtual bool getDefaultClientVersion(double &ver) {ver=0; return true;}
+
+    double getVersion(IEspContext &context)
+    {
+        double version = context.getClientVersion();
+        if (version == 0.0)
+        {
+            getDefaultClientVersion(version);
+        }
+        return version;
+    }
+
 protected:
     virtual bool basicAuth(IEspContext* ctx);
-    int getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl);
+    int getServiceWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl);
     virtual bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone);
     virtual void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method){}
     void generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);

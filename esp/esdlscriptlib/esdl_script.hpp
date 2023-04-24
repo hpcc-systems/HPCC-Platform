@@ -18,10 +18,10 @@
 #ifndef ESDL_SCRIPT_HPP_
 #define ESDL_SCRIPT_HPP_
 
-#ifdef ESDLLIB_EXPORTS
- #define esdl_decl DECL_EXPORT
+#ifdef ESDLSCRIPTLIB_EXPORTS
+ #define esdlscript_decl DECL_EXPORT
 #else
- #define esdl_decl
+ #define esdlscript_decl
 #endif
 
 #include "jlib.hpp"
@@ -30,7 +30,7 @@
 #include "jlog.hpp"
 #include "esp.hpp"
 
-#include "esdl_def.hpp"
+//#include "esdl_def.hpp"
 
 #include "datamaskingengine.hpp"
 #include "tracer.h"
@@ -163,7 +163,7 @@ protected:
  * The absence of a sectional document model in the parameter list implies the returned instance
  * is responsible for creating its own model.
  */
-extern "C" esdl_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine);
+extern "C" esdlscript_decl IEsdlScriptContext* createEsdlScriptContext(IEspContext* espCtx, IEsdlFunctionRegister* functionRegister, IDataMaskingEngine* engine);
 
 interface IEsdlCustomTransform : extends IInterface
 {
@@ -229,11 +229,11 @@ interface IEsdlTransformMethodMap : extends IInterface
     virtual void bindFunctionCalls() = 0;
 };
 
-esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap();
+esdlscript_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap();
 
-esdl_decl IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const char *ns_prefix);
+esdlscript_decl IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const char *ns_prefix);
 
-esdl_decl void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::initializer_list<IEsdlTransformSet *> const &transforms, const char *srcSection, const char *tgtSection);
-esdl_decl void registerEsdlXPathExtensions(IXpathContext *xpathCtx, IEsdlScriptContext *scriptCtx, const StringArray &prefixes);
+esdlscript_decl void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::initializer_list<IEsdlTransformSet *> const &transforms, const char *srcSection, const char *tgtSection);
+esdlscript_decl void registerEsdlXPathExtensions(IXpathContext *xpathCtx, IEsdlScriptContext *scriptCtx, const StringArray &prefixes);
 
 #endif /* ESDL_SCRIPT_HPP_ */

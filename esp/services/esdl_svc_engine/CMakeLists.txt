@@ -61,6 +61,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/esp/esdllib
+         ${HPCC_SOURCE_DIR}/esp/esdlscriptlib
          ${HPCC_SOURCE_DIR}/esp/logging/logginglib
          ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${CMAKE_BINARY_DIR}
@@ -86,6 +87,7 @@ target_link_libraries ( esdl_svc_engine
          remote
          dalibase
          esdllib
+         esdlscriptlib
          dllserver
          dalibase
          ${COMMON_ESP_SERVICE_LIBS}

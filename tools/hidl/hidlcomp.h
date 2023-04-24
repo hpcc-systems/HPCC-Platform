@@ -1232,7 +1232,7 @@ public:
     void write_client_interface();
     void write_factory_impl();
 
-    void write_esp_binding();
+    void write_esp_binding(const char *);
     void write_esp_binding_ipp();
     void write_esp_service_ipp();
     void write_esp_binding_ng_ipp(EspMessageInfo *);
