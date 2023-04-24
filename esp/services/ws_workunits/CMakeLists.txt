@@ -133,7 +133,7 @@ target_link_libraries ( ws_workunits
          pkgfiles
          wuanalysis
          ${CPPUNIT_LIBRARIES}
-
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)

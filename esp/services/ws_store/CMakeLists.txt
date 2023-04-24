@@ -73,6 +73,7 @@ HPCC_ADD_SUBDIRECTORY (espstorelib)
         esphttp
         dalibase
         wuwebview
+        ${COMMON_ESP_SERVICE_LIBS}
         )
 
 IF (USE_OPENSSL)

@@ -70,4 +70,5 @@ target_link_libraries ( ws_logaccess
          xmllib
          esphttp
          SMCLib
+         ${COMMON_ESP_SERVICE_LIBS}
     )

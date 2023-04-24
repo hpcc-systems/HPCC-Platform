@@ -58,4 +58,5 @@ target_link_libraries ( ws_loggingservice
     esphttp
     jlib
     logginglib
+    ${COMMON_ESP_SERVICE_LIBS}
 )

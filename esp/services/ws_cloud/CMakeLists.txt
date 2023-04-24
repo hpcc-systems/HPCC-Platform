@@ -66,6 +66,7 @@ target_link_libraries ( ws_cloud
          xmllib
          esphttp
          SMCLib
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)
@@ -77,4 +78,3 @@ ENDIF()
 IF (USE_OPENLDAP)
 target_link_libraries ( ws_cloud LdapSecurity )
 ENDIF(USE_OPENLDAP)
-

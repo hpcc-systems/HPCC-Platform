@@ -62,6 +62,7 @@ target_link_libraries ( ws_packageprocess
          dalibase
          ws_fs
          pkgfiles
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

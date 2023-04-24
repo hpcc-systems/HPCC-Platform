@@ -13,6 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
+set(COMMON_ESP_SERVICE_LIBS espcommon)
+
 HPCC_ADD_SUBDIRECTORY (common)
 IF (USE_OPENLDAP)
     HPCC_ADD_SUBDIRECTORY (ws_access "PLATFORM")

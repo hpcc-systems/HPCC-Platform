@@ -107,7 +107,7 @@ if(WSSQL_SERVICE AND USE_JAVA)
     if (CMAKE_COMPILER_IS_CLANG)
       set_source_files_properties(${ANTLR_sql2ecl_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-parentheses-equality)
     endif()
-    
+
     add_definitions(-D_USRDLL -Dwssql_API_LOCAL )
     HPCC_ADD_LIBRARY(ws_sql SHARED ${SRCS})
     add_dependencies(ws_sql espscm sql2ecl)
@@ -121,6 +121,7 @@ if(WSSQL_SERVICE AND USE_JAVA)
         dalibase
         libantlr3c
         wuwebview
+        ${COMMON_ESP_SERVICE_LIBS}
         )
 
     SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "antlr3c")
@@ -130,7 +131,7 @@ IF (USE_OPENSSL)
     	securesocket
     )
 ENDIF()
-         
+
     install(TARGETS ws_sql
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR}
