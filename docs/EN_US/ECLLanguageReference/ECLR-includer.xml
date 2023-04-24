@@ -76,8 +76,10 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Overview.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
     <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Constants.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-EnvironmentVariables.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 

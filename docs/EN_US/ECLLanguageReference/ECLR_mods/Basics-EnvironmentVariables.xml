@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EnvironmentVariables">
+  <title>Environment Variables</title>
+
+  <para>Environment variables store data about the current platform
+  environment. You can retrieve the value of an environment variable using the
+  built-in function GETENV().</para>
+
+  <sect2>
+    <title>HPCC_DEPLOYMENT</title>
+
+    <para>In a Kubernetes deployment, this variable is auto-populated with the
+    name of the Helm chart. For example, if deployed using:</para>
+
+    <para><programlisting>helm install myenv1 hpcc/hpcc</programlisting></para>
+
+    <para>then the HPCC_DEPLOYMENT variable will contain the value:
+    myenv1.</para>
+
+    <para>For a bare-metal environment, this value can be set in
+    environment.conf, by adding:</para>
+
+    <para><programlisting>deploymentName=myenv1</programlisting></para>
+
+    <para>You can retrieve this value using:</para>
+
+    <para><programlisting>OUTPUT(GETENV('HPCC_DEPLOYMENT', 'unknown'));</programlisting></para>
+
+    <para>See Also: <link linkend="GETENV">GETENV</link></para>
+  </sect2>
+</sect1>
