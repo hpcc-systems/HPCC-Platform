@@ -135,7 +135,7 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'«'</programlisting>
       part of the string. While you can use the \ escape character inside a
       multiline string, escaping is not necessary (except for the \
       character). The \ character at the end of a line in a multiline string
-      removes the end of line and joins the two lines together. </para>
+      removes the end of line and joins the two lines together.</para>
 
       <para><emphasis role="bold">Examples:</emphasis></para>
 
@@ -289,7 +289,7 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
             </row>
           </tbody>
         </tgroup>
-      </informaltable>Example:</para>
+      </informaltable>Examples:</para>
 
     <para><programlisting>// Any modules referenced inside the condition must be declared outside of the condition
 // This will avoid syntax errors 
@@ -322,6 +322,22 @@ IMPORT STD;
       RETURN fGetDimeTime();
     END;
   #END;
+
+// Example using __CONTAINERIZED__
+over := 'overwrite=1 ';
+repl := 'replicate=1 ';
+action  := 'action=spray ';
+srcplane :='srcplane=mydropzone ';
+srcfile := 'srcfile=originalperson ';
+dstname:='dstname=JD::originalperson ' ;
+//dstcluster:= 'dstcluster=data '; // for containerized
+//dstcluster:= 'dstcluster=mythor '; // for bare-metal
+dstcluster := IF(__CONTAINERIZED__, 'dstcluster=data ','dstcluster=mythor '); 
+fmt:= 'format=fixed ';
+recsize:='recordsize=124 ';
+cmd := over + repl + action + srcplane + srcfile + dstname 
+       + dstcluster + fmt + recsize;
+STD.File.DfuPlusExec(cmd);
 </programlisting></para>
 
     <para><emphasis role="bold">Runtime Expressions</emphasis></para>
