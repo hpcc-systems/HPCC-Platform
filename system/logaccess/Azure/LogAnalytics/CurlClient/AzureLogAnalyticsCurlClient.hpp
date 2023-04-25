@@ -43,6 +43,7 @@ private:
     StringBuffer m_workunitSearchColName;
     StringBuffer m_workunitIndexSearchPattern;
 
+    bool m_disableComponentNameJoins = false;
     StringBuffer m_componentsSearchColName;
     StringBuffer m_componentsIndexSearchPattern;
     StringBuffer m_componentsTimestampField;

@@ -105,6 +105,14 @@
 #define THOROPT_MIN_REMOTE_CQ_INDEX_SIZE_MB "minRemoteCQIndexSizeMb" // minimum size of index file to enable server side handling                (default = 0, meaning use heuristic to determin)
 #define THOROPT_KJ_ASSUME_PRIMARY "keyedJoinAssumePrimary"      // assume primary part exists (don't check when mapping, which can be slow)
 #define THOROPT_COMPRESS_SORTOVERFLOW "compressSortOverflow"    // If global sort spills, compress the merged overflow file                      (default = true)
+#define THOROPT_TIME_ACTIVITIES "timeActivities"                // Time activities (default=true)
+#define THOROPT_MAX_ACTIVITY_CORES "maxActivityCores"           // controls number of default threads to use for very parallel phases (like sort/parallel join helper). (default = # of h/w cores)
+#define THOROPT_THOR_ROWCRC "THOR_ROWCRC"                       // Use a CRC checking row allocator (default=false)
+#define THOROPT_THOR_PACKEDALLOCATOR "THOR_PACKEDALLOCATOR"     // Use packed roxiemem row allocators by default (default=true)
+#define THOROPT_MEMORY_SPILL_AT "memorySpillAt"                 // The threshold (%) that roxiemem will request memory to be reduced (default=80)
+#define THOROPT_FAIL_ON_LEAKS "failOnLeaks"                     // If any leaks are detected at the end of graph, fail the query (default=false)
+#define THOROPT_SOAP_TRACE_LEVEL "soapTraceLevel"               // The trace SOAP level (default=1)
+
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 

@@ -86,8 +86,6 @@ jobs:
             event_name: "schedule"
           - os: ubuntu-20.04
             event_name: "schedule"
-          - os: ubuntu-18.04
-            event_name: "schedule"
           - os: centos-8
             event_name: "schedule"
           - os: centos-7
@@ -199,12 +197,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: "ubuntu-18.04"
-            mono: "mono"
-            sudo: "sudo"
-            cmake_config_options: "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DINCLUDE_PLUGINS=ON -DSUPPRESS_V8EMBED=ON -DSUPPRESS_REMBED=ON"
-            cmake_build_options: "-- -j$(nproc) -k"
-            event_name: "schedule"
           - os: "ubuntu-20.04"
             mono: "mono"
             sudo: "sudo"
