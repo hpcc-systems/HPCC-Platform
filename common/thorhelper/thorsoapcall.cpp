@@ -45,6 +45,7 @@ using roxiemem::OwnedRoxieString;
 
 #define CONTENT_LENGTH "Content-Length: "
 #define CONTENT_ENCODING "Content-Encoding"
+#define CONTENT_TYPE "Content-Type"
 #define ACCEPT_ENCODING "Accept-Encoding"
 #define CONNECTION "Connection"
 
@@ -662,8 +663,8 @@ interface IWSCAsyncFor: public IInterface
     virtual void checkTimeLimitExceeded(unsigned * _remainingMS) = 0;
 
     virtual void createHttpRequest(Url &url, StringBuffer &request) = 0;
-    virtual int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive) = 0;
-    virtual void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta) = 0;
+    virtual int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive, StringBuffer &contentType) = 0;
+    virtual void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta, const char *contentType) = 0;
 
     virtual const char *getResponsePath() = 0;
     virtual ConstPointerArray & getInputRows() = 0;
@@ -1449,11 +1450,27 @@ void CWSCHelperThread::processQuery(ConstPointerArray &inputRows)
     XMLWriterType xmlType = WTStandard;
     if (useMarkup && (master->flags & SOAPFjson))
         xmlType = (master->flags & SOAPFnoroot) ? WTJSONRootless : WTJSONObject;
+    else if (master->flags & SOAPFformEncoded)
+    {
+        xmlType = WTFormUrlEncoded;
+        if (master->xpathHints)
+        {
+            const char *notation = master->xpathHints->queryProp("formnotation");
+            if (!isEmptyString(notation))
+            {
+                //default is "dot" which is of the form a[1].b=22
+                if (strieq(notation, "bracket")) //which is of the form a[1][b]=22
+                    xmlWriteFlags |= XWFbracketformenc;
+                else if (strieq(notation, "esp")) //which is of the form a.1.b=22
+                    xmlWriteFlags |= XWFhpccformenc;
+            }
+        }
+    }
     else if (master->flags & SOAPFencoding)
         xmlType = WTEncodingData64;
 
     Owned<IXmlWriterExt> xmlWriter = createIXmlWriterExt(xmlWriteFlags, 0, nullptr, xmlType);
-    if (useMarkup)
+    if (useMarkup || xmlType == WTFormUrlEncoded)
         createHttpPostQuery(*xmlWriter, inputRows, false, false);
     else if (master->wscType == STsoap )
         createXmlSoapQuery(*xmlWriter, inputRows);
@@ -1796,9 +1813,10 @@ private:
             }
             if (!httpHeaderBlockContainsHeader(httpheaders, "Content-Type"))
             {
-                bool isJson = ((master->flags & SOAPFmarkupinfo) && (master->flags & SOAPFjson));
-                if (isJson)
+                if ((master->flags & SOAPFmarkupinfo) && (master->flags & SOAPFjson))
                     request.append("Content-Type: application/json\r\n");
+                else if (master->flags & SOAPFformEncoded)
+                    request.append("Content-Type: application/x-www-form-urlencoded\r\n");
                 else
                     request.append("Content-Type: text/xml\r\n");
             }
@@ -1842,7 +1860,7 @@ private:
             master->logctx.CTXLOG("%s: request(%s:%u)", master->wscCallTypeText(), url.host.str(), url.port);
     }
 
-    int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive)
+    int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive, StringBuffer &contentType)
     {
         // Read the POST reply
         // not doesn't *assume* is valid HTTP post format but if it is takes advantage of
@@ -2009,7 +2027,10 @@ private:
             }
         }
         if (rval == 200 && response.length() > 0)
+        {
             keepAlive = checkKeepAlive(dbgheader);
+            getHTTPHeader(dbgheader, CONTENT_TYPE, contentType);
+        }
         if (checkContentDecoding(dbgheader, response, contentEncoding))
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
@@ -2066,7 +2087,7 @@ private:
         while (xmlParser->next());
     }
 
-    void processHttpResponse(Url &url, StringBuffer &response, ColumnProvider * meta)
+    void processHttpResponse(Url &url, StringBuffer &response, ColumnProvider * meta, const char *contentType)
     {
         const char *path = nullptr;
         const char *tail = nullptr;
@@ -2081,15 +2102,24 @@ private:
         Owned<IXMLParse> xmlParser;
         if (strieq(master->acceptType.str(), "application/json") || (master->flags & SOAPFjson))
             xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path, matchCB, options, (master->flags&SOAPFusescontents)!=0, true));
+        else if (master->flags & SOAPFformEncoded)
+        {
+            //currently only use content-type for form url encoded formats,.. to avoid any backward compatability issues for existing calls
+            //  users can control what the server returns by setting the "Accepts" header using the HTTPHEADER option on HTTPCALL and SOAPCALL
+            if (strnicmp(contentType, "application/json", 16)==0)
+                xmlParser.setown(createJSONParse((const void *)response.str(), (unsigned)response.length(), path, matchCB, options, (master->flags&SOAPFusescontents)!=0, true));
+            else
+                xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path, matchCB, options, (master->flags&SOAPFusescontents)!=0));
+        }
         else
             xmlParser.setown(createXMLParse((const void *)response.str(), (unsigned)response.length(), path, matchCB, options, (master->flags&SOAPFusescontents)!=0));
         while (xmlParser->next());
     }
 
-    void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta)
+    void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta, const char *contentType)
     {
-        if (master->wscType == SThttp || master->flags & SOAPFmarkupinfo)
-            processHttpResponse(url, response, meta);
+        if (master->wscType == SThttp || master->flags & (SOAPFmarkupinfo | SOAPFformEncoded))
+            processHttpResponse(url, response, meta, contentType);
         else if (master->flags & SOAPFliteral)
             processLiteralResponse(url, response, meta);
         else if (master->flags & SOAPFencoding)
@@ -2311,7 +2341,8 @@ public:
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
                 bool keepAlive2;
-                int rval = readHttpResponse(response, socket, keepAlive2);
+                StringBuffer contentType;
+                int rval = readHttpResponse(response, socket, keepAlive2, contentType);
                 keepAlive = keepAlive && keepAlive2;
 
                 if (soapTraceLevel > 4)
@@ -2333,7 +2364,7 @@ public:
                 }
                 checkTimeLimitExceeded(&remainingMS);
                 ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider((unsigned)nanoToMilli(timer.elapsedNs()), master->flags&SOAPFencoding?true:false);
-                processResponse(url, response, meta);
+                processResponse(url, response, meta, contentType);
                 delete meta;
 
                 if (persistentHandler)

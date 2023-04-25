@@ -1537,7 +1537,7 @@ StringBuffer &  StringBuffer::appendhex(unsigned char c, char lower)
     return *this;
 }
 
-void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
+void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower, bool keepUnderscore)
 {
   if (len == (size32_t)-1)
     len = (size32_t)strlen(src);
@@ -1547,6 +1547,8 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
     unsigned char c = (unsigned char) *src;
     if (c == ' ')
       dest->append('+');
+    else if (c == '_' && keepUnderscore)
+      dest->append(c);
     else if ((c & 0x80) || !isalnum(*src))
     {
       dest->append('%');

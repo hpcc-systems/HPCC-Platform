@@ -433,6 +433,7 @@ static const char * eclReserved14[] = { //Attribute functions (some might actual
     "default",
     "escape",
     "format",
+    "formencoded",
     "global",
     "groupby",
     "guard",
