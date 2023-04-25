@@ -1473,9 +1473,13 @@ StringBuffer & HqlCppWriter::generateChildExpr(IHqlExpression * expr, unsigned c
             {
             case no_and:
             case no_or:
-            case no_add:
             case no_band:
             case no_bor:
+                //These operators are associative, so no need to add brackets to force and ordering.
+                needBra = false;
+                break;
+            case no_add:
+                //Add is theoretically associative, but the potential for overflow means we should preserve the order
                 needBra = (childIndex != 0); // Operators are left associative, so use () on rhs to preserve order
                 break;
             }

@@ -10,4 +10,5 @@
 *.psd           -text
 *.doc           -text
 *.mk            -text
+*.patch         -text
 ecl/regress/crmultiline*.ecl eol=crlf
