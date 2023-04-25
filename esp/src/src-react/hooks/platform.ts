@@ -2,12 +2,13 @@ import * as React from "react";
 import { scopedLogger } from "@hpcc-js/util";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { getBuildInfo, BuildInfo } from "src/Session";
+import { cmake_build_type, containerized } from "src/BuildInfo";
 
 const logger = scopedLogger("src-react/hooks/platform.ts");
 
 declare const dojoConfig;
 
-export function useBuildInfo(): [BuildInfo, { isContainer: boolean, currencyCode: string }] {
+export function useBuildInfo(): [BuildInfo, { isContainer: boolean, currencyCode: string, opsCategory: string }] {
 
     const [buildInfo, setBuildInfo] = React.useState<BuildInfo>({});
     const [isContainer, setIsContainer] = React.useState<boolean>(dojoConfig.isContainer);
@@ -21,7 +22,15 @@ export function useBuildInfo(): [BuildInfo, { isContainer: boolean, currencyCode
         });
     }, []);
 
-    return [buildInfo, { isContainer, currencyCode }];
+    const opsCategory = React.useMemo(() => {
+        return cmake_build_type !== "Debug" ?
+            // not a Debug build, check if containerized
+            ((containerized) ? "topology" : "operations") :
+            // Debug build, use first segment of current hash after #
+            document.location.hash.indexOf("stub") > -1 ? "operations" : document.location.hash.split("/")[1];
+    }, []);
+
+    return [buildInfo, { isContainer, currencyCode, opsCategory }];
 }
 
 export function useLogicalClusters(): [TpLogicalClusterQuery.TpLogicalCluster[] | undefined, TpLogicalClusterQuery.TpLogicalCluster | undefined] {

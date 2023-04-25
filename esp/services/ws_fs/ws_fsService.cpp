@@ -1890,6 +1890,8 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
     {
         if (sourcePath.isEmpty())
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source path not specified.");
+        if (containsRelPaths(sourcePath)) //Detect a path like: a/../../../f
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", sourcePath.str());
 
         if (!isEmptyString(srcPlane))
         {
@@ -2440,10 +2442,13 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
         StringBuffer destip(req.getDestIP());
         const char* destPlane = req.getDestPlane();
+        const char* destPathReq = req.getDestPath();
+        if (containsRelPaths(destPathReq)) //Detect a path like: a/../../../f
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", destPathReq);
 
         StringBuffer destPath;
         StringBuffer implicitDestFile;
-        const char* destfile = getStandardPosixPath(destPath, req.getDestPath()).str();
+        const char* destfile = getStandardPosixPath(destPath, destPathReq).str();
 
         MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
         if (dstxml.length() == 0)
@@ -2865,6 +2870,8 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         const char* path = req.getPath();
         if (!path || !*path)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Path not specified.");
+        if (containsRelPaths(path)) //Detect a path like: /var/lib/HPCCSystems/mydropzone/../../../
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", path);
 
         StringBuffer sPath(path);
         const char* osStr = req.getOS();
@@ -3337,8 +3344,13 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
             resp.setDropZones(dropZoneList);
 
         StringBuffer directoryStr(req.getPath());
+        if (containsRelPaths(directoryStr)) //Detect a path like: a/../../../f
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", directoryStr.str());
+
         const char* dzName = req.getDropZoneName();
         const char* subfolder = req.getSubfolder();
+        if (containsRelPaths(subfolder)) //Detect a path like: a/../../../f
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Subfolder %s", subfolder);
 
         if (isEmptyString(dzName) && isEmptyString(netAddress))
             return true; //Do not report DropZone files if DropZone is not specified in the request.
@@ -3410,10 +3422,19 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
         const char* dzName = req.getDropZoneName();
         const char* netAddress = req.getNetAddress();
         const char* directory = req.getPath();
+        if (containsRelPaths(directory)) //Detect a path like: a/../../../f
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", directory);
+
         const char* osStr = req.getOS();
         StringArray & files = req.getNames();
         if (!files.ordinality())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
+        ForEachItemIn(idx, files)
+        {
+            const char* file = files.item(idx);
+            if (containsRelPaths(file))
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file %s", file);   
+        }
 
         StringBuffer path(directory);
         if (!isEmptyString(osStr))

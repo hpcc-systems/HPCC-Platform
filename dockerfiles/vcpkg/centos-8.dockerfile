@@ -10,6 +10,8 @@ RUN yum install -y \
     R-Rcpp-devel \
     R-RInside-devel
 
+RUN dnf -y install gcc-toolset-11-gcc gcc-toolset-11-gcc-c++
+
 WORKDIR /hpcc-dev
 
 ENTRYPOINT ["/bin/bash", "--login", "-c"]

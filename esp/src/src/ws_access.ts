@@ -702,8 +702,8 @@ export function CreateGroupStore(): BaseStore<WsAccess.GroupQueryRequest, WsAcce
         try {
             return service.GroupQuery(request).then(response => {
                 return {
-                    data: response.Groups.Group,
-                    total: response.TotalGroups
+                    data: response?.Groups?.Group ?? [],
+                    total: response?.TotalGroups ?? 0
                 };
             });
         } catch (err) {
@@ -726,8 +726,8 @@ export function CreateUserStore(): BaseStore<WsAccess.UserQueryRequest, WsAccess
         try {
             return service.UserQuery(request).then(response => {
                 return {
-                    data: response.Users.User,
-                    total: response.TotalUsers
+                    data: response?.Users?.User ?? [],
+                    total: response?.TotalUsers ?? 0
                 };
             });
         } catch (err) {
@@ -750,8 +750,8 @@ export function CreateGroupMemberStore(): BaseStore<WsAccess.GroupMemberQueryReq
         try {
             return service.GroupMemberQuery(request).then(response => {
                 return {
-                    data: response.Users.User,
-                    total: response.TotalUsers
+                    data: response?.Users?.User ?? [],
+                    total: response?.TotalUsers ?? 0
                 };
             });
         } catch (err) {

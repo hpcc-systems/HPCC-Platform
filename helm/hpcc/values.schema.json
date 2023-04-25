@@ -2841,8 +2841,11 @@
         "columnType": {
           "description" : "Data type of the given column",
           "type": "string"
+        },
+        "disableJoins": {
+          "description" : "Disables expensive table join operations",
+          "type": "boolean"
         }
-        
       }
     },
     "sinks": {

@@ -200,6 +200,7 @@ extern HQL_API IAtom * flagAtom;
 extern HQL_API IAtom * flagsAtom;
 extern HQL_API IAtom * flatAtom;
 extern HQL_API IAtom * foldAtom;
+extern HQL_API IAtom * formEncodedAtom;
 extern HQL_API IAtom * formatAtom;
 extern HQL_API IAtom * forwardAtom;
 extern HQL_API IAtom * fullonlyAtom;

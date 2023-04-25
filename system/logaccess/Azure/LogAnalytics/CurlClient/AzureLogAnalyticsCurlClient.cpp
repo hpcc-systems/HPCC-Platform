@@ -44,6 +44,7 @@ static constexpr const char * logMapIndexPatternAtt = "@storeName";
 static constexpr const char * logMapSearchColAtt = "@searchColumn";
 static constexpr const char * logMapTimeStampColAtt = "@timeStampColumn";
 static constexpr const char * logMapKeyColAtt = "@keyColumn";
+static constexpr const char * logMapDisableJoinsAtt = "@disableJoins";
 
 
 static constexpr std::size_t  defaultMaxRecordsPerFetch = 100;
@@ -226,7 +227,7 @@ static void submitKQLQuery(std::string & readBuffer, const char * token, const c
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_USERAGENT' option!", COMPONENT_NAME);
 
         if (curl_easy_setopt(curlHandle, CURLOPT_ERRORBUFFER, curlErrBuffer) != CURLE_OK)
-            throw makeStringExceptionV(-1, "%s: Access token request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
+            throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_ERRORBUFFER' option!", COMPONENT_NAME);
 
         if (curl_easy_setopt(curlHandle, CURLOPT_FAILONERROR, 1L) != CURLE_OK) // non HTTP Success treated as error
             throw makeStringExceptionV(-1, "%s: Log query request: Could not set 'CURLOPT_FAILONERROR'option!", COMPONENT_NAME);
@@ -367,6 +368,8 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
                 m_componentsTimestampField = logMap.queryProp(logMapTimeStampColAtt);
             else
                 m_componentsTimestampField = defaultHPCCLogComponentTSCol;
+
+            m_disableComponentNameJoins = logMap.getPropBool(logMapDisableJoinsAtt, false);
         }
         else if (streq(logMapType, "class"))
         {
@@ -405,16 +408,19 @@ AzureLogAnalyticsCurlClient::AzureLogAnalyticsCurlClient(IPropertyTree & logAcce
 
 void AzureLogAnalyticsCurlClient::getMinReturnColumns(StringBuffer & columns, bool & includeComponentName)
 {
-    includeComponentName = false;
-    //timestamp, message - Note: omponent information in default ALA format is expensive and therefore avoided
-    columns.appendf("\n| project %s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
+    columns.append("\n| project ");
+    if (includeComponentName)
+        columns.appendf("%s, ", defaultHPCCLogComponentCol);
+    columns.appendf("%s, %s", m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol);
 }
 
 void AzureLogAnalyticsCurlClient::getDefaultReturnColumns(StringBuffer & columns, bool & includeComponentName)
 {
-    includeComponentName = false;
-    //timestamp, class, audience, jobid, seq, threadid - Note: component information in default ALA format is expensive and therefore avoided
-    columns.appendf("\n| project %s, %s, %s, %s, %s, %s, %s",
+    columns.append("\n| project ");
+    if (includeComponentName)
+        columns.appendf("%s, ", defaultHPCCLogComponentCol);
+
+    columns.appendf("%s, %s, %s, %s, %s, %s, %s",
     m_globalIndexTimestampField.str(), defaultHPCCLogMessageCol, m_classSearchColName.str(),
     m_audienceSearchColName.str(), m_workunitSearchColName.str(), defaultHPCCLogSeqCol, defaultHPCCLogThreadIDCol);
 }
@@ -679,7 +685,7 @@ void AzureLogAnalyticsCurlClient::populateKQLQueryString(StringBuffer & queryStr
         queryIndex.set(m_globalIndexSearchPattern.str());
 
         StringBuffer searchColumns;
-        bool includeComponentName = false;
+        bool includeComponentName = !m_disableComponentNameJoins;
         searchMetaData(searchColumns, options.getReturnColsMode(), options.getLogFieldNames(), includeComponentName, options.getLimit(), options.getStartFrom());
         if (includeComponentName)
             declareContainerIndexJoinTable(queryString, options);

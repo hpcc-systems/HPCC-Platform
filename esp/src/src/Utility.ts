@@ -6,7 +6,6 @@ import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
 import { darkTheme } from "../src-react/themes";
 import nlsHPCC from "src/nlsHPCC";
-import { cmake_build_type, containerized } from "src/BuildInfo";
 
 declare const dojoConfig;
 declare const ActiveXObject;
@@ -1066,23 +1065,20 @@ const d3FormatDecimal = d3Format(",.2f");
 const d3FormatInt = d3Format(",");
 
 export function formatDecimal(num: number): string {
-    if (isNaN(num)) {
-        return num.toString();
-    }
+    if (!num) return "";
+    if (isNaN(num)) return num.toString();
     return d3FormatDecimal(num);
 }
 
 export function formatNum(num: number): string {
-    if (isNaN(num)) {
-        return num.toString();
-    }
+    if (!num) return "";
+    if (isNaN(num)) return num.toString();
     return d3FormatNum(num);
 }
 
 export function safeFormatNum(num: number): string {
-    if (isNaN(num)) {
-        return num.toString();
-    }
+    if (!num) return "";
+    if (isNaN(num)) return num.toString();
     if (num < 0) return nlsHPCC.NotAvailable;
     return d3FormatInt(num);
 }
@@ -1179,9 +1175,3 @@ export function wrapStringWithTag(string, tag = "span") {
 export function isSpill(sourceKind: string, targetKind: string): boolean {
     return sourceKind === "2" || targetKind === "71";
 }
-
-export const opsRouteCategory = (cmake_build_type !== "Debug") ?
-    // not a Debug build, check if containerized
-    ((containerized) ? "topology" : "operations") :
-    // Debug build, use first segment of current hash after #
-    document.location.hash.indexOf("stub") > -1 ? "operations" : document.location.hash.split("/")[1];

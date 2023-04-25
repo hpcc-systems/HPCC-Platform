@@ -751,6 +751,7 @@ FILTERED            { RETURNSYM(FILTERED); }
 FIRST               { RETURNSYM(FIRST); }
 FIXED               { RETURNSYM(TOK_FIXED); }
 FLAT                { RETURNSYM(FLAT); }
+FORMENCODED         { RETURNSYM(FORMENCODED); }             // Dynamically enabled based on the context
 FORMAT              { RETURNSYM(FORMAT_ATTR); }             // Dynamically enabled based on the context
 FORWARD             { RETURNSYM(FORWARD); }
 FROM                { RETURNSYM(FROM); }

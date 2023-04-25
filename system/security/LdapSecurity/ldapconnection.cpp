@@ -4576,9 +4576,8 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
-            throw MakeStringException(-1, "Error deleting %s: %s", dn.str(), ldap_err2string(rc));
+            DBGLOG("error deleting %s: %s", dn.str(), ldap_err2string(rc));
         }
-        
     }
 
     virtual void renameResource(SecResourceType rtype, const char* oldname, const char* newname, const char* basedn)

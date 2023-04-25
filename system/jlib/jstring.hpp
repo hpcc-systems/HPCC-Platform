@@ -384,7 +384,7 @@ interface IEntityHelper
     virtual bool find(const char *entity, StringBuffer &value) = 0;
 };
 
-void jlib_decl appendURL(StringBuffer *dest, const char *src, size32_t len = -1, char lower=FALSE);
+void jlib_decl appendURL(StringBuffer *dest, const char *src, size32_t len = -1, char lower=FALSE, bool keepUnderscore=false);
 extern jlib_decl StringBuffer &appendDecodedURL(StringBuffer &out, const char *url);
 extern jlib_decl StringBuffer &appendDecodedURL(StringBuffer &s, size_t len, const char *url);
 extern jlib_decl StringBuffer & appendStringAsCPP(StringBuffer &out, unsigned len, const char * src, bool addBreak);

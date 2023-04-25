@@ -228,6 +228,7 @@
 #define HQLERR_OutputLimitMaxExceeded           4216
 #define HQLERR_OutputLimitFutureMaxExceeded     4217
 #define HQLERR_UnsupportedReturnType            4218
+#define HQLERR_UnsupportedFormEncNotation       4219
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -540,6 +541,7 @@
 #define HQLERR_OutputLimitMaxExceeded_Text      "Dali result outputs are restricted to an absolute maximum of %u MB (%u MB specified by option). A huge dali result usually indicates the ECL needs altering."
 #define HQLERR_OutputLimitFutureMaxExceeded_Text "In the next platform version dali result outputs will be restricted to an absolute maximum of %u MB (%u MB specified by option). A huge dali result usually indicates the ECL needs altering."
 #define HQLERR_UnsupportedReturnType_Text       "Function returning type %s is not currently supported"
+#define HQLERR_UnsupportedFormEncNotation_Text  "x-www-form-urlencoded parameter notation format %s is not currently supported"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
