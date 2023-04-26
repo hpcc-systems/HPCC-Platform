@@ -19,12 +19,13 @@
   <section>
     <title>Version Section</title>
 
-    <para id="bpara">This document contains no actual content, information, 
-    or other interesting material. In fact it is only here to
-    serve one purpose and that is to store the chapterinfo the above sections
-    that are being used by several other documents.</para>
+    <para id="bpara">This document contains no actual content. It is only here to
+    serve one purpose and that is to store the chapterinfo and other information
+    used by several document components.</para>
 
     <para id="CHMVer">2023 Version ${DOC_VERSION}</para>
+
+    <remark id="YrVer">2023</remark>
 
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>
