@@ -7,7 +7,7 @@ HPCC Systems offers an enterprise ready, open source supercomputing platform to 
 * [Learn about HPCC](https://hpccsystems.com/about#Platform)
 * [Download](https://hpccsystems.com/download)
 * [Installation and Running](https://hpccsystems.com/training/documentation/installation-and-administration)
-* [Build from Source](https://github.com/hpcc-systems/HPCC-Platform/wiki/Building-HPCC)
+* [Developer Documentation](https://hpcc-systems.github.io/HPCC-Platform/)
 
 # Architecture
 
@@ -65,10 +65,10 @@ ESP (Enterprise Services Platform) provides an easy to use interface to access E
 
 The following links describe the structure of the system and detail some of the key components:
 
-* [An overview of workunits and the different stages in executing a query](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/WorkUnits.rst)
-* [An introduction to the code generator - eclcc](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/CodeGenerator.rst)
-* [The memory manager used by roxie and thor](https://github.com/hpcc-systems/HPCC-Platform/blob/master/devdoc/MemoryManager.rst)
-* [The structure of the initialization scripts](https://github.com/hpcc-systems/HPCC-Platform/blob/master/initfiles/DOCUMENTATION.rst)
-* [Outline of ecl-bundle](https://github.com/hpcc-systems/HPCC-Platform/blob/master/ecl/ecl-bundle/DOCUMENTATION.rst)
-* [The structure and some details of the cmake files](https://github.com/hpcc-systems/HPCC-Platform/blob/master/cmake_modules/DOCUMENTATION.rst)
-* [Building the documentation](https://github.com/hpcc-systems/HPCC-Platform/blob/master/docs/DOCUMENTATION.rst)
+* [An overview of workunits and the different stages in executing a query](https://hpcc-systems.github.io/HPCC-Platform/devdoc/Workunits.html)
+* [An introduction to the code generator - eclcc](https://hpcc-systems.github.io/HPCC-Platform/devdoc/CodeGenerator.html)
+* [The memory manager used by roxie and thor](https://hpcc-systems.github.io/HPCC-Platform/devdoc/MemoryManager.html)
+* [The structure of the initialization scripts](https://hpcc-systems.github.io/HPCC-Platform/initfiles/DOCUMENTATION.html)
+* [Outline of ecl-bundle](https://hpcc-systems.github.io/HPCC-Platform/ecl/ecl-bundle/DOCUMENTATION.html)
+* [The structure and some details of the cmake files](https://hpcc-systems.github.io/HPCC-Platform/cmake_modules/DOCUMENTATION.html)
+* [Building the documentation](https://hpcc-systems.github.io/HPCC-Platform/docs/DOCUMENTATION.html)
