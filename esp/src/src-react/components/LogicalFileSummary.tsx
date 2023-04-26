@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
 import { format as d3Format } from "@hpcc-js/common";
 import { DFUService, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -47,6 +47,9 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
     const [showRenameFile, setShowRenameFile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [showReplicateFile, setShowReplicateFile] = React.useState(false);
+
+    const [showMessageBar, setShowMessageBar] = React.useState(false);
+    const dismissMessageBar = React.useCallback(() => setShowMessageBar(false), []);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -113,7 +116,15 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
                     FileDesc: description,
                     Protect: _protected ? WsDfu.DFUChangeProtection.Protect : WsDfu.DFUChangeProtection.Unprotect,
                     Restrict: restricted ? WsDfu.DFUChangeRestriction.Restrict : WsDfu.DFUChangeRestriction.Unrestricted,
-                });
+                })
+                    .then(_ => {
+                        setShowMessageBar(true);
+                        const t = window.setTimeout(function () {
+                            setShowMessageBar(false);
+                            window.clearTimeout(t);
+                        }, 2400);
+                    })
+                    .catch(err => logger.error(err));
             }
         },
         {
@@ -148,6 +159,15 @@ export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps
         <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
             <Sticky stickyPosition={StickyPositionType.Header}>
                 <CommandBar items={buttons} />
+                {showMessageBar &&
+                    <MessageBar
+                        messageBarType={MessageBarType.success}
+                        dismissButtonAriaLabel={nlsHPCC.Close}
+                        onDismiss={dismissMessageBar}
+                    >
+                        {nlsHPCC.SuccessfullySaved}
+                    </MessageBar>
+                }
             </Sticky>
             <Sticky stickyPosition={StickyPositionType.Header}>
                 <div style={{ display: "inline-block" }}>

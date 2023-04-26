@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, MessageBar, MessageBarType, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
@@ -25,10 +25,12 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
 }) => {
 
     const [workunit, setWorkunit] = React.useState<any>(null);
-    const [dfuWuData, setDfuWuData] = React.useState<any>(null);
     const [wuXML, setWuXML] = React.useState("");
     const [jobname, setJobname] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
+
+    const [showMessageBar, setShowMessageBar] = React.useState(false);
+    const dismissMessageBar = React.useCallback(() => setShowMessageBar(false), []);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
@@ -39,17 +41,17 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     });
 
     React.useEffect(() => {
-        setWorkunit(ESPDFUWorkunit.Get(wuid));
-        FileSpray.GetDFUWorkunit({ request: { wuid } }).then(response => {
-            setDfuWuData(response?.GetDFUWorkunitResponse?.result);
-        }).catch(err => logger.error(err));
+        const wu = ESPDFUWorkunit.Get(wuid);
+        setWorkunit(wu);
+        wu.watch((name, oldValue, newValue) => {
+            if (name === "JobName") {
+                setJobname(newValue);
+            } else if (name === "isProtected") {
+                setProtected(newValue);
+            }
+        });
+        wu.refresh();
     }, [wuid]);
-
-    React.useEffect(() => {
-        if (!dfuWuData) return;
-        setJobname(dfuWuData?.JobName);
-        setProtected(dfuWuData?.isProtected);
-    }, [dfuWuData]);
 
     React.useEffect(() => {
         if (!workunit) return;
@@ -58,21 +60,35 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         }).catch(err => logger.error(err));
     }, [workunit]);
 
-    const canSave = dfuWuData && (
-        jobname !== dfuWuData?.JobName ||
-        _protected !== dfuWuData?.isProtected
-    );
+    React.useEffect(() => {
+        setJobname(workunit?.JobName);
+        setProtected(workunit?.isProtected);
+    }, [workunit?.JobName, workunit?.isProtected]);
 
-    const canDelete = dfuWuData && (
-        _protected !== dfuWuData?.Protected &&
-        999 !== dfuWuData?.StateID &&
-        dfuWuData?.Archived
-    );
+    const canSave = React.useMemo(() => {
+        return jobname !== workunit?.JobName || _protected !== workunit?.isProtected;
+    }, [jobname, _protected, workunit?.JobName, workunit?.isProtected]);
 
-    const canAbort = workunit && (
-        !workunit?.isComplete() &&
-        !workunit?.isDeleted()
-    );
+    const canDelete = React.useMemo(() => {
+        return _protected !== workunit?.isProtected && 999 !== workunit?.State && workunit?.Archived;
+    }, [_protected, workunit?.isProtected, workunit?.State, workunit?.Archived]);
+
+    const canAbort = React.useMemo(() => {
+        return !workunit?.isComplete() && !workunit?.isDeleted();
+    }, [workunit]);
+
+    const saveWorkunit = React.useCallback(() => {
+        workunit?.update({ JobName: jobname, isProtected: _protected })
+            .then(_ => {
+                setShowMessageBar(true);
+                workunit.refresh();
+                const t = window.setTimeout(function () {
+                    setShowMessageBar(false);
+                    window.clearTimeout(t);
+                }, 2400);
+            })
+            .catch(err => logger.error(err));
+    }, [jobname, _protected, workunit]);
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -86,7 +102,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "save", text: nlsHPCC.Save, iconProps: { iconName: "Save" }, disabled: !canSave,
-            onClick: () => workunit?.update({ JobName: jobname, isProtected: _protected })
+            onClick: saveWorkunit
         },
         {
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: canDelete,
@@ -97,7 +113,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
             key: "abort", text: nlsHPCC.Abort, disabled: canAbort,
             onClick: () => workunit?.abort()
         },
-    ], [_protected, canAbort, canDelete, canSave, jobname, setShowDeleteConfirm, workunit, wuid]);
+    ], [canAbort, canDelete, canSave, saveWorkunit, setShowDeleteConfirm, workunit, wuid]);
 
     return <>
         <SizeMe monitorHeight>{({ size }) =>
@@ -105,7 +121,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                 overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab}
                 onLinkClick={evt => {
                     if (evt.props.itemKey === "target") {
-                        pushUrl(`/files/${dfuWuData?.DestGroupName}/${dfuWuData?.DestLogicalName}`);
+                        pushUrl(`/files/${workunit?.DestGroupName}/${workunit?.DestLogicalName}`);
                     } else {
                         pushUrl(`/dfuworkunits/${wuid}/${evt.props.itemKey}`);
                     }
@@ -114,22 +130,31 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                 <PivotItem headerText={wuid} itemKey="summary" style={pivotItemStyle(size)} >
                     <Sticky stickyPosition={StickyPositionType.Header}>
                         <CommandBar items={buttons} />
+                        {showMessageBar &&
+                            <MessageBar
+                                messageBarType={MessageBarType.success}
+                                dismissButtonAriaLabel={nlsHPCC.Close}
+                                onDismiss={dismissMessageBar}
+                            >
+                                {nlsHPCC.SuccessfullySaved}
+                            </MessageBar>
+                        }
                     </Sticky>
                     <TableGroup fields={{
                         "id": { label: nlsHPCC.ID, type: "string", value: wuid, readonly: true },
-                        "clusterName": { label: nlsHPCC.ClusterName, type: "string", value: dfuWuData?.ClusterName, readonly: true },
+                        "clusterName": { label: nlsHPCC.ClusterName, type: "string", value: workunit?.ClusterName, readonly: true },
                         "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
-                        "dfuServerName": { label: nlsHPCC.DFUServerName, type: "string", value: dfuWuData?.DFUServerName, readonly: true },
-                        "queue": { label: nlsHPCC.Queue, type: "string", value: dfuWuData?.Queue, readonly: true },
-                        "user": { label: nlsHPCC.User, type: "string", value: dfuWuData?.Owner, readonly: true },
+                        "dfuServerName": { label: nlsHPCC.DFUServerName, type: "string", value: workunit?.DFUServerName, readonly: true },
+                        "queue": { label: nlsHPCC.Queue, type: "string", value: workunit?.Queue, readonly: true },
+                        "user": { label: nlsHPCC.User, type: "string", value: workunit?.User, readonly: true },
                         "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
-                        "command": { label: nlsHPCC.Command, type: "string", value: FileSpray.CommandMessages[dfuWuData?.Command], readonly: true },
-                        "state": { label: nlsHPCC.State, type: "string", value: FileSpray.States[dfuWuData?.State], readonly: true },
-                        "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: dfuWuData?.TimeStarted, readonly: true },
-                        "timeStopped": { label: nlsHPCC.TimeStopped, type: "string", value: dfuWuData?.TimeStopped, readonly: true },
-                        "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: dfuWuData?.PercentDone, readonly: true },
-                        "progressMessage": { label: nlsHPCC.ProgressMessage, type: "string", value: dfuWuData?.ProgressMessage, readonly: true },
-                        "summaryMessage": { label: nlsHPCC.SummaryMessage, type: "string", value: dfuWuData?.SummaryMessage, readonly: true },
+                        "command": { label: nlsHPCC.Command, type: "string", value: FileSpray.CommandMessages[workunit?.Command], readonly: true },
+                        "state": { label: nlsHPCC.State, type: "string", value: FileSpray.States[workunit?.State], readonly: true },
+                        "timeStarted": { label: nlsHPCC.TimeStarted, type: "string", value: workunit?.TimeStarted, readonly: true },
+                        "timeStopped": { label: nlsHPCC.TimeStopped, type: "string", value: workunit?.TimeStopped, readonly: true },
+                        "percentDone": { label: nlsHPCC.PercentDone, type: "progress", value: workunit?.PercentDone, readonly: true },
+                        "progressMessage": { label: nlsHPCC.ProgressMessage, type: "string", value: workunit?.ProgressMessage, readonly: true },
+                        "summaryMessage": { label: nlsHPCC.SummaryMessage, type: "string", value: workunit?.SummaryMessage, readonly: true },
                     }} onChange={(id, value) => {
                         switch (id) {
                             case "jobname":
@@ -145,28 +170,28 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                     <hr />
                     <h2>{nlsHPCC.Source} ({nlsHPCC.Fixed})</h2>
                     <TableGroup fields={{
-                        "ip": { label: nlsHPCC.IP, type: "string", value: dfuWuData?.SourceIP, readonly: true },
-                        "directory": { label: nlsHPCC.Directory, type: "string", value: dfuWuData?.SourceDirectory, readonly: true },
-                        "filePath": { label: nlsHPCC.FilePath, type: "string", value: dfuWuData?.SourceFilePath, readonly: true },
-                        "numParts": { label: nlsHPCC.NumberofParts, type: "string", value: dfuWuData?.SourceNumParts, readonly: true },
-                        "format": { label: nlsHPCC.Format, type: "string", value: FileSpray.FormatMessages[dfuWuData?.SourceFormat], readonly: true },
-                        "recordSize": { label: nlsHPCC.RecordSize, type: "string", value: dfuWuData?.SourceRecordSize, readonly: true },
+                        "ip": { label: nlsHPCC.IP, type: "string", value: workunit?.SourceIP, readonly: true },
+                        "directory": { label: nlsHPCC.Directory, type: "string", value: workunit?.SourceDirectory, readonly: true },
+                        "filePath": { label: nlsHPCC.FilePath, type: "string", value: workunit?.SourceFilePath, readonly: true },
+                        "numParts": { label: nlsHPCC.NumberofParts, type: "string", value: workunit?.SourceNumParts, readonly: true },
+                        "format": { label: nlsHPCC.Format, type: "string", value: FileSpray.FormatMessages[workunit?.SourceFormat], readonly: true },
+                        "recordSize": { label: nlsHPCC.RecordSize, type: "string", value: workunit?.SourceRecordSize, readonly: true },
                     }} />
                     <hr />
                     <h2>{nlsHPCC.Target}</h2>
                     <TableGroup fields={{
-                        "directory": { label: nlsHPCC.Directory, type: "string", value: dfuWuData?.DestDirectory, readonly: true },
-                        "logicalName": { label: nlsHPCC.LogicalName, type: "string", value: dfuWuData?.DestLogicalName, readonly: true },
-                        "groupName": { label: nlsHPCC.GroupName, type: "string", value: dfuWuData?.DestGroupName, readonly: true },
-                        "numParts": { label: nlsHPCC.NumberofParts, type: "string", value: dfuWuData?.DestNumParts, readonly: true },
+                        "directory": { label: nlsHPCC.Directory, type: "string", value: workunit?.DestDirectory, readonly: true },
+                        "logicalName": { label: nlsHPCC.LogicalName, type: "string", value: workunit?.DestLogicalName, readonly: true },
+                        "groupName": { label: nlsHPCC.GroupName, type: "string", value: workunit?.DestGroupName, readonly: true },
+                        "numParts": { label: nlsHPCC.NumberofParts, type: "string", value: workunit?.DestNumParts, readonly: true },
                     }} />
                     <hr />
                     <h2>{nlsHPCC.Other}</h2>
                     <TableGroup fields={{
-                        "monitorSub": { label: nlsHPCC.MonitorSub, type: "string", value: dfuWuData?.MonitorSub ? "true" : "false", readonly: true },
-                        "overwrite": { label: nlsHPCC.Overwrite, type: "string", value: dfuWuData?.Overwrite ? "true" : "false", readonly: true },
-                        "replicate": { label: nlsHPCC.Replicate, type: "string", value: dfuWuData?.Replicate ? "true" : "false", readonly: true },
-                        "compress": { label: nlsHPCC.Compress, type: "string", value: dfuWuData?.Compress ? "true" : "false", readonly: true },
+                        "monitorSub": { label: nlsHPCC.MonitorSub, type: "string", value: workunit?.MonitorSub ? "true" : "false", readonly: true },
+                        "overwrite": { label: nlsHPCC.Overwrite, type: "string", value: workunit?.Overwrite ? "true" : "false", readonly: true },
+                        "replicate": { label: nlsHPCC.Replicate, type: "string", value: workunit?.Replicate ? "true" : "false", readonly: true },
+                        "compress": { label: nlsHPCC.Compress, type: "string", value: workunit?.Compress ? "true" : "false", readonly: true },
                     }} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.XML} itemKey="xml" style={pivotItemStyle(size, 0)}>

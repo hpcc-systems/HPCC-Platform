@@ -85,7 +85,9 @@ define([
             this.wu.update({
                 JobName: dom.byId(context.id + "JobName").value,
                 isProtected: protectedCheckbox.get("value")
-            }, null);
+            }, null).then(() => {
+                this.wu.refresh();
+            });
         },
         _onDelete: function (event) {
             if (confirm(this.i18n.YouAreAboutToDeleteThisWorkunit)) {
