@@ -24,9 +24,9 @@
 
 project( memcachedplugin )
 
-if (MEMCACHED OR USE_LIBMEMCACHED)
+if (MEMCACHED)
     ADD_PLUGIN(memcached)
-    if(MAKE_MEMCACHED OR USE_LIBMEMCACHED)
+    if(MAKE_MEMCACHED)
 
         find_package(LIBMEMCACHED ${LIBMEMCACHED_MINVERSION} REQUIRED)
 
@@ -65,9 +65,9 @@ if (MEMCACHED OR USE_LIBMEMCACHED)
         install(
             TARGETS memcachedplugin
             DESTINATION plugins
-            CALC_DEPS)
+            )
 
-	if(TARGET generate-libmemcached)
+	    if(TARGET generate-libmemcached)
             target_link_libraries(memcachedplugin libmemcached libmemcachedutil)
             add_dependencies(memcachedplugin generate-libmemcached)
             install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${CMAKE_BINARY_DIR}/build-libmemcached/libmemcached/.libs\")")

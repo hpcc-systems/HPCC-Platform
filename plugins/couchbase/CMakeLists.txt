@@ -53,7 +53,19 @@ IF ( COUCHBASEEMBED )
         install(
             TARGETS couchbaseembed
             DESTINATION plugins
-            CALC_DEPS)
+            )
+        #install dependency from vcpkg
+        install(
+            FILES ${LIBCOUCHBASE_LIB} ${LIBCOUCHBASE_LIB}.2
+            DESTINATION ${LIB_DIR}
+            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+            COMPONENT Runtime)
+        install(
+            FILES ${LIBCOUCHBASE_LIB}.2.0.59
+            DESTINATION ${LIB_DIR}
+            PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+            COMPONENT Runtime)
+        
 
         target_link_libraries(
             couchbaseembed

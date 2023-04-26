@@ -40,7 +40,6 @@ if(KAFKA)
             ./../../rtl/include
             ./../../common/deftype
             ./../../system/jlib
-            ${LOCAL_LIBRDKAFKA_INCLUDE}
             ${CMAKE_BINARY_DIR}
             ${CMAKE_BINARY_DIR}/oss)
 
@@ -53,20 +52,26 @@ if(KAFKA)
             set_target_properties(kafka PROPERTIES NO_SONAME 1)
         endif()
 
+        if (WIN32)
+            install(RUNTIME_DEPENDENCY_SET kafka_deps
+              DESTINATION ${EXEC_DIR} 
+              PRE_EXCLUDE_REGEXES "api-ms-win-.*\.dll"
+              POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}.*"
+              POST_EXCLUDE_REGEXES ".*")
+        else()
+            install(RUNTIME_DEPENDENCY_SET kafka_deps
+            DESTINATION ${LIB_DIR} 
+            DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+            PRE_EXCLUDE_REGEXES "liblz4"
+            POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
+            POST_EXCLUDE_REGEXES ".*")
+        endif()
+
         install(
             TARGETS kafka
-            DESTINATION plugins CALC_DEPS)
-
-        install(
-            FILES ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB_REAL}
-            DESTINATION ${LIB_DIR}
-            PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
-        install(
-            FILES ${LIBRDKAFKA_LIB} ${LIBRDKAFKACPP_LIB}
-            DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
+            RUNTIME_DEPENDENCY_SET kafka_deps
+            DESTINATION plugins
+            )
 
         target_link_libraries(kafka
             eclrtl

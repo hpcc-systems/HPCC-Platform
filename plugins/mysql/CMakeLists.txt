@@ -52,10 +52,25 @@ if(MYSQLEMBED)
             set_target_properties(mysqlembed PROPERTIES NO_SONAME 1)
         endif()
 
+        if (WIN32)
+            install(RUNTIME_DEPENDENCY_SET mysqlembed_deps
+              DESTINATION ${EXEC_DIR} 
+              PRE_EXCLUDE_REGEXES "api-ms-win-.*\.dll"
+              POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}.*"
+              POST_EXCLUDE_REGEXES ".*")
+        else()
+            install(RUNTIME_DEPENDENCY_SET mysqlembed_deps
+            DESTINATION ${LIB_DIR} 
+            DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+            POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*/libmysqlclient.*"
+            POST_EXCLUDE_REGEXES ".*")
+        endif()
+
         install(
             TARGETS mysqlembed
+            RUNTIME_DEPENDENCY_SET mysqlembed_deps
             DESTINATION plugins
-            CALC_DEPS)
+            )
         target_link_libraries(
             mysqlembed
             ${MYSQL_LIBRARIES}

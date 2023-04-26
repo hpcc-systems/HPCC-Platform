@@ -58,10 +58,24 @@ IF(NLP)
 
         target_compile_definitions(nlp PUBLIC NLP_HAVE_ALLOCA)
 
+        if (WIN32)
+            install(RUNTIME_DEPENDENCY_SET nlp_deps
+                DESTINATION ${EXEC_DIR} 
+                PRE_EXCLUDE_REGEXES "api-ms-win-.*\.dll"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}.*"
+                POST_EXCLUDE_REGEXES ".*")
+        else()
+            install(RUNTIME_DEPENDENCY_SET nlp_deps
+                DESTINATION ${LIB_DIR} 
+                DIRECTORIES "${VCPKG_FILES_DIR}/vcpkg_installed"
+                POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*/libnlp-engine.*"
+                POST_EXCLUDE_REGEXES ".*")
+        endif()
+
         install(
             TARGETS nlp
-            DESTINATION plugins
-            CALC_DEPS)
+            RUNTIME_DEPENDENCY_SET nlp_deps
+            DESTINATION plugins)
 
         target_link_libraries(nlp PRIVATE
             eclrtl
