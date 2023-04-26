@@ -59,6 +59,8 @@ ESPCOMMON_API std::shared_ptr<hpccMetrics::ScaledHistogramMetric> registerServic
 {
     std::string metricName(processName);
     metricName.append(".").append(serviceName).append(".").append(methodName);
+    auto no_ = std::remove(metricName.begin(), metricName.end(), '_');
+    metricName.erase(no_, metricName.end());
     return registerProfilingMetric(metricName.c_str(), desc, profilingOptions);
 }
 

@@ -56,7 +56,7 @@ if (USE_OPENLDAP)
     include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 endif ()
 
-ADD_DEFINITIONS( -D_USRDLL -DWS_CLOUD_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DWS_CLOUD_EXPORTS -DESP_SERVICE_WsCloud)
 
 HPCC_ADD_LIBRARY( ws_cloud SHARED ${SRCS}  )
 add_dependencies ( ws_cloud espscm )

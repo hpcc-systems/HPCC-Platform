@@ -51,7 +51,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWSESPControl_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWSESPControl_API_LOCAL -DESP_SERVICE_WSESPControl)
 
 HPCC_ADD_LIBRARY( ws_espcontrol SHARED ${SRCS} )
 install ( TARGETS ws_espcontrol RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

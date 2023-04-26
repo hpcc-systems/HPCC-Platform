@@ -6540,14 +6540,22 @@ void HIDLcompiler::Process()
 
 }
 
-
 void HIDLcompiler::processExecutionProfiling()
 {
     EspServInfo *si;
     for (si=servs; si; si=si->next)
     {
         StrBuffer serviceProfilingOptions;
+
         si->executionProfilingEnabled = si->getMetaStringValue(serviceProfilingOptions,"profile_execution");
+
+#ifdef ENABLE_DEFAULT_EXECUTION_PROFILING
+        if (!si->executionProfilingEnabled)
+        {
+            si->executionProfilingEnabled = !si->getMetaInt("disable_profile_execution");
+            serviceProfilingOptions.append("ms,100,200,300,400,500,600,700,800,900,1000");
+        }
+#endif
 
         //
         // Go through each method and save any profile information to make if faster later when
@@ -6563,7 +6571,7 @@ void HIDLcompiler::processExecutionProfiling()
             si->executionProfilingEnabled |= methodProfileExecutionEnabled;   // again, if a method is enabled, set top flag
             if (si->executionProfilingEnabled || methodProfileExecutionEnabled)
             {
-                if (!mthi->getMetaInt("no_profile_execution"))
+                if (!mthi->getMetaInt("disable_profile_execution"))
                 {
                     mthi->setExecutionProfilingEnabled();
                     mthi->setExecutionProfilingOptions(methodProfileExecutionEnabled ? methodProfilingOptions.str() : serviceProfilingOptions.str());
@@ -6598,10 +6606,11 @@ void HIDLcompiler::write_esp()
     outf("#define %s_ESPGEN_INCLUDED\n\n", packagename);
     outf("#include \"%s_esp.ipp\"\n", packagename);
 
+    outs("#include \"espcommon.hpp\"\n");
+
     // If any defined service has execution profiling enabled, add the required includes
     if (isProcessExecutionEnabled())
     {
-        outs("#include \"espcommon.hpp\"\n");
         outs("#include \"jmetrics.hpp\"\n");
     }
 

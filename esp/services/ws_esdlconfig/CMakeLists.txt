@@ -62,7 +62,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DWsESDLConfig_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DWsESDLConfig_API_LOCAL -DESP_SERVICE_WsESDLConfig)
 
 HPCC_ADD_LIBRARY( ws_esdlconfig SHARED ${SRCS} )
 install ( TARGETS ws_esdlconfig RUNTIME DESTINATION bin LIBRARY DESTINATION lib )

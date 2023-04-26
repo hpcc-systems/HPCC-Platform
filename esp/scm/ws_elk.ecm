@@ -16,7 +16,7 @@ ESPResponse GetConfigDetailsResponse
     string LogStashPort;
  };
 
-ESPservice [auth_feature("WsELKAccess:ACCESS"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt")] ws_elk
+ESPservice [auth_feature("WsELKAccess:ACCESS"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt"), disable_profile_execution] ws_elk
 {
     ESPmethod [auth_feature("WsELKAccess:READ")] GetConfigDetails(GetConfigDetailsRequest, GetConfigDetailsResponse);
 };
@@ -24,4 +24,3 @@ ESPservice [auth_feature("WsELKAccess:ACCESS"), version("1.0"), default_client_v
 SCMexportdef(ws_elk);
 
 SCMapi(ws_elk) IClientws_elk *createws_elkClient();
-
