@@ -715,6 +715,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayFixed(ICodeContext *ctx,
     req->setSourceRecordSize(recordSize);
     req->setDestGroup(destinationGroup);
     req->setDestLogicalName(logicalName.str());
+    req->setDestNumParts(destinationNumParts);
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
@@ -848,6 +849,7 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
         req->setSourceCsvEscape(sourceCsvEscape);
     req->setDestGroup(destinationGroup);
     req->setDestLogicalName(logicalName.str());
+    req->setDestNumParts(destinationNumParts);
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
@@ -1023,6 +1025,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayXml(ICodeContext *ctx, c
     req->setSourceRowTag(sourceRowTag);
     req->setDestGroup(destinationGroup);
     req->setDestLogicalName(logicalName.str());
+    req->setDestNumParts(destinationNumParts);
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
@@ -1158,6 +1161,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayJson(ICodeContext *ctx, 
     req->setSourceRowTag(sourceRowPath);
     req->setDestGroup(destinationGroup);
     req->setDestLogicalName(logicalName.str());
+    req->setDestNumParts(destinationNumParts);
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
