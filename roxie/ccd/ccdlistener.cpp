@@ -53,7 +53,8 @@ static void controlException(StringBuffer &response, IException *E, const IRoxie
     }
     catch(IException *EE)
     {
-        logctx.logOperatorException(EE, __FILE__, __LINE__, "controlException - While reporting exception");
+        if (traceLevel)
+            logctx.logOperatorException(EE, __FILE__, __LINE__, "controlException - While reporting exception");
         EE->Release();
     }
 #ifndef _DEBUG
@@ -633,7 +634,7 @@ public:
         if (sink->getIsSuspended())
         {
             accepted = false;
-            if (traceLevel > 1)
+            if (doTrace(traceRoxieActiveQueries))
                 DBGLOG("Rejecting query since Roxie server pool %d is suspended ", parent->queryPort());
         }
         else
@@ -760,7 +761,7 @@ public:
             }
 #endif /* GLIBC */
             if (traceLevel)
-                traceAffinity(&cpuMask);
+                traceAffinitySettings(&cpuMask);
         }
 #endif
     }
@@ -871,14 +872,14 @@ public:
                         }
                     }
                 }
-                if (traceLevel > 3)
-                    traceAffinity(&threadMask);
+                if (doTrace(traceAffinity))
+                    traceAffinitySettings(&threadMask);
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &threadMask);
             }
             else
             {
-                if (traceLevel > 3)
-                    traceAffinity(&cpuMask);
+                if (doTrace(traceAffinity))
+                    traceAffinitySettings(&cpuMask);
                 pthread_setaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuMask);
             }
         }
@@ -903,7 +904,7 @@ protected:
     static unsigned lastCore;
 
 private:
-    static void traceAffinity(cpu_set_t *mask)
+    static void traceAffinitySettings(cpu_set_t *mask)
     {
         StringBuffer trace;
         for (unsigned core = 0; core < CPU_SETSIZE; core++)

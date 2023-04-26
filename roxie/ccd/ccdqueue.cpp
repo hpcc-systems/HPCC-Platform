@@ -1018,7 +1018,7 @@ void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger 
     mb.append(sizeof(RoxiePacketHeader), &header);
     mb.append((char) LOGGING_FLAGSPRESENT);
     mb.append(id);
-    if (traceLevel > 1)
+    if (doTrace(traceRoxiePackets))
         DBGLOG("UNLOAD sent for query %s", id);
     Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
     ROQ->sendPacket(packet, logctx);
@@ -1254,7 +1254,7 @@ public:
         }
         if (found)
         {
-            if (traceLevel > 0)
+            if (traceLevel)
             {
                 StringBuffer xx;
                 AgentContextLogger l(x);
@@ -1270,7 +1270,7 @@ public:
         {
             available.signal();
             noteQueued();
-            if (traceLevel > 10)
+            if (doTrace(traceIBYTI, TraceFlags::Max))
             {
                 AgentContextLogger l(x);
                 StringBuffer xx; 
@@ -2024,8 +2024,8 @@ protected:
             CallbackEntry &c = callbacks.item(idx);
             if (c.matches(header, lfn))
             {
-                if (traceLevel > 10)
-                    DBGLOG("callback return matched a waiting query"); 
+                if (doTrace(traceRoxieFiles, TraceFlags::Max))
+                    DBGLOG("File callback return matched a waiting query"); 
                 c.doFileCallback(len, data, header.retries==QUERY_ABORTED);
             }
         }
@@ -2615,7 +2615,7 @@ public:
         }
         if (!checkRank)
         {
-            if (traceLevel > 8)
+            if (doTrace(traceRoxiePackets))
                 DBGLOG("discarding data for aborted query");
             ROQ->abortCompleted(header);
         }
@@ -3486,7 +3486,7 @@ public:
                 Owned<IMessageResult> mr = mc->getNextResult(5000, anyActivity);
                 if (mr)
                 {
-                    if (traceLevel > 4)
+                    if (doTrace(traceRoxiePackets))
                         DBGLOG("Discarding unwanted message");
                     unsigned headerLen;
                     const RoxiePacketHeader &header = *(const RoxiePacketHeader *) mr->getMessageHeader(headerLen);

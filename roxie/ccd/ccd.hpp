@@ -690,9 +690,9 @@ public:
         blind = _blind;
     }
 
-    void setTraceLevel(unsigned _traceLevel)
+    void setTraceLevel(unsigned _level)
     {
-        ctxTraceLevel = _traceLevel;
+        ctxTraceLevel = _level;
     }
 
     StringBuffer &getStats(StringBuffer &s) const

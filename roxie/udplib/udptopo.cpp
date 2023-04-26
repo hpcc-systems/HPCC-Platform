@@ -53,7 +53,7 @@ void ChannelInfo::noteChannelsSick(unsigned primarySubChannel) const
         unsigned newDelay = currentDelay[subChannel] / 2;
         if (newDelay < minIbytiDelay)
             newDelay = minIbytiDelay;
-        if (doTrace(traceIBYTIfails))
+        if (doTrace(traceIBYTI))
             DBGLOG("IBYTI delay for subchannel %d is now %d", subChannel, newDelay);
         currentDelay[subChannel] = newDelay;
         subChannel++;
@@ -64,7 +64,7 @@ void ChannelInfo::noteChannelsSick(unsigned primarySubChannel) const
 
 void ChannelInfo::noteChannelHealthy(unsigned subChannel) const
 {
-    if (doTrace(traceIBYTIfails) && currentDelay[subChannel] != initIbytiDelay)
+    if (doTrace(traceIBYTI) && currentDelay[subChannel] != initIbytiDelay)
         DBGLOG("Resetting IBYTI delay for subchannel %d to %d", subChannel, initIbytiDelay);
     currentDelay[subChannel] = initIbytiDelay;
 }

@@ -967,8 +967,6 @@ public:
                         Owned<IFileIO> file = files->getFilePart(idx, base);
                         offset_t size = file->size();
                         baseMap.addFragment(fileEnd, size, idx-1, base, 0);
-                        if (traceLevel > 6)
-                            DBGLOG("File fragment %d size %" I64F "d", idx, size);
                         totalSize += size; // MORE - check for overflow here
                     }
                 }
@@ -989,7 +987,7 @@ public:
                 EXCLOG(MCoperatorError, E);
                 throw E;
             }
-            if (traceLevel > 2)
+            if (doTrace(traceRoxieFiles))
                 DBGLOG("Loading in-memory file, size %" I64F "d", totalSize);
             // MORE - 32-bit systems could wrap here if totalSize > 2^32
             fileEnd = fileStart = (char *) malloc((size_t)totalSize);
