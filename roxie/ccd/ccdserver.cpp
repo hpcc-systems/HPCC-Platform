@@ -224,6 +224,10 @@ public:
     {
         ctx->mergeStats(from);
     }
+    virtual StringBuffer &getStats(StringBuffer &ret) const
+    {
+        return ctx->getStats(ret);
+    }
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const override
     {
         ctx->gatherStats(merged);
@@ -1044,7 +1048,7 @@ protected:
     IHThorArg *colocalParent;
     IEngineRowAllocator *rowAllocator;
     CriticalSection statecrit;
-    CriticalSection statscrit;
+    mutable CriticalSection statscrit;
 
     mutable CRuntimeStatisticCollection stats;
     MapStringToMyClass<ThorSectionTimer> functionTimers;
@@ -1213,6 +1217,11 @@ public:
     {
         CriticalBlock b(statscrit);
         stats.merge(childStats);
+    }
+    virtual StringBuffer &getStats(StringBuffer &ret) const
+    {
+        CriticalBlock b(statscrit);
+        return stats.toStr(ret);
     }
     virtual ISectionTimer *registerTimer(unsigned _activityId, const char * name)
     {

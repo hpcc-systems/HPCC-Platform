@@ -83,6 +83,7 @@ interface IRoxieContextLogger : extends IContextLogger
     virtual void CTXLOGl(LogItem *) const = 0;
     virtual bool isBlind() const = 0;
     virtual void gatherStats(CRuntimeStatisticCollection & merged) const = 0;
+    virtual StringBuffer &getStats(StringBuffer &s) const = 0;
     virtual bool collectingDetailedStatistics() const = 0;
 };
 
