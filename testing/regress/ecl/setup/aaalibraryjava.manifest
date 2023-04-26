@@ -1,0 +1,3 @@
+<Manifest>
+ <Resource type='jar' filename='javaembed_library.jar'/>
+</Manifest>

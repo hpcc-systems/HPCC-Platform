@@ -117,6 +117,7 @@ interface IRoxieQuerySetManagerSet : extends IInterface
 {
     virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry) = 0;
     virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const = 0;
+    virtual void preloadOnce() = 0;
 };
 
 interface IRoxieQuerySetManager : extends IInterface
@@ -129,6 +130,7 @@ interface IRoxieQuerySetManager : extends IInterface
     virtual void resetAllQueryTimings() = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
     virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *agents, const IRoxieContextLogger &logctx) const = 0;
+    virtual void preloadOnce() const = 0;
 };
 
 interface IRoxieDebugSessionManager : extends IInterface
