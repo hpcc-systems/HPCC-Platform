@@ -1280,7 +1280,7 @@ IDirectReader *InMemoryIndexManager::selectKey(ScoredRowFilter &filter, const IT
     }
     if (bestIndex)
     {
-        if (logctx.queryTraceLevel() > 5)
+        if (doTrace(traceFilters))
         {
             StringBuffer ret;
             logctx.CTXLOG("Using key %s", bestIndex->toString(ret).str());

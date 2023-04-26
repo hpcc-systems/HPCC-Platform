@@ -652,7 +652,7 @@ namespace mongodbembed
      */
     unsigned MongoDBRecordBinder::checkNextParam(const RtlFieldInfo * field)
     {
-       if (logctx.queryTraceLevel() > 4) logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
+       if (doTrace(traceMongoDB)) logctx.CTXLOG("Binding %s to %d", field->name, thisParam);
        return thisParam++;
     }
 

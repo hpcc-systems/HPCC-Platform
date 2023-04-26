@@ -1001,7 +1001,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #endif
         linuxYield = topology->getPropBool("@linuxYield", false);
-        traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         traceStrands = topology->getPropBool("@traceStrands", false);
 
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);

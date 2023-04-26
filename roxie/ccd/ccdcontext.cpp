@@ -1522,8 +1522,6 @@ public:
 
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph)
     {
-        if (queryTraceLevel() > 10)
-            CTXLOG("CAgentContext %p noteChildGraph %d=%p", this, id, childGraph);
         childGraphs.setValue(id, childGraph);
     }
 
@@ -1630,9 +1628,6 @@ public:
     virtual void executeGraph(const char * name, bool realThor, size32_t parentExtractSize, const void * parentExtract)
     {
         assertex(parentExtractSize == 0);
-        if (queryTraceLevel() > 8)
-            CTXLOG("Executing graph %s", name);
-
         if (realThor)
         {
             Owned<IPropertyTree> compConfig = getComponentConfig();
@@ -1687,8 +1682,6 @@ public:
 
     virtual IActivityGraph * queryChildGraph(unsigned  id)
     {
-        if (queryTraceLevel() > 10)
-            CTXLOG("CAgentContext %p resolveChildGraph %d", this, id);
         if (id == 0)
             return graph;
         IActivityGraph *childGraph = childGraphs.getValue(id);

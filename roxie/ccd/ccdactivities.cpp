@@ -433,7 +433,7 @@ public:
 
     virtual void abort() 
     {
-        if (logctx.queryTraceLevel() > 2)
+        if (doTrace(traceRoxiePackets))
         {
             StringBuffer s;
             logctx.CTXLOG("Aborting running activity: %s", packet->queryHeader().toString(s).str());
@@ -2633,12 +2633,12 @@ public:
             assertex(numSeeks); // Given that we put the first seek in here to there should always be at least one!
             steppingRow = smartStepInfoValue; // the first of them...
             stepExtra.set(flags, NULL);
-            if (logctx.queryTraceLevel() > 10)
+            if (doTrace(traceSmartStepping, TraceFlags::Detailed))
             {
                 logctx.CTXLOG("%d seek rows provided. mismatch(%d) readahead(%d) onlyfirst(%d)", numSeeks,
                        (int)stepExtra.returnMismatches(), (int)stepExtra.readAheadManyResults(), (int)stepExtra.onlyReturnFirstSeekMatch());
 
-                if (logctx.queryTraceLevel() > 15)
+                if (doTrace(traceSmartStepping, TraceFlags::Max))
                 {
                     for (unsigned i = 0; i < numSeeks; i++)
                     {
@@ -2652,7 +2652,7 @@ public:
         }
         else
         {
-            if (logctx.queryTraceLevel() > 10)
+            if (doTrace(traceSmartStepping, TraceFlags::Detailed))
                 logctx.CTXLOG("0 seek rows provided.");
         }
     }
@@ -2708,7 +2708,7 @@ public:
             compressed.append(true);
             compressed.append(lastRowCompleteMatch);  // This field is not compressed - see above!
             compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
-            bool report = logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 3 || si.length() >= continuationWarnThreshold);
+            bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
                 logctx.CTXLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
             siLen = compressed.length() - sizeof(siLen);
@@ -2734,7 +2734,7 @@ public:
         {
             MemoryBuffer decompressed;
             decompressToBuffer(decompressed, resentInfo);
-            if (logctx.queryTraceLevel() > 3)
+            if (doTrace(traceRoxiePackets))
                  logctx.CTXLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
             resentInfo.swapWith(decompressed);
             resentInfo.reset(0);
@@ -2944,7 +2944,7 @@ public:
                             callback.finishedRow();
                             if (transformedSize)
                             {
-                                if (logctx.queryTraceLevel() > 15)
+                                if (doTrace(traceSmartStepping, TraceFlags::Max))
                                 {
                                     StringBuffer b;
                                     for (unsigned j = 0; j < (steppingLength ? steppingLength : 6); j++)
@@ -2999,7 +2999,7 @@ public:
                         }
                         if (continuationNeeded && !continuationFailed)
                         {
-                            if (logctx.queryTraceLevel() > 10)
+                            if (doTrace(traceSmartStepping, TraceFlags::Detailed))
                                 logctx.CTXLOG("Indexread returning partial result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
                             if (sendContinuation(output))
                             {
@@ -3025,7 +3025,7 @@ public:
         }
         if (tlk) // a very early abort can mean it is NULL.... MORE is this the right place to put it or should it be inside the loop??
         {
-            if (logctx.queryTraceLevel() > 10 && !aborted)
+            if (doTrace(traceSmartStepping, TraceFlags::Max) && !aborted)
             {
                 logctx.CTXLOG("Indexread returning result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
                 if (steppingOffset)
@@ -4125,7 +4125,7 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
             compressed.append(siLen);  // Leaving space to patch when size known
             compressed.append(true);
             compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
-            bool report = logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 3 || si.length() >= continuationWarnThreshold);
+            bool report = logctx.queryTraceLevel() && (doTrace(traceRoxiePackets) || si.length() >= continuationWarnThreshold);
             if (report)
                 DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
             siLen = compressed.length() - sizeof(siLen);
@@ -4150,7 +4150,7 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
         {
             MemoryBuffer decompressed;
             decompressToBuffer(decompressed, resentInfo);
-            if (logctx.queryTraceLevel() > 3)
+            if (doTrace(traceRoxiePackets))
                  DBGLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
             resentInfo.swapWith(decompressed);
             resentInfo.reset(0);
@@ -4314,13 +4314,9 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                 if (precount > atmost)
                 {
                     candidateCount = atmost+1;
-                    if (logctx.queryTraceLevel() > 5)
-                        logctx.CTXLOG("Pre-aborting since candidate count is at least %" I64F "d", precount);
                 }
                 else
                 {
-                    if (logctx.queryTraceLevel() > 10)
-                        logctx.CTXLOG("NOT Pre-aborting since candidate count is %" I64F "d", precount);
                     tlk->reset(false);
                 }
             }
@@ -4350,11 +4346,6 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         }
                         if (processed > rowLimit)
                         {
-                            if (logctx.queryTraceLevel() > 1)
-                            {
-                                StringBuffer s;
-                                logctx.CTXLOG("limit exceeded for %s", packet->queryHeader().toString(s).str());
-                            }
                             noteStats(processed-processedBefore, rejected);
                             limitExceeded();
                             return NULL;

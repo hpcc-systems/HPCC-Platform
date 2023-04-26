@@ -427,8 +427,6 @@ public:
 
     void doControlQuery(SocketEndpoint &ep, IPropertyTree *xml, const char *queryText, StringBuffer &reply)
     {
-        if (logctx.queryTraceLevel() > 5)
-            logctx.CTXLOG("doControlQuery (%d): %.80s", isOriginal, queryText);
         // By this point we should have cascade-connected thanks to a prior <control:lock>
         // So do the query ourselves and in all child threads;
         const char *name = xml->queryName();
@@ -462,8 +460,6 @@ public:
             }
             void Do(unsigned i)
             {
-                if (logctx.queryTraceLevel() > 5)
-                    logctx.CTXLOG("doControlQuery::do (%d of %d): %.80s", i, numChildren, queryText);
                 if (i == numChildren)
                     doMe();
                 else
@@ -533,8 +529,6 @@ public:
         activeChildren.kill();
         if (mergedReply)
             toXML(mergedReply, reply, 0, (mergeType == CascadeMergeQueries) ? XML_Embed|XML_LineBreak|XML_SortTags : XML_Format);
-        if (logctx.queryTraceLevel() > 5)
-            logctx.CTXLOG("doControlQuery (%d) finished: %.80s", isOriginal, queryText);
     }
 
 };
@@ -1320,7 +1314,7 @@ public:
         unsigned elapsed = msTick() - qstart;
         noteQuery(failed, elapsed, priority);
         queryFactory->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, 0);
-        if (logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 2 || logFullQueries || logctx.intercept))
+        if (logctx.queryTraceLevel() && (logFullQueries || logctx.intercept))
         {
             StringBuffer s;
             logctx.getStats(s);
@@ -1619,7 +1613,7 @@ public:
             queryFactory->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, bytesOut);
             queryFactory.clear();
         }
-        if (logctx && logctx->queryTraceLevel() && (logctx->queryTraceLevel() > 2 || logFullQueries() || logctx->intercept))
+        if (logctx && logctx->queryTraceLevel() && (logFullQueries() || logctx->intercept))
         {
             if (queryName.get())
             {
@@ -1835,27 +1829,17 @@ public:
         StringBuffer reply;
         RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx, msg);
         const char *name = msg->queryName();
-        IContextLogger &logctx = *msgctx->queryLogContext();
-
         StringBuffer xml;
         toXML(msg, xml, 0, 0);
 
         if (strieq(name, "control:lock"))
         {
-            if (logctx.queryTraceLevel() > 8)
-                logctx.CTXLOG("Got lock request %s", xml.str());
             roxieMsgCtx->ensureCascadeManager().doLockGlobal(reply, false);
-            if (logctx.queryTraceLevel() > 8)
-                logctx.CTXLOG("lock reply %s", reply.str());
             unknownQueryStats.noteComplete();
         }
         else if (strieq(name, "control:childlock"))
         {
-            if (logctx.queryTraceLevel() > 8)
-                logctx.CTXLOG("Got childlock request %s", xml.str());
             roxieMsgCtx->ensureCascadeManager().doLockChild(msg, xml.str(), reply);
-            if (logctx.queryTraceLevel() > 8)
-                logctx.CTXLOG("childlock reply %s", reply.str());
             unknownQueryStats.noteComplete();
         }
         else
@@ -1864,11 +1848,7 @@ public:
             bool lockAll = msg->getPropBool("@lockAll", false);
             if (!roxieMsgCtx->ensureCascadeManager().checkEntered() && (lock || lockAll)) //only if not already locked
             {
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("controll msg lock%s attribute", lockAll ? "All" : "");
                 roxieMsgCtx->ensureCascadeManager().doLockGlobal(reply, false);
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("lock%s attribute reply %s", lockAll ? "All" : "", reply.str());
             }
 
             bool doControlQuery = true;

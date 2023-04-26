@@ -1136,8 +1136,6 @@ public:
             return NULL;
         IQueryFactory *ret;
         ret = aliases.getValue(id);
-        if (ret && logctx.queryTraceLevel() > 5)
-            logctx.CTXLOG("Found query alias %s => %s", id, ret->queryQueryName());
         if (!ret)
             ret = queries.getValue(id);
         if (ret && querySet)
@@ -2974,11 +2972,6 @@ private:
                 if (traceLevel > MAXTRACELEVEL)
                     traceLevel = MAXTRACELEVEL;
                 topology->setPropInt("@traceLevel", traceLevel);
-            }
-            else if (stricmp(queryName, "control:traceSmartStepping")==0)
-            {
-                traceSmartStepping = control->getPropBool("@val", true);
-                topology->setPropInt("@traceSmartStepping", traceSmartStepping);
             }
             else if (stricmp(queryName, "control:traceStartStop")==0)
             {

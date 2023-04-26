@@ -74,7 +74,6 @@ static __uint64 fetchThresholdCycles = 0;
 
 bool useMemoryMappedIndexes = false;
 bool linuxYield = false;
-bool traceSmartStepping = false;
 bool flushJHtreeCacheOnOOM = true;
 std::atomic<unsigned __int64> branchSearchCycles{0};
 std::atomic<unsigned __int64> leafSearchCycles{0};
@@ -1990,7 +1989,7 @@ bool CKeyCursor::lookupSkip(const void *seek, size32_t seekOffset, size32_t seek
         stats.noteSkips(0, 1);
     bool ret = lookup(true, stats);
 #ifdef _DEBUG
-    if (traceSmartStepping)
+    if (doTrace(traceSmartStepping, TraceFlags::Max))
     {
         StringBuffer recstr;
         unsigned i;
@@ -2820,7 +2819,7 @@ public:
             if (!activekeys)
                 return false;
 #ifdef _DEBUG
-            if (traceSmartStepping)
+            if (doTrace(traceSmartStepping, TraceFlags::Max))
                 DBGLOG("SKIP: init key = %d", mergeheap[0]);
 #endif
             return true;
@@ -2830,14 +2829,14 @@ public:
             if (!activekeys)
             {
 #ifdef _DEBUG
-                if (traceSmartStepping)
+                if (doTrace(traceSmartStepping, TraceFlags::Max))
                     DBGLOG("SKIP: merge done");
 #endif
                 return false;
             }
             unsigned key = mergeheap[0];
 #ifdef _DEBUG
-            if (traceSmartStepping)
+            if (doTrace(traceSmartStepping, TraceFlags::Max))
                 DBGLOG("SKIP: merging key = %d", key);
 #endif
             unsigned compares = 0;
@@ -2884,7 +2883,7 @@ public:
                 if (memcmp(seek, keyBuffer+seekOffset, seeklen) <= 0)
                 {
 #ifdef _DEBUG
-                    if (traceSmartStepping)
+                    if (doTrace(traceSmartStepping, TraceFlags::Max))
                     {
                         unsigned keySize = keyCursor->getKeyedSize();
                         DBGLOG("SKIP: merged key = %d", key);

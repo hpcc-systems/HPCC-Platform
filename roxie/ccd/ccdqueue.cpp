@@ -1506,7 +1506,7 @@ public:
     {
         try 
         {
-            if (activity && (logctx.queryTraceLevel() > 1))
+            if (activity && (doTrace(traceRoxiePackets)))
             {
                 StringBuffer act;
                 activity->toString(act);
@@ -1531,7 +1531,7 @@ public:
                 header.setException(mySubChannel);
                 if (!header.allChannelsFailed() && !localAgent)
                 {
-                    if (logctx.queryTraceLevel() > 1) 
+                    if (doTrace(traceRoxiePackets)) 
                         logctx.CTXLOG("resending packet from agent in case others want to try it");
                     ROQ->sendPacket(packet, logctx);
                 }
@@ -1624,7 +1624,7 @@ public:
                 if (primarySubChannel != mySubChannel)
                 {
                     unsigned delay = topology->queryChannelInfo(channel).getIbytiDelay(primarySubChannel);
-                    if (logctx.queryTraceLevel() > 6)
+                    if (doTrace(traceIBYTI))
                     {
                         StringBuffer x;
                         logctx.CTXLOG("YES myTurnToDelayIBYTI subchannel=%u delay=%u hash=%u %s", mySubChannel, delay, hdrHashVal, header.toString(x).str());
@@ -1663,7 +1663,7 @@ public:
                     else
                         ibytiNoDelaysSec.fastInc();
 #endif
-                    if (logctx.queryTraceLevel() > 6)
+                    if (doTrace(traceIBYTI))
                     {
                         StringBuffer x;
                         logctx.CTXLOG("NOT myTurnToDelayIBYTI subchannel=%u hash=%u %s", mySubChannel, hdrHashVal, header.toString(x).str());
@@ -1676,7 +1676,7 @@ public:
             if (abortLaunch)
             {
                 workerThreadBusy = false;  // Keep order - before setActivity below
-                if (logctx.queryTraceLevel() > 5)
+                if (doTrace(traceRoxiePackets))
                 {
                     StringBuffer x;
                     logctx.CTXLOG("Stop before processing - activity aborted %s", header.toString(x).str());
@@ -1711,7 +1711,7 @@ public:
             if (!debugging)
                 ROQ->sendIbyti(header, logctx, mySubChannel);
             Owned<IMessagePacker> output = activity->process();
-            if (logctx.queryTraceLevel() > 5)
+            if (doTrace(traceRoxiePackets))
             {
                 StringBuffer x;
                 logctx.CTXLOG("done processing %s", header.toString(x).str());
@@ -1791,7 +1791,7 @@ public:
 #ifndef SUBCHANNELS_IN_HEADER
                         topology.setown(getTopology());
 #endif
-                        if (logctx.queryTraceLevel() > 10)
+                        if (doTrace(traceRoxiePackets, TraceFlags::Max))
                         {
                             StringBuffer x;
                             logctx.CTXLOG("dequeued %s", header.toString(x).str());
@@ -2151,19 +2151,21 @@ public:
         switch (header.retries & ROXIE_RETRIES_MASK)
         {
         case (QUERY_ABORTED & ROXIE_RETRIES_MASK):
+            if (doTrace(traceRoxiePackets))
             {
                 StringBuffer s;
                 logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
             }
             break;
         default:
+            if (doTrace(traceRoxiePackets))
             {
                 StringBuffer s;
                 logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
             }
             break; 
         case 0:
-            if (logctx.queryTraceLevel() > 8)
+            if (doTrace(traceRoxiePackets, TraceFlags::Max))
             {
                 StringBuffer s;
                 logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
@@ -2493,19 +2495,22 @@ public:
 
             unsigned length = x->queryHeader().packetlength;
             assertex (header.activityId & ~ROXIE_PRIORITY_MASK);
-            StringBuffer s;
-            switch (header.retries & ROXIE_RETRIES_MASK)
+            if (doTrace(traceRoxiePackets))
             {
-            case (QUERY_ABORTED & ROXIE_RETRIES_MASK):
-                logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
-                break;
-            default:
-                logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
-                break; 
-            case 0:
-                if (logctx.queryTraceLevel() > 8)
-                    logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
-                break;
+                StringBuffer s;
+                switch (header.retries & ROXIE_RETRIES_MASK)
+                {
+                case (QUERY_ABORTED & ROXIE_RETRIES_MASK):
+                    logctx.CTXLOG("Aborting packet size=%d: %s", length, header.toString(s).str());
+                    break;
+                default:
+                    logctx.CTXLOG("Resending packet size=%d: %s", length, header.toString(s).str());
+                    break; 
+                case 0:
+                    if (doTrace(traceRoxiePackets, TraceFlags::Max))
+                        logctx.CTXLOG("Sending packet size=%d: %s", length, header.toString(s).str());
+                    break;
+                }
             }
             if (length > maxPacketSize)
                 throwPacketTooLarge(x, maxPacketSize);
@@ -2526,7 +2531,7 @@ public:
         MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendIbyti");
         RoxiePacketHeader ibytiHeader(header, header.activityId & ROXIE_PRIORITY_MASK, subChannel);
     
-        if (logctx.queryTraceLevel() > 8)
+        if (doTrace(traceIBYTI))
         {
             StringBuffer s; logctx.CTXLOG("Sending IBYTI packet %s", ibytiHeader.toString(s).str());
         }
@@ -2539,7 +2544,7 @@ public:
         MTIME_SECTION(queryActiveTimer(), "RoxieSocketQueueManager::sendAbort");
         RoxiePacketHeader abortHeader(header, header.activityId & ROXIE_PRIORITY_MASK, 0);  // subChannel irrelevant - we are about to overwrite retries anyway
         abortHeader.retries = QUERY_ABORTED;
-        if (logctx.queryTraceLevel() > 8)
+        if (doTrace(traceRoxiePackets))
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
         }
@@ -2564,7 +2569,7 @@ public:
         abortHeader.packetlength += strlen(lfn)+1;
         MemoryBuffer data;
         data.append(sizeof(abortHeader), &abortHeader).append(lfn);
-        if (logctx.queryTraceLevel() > 5)
+        if (doTrace(traceRoxieFiles))
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
         }
@@ -2578,7 +2583,7 @@ public:
     virtual IMessagePacker *createOutputStream(RoxiePacketHeader &header, bool outOfBand, const IRoxieContextLogger &logctx)
     {
         unsigned qnum = outOfBand ? 0 : ((header.retries & ROXIE_FASTLANE) || !fastLaneQueue) ? 1 : 2;
-        if (logctx.queryTraceLevel() > 8)
+        if (doTrace(traceRoxiePackets, TraceFlags::Max))
         {
             StringBuffer s; logctx.CTXLOG("Creating Output Stream for reply packet on Q=%d - %s", qnum, header.toString(s).str());
         }
@@ -2817,7 +2822,7 @@ public:
                             else
                                 retriesIgnoredSec.fastInc();
                             ROQ->sendIbyti(header, logctx, mySubchannel);
-                            if (logctx.queryTraceLevel() > 10)
+                            if (doTrace(traceRoxiePackets, TraceFlags::Max))
                             {
                                 StringBuffer xx; logctx.CTXLOG("Ignored retry on subchannel %u for running activity %s", mySubchannel, header.toString(xx).str());
                             }
@@ -2832,14 +2837,14 @@ public:
                         else 
                             retriesIgnoredSec.fastInc();
                         ROQ->sendIbyti(header, logctx, mySubchannel);
-                        if (logctx.queryTraceLevel() > 10)
+                        if (doTrace(traceRoxiePackets, TraceFlags::Max))
                         {
                             StringBuffer xx; logctx.CTXLOG("Ignored retry on subchannel %u for completed activity %s", mySubchannel, header.toString(xx).str());
                         }
                     }
                     if (!alreadyRunning)
                     {
-                        if (logctx.queryTraceLevel() > 10)
+                        if (doTrace(traceRoxiePackets, TraceFlags::Max))
                         {
                             StringBuffer xx; logctx.CTXLOG("Retry %d received on subchannel %u for %s", retries+1, mySubchannel, header.toString(xx).str());
                         }
@@ -3382,7 +3387,7 @@ public:
         MTIME_SECTION(queryActiveTimer(), "RoxieLocalQueueManager::sendAbort");
         RoxiePacketHeader abortHeader(header, header.activityId & ROXIE_PRIORITY_MASK, 0);
         abortHeader.retries = QUERY_ABORTED;
-        if (logctx.queryTraceLevel() > 8)
+        if (doTrace(traceRoxiePackets, TraceFlags::Max))
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
         }
@@ -3400,7 +3405,7 @@ public:
         abortHeader.retries = QUERY_ABORTED;
         MemoryBuffer data;
         data.append(sizeof(abortHeader), &abortHeader).append(lfn);
-        if (logctx.queryTraceLevel() > 5)
+        if (doTrace(traceRoxieFiles))
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
         }
