@@ -1952,6 +1952,7 @@ CInplaceLeafWriteNode::CInplaceLeafWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, I
 
     uncompressed.clear();
     compressed.allocate(nodeSize);
+    gatherUncompressed = true;
 }
 
 bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size, unsigned __int64 sequence)
@@ -1962,14 +1963,17 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     if (0 == hdr.numKeys)
     {
         firstSequence = sequence;
-        if (keyLen != keyCompareLen)
-            compressor.open(compressed.mem(), nodeSize, isVariable, ctx.compressionHandler);
+        if ((keyLen != keyCompareLen) && ctx.compressionHandler)
+        {
+            size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
+            compressor.open(compressed.mem(), nodeSize, ctx.compressionHandler, isVariable, fixedSize);
+        }
     }
 
     __uint64 savedMinPosition = minPosition;
     __uint64 savedMaxPosition = maxPosition;
     const byte * data = (const byte *)_data;
-    unsigned oldSize = getDataSize();
+    unsigned oldSize = getDataSize(true);
     builder.add(keyCompareLen, data);
 
     if (positions.ordinality())
@@ -1989,36 +1993,74 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     const char * extraData = (const char *)(data + keyCompareLen);
     size32_t extraSize = size - keyCompareLen;
 
-    //Save the uncompressed version in case it is smaller than the compressed version...
-    //but only up to a certain size - to prevent very large compression ratios creating giant buffers.
-    const size32_t uncompressedLimit = 0x2000;
+    //Save the uncompressed version in case it is smaller than the compressed version (or fits in the whole node)...
     const size32_t prevUncompressedLen = uncompressed.length();
-    if (uncompressed.length() < uncompressedLimit)
+    if (gatherUncompressed)
         uncompressed.append(extraSize, extraData);
+
     if (isVariable)
         payloadLengths.append(extraSize);
 
-    size32_t required = getDataSize();
-    //The compression algorithm may append some extra data when the block is complete
-    //so ensure that that safety margin is subtracted from the space available
-    size32_t safetyMargin = (keyLen != keyCompareLen) ? 16 : 0;
-
+    size32_t required = getDataSize(true);
     bool hasSpace = (required <= maxBytes);
-    if (hasSpace && (keyLen != keyCompareLen))
+    if ((keyLen != keyCompareLen) && ctx.compressionHandler)
     {
-        size32_t oldLzwSize = compressor.buflen();
-        size32_t lzwSpace = maxBytes - (required - oldLzwSize);
-        if (!compressor.adjustLimit(lzwSpace) || !compressor.write(extraData, extraSize))
+        // Non-Payload size + compression-version byte + optional length (assume the worst)
+        size32_t maxSizePayloadLength = sizePacked(maxBytes);
+        size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0);
+        size32_t maxPayloadSize = maxBytes - maxUsedSpace;
+        if (hasSpace)
         {
-            //Attempting to write data may have flushed some bytes into the lzw output buffer.
-            oldSize += (compressor.buflen() - oldLzwSize);
-            hasSpace = false;
+            if (useCompressedPayload)
+            {
+                size32_t oldLzwSize = compressor.buflen();
+                if (!compressor.adjustLimit(maxPayloadSize) || !compressor.write(extraData, extraSize))
+                {
+                    //Attempting to write data may have flushed some bytes into the lzw output buffer.
+                    oldSize += (compressor.buflen() - oldLzwSize);
+                    hasSpace = false;
+                }
+            }
+            else
+            {
+                // payload already appended to uncompressed.
+            }
+        }
+        else if (uncompressed.length())
+        {
+            if (!useCompressedPayload)
+            {
+                //Reached the threshold where uncompressed data does not fit.
+                //Either need to finish the node or switch to using a compressed payload.
+                unsigned uncompressedSize = uncompressed.length();
+                if (compressor.adjustLimit(maxPayloadSize) && compressor.write(uncompressed.bytes(), uncompressedSize))
+                {
+                    unsigned compressedSize = compressor.buflen();
+                    if (compressedSize <= uncompressedSize * ctx.minCompressionThreshold)
+                    {
+                        //compression reduces the size by a sufficient amount to be worth the decompression time/fragmentation.
+                        hasSpace = true;
+                        useCompressedPayload = true;
+
+                        //MORE: Some compressors do not support incremental compression.  For those we should continue to
+                        //gather uncompressed, but may also need to move the buffer to the context so it is reused (or
+                        //maybe swap with the context).
+                        gatherUncompressed = false;
+                    }
+                }
+                // else compressed does not fit either - better to remain uncompressed.
+            }
+            else
+            {
+                // no space for the keyed portion - adding compressed data will only make it bigger..
+            }
         }
     }
 
     if (!hasSpace)
     {
         //Reverse all the operations that have just been performed
+        //compressed buffer will either be ignored or the write will have failed => no need to adjust
         if (isVariable)
             payloadLengths.pop();
         uncompressed.setLength(prevUncompressedLen);
@@ -2027,7 +2069,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         positions.pop();
         minPosition = savedMinPosition;
         maxPosition = savedMaxPosition;
-        unsigned nowSize = getDataSize();
+        unsigned nowSize = getDataSize(true);
         assertex(oldSize == nowSize);
 #ifdef TRACE_BUILDING
         DBGLOG("---- leaf ----");
@@ -2041,7 +2083,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     return true;
 }
 
-unsigned CInplaceLeafWriteNode::getDataSize()
+unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 {
     if (positions.ordinality() == 0)
         return 0;
@@ -2060,11 +2102,21 @@ unsigned CInplaceLeafWriteNode::getDataSize()
     unsigned posSize = sizeOfCompressionMethodByte + sizePacked(minPosition) + bytesPerPosition * positions.ordinality() + sizePacked(firstSequence);
     unsigned offsetSize = payloadLengths.ordinality() * 2;  // MORE: Could probably compress
     unsigned payloadSize = 0;
-    if (keyLen != keyCompareLen)
+    if ((keyLen != keyCompareLen) && includePayload)
     {
-        //MORE: Support Uncompressed
-        size32_t payloadLen = compressor.buflen();
-        payloadSize = 1 + sizePacked(payloadLen) + payloadLen;
+        payloadSize = 1; // compressionType;
+        if (useCompressedPayload)
+        {
+            unsigned compressedSize = compressor.buflen();
+            payloadSize += sizePacked(compressedSize) + compressedSize;
+        }
+        else
+        {
+            unsigned uncompressedSize = uncompressed.length();
+            if (isVariable)
+                payloadSize += sizePacked(uncompressedSize);
+            payloadSize += uncompressedSize;
+        }
     }
     return posSize + offsetSize + payloadSize + builder.getSize();
 }
@@ -2074,7 +2126,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
     if (keyLen != keyCompareLen)
         compressor.close();
 
-    hdr.keyBytes = getDataSize();
+    hdr.keyBytes = getDataSize(true);
 
     MemoryBuffer data;
     data.setBuffer(maxBytes, keyPtr, false);
@@ -2109,12 +2161,11 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 
         if (keyLen != keyCompareLen)
         {
-            bool useUncompressed = false; // Implement in HPCC-19115
             CompressionMethod payloadCompression;
-            if (useUncompressed)
-                payloadCompression = COMPRESS_METHOD_NONE;
-            else
+            if (useCompressedPayload)
                 payloadCompression = compressor.getCompressionMethod();
+            else
+                payloadCompression = COMPRESS_METHOD_NONE;
 
             data.append((byte)payloadCompression);
             switch (payloadCompression)
@@ -2137,7 +2188,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
         builder.serialize(data);
         ctx.numKeyedDuplicates += builder.numDuplicates;
 
-        assertex(data.length() == getDataSize());
+        assertex(data.length() == getDataSize(true));
     }
 
     CWriteNode::write(out, crc);
@@ -2169,18 +2220,39 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
 
     //Process any options.  Currently supports the compression mode
     const char * colon= strchr(compressionName, ':');
+    bool useDefaultCompression = true;
     if (colon)
     {
         const char * cur = colon+1;
         StringBuffer option;
+        StringBuffer value;
         while (true)
         {
             const char * comma = strchr(cur, ',');
+            const char * eq = strchr(cur, '=');
+            if (comma && eq)
+            {
+                if (comma < eq)
+                    eq = nullptr;
+            }
             option.clear();
-            if (comma)
-                option.append(comma-cur, cur);
+            value.clear();
+            if (eq)
+            {
+                option.append(eq-cur, cur);
+                if (comma)
+                    value.append(comma-(eq+1), eq+1);
+                else
+                    value.append(eq+1);
+            }
             else
-                option.append(cur);
+            {
+                value.append("1");
+                if (comma)
+                    option.append(comma-cur, cur);
+                else
+                    option.append(cur);
+            }
 
             if (option.length())
             {
@@ -2188,6 +2260,18 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
                 if (method != COMPRESS_METHOD_NONE)
                 {
                     ctx.compressionHandler = queryCompressHandler(method);
+                    useDefaultCompression = false;
+                }
+                else if (strieq(option, "uncompressed"))
+                    useDefaultCompression = false;
+                else if (strieq(option, "compressThresholdPercent")) // use uncompressed if compressed is > 95% uncompressed
+                    ctx.minCompressionThreshold = strtod(value, nullptr) / 100.0;
+                else if (strieq(option, "compression"))
+                {
+                    useDefaultCompression = false;
+                    CompressionMethod method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
+                    if (method != COMPRESS_METHOD_NONE)
+                        ctx.compressionHandler = queryCompressHandler(method);
                 }
                 else
                 {
@@ -2202,7 +2286,7 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
         }
     }
 
-    if (!ctx.compressionHandler)
+    if (useDefaultCompression)
     {
         bool isVariable = keyHdr->isVariable();
         bool rowCompression = (keyHdr->getKeyType()&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;

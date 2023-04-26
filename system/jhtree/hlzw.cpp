@@ -62,7 +62,7 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompres
     method = comp->getCompressionMethod();
 }
 
-void KeyCompressor::open(void *blk,int blksize,bool _isVariable, ICompressHandler * compressionHandler)
+void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHandler, bool _isVariable, size32_t _fixedRowSize)
 {
     isVariable = _isVariable;
     isBlob = false;
@@ -72,6 +72,7 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, ICompressHandle
     comp = compressionHandler->getCompressor(options);
     comp->open(blk,blksize);
     method = comp->getCompressionMethod();
+    fixedRowSize = _fixedRowSize;
 }
 
 void KeyCompressor::openBlob(void *blk,int blksize)
@@ -83,6 +84,7 @@ void KeyCompressor::openBlob(void *blk,int blksize)
     comp = NULL;
     comp = createLZWCompressor(true);
     comp->open(blk,blksize);
+    method = comp->getCompressionMethod();
 }
 
 int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength, unsigned __int64 sequence)
@@ -113,14 +115,35 @@ int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength,
     return 1;
 }
 
-bool KeyCompressor::write(const char * data, size32_t datalength)
+bool KeyCompressor::write(const void * data, size32_t datalength)
 {
-    comp->startblock(); // start transaction
-    if (comp->write(data,datalength)!=datalength) {
-        close();
-        return false;
+    if (method == COMPRESS_METHOD_RANDROW && fixedRowSize)
+    {
+        //Ugly special casing because the RandR compressor expects single rows to be added.
+        //This code could be migrated to the compressor, but that should be done carefully as a separate change.
+        for (size32_t offset = 0; offset < datalength; offset += fixedRowSize)
+        {
+            dbgassertex(offset + fixedRowSize <= datalength); // Check datalength is a multiple of the fixedRowSize
+            comp->startblock(); // start transaction
+            size32_t size = comp->write((const byte *)data + offset, fixedRowSize);
+            if (size != fixedRowSize)
+            {
+                close();
+                return false;
+            }
+            comp->commitblock();    // end transaction
+        }
     }
-    comp->commitblock();    // end transaction
+    else
+    {
+        comp->startblock(); // start transaction
+        if (comp->write(data,datalength)!=datalength)
+        {
+            close();
+            return false;
+        }
+        comp->commitblock();    // end transaction
+    }
     return true;
 }
 
