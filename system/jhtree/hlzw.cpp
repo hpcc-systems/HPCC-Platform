@@ -62,13 +62,12 @@ void KeyCompressor::open(void *blk,int blksize,bool _isVariable, bool rowcompres
     method = comp->getCompressionMethod();
 }
 
-void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHandler, bool _isVariable, size32_t _fixedRowSize)
+void KeyCompressor::open(void *blk,int blksize, ICompressHandler * compressionHandler, const char * options, bool _isVariable, size32_t _fixedRowSize)
 {
     isVariable = _isVariable;
     isBlob = false;
     curOffset = 0;
     ::Release(comp);
-    const char * options = nullptr;
     comp = compressionHandler->getCompressor(options);
     comp->open(blk,blksize);
     method = comp->getCompressionMethod();
@@ -113,6 +112,30 @@ int KeyCompressor::writekey(offset_t fPtr, const char *key, unsigned datalength,
     comp->commitblock();    // end transaction
 
     return 1;
+}
+
+bool KeyCompressor::compressBlock(size32_t destSize, void * dest, size32_t srcSize, const void * src, ICompressHandler * compressionHandler, const char * options, bool isVariable, size32_t fixedSize)
+{
+    bool ok = false;
+    Owned<ICompressor> compressor = compressionHandler->getCompressor(options);
+    if (compressor->supportsBlockCompression())
+    {
+        size32_t written = compressor->compressBlock(destSize, dest, srcSize, src);
+        if (written)
+        {
+            bufp = dest;
+            bufl = written;
+            method = compressor->getCompressionMethod();
+            ok = true;
+        }
+    }
+    else
+    {
+        open(dest, destSize, compressionHandler, options, isVariable, fixedSize);
+        ok = write(src, srcSize);
+        close();
+    }
+    return ok;
 }
 
 bool KeyCompressor::write(const void * data, size32_t datalength)
