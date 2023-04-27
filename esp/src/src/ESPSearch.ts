@@ -107,9 +107,9 @@ export class ESPSearch {
             }));
         }
         if (searchParams.searchDFU) {
-            searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" } }).then(response => {
-                const results = this.parseGetDFUWorkunitResponse(nlsHPCC.ECL, response);
-                this.loadGetDFUWorkunitResponse(results);
+            searchArray.push(FileSpray.GetDFUWorkunits({ request: { Wuid: "*" + searchText + "*" } }).then(response => {
+                const results = this.parseGetDFUWorkunitsResponse(nlsHPCC.ECL, response);
+                this.loadGetDFUWorkunitsResponse(results);
                 return results;
             }));
             searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(response => {
@@ -365,8 +365,8 @@ export function searchAll(searchText: string,
         }));
     }
     if (searchParams.searchDFU) {
-        searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" } }).then(response => {
-            loadGetDFUWorkunitResponse(nlsHPCC.ECL, response);
+        searchArray.push(FileSpray.GetDFUWorkunits({ request: { Wuid: "*" + searchText + "*" } }).then(response => {
+            loadGetDFUWorkunitsResponse(nlsHPCC.ECL, response);
         }));
         searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(response => {
             loadGetDFUWorkunitsResponse(nlsHPCC.JobName, response);
