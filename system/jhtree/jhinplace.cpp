@@ -35,6 +35,7 @@
 #ifdef _DEBUG
 //#define SANITY_CHECK_INPLACE_BUILDER     // painfully expensive consistency check
 //#define TRACE_BUILDING
+//#define TRACE_BUILDING_STATS
 #endif
 
 static constexpr size32_t minRepeatCount = 2;       // minimum number of times a 0x00 or 0x20 is repeated to generate a special opcode
@@ -420,19 +421,7 @@ void PartialMatch::cacheSizes()
     {
         if (allNextAreEnd())
         {
-            if (numNext <= maxRepeatCount)
-            {
-                size += sizeSerializedOp(numNext-1);  // count of options
-                size += 1;                      // end marker
-            }
-            else
-            {
-                //Unusual situation where there are very large numbers of duplicate key entries.
-                size += sizeSerializedOp(1);  // count of options
-                size += 1;                    // end marker
-                size += sizePacked(numNext - maxRepeatCount);
-            }
-
+            // No need to output anything - because the code for searching will have already terminated since offset==keyLen
             maxCount = numNext;
         }
         else
@@ -571,20 +560,8 @@ void PartialMatch::serialize(MemoryBuffer & out)
     {
         if (allNextAreEnd())
         {
+            // No need to serialize anything - because the code for searching will have already terminated since offset==keyLen
             builder->numDuplicates++;
-            if (numNext <= maxRepeatCount)
-            {
-                serializeOp(out, SqOption, numNext-1);  // count of options
-                out.append((byte)0);
-            }
-            else
-            {
-                //Unusual situation where there are very large numbers of duplicate key entries.
-                //Set the top bit on the sizeinfo.  The number is currently needed - so could potentially remove!
-                serializeOp(out, SqOption, 1);  // count of options
-                out.append((byte)SFmanyDuplicates);
-                serializePacked(out, numNext - maxRepeatCount);
-            }
         }
         else
         {
@@ -908,6 +885,78 @@ unsigned PartialMatchBuilder::getSize()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+
+// Calculate the size of the compressed data
+static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
+{
+    const byte * finger = nodeData;
+    unsigned offset = 0;
+
+    while (offset < keyLen)
+    {
+        byte next = *finger++;
+        SquashOp op = (SquashOp)(next >> 5);
+        unsigned count = (next & 0x1f);
+        if (count == 0)
+            count = 32 + *finger++;
+
+        switch (op)
+        {
+        case SqQuote:
+        {
+            unsigned numBytes = count;
+            offset += numBytes;
+            finger += numBytes;
+            break;
+        }
+        case SqSingle:
+        {
+            offset += 1;
+            break;
+        }
+        case SqSingleX:
+        {
+            finger++;
+            offset += 2;
+            break;
+        }
+        case SqZero:
+        case SqSpace:
+        {
+            unsigned numBytes = count + repeatDelta;
+            offset += numBytes;
+            break;
+        }
+        case SqRepeat:
+        {
+            finger++;
+            unsigned numBytes = count + repeatXDelta;
+            offset += numBytes;
+            break;
+        }
+        case SqOption:
+        {
+            const unsigned numOptions = count+1;
+            byte sizeInfo = *finger++;
+            byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
+            byte bytesPerOffset = (sizeInfo & 7);
+            assertex(bytesPerOffset != 0);
+            const byte * counts = finger + numOptions; // counts (if present) follow the data
+
+            const byte * offsets = counts + numOptions * bytesPerCount;
+            const byte * next = offsets + (numOptions-1) * bytesPerOffset;
+            finger = next;
+            finger += readBytesEntry16(offsets, (numOptions-1)-1, bytesPerOffset);
+            offset++;
+            break;
+        }
+        }
+
+    }
+
+    return finger-nodeData;
+}
+
 
 InplaceNodeSearcher::InplaceNodeSearcher(unsigned _count, const byte * data, size32_t _keyLen, const byte * _nullRow)
 : nodeData(data), nullRow(_nullRow), count(_count), keyLen(_keyLen)
@@ -1491,8 +1540,8 @@ int InplaceNodeSearcher::compareValueAtFallback(const char *src, unsigned int in
 
 InplaceKeyBuildContext::~InplaceKeyBuildContext()
 {
-#ifdef TRACE_BUILDING
-    DBGLOG("NumDuplicates = %u", numKeyedDuplicates);
+#ifdef TRACE_BUILDING_STATS
+    DBGLOG("NumDuplicates = %u  DataSize(%llu) KeyedSize(%llu)", numKeyedDuplicates, totalDataSize, totalKeyedSize);
 #endif
 
     delete [] nullRow;
@@ -1590,16 +1639,17 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
         else
             positionScale = 1;
 
+        //Extra position serialized for leaves since first may not be the lowest
+        const unsigned numPositions = isLeaf() ? numKeys : numKeys-1;
         positionData = data;
-        if (bytesPerPosition != 0)
-            data += (bytesPerPosition * (numKeys -1));
+        data += (bytesPerPosition * numPositions);
+
+        searcher.init(numKeys, data, keyCompareLen, nullRow);
+        data += getCompressedSize(data, keyCompareLen);
 
         if (isLeaf())
         {
             const bool isVariablePayload = keyHdr->isVariable();
-            //Extra position serialized for leaves since first may not be the lowest
-            data += bytesPerPosition;
-
             firstSequence = readPacked64(data);
             if (isVariablePayload)
             {
@@ -1663,8 +1713,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                 expandedSize += len;
             }
         }
-
-        searcher.init(numKeys, data, keyCompareLen, nullRow);
+        assertex(data - (const byte *)keyBuf == len);
     }
 }
 
@@ -1930,9 +1979,15 @@ void CInplaceBranchWriteNode::write(IFileIOStream *out, CRC32 *crc)
             }
         }
 
+        size32_t prevSize = data.length();
         builder.serialize(data);
+        size32_t writtenSize = data.length() - prevSize;
         ctx.numKeyedDuplicates += builder.numDuplicates;
+        ctx.totalKeyedSize += writtenSize;
+        size32_t inplaceSize = getCompressedSize(data.bytes() + prevSize, keyCompareLen);
+        assertex(inplaceSize == writtenSize);
 
+        ctx.totalDataSize += data.length();
         assertex(data.length() == getDataSize());
     }
 
@@ -1963,11 +2018,6 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     if (0 == hdr.numKeys)
     {
         firstSequence = sequence;
-        if ((keyLen != keyCompareLen) && ctx.compressionHandler)
-        {
-            size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
-            compressor.open(compressed.mem(), nodeSize, ctx.compressionHandler, isVariable, fixedSize);
-        }
     }
 
     __uint64 savedMinPosition = minPosition;
@@ -2005,7 +2055,17 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     bool hasSpace = (required <= maxBytes);
     if ((keyLen != keyCompareLen) && ctx.compressionHandler)
     {
-        // Non-Payload size + compression-version byte + optional length (assume the worst)
+        // The following approach is used for compressing payloads:
+        // Payloads are gathered uncompressed until there is not enough space to add the next row.
+        // At that point we try compressing the data.  If it fits when compressed, and the compressed size is
+        // smaller than the uncompressed by a threshold (default 95%) then switch to a compressed payload.
+        // Currently we also stop gathering the uncompressed payload, but that may change in later versions.
+        //
+        // This approach means compression is avoided if the data is small enough to fit uncompressed (e.g. a very
+        // small index), the last leaf node in an index or the payload is not compressible - e.g. mapping to a unique
+        // id.
+
+        // Minimum size used = Non-Payload size + compression-version byte + optional length (assume the worst)
         size32_t maxSizePayloadLength = sizePacked(maxBytes);
         size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0);
         size32_t maxPayloadSize = maxBytes - maxUsedSpace;
@@ -2033,6 +2093,10 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
                 //Reached the threshold where uncompressed data does not fit.
                 //Either need to finish the node or switch to using a compressed payload.
                 unsigned uncompressedSize = uncompressed.length();
+                size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
+                compressor.open(compressed.mem(), nodeSize, ctx.compressionHandler, isVariable, fixedSize);
+                openedCompressor = true;
+
                 if (compressor.adjustLimit(maxPayloadSize) && compressor.write(uncompressed.bytes(), uncompressedSize))
                 {
                     unsigned compressedSize = compressor.buflen();
@@ -2123,7 +2187,7 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 
 void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 {
-    if (keyLen != keyCompareLen)
+    if (openedCompressor)
         compressor.close();
 
     hdr.keyBytes = getDataSize(true);
@@ -2150,6 +2214,14 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
                 serializeBytes(data, delta, bytesPerPosition);
             }
         }
+
+        size32_t prevSize = data.length();
+        builder.serialize(data);
+        size32_t writtenSize = data.length() - prevSize;
+        ctx.numKeyedDuplicates += builder.numDuplicates;
+        ctx.totalKeyedSize += writtenSize;
+        size32_t inplaceSize = getCompressedSize(data.bytes() + prevSize, keyCompareLen);
+        assertex(inplaceSize == writtenSize);
 
         serializePacked(data, firstSequence);
         if (isVariable)
@@ -2185,9 +2257,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
             }
         }
 
-        builder.serialize(data);
-        ctx.numKeyedDuplicates += builder.numDuplicates;
-
+        ctx.totalDataSize += data.length();
         assertex(data.length() == getDataSize(true));
     }
 
