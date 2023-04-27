@@ -128,6 +128,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
   option(SKIP_ECLWATCH "Skip building ECL Watch" OFF)
   option(USE_ADDRESS_SANITIZER "Use address sanitizer to spot leaks" OFF)
+
+  if (NOT USE_JAVA)
+    if (WSSQL_SERVICE)
+      message(WARNING "WSSQL_SERVICE requires USE_JAVA, forcing WSSQL_SERVICE OFF")
+      set (WSSQL_SERVICE OFF)
+    endif ()
+    if ((INCLUDE_PLUGINS AND NOT SUPPRESS_JAVAEMBED) OR INCLUDE_JAVAEMBED)
+      message(WARNING "JAVAEMBED requires USE_JAVA, forcing SUPPRESS_JAVAEMBED ON")
+      set (SUPRESS_JAVAEMBED ON)
+    endif ()
+  endif ()
 #########################################################
 
   if (WIN32)
