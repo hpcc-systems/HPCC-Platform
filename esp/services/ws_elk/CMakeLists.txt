@@ -70,4 +70,5 @@ target_link_libraries ( ws_elk
          esphttp
          dalibase
          dllserver
+         ${COMMON_ESP_SERVICE_LIBS}
     )

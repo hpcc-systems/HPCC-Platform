@@ -15,25 +15,25 @@
 ################################################################################
 
 
-# Component: ws_access 
+# Component: ws_access
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for ws_access
 #####################################################
 
-project( ws_access ) 
+project( ws_access )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
 
-set (    SRCS 
+set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_access_esp.cpp
-         ws_accessPlugin.cpp 
-         ws_accessService.cpp 
+         ws_accessPlugin.cpp
+         ws_accessService.cpp
     )
 
-include_directories ( 
+include_directories (
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/esp/services
@@ -52,7 +52,7 @@ include_directories (
     )
 
 if(USE_OPENLDAP)
-    # NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly 
+    # NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly
     include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 endif()
 
@@ -61,11 +61,12 @@ ADD_DEFINITIONS( -D_USRDLL -Dws_access_API_LOCAL )
 HPCC_ADD_LIBRARY( ws_access SHARED ${SRCS} )
 install ( TARGETS ws_access RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} COMPONENT Runtime)
 add_dependencies (ws_access espscm)
-target_link_libraries ( ws_access 
+target_link_libraries ( ws_access
          jlib
-         xmllib 
-         esphttp 
-         LdapSecurity 
+         xmllib
+         esphttp
+         LdapSecurity
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

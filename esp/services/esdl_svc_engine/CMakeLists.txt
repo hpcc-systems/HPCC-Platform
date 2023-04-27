@@ -88,6 +88,7 @@ target_link_libraries ( esdl_svc_engine
          esdllib
          dllserver
          dalibase
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

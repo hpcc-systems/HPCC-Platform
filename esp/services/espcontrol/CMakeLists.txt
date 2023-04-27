@@ -41,7 +41,7 @@ include_directories (
          ./../../../system/security/securesocket
          ./../../../system/security/LdapSecurity
          ./../../../system/security/shared
-         ./../../../system/mp 
+         ./../../../system/mp
          ./../../../dali/base
          ./../../clients
          ./../../bindings
@@ -59,12 +59,11 @@ target_link_libraries ( ws_espcontrol
          jlib
          xmllib
          esphttp
+         ${COMMON_ESP_SERVICE_LIBS}
     )
-    
+
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_espcontrol 
+    target_link_libraries ( ws_espcontrol
         securesocket
     )
 ENDIF()
-
-    

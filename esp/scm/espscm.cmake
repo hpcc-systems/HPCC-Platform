@@ -75,4 +75,4 @@ foreach ( loop_var ${ESPSCM_SRCS} )
     endif ( PLATFORM )
 endforeach ( loop_var ${ESPSCM_SRCS} )
 
-include_directories ( ${ESPSCM_GENERATED_DIR} )
+include_directories ( ${ESPSCM_GENERATED_DIR} ${HPCC_SOURCE_DIR}/esp/espcommon )

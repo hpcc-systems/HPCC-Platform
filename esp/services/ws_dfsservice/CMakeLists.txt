@@ -75,6 +75,7 @@ target_link_libraries ( ws_dfsservice
          xmllib
          esphttp
          SMCLib
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 IF (USE_OPENSSL)

@@ -53,8 +53,9 @@ target_link_libraries(
     xmllib
     esphttp
     LdapSecurity
+    ${COMMON_ESP_SERVICE_LIBS}
     )
-         
+
 install(
     TARGETS ldapenvironment
     RUNTIME DESTINATION ${EXEC_DIR}

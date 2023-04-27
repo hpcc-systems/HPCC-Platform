@@ -39,7 +39,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${HPCC_SOURCE_DIR}/system/security/LdapSecurity
          ${HPCC_SOURCE_DIR}/system/security/shared
-         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/esp/platform
@@ -62,10 +62,11 @@ target_link_libraries ( ws_decoupledlogging
          xmllib
          logginglib
          esphttp
+         ${COMMON_ESP_SERVICE_LIBS}
     )
-    
+
 IF (USE_OPENSSL)
-    target_link_libraries ( ws_decoupledlogging 
+    target_link_libraries ( ws_decoupledlogging
         securesocket
     )
 ENDIF()

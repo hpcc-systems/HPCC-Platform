@@ -73,6 +73,7 @@ target_link_libraries ( ws_esdlconfig
          SMCLib
          esdl_svc_engine
          dalibase
+         ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)

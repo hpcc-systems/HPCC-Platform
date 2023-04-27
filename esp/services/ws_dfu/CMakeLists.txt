@@ -15,69 +15,69 @@
 ################################################################################
 
 
-# Component: ws_dfu 
+# Component: ws_dfu
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for ws_dfu
 #####################################################
 
-project( ws_dfu ) 
+project( ws_dfu )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set (    SRCS 
-         ../../../dali/dfu/dfuutil.cpp 
-         ${ESPSCM_GENERATED_DIR}/ws_dfu_common_esp.cpp 
-         ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp 
-         ${ESPSCM_GENERATED_DIR}/ws_dfuXref_esp.cpp 
+set (    SRCS
+         ../../../dali/dfu/dfuutil.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_dfu_common_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_dfu_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_dfuXref_esp.cpp
          ${HPCC_SOURCE_DIR}/esp/scm/ws_dfu_common.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_dfu.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_dfuXref.ecm
          ${HPCC_SOURCE_DIR}/esp/clients/roxiecontrol.cpp
-         ws_dfuHelpers.cpp 
-         ws_dfuPlugin.cpp 
-         ws_dfuService.cpp 
-         ws_dfuXRefService.cpp 
+         ws_dfuHelpers.cpp
+         ws_dfuPlugin.cpp
+         ws_dfuService.cpp
+         ws_dfuXRefService.cpp
     )
 
-include_directories ( 
+include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../../dali/dfu 
-         ./../../../system/mp 
-         ./../../platform 
-         ./../ws_topology 
-         ./../../../system/jlib 
+         ./../../../dali/dfu
+         ./../../../system/mp
+         ./../../platform
+         ./../ws_topology
+         ./../../../system/jlib
          ./../../../rtl/include
-         ./../../../rtl/eclrtl 
+         ./../../../rtl/eclrtl
          ./../../../rtl/nbcd
-         ./../../../common/environment 
-         ./../../../common/thorhelper 
-         ./../../services 
-         ./../../../dali/ft 
-         ./../common 
-         ./../../../dali/dfuXRefLib 
-         ./../../../system/xmllib 
-         ./../../../common/deftype 
-         ./../../../ecl/hql 
-         ./../../../system/security/securesocket 
-         ./../../../system/security/shared 
-         ./../../../system/security/cryptohelper 
-         ./../../../system/include 
+         ./../../../common/environment
+         ./../../../common/thorhelper
+         ./../../services
+         ./../../../dali/ft
+         ./../common
+         ./../../../dali/dfuXRefLib
+         ./../../../system/xmllib
+         ./../../../common/deftype
+         ./../../../ecl/hql
+         ./../../../system/security/securesocket
+         ./../../../system/security/shared
+         ./../../../system/security/cryptohelper
+         ./../../../system/include
          ./../../../common/pkgfiles
-         ./../../../common/workunit 
-         ./../../../fs/dafsclient 
+         ./../../../common/workunit
+         ./../../../fs/dafsclient
          ./../../../fs/dafsstream
          ./../../../common/roxiecommlib
-         ./../../clients 
+         ./../../clients
          ./../../../dali/base
          ./../../../dali/sasha
-         ./../ws_workunits 
-         ./../../bindings 
-         ./../../smc/SMCLib 
-         ./../../../common/fileview2 
-         ./../../bindings/SOAP/xpp 
+         ./../ws_workunits
+         ./../../bindings
+         ./../../smc/SMCLib
+         ./../../../common/fileview2
+         ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/clients
     )
 
@@ -88,28 +88,29 @@ add_dependencies ( ws_dfu espscm )
 install ( TARGETS ws_dfu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_dfu
          jlib
-         mp 
-         hrpc 
+         mp
+         hrpc
          dafsclient
-         dafsclient 
-         nbcd 
-         eclrtl 
-         jhtree 
-         dalibase 
-         dllserver 
-         deftype 
-         workunit 
+         dafsclient
+         nbcd
+         eclrtl
+         jhtree
+         dalibase
+         dllserver
+         deftype
+         workunit
          hql
-         fileview2 
-         xmllib 
-         esphttp 
-         SMCLib 
-         dfuXRefLib 
-         dfuwu 
-         roxiecommlib 
+         fileview2
+         xmllib
+         esphttp
+         SMCLib
+         dfuXRefLib
+         dfuwu
+         roxiecommlib
          wsdfuaccess
          pkgfiles
          thorhelper
+        ${COMMON_ESP_SERVICE_LIBS}
     )
 
 if (NOT CONTAINERIZED)
