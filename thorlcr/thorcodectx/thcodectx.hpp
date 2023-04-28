@@ -118,6 +118,7 @@ public:
     virtual char *getDaliServers() override;
     virtual IWorkUnit *updateWorkUnit() const override { throwUnexpected(); }
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) override;
+    virtual unsigned getElapsedMs() const override {UNIMPLEMENTED;} //Implementing for roxie first, not sure what this means from a thor perspective.  ECL plugin implies elapsed time of entire query
 };
 
 #endif
