@@ -155,7 +155,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     return "";
                 }, [])
             },
-            __hpcc_displayName: {
+            Name: {
                 label: nlsHPCC.LogicalName,
                 formatter: React.useCallback(function (name, row) {
                     if (row.__hpcc_isDir) {

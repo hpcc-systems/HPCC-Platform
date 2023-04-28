@@ -161,7 +161,7 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
                     return "";
                 }, [])
             },
-            __hpcc_displayName: {
+            Name: {
                 label: nlsHPCC.LogicalName, width: 600,
                 formatter: React.useCallback((_, row) => {
                     let name = row.Name?.split("::").pop();
