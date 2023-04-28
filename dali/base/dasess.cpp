@@ -36,6 +36,7 @@
 #include "seclib.hpp"
 #include "dasess.hpp"
 #include "digisign.hpp"
+#include "dautils.hpp"
 
 using namespace cryptohelper;
 
@@ -150,26 +151,6 @@ static CriticalSection sessionCrit;
 
 #define CLDAPE_getpermtimeout (-1)
 #define CLDAPE_ldapfailure    (-2)
-
-#ifdef NULL_DALIUSER_STACKTRACE
-
-static void logNullUser(const char * func, int line = __LINE__)
-{
-    const double nullUserLogMinutes = 60;	//log NULL user requests no more than once this often
-    static time_t lastNullUserLogEntry = (time_t)NULL;
-    static CriticalSection nullUserLogCS;
-
-    CriticalBlock block(nullUserLogCS);
-    time_t timeNow = time(nullptr);
-    if (difftime(timeNow, lastNullUserLogEntry) >= nullUserLogMinutes)
-    {
-        DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp %s line %d", func, line);
-        PrintStackReport();
-        lastNullUserLogEntry = timeNow;
-    }
-}
-
-#endif
 
 class DECL_EXCEPTION CDaliLDAP_Exception: implements IException, public CInterface
 {
@@ -638,15 +619,9 @@ public:
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
-#ifdef NULL_DALIUSER_STACKTRACE
-                //following debug code to be removed
-                StringBuffer sb;
-                udesc->getUserName(sb);
-                if (0==sb.length())
-                {
-                    logNullUser("CSessionRequestServer::processMessage()");
-                }
-#endif
+
+                LOGNULLUSER(udesc);//stack trace if NULL user
+
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
@@ -951,16 +926,9 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
-#ifdef NULL_DALIUSER_STACKTRACE
-        //following debug code to be removed
-        StringBuffer sb;
-        if (udesc)
-            udesc->getUserName(sb);
-        if (0==sb.length())
-        {
-            logNullUser("getPermissionsLDAP()");
-        }
-#endif
+
+
+        LOGNULLUSER(udesc);//stack trace if NULL user
 
         udesc->serializeWithoutPassword(mb);//serialize user descriptor without password
         mb.append(auditflags);
@@ -1203,15 +1171,8 @@ public:
         key.set(_key);
         obj.set(_obj); 
 
-#ifdef NULL_DALIUSER_STACKTRACE
-        StringBuffer sb;
-        if (_udesc)
-            _udesc->getUserName(sb);
-        if (sb.length()==0)
-        {
-            logNullUser("CLdapWorkItem::start()");
-        }
-#endif
+        LOGNULLUSER(_udesc);//stack trace if NULL user
+
         udesc.set(_udesc);
         flags = _flags;
         ret = CLDAPE_ldapfailure;
@@ -1470,15 +1431,8 @@ public:
 #ifdef _NO_LDAP
         return SecAccess_Unavailable;
 #else
-#ifdef NULL_DALIUSER_STACKTRACE
-        StringBuffer sb;
-        if (udesc)
-            udesc->getUserName(sb);
-        if (sb.length()==0)
-        {
-            logNullUser("CCovenSessionManager::getPermissionsLDAP()");
-        }
-#endif
+        LOGNULLUSER(udesc);//stack trace if NULL user
+
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
             return ldapconn->getPermissions(key,obj,udesc,flags);
         ldapwaiting++;
