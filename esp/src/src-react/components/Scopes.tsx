@@ -106,14 +106,14 @@ export const Scopes: React.FunctionComponent<ScopesProps> = ({
     const refreshData = React.useCallback(() => {
         if (!scope) return;
         if (scope === ".") {
-            dfuService.DFUFileView({ Scope: "" }).then(async ({ DFULogicalFiles }) => {
-                const rootFiles = await dfuService.DFUFileView({ Scope: "." });
+            dfuService.DFUFileView({ Scope: "", IncludeSuperOwner: true }).then(async ({ DFULogicalFiles }) => {
+                const rootFiles = await dfuService.DFUFileView({ Scope: ".", IncludeSuperOwner: true });
                 const files = rootFiles?.DFULogicalFiles?.DFULogicalFile ?? [];
                 setData(mergeFileData(DFULogicalFiles, files));
                 setScopePath([]);
             });
         } else {
-            dfuService.DFUFileView({ Scope: scope }).then(({ DFULogicalFiles }) => {
+            dfuService.DFUFileView({ Scope: scope, IncludeSuperOwner: true }).then(({ DFULogicalFiles }) => {
                 let files = DFULogicalFiles?.DFULogicalFile?.filter(file => !file.isDirectory) ?? [];
                 if (filter.Owner === currentUser?.username) {
                     files = files.filter(file => file.Owner === currentUser?.username);
