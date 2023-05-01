@@ -122,6 +122,20 @@ IPropertyTree * getDropZonePlane(const char * name)
     return getGlobalConfigSP()->getPropTree(xpath);
 }
 
+bool validateDropZone(IPropertyTree * plane, const char * path, const char * host, bool ipMatch)
+{
+    if (host)
+    {
+        if (!isHostInPlane(plane, host, ipMatch))
+            return false;
+    }
+    else if (plane->hasProp("@hostGroup") || plane->hasProp("hosts"))
+        return false;
+
+    //Match path
+    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+}
+
 IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch, bool mustMatch)
 {
     const char * hostReq = host;
@@ -131,16 +145,7 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
     ForEach(*iter)
     {
         IPropertyTree & plane = iter->query();
-        if (host)
-        {
-            if (!isHostInPlane(&plane, host, ipMatch))
-                continue;
-        }
-        else if (plane.hasProp("@hostGroup") || plane.hasProp("hosts"))
-            continue;
-
-        //Match path
-        if (isEmptyString(path) || startsWith(path, plane.queryProp("@prefix")))
+        if (validateDropZone(&plane, path, host, ipMatch))
             return LINK(&plane);
     }
     if (mustMatch)
