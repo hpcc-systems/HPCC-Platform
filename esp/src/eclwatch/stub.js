@@ -27,10 +27,22 @@ define([
 
     Session.initSession();
 
+    const params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
+    const hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
+
     const store = KeyValStore.userKeyValStore();
     store.getEx(BuildInfo.ModernMode, { defaultValue: String(BuildInfo.containerized) }).then(modernMode => {
-        if (modernMode === String(true)) {
-            window.location.replace("/esp/files/index.html");
+        if (modernMode === String(true) && hpccWidget !== "IFrameWidget") {
+            switch (hpccWidget) {
+                case "WUDetailsWidget":
+                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}`);
+                    break;
+                case "GraphsWUWidget":
+                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}/metrics`);
+                    break;
+                default:
+                    window.location.replace("/esp/files/index.html");
+            }
         } else {
             ready(function () {
                 parseUrl();
@@ -54,9 +66,6 @@ define([
     }
 
     function initUI() {
-        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) === "?" ? 1 : 0)));
-        var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
-
         topic.subscribe("hpcc/session_management_status", function (publishedMessage) {
             if (publishedMessage.status === "Unlocked") {
                 Session.unlock();
