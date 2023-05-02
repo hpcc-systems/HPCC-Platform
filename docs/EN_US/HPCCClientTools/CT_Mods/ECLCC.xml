@@ -55,9 +55,9 @@
     <title>ECL Compiler</title>
 
     <para>The ECL Compiler is the compiler component of the High Performance
-    Computing Cluster (HPCC) Systems platform. It is embedded and included when you install the
-    HPCC Systems platform. The compiler is the component that actually compiles the ECL
-    code.</para>
+    Computing Cluster (HPCC) Systems platform. It is embedded and included
+    when you install the HPCC Systems platform. The compiler is the component
+    that actually compiles the ECL code.</para>
 
     <para>The syntax and many of the compiler options implemented are similar
     to the gcc compiler. You can execute either the Linux or Windows version
@@ -119,15 +119,15 @@
     <sect1 id="Stand-Alone-ECL-Compiler">
       <title>Using the ECL Compiler as a Stand Alone option</title>
 
-      <para>The ECL Compiler is normally used through the ECL IDE, however, you can use the ECL Compiler
-      in a stand alone manner, to create stand alone programs, or workunits.
-      The ECL Compiler can read ECL code from standard input, or can read it
-      from a specified input file. It compiles the code into an executable
-      program (Such as an 'EXE' file in Windows). The resulting program, when
-      executed, runs the job, writing any output to standard output.
-      Alternatively, you could redirect the output to a file or pipe into
-      another process. With the ECL Compiler, you do not need a supercomputer
-      cluster to develop and run ECL code.</para>
+      <para>The ECL Compiler is normally used through the ECL IDE, however,
+      you can use the ECL Compiler in a stand alone manner, to create stand
+      alone programs, or workunits. The ECL Compiler can read ECL code from
+      standard input, or can read it from a specified input file. It compiles
+      the code into an executable program (Such as an 'EXE' file in Windows).
+      The resulting program, when executed, runs the job, writing any output
+      to standard output. Alternatively, you could redirect the output to a
+      file or pipe into another process. With the ECL Compiler, you do not
+      need a supercomputer cluster to develop and run ECL code.</para>
 
       <para>Running the ECL Compiler without any options (or specifying
       --help) will display the syntax.</para>
@@ -185,8 +185,10 @@
               <row>
                 <entry>-main <emphasis>&lt;ref&gt;</emphasis></entry>
 
-                <entry>Compile definition &lt;ref&gt; from the source
-                collection</entry>
+                <entry>Compile definition &lt;ref&gt; from the specified
+                source - note extended Git repository support (see "<link
+                linkend="CT-CLI-GIT-Support">Git Support</link>" in the
+                previous section)</entry>
               </row>
 
               <row>
