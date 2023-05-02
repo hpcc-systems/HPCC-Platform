@@ -73,6 +73,11 @@ public:
             total += nodeStats[n]->getValue(index);
         return total;
     }
+    stat_type getStatistic(unsigned node, StatisticKind kind) const
+    {
+        unsigned index = mapping.getIndex(kind);
+        return nodeStats[node]->getValue(index);
+    }
 };
 
 class graphmaster_decl CThorEdgeCollection : public CThorStatsCollection
@@ -95,6 +100,8 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     CThorStatsCollection graphStats;
     offset_t totalActiveSpillSize = 0; // total inter-graph spill
     offset_t graphSpillSize = 0;
+    offset_t nodeActivityTotalSpillSize = 0;
+    offset_t nodeActivityPeakSpillSize = 0;
 
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
 
@@ -166,6 +173,8 @@ class graphmaster_decl CJobMaster : public CJobBase
     CriticalSection sendQueryCrit, spillCrit;
     RelaxedAtomic<offset_t> peakSpillSize{0};  // peak inter-graph spill
     RelaxedAtomic<offset_t> totalSpillSize{0}; // total graph spill
+    RelaxedAtomic<offset_t> nodeActivityPeakSpillSize{0};
+    RelaxedAtomic<offset_t> nodeActivityTotalSpillSize{0};
 
     void initNodeDUCache();
 
@@ -202,13 +211,17 @@ public:
         dirty = true;
     }
 // Track spills
-    virtual void updateActiveSpillSize(offset_t graphSpillSize, offset_t activeSpillSize)
+    virtual void updateActiveSpillSize(offset_t graphSpillSize, offset_t activeSpillSize, offset_t _nodeActivityTotalSpillSize, offset_t _nodeActivityPeakSpillSize)
     {
         totalSpillSize.fetch_add(graphSpillSize);
         peakSpillSize.store_max(activeSpillSize);
+        nodeActivityTotalSpillSize.fetch_add(_nodeActivityTotalSpillSize);
+        nodeActivityPeakSpillSize.store_max(_nodeActivityPeakSpillSize);
     }
     virtual offset_t getTotalSpillSize() const { return totalSpillSize; }
     virtual offset_t getPeakSpillSize() const { return peakSpillSize; }
+    virtual offset_t getNodeTotalSpillSize() const { return nodeActivityTotalSpillSize; }
+    virtual offset_t getNodePeakSpillSize() const { return nodeActivityPeakSpillSize; }
 // CJobBase impls.
     virtual mptag_t allocateMPTag();
     virtual void freeMPTag(mptag_t tag);
@@ -253,6 +266,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     std::vector<Owned<IDistributedFile>> readFiles;
     std::unordered_map<std::string, unsigned> readFilesMap; // NB: IDistributedFile pointers are owned by readFiles
     std::vector<unsigned> fileStatsTable;
+    bool hasActivitySpillStats = false;
 protected:
     std::vector<OwnedPtr<CThorEdgeCollection>> edgeStatsVector;
     CThorStatsCollection statsCollection;
@@ -291,6 +305,12 @@ public:
     virtual void done();
     virtual void kill();
     virtual cost_type getDiskAccessCost() const { return diskAccessCost; }
+    virtual stat_type getNodeSpillSize(unsigned node) const override
+    {
+        if (hasActivitySpillStats)
+            return statsCollection.getStatistic(node, StSizeSpillFile);
+        return 0;
+    }
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

@@ -385,6 +385,7 @@ CMasterActivity::CMasterActivity(CGraphElementBase *_container, const Statistics
         for (unsigned o=0; o<container.getOutputs(); o++)
             edgeStatsVector.push_back(new CThorEdgeCollection);
     }
+    hasActivitySpillStats = statsMapping.hasStatisticKind(StSizeSpillFile);
 }
 
 CMasterActivity::~CMasterActivity()
@@ -2722,6 +2723,19 @@ void CMasterGraph::handleSlaveDone(unsigned node, MemoryBuffer &mb)
         sdMb.setBuffer(len, (void *)d);
         act->slaveDone(node, sdMb);
     }
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
+    ForEach(*iter)
+    {
+            CGraphElementBase &element = iter->query();
+            CActivityBase *activity = element.queryActivity();
+            if (activity)
+            {
+                stat_type nodeSpillSize = activity->getNodeSpillSize(node);
+                nodeActivityTotalSpillSize += nodeSpillSize;
+                if (nodeSpillSize>nodeActivityPeakSpillSize)
+                    nodeActivityPeakSpillSize = nodeSpillSize;
+            }
+    }
     offset_t activeSpillSize, nodeGraphSpill;
     mb.read(nodeGraphSpill);
     mb.read(activeSpillSize);
@@ -2806,7 +2820,7 @@ void CMasterGraph::getFinalProgress()
             }
         }
     }
-    jobM->updateActiveSpillSize(graphSpillSize, totalActiveSpillSize);
+    jobM->updateActiveSpillSize(graphSpillSize, totalActiveSpillSize, nodeActivityTotalSpillSize, nodeActivityPeakSpillSize);
 }
 
 void CMasterGraph::done()
@@ -2843,6 +2857,7 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     mb.read(count);
     if (count)
         setProgressUpdated();
+    stat_type nodeSpillSize = 0;
     while (count--)
     {
         activity_id activityId;
@@ -2878,7 +2893,10 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                 }
             }
             if (activity)
+            {
                 activity->deserializeStats(node, mb);
+                nodeSpillSize += activity->getNodeSpillSize(node);
+            }
         }
         else
         {
@@ -2886,6 +2904,8 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
             return false; // don't know if or how this could happen, but all bets off with packet if did.
         }
     }
+    if (nodeSpillSize)
+        graphStats.setStatistic(node, StSizeActivitySpill, nodeSpillSize);
     unsigned subs;
     mb.read(subs);
     while (subs--)

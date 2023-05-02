@@ -279,6 +279,8 @@ enum StatisticKind
     StWhenK8sLaunched,
     StWhenK8sStarted,
     StWhenK8sReady,
+    StSizeActivitySpill,
+    StSizePeakActivitySpill,
     StMax,
 
     //For any quantity there is potentially the following variants.

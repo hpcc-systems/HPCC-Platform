@@ -1108,6 +1108,13 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             offset_t peakSpillSize = job->getPeakSpillSize();
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StSizePeakSpillFile, NULL, peakSpillSize, 1, 0, StatsMergeAppend);
         }
+        offset_t nodeTotalSpillSize = job->getNodeTotalSpillSize();
+        if (nodeTotalSpillSize)
+        {
+            offset_t nodePeakSpillSize = job->getNodePeakSpillSize();
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StSizeActivitySpill, NULL, nodeTotalSpillSize, 1, 0, StatsMergeAppend);
+            wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StSizePeakActivitySpill, NULL, nodePeakSpillSize, 1, 0, StatsMergeAppend);
+        }
 
         removeJob(*job);
     }

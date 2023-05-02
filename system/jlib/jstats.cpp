@@ -961,6 +961,8 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { WHENFIRSTSTAT(K8sLaunched) },
     { WHENFIRSTSTAT(K8sStarted) },
     { WHENFIRSTSTAT(K8sReady) },
+    { SIZESTAT(ActivitySpill) },
+    { SIZESTAT(PeakActivitySpill) },
 };
 
 

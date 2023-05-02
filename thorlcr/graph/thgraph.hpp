@@ -1186,6 +1186,7 @@ public:
     unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return container.getOptUInt(prop, defVal); }
     __int64 getOptInt64(const char *prop, __int64 defVal=0) const { return container.getOptInt64(prop, defVal); }
     unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return container.getOptUInt64(prop, defVal); }
+    virtual stat_type getNodeSpillSize(unsigned node) const { return 0; }
 };
 
 interface IFileInProgressHandler : extends IInterface

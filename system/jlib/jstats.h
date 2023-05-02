@@ -456,6 +456,10 @@ public:
         dbgassertex(kind >= StKindNone && kind < StMax);
         return kindToIndex.item(kind);
     }
+    inline bool hasStatisticKind(StatisticKind kind) const
+    {
+        return getIndex(kind) != numStatistics();
+    }
     inline StatisticKind getKind(unsigned index) const { return (StatisticKind)indexToKind.item(index); }
     inline unsigned numStatistics() const { return indexToKind.ordinality(); }
     inline unsigned getUniqueHash() const { return hashcode; }
