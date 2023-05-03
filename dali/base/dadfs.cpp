@@ -289,7 +289,7 @@ public:
         case DFSERR_LookupAccessDenied:
         {
             StringBuffer ip;
-            queryMyNode()->endpoint().getIpText(ip);
+            queryCoven().queryGroup().queryNode(0).endpoint().getIpText(ip);
             return str.appendf(" Lookup access denied for scope %s at Dali %s", errstr.str(), ip.str());
         }
         case DFSERR_CreateAccessDenied:
