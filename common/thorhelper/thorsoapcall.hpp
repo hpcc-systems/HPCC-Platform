@@ -27,6 +27,10 @@
 #include "jlog.hpp"
 #include "eclhelper.hpp"
 
+#define DEBLACKLIST_RETRY_DELAY 5000
+#define DEBLACKLIST_RETRIES 10
+#define DEBLACKLIST_CONNECT_TIMEOUT 10000
+
 //Web Service Call Row Provider
 interface IWSCRowProvider : extends IInterface
 {
@@ -34,7 +38,13 @@ interface IWSCRowProvider : extends IInterface
     virtual IHThorWebServiceCallArg * queryCallHelper() = 0;
     virtual const void * getNextRow() = 0;
     virtual void releaseRow(const void * row) = 0;
+    virtual bool useBlacklister() const { return true; };
+    virtual unsigned getBLConnectTimeout() const { return DEBLACKLIST_CONNECT_TIMEOUT; };
+    virtual unsigned getBLRetries() const { return DEBLACKLIST_RETRIES; };
+    virtual unsigned getBLDelay() const { return DEBLACKLIST_RETRY_DELAY; };
+    virtual const char * getBLerror() const { return "connection failed"; }
 };
+
 typedef IWSCRowProvider ISoapCallRowProvider;//DEPRECATED
 
 //Web Service Call Helper
