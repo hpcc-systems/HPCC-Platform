@@ -3426,6 +3426,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     Owned<ISocket>      rowServiceSock;
     Linked<IPropertyTree> componentConfig;
     bool directIO = true;
+    unsigned retryOpenMs = 0;
     bool rowServiceOnStdPort = true; // should row service commands be processed on std. service port
     bool rowServiceSSL = false;
 
@@ -3826,7 +3827,49 @@ public:
         }
         if (TF_TRACE_PRE_IO)
             PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
-        Owned<IFileIO> fileio = file->open((IFOmode)mode,extraFlags);
+
+        Owned<IFileIO> fileio;
+        unsigned retries = 0;
+        unsigned remainingMs = retryOpenMs;
+        if (0 == retryOpenMs) // disabled
+            fileio.setown(file->open((IFOmode)mode,extraFlags));
+        else
+        {
+            // This is an attempt to deal this issue raised after MS update KB5025229 was applied.
+            // retry to open if file in use by another process (MS process suspected to be holding file for a short time)
+            CCycleTimer timer;
+            while (true)
+            {
+                unsigned elapsedMs = 0;
+                try
+                {
+                    fileio.setown(file->open((IFOmode)mode,extraFlags));
+                    break;
+                }
+                catch (IOSException *e)
+                {
+                    // abort unless "The process cannot access the file because it is being used by another process."
+                    if (32 != e->errorCode())
+                        throw;
+
+                    elapsedMs = timer.elapsedMs();
+                    if (elapsedMs >= remainingMs)
+                    {
+                        StringBuffer msg;
+                        e->errorMessage(msg);
+                        msg.appendf(" - retries = %u", retries);
+                        e->Release();
+                        throw makeOsException(32, msg.str());
+                    }
+                }
+                remainingMs -= elapsedMs;
+                unsigned delayMs = 10 + (getRandom() % 90); // 10-100 ms
+                if (delayMs > remainingMs)
+                    delayMs = remainingMs;
+                MilliSleep(delayMs);
+                ++retries;
+            }
+        }
         int handle;
         if (fileio)
         {
@@ -3840,7 +3883,7 @@ public:
         reply.append(RFEnoerror);
         reply.append(handle);
         if (TF_TRACE)
-            PROGLOG("open file '%s',  (%d,%d) handle = %d",name->text.get(),(int)mode,(int)share,handle);
+            PROGLOG("open file '%s',  (%d,%d) handle = %d, retries = %u, delay(ms) = %u",name->text.get(),(int)mode,(int)share,handle,retries,retryOpenMs-remainingMs);
         return true;
     }
 
@@ -5233,6 +5276,12 @@ public:
         {
             if (!securesock)
                 throw createDafsException(DAFSERR_serverinit_failed, "Invalid secure socket");
+        }
+
+        if (componentConfig)
+        {
+            constexpr unsigned defaultRetryOpenMs = 5000;
+            retryOpenMs = componentConfig->getPropInt("@retryOpenMs", defaultRetryOpenMs);
         }
 
         selecthandler->start();
