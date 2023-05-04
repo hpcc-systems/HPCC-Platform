@@ -3426,7 +3426,9 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     Owned<ISocket>      rowServiceSock;
     Linked<IPropertyTree> componentConfig;
     bool directIO = true;
+#ifdef _WIN32
     unsigned retryOpenMs = 0;
+#endif
     bool rowServiceOnStdPort = true; // should row service commands be processed on std. service port
     bool rowServiceSSL = false;
 
@@ -3829,15 +3831,17 @@ public:
             PROGLOG("before open file '%s',  (%d,%d,%d,%d,0%o)",name->text.get(),(int)mode,(int)share,extraFlags,sMode,cFlags);
 
         Owned<IFileIO> fileio;
+#ifndef _WIN32
+        fileio.setown(file->open((IFOmode)mode,extraFlags));
+#else
+        // This is an attempt to deal this issue raised after MS update KB5025229 was applied.
+        // retry to open if file in use by another process (MS process suspected to be holding file for a short time)
         unsigned retries = 0;
-        unsigned remainingMs = retryOpenMs;
+        CCycleTimer timer;
         if (0 == retryOpenMs) // disabled
             fileio.setown(file->open((IFOmode)mode,extraFlags));
         else
         {
-            // This is an attempt to deal this issue raised after MS update KB5025229 was applied.
-            // retry to open if file in use by another process (MS process suspected to be holding file for a short time)
-            CCycleTimer timer;
             while (true)
             {
                 unsigned elapsedMs = 0;
@@ -3849,27 +3853,28 @@ public:
                 catch (IOSException *e)
                 {
                     // abort unless "The process cannot access the file because it is being used by another process."
-                    if (32 != e->errorCode())
+                    if (ERROR_SHARING_VIOLATION != e->errorCode())
                         throw;
 
                     elapsedMs = timer.elapsedMs();
-                    if (elapsedMs >= remainingMs)
+                    if (elapsedMs >= retryOpenMs)
                     {
                         StringBuffer msg;
                         e->errorMessage(msg);
                         msg.appendf(" - retries = %u", retries);
                         e->Release();
-                        throw makeOsException(32, msg.str());
+                        throw makeOsException(ERROR_SHARING_VIOLATION, msg.str());
                     }
                 }
-                remainingMs -= elapsedMs;
                 unsigned delayMs = 10 + (getRandom() % 90); // 10-100 ms
+                unsigned remainingMs = retryOpenMs-elapsedMs;
                 if (delayMs > remainingMs)
                     delayMs = remainingMs;
                 MilliSleep(delayMs);
                 ++retries;
             }
         }
+#endif
         int handle;
         if (fileio)
         {
@@ -3883,7 +3888,13 @@ public:
         reply.append(RFEnoerror);
         reply.append(handle);
         if (TF_TRACE)
-            PROGLOG("open file '%s',  (%d,%d) handle = %d, retries = %u, delay(ms) = %u",name->text.get(),(int)mode,(int)share,handle,retries,retryOpenMs-remainingMs);
+        {
+#ifndef _WIN32
+            PROGLOG("open file '%s',  (%d,%d) handle = %d",name->text.get(),(int)mode,(int)share,handle);
+#else
+            PROGLOG("open file '%s',  (%d,%d) handle = %d, retries = %u, time(ms) = %u",name->text.get(),(int)mode,(int)share,handle,retries,timer.elapsedMs());
+#endif
+        }
         return true;
     }
 
@@ -5278,11 +5289,13 @@ public:
                 throw createDafsException(DAFSERR_serverinit_failed, "Invalid secure socket");
         }
 
+#ifdef _WIN32
         if (componentConfig)
         {
             constexpr unsigned defaultRetryOpenMs = 5000;
             retryOpenMs = componentConfig->getPropInt("@retryOpenMs", defaultRetryOpenMs);
         }
+#endif
 
         selecthandler->start();
 
