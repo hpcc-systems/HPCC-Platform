@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "'ECL Watch' Web interface for HPCC Platform.",
   "scripts": {
-    "clean": "rimraf ./build ./lib ./src/nlsHPCCType.ts",
+    "clean": "rimraf ./build ./lib ./types ./src/nlsHPCCType.ts",
     "lint": "eslint ./eclwatch ./src ./src-react",
     "lint-fix": "eslint --fix eclwatch/**/*.js src/**/*.ts src-react/**/*.ts?",
     "copy-res-es6-promise": "copyfiles -u 3 \"./node_modules/es6-promise/dist/es6-promise.auto.min.js\" ./build/node_modules/es6-promise/dist/",
