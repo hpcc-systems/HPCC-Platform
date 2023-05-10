@@ -5394,15 +5394,18 @@ private:
                     }
                     if(isleaf && (sd.getObjectClass() != NULL) && (stricmp(sd.getObjectClass(), "Volume") == 0))
                     {
-                        cn.append(curlen, curscope);
                         dn.append("cn=").append(curlen, curscope).append(",");
                     }
                     else
                     {
-                        cn.append(curlen, curscope);
                         dn.append("ou=").append(curlen, curscope).append(",");
                     }
                     
+                    if (cn.isEmpty())//only process leftmost part of ou, so "ou=s3,ou=s2,ou=s1" only specify ou=s3
+                    {
+                        cn.append("ou=").append(curlen, curscope);
+                    }
+
                     isleaf = false;
 
                     if (curptr == resourcename) //handle a single char as the top scope, such as x::abc
@@ -5428,7 +5431,7 @@ private:
                 }
                 else if(servertype == OPEN_LDAP)
                 {
-                    filter.append("(ou=").append(cn.str()).append(")");
+                    filter.append("(").append(cn.str()).append(")");
                 }
                 sd.setDn(dn.str());
             }
