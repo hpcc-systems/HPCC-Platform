@@ -1268,6 +1268,7 @@
     <!-- get enum type used in an element node -->
     <xsl:template name="GetEnumTypes">
         <xsl:param name="node"/>
+        <xsl:param name="parentName" select="''"/>
         <xsl:if test="$node">
             <xsl:choose>
                 <xsl:when test="$node/@type">
@@ -1279,9 +1280,14 @@
                                <xsl:value-of select="substring($type,5)"/>
                             </xsl:when>
                             <xsl:when test="$schemaRoot/xsd:complexType[@name=$bareType]">
-                                <xsl:call-template name="GetEnumTypesOfComplexType">
+                              <xsl:if test="not($bareType = $parentName)">
+                                <xsl:variable name="arrayOfParentName" select="concat('ArrayOf', $parentName)"/>
+                                <xsl:if test="not($bareType = $arrayOfParentName)">
+                                  <xsl:call-template name="GetEnumTypesOfComplexType">
                                     <xsl:with-param name="complexNode" select="$schemaRoot/xsd:complexType[@name=$bareType]"/>
-                                </xsl:call-template>
+                                  </xsl:call-template>
+                                </xsl:if>
+                              </xsl:if>
                             </xsl:when>
                         </xsl:choose>
                     </xsl:if>
@@ -1289,6 +1295,7 @@
                 <xsl:when test="$node/xsd:complexType">
                    <xsl:call-template name="GetEnumTypesOfComplexType">
                       <xsl:with-param name="complexNode" select="$node/xsd:complexType"/>
+                      <xsl:with-param name="parentName" select="$node/@name"/>
                    </xsl:call-template>
                 </xsl:when>
             </xsl:choose>
@@ -1303,11 +1310,13 @@
                 <xsl:when test="$complexNode/xsd:sequence">
                     <xsl:call-template name="GetEnumTypesOfElements">
                         <xsl:with-param name="nodes" select="$complexNode/xsd:sequence/xsd:element"/>
+                        <xsl:with-param name="parentName" select="$complexNode/@name"/>
                     </xsl:call-template>
                 </xsl:when>
                 <xsl:when test="$complexNode/xsd:all">
                     <xsl:call-template name="GetEnumTypesOfElements">
                         <xsl:with-param name="nodes" select="$complexNode/xsd:all/xsd:element"/>
+                        <xsl:with-param name="parentName" select="$complexNode/@name"/>
                     </xsl:call-template>
                 </xsl:when>
             </xsl:choose>
@@ -1316,15 +1325,18 @@
     <!-- get array type used in element nodes -->
     <xsl:template name="GetEnumTypesOfElements">
         <xsl:param name="nodes"/>
+        <xsl:param name="parentName" select="''"/>
         <xsl:variable name="first">
             <xsl:call-template name="GetEnumTypes">
                 <xsl:with-param name="node" select="$nodes[1]"/>
+                <xsl:with-param name="parentName" select="$parentName"/>
             </xsl:call-template>
         </xsl:variable>
         <xsl:variable name="rest">
             <xsl:if test="count($nodes) &gt; 1">
                 <xsl:call-template name="GetEnumTypesOfElements">
                     <xsl:with-param name="nodes" select="$nodes[position()!=1]"/>
+                    <xsl:with-param name="parentName" select="$parentName"/>
                 </xsl:call-template>
             </xsl:if>
         </xsl:variable>
@@ -1345,6 +1357,7 @@
     <!-- get array type used in an element node -->
     <xsl:template name="GetArrayTypes">
         <xsl:param name="node"/>
+        <xsl:param name="parentName" select="''"/>
         <xsl:choose>
             <xsl:when test="not($node)">
                 <!-- <xsl:value-of select="concat('Warning[3]: Fail to find type definition for ', $node/@name)" /> -->
@@ -1357,9 +1370,12 @@
                     </xsl:when>
                     <xsl:when test="starts-with($type, 'tns:ArrayOf')">
                         <xsl:variable name="more">
-                            <xsl:call-template name="GetArrayTypesOfComplexType">
-                                <xsl:with-param name="complexNode" select="$schemaRoot/xsd:complexType[@name=substring($type,12)]"/>
-                            </xsl:call-template>
+                            <xsl:variable name="complexTypeName" select="substring($type,12)"/>
+                            <xsl:if test="$parentName != $complexTypeName">
+                              <xsl:call-template name="GetArrayTypesOfComplexType">
+                                <xsl:with-param name="complexNode" select="$schemaRoot/xsd:complexType[@name=$complexTypeName]"/>
+                              </xsl:call-template>
+                            </xsl:if>
                         </xsl:variable>
                         <xsl:choose>
                             <xsl:when test="string($more)">
@@ -1409,11 +1425,13 @@
             <xsl:when test="$complexNode/xsd:sequence">
                 <xsl:call-template name="GetArrayTypesOfElements">
                     <xsl:with-param name="nodes" select="$complexNode/xsd:sequence/xsd:element"/>
+                    <xsl:with-param name="parentName" select="$complexNode/@name"/>
                 </xsl:call-template>
             </xsl:when>
             <xsl:when test="$complexNode/xsd:all">
                 <xsl:call-template name="GetArrayTypesOfElements">
                     <xsl:with-param name="nodes" select="$complexNode/xsd:all/xsd:element"/>
+                    <xsl:with-param name="parentName" select="$complexNode/@name"/>
                 </xsl:call-template>
             </xsl:when>
         </xsl:choose>
@@ -1421,15 +1439,18 @@
     <!-- get array type used in element nodes -->
     <xsl:template name="GetArrayTypesOfElements">
         <xsl:param name="nodes"/>
+        <xsl:param name="parentName" select="''"/>
         <xsl:variable name="first">
             <xsl:call-template name="GetArrayTypes">
                 <xsl:with-param name="node" select="$nodes[1]"/>
+                <xsl:with-param name="parentName" select="$parentName"/>
             </xsl:call-template>
         </xsl:variable>
         <xsl:variable name="rest">
             <xsl:if test="count($nodes) &gt; 1">
                 <xsl:call-template name="GetArrayTypesOfElements">
                     <xsl:with-param name="nodes" select="$nodes[position()!=1]"/>
+                    <xsl:with-param name="parentName" select="$parentName"/>
                 </xsl:call-template>
             </xsl:if>
         </xsl:variable>
