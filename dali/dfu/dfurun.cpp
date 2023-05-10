@@ -1274,21 +1274,6 @@ public:
                     oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
                     kind.set(srcFile->queryAttributes().queryProp("@kind"));
 
-                    // keys default wrap for copy
-                    if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
-                        destination->setNumPartsOverride(srcFile->numParts());
-                    else if (isContainerized())
-                    {
-                        StringBuffer clusterName;
-                        destination->getGroupName(0, clusterName);
-                        Owned<IPropertyTree> plane = getStoragePlane(clusterName);
-                        if (plane)
-                        {
-                            if (plane->hasProp("@defaultSprayParts"))
-                                destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
-                        }
-                    }
-
                     if (options->getSubfileCopy())
                         opttree->setPropBool("@compress",srcFile->isCompressed());
 
@@ -1325,6 +1310,21 @@ public:
             case DFUcmd_import:
             case DFUcmd_add:
                 {
+                    // keys default wrap for copy
+                    if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
+                        destination->setNumPartsOverride(srcFile->numParts());
+                    else if (isContainerized())
+                    {
+                        StringBuffer clusterName;
+                        destination->getGroupName(0, clusterName);
+                        Owned<IPropertyTree> plane = getStoragePlane(clusterName);
+                        if (plane)
+                        {
+                            if (plane->hasProp("@defaultSprayParts"))
+                                destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                        }
+                    }
+
                     destination->getLogicalName(tmp.clear());
                     if (tmp.length())
                     {

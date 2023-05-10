@@ -33,7 +33,16 @@ define([
     const store = KeyValStore.userKeyValStore();
     store.getEx(BuildInfo.ModernMode, { defaultValue: String(BuildInfo.containerized) }).then(modernMode => {
         if (modernMode === String(true) && hpccWidget !== "IFrameWidget") {
-            window.location.replace("/esp/files/index.html");
+            switch (hpccWidget) {
+                case "WUDetailsWidget":
+                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}`);
+                    break;
+                case "GraphsWUWidget":
+                    window.location.replace(`/esp/files/index.html#/workunits/${params.Wuid}/metrics`);
+                    break;
+                default:
+                    window.location.replace("/esp/files/index.html");
+            }
         } else {
             ready(function () {
                 parseUrl();
