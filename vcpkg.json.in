@@ -115,6 +115,10 @@
         "libyaml",
         "lz4",
         {
+            "name": "minizip",
+            "platform": "@VCPKG_ZLIB@"
+        },
+        {
             "name": "mongo-cxx-driver",
             "platform": "@VCPKG_MONGODBEMBED@"
         },

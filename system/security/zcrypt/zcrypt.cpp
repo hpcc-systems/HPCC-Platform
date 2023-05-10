@@ -22,7 +22,7 @@
 #include "aes.hpp"
 #include "base64.ipp"
 
-#include "zip.h"
+#include <minizip/zip.h>
 #include "jexcept.hpp"
 #include <math.h>
 

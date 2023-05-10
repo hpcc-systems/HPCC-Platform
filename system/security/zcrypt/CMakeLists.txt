@@ -27,23 +27,20 @@ project( zcrypt )
 
 SET(CMAKE_UNITY_BUILD FALSE)
 
+find_package(minizip CONFIG REQUIRED)
+find_path(MINIZIP_INCLUDE_DIRS "minizip/zip.h" HINTS "${VCPKG_INSTALLED_DIR}")
+
 set ( SRCS
       aes.cpp
       base64.cpp
       mutex.cpp
-      ioapi.c
-      zip.c
-      unzip.c
       zcrypt.cpp
     )
-
-IF (WIN32)
-  set ( SRCS ${SRCS} iowin32.c )
-ENDIF()
 
 include_directories ( 
          ${ZLIB_INCLUDE_DIR}
          ${OPENSSL_INCLUDE_DIR}
+         ${MINIZIP_INCLUDE_DIRS}
          ./../../security/shared
          ./../../include 
          ./../../jlib
@@ -57,6 +54,7 @@ target_link_libraries ( zcrypt
          jlib
          ${ZLIB_LIBRARIES} 
          ${OPENSSL_LIBRARIES} 
+         minizip::minizip
     )
 
 
