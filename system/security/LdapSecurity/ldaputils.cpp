@@ -389,13 +389,10 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
 void LdapUtils::bin2str(MemoryBuffer& from, StringBuffer& to)
 {
     const char* frombuf = from.toByteArray();
-    char tmp[3];
     for(unsigned i = 0; i < from.length(); i++)
     {
         unsigned char c = frombuf[i];
-        sprintf(tmp, "%02X", c);
-        tmp[2] = 0;
-        to.append("\\").append(tmp);
+        to.append("\\").appendhex(c, false);
     }
 }
 
