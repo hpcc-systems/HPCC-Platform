@@ -58,7 +58,10 @@ export function useUserSession(): {
             }
             store.set("Status", "Unlocked");
             store.set("ECLWatchUser", "true");
-        }).catch(err => console.log("Unable to create user session."));
+        }).catch(err => {
+            store.set("ESPSessionState", "false");
+            console.error("Authorization Request Error:  " + err.message);
+        });
     }, [store]);
 
     const deleteUserSession = React.useCallback(() => {

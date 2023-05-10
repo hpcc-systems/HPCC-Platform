@@ -84,7 +84,10 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Queries filter={{ WUID: wuid }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Resources} itemKey="resources" itemCount={resourceCount} style={pivotItemStyle(size, 0)}>
-                <Resources wuid={wuid} />
+                {state ?
+                    <FetchEditor mode={queryParams?.mode as any} url={queryParams?.url as string} /> :
+                    <Resources wuid={wuid} preview={queryParams?.preview as any} />
+                }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Helpers} itemKey="helpers" itemCount={workunit?.HelpersCount} style={pivotItemStyle(size, 0)}>
                 {state ?

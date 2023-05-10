@@ -116,11 +116,11 @@ bool canReadPackageFrom(const char * urn)
 {
     if (queryExtractFilename(urn))
         return true;
+    if (endsWith(urn, ".tgz"))
+        return false;
     if (looksLikeGitPackage(urn))
         return true;
     if (!isalnum(*urn))
-        return false;
-    if (endsWith(urn, ".tgz"))
         return false;
     return true;
 }

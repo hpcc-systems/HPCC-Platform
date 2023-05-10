@@ -106,7 +106,8 @@
                                 document.cookie = ("ESPSessionState=false");
                         }
                     } else {
-                        alert('Authorization Request Error.');
+                        document.cookie = ("ESPSessionState=false");
+                        console.error('Authorization Request Error:  ' + this.status + ' ' + this.statusText);
                     }
                 }
                 xhttp.open('GET', '/esp/getauthtype', true);

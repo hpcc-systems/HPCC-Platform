@@ -134,7 +134,10 @@ public:
     unsigned numKeyedDuplicates = 0;
     MemoryBuffer uncompressed;
     MemoryAttr compressed;
+    double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
     const byte * nullRow = nullptr;
+    offset_t totalKeyedSize = 0;
+    offset_t totalDataSize = 0;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -229,7 +232,7 @@ public:
     virtual void write(IFileIOStream *, CRC32 *crc) override;
 
 protected:
-    unsigned getDataSize();
+    unsigned getDataSize(bool includePayload);
 
 protected:
     InplaceKeyBuildContext & ctx;
@@ -246,6 +249,9 @@ protected:
     size32_t keyLen = 0;
     bool isVariable = false;
     bool rowCompression = false;
+    bool useCompressedPayload = false;
+    bool gatherUncompressed = true;
+    bool openedCompressor = false;
 };
 
 class InplaceIndexCompressor : public CInterfaceOf<IIndexCompressor>

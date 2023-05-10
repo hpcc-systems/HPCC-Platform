@@ -4,6 +4,8 @@ import { Graph2, scopedLogger } from "@hpcc-js/util";
 import { format } from "src/Utility";
 import { MetricsOptions } from "../hooks/metrics";
 
+import "/src-react/util/metricGraph.css";
+
 const logger = scopedLogger("src-react/util/metricGraph.ts");
 
 declare const dojoConfig;
@@ -71,6 +73,8 @@ interface IScopeEdge extends IScope {
     IdSource: string;
     IdTarget: string;
 }
+
+type ScopeStatus = "unknown" | "started" | "completed";
 
 export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
 
@@ -141,7 +145,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         if (parent && !this.subgraphExists(parent.name)) {
             this.ensureGraphLineage(parent);
         }
-        if (!this.subgraphExists(scope.name)) {
+        if (scope.__children?.length > 0 && !this.subgraphExists(scope.name)) {
             this.addSubgraph(scope, parent);
         }
     }
@@ -198,9 +202,31 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return id.replace(/\s/, "_");
     }
 
+    vertexLabel(v: IScope, options: MetricsOptions): string {
+        return v.type === "activity" ? format(options.activityTpl, v) : v.Label || v.id;
+    }
+
+    vertexStatus(v: IScope): ScopeStatus {
+        const tally: { [id: string]: number } = { "unknown": 0, "started": 0, "completed": 0 };
+        let outEdges = this.vertexInternalOutEdges(v);
+        if (outEdges.length === 0) {
+            outEdges = this.inEdges(v.name);
+        }
+        outEdges.forEach(e => ++tally[this.edgeStatus(e)]);
+        if (outEdges.length === tally["completed"]) {
+            return "completed";
+        } else if (tally["started"] || tally["completed"]) {
+            return "started";
+        }
+        return "unknown";
+    }
+
+    vertexInternalOutEdges(v: IScope): IScopeEdge[] {
+        return this.outEdges(v.name).filter(e => e.__parentName === v.__parentName);
+    }
+
     vertexTpl(v: IScope, options: MetricsOptions): string {
-        const label = v.type === "activity" ? format(options.activityTpl, v) : v.Label || v.id;
-        return `"${v.id}" [id="${encodeID(v.name)}" label="${label}" shape="${shape(v.Kind)}"]`;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${this.vertexLabel(v, options)}" shape="${shape(v.Kind)}" class="${this.vertexStatus(v)}"]`;
     }
 
     protected _dedupEdges: { [scopeName: string]: boolean } = {};
@@ -217,13 +243,39 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         }
     }
 
+    edgeStatus(e: IScopeEdge): ScopeStatus {
+        const starts = Number(e.NumStarts ?? 0);
+        const stops = Number(e.NumStops ?? 0);
+        if (!isNaN(starts) && !isNaN(stops)) {
+            if (starts > 0) {
+                if (starts === stops) {
+                    return "completed";
+                }
+                return "started";
+            }
+        }
+        return "unknown";
+    }
+
     edgeTpl(e: IScopeEdge, options: MetricsOptions) {
         if (this._dedupEdges[e.id] === true) return "";
         this._dedupEdges[e.id] = true;
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, { ...e, ...e.__formattedProps })}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}"]`;
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, { ...e, ...e.__formattedProps })}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}" class="${this.edgeStatus(e)}"]`;
+    }
+
+    subgraphStatus(sg: IScope): ScopeStatus {
+        const tally: { [id: string]: number } = { "unknown": 0, "started": 0, "completed": 0 };
+        const finalVertices = this.subgraphVertices(sg.name).filter(v => this.vertexInternalOutEdges(v).length === 0);
+        finalVertices.forEach(v => ++tally[this.vertexStatus(v)]);
+        if (finalVertices.length && finalVertices.length === tally["completed"]) {
+            return "completed";
+        } else if (tally["started"] || tally["completed"]) {
+            return "started";
+        }
+        return "unknown";
     }
 
     subgraphTpl(sg: IScope, options: MetricsOptions): string {
@@ -239,11 +291,11 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         });
         return `\
 subgraph cluster_${encodeID(sg.id)} {
-    color="darkgrey";
     fillcolor="white";
     style="filled";
     id="${encodeID(sg.name)}";
     label="${format(options.subgraphTpl, sg)}";
+    class="${this.subgraphStatus(sg)}";
 
     ${childTpls.join("\n")}
 
@@ -290,8 +342,8 @@ digraph G {
     graph [fontname="arial"];// fontsize=11.0];
     // graph [rankdir=TB];
     // node [shape=rect fontname=arial fontsize=11.0 fixedsize=true];
-    node [color="darkgrey" fontname="arial" fillcolor="whitesmoke" style="filled" margin=0.2]
-    edge [color="darkgrey"]
+    node [color="" fontname="arial" fillcolor="whitesmoke" style="filled" margin=0.2]
+    edge []
     // edge [fontname=arial fontsize=11.0];
 
     ${childTpls.join("\n")}
@@ -411,7 +463,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
             .each(function () {
                 d3Select(this).selectAll("path,polygon")
                     .style("stroke", () => {
-                        return context._selection[decodeID(this.id)] ? "red" : "darkgrey";
+                        return context._selection[decodeID(this.id)] ? "red" : undefined;
                     })
                     ;
             })
@@ -503,3 +555,4 @@ export class MetricGraphWidget extends SVGZoomWidget {
     selectionChanged() {
     }
 }
+MetricGraphWidget.prototype._class += " eclwatch_MetricGraphWidget";
