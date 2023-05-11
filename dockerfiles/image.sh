@@ -44,11 +44,19 @@ create_build_image() {
 
 create_platform_core_image() {
     local base=$1
-    echo "--- Create 'platform-core:$MODE' image ---"
+    echo "--- Create 'platform-core:release' image ---"
     docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-$BUILD_OS.dockerfile" \
-        -t platform-core:$MODE \
+        -t platform-core:release \
         --build-arg BASE_IMAGE=$base \
             "$SCRIPT_DIR/vcpkg/." 
+
+    if [ "$MODE" = "debug" ]; then
+        echo "--- Create 'platform-core:debug' image ---"
+        docker build --rm -f "$SCRIPT_DIR/vcpkg/platform-core-debug-$BUILD_OS.dockerfile" \
+            -t platform-core:debug \
+            --build-arg BASE_IMAGE=platform-core:release \
+                "$SCRIPT_DIR/vcpkg/."
+    fi
 }
 
 finalize_platform_core_image() {
@@ -60,7 +68,7 @@ finalize_platform_core_image() {
         local image_name=incr-core:$MODE
         echo "--- Incremental '$image_name' image ---"
     fi
-    CONTAINER=$(docker run -d \
+    local CONTAINER=$(docker run -d \
         --mount source=hpcc_src,target=/hpcc-dev/HPCC-Platform,type=volume \
         --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
         $image_name "tail -f /dev/null")
@@ -69,6 +77,26 @@ finalize_platform_core_image() {
     docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
     docker stop $CONTAINER
     docker rm $CONTAINER
+
+    if [ "$MODE" = "debug" ]; then
+        # Add sources
+        echo "--- Adding sources to '$image_name' image ---"
+        local CONTAINER=$(docker run -d \
+            --mount source=$ROOT_DIR,target=/hpcc-dev/HPCC-Platform-local,type=bind,readonly \
+            --mount source=$HPCC_BUILD,target=/hpcc-dev/build,type=volume \
+            hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc "tail -f /dev/null")
+        docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "rm -rf /hpcc-dev/HPCC-Platform && mkdir /hpcc-dev/HPCC-Platform && chown -R hpcc:hpcc /hpcc-dev/HPCC-Platform"
+        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git config --global --add safe.directory /hpcc-dev/HPCC-Platform-local"
+        docker exec --workdir /hpcc-dev $CONTAINER /bin/bash -c "git clone --single-branch file:///hpcc-dev/HPCC-Platform-local /hpcc-dev/HPCC-Platform"
+        docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "git reset --hard --recurse-submodules"
+        docker exec --workdir /hpcc-dev/HPCC-Platform-local $CONTAINER /bin/bash -c "git ls-files --modified --exclude-standard -z | xargs -0 -I {} cp {} /hpcc-dev/HPCC-Platform/{}"
+        docker exec --workdir /hpcc-dev/HPCC-Platform $CONTAINER /bin/bash -c "rm -rf ./.git"
+        docker exec --user root --workdir /hpcc-dev $CONTAINER /bin/bash -c "find /hpcc-dev/HPCC-Platform -exec touch -r /hpcc-dev/build/CMakeCache.txt {} +"
+        docker commit $CONTAINER hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc
+        docker stop $CONTAINER
+        docker rm $CONTAINER
+    fi
+
     docker tag hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc incr-core:$MODE
 }
 
@@ -124,7 +152,7 @@ reconfigure() {
     echo "--- Clean cmake cache ---"
     init_hpcc_src
     run "rm -rf /hpcc-dev/HPCC-Platform/vcpkg/vcpkg && \
-        rm -rf /hpcc-dev/build/CMakeCache.txt CMakeFiles"
+        rm -rf /hpcc-dev/build/CMakeCache.txt CMakeFiles generated"
 }
 
 configure() {
@@ -234,11 +262,11 @@ build() {
     elif [ "$MODE" = "debug" ]; then
         run "cmake --build /hpcc-dev/build --parallel"
         finalize_platform_core_image $crc \
-            "cmake --build /hpcc-dev/build --parallel --target install"
+            "cmake --install /hpcc-dev/build --prefix /opt/HPCCSystems"
     fi
 
-    echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$GIT_BRANCH-$crc"
-    echo "hpccsystems/platform-core:$GIT_BRANCH-$crc"
+    echo "docker run --entrypoint /bin/bash -it hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc"
+    echo "hpccsystems/platform-core:$GIT_BRANCH-$MODE-$crc"
     exit 0
 }
 
