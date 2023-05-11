@@ -86,4 +86,5 @@ public:
     virtual const char * fetchConnectionStr() const override { return m_logAnalyticsWorkspaceID.str(); }
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format) override;
     virtual IRemoteLogAccessStream * getLogReader(const LogAccessConditions & options, LogAccessLogFormat format, unsigned int pageSize) override;
+    virtual bool supportsResultPaging() const override { return false;}
 };
