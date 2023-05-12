@@ -804,6 +804,7 @@ class JlibTimingTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testClockGetTimeReal);
         CPPUNIT_TEST(testClockGetTimeMono);
         CPPUNIT_TEST(testTimestampNow);
+        CPPUNIT_TEST(testTime);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -891,6 +892,17 @@ public:
             value += getTimeStampNowValue();
         }
         DBGLOG("getTimeStampNowValue() %uns = %u", (msTick()-startTime)/scale, value);
+    }
+    void testTime()
+    {
+        unsigned startTime = msTick();
+        struct timespec ts;
+        unsigned value = 0;
+        for (unsigned i=0; i < iters; i++)
+        {
+            value += (unsigned)time(nullptr);
+        }
+        DBGLOG("time() %uns = %u", (msTick()-startTime)/scale, value);
     }
 };
 
