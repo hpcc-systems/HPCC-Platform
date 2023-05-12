@@ -63,7 +63,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DJHTREE_EXPORTS -DECLRTL_LOCAL )
 
 HPCC_ADD_LIBRARY( jhtree SHARED ${SRCS} ${INCLUDES} )
-install ( TARGETS jhtree RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+     TARGETS jhtree 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     LIBRARY DESTINATION ${LIB_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( jhtree 
          eclrtl
          zcrypt

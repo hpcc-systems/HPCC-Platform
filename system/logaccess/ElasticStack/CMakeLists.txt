@@ -45,8 +45,10 @@ target_link_libraries(elasticstacklogaccess
   cpr::cpr
 )
 
-install(TARGETS elasticstacklogaccess
+install(
+  TARGETS elasticstacklogaccess
   RUNTIME DESTINATION ${EXEC_DIR}
   LIBRARY DESTINATION ${LIB_DIR}
+  COMPONENT Runtime
   CALC_DEPS
 )

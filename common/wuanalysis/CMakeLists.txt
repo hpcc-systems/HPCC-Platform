@@ -58,7 +58,12 @@ set_target_properties(wuanalysis PROPERTIES
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL WUANALYSIS_EXPORTS )
 
-install ( TARGETS wuanalysis RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS wuanalysis 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 
 target_link_libraries ( wuanalysis
          jlib

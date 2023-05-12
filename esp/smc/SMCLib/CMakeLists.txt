@@ -73,7 +73,12 @@ ADD_DEFINITIONS( -D_USRDLL -DSMCLIB_EXPORTS -DWSWU_API_LOCAL -DWsResources_API_L
 
 HPCC_ADD_LIBRARY( SMCLib SHARED ${SRCS} )
 add_dependencies(SMCLib espscm)
-install ( TARGETS SMCLib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS SMCLib 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( SMCLib
          jlib
          remote 

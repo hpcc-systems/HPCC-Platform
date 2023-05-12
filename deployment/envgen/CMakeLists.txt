@@ -43,7 +43,11 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( envgen ${SRCS} )
-install ( TARGETS envgen DESTINATION sbin )
+install ( 
+    TARGETS envgen 
+    DESTINATION sbin 
+    COMPONENT Runtime
+)
 target_link_libraries ( envgen 
         deploy
         deployutils 

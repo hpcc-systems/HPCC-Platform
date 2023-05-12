@@ -54,7 +54,9 @@ if(NOT PLUGIN)
     install(
         TARGETS pkgfiles
         RUNTIME DESTINATION ${EXEC_DIR}
-        LIBRARY DESTINATION ${LIB_DIR})
+        LIBRARY DESTINATION ${LIB_DIR}
+        COMPONENT Runtime
+    )
     target_link_libraries(
         pkgfiles
         dfuwu

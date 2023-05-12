@@ -66,7 +66,12 @@ ADD_DEFINITIONS( -D_USRDLL -DWsDeploy_API_LOCAL )
 
 HPCC_ADD_LIBRARY( WsDeploy SHARED ${SRCS}  )
 add_dependencies (WsDeploy espscm)
-install ( TARGETS WsDeploy RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS WsDeploy 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( WsDeploy  
          jlib
          xmllib 

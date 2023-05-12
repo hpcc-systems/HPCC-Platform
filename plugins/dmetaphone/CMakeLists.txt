@@ -24,7 +24,11 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DDMETAPHONE_EXPORTS )
 
 HPCC_ADD_LIBRARY( dmetaphone SHARED ${SRCS} )
-install ( TARGETS dmetaphone DESTINATION plugins )
+install ( 
+     TARGETS dmetaphone 
+     DESTINATION plugins 
+     COMPONENT Runtime
+)
 target_link_libraries ( dmetaphone
          jlib
     )

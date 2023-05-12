@@ -45,7 +45,12 @@ set_target_properties ( dfuwu PROPERTIES
         COMPILE_FLAGS "-D_USRDLL"
         DEFINE_SYMBOL DFUWU_EXPORTS
         )
-install ( TARGETS dfuwu RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+        TARGETS dfuwu 
+        RUNTIME DESTINATION ${EXEC_DIR} 
+        LIBRARY DESTINATION ${LIB_DIR} 
+        COMPONENT Runtime
+)
 target_link_libraries ( dfuwu 
          workunit
          jlib

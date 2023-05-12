@@ -63,12 +63,15 @@ if(REMBED)
         install(
             TARGETS Rembed
             DESTINATION plugins
-            CALC_DEPS)
+            COMPONENT REmbed
+            CALC_DEPS
+        )
         install(
             FILES ${RINSIDE_LIBRARY}
             DESTINATION ${LIB_DIR}
             PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
+            COMPONENT REmbed
+        )
     endif()
 endif()
 

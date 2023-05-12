@@ -51,7 +51,11 @@ if (WIN32)
 endif()
 
 HPCC_ADD_EXECUTABLE ( toposerver ${SRCS} )
-install ( TARGETS toposerver RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+  TARGETS toposerver 
+  RUNTIME DESTINATION ${EXEC_DIR} 
+  COMPONENT Runtime
+)
 
 target_link_libraries ( toposerver
          jlib 

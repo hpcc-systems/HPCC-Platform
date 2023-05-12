@@ -51,7 +51,11 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE -DESPCFG_EXPORTS)
 
 HPCC_ADD_EXECUTABLE ( esp ${SRCS} )
-install ( TARGETS esp RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS esp
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( esp 
          jlib
          mp 

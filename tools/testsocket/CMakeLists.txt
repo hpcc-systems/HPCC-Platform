@@ -45,7 +45,11 @@ IF (USE_OPENSSL)
          )
 ENDIF()
 
-install ( TARGETS testsocket RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS testsocket 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 
 if ( PLATFORM )
     install ( PROGRAMS testsocket.install DESTINATION etc/init.d/install COMPONENT Runtime )

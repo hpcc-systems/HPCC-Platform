@@ -37,4 +37,9 @@ TARGET_LINK_LIBRARIES( hpccmetrics_prometheussink
                        jlib
                      )
 
-INSTALL ( TARGETS hpccmetrics_prometheussink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+INSTALL ( 
+  TARGETS hpccmetrics_prometheussink 
+  RUNTIME DESTINATION ${EXEC_DIR} 
+  LIBRARY DESTINATION ${LIB_DIR} 
+  COMPONENT Runtime
+)

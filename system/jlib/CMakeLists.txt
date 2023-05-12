@@ -258,8 +258,22 @@ if (NOT PLUGIN)
                         )
         add_custom_target ( jelog ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll )
         add_dependencies( jlib jelog )
-        install ( PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll DESTINATION ${EXEC_DIR} )
+        install ( 
+            PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/$<CONFIG>/jelog.dll 
+            DESTINATION ${EXEC_DIR} 
+            COMPONENT Runtime
+        )
     endif ()
-    install ( TARGETS jlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} CALC_DEPS )
-    install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/jscm.hpp DESTINATION componentfiles/cl/include COMPONENT Runtime )
+    install ( 
+        TARGETS jlib 
+        RUNTIME DESTINATION ${EXEC_DIR} 
+        LIBRARY DESTINATION ${LIB_DIR} 
+        COMPONENT Runtime
+        CALC_DEPS 
+    )
+    install ( 
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/jscm.hpp 
+        DESTINATION componentfiles/cl/include 
+        COMPONENT Runtime
+    )
 endif()

@@ -43,9 +43,11 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 
 HPCC_ADD_EXECUTABLE ( addScopes ${SRCS} )
-install ( TARGETS addScopes RUNTIME DESTINATION ${EXEC_DIR} )
-
-
+install ( 
+     TARGETS addScopes 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     COMPONENT Runtime
+)
 
 target_link_libraries ( addScopes 
          jlib

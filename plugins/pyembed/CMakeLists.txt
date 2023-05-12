@@ -60,15 +60,19 @@ elseif(NOT APPLE)
 endif()
 
 if (CONTAINERIZED)
-install(
-    TARGETS py2embed
-    DESTINATION plugins
-    CALC_DEPS)
+    install(
+        TARGETS py2embed
+        DESTINATION plugins
+        COMPONENT Python2Embed
+        CALC_DEPS
+    )
 else()
-install(
-    TARGETS py2embed
-    DESTINATION versioned/python2
-    CALC_DEPS)
+    install(
+        TARGETS py2embed
+        DESTINATION versioned/python2
+        COMPONENT Python2Embed
+        CALC_DEPS
+    )
 endif()
 
 if(debug_python)

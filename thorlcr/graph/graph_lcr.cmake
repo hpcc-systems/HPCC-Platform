@@ -64,7 +64,12 @@ HPCC_ADD_LIBRARY( graph_lcr SHARED ${SRCS} )
 set_target_properties(graph_lcr PROPERTIES 
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL GRAPH_EXPORTS )
-install ( TARGETS graph_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS graph_lcr 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( graph_lcr 
          jlib
          jhtree 

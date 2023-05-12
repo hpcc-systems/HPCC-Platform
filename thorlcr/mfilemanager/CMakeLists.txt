@@ -56,7 +56,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )
 
 HPCC_ADD_LIBRARY( mfilemanager_lcr SHARED ${SRCS} )
-install ( TARGETS mfilemanager_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS mfilemanager_lcr 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( mfilemanager_lcr
          dalibase
          deftype

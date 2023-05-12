@@ -12,5 +12,9 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/setup_one_nfs
     ${CMAKE_CURRENT_SOURCE_DIR}/sshslaves
 )
-    Install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} )
+    Install ( 
+        PROGRAMS ${iFILES} 
+        DESTINATION ${EXEC_DIR} 
+        COMPONENT Runtime
+    )
 ENDFOREACH ( iFILES )

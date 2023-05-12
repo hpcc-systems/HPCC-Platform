@@ -60,7 +60,12 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_CLOUD_EXPORTS )
 
 HPCC_ADD_LIBRARY( ws_cloud SHARED ${SRCS}  )
 add_dependencies ( ws_cloud espscm )
-install ( TARGETS ws_cloud RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS ws_cloud 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ws_cloud
          jlib
          xmllib

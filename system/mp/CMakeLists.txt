@@ -42,7 +42,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DMP_EXPORTS )
 
 HPCC_ADD_LIBRARY( mp SHARED ${SRCS} )
-install ( TARGETS mp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS mp 
+    RUNTIME DESTINATION ${EXEC_DIR}
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( mp 
          jlib
     )

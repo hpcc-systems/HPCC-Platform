@@ -45,7 +45,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DAZURE_FILE_EXPORTS )
 
 HPCC_ADD_LIBRARY( azurefile SHARED ${SRCS}  )
-install ( TARGETS azurefile DESTINATION filehooks CALC_DEPS)
+install ( 
+    TARGETS azurefile 
+    DESTINATION filehooks 
+    COMPONENT Runtime 
+    CALC_DEPS
+)
 
 target_link_libraries ( azurefile
         jlib

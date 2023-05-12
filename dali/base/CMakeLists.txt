@@ -81,6 +81,7 @@ if(NOT PLUGIN)
         TARGETS dalibase
         RUNTIME DESTINATION ${EXEC_DIR}
         LIBRARY DESTINATION ${LIB_DIR}
+        COMPONENT Runtime
     )
     target_link_libraries(
         dalibase 

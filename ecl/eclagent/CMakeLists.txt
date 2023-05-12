@@ -44,7 +44,11 @@ SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STRICT_CXX_FLAGS}")
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( hthor ${SRCS} )
-install ( TARGETS hthor RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+  TARGETS hthor 
+  RUNTIME DESTINATION ${EXEC_DIR}
+  COMPONENT Runtime
+)
 target_link_libraries ( hthor
       hthorlib
       wuanalysis

@@ -55,7 +55,10 @@ if(KAFKA)
 
         install(
             TARGETS kafka
-            DESTINATION plugins CALC_DEPS)
+            DESTINATION plugins 
+            COMPONENT KafkaPlugin
+            CALC_DEPS
+        )
 
         install(
             FILES ${LIBRDKAFKA_LIB_REAL} ${LIBRDKAFKACPP_LIB_REAL}
@@ -81,5 +84,6 @@ if(PLATFORM OR CLIENTTOOLS_ONLY)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/kafka.ecllib
         DESTINATION plugins
-        COMPONENT Runtime)
+        COMPONENT Runtime
+    )
 endif()

@@ -56,7 +56,12 @@ ADD_DEFINITIONS( -D_USRDLL -DLOGGINGCOMMON_EXPORTS -DWSDecoupledLog_API_LOCAL )
 HPCC_ADD_LIBRARY( ws_decoupledlogging SHARED ${SRCS} )
 add_dependencies( ws_decoupledlogging espscm )
 
-install ( TARGETS ws_decoupledlogging RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS ws_decoupledlogging 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ws_decoupledlogging
          jlib
          xmllib

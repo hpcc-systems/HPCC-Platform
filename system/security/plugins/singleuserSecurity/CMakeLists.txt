@@ -42,7 +42,12 @@ include_directories (
 ADD_DEFINITIONS( -DSINGLEUSERSECURITY_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( singleUserSecurity SHARED ${SRCS} )
-install ( TARGETS singleUserSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+     TARGETS singleUserSecurity 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     LIBRARY DESTINATION ${LIB_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( singleUserSecurity
          jlib
          dalibase

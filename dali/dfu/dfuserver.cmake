@@ -53,7 +53,11 @@ HPCC_ADD_EXECUTABLE ( dfuserver ${SRCS} )
 set_target_properties ( dfuserver PROPERTIES 
         COMPILE_FLAGS "-D_CONSOLE -D_DFUSERVER"
         )
-install ( TARGETS dfuserver RUNTIME DESTINATION ${EXEC_DIR})
+install ( 
+    TARGETS dfuserver 
+    RUNTIME DESTINATION ${EXEC_DIR}
+    COMPONENT Runtime
+)
 target_link_libraries ( dfuserver 
          jlib
          mp 

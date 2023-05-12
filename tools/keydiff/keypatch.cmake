@@ -41,7 +41,11 @@ include_directories (
 ADD_DEFINITIONS ( -DNO_SYBASE -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( keypatch ${SRCS} )
-install ( TARGETS keypatch RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+     TARGETS keypatch 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( keypatch 
          jlib
          jhtree 

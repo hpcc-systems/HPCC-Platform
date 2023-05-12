@@ -37,6 +37,7 @@ if(SQS AND USE_AWS)
         install(
             TARGETS sqs
             DESTINATION plugins
+            COMPONENT SQSPlugin
             CALC_DEPS
         )
 

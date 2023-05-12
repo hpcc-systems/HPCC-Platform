@@ -98,7 +98,12 @@ include_directories (
 ADD_DEFINITIONS ( -D_USRDLL -DCONFIGENV_EXPORTS )
 
 HPCC_ADD_LIBRARY( configenv SHARED ${SRCS} )
-install ( TARGETS configenv RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS configenv 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( configenv
          jlib
 #         environment

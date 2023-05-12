@@ -61,7 +61,11 @@ ADD_DEFINITIONS( -D_CONSOLE -DWSDFU_API_LOCAL -DFileSpray_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( dfuplus ${SRCS} )
 add_dependencies ( dfuplus espscm )
-install ( TARGETS dfuplus RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+     TARGETS dfuplus 
+     RUNTIME DESTINATION ${EXEC_DIR}
+     COMPONENT Runtime
+)
 target_link_libraries ( dfuplus
          jlib
          dafsclient

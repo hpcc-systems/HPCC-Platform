@@ -60,7 +60,11 @@ ADD_DEFINITIONS( -D_CONSOLE -DWsPackageProcess_API_LOCAL )
 HPCC_ADD_EXECUTABLE ( ecl-packagemap ${SRCS} )
 
 add_dependencies ( ecl-packagemap espscm )
-install ( TARGETS ecl-packagemap RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS ecl-packagemap 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ecl-packagemap
         jlib
         esphttp

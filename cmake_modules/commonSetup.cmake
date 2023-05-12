@@ -1055,6 +1055,18 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ENDMACRO()
 
   function(install)
+
+    set(options)
+    set(oneValueArgs)
+    set(multiValueArgs COMPONENT)
+    cmake_parse_arguments(INSTALL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT INSTALL_COMPONENT)
+      message(FATAL_ERROR "An install call without a component found: COMPONENT='${INSTALL_COMPONENT}', ARGN='${ARGN}', typcally 'COMPONENT Runtime' is missing")
+      # Add your additional actions here for install calls without a component
+      # For example, you can log a warning, raise an error, or modify the installation behavior.
+    endif()
+
     z_vcpkg_function_arguments(ARGS)
 
     if ("${ARGS}" MATCHES "CALC_DEPS")
@@ -1069,12 +1081,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
             PRE_EXCLUDE_REGEXES "api-ms-win-.*\.dll"
             POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}.*"
             POST_EXCLUDE_REGEXES ".*"
+            COMPONENT ${INSTALL_COMPONENT}
           )
         else()
           install(RUNTIME_DEPENDENCY_SET ${ARGV1}_deps
             DESTINATION ${LIB_DIR} 
             POST_INCLUDE_REGEXES "^${VCPKG_FILES_DIR}\/vcpkg_installed\/.*"
             POST_EXCLUDE_REGEXES ".*"
+            COMPONENT ${INSTALL_COMPONENT}
           )
         endif()
       endif()

@@ -59,7 +59,12 @@ ADD_DEFINITIONS( -D_LIB )
 ADD_DEFINITIONS( -DTHORSORT_EXPORTS )
 
 HPCC_ADD_LIBRARY( thorsort_lcr SHARED ${SRCS} )
-install ( TARGETS thorsort_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS thorsort_lcr 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( thorsort_lcr
         jlib
         eclrtl

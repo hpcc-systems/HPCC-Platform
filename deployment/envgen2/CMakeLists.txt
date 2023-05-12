@@ -47,7 +47,11 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( envgen2 ${SRCS} )
-install ( TARGETS envgen2 DESTINATION sbin )
+install ( 
+  TARGETS envgen2 
+  DESTINATION sbin 
+  COMPONENT Runtime
+)
 target_link_libraries ( envgen2
         jlib
         configenv

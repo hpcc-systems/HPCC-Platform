@@ -43,7 +43,11 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( xmllibtest ${SRCS} )
 add_dependencies ( xmllibtest xmllib )
-install ( TARGETS xmllibtest RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS xmllibtest 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( xmllibtest
         jlib
         xmllib

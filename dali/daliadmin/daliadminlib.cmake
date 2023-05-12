@@ -47,7 +47,12 @@ include_directories (
 ADD_DEFINITIONS ( -D_USRDLL -DDALIADMIN_API_EXPORTS )
 
 HPCC_ADD_LIBRARY( daliadminlib SHARED ${SRCS} )
-install ( TARGETS daliadminlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+     TARGETS daliadminlib 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     LIBRARY DESTINATION ${LIB_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( daliadminlib
          jlib
          mp

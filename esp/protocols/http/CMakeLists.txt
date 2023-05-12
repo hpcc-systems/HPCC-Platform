@@ -76,7 +76,12 @@ if(USE_OPENLDAP)
 endif()
 HPCC_ADD_LIBRARY(esphttp SHARED ${SRCS})
 add_dependencies(esphttp  espscm)
-install(TARGETS esphttp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR})
+install(
+    TARGETS esphttp 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR}
+    COMPONENT Runtime
+)
 target_link_libraries(
     esphttp
     ${XALAN_LIBRARIES}

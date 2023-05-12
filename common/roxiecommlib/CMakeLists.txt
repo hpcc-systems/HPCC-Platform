@@ -55,7 +55,12 @@ ADD_DEFINITIONS( -D_USRDLL -DROXIECOMMLIB_EXPORTS )
 
 HPCC_ADD_LIBRARY( roxiecommlib SHARED ${SRCS} )
 add_dependencies( roxiecommlib espscm )
-install ( TARGETS roxiecommlib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+     TARGETS roxiecommlib 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     LIBRARY DESTINATION ${LIB_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( roxiecommlib
          jlib 
     )

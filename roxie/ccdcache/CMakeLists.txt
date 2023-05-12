@@ -65,7 +65,11 @@ if (CMAKE_COMPILER_IS_CLANGXX)
 endif()
 
 HPCC_ADD_EXECUTABLE ( ccdcache ${SRCS} )
-install ( TARGETS ccdcache RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+  TARGETS ccdcache 
+  RUNTIME DESTINATION ${EXEC_DIR} 
+  COMPONENT Runtime
+)
 
 target_link_libraries ( ccdcache
          jlib

@@ -35,6 +35,8 @@ include_directories (
 ADD_DEFINITIONS ( -DDEBUGSERVICES_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( debugservices SHARED ${SRCS} )
-install ( TARGETS debugservices DESTINATION plugins )
-
-
+install ( 
+    TARGETS debugservices 
+    DESTINATION plugins 
+    COMPONENT Runtime
+)

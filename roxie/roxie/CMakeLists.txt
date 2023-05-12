@@ -54,7 +54,11 @@ if (WIN32)
 endif()
 
 HPCC_ADD_EXECUTABLE ( roxie ${SRCS} )
-install ( TARGETS roxie RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS roxie 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 
 target_link_libraries ( roxie
          ccd

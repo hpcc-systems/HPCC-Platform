@@ -52,7 +52,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DDAFSCLIENT_EXPORTS )
 
 HPCC_ADD_LIBRARY( dafsstream SHARED ${SRCS}  )
-install ( TARGETS dafsstream RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS dafsstream 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 
 target_link_libraries ( dafsstream 
     eclrtl

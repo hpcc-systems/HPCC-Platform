@@ -50,7 +50,11 @@ ADD_DEFINITIONS( -D_CONSOLE -DWSSMC_API_LOCAL -DWSDFU_API_LOCAL -DWSDFUXREF_API_
 
 HPCC_ADD_EXECUTABLE ( ecl-roxie ${SRCS} )
 add_dependencies ( ecl-roxie espscm )
-install ( TARGETS ecl-roxie RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS ecl-roxie 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ecl-roxie
         jlib
         esphttp

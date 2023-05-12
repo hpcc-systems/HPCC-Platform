@@ -76,7 +76,11 @@ add_dependencies ( esdl
                    espscm
                  )
 
-install ( TARGETS esdl RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS esdl 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( esdl
         jlib
         esphttp

@@ -138,7 +138,12 @@ endif()
 ADD_DEFINITIONS( -DHQLCPP_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( hqlcpp SHARED ${SRCS} )
-install ( TARGETS hqlcpp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+  TARGETS hqlcpp 
+  RUNTIME DESTINATION ${EXEC_DIR} 
+  LIBRARY DESTINATION ${LIB_DIR} 
+  COMPONENT Runtime
+)
 target_link_libraries ( hqlcpp
          jlib
          nbcd 

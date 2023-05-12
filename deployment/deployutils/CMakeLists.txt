@@ -55,7 +55,12 @@ endif()
 ADD_DEFINITIONS ( -D_USRDLL -DDEPLOYUTILS_EXPORTS )
 
 HPCC_ADD_LIBRARY( deployutils SHARED ${SRCS} )
-install ( TARGETS deployutils RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+     TARGETS deployutils 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     LIBRARY DESTINATION ${LIB_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( deployutils
          jlib 
          environment 

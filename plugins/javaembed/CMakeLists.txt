@@ -79,12 +79,15 @@ if(JAVAEMBED AND USE_JAVA)
 
         install(
             TARGETS javaembed
-            DESTINATION plugins)
+            DESTINATION plugins
+            COMPONENT JavaEmbed
+        )
         install(
             FILES ${java_classes}
             DESTINATION classes/com/HPCCSystems
             COMPONENT Runtime
-            CALC_DEPS)
+            CALC_DEPS
+        )
 
         # We link against jsig so that signals are chained from the jvm
 

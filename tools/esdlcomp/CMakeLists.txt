@@ -58,7 +58,12 @@ endif ()
 HPCC_ADD_LIBRARY ( esdlcomp SHARED ${SRCS} )
 
 MESSAGE("----INSTALLING esdlcomp")
-install ( TARGETS esdlcomp RUNTIME DESTINATION bin LIBRARY DESTINATION lib )
+install ( 
+    TARGETS esdlcomp 
+    RUNTIME DESTINATION bin 
+    LIBRARY DESTINATION lib 
+    COMPONENT Runtime
+)
 
 target_link_libraries ( esdlcomp
                    jlib )

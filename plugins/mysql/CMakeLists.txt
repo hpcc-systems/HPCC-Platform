@@ -55,7 +55,9 @@ if(MYSQLEMBED)
         install(
             TARGETS mysqlembed
             DESTINATION plugins
-            CALC_DEPS)
+            COMPONENT MySqlEmbed
+            CALC_DEPS
+        )
         target_link_libraries(
             mysqlembed
             ${MYSQL_LIBRARIES}

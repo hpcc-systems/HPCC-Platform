@@ -41,7 +41,12 @@ endif (RELEASE_BUILD EQUAL 1)
 
 HPCC_ADD_LIBRARY( datamasker SHARED ${SRCS} )
 
-install ( TARGETS datamasker RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS datamasker 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 
 target_link_libraries ( datamasker
     jlib

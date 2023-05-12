@@ -52,7 +52,11 @@ ADD_DEFINITIONS( -D_CONSOLE -DWSWU_API_LOCAL -Dws_logaccess_API_LOCAL )
 
 HPCC_ADD_EXECUTABLE ( ecl-queries ${SRCS} )
 add_dependencies ( ecl-queries espscm)
-install ( TARGETS ecl-queries RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS ecl-queries 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ecl-queries
         jlib
         esphttp

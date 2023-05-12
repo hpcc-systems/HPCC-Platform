@@ -39,5 +39,9 @@ target_link_libraries ( wuget
          dllserver
          workunit
          )
-install ( TARGETS wuget RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS wuget 
+    RUNTIME DESTINATION ${EXEC_DIR}
+    COMPONENT Runtime
+)
 

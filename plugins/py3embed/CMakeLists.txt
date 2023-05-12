@@ -54,15 +54,19 @@ elseif(NOT APPLE)
 endif()
 
 if (CONTAINERIZED)
-install(
-    TARGETS py3embed
-    DESTINATION plugins
-    CALC_DEPS)
+    install(
+        TARGETS py3embed
+        DESTINATION plugins
+        COMPONENT Python3Embed
+        CALC_DEPS
+    )
 else()
-install(
-    TARGETS py3embed
-    DESTINATION versioned/python3
-    CALC_DEPS)
+    install(
+        TARGETS py3embed
+        DESTINATION versioned/python3
+        COMPONENT Python3Embed
+        CALC_DEPS
+    )
 endif()
 
 target_link_libraries(

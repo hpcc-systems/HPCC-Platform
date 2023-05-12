@@ -53,7 +53,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DWsPackageProcess_API_LOCAL -DFileSpray_API_LOCAL -DWSDFU_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
-install ( TARGETS ws_packageprocess RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS ws_packageprocess 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 add_dependencies (ws_packageprocess espscm)
 target_link_libraries ( ws_packageprocess
          jlib

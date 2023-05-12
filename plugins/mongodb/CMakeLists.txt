@@ -51,29 +51,36 @@ IF(MONGODBEMBED)
 
         install(
             TARGETS mongodbembed
-            DESTINATION plugins CALC_DEPS)
+            DESTINATION plugins 
+            COMPONENT MongoEmbed
+            CALC_DEPS
+        )
 
         install(
             FILES ${LIBMONGOCXX_LIB_REAL}
             DESTINATION ${LIB_DIR}
             PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
+            COMPONENT MongoEmbed
+        )
 
         install(
             FILES ${LIBMONGOCXX_LIB} ${LIBMONGOCXX_LIB_ABI}
             DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
-            
+            COMPONENT MongoEmbed
+        )
+
         install(
             FILES ${LIBBSONCXX_LIB_REAL}
             DESTINATION ${LIB_DIR}
             PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-            COMPONENT Runtime)
-
+            COMPONENT MongoEmbed
+        )
+        
         install(
             FILES ${LIBBSONCXX_LIB} ${LIBBSONCXX_LIB_ABI}
             DESTINATION ${LIB_DIR}
-            COMPONENT Runtime)
+            COMPONENT MongoEmbed
+        )
 
         target_link_libraries(
             mongodbembed

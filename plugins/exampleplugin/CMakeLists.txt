@@ -59,7 +59,9 @@ if(EXAMPLEPLUGIN)
 
         install(
             TARGETS exampleplugin
-            DESTINATION plugins)
+            DESTINATION plugins
+            COMPONENT Runtime
+        )
 
         target_link_libraries(
             exampleplugin

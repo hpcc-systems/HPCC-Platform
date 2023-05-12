@@ -49,11 +49,16 @@ IF ( COUCHBASEEMBED )
 
         ADD_DEFINITIONS(-D_USRDLL -DCOUCHBASEEMBED_EXPORTS)
         HPCC_ADD_LIBRARY(couchbaseembed SHARED ${SRCS})
-        install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libcouchbase-build/lib\")")
+        install(
+            CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/libcouchbase-build/lib\")"
+            COMPONENT CouchbasePlugin
+        )
         install(
             TARGETS couchbaseembed
             DESTINATION plugins
-            CALC_DEPS)
+            COMPONENT CouchbasePlugin
+            CALC_DEPS
+        )
 
         target_link_libraries(
             couchbaseembed

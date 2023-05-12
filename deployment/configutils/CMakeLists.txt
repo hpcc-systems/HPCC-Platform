@@ -43,7 +43,12 @@ include_directories (
 ADD_DEFINITIONS ( -D_USRDLL -DCONFIGUTILS_EXPORTS )
 
 HPCC_ADD_LIBRARY( configutils SHARED ${SRCS} )
-install ( TARGETS configutils RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+     TARGETS configutils 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     LIBRARY DESTINATION ${LIB_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( configutils
          jlib
          environment

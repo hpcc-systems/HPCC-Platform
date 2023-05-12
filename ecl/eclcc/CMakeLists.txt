@@ -60,7 +60,11 @@ if (WIN32)
 endif()
 
 HPCC_ADD_EXECUTABLE ( eclcc ${SRCS} )
-install ( TARGETS eclcc RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+    TARGETS eclcc 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( eclcc 
          eclrtl 
          deftype 

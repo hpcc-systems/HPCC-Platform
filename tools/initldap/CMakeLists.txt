@@ -46,9 +46,11 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 
 HPCC_ADD_EXECUTABLE ( initldap ${SRCS} )
-install ( TARGETS initldap RUNTIME DESTINATION ${EXEC_DIR} )
-
-
+install ( 
+     TARGETS initldap 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     COMPONENT Runtime
+)
 
 target_link_libraries ( initldap
          jlib

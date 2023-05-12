@@ -65,7 +65,12 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_DFS_EXPORTS -DWsDfs_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_dfsservice SHARED ${SRCS} )
 add_dependencies ( ws_dfsservice espscm )
-install ( TARGETS ws_dfsservice RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS ws_dfsservice 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ws_dfsservice
          jlib
          mp

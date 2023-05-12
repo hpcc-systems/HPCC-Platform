@@ -50,7 +50,12 @@ HPCC_ADD_LIBRARY( udplib SHARED ${SRCS} )
 set_target_properties( udplib PROPERTIES 
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL UDPLIB_EXPORTS )
-install ( TARGETS udplib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+  TARGETS udplib 
+  RUNTIME DESTINATION ${EXEC_DIR} 
+  LIBRARY DESTINATION ${LIB_DIR} 
+  COMPONENT Runtime
+)
 
 target_link_libraries ( udplib 
          jlib
@@ -63,6 +68,11 @@ if (USE_AERON)
          aeron_driver
     )
 
-  install( TARGETS aeron_driver RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+  install( 
+    TARGETS aeron_driver 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+  )
 endif()    
 

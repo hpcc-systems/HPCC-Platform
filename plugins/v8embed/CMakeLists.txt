@@ -53,7 +53,9 @@ if(V8EMBED)
         install(
             TARGETS v8embed
             DESTINATION plugins
-            CALC_DEPS)
+            COMPONENT V8Embed
+            CALC_DEPS
+        )
         target_link_libraries(
             v8embed
             ${V8_LIBRARIES}

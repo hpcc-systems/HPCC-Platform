@@ -38,7 +38,11 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( combine ${SRCS} )
-install ( TARGETS combine RUNTIME DESTINATION ${EXEC_DIR} )
+install ( 
+     TARGETS combine 
+     RUNTIME DESTINATION ${EXEC_DIR} 
+     COMPONENT Runtime
+)
 target_link_libraries ( combine
          jlib
     )

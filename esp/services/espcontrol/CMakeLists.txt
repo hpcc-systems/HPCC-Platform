@@ -54,7 +54,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DWSESPControl_API_LOCAL )
 
 HPCC_ADD_LIBRARY( ws_espcontrol SHARED ${SRCS} )
-install ( TARGETS ws_espcontrol RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+install ( 
+    TARGETS ws_espcontrol 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+)
 target_link_libraries ( ws_espcontrol
          jlib
          xmllib

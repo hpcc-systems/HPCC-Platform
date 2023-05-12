@@ -118,7 +118,14 @@ endif()
 
 
 if (NOT PLUGIN)
-  install ( TARGETS eclrtl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib CALC_DEPS)
+  install ( 
+    TARGETS eclrtl 
+    RUNTIME DESTINATION ${EXEC_DIR} 
+    LIBRARY DESTINATION ${LIB_DIR} 
+    COMPONENT Runtime
+    ARCHIVE DESTINATION componentfiles/cl/lib 
+    CALC_DEPS
+  )
   FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclinclude4.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl.hpp
@@ -130,6 +137,10 @@ if (NOT PLUGIN)
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlrecord.hpp
   )
-    install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
+    install ( 
+      FILES ${iFILES} 
+      DESTINATION componentfiles/cl/include 
+      COMPONENT Runtime
+    )
   ENDFOREACH ( iFILES )
 endif()

@@ -69,8 +69,11 @@ if (WIN32)
 endif()
 
 HPCC_ADD_EXECUTABLE ( saserver ${SRCS} )
-install ( TARGETS saserver RUNTIME DESTINATION ${EXEC_DIR})
-
+install ( 
+    TARGETS saserver 
+    RUNTIME DESTINATION ${EXEC_DIR}
+    COMPONENT Runtime
+)
 
 if ( ${HAVE_LIBCRYPT} )
 target_link_libraries ( saserver crypt)
@@ -107,7 +110,11 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( sasha ${SRCS} )
-install ( TARGETS sasha RUNTIME DESTINATION ${EXEC_DIR})
+install ( 
+    TARGETS sasha 
+    RUNTIME DESTINATION ${EXEC_DIR}
+    COMPONENT Runtime
+)
 
 target_link_libraries ( sasha 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
