@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { IPivotItemProps, Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { service, hasLogAccess } from "src/ESPLog";
@@ -8,6 +8,7 @@ import { useUserTheme } from "../hooks/theme";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
+import { WorkunitPersona } from "./controls/StateIcon";
 import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
@@ -38,6 +39,17 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const { themeV9 } = useUserTheme();
     const [workunit] = useWorkunit(wuid, true);
 
+    const wuidPivotRenderer = React.useMemo(() => {
+        return function (link?: IPivotItemProps,
+            defaultRenderer?: (link?: IPivotItemProps) => JSX.Element | null) {
+            if (!link || !defaultRenderer) return null;
+            return <span>
+                <WorkunitPersona wuid={wuid} showProtected={false} showWuid={false} />
+                {defaultRenderer({ ...link, itemIcon: undefined })}
+            </span>;
+        };
+    }, [wuid]);
+
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;
 
     const [logCount, setLogCount] = React.useState<number | string>("*");
@@ -59,7 +71,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
 
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
-            <PivotItem headerText={wuid} itemKey="summary" style={pivotItemStyle(size)} >
+            <PivotItem headerText={wuid} itemKey="summary" style={pivotItemStyle(size)} onRenderItemLink={wuidPivotRenderer}>
                 <WorkunitSummary wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Variables} itemCount={(workunit?.VariableCount || 0) + (workunit?.ApplicationValueCount || 0) + (workunit?.DebugValueCount || 0)} itemKey="variables" style={pivotItemStyle(size, 0)}>

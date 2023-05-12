@@ -131,13 +131,13 @@ export const StateIcon: React.FunctionComponent<StateIconProps> = ({
 
     return <FluentProvider theme={themeV9} className={ss.placeholder} >
         <ThemeProvider theme={theme} className={ss.placeholder} title={title}>
-            <div className={ss.iconPlaceholder}>
+            <span className={ss.iconPlaceholder}>
                 <FontIcon iconName={iconName} className={ss.icon} />
-            </div>
+            </span>
             {overlayName &&
-                <div className={ss.overlayPlaceholder} style={{ backgroundColor: overlayColor, borderColor: theme.palette.white }}>
+                <span className={ss.overlayPlaceholder} style={{ backgroundColor: overlayColor, borderColor: theme.palette.white }}>
                     <FontIcon iconName={overlayName} className={ss.overlay} style={{ color: overlayIconColor }} />
-                </div>
+                </span>
             }
         </ThemeProvider>
     </FluentProvider>;
@@ -145,13 +145,16 @@ export const StateIcon: React.FunctionComponent<StateIconProps> = ({
 
 interface WorkunitPersonaProps {
     wuid: string;
+    showProtected?: boolean;
+    showWuid?: boolean;
     size?: SizeT;
 }
 
 export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
     wuid,
+    showProtected = true,
+    showWuid = true,
     size = "sm"
-
 }) => {
 
     const [workunit] = useWorkunit(wuid);
@@ -217,11 +220,17 @@ export const WorkunitPersona: React.FunctionComponent<WorkunitPersonaProps> = ({
         }
     }, [workunit, workunit?.StateID, theme.semanticColors.errorIcon, theme.semanticColors.successIcon, theme.semanticColors.warningIcon]);
 
-    return <FluentProvider theme={themeV9} style={{ paddingLeft: 4, paddingRight: 4 }}>
-        <ThemeProvider theme={theme} title={workunit?.State} style={{ paddingLeft: 4, paddingRight: 4 }}>
-            <StateIcon iconName={workunit?.Protected ? "LockSolid" : "Unlock"} size={size} />
+    return <FluentProvider theme={themeV9} style={{ marginRight: 4, display: "inline-block" }}>
+        <ThemeProvider theme={theme} title={workunit?.State}>
+            {showProtected &&
+                <span style={{ marginLeft: 8, marginRight: 2 }}>
+                    <StateIcon iconName={workunit?.Protected ? "LockSolid" : "Unlock"} size={size} />
+                </span>
+            }
             <StateIcon iconName="Settings" overlayName={overlayName} overlayColor={overlayColor} size={size} />
-            <Text variant="xLarge" style={{ fontWeight: "bold", paddingLeft: "4px" }}>{wuid}</Text>
+            {showWuid &&
+                <Text variant="xLarge" style={{ fontWeight: "bold", paddingLeft: "4px" }}>{wuid}</Text>
+            }
         </ThemeProvider>
     </FluentProvider>;
 };
