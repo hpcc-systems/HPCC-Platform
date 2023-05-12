@@ -1311,6 +1311,7 @@ public:
             case DFUcmd_rename:
             case DFUcmd_replicate:
             case DFUcmd_import:
+            case DFUcmd_export:
                 {
                     IDFUfileSpec *dst = wu->queryUpdateDestination();
                     StringBuffer clusterName;
@@ -1332,6 +1333,7 @@ public:
                             dst->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
                     }
                 }
+                break;
             }
             // fill dstfile for commands that need it
             switch (cmd) {
@@ -1350,7 +1352,7 @@ public:
                         tmp.clear().append(tmpdlfn.get());
                         bool iswin;
                         if (!destination->getWindowsOS(iswin)) // would normally know!
-                            {
+                        {
                             // set default OS to cluster 0
                             Owned<IGroup> grp=destination->getGroup(0);
                             if (grp.get())
