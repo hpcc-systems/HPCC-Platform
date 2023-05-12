@@ -1317,6 +1317,7 @@ public:
             case DFUcmd_move:
             case DFUcmd_import:
             case DFUcmd_add:
+            case DFUcmd_export:
                 {
                     // keys default wrap for copy
                     if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))
@@ -1332,6 +1333,8 @@ public:
                                 destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
                         }
                     }
+                    if (DFUcmd_export == cmd)
+                        break; // the rest applies to creating a target logical file only
 
                     destination->getLogicalName(tmp.clear());
                     if (tmp.length())
@@ -1342,7 +1345,7 @@ public:
                         tmp.clear().append(tmpdlfn.get());
                         bool iswin;
                         if (!destination->getWindowsOS(iswin)) // would normally know!
-                            {
+                        {
                             // set default OS to cluster 0
                             Owned<IGroup> grp=destination->getGroup(0);
                             if (grp.get())
