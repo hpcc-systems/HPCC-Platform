@@ -2049,6 +2049,9 @@ void CFileIO::close()
 
 void CFileIO::flush()
 {
+    if (0 == (extraFlags & IFEnocache))
+        return;
+
     CriticalBlock procedure(cs);
 #ifdef F_FULLFSYNC
     if (fcntl(file, F_FULLFSYNC) != 0)
@@ -2057,8 +2060,7 @@ void CFileIO::flush()
 #endif
         throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::flush");
 #ifdef POSIX_FADV_DONTNEED
-    if (extraFlags & IFEnocache)
-        posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+    posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
 #endif
 }
 
