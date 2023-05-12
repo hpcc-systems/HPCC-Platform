@@ -13,6 +13,10 @@ import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
 
+const maximumTimeUntilRefresh = 8 * 60 * 60 * 1000;
+const startTimeOffset = 6 * 60 * 60 * 1000;
+const defaultStartDate = new Date(new Date().getTime() - startTimeOffset);
+
 const FilterFields: Fields = {
     containerName: { type: "cloud-containername", label: nlsHPCC.ContainerName },
     audience: {
@@ -37,8 +41,8 @@ const FilterFields: Fields = {
     procId: { type: "string", label: nlsHPCC.ProcessID },
     threadId: { type: "string", label: nlsHPCC.ThreadID },
     message: { type: "string", label: nlsHPCC.Message },
-    "StartDate": { type: "datetime", label: nlsHPCC.FromDate },
-    "EndDate": { type: "datetime", label: nlsHPCC.ToDate },
+    StartDate: { type: "datetime", label: nlsHPCC.FromDate },
+    EndDate: { type: "datetime", label: nlsHPCC.ToDate },
 };
 
 function formatQuery(_request: any): Partial<GetLogsExRequest> {
@@ -59,7 +63,7 @@ interface LogsProps {
     wuid?: string;
     filter?: Partial<GetLogsExRequest>;
 }
-const emptyFilter: Partial<GetLogsExRequest> = {};
+export const defaultFilter: Partial<GetLogsExRequest> = { StartDate: defaultStartDate };
 
 const levelMap = (level) => {
     switch (level) {
@@ -77,11 +81,13 @@ const levelMap = (level) => {
 
 export const Logs: React.FunctionComponent<LogsProps> = ({
     wuid,
-    filter = emptyFilter,
+    filter = defaultFilter,
 }) => {
 
     const hasFilter = React.useMemo(() => Object.keys(filter).length > 0, [filter]);
     const [showFilter, setShowFilter] = React.useState(false);
+
+    const now = React.useMemo(() => new Date(), []);
 
     //  Grid ---
     const gridStore = useConst(CreateLogsQueryStore());
@@ -90,8 +96,14 @@ export const Logs: React.FunctionComponent<LogsProps> = ({
         if (wuid !== undefined) {
             filter.jobId = wuid;
         }
+        if (typeof filter.StartDate === "string") {
+            filter.StartDate = new Date(filter.StartDate);
+        }
+        if (filter.StartDate && now.getTime() - filter.StartDate.getTime() > maximumTimeUntilRefresh) {
+            filter.StartDate = new Date(now.getTime() - startTimeOffset);
+        }
         return formatQuery(filter);
-    }, [filter, wuid]);
+    }, [filter, now, wuid]);
 
     const { Grid, GridPagination, refreshTable, copyButtons } = useFluentPagedGrid({
         persistID: "cloudlogs",
