@@ -3644,3 +3644,25 @@ void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver)
         }
     }
 }
+
+#ifdef NULL_DALIUSER_STACKTRACE
+static time_t lastNullUserLogEntry = (time_t)0;
+static CriticalSection nullUserLogCS;
+void logNullUser(IUserDescriptor * userDesc)
+{
+    StringBuffer userName;
+    if (userDesc)
+        userDesc->getUserName(userName);
+    if (nullptr == userDesc || userName.isEmpty())
+    {
+        CriticalBlock block(nullUserLogCS);
+        time_t timeNow = time(nullptr);
+        if (difftime(timeNow, lastNullUserLogEntry) >= 60)
+        {
+            IERRLOG("UNEXPECTED USER (NULL)");
+            PrintStackReport();
+            lastNullUserLogEntry = timeNow;
+        }
+    }
+}
+#endif
