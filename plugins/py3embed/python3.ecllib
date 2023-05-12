@@ -18,9 +18,11 @@
 EXPORT Language := SERVICE : plugin('py3embed')
   integer getEmbedContext():cpp,pure,fold,namespace='py3embed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';
   STRING syntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):cpp,pure,namespace='py3embed',entrypoint='syntaxCheck',fold;
+  integer py3GetEmbedContext():c,pure,fold,prototype='extern "C" IEmbedContext* py3GetEmbedContext()';
+  STRING py3SyntaxCheck(const varstring funcname, UTF8 body, const varstring argnames, const varstring compileOptions, const varstring persistOptions):c,pure,fold;
 END;
-EXPORT getEmbedContext := Language.getEmbedContext;
-EXPORT syntaxCheck := Language.syntaxCheck;
+EXPORT getEmbedContext := Language.py3GetEmbedContext;
+EXPORT syntaxCheck := Language.py3SyntaxCheck;
 EXPORT boolean supportsImport := true;
 EXPORT boolean supportsScript := true;
 EXPORT boolean prebind := true;
