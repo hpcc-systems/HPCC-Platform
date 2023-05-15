@@ -41,6 +41,12 @@
   <emphasis>text</emphasis> string to the eclagent.log file for the
   workunit.</para>
 
+  <para>In a containerized platform deployment, this action writes the
+  <emphasis>text</emphasis> string to the eclagent pod's log, accessible using
+  this command:</para>
+
+  <para><programlisting>kubectl logs &lt;podname&gt;</programlisting></para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT STD;
