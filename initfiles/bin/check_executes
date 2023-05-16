@@ -84,6 +84,7 @@ if [ $retVal -ne 0 ]; then
     echo "Generated info from core file" | tee -a $POST_MORTEM_DIR/info.log
     rm core
   fi
+  dmesg -T > $POST_MORTEM_DIR/dmesg.log
   if [[ -n "${PMD_DALISERVER}" ]] && [[ -n "${PMD_WORKUNIT}" ]]; then
     wutool postmortem ${PMD_WORKUNIT} DALISERVER=${PMD_DALISERVER} PMD=${POST_MORTEM_DIR}
     echo Updated workunit ${PMD_WORKUNIT}
