@@ -2792,11 +2792,11 @@ public:
             else
                 activityText.append("ac").append(allocatorId & MAX_ACTIVITY_ID);
 
-            target.addStatistic(SSTallocator, activityText.str(), StSizePeakMemory, NULL, results[j]->usage, results[j]->allocations, 0, StatsMergeMax);
+            target.addStatistic(SSTallocator, activityText.str(), StSizePeakRowMemory, NULL, results[j]->usage, results[j]->allocations, 0, StatsMergeMax);
         }
         delete [] results;
 
-        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, totalUsed, 1, 0, StatsMergeMax);
+        target.addStatistic(SSTglobal, NULL, StSizePeakRowMemory, NULL, totalUsed, 1, 0, StatsMergeMax);
     }
 };
 
@@ -4536,7 +4536,7 @@ private:
     CHugeHeap hugeHeap;
     ITimeLimiter *timeLimit;
     DataBuffer *activeBuffs;
-    unsigned peakPages;
+    std::atomic<unsigned> peakPages;
     unsigned dataBuffs;
     unsigned dataBuffPages;
     unsigned reportWalkFreeThreshold = 256;
@@ -4625,7 +4625,7 @@ public:
         activeRowManagers--;
         if (memTraceLevel >= 2)
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager d-tor pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p num=%u",
-                    maxPageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
+                    maxPageLimit, peakPages.load(), dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
 
         //Ensure that the rowHeaps release any references to the fixed heaps, and no longer call back when they
         //are destroyed
@@ -5210,7 +5210,19 @@ public:
         }
         if (map)
             map->reportStatistics(target, detail, allocatorCache);
-        target.addStatistic(SSTglobal, NULL, StSizePeakMemory, NULL, peakPages * HEAP_ALIGNMENT_SIZE, 1, 0, StatsMergeMax);
+        target.addStatistic(SSTglobal, NULL, StSizePeakRowMemory, NULL, peakPages * HEAP_ALIGNMENT_SIZE, 1, 0, StatsMergeMax);
+    }
+
+    virtual void reportSummaryStatistics(CRuntimeStatisticCollection & target)
+    {
+        unsigned pageCount = dataBuffPages + totalHeapPages.load(std::memory_order_acquire);
+        target.addStatistic(StSizeRowMemory, pageCount * HEAP_ALIGNMENT_SIZE);
+        target.addStatistic(StSizePeakRowMemory, peakPages * HEAP_ALIGNMENT_SIZE);
+    }
+
+    virtual void resetPeakMemory()
+    {
+        peakPages = dataBuffPages + totalHeapPages.load(std::memory_order_acquire);
     }
 
     void restoreLimit(unsigned numRequested)
@@ -5425,7 +5437,7 @@ protected:
         else
         {
             logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p cnt(%u)",
-                          maxPageLimit, peakPages, dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
+                          maxPageLimit, peakPages.load(), dataBuffs, dataBuffPages, possibleGoers.load(), this, activeRowManagers.load());
             Owned<IActivityMemoryUsageMap> map = getActivityUsage();
             map->report(logctx, allocatorCache);
         }
@@ -5951,7 +5963,7 @@ void * CHugeHeap::doAllocate(memsize_t _size, unsigned allocatorId, unsigned max
     {
         unsigned numPages = head->sizeInPages();
         logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %" I64F "u) allocated new HugeHeaplet size %" I64F "u - addr=%p pages=%u pageLimit=%u peakPages=%u rowMgr=%p",
-            (unsigned __int64) _size, (unsigned __int64) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, rowManager->getPageLimit(), rowManager->peakPages, this);
+            (unsigned __int64) _size, (unsigned __int64) (numPages*HEAP_ALIGNMENT_SIZE), head, numPages, rowManager->getPageLimit(), rowManager->peakPages.load(), this);
     }
 
     CriticalBlock b(heapletLock);
@@ -6154,7 +6166,7 @@ void * CChunkedHeap::doAllocateRow(unsigned allocatorId, unsigned maxSpillCost)
 
     if (memTraceLevel >= 3 && (memTraceLevel >= 5 || chunkSize > 32000))
         logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
-                chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages, this);
+                chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages.load(), this);
 
     {
         CriticalBlock block(heapletLock);
@@ -6272,7 +6284,7 @@ unsigned CChunkedHeap::doAllocateRowBlock(unsigned allocatorId, unsigned maxSpil
 
     if (memTraceLevel >= 5 || (memTraceLevel >= 3 && chunkSize > 32000))
         logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::allocate(size %u) allocated new FixedSizeHeaplet size %u - addr=%p pageLimit=%u peakPages=%u rowMgr=%p",
-                chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages, this);
+                chunkSize, chunkSize, donorHeaplet, rowManager->getPageLimit(), rowManager->peakPages.load(), this);
 
     {
         CriticalBlock b(heapletLock);

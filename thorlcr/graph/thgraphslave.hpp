@@ -432,6 +432,7 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     CriticalSection progressCrit;
     bool doneInit = false;
     std::atomic_bool progressActive;
+    ProcessInfo processStartInfo;
 
 public:
 
