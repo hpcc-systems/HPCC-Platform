@@ -176,8 +176,8 @@ protected:
 
     bool authorizeViewScope(ISecUser & user, ISecResourceList * resources)
     {
-        int nResources = resources->count();
-        for (int ri = 0; ri < nResources; ri++)
+        unsigned nResources = resources->count();
+        for (unsigned ri = 0; ri < nResources; ri++)
         {
             ISecResource* res = resources->queryResource(ri);
             if(res != nullptr)

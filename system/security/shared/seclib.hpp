@@ -385,7 +385,7 @@ interface ISecResourceList : extends ISecPropertyList
     virtual bool addCustomResource(const char * name, const char * config) = 0;
     virtual ISecResource * getResource(const char * feature) = 0;
     virtual ISecResource * queryResource(unsigned seq) = 0;
-    virtual int count() = 0;
+    virtual unsigned count() = 0;
     virtual const char * getName() = 0;
     virtual StringBuffer & toString(StringBuffer & s) = 0;
 };

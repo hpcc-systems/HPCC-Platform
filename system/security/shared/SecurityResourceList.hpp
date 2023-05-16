@@ -136,7 +136,7 @@ public:
             return NULL;
     }
 
-    virtual int count()
+    virtual unsigned count()
     {
         return m_rlist.length();
     }
@@ -166,8 +166,8 @@ public:
 
     StringBuffer& toString(StringBuffer& s)
     {
-        s.appendf("name=%s, count=%d.", m_name.get(), count());
-        for (int i=0; i<count(); i++)
+        s.appendf("name=%s, count=%u.", m_name.get(), count());
+        for (unsigned i=0; i<count(); i++)
         {
             s.appendf("\nItem %d: ",i+1);
             queryResource(i)->toString(s);
