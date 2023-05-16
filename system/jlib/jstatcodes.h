@@ -287,6 +287,10 @@ enum StatisticKind
     StSizeSocketRead,
     StTimeSocketReadIO,
     StCycleSocketReadIOCycles,
+    StSizeMemory,   // StSizePeakMemory above
+    StSizeRowMemory,
+    StSizePeakRowMemory,
+    StSizeAgentSend,
     StMax,
 
     //For any quantity there is potentially the following variants.

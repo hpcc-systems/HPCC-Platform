@@ -2519,19 +2519,19 @@ public:
     void getSystemTiming()
     {
         const unsigned num = 10000;
-        CpuInfo temp;
+        SystemInfo temp;
         CCycleTimer timer;
         for (unsigned i=0; i < num; i++)
-            temp.getSystemTimes();
+            temp.update(ReadAllInfo);
         DBGLOG("Time to get system cpu activity = %" I64F "uns", timer.elapsedNs()/num);
     }
     void getProcessTiming()
     {
         const unsigned num = 10000;
-        CpuInfo temp;
+        ProcessInfo temp;
         CCycleTimer timer;
         for (unsigned i=0; i < num; i++)
-            temp.getProcessTimes();
+            temp.update(ReadAllInfo);
         DBGLOG("Time to get process cpu activity = %" I64F "uns", timer.elapsedNs()/num);
     }
     void runAllTests()
@@ -2541,19 +2541,19 @@ public:
         getProcessTiming();
         getProcessTiming(); // Second call seems to be faster - so more representative
 
-        CpuInfo prevSystem;
-        CpuInfo prevProcess;
-        CpuInfo curProcess(true, false);
-        CpuInfo curSystem(false, true);
+        SystemInfo prevSystem;
+        ProcessInfo prevProcess;
+        ProcessInfo curProcess(ReadAllInfo);
+        SystemInfo curSystem(ReadAllInfo);
         volatile unsigned x = 0;
         for (unsigned i=0; i < 10; i++)
         {
             prevProcess = curProcess;
             prevSystem = curSystem;
-            curProcess.getProcessTimes();
-            curSystem.getSystemTimes();
-            CpuInfo deltaProcess = curProcess - prevProcess;
-            CpuInfo deltaSystem = curSystem - prevSystem;
+            curProcess.update(ReadAllInfo);
+            curSystem.update(ReadAllInfo);
+            SystemProcessInfo deltaProcess = curProcess - prevProcess;
+            SystemProcessInfo deltaSystem = curSystem - prevSystem;
             if (deltaSystem.getTotalNs())
             {
                 DBGLOG(" System: User(%u) System(%u) Total(%u) %u%% Ctx(%" I64F "u)  ",
