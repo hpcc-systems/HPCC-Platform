@@ -477,6 +477,8 @@ void CDiskWriteSlaveActivityBase::close()
                 // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
                 tmpFileIO.setown(outputIO.getClear());
                 mergeStats(inactiveStats, tmpFileIO, diskWriteRemoteStatistics);
+                if (tmpUsage)
+                    tmpUsage->setSize(tmpFileIO->getStatistic(StSizeDiskWrite));
             }
             tmpFileIO->close(); // NB: close now, do not rely on close in dtor
         }
@@ -555,7 +557,12 @@ void CDiskWriteSlaveActivityBase::abort()
 void CDiskWriteSlaveActivityBase::gatherActiveStats(CRuntimeStatisticCollection &activeStats) const
 {
     PARENT::gatherActiveStats(activeStats);
-    mergeStats(activeStats, outputIO, diskWriteRemoteStatistics);
+    if (outputIO)
+    {
+        mergeStats(activeStats, outputIO, diskWriteRemoteStatistics);
+        if (tmpUsage) // Update tmpUsage file size (Needed to calc inter-graph spill stats)
+            tmpUsage->setSize(outputIO->getStatistic(StSizeDiskWrite));
+    }
     activeStats.setStatistic(StPerReplicated, replicateDone);
 }
 
@@ -671,8 +678,6 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     modifiedTime.getTime(hour, min, sec, nanosec);
     modifiedTime.setTime(hour, min, sec, 0);
     modifiedTime.serialize(mb);
-    if (tmpUsage)
-        tmpUsage->setSize(sz);
 }
 
 /////////////

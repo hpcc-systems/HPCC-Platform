@@ -2691,7 +2691,6 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
         sendActivityInitData(); // has to be done at least once
         // NB: At this point, on the slaves, the graphs will start
     }
-    totalActiveSpillSize = graphSpillSize = 0;
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())
     {
@@ -2722,11 +2721,6 @@ void CMasterGraph::handleSlaveDone(unsigned node, MemoryBuffer &mb)
         sdMb.setBuffer(len, (void *)d);
         act->slaveDone(node, sdMb);
     }
-    offset_t activeSpillSize, nodeGraphSpill;
-    mb.read(nodeGraphSpill);
-    mb.read(activeSpillSize);
-    totalActiveSpillSize += activeSpillSize;
-    graphSpillSize += nodeGraphSpill;
 }
 
 void CMasterGraph::getFinalProgress()
@@ -2806,7 +2800,6 @@ void CMasterGraph::getFinalProgress()
             }
         }
     }
-    jobM->updateActiveSpillSize(graphSpillSize, totalActiveSpillSize);
 }
 
 void CMasterGraph::done()

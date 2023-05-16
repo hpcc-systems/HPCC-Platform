@@ -93,9 +93,6 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     CriticalSection exceptCrit;
     bool sentGlobalInit = false;
     CThorStatsCollection graphStats;
-    offset_t totalActiveSpillSize = 0; // total inter-graph spill
-    offset_t graphSpillSize = 0;
-
     CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
 
     void sendQuery();
@@ -164,8 +161,6 @@ class graphmaster_decl CJobMaster : public CJobBase
     Owned<CSlaveMessageHandler> slaveMsgHandler;
     SocketEndpoint agentEp;
     CriticalSection sendQueryCrit, spillCrit;
-    RelaxedAtomic<offset_t> peakSpillSize{0};  // peak inter-graph spill
-    RelaxedAtomic<offset_t> totalSpillSize{0}; // total graph spill
 
     void initNodeDUCache();
 
@@ -201,14 +196,6 @@ public:
         CriticalBlock b(wuDirty);
         dirty = true;
     }
-// Track spills
-    virtual void updateActiveSpillSize(offset_t graphSpillSize, offset_t activeSpillSize)
-    {
-        totalSpillSize.fetch_add(graphSpillSize);
-        peakSpillSize.store_max(activeSpillSize);
-    }
-    virtual offset_t getTotalSpillSize() const { return totalSpillSize; }
-    virtual offset_t getPeakSpillSize() const { return peakSpillSize; }
 // CJobBase impls.
     virtual mptag_t allocateMPTag();
     virtual void freeMPTag(mptag_t tag);

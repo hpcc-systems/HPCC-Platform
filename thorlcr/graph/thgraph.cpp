@@ -2376,21 +2376,17 @@ void CGraphTempHandler::clearTemps()
     tmpFiles.kill();
 }
 
-void CGraphTempHandler::serializeUsageStats(MemoryBuffer &mb, graph_id gid)
+offset_t CGraphTempHandler::getActiveUsageSize()
 {
     CriticalBlock b(crit);
     Owned<IFileUsageIterator> iter = getIterator();
     offset_t activeSpillSize = 0;
-    offset_t graphSpillSize = 0;
     ForEach(*iter)
     {
         CFileUsageEntry &entry = iter->query();
-        if (entry.queryGraphId() == gid)
-            graphSpillSize += entry.getSize();
         activeSpillSize += entry.getSize();
     }
-    mb.append(graphSpillSize);
-    mb.append(activeSpillSize);
+    return activeSpillSize;
 }
 /////
 

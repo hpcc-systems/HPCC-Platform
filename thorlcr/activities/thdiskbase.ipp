@@ -64,7 +64,6 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave);
     virtual void done();
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb);
-    virtual void getActivityStats(IStatisticGatherer & stats);
 };
 
 
