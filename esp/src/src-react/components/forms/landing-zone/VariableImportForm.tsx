@@ -38,7 +38,7 @@ const defaultValues: VariableImportFormValues = {
     sourceFormat: "recfmv",
     overwrite: false,
     replicate: false,
-    nosplit: false,
+    nosplit: true,
     noCommon: true,
     compress: false,
     failIfNoSourceFile: false,
@@ -276,7 +276,7 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                             control={control} name="nosplit"
                             render={({
                                 field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} />}
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} disabled={true} />}
                         /></td>
                         <td><Controller
                             control={control} name="noCommon"
