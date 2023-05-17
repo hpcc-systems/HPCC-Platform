@@ -124,6 +124,7 @@ protected:
     void sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* msg);
     bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
+    bool isMalformedUserName(const char *userName);
 
 public:
     IMPLEMENT_IINTERFACE;
