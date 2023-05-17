@@ -761,7 +761,18 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 # This is only required when mounting a remote filing systems from another container or machine.
 # NB: this includes where the filing system is on the containers host machine .
 # Examples include, minikube, docker for desktop, or NFS mounted storage.
-{{- $permCmd := printf "chown -R %v:%v %s || true" .uid .gid .volumePath }}
+{{- $permCmd := "" -}}
+{{- $uid := .uid -}}
+{{- $gid := .gid -}}
+{{- range $index, $volume := .volumes }}
+ {{- if ne $index 0 }}
+  {{- $permCmd = printf "%s & " $permCmd -}}
+ {{- end -}}
+ {{- $permCmd = printf "%s(chown -R %v:%v %s || true)" $permCmd $uid $gid $volume.path }}
+{{- end }}
+{{- if gt (len .volumes) 1 -}}
+ {{- $permCmd = printf "%s; wait" $permCmd -}}
+{{- end }}
 - name: volume-mount-hack
   image: {{ .root.Values.global.busybox | default "busybox:stable" }}
   command: [
@@ -770,8 +781,10 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
              "{{ $permCmd }}"
            ]
   volumeMounts:
-    - name: {{ .volumeName | quote}}
-      mountPath: {{ .volumePath | quote }}
+{{- range $volume := .volumes }}
+    - name: {{ $volume.name | quote}}
+      mountPath: {{ $volume.path | quote }}
+{{- end }}
 {{- end }}
 
 
@@ -788,6 +801,7 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeCategories := .includeCategories | default list -}}
 {{- $includeNames := .includeNames | default list -}}
+{{- $planesToChown := list -}}
 {{- $component := .me -}}
 {{- range $plane := $planes -}}
  {{- if not $plane.disabled -}}
@@ -795,11 +809,18 @@ NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platfor
    {{- $mountpath := $plane.prefix -}}
    {{- $componentMatches := or (not (hasKey $plane "components")) (has $component.name $plane.components) -}}
    {{- if and (or (has $plane.category $includeCategories) (has $plane.name $includeNames)) $componentMatches }}
-    {{- $volumeName := (printf "%s-pv" $plane.name) -}}
-   {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+    {{- $planesToChown = append $planesToChown $plane -}}
    {{- end -}}
   {{- end -}}
  {{- end -}}
+{{- end -}}
+{{- $volumes := list -}}
+{{- if len $planesToChown -}}
+ {{- range $plane := $planesToChown -}}
+  {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+  {{- $volumes = append $volumes (dict "name" $volumeName "path" $plane.prefix) -}}
+ {{- end -}}
+ {{- include "hpcc.changeMountPerms" (dict "root" $root "uid" $uid "gid" $gid "volumes" $volumes) | nindent 0 }}
 {{- end -}}
 {{- end -}}
 
