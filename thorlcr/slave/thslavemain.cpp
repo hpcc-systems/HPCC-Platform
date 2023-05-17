@@ -128,7 +128,9 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         mergeConfiguration(*mergedGlobals, *masterComponentConfig);
         replaceComponentConfig(mergedGlobals);
         globals.set(mergedGlobals);
-
+        // The slave doesn't load configuration directly (it has been serialized from the master)
+        // manually invoke any installed config CB's
+        executeConfigUpdaterCallbacks();
 #ifdef _DEBUG
         unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
         if (mySlaveNum == holdSlave)

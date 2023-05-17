@@ -9710,7 +9710,7 @@ protected:
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
-        pipe.setown(createPipeProcess());
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         if(!pipe->run(NULL, cmd, ".", false, true, true, 0x10000))
         {
             // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
@@ -9939,7 +9939,7 @@ private:
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
-        pipe.setown(createPipeProcess());
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         if(!pipe->run(NULL, cmd, ".", true, true, true, 0x10000))
         {
             // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
@@ -10083,7 +10083,7 @@ private:
     void openPipe(char const * cmd)
     {
         pipeCommand.setown(cmd);
-        pipe.setown(createPipeProcess());
+        pipe.setown(createPipeProcess(allowedPipePrograms));
         if(!pipe->run(NULL, cmd, ".", true, false, true, 0x10000))
         {
             // NB: pipe->run can't rely on the child process failing fast enough to return false here, failure picked up later with stderr context.
