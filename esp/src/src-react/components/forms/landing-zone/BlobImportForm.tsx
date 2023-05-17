@@ -214,7 +214,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                                     rules={{
                                         required: nlsHPCC.ValidationErrorTargetNameRequired,
                                         pattern: {
-                                            value: /^(?:[\/\\]?[-a-z0-9_]+[\/\\])+([-a-z0-9 _\.]+)$/i,
+                                            value: /^(?:[\/\\]?[-a-z0-9\*_]+[\/\\])+([-a-z0-9 \*_\.]+)$/i,
                                             message: nlsHPCC.ValidationErrorTargetNameInvalid
                                         }
                                     }}
