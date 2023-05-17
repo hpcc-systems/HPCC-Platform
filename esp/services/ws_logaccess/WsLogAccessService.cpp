@@ -13,6 +13,7 @@ bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessI
     bool success = true;
     if (queryRemoteLogAccessor())
     {
+        double clientVer = context.getClientVersion();
         IPropertyTree *logColumnDefinitions = queryRemoteLogAccessor()->queryLogMap();
         if (!logColumnDefinitions)
         {
@@ -21,8 +22,6 @@ bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessI
         }
         else
         {
-            double clientVer = context.getClientVersion();
-
             if (clientVer >= 1.04)
             {
                 IArrayOf<IEspLogColumn> logColumns;
@@ -82,6 +81,11 @@ bool Cws_logaccessEx::onGetLogAccessInfo(IEspContext &context, IEspGetLogAccessI
                 }
                 resp.setColumns(logColumns);
             }
+        }
+
+        if (clientVer >= 1.05)
+        {
+            resp.setSupportsResultPaging(queryRemoteLogAccessor()->supportsResultPaging());
         }
 
         resp.setRemoteLogManagerType(queryRemoteLogAccessor()->getRemoteLogAccessType());
