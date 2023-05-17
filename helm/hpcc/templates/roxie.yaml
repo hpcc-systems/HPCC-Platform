@@ -421,13 +421,15 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-agent" "name" $name "certificate" $roxie.certificate "external" true) | indent 6 }}
 {{ include "hpcc.addUDPCertificateVolume" (dict "root" $ "component" "udpkey" "name" $udpkeyname) | indent 6 }}
 {{- end }}
-
 ---
 
 {{- end }}
 {{- end }}
 ---
 {{ include "hpcc.addEgress" (dict "root" $ "me" $roxie "labels" $commonCtx.instanceNames) }}
+{{- if hasKey . "hpa" }}
+ {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" $roxie.name "kind" "Deployment" "hpa" $roxie.hpa) }}
 {{- end }}
 {{- end }}
- 
+{{- end }}
+

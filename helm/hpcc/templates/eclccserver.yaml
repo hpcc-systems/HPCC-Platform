@@ -194,6 +194,10 @@ spec:
       - name: hpccbundles
         emptyDir: {}
 ---
+{{- if hasKey . "hpa" }}
+ {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+{{- end }}
+---
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap")) }}
 ---
