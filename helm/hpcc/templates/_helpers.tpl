@@ -2221,3 +2221,99 @@ Fills "result" dictionary with "planeCategories" and "namedPlanes"
 {{- $_ := set .result "planeCategories" $planeCategories -}}
 {{- $_ := set .result "namedPlanes" $namedPlanes -}}
 {{- end -}}
+
+{{/*
+A template to generate a HPA Behavior.scaleUp/Down clause for HPA object
+Pass in dict behaviorscale section
+*/}}
+{{- define "hpcc.addHPABehaviorScale" -}}
+{{- if .behaviorScale }}
+ {{- if hasKey .behaviorScale "stabilizationWindowSeconds" -}}
+stabilizationWindowSeconds: {{ .behaviorScale.stabilizationWindowSeconds }}
+ {{- end -}}
+ {{- if hasKey .behaviorScale "policies" }}
+policies:
+  {{- range $policy := .behaviorScale.policies }}
+- type: {{ $policy.type }}
+  value: {{ $policy.value }}
+  periodSeconds: {{ $policy.periodSeconds }}
+  {{- end -}}
+  {{- if hasKey .behaviorScale "selectPolicy" }}
+selectPolicy: {{ .behaviorScale.selectPolicy }}
+  {{- end }}
+ {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+A template to generate a HorizontalPodAutoscaler for a named workload resource (such as a Deployment or StatefulSet)
+Pass in dict with workload resource name and kind (Deployment|ReplicaSet|StatefulSet|ReplicationController), and hpa section
+*/}}
+{{- define "hpcc.addHorizontalPodAutoscaler" }}
+ {{- if .name -}}
+  {{- if .hpa -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ printf "%s-hpa" .name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: {{ .kind }}
+    name: {{ printf "%s" .name }}
+  minReplicas: {{ (hasKey .hpa "minReplicas") | ternary .hpa.minReplicas 1 }}
+  maxReplicas: {{ .hpa.maxReplicas }}
+   {{- if hasKey .hpa "behavior" }}
+  behavior: 
+    {{- if hasKey .hpa.behavior "scaleDown" }}
+    scaleDown:
+      {{- include "hpcc.addHPABehaviorScale" (dict "behaviorScale" .hpa.behavior.scaleDown) | nindent 6 }}
+    {{- end }}
+    {{- if hasKey .hpa.behavior "scaleUp" }}
+    scaleUp:
+      {{- include "hpcc.addHPABehaviorScale" (dict "behaviorScale" .hpa.behavior.scaleUp) | nindent 6 }}
+    {{- end }}
+   {{- end }}
+  metrics:
+   {{- range $metric := .hpa.metrics }}
+  - type: {{ $metric.type }}
+    {{ lower $metric.type }}:
+     {{- if eq $metric.type "Pods" }}
+      metric:
+        name: {{ $metric.name }}
+      {{- if hasKey $metric "selector" }}
+        selector: {{ $metric.selector }}
+      {{- end }}
+     {{- else if eq $metric.type "Object" }}
+      {{- if hasKey $metric "describedObject" }}
+      metric:
+        name: {{ $metric.name }}
+      describedObject:
+        apiVersion: {{ $metric.describedObject.apiVersion }}
+        kind: {{ $metric.describedObject.kind }}
+        name: {{ $metric.describedObject.name }}
+      {{- end }}
+     {{- else if eq $metric.type "External"}}
+      metric:
+        name: {{ $metric.name }}
+      {{- if hasKey $metric "selector" }}
+        selector:
+          matchLabels:
+            {{- toYaml $metric.selector.matchLabels | nindent 12 }}
+      {{- end }}
+     {{- else if eq $metric.type "Resource"}}
+      name: {{ $metric.name }}
+     {{- end }}
+      target:
+        type: {{ $metric.target.type }}
+      {{- if eq $metric.target.type "Utilization" }}
+        averageUtilization: {{ $metric.target.value }}
+      {{- else if eq $metric.target.type "AverageValue" }}
+        averageValue: {{ $metric.target.value }}
+      {{- else if eq $metric.target.type "Value" }}
+        value: {{ $metric.target.value }}
+     {{- end }}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}

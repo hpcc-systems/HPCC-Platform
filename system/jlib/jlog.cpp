@@ -28,6 +28,7 @@
 #include "jmisc.hpp"
 #include "jprop.hpp"
 #include "lnuid.h"
+#include <sys/stat.h>
 
 using namespace ln_uid;
 
@@ -58,6 +59,38 @@ static FILE *getNullHandle()
 #else
     return fopen("/dev/null","w");
 #endif
+}
+
+static bool stdErrIsDevNull()
+{
+    bool result = false;
+
+#ifndef _WIN32
+    int fd2 = fileno(stderr);
+    if (fd2 >= 0)
+    {
+        struct stat stdErr;
+        struct stat devNull;
+        int srtn = fstat(fd2, &stdErr);
+        if (srtn == 0)
+        {
+            if (S_ISCHR(stdErr.st_mode))
+            {
+                srtn = stat("/dev/null", &devNull);
+                if (srtn == 0)
+                {
+                    if ( (stdErr.st_ino == devNull.st_ino) &&
+                         (stdErr.st_dev == devNull.st_dev) )
+                    {
+                        result = true;
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+    return result;
 }
 
 LogMsgSysInfo::LogMsgSysInfo(LogMsgId _id, unsigned port, LogMsgSessionId session)
@@ -1795,7 +1828,11 @@ void CLogMsgManager::resetMonitors()
     suspendChildren();
     removeAllMonitors();
     Owned<ILogMsgFilter> defaultFilter = getDefaultLogMsgFilter();
-    addMonitor(theStderrHandler, defaultFilter);
+
+    // dont add stderr log handler if it has been redirected to /dev/null ...
+
+    if (!stdErrIsDevNull())
+        addMonitor(theStderrHandler, defaultFilter);
     unsuspendChildren();
 }
 

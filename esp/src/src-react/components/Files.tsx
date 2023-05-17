@@ -86,7 +86,7 @@ interface FilesProps {
 }
 
 const emptyFilter = {};
-const defaultSort = { attribute: undefined, descending: false };
+export const defaultSort = { attribute: "Modified", descending: true };
 
 export const Files: React.FunctionComponent<FilesProps> = ({
     filter = emptyFilter,

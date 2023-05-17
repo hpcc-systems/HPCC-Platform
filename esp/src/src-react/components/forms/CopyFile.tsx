@@ -69,7 +69,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                         const request = { ...data, sourceLogicalName: logicalFiles[0] };
                         FileSpray.Copy({ request: request }).then(response => {
                             closeForm();
-                            pushUrl(`/files/${data.destGroup}/${request.destLogicalName}`);
+                            pushUrl(`/dfuworkunits/${response.CopyResponse.result}`);
                         });
                     } else {
                         logicalFiles.forEach((logicalFile, idx) => {

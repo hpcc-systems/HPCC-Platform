@@ -400,7 +400,6 @@ define([
                     var fields = query("input", dom.byId(this.id + formID));
                     lang.mixin(request, {
                         sourceIP: item.NetAddress,
-                        nosplit: true
                     });
                     var sourcePath = "";
                     arrayUtil.forEach(selections, function (item, idx) {

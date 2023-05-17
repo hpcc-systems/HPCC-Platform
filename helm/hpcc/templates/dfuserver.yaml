@@ -98,6 +98,10 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dfuserver" "external" false) | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 ---
+{{- if hasKey . "hpa" }}
+ {{- include "hpcc.addHorizontalPodAutoscaler" (dict "name" .name "kind" "Deployment" "hpa" .hpa) }}
+{{- end }}
+---
 kind: ConfigMap
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.dfuServerConfigMap")) }}
 ---

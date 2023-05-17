@@ -96,6 +96,7 @@ namespace xpp {
     virtual std::map<string, const SXT_CHAR*>::const_iterator getNsBegin() const = 0;
     virtual std::map<string, const SXT_CHAR*>::const_iterator getNsEnd() const = 0;
     virtual void setSupportNamespaces(bool enable) = 0;
+    virtual void setRequestNamespaces(bool enable) = 0;
     virtual bool skipSubTreeEx() = 0;
     virtual int skipSubTree() = 0;
     virtual const SXT_STRING getPosDesc() const = 0;
@@ -200,6 +201,14 @@ namespace xpp {
       "namespace support can only be set before parsing element markup"));
       }  
       supportNs = enable;
+    }
+
+    virtual void setRequestNamespaces(bool enable) override {
+      if(elStackDepth > 0 || seenRootElement) {
+        throw XmlPullParserException(string(
+        "namespace requests can only be set before parsing element markup"));
+      }
+      requestNs = enable;
     }
 
 
@@ -502,6 +511,8 @@ namespace xpp {
                   }
                }
 
+                if (requestNs)
+                  ++stag.attEnd;
 
                 ++el.prefixesEnd;
                 //prefix2Ns[ att.localName ] = new string(att.value);
@@ -516,6 +527,9 @@ namespace xpp {
               "default namespace was alredy declared by xmlns attribute")
                     +tokenizer.getPosDesc(), tokenizer.getLineNumber(), tokenizer.getColumnNumber());            
                 el.defaultNs = nsBufAdd(att.value);
+
+                if (requestNs)
+                  ++stag.attEnd;
                 //el.defaultNsValid =  true;
               } else {
                 ++stag.attEnd;
@@ -608,7 +622,9 @@ namespace xpp {
       }
       int n = stag.attEnd;
       for(int i = 0; i < n; ++i) {
-        if(stag.attArr[i].prefixValid) {
+        if(supportNs && requestNs && ("xmlns" == stag.attArr[i].prefix || "xmlns" == stag.attArr[i].localName)) {
+          stag.attArr[i].uri = stag.attArr[i].value;
+        } else if(stag.attArr[i].prefixValid) {
           SXT_STRING pfx = stag.attArr[i].prefix;
           //if(prefix2Ns[ pfx ]  == NULL)
           if(prefix2Ns.find( pfx ) == prefix2Ns.end())
@@ -674,6 +690,7 @@ namespace xpp {
       seenRootElement = false;
       //elContent = "";
       supportNs = true;
+      requestNs = false;
       reset();
     }
 
@@ -825,6 +842,7 @@ namespace xpp {
   
       // mapping namespace prefixes to uri
       bool supportNs;
+      bool requestNs;
       //map< SXT_STRING, SXT_STRING*, less<SXT_STRING> > prefix2Ns;
       SXT_CHAR* nsBuf;
       int nsBufPos;

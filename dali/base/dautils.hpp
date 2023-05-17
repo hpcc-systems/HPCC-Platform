@@ -577,4 +577,10 @@ inline unsigned calcStripeNumber(unsigned partNum, const char *lfnName, unsigned
 interface INamedGroupStore;
 extern da_decl void remapGroupsToDafilesrv(IPropertyTree *file, INamedGroupStore *resolver);
 
+#ifdef NULL_DALIUSER_STACKTRACE
+extern da_decl void logNullUser(IUserDescriptor *userDesc);
+#else
+inline void logNullUser(IUserDescriptor *userDesc) { }
+#endif
+
 #endif

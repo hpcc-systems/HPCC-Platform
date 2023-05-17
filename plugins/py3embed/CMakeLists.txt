@@ -53,7 +53,7 @@ elseif(NOT APPLE)
     set_target_properties(py3embed PROPERTIES NO_SONAME 1)
 endif()
 
-if (CONTAINERIZED)
+if (CONTAINERIZED OR WIN32)
 install(
     TARGETS py3embed
     DESTINATION plugins

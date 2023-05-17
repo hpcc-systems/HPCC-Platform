@@ -79,7 +79,7 @@ interface WorkunitsProps {
 }
 
 const emptyFilter: { [id: string]: any } = {};
-const defaultSort = { attribute: "Wuid", descending: true };
+export const defaultSort = { attribute: "Wuid", descending: true };
 
 export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     filter = emptyFilter,

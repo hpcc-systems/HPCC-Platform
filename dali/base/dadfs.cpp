@@ -289,7 +289,7 @@ public:
         case DFSERR_LookupAccessDenied:
         {
             StringBuffer ip;
-            queryMyNode()->endpoint().getIpText(ip);
+            queryCoven().queryGroup().queryNode(0).endpoint().getIpText(ip);
             return str.appendf(" Lookup access denied for scope %s at Dali %s", errstr.str(), ip.str());
         }
         case DFSERR_CreateAccessDenied:
@@ -1333,19 +1333,9 @@ public:
 
 static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *user)
 {
+    logNullUser(user);//stack trace if NULL user
     if (!user)
     {
-#ifdef NULL_DALIUSER_STACKTRACE
-        StringBuffer sb;
-        if (user)
-            user->getUserName(sb);
-        if (sb.length()==0)
-        {
-            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor() %d",__LINE__);
-            //following debug code to be removed
-            PrintStackReport();
-        }
-#endif
         user = queryDistributedFileDirectory().queryDefaultUser();
     }
     udesc.set(user);
@@ -1358,11 +1348,7 @@ static SecAccessFlags getScopePermissions(const char *scopename,IUserDescriptor 
     if (scopePermissionsAvail && scopename && *scopename) {
         if (!user)
         {
-#ifdef NULL_DALIUSER_STACKTRACE
-            IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp getScopePermissions() line %d",__LINE__);
-            //following debug code to be removed
-            PrintStackReport();
-#endif
+            logNullUser(user);//stack trace if NULL user
             user = queryDistributedFileDirectory().queryDefaultUser();
         }
 
@@ -1389,14 +1375,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_READ_WANTED);
     if (createreq)
         auditflags |= (DALI_LDAP_AUDIT_REPORT|DALI_LDAP_WRITE_WANTED);
-#ifdef NULL_DALIUSER_STACKTRACE
-    if (!user)
-    {
-        IERRLOG("UNEXPECTED USER (NULL) in dadfs.cpp checkLogicalScope() line %d",__LINE__);
-        PrintStackReport();
-    }
-#endif
-
+    logNullUser(user);//stack trace if NULL user
     SecAccessFlags perm = getScopePermissions(scopename,user,auditflags);
     IDFS_Exception *e = NULL;
     if (readreq&&!HASREADPERMISSION(perm))
@@ -8902,13 +8881,9 @@ void CDistributedFileDirectory::removeEmptyScope(const char *scope)
 
 void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction)
 {
+    logNullUser(user);//stack trace if NULL user
     if (!user)
     {
-#ifdef NULL_DALIUSER_STACKTRACE
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp CDistributedFileDirectory::renamePhysical %d",__LINE__);
-        //following debug code to be removed
-        PrintStackReport();
-#endif
         user = defaultudesc.get();
     }
     CDfsLogicalFileName oldlogicalname;
@@ -11348,17 +11323,11 @@ IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const 
     }
     CMessageBuffer mb;
     mb.append((int)MDFS_ITERATE_FILES).append(wildname).append(recursive).append("").append(includesuper); // "" is legacy
+    logNullUser(user);//stack trace if NULL user
     if (user)
     {
         user->serializeWithoutPassword(mb);
     }
-#ifdef NULL_DALIUSER_STACKTRACE
-    else
-    {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getDFAttributesIterator() line %d",__LINE__);
-        PrintStackReport();
-    }
-#endif
 
     if (foreigndali)
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
@@ -11481,17 +11450,12 @@ void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn,IUserD
     CMessageBuffer mb;
     mb.append((int)MDFS_SET_FILE_ACCESSED).append(lname);
     dt.serialize(mb);
+    logNullUser(user);//stack trace if NULL user
     if (user)
     {
         user->serializeWithoutPassword(mb);
     }
-#ifdef NULL_DALIUSER_STACKTRACE
-    else
-    {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setFileAccessed() line %d",__LINE__);
-        PrintStackReport();
-    }
-#endif
+
     if (foreigndali)
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
@@ -11529,17 +11493,11 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDe
     if (!owner)
         owner = "";
     mb.append((int)MDFS_SET_FILE_PROTECT).append(lname).append(owner).append(set);
+    logNullUser(user);//stack trace if NULL user
     if (user)
     {
         user->serializeWithoutPassword(mb);
     }
-#ifdef NULL_DALIUSER_STACKTRACE
-    else
-    {
-        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setFileProtect() line %d",__LINE__);
-        PrintStackReport();
-    }
-#endif
     if (foreigndali)
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
@@ -11592,7 +11550,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
             opts |= GetFileTreeOpts::remapToService;
 
         mb.append(static_cast<unsigned>(opts));
-
+        logNullUser(user);//stack trace if NULL user
         if (user)
         {
             mb.append(true);
@@ -11601,10 +11559,6 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
         else
         {
             mb.append(false);
-#ifdef NULL_DALIUSER_STACKTRACE
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
-            PrintStackReport();
-#endif
         }
     }
     else
@@ -11613,13 +11567,6 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
         mb.append(MDFS_GET_FILE_TREE_V2);
         if (user)
             user->serializeWithoutPassword(mb);
-#ifdef NULL_DALIUSER_STACKTRACE
-        else
-        {
-            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp getFileTree() line %d",__LINE__);
-            PrintStackReport();
-        }
-#endif
     }
     if (foreigndali)
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);

@@ -36,6 +36,7 @@
 #include "seclib.hpp"
 #include "dasess.hpp"
 #include "digisign.hpp"
+#include "dautils.hpp"
 
 using namespace cryptohelper;
 
@@ -618,15 +619,7 @@ public:
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
-#ifdef NULL_DALIUSER_STACKTRACE
-                //following debug code to be removed
-                StringBuffer sb;
-                udesc->getUserName(sb);
-                if (0==sb.length())
-                {
-                    DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CSessionRequestServer::processMessage() line %d", __LINE__);
-                }
-#endif
+                logNullUser(udesc);//stack trace if NULL user
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
@@ -931,18 +924,7 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
-#ifdef NULL_DALIUSER_STACKTRACE
-        //following debug code to be removed
-        StringBuffer sb;
-        if (udesc)
-            udesc->getUserName(sb);
-        if (0==sb.length())
-        {
-            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp getPermissionsLDAP() line %d",__LINE__);
-            PrintStackReport();
-        }
-#endif
-
+        logNullUser(udesc);//stack trace if NULL user
         udesc->serializeWithoutPassword(mb);//serialize user descriptor without password
         mb.append(auditflags);
 
@@ -1183,17 +1165,7 @@ public:
     {
         key.set(_key);
         obj.set(_obj); 
-
-#ifdef NULL_DALIUSER_STACKTRACE
-        StringBuffer sb;
-        if (_udesc)
-            _udesc->getUserName(sb);
-        if (sb.length()==0)
-        {
-            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CLdapWorkItem::start() line %d",__LINE__);
-            PrintStackReport();
-        }
-#endif
+        logNullUser(_udesc);//stack trace if NULL user
         udesc.set(_udesc);
         flags = _flags;
         ret = CLDAPE_ldapfailure;
@@ -1452,16 +1424,7 @@ public:
 #ifdef _NO_LDAP
         return SecAccess_Unavailable;
 #else
-#ifdef NULL_DALIUSER_STACKTRACE
-        StringBuffer sb;
-        if (udesc)
-            udesc->getUserName(sb);
-        if (sb.length()==0)
-        {
-            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CCovenSessionManager::getPermissionsLDAP() line %d",__LINE__);
-            PrintStackReport();
-        }
-#endif
+        logNullUser(udesc);//stack trace if NULL user
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
             return ldapconn->getPermissions(key,obj,udesc,flags);
         ldapwaiting++;

@@ -1642,6 +1642,7 @@ interface IRemoteLogAccess : extends IInterface
     virtual const char * getRemoteLogAccessType() const = 0;
     virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
+    virtual bool supportsResultPaging() const = 0;
 };
 
 // Helper functions to construct log access filters

@@ -2113,3 +2113,13 @@ extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, c
 }
 
 } // namespace
+
+extern "C" DECL_EXPORT IEmbedContext* py3GetEmbedContext()
+{
+    return new py3embed::Python3xEmbedContext;
+}
+
+extern "C" DECL_EXPORT void py3SyntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
+{
+    py3embed::syntaxCheck(__lenResult, __result, funcname, charsBody, body, argNames, compilerOptions, persistOptions);
+}

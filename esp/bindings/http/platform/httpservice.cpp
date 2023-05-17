@@ -1411,6 +1411,17 @@ void CEspHttpServer::sendVerifyCookieResponse(EspAuthRequest& authReq, CIArrayOf
     sendMessage(resp.str(), (format == ESPSerializationJSON) ? "application/json" : "text/xml");
 }
 
+bool CEspHttpServer::isMalformedUserName(const char *userName)
+{
+    StringBuffer s(userName);
+    s.trim();
+    if (s.isEmpty())
+        return true;
+
+    //Only check newline for now. May add more if needed.
+    return strchr(s.str(), '\n');
+}
+
 EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
 {
     if (authReq.authBinding->isDomainAuthResources(authReq.httpPath.str()))
@@ -1429,9 +1440,29 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
     if (!userName.isEmpty())
         return authSucceeded;
 
+    bool malformedUserName = false;
     const char* userNameIn = (authReq.requestParams) ? authReq.requestParams->queryProp("username") : NULL;
-    if (isEmptyString(userNameIn))
+    if (!isEmptyString(userNameIn))
+        malformedUserName = isMalformedUserName(userNameIn);
+    if (isEmptyString(userNameIn) || malformedUserName)
     {
+        StringBuffer logMsg("Authentication failed");
+        if (malformedUserName)
+        {
+            logMsg.append(" (malformed username)");
+            //If the username comes from the GetUserName page (sent with POST), the page should have set the urlCookie and askUserLogin() should be called to get the username.
+            StringBuffer urlCookie;
+            readCookie(SESSION_START_URL_COOKIE, urlCookie);
+            if (!urlCookie.isEmpty())
+            {
+                logMsg.append(": call askUserLogin.");
+                ESPLOG(LogMin, "%s", logMsg.str());
+                //Display a GetUserName (similar to login) page to get a user name.
+                askUserLogin(authReq, "Malformed username.");
+                return authFailed;
+            }
+        }
+
         //We should send BasicAuthenticationChallenge for CORS Request, HTPP Post Request, etc.
         StringBuffer authorizationHeader, originHeader;
         m_request->getHeader("Authorization", authorizationHeader);
@@ -1440,14 +1471,16 @@ EspAuthState CEspHttpServer::handleUserNameOnlyMode(EspAuthRequest& authReq)
             strieq(authReq.httpMethod.str(), POST_METHOD);
         if (basicAuthentication)
         {
-            ESPLOG(LogMin, "Authentication failed: send BasicAuthentication.");
+            logMsg.append(": send BasicAuthentication.");
+            ESPLOG(LogMin, "%s", logMsg.str());
             m_response->sendBasicChallenge(authReq.authBinding->getChallengeRealm(), true);
         }
         else
         {
-            ESPLOG(LogMin, "Authentication failed: call askUserLogin.");
+            logMsg.append(": call askUserLogin.");
+            ESPLOG(LogMin, "%s", logMsg.str());
             //Display a GetUserName (similar to login) page to get a user name.
-            askUserLogin(authReq, "Empty username.");
+            askUserLogin(authReq, malformedUserName ? "Malformed username." : "Empty username.");
         }
         return authFailed;
     }
