@@ -2,7 +2,7 @@
 
 The MongoDB plugin allows an ECL user to embed MongoDB function calls into their code and run it
 on the HPCC Platform. The plugin supports inserting a dataset into a database using `insert_many`, and can 
-build ECL datasets from MongoDB result documents from the `find`, `update`, `delete`, `aggregate`, and `runCommand` methods.
+build ECL datasets from MongoDB result documents returned by the `find`, `update`, `delete`, `aggregate`, and `runCommand` methods.
 
 The embedded script that gets passed to the plugin can be used to create complex documents to support almost every
 MongoDB command. 
@@ -42,7 +42,7 @@ You then need to define a function for interfacing with MongoDB. Within the EMBE
 
 ### Options
 
-To create the uri for the MongoDB connection instance the ECL user needs to pass in the username, password, server name, or just the port to use for connecting to the cluster. The plugin takes all of these and creates a shared connection instance for many threads to have access to the MongoDB databases. The plugin can only connect to one MongoDB cluster per workunit, but it can access multiple databases and collections if multiple functions are defined. The ECL user can define the batch size of the result rows.
+To create the uri for the MongoDB connection instance the ECL user needs to pass in the username, password, server name, or just the port to use for connecting to the cluster. The plugin takes all of these and creates a shared connection instance for many threads to have access to the MongoDB databases. The plugin can connect to multiple MongoDB clusters with different connection options and user credentials all from the same workunit. The ECL user can also define the batch size of the result rows.
 
 | Option | Description |
 | ------ | ----------- |
