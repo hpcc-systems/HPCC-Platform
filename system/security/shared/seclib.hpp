@@ -421,7 +421,8 @@ enum secManagerType : int
     SMT_SingleUser,
     SMT_HTPluggable,
     SMT_JWTAuth,
-    SMT_TestAuth
+    SMT_TestAuth,
+    SMT_Other // for use by plugins not included in the platform
 };
 
 static const SecFeatureBit SMF_NO_FEATURES                    = 0x00;
