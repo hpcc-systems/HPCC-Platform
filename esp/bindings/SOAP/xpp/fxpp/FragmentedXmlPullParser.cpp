@@ -351,6 +351,14 @@ public:
         if (cur)
             cur->setSupportNamespaces(enable);
     }
+
+    virtual void setRequestNamespaces(bool enable) override
+    {
+        m_requestNamespaces = enable;
+        IXmlPullParser* cur = parser();
+        if (cur)
+            cur->setRequestNamespaces(enable);
+    }
     
     virtual bool skipSubTreeEx() override
     {
@@ -423,6 +431,7 @@ protected:
     ParserArchive                         m_parsers;
     unsigned                              m_reportedElementDepth = 0;
     bool                                  m_supportNamespaces = false;
+    bool                                  m_requestNamespaces = false;
     bool                                  m_keepWhitespace = false;
     bool                                  m_indefiniteRetention = true;
     Owned<FragmentFrame>                  m_deferred;
@@ -454,6 +463,7 @@ protected:
         std::shared_ptr<IXmlPullParser> parser(new XmlPullParser());
         parser->setMixedContent(false);
         parser->setSupportNamespaces(m_supportNamespaces);
+        parser->setRequestNamespaces(m_requestNamespaces);
 
         StringBuffer prefixBuf, suffixBuf;
         prepareInputPrefix(prefixBuf, testRule(FXPP_PROPAGATE_NAMESPACES, rules));
