@@ -535,7 +535,7 @@ void CLdapSecResourceList::clear()
     m_rlist.kill();
 }
 
-int CLdapSecResourceList::count()
+unsigned CLdapSecResourceList::count()
 {
     return m_rlist.length();
 }

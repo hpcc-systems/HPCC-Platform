@@ -129,7 +129,7 @@ static bool checkWuScopeListSecAccess(const char *wuscope, ISecResourceList *sco
     }
     else
     {
-        for (int seq=0; ret && seq<scopes->count(); seq++)
+        for (unsigned seq=0; ret && seq<scopes->count(); seq++)
         {
             ISecResource *res=scopes->queryResource(seq);
             if (res && res->getAccessFlags()<required)

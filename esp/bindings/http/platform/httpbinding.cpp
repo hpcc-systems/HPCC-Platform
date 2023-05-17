@@ -984,7 +984,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         return false;
     }
     bool authorized = true;
-    for(int i = 0; i < rlist->count(); i++)
+    for(unsigned i = 0; i < rlist->count(); i++)
     {
         ISecResource* curres = rlist->queryResource(i);
         if(curres != NULL)
