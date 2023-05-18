@@ -66,15 +66,14 @@ public:
 
 class CFileSprayEx : public CFileSpray
 {
-    void readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcplane,
-        StringBuffer& sourcePlaneReq, StringBuffer& sourceIPReq, StringBuffer& sourcePathReq);
+    void readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcplane,
+        StringBuffer& sourcePlaneReq, StringBuffer& sourceHostReq, StringBuffer& sourcePathReq);
     void getServersInDropZone(const char* dropZoneName, IArrayOf<IConstTpDropZone>& dropZoneList,
         bool isECLWatchVisibleOnly, StringArray& serverList);
     IPropertyTree* getAndValidateDropZone(const char * path, const char * host);
     IEspDFUWorkunit* createDFUWUFromSashaListResult(const char* result);
     void setDFUCommand(const char* commandStr, IEspDFUWorkunit* dfuWU);
-    void checkDZScopeAccessAndSetSpraySourceDFUFileSpec(IEspContext& context, const char* srcPlane, const char * srcHost,
-        const char* srcFile, MemoryBuffer& srcXML, IDFUfileSpec* srcDFUfileSpec);
+    void setSpraySourceDFUFileSpec(const char* host, const char* path, MemoryBuffer& srcXML, IDFUfileSpec* srcDFUfileSpec);
 
 public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
