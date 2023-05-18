@@ -113,7 +113,7 @@ void setActionResult(const char* wuid, CECLWUActions action, const char* result,
 IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
 {
     SocketEndpoint ep;
-    getSashaServiceEP(ep, "wu-archiver", true);
+    getSashaServiceEP(ep, wuArchiverType, true);
     Owned<INode> node = createINode(ep);
     if (!node)
         throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");
@@ -1544,7 +1544,7 @@ void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned
     if (sashaServerIP && *sashaServerIP)
         ep.set(sashaServerIP, sashaServerPort);
     else
-        getSashaServiceEP(ep, "wu-archiver", true);
+        getSashaServiceEP(ep, wuArchiverType, true);
 
     if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
@@ -2457,7 +2457,7 @@ public:
         if (sashaServerIP && *sashaServerIP)
             ep.set(sashaServerIP, sashaServerPort);
         else
-            getSashaServiceEP(ep, "wu-archiver", true);
+            getSashaServiceEP(ep, wuArchiverType, true);
 
         Owned<INode> sashaserver = createINode(ep);
 
