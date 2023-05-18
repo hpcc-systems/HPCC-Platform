@@ -792,9 +792,60 @@
     prefix: "/home/demo/mydropzone" 
     hosts: [ 'mylandingzone.com' ] # Inline reference to an external host. </programlisting>
       </sect3>
+
+      <sect3 id="CV_RemoteStorage" role="brk">
+        <title>Remote Storage</title>
+
+        <para>You can configure your HPCC Systems cloud deployment to access
+        logical files from other remote environments. You configure this
+        remote storage by adding a "remote" section to your helm chart.
+        </para>
+
+        <para>The <emphasis>storage.remote</emphasis> section is a list of
+        named remote environments that define the remote service url and a
+        section that maps the remote plane names to local plane names. The
+        local planes referenced are special planes with the category 'remote'.
+        They are read-only and only exposed to the engines which can read from
+        them.</para>
+
+        <para>For Example:</para>
+
+        <programlisting>storage:
+  planes:
+...
+  - name: hpcc2-stddata
+    pvc: hpcc2-stddata-pv
+    prefix: "/var/lib/HPCCSystems/hpcc2/hpcc-stddata"
+    category: remote
+  - name: hpcc2-fastdata
+    pvc: hpcc2-fastdata-pv
+    prefix: "/var/lib/HPCCSystems/hpcc2/hpcc-fastdata"
+    category: remote
+  remote:
+  - name: hpcc2
+    service: http://20.102.22.31:8010
+    planes:
+    - remote: data
+      local: hpcc2-stddata
+    - remote: fastdata
+      local: hpcc2-fastdata</programlisting>
+
+        <para>This example defines a remote target called "hpcc2" whose DFS
+        service url is http://20.102.22.31:8010 and whose local plane is
+        "hpcc2data". The local plane must be defined such that it shares the
+        same storage as the remote environment. This is expected to be done
+        via a PVC that has been pre-configured to use the same storage.</para>
+
+        <para>To access the logical file in ECL use the following
+        format:</para>
+
+        <programlisting>ds := DATASET('~remote::hpcc2::somescope1::somelfn1', rec);</programlisting>
+
+        <para></para>
+      </sect3>
     </sect2>
 
-    <sect2 id="StorageItems_HPCC_Systems_Coomponents">
+    <sect2 id="StorageItems_HPCC_Systems_Coomponents" role="brk">
       <title>Storage Items for HPCC Systems Components</title>
 
       <sect3 id="YML-DOC_GenData-Storage">
