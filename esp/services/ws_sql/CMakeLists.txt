@@ -102,13 +102,14 @@ if(WSSQL_SERVICE)
         ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
         ${HPCC_SOURCE_DIR}/rtl/eclrtl
         ${HPCC_SOURCE_DIR}/rtl/include
+        ${HPCC_SOURCE_DIR}/esp/espcommon
         )
 
     if (CMAKE_COMPILER_IS_CLANG)
       set_source_files_properties(${ANTLR_sql2ecl_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-parentheses-equality)
     endif()
 
-    add_definitions(-D_USRDLL -Dwssql_API_LOCAL )
+    add_definitions(-D_USRDLL -Dwssql_API_LOCAL -DESP_SERVICE_wssql)
     HPCC_ADD_LIBRARY(ws_sql SHARED ${SRCS})
     add_dependencies(ws_sql espscm sql2ecl)
     target_link_libraries(

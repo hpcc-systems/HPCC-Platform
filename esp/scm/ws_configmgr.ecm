@@ -440,7 +440,7 @@ ESPrequest WizardTestRequest
 
 
 
-ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0"), exceptions_inline("xslt/exceptions.xslt")] ws_configmgr
+ESPservice [auth_feature("DEFERRED"),version("2.0"), default_client_version("2.0"), exceptions_inline("xslt/exceptions.xslt"), disable_profile_execution] ws_configmgr
 {
     ESPMethod
         [

@@ -66,7 +66,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
          )
 
-ADD_DEFINITIONS( -D_USRDLL -DFileSpray_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -DFileSpray_API_LOCAL -DESP_SERVICE_FileSpray)
 
 HPCC_ADD_LIBRARY( ws_fs SHARED ${SRCS} )
 add_dependencies ( ws_fs espscm )

@@ -59,7 +59,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-ADD_DEFINITIONS( -D_USRDLL -Dws_machine_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -Dws_machine_API_LOCAL -DESP_SERVICE_ws_machine)
 
 HPCC_ADD_LIBRARY( ws_machine SHARED ${SRCS} )
 add_dependencies( ws_machine espscm )

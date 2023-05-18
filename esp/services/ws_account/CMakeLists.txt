@@ -54,7 +54,7 @@ if (USE_OPENLDAP)
     include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 endif ()
 
-ADD_DEFINITIONS( -D_USRDLL -Dws_account_API_LOCAL )
+ADD_DEFINITIONS( -D_USRDLL -Dws_account_API_LOCAL -DESP_SERVICE_ws_account)
 
 HPCC_ADD_LIBRARY( ws_account SHARED ${SRCS} )
 install ( TARGETS ws_account RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} COMPONENT Runtime )
