@@ -64,7 +64,7 @@ enum DFD_Replicate
 #endif
 };
 
-enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_unknown, __grp_size };
+enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_dropzone, grp_unknown, __grp_size };
 
 enum class AccessMode : unsigned
 {
