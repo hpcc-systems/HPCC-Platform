@@ -156,6 +156,7 @@ public:
     IPropertyTree* getDataElement(const char* xpath = ".") const override { return nullptr; }
     IPropertyTreeIterator* getDataElements(const char* xpath = ".") const override { return nullptr; }
     bool setData(IPropertyTree* data) override { return false; }
+    virtual bool isCanonicalMatch(const char* name) const override { return (name && strieq(m_name.str(), name)); }
 
 //interface ISecCredentials
     bool setPassword(const char * pw);
