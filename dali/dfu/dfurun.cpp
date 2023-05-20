@@ -1106,6 +1106,12 @@ public:
             wu->setDebugValue("dfulog", logname.str(), true);
         IConstDFUfileSpec *source = wu->querySource();
         IConstDFUfileSpec *destination = wu->queryDestination();
+        {
+            Owned<IFileDescriptor> fdesc = destination->getFileDescriptor();
+            StringBuffer groupName;
+            fdesc->getClusterGroupName(0, groupName, nullptr);
+            DBGLOG("####runWU(): groupName(%s)", groupName.str());
+        }
         IConstDFUoptions *options = wu->queryOptions();
         Owned<IPropertyTree> opttree = createPTreeFromIPT(options->queryTree());
 

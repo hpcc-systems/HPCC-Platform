@@ -11840,8 +11840,14 @@ SecAccessFlags CDistributedFileDirectory::getFDescPermissions(IFileDescriptor *f
                         localpath.setCharAt(k,'_');
 
                 SecAccessFlags perm = SecAccess_None;
-                StringBuffer planeName;
+                StringBuffer plane1;
+                fdesc->getClusterGroupName(0, plane1, nullptr);
+                DBGLOG("####getFDescPermissions(): plane1(%s)", plane1.str());
+                IClusterInfo *iClusterInfo = LINK(fdesc->queryClusterNum(i));
+                StringBuffer planeName, planeName1(iClusterInfo->queryGroupName());
+                DBGLOG("####getFDescPermissions(): iClusterInfo->queryGroupName(%s)", planeName1.str());
                 fdesc->getPlaneName(planeName);
+                DBGLOG("####getFDescPermissions(): planeName(%s)", planeName.str());
                 if (!planeName.isEmpty())
                 {
                     StringBuffer relativePath,dir;
