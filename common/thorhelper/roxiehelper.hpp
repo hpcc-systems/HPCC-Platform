@@ -376,6 +376,7 @@ interface SafeSocket : extends IInterface
 
     virtual void setAdaptiveRoot(bool adaptive)=0;
     virtual bool getAdaptiveRoot()=0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
 };
 
 class THORHELPER_API CSafeSocket : implements SafeSocket, public CInterface
@@ -420,6 +421,7 @@ public:
     unsigned bytesOut() const;
     bool checkConnection() const;
     void sendException(const char *source, unsigned code, const char *message, bool isBlocked, const IContextLogger &logctx);
+    unsigned __int64 getStatistic(StatisticKind kind) const;
 };
 
 //==============================================================================================================
