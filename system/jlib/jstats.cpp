@@ -756,6 +756,7 @@ constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
 //#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
 #define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
 #define WHENSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeSum, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENFIRSTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeFirst, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -933,8 +934,25 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(LeafFetch) },
     { TIMESTAT(BlobFetch) },
     { CYCLESTAT(BlobFetch) },
+    { SIZESTAT(PeakSpillFile) },
+    { TIMESTAT(AgentQueue) },
+    { CYCLESTAT(AgentQueue) },
+    { TIMESTAT(IBYTIDelay) },
+    { CYCLESTAT(IBYTIDelay) },
+    { WHENFIRSTSTAT(Queued) },
+    { WHENFIRSTSTAT(Dequeued) },
+    { WHENFIRSTSTAT(K8sLaunched) },
+    { WHENFIRSTSTAT(K8sStarted) },
+    { WHENFIRSTSTAT(K8sReady) },
+    { NUMSTAT(SocketWrites) },
+    { SIZESTAT(SocketWrite) },
+    { TIMESTAT(SocketWriteIO) },
+    { CYCLESTAT(SocketWriteIO) },
+    { NUMSTAT(SocketReads) },
+    { SIZESTAT(SocketRead) },
+    { TIMESTAT(SocketReadIO) },
+    { CYCLESTAT(SocketReadIO) },
 };
-
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);
 
@@ -3934,6 +3952,7 @@ static void checkDistributedKind(StatisticKind kind)
 
 void verifyStatisticFunctions()
 {
+    static_assert(_elements_in(statsMetaData) == StMax, "statsMetaData is missing entries");
     static_assert(_elements_in(measureNames) == SMeasureMax+1 && !measureNames[SMeasureMax], "measureNames needs updating");
     static_assert(_elements_in(creatorTypeNames) == SCTmax+1 && !creatorTypeNames[SCTmax], "creatorTypeNames needs updating");
     static_assert(_elements_in(scopeTypeNames) == SSTmax+1 && !scopeTypeNames[SSTmax], "scopeTypeNames needs updating");

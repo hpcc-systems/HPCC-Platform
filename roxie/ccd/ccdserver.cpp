@@ -448,7 +448,11 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StTimeSoapcall,
                                                       StNumGroups,
                                                       StTimeSortElapsed,
-                                                      StNumDuplicateKeys});
+                                                      StNumDuplicateKeys,
+                                                      StTimeAgentQueue, StTimeIBYTIDelay,
+                                                      StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
+                                                      StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
+                                                      });
 
 //=================================================================================
 

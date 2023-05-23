@@ -142,6 +142,8 @@ enum StatsMergeAction
     StatsMergeMin,
     StatsMergeMax,
     StatsMergeAppend,
+    StatsMergeFirst,
+    StatsMergeLast,
 };
 
 interface IStatisticGatherer : public IInterface

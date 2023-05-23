@@ -2123,6 +2123,16 @@ readAnother:
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
         unsigned elapsed = msTick() - qstart;
+        if (client)
+        {
+            logctx.noteStatistic(StTimeSocketReadIO, client->getStatistic(StTimeSocketReadIO));
+            logctx.noteStatistic(StTimeSocketWriteIO, client->getStatistic(StTimeSocketWriteIO));
+            logctx.noteStatistic(StSizeSocketRead, client->getStatistic(StSizeSocketRead));
+            logctx.noteStatistic(StSizeSocketWrite, client->getStatistic(StSizeSocketWrite));
+            logctx.noteStatistic(StNumSocketReads, client->getStatistic(StNumSocketReads));
+            logctx.noteStatistic(StNumSocketWrites, client->getStatistic(StNumSocketWrites));
+        }
+
         sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, agentsReplyLen, agentsDuplicates, agentsResends, continuationNeeded, requestArraySize);
         if (continuationNeeded)
         {
