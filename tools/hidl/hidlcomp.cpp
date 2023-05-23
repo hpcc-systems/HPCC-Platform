@@ -4991,7 +4991,7 @@ void EspServInfo::write_esp_binding_ipp()
     if (executionProfilingEnabled)
     {
         outf("#ifdef ESP_SERVICE_%s\n", name_);
-        outs("\tvirtual void init_metrics();\n");
+        outs("\tvoid init_metrics();\n");
         outf("#endif\n");
     }
     outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
