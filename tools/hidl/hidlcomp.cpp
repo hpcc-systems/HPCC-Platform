@@ -4995,8 +4995,8 @@ void EspServInfo::write_esp_binding_ipp()
     //method ==> processRequest
     outs("\tvirtual int processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response);\n");
 
-    // method ===> getXmlFilename
-    outs("\tint getXmlFilename(StringBuffer &filename);\n");
+    // method ===> getServiceXmlFilename
+    outs("\tint getServiceXmlFilename(StringBuffer &filename);\n");
 
     //method ==> getXsdDefinition
     outs("\tint getXsdDefinition(IEspContext &context, CHttpRequest* request, StringBuffer &content, const char *service, const char *method, bool mda);\n");
@@ -5364,8 +5364,8 @@ void EspServInfo::write_esp_binding(const char *packagename)
     outs("}\n");
 
 
-    //method ==> getXmlFilename for xsd and wsdl transformations
-    outf("\nint C%sSoapBinding::getXmlFilename(StringBuffer &filename)\n", name_);
+    //method ==> getServiceXmlFilename for xsd and wsdl transformations
+    outf("\nint C%sSoapBinding::getServiceXmlFilename(StringBuffer &filename)\n", name_);
     outs("{\n");
     outf("\tfilename.append(\"%s.xml\");\n", packagename);
     outs("\treturn 1;\n");

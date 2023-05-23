@@ -47,6 +47,7 @@
 #include "workunit.hpp"
 #include "cumulativetimer.hpp"
 #include <memory>
+
 #include "esdl_def_helper.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
@@ -116,7 +117,7 @@ static void setBndCfgServiceType(IPropertyTree* tree, const char* procName, IPro
 }
 
 
-static void generateEsdlNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns, double version) {
+static void generateEsdlNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns) {
     ns.append("urn:hpccsystems:ws:");
     if (serv && *serv)
         ns.appendLower(strlen(serv), serv);
@@ -308,6 +309,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
     m_wsdlVer=0.0;
     processName.set(procname);
+    getServiceXmlFilename(serviceXmlFilename);
 
     // get the config default version
     const char* defVersion = bnd_cfg->queryProp("@defaultServiceVersion");
@@ -1259,8 +1261,6 @@ int EspHttpBinding::onGetStaticIndex(IEspContext &context, CHttpRequest* request
 
 
 
-#if 1
-
 //============================================================
 // Filter out XML by schema using Schema parser without indent
 
@@ -1419,21 +1419,29 @@ void EspHttpBinding::getXMLMessageTag(IEspContext& ctx, bool isRequest, const ch
 }
 
 // new way to generate soap message
-void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHttpRequest* request, const char *serv, const char *method)
+void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHttpRequest* request, const char *serviceQName, const char *methodQName)
 {
-    StringBuffer reqName(serv);
+    StringBuffer reqName(serviceQName);
     reqName.append("Request");
     Owned<IRpcMessage> msg = new CRpcMessage(reqName.str());
     msg->setContext(&ctx);
 
-    Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serv, method);
+    Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serviceQName, methodQName);
     rpcreq->serialize(*msg);
 
     StringBuffer req, tag, schema, filtered;
     msg->marshall(req, NULL);
 
-    getSchema(schema,ctx,request,serv,method,false);
-    getXMLMessageTag(ctx, true, method, tag);
+    if (!serviceXmlFilename.isEmpty())
+    {
+        getServiceSchema(ctx, request, serviceQName, methodQName, getVersion(ctx), false, false, schema);
+    }
+    else
+    {
+        getSchema(schema,ctx,request,serviceQName,methodQName,false);
+    }
+
+    getXMLMessageTag(ctx, true, methodQName, tag);
     filterXmlBySchema(req,schema,tag.str(),filtered);
 
     StringBuffer ns;
@@ -1443,15 +1451,15 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
           " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\""
           " xmlns=\"%s\">"
         " <soap:Body>%s </soap:Body></soap:Envelope>",
-        generateNamespace(ctx, request, serv, method, ns).str(), filtered.str()
+        generateNamespace(ctx, request, serviceQName, methodQName, ns).str(), filtered.str()
         );
 }
 
-void EspHttpBinding::getJsonMessage(StringBuffer& jsonmsg, IEspContext& ctx, CHttpRequest* request, const char *serv, const char *method)
+void EspHttpBinding::getJsonMessage(StringBuffer& jsonmsg, IEspContext& ctx, CHttpRequest* request, const char *serviceQName, const char *methodQName)
 {
     ESPSerializationFormat orig_format = ctx.getResponseFormat();
     ctx.setResponseFormat(ESPSerializationJSON);
-    Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serv, method);
+    Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serviceQName, methodQName);
     CSoapRequestBinding* reqbind = dynamic_cast<CSoapRequestBinding*>(rpcreq.get());
     if (reqbind)
     {
@@ -1460,124 +1468,6 @@ void EspHttpBinding::getJsonMessage(StringBuffer& jsonmsg, IEspContext& ctx, CHt
     }
     ctx.setResponseFormat(orig_format);
 }
-
-#else
-
-//=========================================================
-// Filter out XML by schema using Schema parser with indent
-
-static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, StringBuffer& out,int indent)
-{
-    assertex(type);
-
-    if (type->isComplexType())
-    {
-        out.pad(indent).appendf("<%s>\n", tag);
-        int flds = type->getFieldCount();
-        for (int i=0; i<flds; i++)
-        {
-            const char* fldName = type->queryFieldName(i);
-            IPTree* fld = in ? in->queryBranch(fldName) : NULL;
-            filterXmlBySchema(fld,type->queryFieldType(i),fldName,out,indent+1);
-        }
-        out.pad(indent).appendf("</%s>\n",tag);
-    }
-    else if (type->isArray())
-    {
-        out.pad(indent).appendf("<%s>\n", tag);
-        //check xml first to decide items, if 0, check schema, generate 1 item by default
-        const char* itemName = type->queryFieldName(0);
-        IXmlType*   itemType = type->queryFieldType(0);
-        if (!itemName || !itemType)
-        {
-            VStringBuffer s("*** Invalid array definition: tag=%s, indent=%d, itemName=%s", tag, indent,itemName?itemName:"NULL");
-            out.append(s);
-            IERRLOG(s);
-            return;
-        }
-
-        bool hasChild = false;
-        if (in)
-        {
-            Owned<IPTreeIterator> it = in->getElements(itemName);
-            for (it->first(); it->isValid(); it->next())
-            {
-                hasChild = true;
-                filterXmlBySchema(&it->query(), itemType, itemName, out,indent+1);
-            }
-        }
-
-        if (!hasChild)
-        {
-            filterXmlBySchema(NULL, itemType, itemName, out,indent+1);
-        }
-        out.pad(indent).appendf("</%s>\n",tag);
-    }
-    else // simple type
-    {
-        out.pad(indent).appendf("<%s>", tag);
-        if (in)
-        {
-            const char* value = in->queryProp(NULL);
-            if (value)
-                encodeUtf8XML(value,out);
-        }
-        out.appendf("</%s>\n", tag);
-    }
-}
-
-static void filterXmlBySchema(StringBuffer& in, StringBuffer& schema, StringBuffer& out,int indent)
-{
-    Owned<IXmlSchema> sp = createXmlSchema(schema);
-    Owned<IPTree> tree = createPTreeFromXMLString(in);
-
-    //VStringBuffer name("tns:%s", tree->queryName());
-    const char* name = tree->queryName();
-    IXmlType* type = sp->queryElementType(name);
-    if (!type)
-    {
-        StringBuffer method(strlen(name)-7, name);
-        type = sp->queryElementType(method);
-    }
-
-    if (type)
-        filterXmlBySchema(tree,type,name,out,indent);
-    else
-    {
-        const char* value = tree->queryProp(NULL);
-        DBGLOG("Unknown xml tag ignored: <%s>%s</%s>", name, value?value:"", name);
-    }
-}
-
-void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHttpRequest* request, const char *serv, const char *method)
-{
-    StringBuffer reqName(serv);
-    reqName.append("Request");
-    Owned<IRpcMessage> msg = new CRpcMessage(reqName.str());
-
-    Owned<IRpcRequestBinding> rpcreq = createReqBinding(ctx, request, serv, method);
-    rpcreq->serialize(*msg);
-
-    // use schema to filter out fields that are internal, not belong to the version etc
-    StringBuffer req,schema,filtered;
-    msg->marshall(req, NULL);
-    getSchema(schema,ctx,request,serv,method,false);
-    //DBGLOG("Schema: %s", schema.str());
-    filterXmlBySchema(req,schema,filtered,2);
-
-    soapmsg.appendf(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
-            " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\""
-            " xmlns=\"urn:hpccsystems:ws:");
-    if (serv && *serv)
-        soapmsg.appendLower(strlen(serv), serv);
-    soapmsg.appendf("\">\n <soap:Body>\n%s </soap:Body>\n</soap:Envelope>", filtered.str());
-}
-
-#endif
-
-
 
 int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method)
 {
@@ -1843,85 +1733,7 @@ int EspHttpBinding::onGetVersion(IEspContext &context, CHttpRequest* request, CH
     return 0;
 }
 
-void getServiceSchema(const char *serviceQName, const char *methodQName, double version, const char *nstr,
-                      const StringBuffer &xmlFilename,  Owned<IProperties> &params, EsdlXslTypeId EsdlXslType,
-                      IProperties *opts, StringBuffer &schema)
-{
-    Owned<IEsdlDefinition> esdlDef = createEsdlDefinition(nullptr, nullptr);
-    Owned<IEsdlDefinitionHelper> defHelper = createEsdlDefinitionHelper();
-
-    std::string xmlFilePath(getCFD());
-    xmlFilePath.append("esdl_files").append(PATHSEPSTR).append(xmlFilename.str());
-    esdlDef->addDefinitionsFromFile(xmlFilePath.c_str());
-    unsigned optFlags{DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF};
-    Owned<IEsdlDefObjectIterator> structs = esdlDef->getDependencies(serviceQName, methodQName, ";", version, opts, optFlags );
-
-    StringBuffer xlstFile(getCFD());
-    xlstFile.append("xslt").append(PATHSEPSTR).append("esp_service_xml2xsd.xslt");
-
-    defHelper->loadTransform(xlstFile, params, EsdlXslType);
-    defHelper->toWSDL(*structs, schema, EsdlXslType, version, opts, nstr, optFlags);
-}
-
-
-int EspHttpBinding::onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
-{
-    return getServiceWsdlOrXsd(context, request, response, service, method, false);
-}
-
-int EspHttpBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
-{
-    return getServiceWsdlOrXsd(context, request, response, service, method, true);
-}
-
-int EspHttpBinding::getServiceWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl)
-{
-    StringBuffer serviceQName;
-    StringBuffer methodQName;
-
-    if (!qualifyServiceName(context, service, method, serviceQName, &methodQName))
-        return onGetNotFound(context, request,  response, service);
-
-    Owned<IProperties> params;
-    params.set(createProperties());
-
-    double version = getVersion(context);
-    params->setProp("version", StringBuffer("'").appendf("%g", version).append("'"));
-
-    StringBuffer nstr;
-    generateEsdlNamespace(context, request, serviceQName.str(), methodQName.str(), nstr, version);
-    params->setProp("tnsParam", StringBuffer("'").append(nstr).append("'").str());
-
-    if (isWsdl)
-    {
-        params->setProp( "create_wsdl", "true()" );
-        StringBuffer location(m_wsdlAddress.str());
-        if (request->queryParameters()->hasProp("wsdl_destination_path"))
-            location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
-        else
-            location.append('/').append(serviceQName.str()).appendf("?ver_=%g", version);
-        params->setProp("location", StringBuffer("'").append(location).append("'").str());
-    }
-
-    StringBuffer xmlFilename;
-    if (!getXmlFilename(xmlFilename))
-    {
-        throw MakeStringException(-1, "Unable to get service XML filename");
-    }
-
-    StringBuffer schema;
-    getServiceSchema(serviceQName.str(), methodQName.str(), version, nstr.str(), xmlFilename,
-                     params, isWsdl ? EsdlXslToWsdl : EsdlXslToXsd, context.queryRequestParameters(), schema);
-
-    response->setContent(schema.length(), schema.str());
-    response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
-    response->setStatus(HTTP_STATUS_OK);
-    response->send();
-    return 0;
-}
-
-
-bool EspHttpBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method, bool standalone)
+bool EspHttpBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone)
 {
     StringBuffer serviceQName;
     StringBuffer methodQName;
@@ -1956,54 +1768,243 @@ bool EspHttpBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequ
 
 
     schema.append(
-        "<xsd:complexType name=\"EspException\">"
+            "<xsd:complexType name=\"EspException\">"
             "<xsd:all>"
-                "<xsd:element name=\"Code\" type=\"xsd:string\"  minOccurs=\"0\"/>"
-                "<xsd:element name=\"Audience\" type=\"xsd:string\" minOccurs=\"0\"/>"
-                "<xsd:element name=\"Source\" type=\"xsd:string\"  minOccurs=\"0\"/>"
-                "<xsd:element name=\"Message\" type=\"xsd:string\" minOccurs=\"0\"/>"
+            "<xsd:element name=\"Code\" type=\"xsd:string\"  minOccurs=\"0\"/>"
+            "<xsd:element name=\"Audience\" type=\"xsd:string\" minOccurs=\"0\"/>"
+            "<xsd:element name=\"Source\" type=\"xsd:string\"  minOccurs=\"0\"/>"
+            "<xsd:element name=\"Message\" type=\"xsd:string\" minOccurs=\"0\"/>"
             "</xsd:all>"
-        "</xsd:complexType>\n"
-        "<xsd:complexType name=\"ArrayOfEspException\">"
+            "</xsd:complexType>\n"
+            "<xsd:complexType name=\"ArrayOfEspException\">"
             "<xsd:sequence>"
-                "<xsd:element name=\"Source\" type=\"xsd:string\"  minOccurs=\"0\"/>"
-                "<xsd:element name=\"Exception\" type=\"tns:EspException\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>"
+            "<xsd:element name=\"Source\" type=\"xsd:string\"  minOccurs=\"0\"/>"
+            "<xsd:element name=\"Exception\" type=\"tns:EspException\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>"
             "</xsd:sequence>"
-        "</xsd:complexType>\n"
-        "<xsd:element name=\"Exceptions\" type=\"tns:ArrayOfEspException\"/>\n"
+            "</xsd:complexType>\n"
+            "<xsd:element name=\"Exceptions\" type=\"tns:ArrayOfEspException\"/>\n"
     );
 
     if (ctx.queryOptions()&ESPCTX_WSDL_EXT)
     {
         schema.append(
-            "<xsd:complexType name=\"EspSecurityInfo\">"
+                "<xsd:complexType name=\"EspSecurityInfo\">"
                 "<xsd:all>"
-                    "<xsd:element name=\"UsernameToken\" minOccurs=\"0\">"
-                        "<xsd:complexType>"
-                            "<xsd:all>"
-                                "<xsd:element name=\"Username\" minOccurs=\"0\"/>"
-                                "<xsd:element name=\"Password\" minOccurs=\"0\"/>"
-                            "</xsd:all>"
-                        "</xsd:complexType>"
-                    "</xsd:element>"
-                    "<xsd:element name=\"RealmToken\" minOccurs=\"0\">"
-                        "<xsd:complexType>"
-                            "<xsd:all>"
-                                "<xsd:element name=\"Realm\" minOccurs=\"0\"/>"
-                            "</xsd:all>"
-                        "</xsd:complexType>"
-                    "</xsd:element>"
+                "<xsd:element name=\"UsernameToken\" minOccurs=\"0\">"
+                "<xsd:complexType>"
+                "<xsd:all>"
+                "<xsd:element name=\"Username\" minOccurs=\"0\"/>"
+                "<xsd:element name=\"Password\" minOccurs=\"0\"/>"
                 "</xsd:all>"
-              "</xsd:complexType>"
-            "<xsd:element name=\"Security\" type=\"tns:EspSecurityInfo\"/>\n"
+                "</xsd:complexType>"
+                "</xsd:element>"
+                "<xsd:element name=\"RealmToken\" minOccurs=\"0\">"
+                "<xsd:complexType>"
+                "<xsd:all>"
+                "<xsd:element name=\"Realm\" minOccurs=\"0\"/>"
+                "</xsd:all>"
+                "</xsd:complexType>"
+                "</xsd:element>"
+                "</xsd:all>"
+                "</xsd:complexType>"
+                "<xsd:element name=\"Security\" type=\"tns:EspSecurityInfo\"/>\n"
         );
     }
 
-    bool mda = (req->queryParameters()->getPropInt("mda") != 0);
+    bool mda=(req->queryParameters()->getPropInt("mda")!=0);
     getXsdDefinition(ctx, req, schema, sqName, mqName, mda);
     schema.append("<xsd:element name=\"string\" nillable=\"true\" type=\"xsd:string\" />\n");
     schema.append("</xsd:schema>");
     return true;
+}
+
+void  EspHttpBinding::getServiceSchema(IEspContext& context, CHttpRequest* request, const char *serviceQName, const char *methodQName,
+                                       double version, bool isWsdl, bool addAnnotations, StringBuffer &schema)
+{
+    IProperties *opts = context.queryRequestParameters();
+    EsdlXslTypeId esdlXslType = EsdlXslToXsd;
+
+    Owned<IEsdlDefinition> esdlDef = createEsdlDefinition(nullptr, nullptr);
+    Owned<IEsdlDefinitionHelper> defHelper = createEsdlDefinitionHelper();
+
+    StringBuffer nstr;
+    generateEsdlNamespace(context, request, serviceQName, methodQName, nstr);
+
+    IProperties *params = createProperties();
+    params->setProp("version", StringBuffer("'").appendf("%g", version).append("'"));
+    params->setProp("tnsParam", StringBuffer("'").append(nstr).append("'").str());
+
+    //
+    // Selectively add parameters based on the type of schema requested
+    if (isWsdl)
+    {
+        params->setProp( "create_wsdl", "true()" );
+        StringBuffer location(m_wsdlAddress.str());
+        if (request->queryParameters()->hasProp("wsdl_destination_path"))
+            location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
+        else
+            location.append('/').append(serviceQName).appendf("?ver_=%g", version);
+        params->setProp("location", StringBuffer("'").append(location).append("'").str());
+        esdlXslType = EsdlXslToWsdl;
+    }
+
+    if (addAnnotations)
+    {
+        params->setProp( "all_annot_Param", "true()" );
+    }
+
+    std::string xmlFilePath(getCFD());
+    xmlFilePath.append("esdl_files").append(PATHSEPSTR).append(serviceXmlFilename.str());
+    esdlDef->addDefinitionsFromFile(xmlFilePath.c_str());
+    unsigned optFlags{DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF};
+    Owned<IEsdlDefObjectIterator> structs = esdlDef->getDependencies(serviceQName, methodQName, ";", version, opts, optFlags );
+
+    StringBuffer xlstFile(getCFD());
+    xlstFile.append("xslt").append(PATHSEPSTR).append("esp_service_xml2xsd.xslt");
+
+    defHelper->loadTransform(xlstFile, params, esdlXslType);
+    defHelper->toWSDL(*structs, schema, esdlXslType, version, opts, nstr, optFlags);
+}
+
+int EspHttpBinding::onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
+{
+    int rc;
+    if (!serviceXmlFilename.isEmpty())
+    {
+        rc = getServiceWsdlOrXsd(context, request, response, service, method, false);
+    }
+    else
+    {
+        rc = getWsdlOrXsd(context,request,response,service,method,false);
+    }
+
+    return rc;
+}
+
+int EspHttpBinding::onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
+{
+    int rc;
+    if (!serviceXmlFilename.isEmpty())
+    {
+        rc = getServiceWsdlOrXsd(context, request, response, service, method, true);
+    }
+    else
+    {
+        rc = getWsdlOrXsd(context,request,response,service,method,true);
+    }
+
+    return rc;
+}
+
+int EspHttpBinding::getServiceWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl)
+{
+    StringBuffer serviceQName;
+    StringBuffer methodQName;
+
+    if (!qualifyServiceName(context, service, method, serviceQName, &methodQName))
+        return onGetNotFound(context, request,  response, service);
+
+    Owned<IProperties> params;
+    params.set(createProperties());
+
+    double version = getVersion(context);
+
+    if (isWsdl)
+    {
+        params->setProp( "create_wsdl", "true()" );
+        StringBuffer location(m_wsdlAddress.str());
+        if (request->queryParameters()->hasProp("wsdl_destination_path"))
+            location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
+        else
+            location.append('/').append(serviceQName.str()).appendf("?ver_=%g", version);
+        params->setProp("location", StringBuffer("'").append(location).append("'").str());
+    }
+
+    StringBuffer schema;
+    getServiceSchema(context, request, serviceQName, methodQName,
+                     version, isWsdl, false, schema);
+
+    response->setContent(schema.length(), schema.str());
+    response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+    response->setStatus(HTTP_STATUS_OK);
+    response->send();
+    return 0;
+}
+
+int EspHttpBinding::getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl)
+{
+    bool mda=(request->queryParameters()->getPropInt("mda")!=0);
+    try
+    {
+        StringBuffer serviceQName;
+        StringBuffer methodQName;
+
+        if (!qualifyServiceName(context, service, method, serviceQName, &methodQName))
+        {
+            return onGetNotFound(context, request,  response, service);
+        }
+        else
+        {
+            const char *sqName = serviceQName.str();
+            const char *mqName = methodQName.str();
+            StringBuffer ns;
+            generateNamespace(context, request, serviceQName.str(), methodQName.str(), ns);
+
+            StringBuffer content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            if (context.queryRequestParameters()->hasProp("display"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+            else if (isWsdl && context.queryRequestParameters()->hasProp("wsdlviewer"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/wsdl-viewer.xsl\"?>");
+            if (isWsdl)
+            {
+                content.appendf("<definitions xmlns=\"http://schemas.xmlsoap.org/wsdl/\" xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\" xmlns:http=\"http://schemas.xmlsoap.org/wsdl/http/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+                                " xmlns:mime=\"http://schemas.xmlsoap.org/wsdl/mime/\" xmlns:tns=\"%s\""
+                                " targetNamespace=\"%s\">", ns.str(), ns.str());
+                content.append("<types>");
+            }
+
+            getSchema(content,context,request,service,method,!isWsdl);
+
+            if (isWsdl)
+            {
+                content.append("</types>");
+
+                getWsdlMessages(context, request, content, sqName, mqName, mda);
+                getWsdlPorts(context, request, content, sqName, mqName, mda);
+                getWsdlBindings(context, request, content, sqName, mqName, mda);
+
+                StringBuffer location(m_wsdlAddress.str());
+                if (request->queryParameters()->hasProp("wsdl_destination_path"))
+                    location.append(request->queryParameters()->queryProp("wsdl_destination_path"));
+                else
+                    location.append('/').append(sqName).appendf("?ver_=%g", context.getClientVersion());
+
+                if (request->queryParameters()->hasProp("encode_results"))
+                {
+                    const char *encval = request->queryParameters()->queryProp("encode_results");
+                    location.append("&amp;").appendf("encode_=%s", (encval && *encval) ? encval : "1");
+                }
+
+                content.appendf("<service name=\"%s\">", sqName);
+                content.appendf("<port name=\"%sServiceSoap\" binding=\"tns:%sServiceSoap\">", sqName, sqName);
+                content.appendf("<soap:address location=\"%s\"/>", location.str());
+                content.append("</port>");
+                content.append("</service>");
+                content.append("</definitions>");
+            }
+
+            response->setContent(content.length(), content.str());
+            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+            response->setStatus(HTTP_STATUS_OK);
+        }
+    }
+    catch (IException *e)
+    {
+        return onGetException(context, request, response, *e);
+    }
+
+    response->send();
+    return 0;
 }
 
 static void genSampleXml(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, const char* ns=NULL)
@@ -2082,7 +2083,25 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
 {
     StringBuffer schemaXml, element;
     getXMLMessageTag(context, isRequest, method, element);
-    getSchema(schemaXml,context,request,serv,method,false);
+
+    StringBuffer serviceQName;
+    StringBuffer methodQName;
+
+    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
+    {
+        content.appendf("<Error>generateSampleXml schema error: %s::%s</Error>", serv, method);
+        return;
+    }
+
+    if (!serviceXmlFilename.isEmpty())
+    {
+        getServiceSchema(context, request, serviceQName, methodQName, getVersion(context), false, false, schemaXml);
+    }
+    else
+    {
+        getSchema(schemaXml,context,request,serv,method,false);
+    }
+
     Owned<IXmlSchema> schema;
     IXmlType* type = nullptr;
     try
@@ -2113,8 +2132,6 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
     genSampleXml(parent,type, content, element, generateNamespace(context, request, serv, method, nsdecl).append('\"').str());
 }
 
-
-
 void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     StringBuffer serviceName;
@@ -2124,7 +2141,7 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
 
     StringBuffer content;
     if (method && *method)
-        generateSampleXml(isRequest, context, request, content, serviceName, methodName);
+        generateSampleXml(isRequest, context, request, content, serv, method);
     else
     {
         MethodInfoArray methods;
@@ -2132,7 +2149,7 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
 
         content.appendf("<Examples><%s>\n", isRequest ? "Requests" : "Responses");
         ForEachItemIn(i, methods)
-            generateSampleXml(isRequest, context, request, content, serviceName.str(), methods.item(i).m_label.str());
+            generateSampleXml(isRequest, context, request, content, serv, methods.item(i).m_label.str());
         content.appendf("\n</%s></Examples>", isRequest ? "Requests" : "Responses");
     }
 
@@ -2147,7 +2164,24 @@ void EspHttpBinding::generateSampleJson(bool isRequest, IEspContext &context, CH
 {
     StringBuffer schemaXml, element;
     getXMLMessageTag(context, isRequest, method, element);
-    getSchema(schemaXml,context,request,serv,method,false);
+
+    StringBuffer serviceQName;
+    StringBuffer methodQName;
+
+    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
+    {
+        content.appendf("<Error>generateSampleXml schema error: %s::%s</Error>", serv, method);
+        return;
+    }
+
+    if (!serviceXmlFilename.isEmpty())
+    {
+        getServiceSchema(context, request, serviceQName, methodQName, getVersion(context), false, false, schemaXml);
+    }
+    else
+    {
+        getSchema(schemaXml, context, request, serv, method, false);
+    }
 
     Owned<IXmlSchema> schema;
     IXmlType* type = nullptr;
@@ -2619,13 +2653,20 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
     }
     else
     {
+        double ver = getVersion(context);
+        StringBuffer schema;
+
+        if (!serviceXmlFilename.isEmpty())
+        {
+            getServiceSchema(context, request, serviceQName, methodQName, getVersion(context), false, false, schema);
+        }
+        else
+        {
+            getSchema(schema,context,request,serv,method,false);
+        }
+
         StringBuffer page;
         IXslProcessor* xslp = getXmlLibXslProcessor();
-
-        // get schema
-        StringBuffer schema;
-        context.addOptions(ESPCTX_ALL_ANNOTATION);
-        getSchema(schema, context, request, serv, method, true);
 
         Owned<IXslTransform> xform = xslp->createXslTransform();
         xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/gen_form.xsl").str());
@@ -2642,7 +2683,7 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         // params
         xform->setStringParameter("serviceName", serviceQName);
         StringBuffer version;
-        version.appendf("%g",context.getClientVersion());
+        version.appendf("%g", ver);
         xform->setStringParameter("serviceVersion", version);
 
         StringBuffer methodExt(methodQName);
@@ -2651,10 +2692,10 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         xform->setStringParameter("methodName", methodExt);
 
         // pass params to form (excluding form and __querystring)
-        StringBuffer params;
-        if (!getUrlParams(context.queryRequestParameters(),params))
-            params.appendf("%cver_=%g",(params.length()>0) ? '&' : '?', context.getClientVersion());
-        xform->setStringParameter("queryParams", params.str());
+        StringBuffer xFormParams;
+        if (!getUrlParams(context.queryRequestParameters(),xFormParams))
+            xFormParams.appendf("%cver_=%g",(xFormParams.length()>0) ? '&' : '?', context.getClientVersion());
+        xform->setStringParameter("queryParams", xFormParams.str());
 
         StringBuffer tmp,escaped;
         getMethodHelp(context, serviceQName, methodQName, tmp);
@@ -2707,115 +2748,7 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
 int EspHttpBinding::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
-    StringBuffer serviceQName;
-    StringBuffer methodQName;
-
-    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
-    {
-        return onGetNotFound(context, request,  response, serv);
-    }
-    else
-    {
-        StringBuffer page;
-
-        page.append(
-            "<html>"
-                "<head>"
-                    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
-                    "<title>ESP Service form</title>"
-                    "<script language=\"JavaScript\" src=\"files_/calendar_xs.js\"></script>"
-                    "<script language=\"JavaScript\" src=\"files_/hint.js\"></script>"
-                "</head>"
-                "<body>"
-                    //"<table border=\"0\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" bgcolor=\"#000000\" height=\"108\">"
-                    //  "<tr>"
-                    //      "<td width=\"24%\" height=\"24\" bgcolor=\"#000000\">"
-                    //          "<img border=\"0\" src=\"/");
-                    //          page.append(serviceQName.str());
-                    //          page.append("/files_/logo.gif\" width=\"258\" height=\"108\" />"
-                    //      "</td>"
-                    //  "</tr>"
-                    //  "<tr>"
-                    //      "<td width=\"24%\" height=\"24\" bgcolor=\"#AA0000\">"
-                    //          "<p align=\"center\" />"
-                    //          "<b>"
-                    //              "<font color=\"#FFFFFF\" size=\"5\">Enterprise Services Platform<sup><font size=\"2\">TM</font></sup></font>"
-                    //          "</b>"
-                    //      "</td>"
-                    //  "</tr>"
-                    //"</table>"
-                    //"<br />"
-                    //"<br />"
-                    "<p align=\"center\" />"
-                    "<table cellSpacing=\"0\" cellPadding=\"1\" width=\"90%\" bgColor=\"#666666\" border=\"0\">"
-                        "<tbody>"
-                            "<tr align=\"middle\" bgColor=\"#666666\">"
-                                "<td height=\"23\">"
-                                    "<p align=\"left\">"
-                                        "<font color=\"#efefef\">");
-                                page.appendf("<b>%s [Version %g]</b>", serviceQName.str(), context.getClientVersion());
-                                page.append("</font>"
-                                    "</p>"
-                                "</td>"
-                            "</tr>"
-                            "<tr bgColor=\"#ffcc66\">"
-                                "<td height=\"3\">"
-                                    "<p align=\"left\">");
-
-                                page.appendf("<b>&gt; %s</b>", methodQName.str());
-                                page.append("</p>"
-                                "</td>"
-                            "</tr>"
-                            "<TR bgColor=\"#666666\">"
-                                "<TABLE cellSpacing=\"0\" width=\"90%\" bgColor=\"#efefef\" border=\"0\">"
-                                    "<TBODY>"
-                                        "<TR>"
-                                            "<TD vAlign=\"center\" align=\"left\">"
-                                                "<p align=\"left\"><br />");
-                                                getMethodDescription(context, serviceQName.str(), methodQName.str(), page);
-                                                page.append("<br/></p>"
-                                            "</TD>"
-                                        "</TR>"
-                                    "</TBODY>"
-                                "</TABLE>"
-                            "</TR>"
-                            "<TR bgColor=\"#666666\">"
-                                "<TABLE cellSpacing=\"0\" width=\"90%\" bgColor=\"#efefef\" border=\"0\">"
-                                    "<TBODY>"
-                                        "<TR>"
-                                            "<TD vAlign=\"center\" align=\"left\">"
-                                                "<p align=\"left\"><br />");
-                                                getMethodHelp(context, serviceQName.str(), methodQName.str(), page);
-                                                page.append("<br/><br/></p>"
-                                            "</TD>"
-                                        "</TR>"
-                                    "</TBODY>"
-                                "</TABLE>"
-                            "</TR>"
-                            "<TR bgColor=\"#666666\">"
-                                "<TABLE cellSpacing=\"0\" width=\"90%\" bgColor=\"#efefef\" border=\"0\">"
-                                    "<TBODY>"
-                                        "<TR>"
-                                            "<TD vAlign=\"center\" align=\"left\">");
-                                                getMethodHtmlForm(context, request, serviceQName.str(), methodQName.str(), page, true);
-                                                page.append("</TD>"
-                                        "</TR>"
-                                    "</TBODY>"
-                                "</TABLE>"
-                            "</TR>"
-                        "</tbody>"
-                    "</table>"
-                    "<BR />"
-                "</body>"
-            "</html>");
-
-        response->setContent(page.str());
-        response->setContentType("text/html");
-    }
-
-    response->send();
-
-    return 0;
+    return onGetXForm(context, request, response, serv, method);
 }
 
 
@@ -3034,7 +2967,14 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
     }
 
     // schema
-    getSchema(xsd,context,request,serviceQName,methodQName,true);
+    if (!serviceXmlFilename.isEmpty())
+    {
+        getServiceSchema(context, request, serviceQName, methodQName, getVersion(context), false, false, xsd);
+    }
+    else
+    {
+        getSchema(xsd,context,request,service,method,false);
+    }
 
     // validation
     if (getEspLogLevel()>LogMax)
@@ -3069,7 +3009,6 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
     unsigned len = temp.length(); // This has to be done before temp.detach is called!
     content.setBuffer(len, temp.detach(), true);
 }
-
 void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, MemoryBuffer& content,
                                       const char *serviceName, const char* methodName)
 {
