@@ -1131,6 +1131,68 @@ thor:
         <para>To add environment values you can insert them into your
         customization configuration YAML file when you deploy your
         containerized HPCC Systems.</para>
+
+        <sect4>
+          <title>Environment Variables for Containerized Systems</title>
+
+          <para>There are several settings in environment.conf for bare-metal
+          systems. While many environment.conf settings are not valid for
+          containers, some can be useful. In a cloud deployment, these
+          settings are inherited from environment variables. These environment
+          variables are configurable using the values yaml either globally, or
+          at the component level.</para>
+
+          <para>Some of those variables are available for container and cloud
+          deployments and can be set using the Helm chart. The following
+          bare-metal environment.conf values have these equivalent values
+          which can be set for containerized instances.</para>
+
+          <para><informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Environment.conf
+                    Value</emphasis></entry>
+
+                    <entry><emphasis role="bold">Helm Environment
+                    Variable</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry>skipPythonCleanup</entry>
+
+                    <entry>SKIP_PYTHON_CLEANUP</entry>
+                  </row>
+
+                  <row>
+                    <entry>jvmlibpath</entry>
+
+                    <entry>JAVA_LIBRARY_PATH</entry>
+                  </row>
+
+                  <row>
+                    <entry>jvmoptions</entry>
+
+                    <entry>JVM_OPTIONS</entry>
+                  </row>
+
+                  <row>
+                    <entry>classpath</entry>
+
+                    <entry>CLASSPATH</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>The following example sets the environment variable to skip
+          Python cleanup on the Thor component: </para>
+
+          <para><programlisting>thor: 
+  env: 
+  - name: SKIP_PYTHON_CLEANUP 
+    value: true</programlisting></para>
+        </sect4>
       </sect3>
 
       <sect3 id="CNT_IndexBuildPlane">
