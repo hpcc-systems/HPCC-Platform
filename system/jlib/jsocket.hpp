@@ -416,6 +416,8 @@ public:
     virtual bool isSecure() const = 0;
     virtual bool isValid() const = 0;
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const = 0;
+
 /*
 Exceptions raised: (when set_raise_exceptions(TRUE))
     create
@@ -532,15 +534,15 @@ protected:
 
 struct JSocketStatistics
 {
+    cycle_t readtimecycles;
+    cycle_t writetimecycles;
     unsigned connects;          // successful
     unsigned connecttime;       // all times in microsecs
     unsigned failedconnects;
     unsigned failedconnecttime;
     unsigned reads;
-    unsigned readtime;
     __int64  readsize;          // all sizes in bytes
     unsigned writes;
-    unsigned writetime;
     __int64  writesize;
     unsigned activesockets;
     unsigned numblockrecvs;
