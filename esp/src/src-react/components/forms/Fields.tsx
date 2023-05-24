@@ -139,7 +139,59 @@ const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
         <DropdownBase label={label} options={selOptions} selectedKey={selectedItem?.key} onChange={(_, item: IDropdownOption) => setSelectedItem(item)} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
 };
 
-export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "link" | "links" | "progress" |
+interface DropdownMultiProps {
+    label?: string;
+    options?: IDropdownOption[];
+    selectedKeys?: string;
+    defaultSelectedKeys?: string;
+    required?: boolean;
+    optional?: boolean;
+    disabled?: boolean;
+    errorMessage?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, value?: string) => void;
+    placeholder?: string;
+    className?: string
+}
+
+const DropdownMulti: React.FunctionComponent<DropdownMultiProps> = ({
+    label,
+    options = [],
+    selectedKeys,
+    defaultSelectedKeys,
+    required = false,
+    optional = !required,
+    disabled,
+    errorMessage,
+    onChange,
+    placeholder,
+    className
+}) => {
+    const defaultSelKeys = React.useMemo(() => {
+        if (defaultSelectedKeys) {
+            return defaultSelectedKeys.split(",");
+        }
+        return [];
+    }, [defaultSelectedKeys]);
+
+    const selKeys = React.useMemo(() => {
+        if (selectedKeys) {
+            return selectedKeys.split(",");
+        }
+        return [];
+    }, [selectedKeys]);
+
+    const localOnChange = React.useCallback((event: React.FormEvent<HTMLDivElement>, item: IDropdownOption): void => {
+        if (item) {
+            const selected = item.selected ? [...selKeys, item.key as string] : selKeys.filter(key => key !== item.key);
+            onChange(event, selected.join(","));
+        }
+    }, [onChange, selKeys]);
+
+    return <DropdownBase label={label} errorMessage={errorMessage} required={required} multiSelect selectedKeys={selKeys} defaultSelectedKeys={defaultSelKeys} onChange={localOnChange} placeholder={placeholder} options={options} disabled={disabled} className={className} />;
+};
+
+export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "dropdown-multi" |
+    "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-priority" | "queries-suspend-state" | "queries-active-state" |
@@ -191,6 +243,12 @@ interface ChoiceGroupField extends BaseField {
 
 interface DropdownField extends BaseField {
     type: "dropdown";
+    value?: string;
+    options: IDropdownOption[];
+}
+
+interface DropdownMultiField extends BaseField {
+    type: "dropdown-multi";
     value?: string;
     options: IDropdownOption[];
 }
@@ -310,7 +368,8 @@ interface CloudContainerNameField extends BaseField {
     value?: string;
 }
 
-type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | LinkField | LinksField | ProgressField |
+type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | DropdownMultiField |
+    LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
     QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
@@ -766,6 +825,19 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         selectedKey={field.value}
                         options={field.options}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "dropdown-multi":
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <DropdownMulti
+                        key={fieldID}
+                        selectedKeys={field.value}
+                        options={field.options}
+                        onChange={(ev, value) => onChange(fieldID, value)}
                         placeholder={field.placeholder}
                     />
                 });
