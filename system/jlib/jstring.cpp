@@ -2750,3 +2750,33 @@ StringBuffer& StringBuffer::operator=(StringBuffer&& value)
     swapWith(value);
     return *this;
 }
+
+
+bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnError)
+{
+    int fd = open(filename, O_RDONLY);
+    bool ok = false;
+    if (fd != -1)
+    {
+        const unsigned chunkSize = 0x10000;
+        ssize_t bytes;
+        for (;;)
+        {
+            void * buffer = contents.reserve(chunkSize);
+            bytes = (size_t)read(fd, buffer, chunkSize);
+            if (bytes != chunkSize)
+                break;
+        }
+
+        if (bytes >= 0)
+            ok = true;
+        else
+            bytes = 0;
+        contents.setLength(contents.length() - (chunkSize - bytes));
+        close(fd);
+    }
+    else if (throwOnError)
+        throw MakeStringException(errno, "File %s could not be opened", filename);
+
+    return ok;
+}

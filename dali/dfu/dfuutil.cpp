@@ -451,8 +451,6 @@ public:
 
     void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali, const char *srcCluster)   // name already has prefix added
     {
-        DBGLOG("cloneSubFile %s", destfilename);
-
         Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
         const char * kind = srcfdesc->queryProperties().queryProp("@kind");
         bool iskey = kind&&(strcmp(kind,"key")==0);
@@ -466,7 +464,7 @@ public:
 
         CDfsLogicalFileName dstlfn;
         if (!dstlfn.setValidate(destfilename,true))
-            throw MakeStringException(-1,"Logical name %s invalid",destfilename);
+            throw MakeStringException(-1,"cloneSubFile: Logical name %s invalid",destfilename);
 
         ClusterPartDiskMapSpec spec = spec1;
         if (iskey&&repeattlk)
@@ -480,6 +478,21 @@ public:
         StringBuffer dstdir;
         getLFNDirectoryUsingBaseDir(dstdir, dstlfn.get(), spec.defaultBaseDir.get());
         dstfdesc->setDefaultDir(dstdir.str());
+
+        Owned<IStoragePlane> plane = getDataStoragePlane(cluster1, false);
+        if (plane) // I think it should always exist, even in bare-metal.., but guard against it not for now (assumes initializeStorageGroups has been called)
+        {
+            DBGLOG("cloneSubFile: destfilename='%s', plane='%s', dirPerPart=%s", destfilename, cluster1.get(), boolToStr(plane->queryDirPerPart()));
+
+            FileDescriptorFlags newFlags = srcfdesc->getFlags();
+            if (plane->queryDirPerPart())
+                newFlags |= FileDescriptorFlags::dirperpart;
+            else
+                newFlags &= ~FileDescriptorFlags::dirperpart;
+            dstfdesc->setFlags(newFlags);
+        }
+        else
+            WARNLOG("cloneSubFile: destfilename='%s', plane='%s' not found", destfilename, cluster1.get());
         dstfdesc->addCluster(cluster1,grp1,spec);
         if (iskey&&!cluster2.isEmpty())
             dstfdesc->addCluster(cluster2,grp2,spec2);
@@ -851,6 +864,8 @@ public:
 
     void cloneRoxieFile(const char *filename, const char *destfilename)
     {
+        DBGLOG("cloneRoxieFile: filename='%s', destfilename='%s'", filename, destfilename);
+
         Linked<INode> srcdali = foreigndalinode;
         CDfsLogicalFileName srcLFN;
         srcLFN.set(filename);

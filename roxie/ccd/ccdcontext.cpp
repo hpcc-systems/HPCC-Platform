@@ -1570,7 +1570,7 @@ public:
             return nullptr;
     }
 
-    virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
+    virtual void endGraph(const ProcessInfo & startProcessInfo, unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
     {
         if (graph)
         {
@@ -1593,6 +1593,14 @@ public:
                     progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
                     updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeElapsed, graphDesc, elapsedTime);
                     addTimeStamp(progressWorkUnit, SSTgraph, graphName, StWhenFinished, graph->queryWorkflowId());
+
+                    ProcessInfo endProcessInfo(ReadAllInfo);
+                    SystemProcessInfo delta = endProcessInfo - startProcessInfo;
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeUser, graphDesc, delta.getUserNs());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StTimeSystem, graphDesc, delta.getSystemNs());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StNumContextSwitches, graphDesc, delta.getNumContextSwitches());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StSizeMemory, graphDesc, endProcessInfo.getActiveResidentMemory());
+                    updateWorkunitStat(progressWorkUnit, SSTgraph, graphScope, StSizePeakMemory, graphDesc, endProcessInfo.getPeakResidentMemory());
                 }
                 graph->reset();
             }
@@ -1638,6 +1646,9 @@ public:
         }
         else
         {
+            ProcessInfo startProcessInfo;
+            if (workUnit || statsWu)
+                startProcessInfo.update(ReadAllInfo);
             bool created = false;
             cycle_t startCycles = get_cycles_now();
             unsigned __int64 startTimeStamp = getTimeStampNowValue();
@@ -1657,7 +1668,7 @@ public:
                     CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
                 }
                 if (created)  // Partially-created graphs are liable to crash if you call abort() on them...
-                    endGraph(startTimeStamp, startCycles, true);
+                    endGraph(startProcessInfo, startTimeStamp, startCycles, true);
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
@@ -1670,7 +1681,7 @@ public:
             {
                 CTXLOG("Exception thrown in query - cleaning up");
                 if (created)
-                    endGraph(startTimeStamp, startCycles, true);
+                    endGraph(startProcessInfo, startTimeStamp, startCycles, true);
                 else
                 {
                     // Bit of a hack... needed to avoid pure virtual calls if these are left to the CRoxieContextBase destructor
@@ -1679,7 +1690,7 @@ public:
                 CTXLOG("Done cleaning up");
                 throw;
             }
-            endGraph(startTimeStamp, startCycles, false);
+            endGraph(startProcessInfo, startTimeStamp, startCycles, false);
         }
     }
 
@@ -3563,10 +3574,10 @@ public:
         return factory->queryPackage().createWriteHandler(filename, overwrite, extend, clusters, workUnit, isPrivilegedUser);
     }
 
-    virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
+    virtual void endGraph(const ProcessInfo & startProcessInfo, unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
     {
         fileCache.kill();
-        CRoxieContextBase::endGraph(startTimeStamp, startCycles, aborting);
+        CRoxieContextBase::endGraph(startProcessInfo, startTimeStamp, startCycles, aborting);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)

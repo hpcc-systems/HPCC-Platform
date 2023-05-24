@@ -86,7 +86,7 @@ const StatisticsMapping joinActivityStatistics({StNumLeftRows, StNumRightRows}, 
 const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead}, basicActivityStatistics, diskReadRemoteStatistics);
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics, spillStatistics);
-const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizePeakSpillFile}, basicActivityStatistics);
+const StatisticsMapping graphStatistics({StNumExecutions, StSizeSpillFile, StSizePeakSpillFile, StTimeUser, StTimeSystem, StNumContextSwitches, StSizeMemory, StSizePeakMemory, StSizeRowMemory, StSizePeakRowMemory }, basicActivityStatistics);
 const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 
 

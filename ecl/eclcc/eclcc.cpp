@@ -1256,8 +1256,8 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     bool optGatherDiskStats = instance.wu->getDebugValueBool("gatherEclccDiskStats", false);
     size32_t prevErrs = errorProcessor.errCount();
     cycle_t startCycles = get_cycles_now();
-    CpuInfo systemStartTime(false, true);
-    CpuInfo processStartTime(true, false);
+    SystemInfo systemStartTime(ReadAllInfo);
+    ProcessInfo processStartTime(ReadAllInfo);
 
     //Avoid creating the OsDiskStats object if not gathering timings to avoid unnecessary initialisation
     OwnedPtr<OsDiskStats> systemIoStartInfo;
@@ -1550,8 +1550,8 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
     }
 
     unsigned __int64 totalTimeNs = cycle_to_nanosec(get_cycles_now() - startCycles);
-    CpuInfo systemFinishTime(false, true);
-    CpuInfo processFinishTime(true, false);
+    SystemInfo systemFinishTime(ReadAllInfo);
+    ProcessInfo processFinishTime(ReadAllInfo);
     OwnedPtr<OsDiskStats> systemIoFinishInfo;
     if (optGatherDiskStats)
         systemIoFinishInfo.setown(new OsDiskStats(true));
@@ -1566,14 +1566,16 @@ void EclCC::processSingleQuery(const EclRepositoryManager & localRepositoryManag
 
     if (systemFinishTime.getTotal())
     {
-        CpuInfo systemElapsed = systemFinishTime - systemStartTime;
-        CpuInfo processElapsed = processFinishTime - processStartTime;
+        SystemProcessInfo systemElapsed = systemFinishTime - systemStartTime;
+        SystemProcessInfo processElapsed = processFinishTime - processStartTime;
         updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
         updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsUser, NULL, systemElapsed.getUserNs());
         updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsSystem, NULL, systemElapsed.getSystemNs());
         updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsTotal, NULL, systemElapsed.getTotalNs());
         updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeUser, NULL, processElapsed.getUserNs());
         updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeSystem, NULL, processElapsed.getSystemNs());
+        if (processFinishTime.getPeakResidentMemory())
+            updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StSizePeakMemory, NULL, processFinishTime.getPeakResidentMemory());
     }
 
     if (optGatherDiskStats)
@@ -2320,13 +2322,6 @@ void EclCompileInstance::logStats(bool logTimings)
 {
     if (wu && wu->getDebugValueBool("logCompileStats", false))
     {
-        memsize_t peakVm, peakResident;
-        getPeakMemUsage(peakVm, peakResident);
-        //Stats: added as a prefix so it is easy to grep, and a comma so can be read as a csv list.
-        DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%" I64F "u,cpp,%" I64F "u",
-                stats.parseTime, stats.generateTime, (unsigned)(peakResident / 0x100000),
-                (unsigned __int64)stats.xmlSize, (unsigned __int64)stats.cppSize);
-
         //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
         dbglogTransformStats(true);
     }
