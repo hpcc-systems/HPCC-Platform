@@ -657,6 +657,8 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
     default:
         return NULLFILE;
     }
+    // MCK - if (extraFlags & IFEsync) should we add O_SYNC or O_DSYNC to openflags
+    //       and then not have to fdatasync() at close(), flush(), write() ?
     //Prevent the file from being inherited by a child process;
     openflags |= O_CLOEXEC;
     handle = _lopen(filename.get(), openflags, fileflags);
@@ -1814,6 +1816,9 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
     HANDLE handle = openHandle(mode,share,false, stdh);
     if (handle==NULLFILE)
         return NULL;
+    // MCK - if (extraFlags & IFEnocache) and mode is not WRONLY perhaps turn off read-ahead ?
+    //       No - while read-ahead can put more into page-cache, IFEnocache is a hint and
+    //       disabling readahead might affect performance negatively too much ...
     if (stdh>=0)
         return new CSequentialFileIO(handle,mode,share,extraFlags);
 
@@ -1984,6 +1989,35 @@ void CFileIO::setSize(offset_t pos)
 
 //-- Unix implementation ----------------------------------------------------
 
+static void syncFileData(int fd, bool notReadOnly, IFEflags extraFlags, bool wait_previous=false)
+{
+    if (notReadOnly)
+    {
+        if (extraFlags & IFEsync)
+        {
+#ifdef F_FULLFSYNC
+            fcntl(fd, F_FULLFSYNC);
+#else
+            fdatasync(fd);
+#endif
+        }
+#if defined(__linux__)
+        else if (extraFlags & IFEnocache)
+        {
+            unsigned flags = SYNC_FILE_RANGE_WRITE;
+            if (wait_previous)
+                flags |= SYNC_FILE_RANGE_WAIT_BEFORE;
+            sync_file_range(fd, 0, 0, flags);
+        }
+#endif
+    }
+
+#ifdef POSIX_FADV_DONTNEED
+    if (extraFlags & IFEnocache)
+        posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+#endif
+}
+
 // More errorno checking TBD
 CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
     : unflushedReadBytes(0), unflushedWriteBytes(0)
@@ -2027,20 +2061,8 @@ void CFileIO::close()
 #ifdef CFILEIOTRACE
         DBGLOG("CFileIO::close(%d), extraFlags = %d", tmpHandle, extraFlags);
 #endif
-        if (extraFlags & IFEnocache)
-        {
-            if (openmode != IFOread)
-            {
-#ifdef F_FULLFSYNC
-                fcntl(tmpHandle, F_FULLFSYNC);
-#else
-                fdatasync(tmpHandle);
-#endif
-            }
-#ifdef POSIX_FADV_DONTNEED
-            posix_fadvise(tmpHandle, 0, 0, POSIX_FADV_DONTNEED);
-#endif
-        }
+        if (extraFlags & (IFEnocache | IFEsync))
+            syncFileData(tmpHandle, openmode!=IFOread, extraFlags, false);
 
         if (::close(tmpHandle) < 0)
             throw makeErrnoException(errno, "CFileIO::close");
@@ -2049,19 +2071,12 @@ void CFileIO::close()
 
 void CFileIO::flush()
 {
-    if (0 == (extraFlags & IFEnocache))
+    if (0 == (extraFlags & (IFEnocache | IFEsync)))
         return;
 
     CriticalBlock procedure(cs);
-#ifdef F_FULLFSYNC
-    if (fcntl(file, F_FULLFSYNC) != 0)
-#else
-    if (fdatasync(file) != 0)
-#endif
-        throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::flush");
-#ifdef POSIX_FADV_DONTNEED
-    posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
-#endif
+
+    syncFileData(file, true, extraFlags, false);
 }
 
 
@@ -2098,9 +2113,7 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
         if (unflushedReadBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
         {
             unflushedReadBytes.store(0);
-#ifdef POSIX_FADV_DONTNEED
-            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
-#endif
+            syncFileData(file, false, extraFlags, false);
         }
     }
     return ret;
@@ -2110,18 +2123,6 @@ void CFileIO::setPos(offset_t newPos)
 {
     if (file != NULLFILE)
         _llseek(file,newPos,SEEK_SET);
-}
-
-static void sync_file_region(int fd, offset_t offset, offset_t nbytes)
-{
-#if defined(__linux__) && defined(__NR_sync_file_range)
-    (void)syscall(__NR_sync_file_range, fd, offset,
-                    nbytes, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
-#elif defined(F_FULLFSYNC)
-    fcntl(fd, F_FULLFSYNC);
-#else
-    fdatasync(fd);
-#endif
 }
 
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
@@ -2136,17 +2137,13 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         throw makeErrnoException(errno, "CFileIO::write");
     if (ret<len)
         throw makeOsException(DISK_FULL_EXCEPTION_CODE, "CFileIO::write");
-    if ( (extraFlags & IFEnocache) && (ret > 0) )
+    if ( (extraFlags & (IFEnocache | IFEsync)) && (ret > 0) )
     {
         if (unflushedWriteBytes.add_fetch(ret) >= PGCFLUSH_BLKSIZE)
         {
             unflushedWriteBytes.store(0);
-            // [possibly] non-blocking request to write-out dirty pages
-            sync_file_region(file, 0, 0);
-#ifdef POSIX_FADV_DONTNEED
-            // flush written-out pages
-            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
-#endif
+            // request to write-out dirty pages
+            syncFileData(file, true, extraFlags, true);
         }
     }
     return ret;

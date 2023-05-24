@@ -1227,10 +1227,21 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
   {{- else -}}
    {{- required "global visibilities section not found" nil -}}
   {{- end -}}
+  {{- if .appProtocolHTTP -}}
+   {{- if (.root.Values.certificates | default dict).enabled -}}
+    {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" $.root "visibility" .service.visibility)) "") -}}
+    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+    {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
+    {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" $.root "issuerKeyName" $issuerKeyName)) "true" -}}
+     {{- $_ := set $lvars "tls" true -}}
+    {{- end }}
+   {{- end }}
+  {{- end }}
  {{- end -}}
  {{- if hasKey .service "ingress" -}}{{- $_ := set $lvars "ingress" .service.ingress -}}{{- end -}}
  {{- if hasKey .service "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" .service.loadBalancerSourceRanges -}}{{- end -}}
 {{- end }}
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -1250,6 +1261,9 @@ spec:
   - port: {{ required "servicePort must be specified" .service.servicePort }}
     protocol: TCP
     targetPort: {{ .service.port | default .defaultPort }}
+{{- if .appProtocolHTTP }}
+    appProtocol: {{ ternary "https" "http" (hasKey $lvars "tls" | ternary $lvars.tls false) }}
+{{- end }}
   selector:
     server: {{ .selector | quote }}
   type: {{ $lvars.type }}
@@ -1546,7 +1560,7 @@ use "public" or "local"
 */}}
 {{- define "hpcc.addCertificate" }}
  {{- if (.root.Values.certificates | default dict).enabled -}}
-  {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
+  {{- $externalCert := ((hasKey . "external") | ternary .external (ne (include "hpcc.isVisibilityPublic" .) "")) -}}
   {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
   {{- $issuerKeyName := .issuerKeyName | default (ternary $externalIssuerKeyName "local" $externalCert) -}}
   {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuerKeyName" $issuerKeyName)) "true" -}}
@@ -1557,6 +1571,7 @@ use "public" or "local"
     {{- $spiffe := (hasKey $issuer "spiffe" | ternary $issuer.spiffe (ne "public" $issuerKeyName)) }}
     {{- $service := (.service | default dict) -}}
     {{- $wildcard := (hasKey $issuer "wildcard" | ternary $issuer.wildcard false) -}}
+    {{- $useCommonName := (hasKey $issuer "useCommonName" | ternary $issuer.useCommonName true) -}}
     {{- /* Having a service specific domain overrules wildcard. We can consider wildcard at the service level later */ -}}
     {{- if and $wildcard (not $service.domain) -}}
      {{- /* Issuer wildcard certifiacte should already be generated */ -}}
@@ -1575,6 +1590,29 @@ use "public" or "local"
     {{- else -}}
      {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
      {{- $name := .name -}}
+
+     {{- /* Prepare Common and DNS names */ -}}
+     {{- $local := dict "dnsNames" list -}}
+     {{- if hasKey . "service" -}}{{- /* ESP style - if service is passed in, it has service properties but the name comes from the name parameter */ -}}
+      {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
+      {{- if eq $public $externalCert -}}
+        {{- $_ := set $local "dnsNames" (append $local.dnsNames $name ) -}}
+      {{- end -}}
+     {{- end -}}
+     {{- if hasKey . "services" -}}{{- /* Roxie style - if services parameter is passed in, the component can have mulitple services with different names */ -}}
+      {{- range $service := .services -}}
+       {{- $public := and (hasKey $service "visibility") (not (eq $service.visibility "cluster")) -}}
+       {{- if eq $public $externalCert -}}
+        {{- $_ := set $local "dnsNames" (append $local.dnsNames $service.name ) -}}
+       {{- end -}}
+      {{- end -}}
+     {{- end -}}
+     {{- $_ := set $local "dnsNames" (uniq $local.dnsNames ) -}}
+     {{- if $externalCert -}}
+       {{- $_ := set $local "commonName" (mustFirst $local.dnsNames ) -}}
+     {{- else -}}
+       {{- $_ := set $local "commonName" $name -}}
+     {{- end -}}
      # spiffe and clientUsage default is off for public issuer to simplify use of letsencrypt, etc.
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -1589,7 +1627,10 @@ spec:
   subject:
     organizations:
     - HPCC Systems
-  commonName: {{ (trunc 64 (printf "%s.%s" $name $domain)) | quote }}
+     {{- /* Initially turning off commonName is experimental, but it may help with some issuers.  Rules may require commonName to also be in alt dns names but truncation may make that impossible */ -}}
+     {{- if $useCommonName }}
+  commonName: {{ (trunc 64 (printf "%s.%s" $local.commonName $domain)) | quote }}
+     {{- end }}
   isCA: false
   privateKey:
     algorithm: RSA
@@ -1601,25 +1642,8 @@ spec:
     - client auth
      {{- end }}
   dnsNames:
-     {{- /* if servicename is passed we simply create a service entry of that name */ -}}
-     {{- if .servicename }}
-  - {{ .servicename }}.{{ $domain }}
-      {{- /* if service parameter is passed in we are using the component config as a service config entry */ -}}
-     {{- else if .service -}}
-      {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
-      {{- if eq $public $externalCert }}
-  - {{ $name }}.{{ $domain }}
-      {{- end }}
-     {{- /* if services parameter is passed the component has an array of services to configure */ -}}
-     {{- else if .services -}}
-      {{- range $service := .services }}
-       {{- $external := and (hasKey $service "external") $service.external -}}
-       {{- if eq $external $externalCert }}
-  - {{ $service.name }}.{{ $domain }}
-       {{- end }}
-      {{- end }}
-     {{- else if not $externalCert }}
-  - "{{ $name }}.{{ $domain }}"
+     {{- range $dnsName := $local.dnsNames }}
+  - {{ (printf "%s.%s" $dnsName $domain) | quote }}
      {{- end }}
      {{- if $spiffe }}
   uris:

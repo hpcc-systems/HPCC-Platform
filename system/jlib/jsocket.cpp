@@ -455,6 +455,16 @@ extern jlib_decl bool queryKeepAlive(int &time, int &intvl, int &probes)
         return false;
 }
 
+struct SocketStats
+{
+    cycle_t ioReadCycles = 0;
+    cycle_t ioWriteCycles = 0;
+    __uint64 ioReadBytes = 0;
+    __uint64 ioWriteBytes = 0;
+    __uint64 ioReads = 0;
+    __uint64 ioWrites = 0;
+};
+
 class CSocket: public ISocket, public CInterface
 {
 public:
@@ -481,6 +491,8 @@ protected:
     bool            in_accept;
     bool            nonblocking;
     bool            nagling;
+    SocketStats     stats;
+
     static unsigned connectingcount;
 #ifdef USERECVSEM
     static Semaphore receiveblocksem;
@@ -529,6 +541,7 @@ public:
     virtual void set_inherit(bool inherit=false);
     virtual bool check_connection();
     virtual bool isSecure() const override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) const override;
 
     
     // Block functions
@@ -1912,7 +1925,7 @@ void CSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t 
     }
         
 
-    unsigned startt=usTick();
+    cycle_t startcycles=get_cycles_now();
     size_read = 0;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
@@ -1980,16 +1993,20 @@ EintrRetry:
         }
         size_read += rc;
     } while (size_read < min_size);
+
+    cycle_t elapsedCycles = get_cycles_now()-startcycles;
     STATS.reads++;
     STATS.readsize += size_read;
-    STATS.readtime+=usTick()-startt;
-
+    STATS.readtimecycles += elapsedCycles;
+    stats.ioReads++;
+    stats.ioReadBytes += size_read;
+    stats.ioReadCycles += elapsedCycles;
 }
 
 void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
                      unsigned timeoutsecs)
 {
-    unsigned startt=usTick();
+    cycle_t startcycles=get_cycles_now();
     size_read = 0;
     unsigned start = 0;
     unsigned timeleft = 0;
@@ -2060,16 +2077,21 @@ EintrRetry:
         }
         size_read += rc;
     } while (size_read < min_size);
+
+    cycle_t elapsedCycles = get_cycles_now()-startcycles;
     STATS.reads++;
     STATS.readsize += size_read;
-    STATS.readtime+=usTick()-startt;
+    STATS.readtimecycles += elapsedCycles;
+    stats.ioReads++;
+    stats.ioReadBytes += size_read;
+    stats.ioReadCycles += elapsedCycles;
 }
 
 void CSocket::read(void* buf, size32_t size)
 {
     if (!size)
         return;
-    unsigned startt=usTick();
+    cycle_t startcycles=get_cycles_now();
     size32_t size_read=size;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
@@ -2115,10 +2137,14 @@ EintrRetry:
         buf = (char*)buf + rc;
         size -= rc;
     } while (size != 0);
+
+    cycle_t elapsedCycles = get_cycles_now()-startcycles;
     STATS.reads++;
     STATS.readsize += size_read;
-    STATS.readtime+=usTick()-startt;
-
+    STATS.readtimecycles +=elapsedCycles;
+    stats.ioReads++;
+    stats.ioReadBytes += size_read;
+    stats.ioReadCycles += elapsedCycles;
 }
 
 
@@ -2127,7 +2153,7 @@ size32_t CSocket::write(void const* buf, size32_t size)
 {
     if (size==0)
         return 0;
-    unsigned startt=usTick();
+    cycle_t startcycles=get_cycles_now();
     size32_t size_writ = size;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
@@ -2190,9 +2216,14 @@ EintrRetry:
         buf = (char*)buf + rc;
         size -= rc;
     } while (size != 0);
+
+    cycle_t elapsedCycles = get_cycles_now()-startcycles;
     STATS.writes++;
     STATS.writesize += size_writ;
-    STATS.writetime+=usTick()-startt;
+    STATS.writetimecycles += elapsedCycles;
+    stats.ioWrites++;
+    stats.ioWriteBytes += size_writ;
+    stats.ioWriteCycles += elapsedCycles;
     return res;
 }
 
@@ -2300,7 +2331,7 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
 {
     if (size==0)
         return 0;
-    unsigned startt=usTick();
+    cycle_t startcycles=get_cycles_now();
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
@@ -2322,9 +2353,14 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
             break;
         }
     }
+
+    cycle_t elapsedCycles = get_cycles_now()-startcycles;
     STATS.writes++;
     STATS.writesize += res;
-    STATS.writetime+=usTick()-startt;
+    STATS.writetimecycles += elapsedCycles;
+    stats.ioWrites++;
+    stats.ioWriteBytes += res;
+    stats.ioWriteCycles += elapsedCycles;
     return res;
 }
 
@@ -2341,7 +2377,7 @@ size32_t CSocket::write_multiple(unsigned num,const void **buf, size32_t *size)
     if (total==0)
         return 0;
     
-    unsigned startt=usTick();
+    cycle_t startcycles=get_cycles_now();
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
@@ -2459,9 +2495,14 @@ EintrRetry:
     }
 #endif
 #endif
+
+    cycle_t elapsedCycles = get_cycles_now()-startcycles;
     STATS.writes++;
     STATS.writesize += res;
-    STATS.writetime+=usTick()-startt;
+    STATS.writetimecycles += elapsedCycles;
+    stats.ioWrites++;
+    stats.ioWriteBytes += res;
+    stats.ioWriteCycles += elapsedCycles;
     return res;
 }
 
@@ -2827,6 +2868,30 @@ void CSocket::logConnectionInfo(unsigned timeoutms, unsigned conn_mstime)
 bool CSocket::isSecure() const
 {
     return false;
+}
+
+unsigned __int64 CSocket::getStatistic(StatisticKind kind) const
+{
+    switch (kind)
+    {
+    case StCycleSocketReadIOCycles:
+        return stats.ioReadCycles;
+    case StCycleSocketWriteIOCycles:
+        return stats.ioWriteCycles;
+    case StTimeSocketReadIO:
+        return cycle_to_nanosec(stats.ioReadCycles);
+    case StTimeSocketWriteIO:
+        return cycle_to_nanosec(stats.ioWriteCycles);
+    case StSizeSocketRead:
+        return stats.ioReadBytes;
+    case StSizeSocketWrite:
+        return stats.ioWriteBytes;
+    case StNumSocketReads:
+        return stats.ioReads;
+    case StNumSocketWrites:
+        return stats.ioWrites;
+    }
+    return 0;
 }
 
 CSocket::~CSocket()
@@ -4046,10 +4111,10 @@ StringBuffer &getSocketStatisticsString(JSocketStatistics &stats,StringBuffer &s
     str.append("failedconnects=").append(stats.failedconnects).append('\n');
     appendtime(str.append("failedconnecttime="),stats.failedconnecttime).append('\n');
     str.append("reads=").append(stats.reads).append('\n');
-    appendtime(str.append("readtime="),stats.readtime).append('\n');
+    appendtime(str.append("readtime="),cycle_to_microsec(stats.readtimecycles)).append('\n');
     str.append("readsize=").append(stats.readsize).append(" bytes\n");
     str.append("writes=").append(stats.writes).append('\n');
-    appendtime(str.append("writetime="),stats.writetime).append('\n');
+    appendtime(str.append("writetime="),cycle_to_microsec(stats.writetimecycles)).append('\n');
     str.append("writesize=").append(stats.writesize).append(" bytes").append('\n');
     str.append("activesockets=").append(stats.activesockets).append('\n');
     str.append("numblockrecvs=").append(stats.numblockrecvs).append('\n');
