@@ -1425,7 +1425,12 @@ inline void refused_sleep(CTimeMon &tm, unsigned &refuseddelay)
                 refuseddelay = CONNECT_TIMEOUT_REFUSED_WAIT;
         }
         else 
-            Sleep(remaining/4); // towards end of timeout approach gradually
+        {
+            unsigned delay = remaining/4;
+            if (delay == 0)
+                delay = 1;
+            Sleep(delay); // towards end of timeout approach gradually
+        }
     }
 }
 
@@ -6981,7 +6986,7 @@ public:
             }
             sock->errclose();
             isopen = false;
-        } while (!waittimedout&&!oneshot);
+        } while (!waittimedout&&!connectimedout&&!oneshot);
         if (connectimedout)
         {
             STATS.failedconnects++;
