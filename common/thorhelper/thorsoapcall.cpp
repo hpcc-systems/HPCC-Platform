@@ -389,27 +389,46 @@ public:
             throw MakeStringException(-1, "blacklisted socket %s", s.str());
         }
         Owned<IException> exc;
-        try
-        {
-            checkRoxieAbortMonitor(roxieAbortMonitor);
-            Owned<ISocket> sock;
-            Owned<ISocketConnectWait> scw = nonBlockingConnect(ep, timeoutMS == WAIT_FOREVER ? 60000 : timeoutMS*(retries+1));
-            for (;;)
-            {
-                sock.setown(scw->wait(1000));//throws if connect fails or timeoutMS
-                checkRoxieAbortMonitor(roxieAbortMonitor);
-                if (sock)
-                    return sock.getLink();
-            }
-        }
 
-        catch (IJSOCK_Exception *e)
+        unsigned numAttemptsRemaining = retries+1;
+        if (!numAttemptsRemaining)
+            numAttemptsRemaining++;
+
+        unsigned connectTimeMS = timeoutMS;
+        if (timeoutMS == WAIT_FOREVER)
+            connectTimeMS = 60000 / numAttemptsRemaining;
+
+        while(numAttemptsRemaining-- > 0)
         {
-            EXCLOG(e,"BlackLister::connect");
-            if (exc)
-                e->Release();
-            else
-                exc.setown(e);
+            try
+            {
+                checkRoxieAbortMonitor(roxieAbortMonitor);
+                Owned<ISocket> sock;
+                Owned<ISocketConnectWait> scw = nonBlockingConnect(ep, connectTimeMS);
+                for (;;)
+                {
+                    sock.setown(scw->wait(1000)); //throws if connect fails or timeoutMS
+                    checkRoxieAbortMonitor(roxieAbortMonitor);
+                    if (sock)
+                        return sock.getLink();
+                }
+            }
+            catch (IException *e)
+            {
+                if (e->errorCode() == ROXIE_ABORT_EVENT)
+                    throw;
+                // MCK - do we checkTimeLimitExceeded(&remainingMS) and possibly error out if timelimit exceeded ?
+                if (numAttemptsRemaining > 0)
+                {
+                    e->Release();
+                }
+                else
+                {
+                    EXCLOG(e, nullptr);
+                    exc.setownIfNull(e);
+                    break;
+                }
+            }
         }
 
         blacklist(ep, logctx);
@@ -477,7 +496,6 @@ public:
                         E->Release();
                         if (stopped.wait(delay))
                             return;
-                        delay += delay;
                     }
                 }
                 parent.deblacklist(ep);
