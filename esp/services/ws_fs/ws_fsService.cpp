@@ -2009,7 +2009,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
 
         IDFUfileSpec *source = wu->queryUpdateSource();
         checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
-
+        source->setGroupName(sourcePlaneReq);
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         bool nosplit = req.getNosplit();
         int recordsize = req.getSourceRecordSize();
@@ -2172,6 +2172,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
+        source->setGroupName(sourcePlaneReq);
 
         StringBuffer rowtag;
         if (req.getIsJSON())
@@ -2493,6 +2494,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             if (umask.length())
                 options->setUMask(umask.str());
             destination->setSingleFilename(rfn);
+            destination->setGroupName(destPlane);
         }
         else
         {   //Not sure there exists any use case for despraying a file using the dstxml. JIRA-29339 is created to check

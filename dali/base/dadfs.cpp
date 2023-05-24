@@ -7442,6 +7442,8 @@ GroupType translateGroupType(const char *groupType)
         return grp_roxie;
     else if (strieq(groupType, "hthor"))
         return grp_hthor;
+    else if (strieq(groupType, "dropzone"))
+        return grp_dropzone;
     else
         return grp_unknown;
 }
@@ -10032,6 +10034,9 @@ class CInitGroups
             case grp_hthor:
                 kind = "hthor";
                 break;
+            case grp_dropzone:
+                kind = "dropzone";
+                break;
         }
         if (kind)
             cluster->setProp("@kind",kind);
@@ -10073,6 +10078,9 @@ class CInitGroups
             case grp_roxie:
                 processName = "RoxieServerProcess";
                 break;
+            case grp_dropzone:
+                processName = "ServerList";
+                break;
             default:
                 throwUnexpected();
         }
@@ -10081,25 +10089,30 @@ class CInitGroups
         ForEach(*nodes)
         {
             IPropertyTree &node = nodes->query();
-            const char *computer = node.queryProp("@computer");
             const char *host = nullptr;
-            if (!isEmptyString(computer))
-            {
-                auto it = machineMap.find(computer);
-                if (it == machineMap.end())
-                {
-                    OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
-                    return nullptr;
-                }
-                host = it->second.c_str();
-            }
+            if (grp_dropzone == groupType)
+                host = node.queryProp("@server");
             else
             {
-                host = node.queryProp("@netAddress");
-                if (isEmptyString(host))
+                const char *computer = node.queryProp("@computer");
+                if (!isEmptyString(computer))
                 {
-                    OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
-                    return nullptr;
+                    auto it = machineMap.find(computer);
+                    if (it == machineMap.end())
+                    {
+                        OERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
+                        return nullptr;
+                    }
+                    host = it->second.c_str();
+                }
+                else
+                {
+                    host = node.queryProp("@netAddress");
+                    if (isEmptyString(host))
+                    {
+                        OERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
+                        return nullptr;
+                    }
                 }
             }
             switch (groupType)
@@ -10112,6 +10125,7 @@ class CInitGroups
                     break;
                 case grp_thor:
                 case grp_thorspares:
+                case grp_dropzone:
                     hosts.push_back(host);
                     break;
                 default:
@@ -10152,6 +10166,11 @@ class CInitGroups
                 break;
             case grp_roxie:
                 gname.append(cluster.queryProp("@name"));
+                break;
+            case grp_dropzone:
+                gname.append(cluster.queryProp("@name"));
+                oldRealCluster = realCluster = false;
+                defDir = cluster.queryProp("@directory");
                 break;
             default:
                 throwUnexpected();
@@ -10460,6 +10479,26 @@ public:
                     else
                         grp.removeProp("@cluster");
                 }
+            }
+        }
+
+        //Walk the drop zones, and add them as storage groups if they have no servers configured, or "."
+        Owned<IPropertyTreeIterator> dropzones = conn->queryRoot()->getElements("DropZone");
+        ForEach(*dropzones)
+        {
+            IPropertyTree & dropZone = dropzones->query();
+            unsigned numServers = dropZone.getCount("ServerList");
+
+            //Allow url style drop zones, and drop zones with a single node.  Not sure what >1 would mean in legacy.
+            if (numServers <= 1)
+            {
+                IPropertyTree *oldDropZone = NULL;
+                if (oldEnvironment)
+                {
+                    VStringBuffer xpath("Software/DropZone[@name=\"%s\"]", dropZone.queryProp("@name"));
+                    oldDropZone = oldEnvironment->queryPropTree(xpath.str());
+                }
+                constructGroup(dropZone,NULL,oldDropZone,grp_dropzone,force,messages);
             }
         }
     }
