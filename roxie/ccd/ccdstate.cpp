@@ -1130,6 +1130,17 @@ public:
         }
     }
 
+    virtual void preloadOnce() const
+    {
+        HashIterator elems(queries);
+        for (elems.first(); elems.isValid(); elems.next())
+        {
+            IMapping &cur = elems.query();
+            IQueryFactory *query = queries.mapToValue(&cur);
+            query->preloadOnce();
+        }
+    }
+
     virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
         if (querySet && querySet->length() && !streq(querySet->str(), querySetName))
@@ -1224,6 +1235,13 @@ public:
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
                 managers[channel]->load(querySets, packages, hash, forceRetry); // MORE - this means the hash depends on the number of channels. Is that desirable?
+    }
+
+    virtual void preloadOnce() override
+    {
+        for (unsigned channel = 0; channel < numChannels; channel++)
+            if (managers[channel])
+                managers[channel]->preloadOnce();
     }
 
     virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const
@@ -1754,6 +1772,20 @@ public:
         }
     }
 
+    void preloadOnce() const
+    {
+        ForEachItemIn(idx, allQueryPackages)
+        {
+            Owned<IRoxieQuerySetManager> serverManager = allQueryPackages.item(idx).getRoxieServerManager();
+            if (serverManager->isActive())
+            {
+                serverManager->preloadOnce();
+                Owned<IRoxieQuerySetManagerSet> agentManagers = allQueryPackages.item(idx).getRoxieAgentManagers();
+                agentManagers->preloadOnce();
+            }
+        }
+    }
+
     void getActivityMetrics(StringBuffer &reply) const
     {
         ForEachItemIn(idx, allQueryPackages)
@@ -2209,6 +2241,11 @@ private:
 
     void completeReload()
     {
+        if (preloadOnceData)
+        {
+            ReadLockBlock readBlock(packageCrit);
+            allQueryPackages->preloadOnce();
+        }
         // Avoid clearing keys and updating the cache file if we are just about to reload something
         if (autoPending.load() == 0)
         {

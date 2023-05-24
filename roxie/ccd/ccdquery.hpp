@@ -178,6 +178,7 @@ interface IQueryFactory : extends IInterface
     virtual void setTimeActResetLastLogged(unsigned _ntime) const = 0;
     virtual void checkSuspended() const = 0;
     virtual void onTermination(TerminationCallbackInfo *info) const= 0;
+    virtual void preloadOnce() = 0;
 };
 
 class ActivityArray : public CInterface
