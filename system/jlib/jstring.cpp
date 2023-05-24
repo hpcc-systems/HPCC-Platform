@@ -1812,6 +1812,11 @@ int utf8CharLen(const unsigned char *ch, unsigned maxsize)
 
 const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned len, bool utf8)
 {
+    //Cost of strlen is small compared to benefits of ensureCapacity and the complexity of the rest of the function.
+    if (len == (unsigned)-1)
+        len = strlen(x);
+    // This is the minimum length that will get generated, and potentially saves large number of relocations for large strings
+    ret.ensureCapacity(len);
     while (len)
     {
         switch(*x)
@@ -1844,8 +1849,6 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
             ret.append(flags & ENCODE_SPACES?"&#9;":"\t");
             break;
         case '\0':
-            if (len == (unsigned)-1)
-                return ret.str();
             ret.append("&#xe000;");   // hack!!! Characters below 0x20 are not legal in strict xml, even encoded.
             break;
         default:
@@ -1856,15 +1859,14 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
             else if (utf8)
             {
                 unsigned chlen = utf8CharLen((const unsigned char *)x);     
-                if (chlen==0)
+                if (chlen==0 || (chlen > len)) // invalid utf8, or missing multi byte characters
                     ret.append("&#").append((unsigned int)*(unsigned char *) x).append(';');
                 else
                 {
                     ret.append(*x);
                     while(--chlen)
                     {
-                        if (len != (unsigned) -1)
-                            len--;
+                        len--;
                         ret.append(*(++x));
                     }
                 }
@@ -1874,8 +1876,7 @@ const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags, unsigned
 
             break;
         }
-        if (len != (unsigned) -1)
-            len--;
+        len--;
         ++x;
     }
     return ret.str();
@@ -2353,6 +2354,7 @@ StringBuffer &encodeJSON(StringBuffer &s, unsigned size, const char *value)
 {
     if (!value)
         return s;
+    s.ensureCapacity(size); // Minimum size that will be written
     while (size)
         encodeJSONChar(s, value, size);
     return s;
