@@ -1946,6 +1946,11 @@ void CSafeSocket::sendException(const char *source, unsigned code, const char *m
 #endif
 }
 
+unsigned __int64 CSafeSocket::getStatistic(StatisticKind kind) const
+{
+    return sock->getStatistic(kind);
+}
+
 //==============================================================================================================
 
 #define RESULT_FLUSH_THRESHOLD 10000u
