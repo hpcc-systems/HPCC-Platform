@@ -2171,6 +2171,11 @@ public:
         queryProperties().setPropInt("@flags", static_cast<int>(flags));
         fileFlags = flags;
     }
+
+    virtual FileDescriptorFlags getFlags() override
+    {
+        return static_cast<FileDescriptorFlags>(queryProperties().getPropInt("@flags"));
+    }
 };
 
 class CSuperFileDescriptor:  public CFileDescriptor
