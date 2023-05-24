@@ -285,8 +285,9 @@ struct UdpPermitToSendMsg
 public:
     bool isSamePermit(const UdpPermitToSendMsg & other) const
     {
-        //Comparisons ordered to fail as quickly as possible (called on a high priority thread)
-        return flowSeq == other.flowSeq && destNode == other.destNode && cmd == other.cmd;
+        // Is this a permit from the same source?  If the flowSeq differs then the newer takes precedence over the older
+        // The command is always the same, so second check will always be true
+        return destNode == other.destNode && cmd == other.cmd;
     }
 
 public:
