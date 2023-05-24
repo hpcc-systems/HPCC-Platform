@@ -4988,12 +4988,8 @@ void EspServInfo::write_esp_binding_ipp()
     outf("\tC%sSoapBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL, http_soap_log_level level=hsl_none);\n", name_);
 
     outs("\tvirtual void init_strings();\n");
-    if (executionProfilingEnabled)
-    {
-        outf("#ifdef ESP_SERVICE_%s\n", name_);
-        outs("\tvoid init_metrics();\n");
-        outf("#endif\n");
-    }
+    outs("\tvoid init_metrics();\n");
+
     outs("\tvirtual unsigned getCacheMethodCount(){return m_cacheMethodCount;}\n");
 
     //method ==> processRequest
@@ -5147,12 +5143,7 @@ void EspServInfo::write_esp_binding()
     outf("\nC%sSoapBinding::C%sSoapBinding(IPropertyTree* cfg, const char *bindname, const char *procname, http_soap_log_level level):CHttpSoapBinding(cfg, bindname, procname, level)\n", name_, name_);
     outf("{\n");
     outf("\tinit_strings();\n");
-    if (executionProfilingEnabled)
-    {
-        outf("#ifdef ESP_SERVICE_%s\n", name_);
-        outf("\tinit_metrics();\n");
-        outf("#endif\n");
-    }
+    outf("\tinit_metrics();\n");
     outf("\tsetWsdlVersion(%s);\n", wsdlVer.str());
     outf("}\n");
 
@@ -5200,24 +5191,25 @@ void EspServInfo::write_esp_binding()
     }
     outs("}\n");
 
-    //
     // Create init_metrics for execution profiling
+    outf("\nvoid C%sSoapBinding::init_metrics()\n", name_);
+    outs("{\n");
     if (executionProfilingEnabled)
     {
         outf("#ifdef ESP_SERVICE_%s\n", name_);
-        outf("\nvoid C%sSoapBinding::init_metrics()\n", name_);
-        outs("{\n");
 
         // For each method with execution profiling enabled, add code to initialize the histogram metric
-        for (mthi = methods; mthi != NULL; mthi = mthi->next) {
-            if (mthi->isExecutionProfilingEnabled()) {
+        for (mthi = methods; mthi != NULL; mthi = mthi->next)
+        {
+            if (mthi->isExecutionProfilingEnabled())
+            {
                 outf("\t%s = registerServiceMethodProfilingMetric(queryProcessName(), \"%s\", \"%s\", \"\", \"%s\");\n",
                      mthi->getExecutionProfilingMetricVariableName(), name_, mthi->getName(), mthi->getExecutionProfilingOptions().c_str());
             }
         }
-        outs("}\n");
         outf("#endif\n");
     }
+    outs("}\n");
 
     outf("\nint C%sSoapBinding::processRequest(IRpcMessage* rpc_call, IRpcMessage* rpc_response)\n", name_);
     outs("{\n");
