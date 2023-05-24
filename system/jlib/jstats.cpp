@@ -969,6 +969,10 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(SocketRead) },
     { TIMESTAT(SocketReadIO) },
     { CYCLESTAT(SocketReadIO) },
+    { SIZESTAT(Memory) },
+    { SIZESTAT(RowMemory) },
+    { SIZESTAT(PeakRowMemory) },
+    { SIZESTAT(AgentSend) },
 };
 
 static MapStringTo<StatisticKind, StatisticKind> statisticNameMap(true);

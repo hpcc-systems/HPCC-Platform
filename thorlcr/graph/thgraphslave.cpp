@@ -1143,6 +1143,7 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
 {
     if (isComplete())
         return;
+    processStartInfo.update(ReadAllInfo);
     Owned<IException> exception;
     try
     {
@@ -1195,6 +1196,7 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
             connect(); // only now do slave acts. have all their outputs prepared.
         }
         CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
+        jobS->querySharedAllocator()->queryRowManager()->resetPeakMemory();
     }
     catch (IException *e)
     {
@@ -1258,13 +1260,23 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 
     CRuntimeStatisticCollection stats(graphStatistics);
     stats.setStatistic(StNumExecutions, numExecuted);
+
+    ProcessInfo processActiveInfo(ReadAllInfo);
+    SystemProcessInfo processElapsed = processActiveInfo - processStartInfo;
+    stats.setStatistic(StTimeUser, processElapsed.getUserNs());
+    stats.setStatistic(StTimeSystem, processElapsed.getSystemNs());
+    stats.setStatistic(StNumContextSwitches, processElapsed.getNumContextSwitches());
+    stats.setStatistic(StSizeMemory, processActiveInfo.getActiveResidentMemory());
+    stats.setStatistic(StSizePeakMemory, processActiveInfo.getPeakResidentMemory());
+    jobS->querySharedAllocator()->queryRowManager()->reportSummaryStatistics(stats);
+
     stats.serialize(mb);
 
     unsigned cPos = mb.length();
     unsigned count = 0;
     mb.append(count);
     CriticalBlock b(progressCrit);
-    // until started and activities initialized, activities are not ready to serlialize stats.
+    // until started and activities initialized, activities are not ready to serialize stats.
     if ((started&&initialized) || 0 == activityCount())
     {
         if (checkProgressUpdatedAndClear() || progressActive)
