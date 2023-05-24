@@ -1188,10 +1188,21 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
   {{- else -}}
    {{- required "global visibilities section not found" nil -}}
   {{- end -}}
+  {{- if .appProtocolHTTP -}}
+   {{- if (.root.Values.certificates | default dict).enabled -}}
+    {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" $.root "visibility" .service.visibility)) "") -}}
+    {{- $externalIssuerKeyName := ternary "remote" "public" (eq "true" ( include "hpcc.usesRemoteClientCertificates" . )) -}}
+    {{- $issuerKeyName := ternary $externalIssuerKeyName "local" $externalCert -}}
+    {{- if eq (include "hpcc.isIssuerEnabled" (dict "root" $.root "issuerKeyName" $issuerKeyName)) "true" -}}
+     {{- $_ := set $lvars "tls" true -}}
+    {{- end }}
+   {{- end }}
+  {{- end }}
  {{- end -}}
  {{- if hasKey .service "ingress" -}}{{- $_ := set $lvars "ingress" .service.ingress -}}{{- end -}}
  {{- if hasKey .service "loadBalancerSourceRanges" -}}{{- $_ := set $lvars "loadBalancerSourceRanges" .service.loadBalancerSourceRanges -}}{{- end -}}
 {{- end }}
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -1211,6 +1222,9 @@ spec:
   - port: {{ required "servicePort must be specified" .service.servicePort }}
     protocol: TCP
     targetPort: {{ .service.port | default .defaultPort }}
+{{- if .appProtocolHTTP }}
+    appProtocol: {{ ternary "https" "http" (hasKey $lvars "tls" | ternary $lvars.tls false) }}
+{{- end }}
   selector:
     server: {{ .selector | quote }}
   type: {{ $lvars.type }}
