@@ -587,10 +587,9 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
         if (wu->getDebugValueBool("addMemoryToWorkunit", true))
         {
-            memsize_t peakVm, peakResident;
-            getPeakMemUsage(peakVm, peakResident);
-            if (peakResident)
-                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StSizePeakMemory, NULL, peakResident, 1, 0, StatsMergeReplace);
+            ProcessInfo info(ReadMemoryInfo);
+            if (info.getPeakResidentMemory())
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StSizePeakMemory, NULL, info.getPeakResidentMemory(), 1, 0, StatsMergeReplace);
         }
 
 

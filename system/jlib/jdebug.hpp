@@ -356,17 +356,33 @@ void jlib_decl enableMemLeakChecking(bool enable);
 
 // Hook to be called by the performance monitor, takes stats for processor, virtual memory, disk, and thread usage
 
-class jlib_decl CpuInfo
+
+enum
+{
+    ReadCpuInfo     = 0x0001,
+    ReadMemoryInfo  = 0x0002,
+    ReadContextInfo = 0x0004,
+    ReadFaultInfo   = 0x0008,
+    ReadAllInfo     = 0xFFFF,
+};
+
+class jlib_decl SystemProcessInfo
 {
 public:
-    CpuInfo() = default;
-    CpuInfo(bool processTime, bool systemTime);
+    SystemProcessInfo() = default;
 
     void clear();
-    bool getProcessTimes();
-    bool getSystemTimes();
-    CpuInfo operator - (const CpuInfo & rhs) const;
-    __uint64 getNumContextSwitches() const { return ctx; }
+    SystemProcessInfo operator - (const SystemProcessInfo & rhs) const;
+
+    __uint64 getNumContextSwitches() const { return contextSwitches; }
+    __uint64 getPeakVirtualMemory() const { return peakVirtualMemory; }
+    __uint64 getActiveVirtualMemory() const { return activeVirtualMemory; }
+    __uint64 getPeakResidentMemory() const { return peakResidentMemory; }
+    __uint64 getActiveResidentMemory() const { return activeResidentMemory; }
+    __uint64 getActiveSwapMemory() const { return activeSwapMemory; }
+    __uint64 getActiveDataMemory() const { return activeDataMemory; }
+    __uint64 getMajorFaults() const { return majorFaults; }
+    __uint64 getNumThreads() const { return numThreads; }
     unsigned getPercentCpu() const;
     __uint64 getSystemNs() const;
     __uint64 getUserNs() const;
@@ -383,7 +399,33 @@ protected:
     __uint64 system = 0;
     __uint64 idle = 0;
     __uint64 iowait =0;
-    __uint64 ctx =0;
+    __uint64 contextSwitches =0;
+    __uint64 peakVirtualMemory = 0;
+    __uint64 activeVirtualMemory = 0;
+    __uint64 peakResidentMemory = 0;
+    __uint64 activeResidentMemory = 0;
+    __uint64 activeSwapMemory = 0;
+    __uint64 activeDataMemory = 0;
+    __uint64 majorFaults = 0;
+    __uint64 numThreads = 0;
+};
+
+class jlib_decl ProcessInfo : public SystemProcessInfo
+{
+public:
+    ProcessInfo() = default;
+    ProcessInfo(unsigned flags);
+
+    bool update(unsigned flags);
+};
+
+class jlib_decl SystemInfo : public SystemProcessInfo
+{
+public:
+    SystemInfo() = default;
+    SystemInfo(unsigned flags);
+
+    bool update(unsigned flags);
 };
 
 //Information about a single IO device
@@ -516,9 +558,7 @@ enum class HugePageMode { Always, Madvise, Never, Unknown };
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
 extern jlib_decl void getProcessTime(UserSystemTime_t & time);
 extern jlib_decl memsize_t getMapInfo(const char *type);
-extern jlib_decl memsize_t getVMInfo(const char *type);
 extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
-extern jlib_decl void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident);
 extern jlib_decl unsigned getAffinityCpus();
 extern jlib_decl void clearAffinityCache(); // should be called whenever the process affinity is changed to reset the cache
 

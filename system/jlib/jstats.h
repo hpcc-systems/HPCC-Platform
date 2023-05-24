@@ -922,9 +922,22 @@ interface IStatisticTarget
 class jlib_decl NullStatisticTarget : implements IStatisticTarget
 {
 public:
-    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction)
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) override
     {
     }
+};
+
+class jlib_decl RuntimeStatisticTarget : implements IStatisticTarget
+{
+public:
+    RuntimeStatisticTarget(CRuntimeStatisticCollection & _target) : target(_target) {}
+
+    virtual void addStatistic(StatisticScopeType scopeType, const char * scope, StatisticKind kind, char * description, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, StatsMergeAction mergeAction) override
+    {
+        target.addStatistic(kind, value);
+    }
+protected:
+    CRuntimeStatisticCollection & target;
 };
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);

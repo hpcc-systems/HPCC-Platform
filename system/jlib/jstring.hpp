@@ -615,5 +615,20 @@ extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len);
 extern jlib_decl size32_t memcount(size32_t len, const char * str, char search);
 
 extern jlib_decl const char * nullText(const char * text);
+extern jlib_decl bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnError);
+
+template <typename LineProcessor>
+void processLines(const StringBuffer & content, LineProcessor process)
+{
+    const char * cur = content;
+    while (*cur)
+    {
+        process(cur);
+        const char * next = strchr(cur, '\n');
+        if (!next)
+            break;
+        cur = next+1;
+    }
+}
 
 #endif
