@@ -1986,11 +1986,9 @@ class CCompressedFile : implements ICompressedFileIO, public CInterface
         while (b>a) {
             unsigned m = a+(b-a)/2;
             __int64 dif = (__int64)pos-index[m];
-            if (dif==0) {
-                b = m+1;
-                a = b;
-            }
-            else if (dif>0) 
+            //Do not optimize exact matches - because if there are zero length blocks this needs
+            //to return the block that follows
+            if (dif >= 0)
                 a = m+1;
             else
                 b = m;
