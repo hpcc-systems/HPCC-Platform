@@ -2945,7 +2945,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
             ForEachItemIn(i, hosts)
             {
                 const char* host = hosts.item(i);
-                if (validateDropZonePath(nullptr, host, sPath))
+                if (validateDropZoneHostAndPath(dropZoneName, host, sPath))
                     getPhysicalFiles(context, dropZoneName, host, sPath, fileNameMask, directoryOnly, files);
             }
         }
