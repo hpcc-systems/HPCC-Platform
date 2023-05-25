@@ -1194,11 +1194,6 @@ public:
             try
             {
                 load(stateInfo);
-                if (sharedOnceContext && preloadOnceData)
-                {
-                    Owned<StringContextLogger> logctx = new StringContextLogger(id); // NB may get linked by the onceContext
-                    sharedOnceContext->checkOnceDone(this, *logctx);
-                }
                 addToMap();  // Publishes for agents to see
             }
             catch (IException *E)
@@ -1209,6 +1204,28 @@ public:
         });
         if (e)
             throw e.getLink();
+    }
+
+    virtual void preloadOnce() override
+    {
+        if (sharedOnceContext && preloadOnceData)
+        {
+            try
+            {
+                {
+                    Owned<StringContextLogger> logctx = new StringContextLogger(id); // NB may get linked by the onceContext
+                    sharedOnceContext->checkOnceDone(this, *logctx);
+                }
+            }
+            catch (IException *E)
+            {
+                StringBuffer m;
+                E->errorMessage(m);
+                setLoadFailed(m.str());
+                OERRLOG("Query %s suspended: %s", id.get(), m.str());
+                E->Release();
+            }
+        };
     }
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const override
@@ -1911,7 +1928,9 @@ extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const I
         dll.setown(createWuQueryDll(wu));
     if (!dll)
         return NULL;
-    return createServerQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
+    Owned<IQueryFactory> ret = createServerQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
+    ret->preloadOnce();
+    return ret.getClear();
 }
 
 //==============================================================================================================================================
@@ -2177,5 +2196,8 @@ extern IQueryFactory *createAgentQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     Owned<const IQueryDll> dll = createWuQueryDll(wu);
     if (!dll)
         return NULL;
-    return createAgentQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
+    Owned<IQueryFactory> ret = createAgentQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
+    ret->preloadOnce();
+    return ret.getClear();
+
 }
