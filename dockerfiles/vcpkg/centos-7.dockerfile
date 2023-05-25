@@ -16,8 +16,6 @@ RUN wget https://cran.r-project.org/src/contrib/Archive/RInside/${RInside_packag
 RUN R CMD INSTALL ${Rcpp_package} ${RInside_package}
 RUN rm -f ${Rcpp_package} ${RInside_package}
 
-RUN yum install -y devtoolset-11-gcc devtoolset-11-gcc-c++ devtoolset-11-binutils
-
 WORKDIR /hpcc-dev
 
 ENTRYPOINT ["/bin/bash", "--login", "-c"]
