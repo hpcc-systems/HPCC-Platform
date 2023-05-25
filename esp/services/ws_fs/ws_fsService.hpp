@@ -66,8 +66,9 @@ public:
 
 class CFileSprayEx : public CFileSpray
 {
-    void readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcplane,
+    void readAndCheckSpraySourceReq(IEspContext& context, const char* srcIP, const char* srcPath, const char* srcplane,
         StringBuffer& sourcePlaneReq, StringBuffer& sourceHostReq, StringBuffer& sourcePathReq);
+    void checkSpraySourcePathAndGetPlane(IEspContext& context, const char* sourceHost, StringArray& fileReqs, StringBuffer& sourcePlaneReq);
     void getServersInDropZone(const char* dropZoneName, IArrayOf<IConstTpDropZone>& dropZoneList,
         bool isECLWatchVisibleOnly, StringArray& serverList);
     IPropertyTree* getAndValidateDropZone(const char * path, const char * host);
