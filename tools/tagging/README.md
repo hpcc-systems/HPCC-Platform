@@ -36,32 +36,27 @@ The files git-fixversion and git-unupmerge can copied so they are on your defaul
 
 ## Tagging new versions
 
-The following process should be followed when tagging a new set of versions.  This ensures that real merge conflicts are dealt with separately from merge conflicts of version numbers in the helm charts.
+The following process should be followed when tagging a new set of versions.
 
 1. Upmerge all changes between candidate branches for the different versions
 
+You can set the `all` environment variable to a subset of the projects (e.g. `export all=hpcc`) if there are no changes in the other repositories.  The only effect for projects that are upmerged with no changes will be that they gain an empty merge transaction.  If multiple people are merging PRs to different repositories it may be safer to upmerge all projects.
+
+For example:
 ```
 ./upmerge A.a.x candidate-A.b.x
 ./upmerge A.b.x candidate-A.c.x
-./upmerge A.c.x master
+./upmerge A.b.x candidate-B.0.x
+./upmerge B.0.x master
 ```
 
-2. Create new point release candidate branches:
+2. Create new point-release candidate branches:
 
 ```
 ./gorc.sh A.a.x
 ./gorc.sh A.b.x
 ./gorc.sh A.c.x
 ```
-
-3. Upmerge again - this ensures any conflicts from version number changes are resolved independently of code changes
-
-```
-./upmerge A.a.x candidate-A.b.x
-./upmerge A.b.x candidate-A.c.x
-./upmerge A.c.x master
-```
-
 
 ## Taking a build gold:
 
@@ -72,8 +67,11 @@ Go gold with each of the explicit versions
 ./gogold.sh 7.10.50
 ```
 
+If you have merged changes onto a point-release branch you would normally create a new rc before going gold.  If the change was trivial (e.g. removing an unwanted file) then you can use the --ignore option to skip that step.
 
 ## Creating a new rc for an existing point release:
+
+This normally happens after cherry-picking a late fix for a particular version, which has already been merged into the .x candidate branch.
 
 ```
 ./gorc.sh A.a.<n>
