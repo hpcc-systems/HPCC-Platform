@@ -272,7 +272,8 @@ static const SecFeatureBit SUF_Clone                       = 0x0800000000;
 static const SecFeatureBit SUF_GetDataElement              = 0x1000000000;
 static const SecFeatureBit SUF_GetDataElements             = 0x2000000000;
 static const SecFeatureBit SUF_SetData                     = 0x4000000000;
-static const SecFeatureSet SUF_ALL_FEATURES                = 0x7FFFFFFFFF; // update to include all added feature bits
+static const SecFeatureBit SUF_IsCanonicalMatch            = 0x8000000000;
+static const SecFeatureSet SUF_ALL_FEATURES                = 0xFFFFFFFFFF; // update to include all added feature bits
 
 class CDateTime;
 interface IPropertyIterator;
@@ -318,6 +319,17 @@ interface ISecUser : implements ISecObject
     virtual IPropertyTree* getDataElement(const char* xpath = ".") const = 0;
     virtual IPropertyTreeIterator* getDataElements(const char* xpath = ".") const = 0;
     virtual bool setData(IPropertyTree* data) = 0;
+    /**
+     * @brief Determine if the input value is equivalent to an instance's name.
+     *
+     * Most user names are case-insensitive. Instead of the ESP assuming this is true for all
+     * names when matching names, each implementation can enforce its own comparison rules.
+     *
+     * @param name potential alternate acceptable name for the instance
+     * @return true the input value and instance name are interchangeable 
+     * @return false the input value and instance name are not interchangeable
+     */
+    virtual bool isCanonicalMatch(const char* name) const = 0;
 };
 
 
