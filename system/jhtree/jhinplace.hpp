@@ -52,10 +52,7 @@ class PartialMatchBuilder;
 class PartialMatch : public CInterface
 {
 public:
-    PartialMatch(PartialMatchBuilder * _builder, size32_t _len, const void * _data, unsigned _rowOffset, bool _isRoot)
-    : builder(_builder), data(_len, _data), rowOffset(_rowOffset), isRoot(_isRoot)
-    {
-    }
+    PartialMatch(PartialMatchBuilder * _builder, size32_t _len, const void * _data, unsigned _rowOffset, bool _isRoot);
 
     bool combine(size32_t newLen, const byte * newData);
     bool removeLast();
@@ -72,18 +69,25 @@ public:
 
 protected:
     bool allNextAreEnd() const;
+    bool allNextAreIdentical(bool allowCache) const;
     unsigned appendRepeat(size32_t offset, size32_t copyOffset, byte repeatByte, size32_t repeatCount);
     void cacheSizes();
     void describeSquashed(StringBuffer & out);
     size32_t getMaxOffset();
     byte getSequentialOptionFlags() const;
+    bool matches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache);
+    void noteDirty();
 
 protected:
     PartialMatchBuilder * builder;
     MemoryBuffer data;
     MemoryBuffer squashedData;
     CIArrayOf<PartialMatch> next;
+#ifdef _DEBUG
+    unsigned seq = 0;
+#endif
     unsigned rowOffset;
+    PartialMatch * prevMatch[2]{ nullptr, nullptr };
     size32_t maxOffset = 0;
     size32_t size = 0;
     size32_t maxCount = 0;
