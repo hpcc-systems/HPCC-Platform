@@ -5,7 +5,7 @@
 		}
 	],
 	"settings": {
-		"cmake.generator": "Unix Makefiles",
+		"cmake.generator": "Ninja",
 		"cmake.configureArgs": [
 			"-DCONTAINERIZED=OFF",
 			"-DUSE_OPTIONAL=OFF",
