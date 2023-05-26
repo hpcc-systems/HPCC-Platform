@@ -1873,7 +1873,12 @@ void EclAgent::doProcess()
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
             w->setTracingValue("EclAgentBuild", hpccBuildInfo.buildTag);
             if (agentTopology->hasProp("@name"))
-                w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
+            {
+                if (isContainerized())
+                    w->setContainerizedProcessInfo("EclAgent", agentTopology->queryProp("@name"), queryMyPodName(), nullptr);
+                else
+                    w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
+            }
 
             eclccCodeVersion = w->getCodeVersion();
             if (eclccCodeVersion == 0)

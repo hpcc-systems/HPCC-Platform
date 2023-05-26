@@ -105,6 +105,8 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         Owned<INode> masterNode = createINode(ep);
         CMessageBuffer msg;
         msg.append(mySlaveNum);
+        if (isContainerized())
+            msg.append(queryMyPodName());
         queryWorldCommunicator().send(msg, masterNode, MPTAG_THORREGISTRATION);
         if (!queryWorldCommunicator().recv(msg, masterNode, MPTAG_THORREGISTRATION))
             return false;

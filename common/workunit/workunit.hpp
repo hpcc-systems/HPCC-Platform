@@ -1320,6 +1320,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void commit() = 0;
     virtual IWUException * createException() = 0;
     virtual void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log=nullptr) = 0;
+    virtual bool setContainerizedProcessInfo(const char *type, const char *instance, const char *podName, const char *sequence) = 0;
     virtual void setAction(WUAction action) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;
@@ -1786,6 +1787,8 @@ extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, 
 
 // returns a vector of {pod-name, node-name} vectors,
 extern WORKUNIT_API std::vector<std::vector<std::string>> getPodNodes(const char *selector);
+
+extern WORKUNIT_API const char *queryMyPodName();
 
 extern WORKUNIT_API TraceFlags loadTraceFlags(IConstWorkUnit * wu, const std::initializer_list<TraceOption> & y, TraceFlags dft);
 

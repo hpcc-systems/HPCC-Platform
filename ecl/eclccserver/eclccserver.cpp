@@ -893,6 +893,11 @@ public:
         {
             if (!useChildProcesses && !childProcessTimeLimit && !config->hasProp("@workunit"))
             {
+                {
+                    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                    Owned<IWorkUnit> wu = factory->updateWorkUnit(wuid.get());
+                    wu->setContainerizedProcessInfo("EclCCServer", getComponentConfigSP()->queryProp("@name"), queryMyPodName(), nullptr);
+                }
                 compileViaK8sJob(true);
                 return;
             }
@@ -905,6 +910,10 @@ public:
             DBGLOG("Workunit %s no longer exists", wuid.get());
             return;
         }
+
+        if (isContainerized())
+            workunit->setContainerizedProcessInfo("EclCC", getComponentConfigSP()->queryProp("@name"), queryMyPodName(), nullptr);
+
         if (workunit->aborting() || workunit->getState()==WUStateAborted)
         {
             workunit->setState(WUStateAborted);

@@ -293,10 +293,16 @@ public:
              */
             unsigned slaveNum;
             msg.read(slaveNum);
+            StringBuffer slavePodName;
             if (NotFound == slaveNum)
             {
                 connectedSlaves.append(sender.getLink());
                 slaveNum = connectedSlaves.ordinality();
+                if (isContainerized())
+                {
+                    msg.read(slavePodName);
+                    addConnectedWorkerPod(slavePodName); // NB: these are added in worker # order
+                }
             }
             else
             {
@@ -313,7 +319,7 @@ public:
             --remaining;
         }
         assertex(slaves == connectedSlaves.ordinality());
-        
+
         if (isContainerized())
         {
             unsigned wfid = globals->getPropInt("@wfid");
@@ -322,6 +328,7 @@ public:
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
             addTimeStamp(workunit, wfid, graphName, StWhenK8sReady);
+            publishPodNames(workunit);
         }
 
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
