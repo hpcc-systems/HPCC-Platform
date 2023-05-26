@@ -239,7 +239,7 @@ define([
                                 case -2:
                                     break;
                                 default:
-                                    if (response.MyAccountResponse.passwordDaysRemaining <= response.MyAccountResponse.passwordExpirationWarningDays) {
+                                    if (response.MyAccountResponse.passwordDaysRemaining && response.MyAccountResponse.passwordDaysRemaining <= response.MyAccountResponse.passwordExpirationWarningDays) {
                                         if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
                                             context._onUserID();
                                         }
@@ -462,7 +462,7 @@ define([
         },
 
         _ondebugLanguageFiles: function () {
-            /* DEBUG_ONLY 
+            /* DEBUG_ONLY
             var context = this;
             require(["src/nls/hpcc"], function (lang) {
                 var languageID = [];
