@@ -571,7 +571,8 @@ int CEspHttpServer::onUpdatePasswordInput(CHttpRequest* request, CHttpResponse* 
 int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* response)
 {
     StringBuffer html;
-    unsigned returnCode = m_apport->onUpdatePassword(*request->queryContext(), request, html);
+    IEspContext* context = request->queryContext();
+    unsigned returnCode = m_apport->onUpdatePassword(*context, request, html);
     if (returnCode == 0)
     {
         EspHttpBinding* binding = getBinding();
@@ -585,7 +586,7 @@ int CEspHttpServer::onUpdatePassword(CHttpRequest* request, CHttpResponse* respo
             {//A session can only be set for those 2 auth types.
                 StringBuffer urlCookie;
                 readCookie(SESSION_START_URL_COOKIE, urlCookie);
-                unsigned sessionID = createHTTPSession(binding, request->getParameters()->queryProp("username"), urlCookie.isEmpty() ? "/" : urlCookie.str());
+                unsigned sessionID = createHTTPSession(context, binding, request->getParameters()->queryProp("username"), urlCookie.isEmpty() ? "/" : urlCookie.str());
                 m_request->queryContext()->setSessionToken(sessionID);
                 VStringBuffer cookieStr("%u", sessionID);
                 addCookie(binding->querySessionIDCookieName(), cookieStr.str(), 0, true);
@@ -1100,6 +1101,58 @@ EspHttpBinding* CEspHttpServer::getEspHttpBinding(EspAuthRequest& authReq)
     return espHttpBinding;
 }
 
+void CEspHttpServer::readDomainAuthDataFromSecureContext(IEspContext* ctx, IPropertyTree* tree)
+{
+    StringBuffer authData;
+    ctx->querySecureContext()->getDomainAuthData(authData);
+    if (!authData.isEmpty())
+        tree->setProp(PropSessionDomainAuthData, authData);
+}
+
+void CEspHttpServer::setDomainAuthDataInSecureContext(IEspContext* ctx, IPropertyTree* tree)
+{
+    StringAttr authData = tree->queryProp(PropSessionDomainAuthData);
+    if (!authData.isEmpty())
+        ctx->querySecureContext()->setDomainAuthData(authData.get());
+}
+
+//Store the userid and DomainAuthData to temporary cookies before a session is created.
+void CEspHttpServer::addTempCookie(IEspContext* ctx)
+{
+    addCookie(SESSION_ID_TEMP_COOKIE, ctx->queryUserId(), 0, true);
+
+    StringBuffer authData;
+    ctx->querySecureContext()->getDomainAuthData(authData);
+    if (!authData.isEmpty())
+    {
+        StringBuffer encodedAuthData;
+        JBASE64_Encode(authData.str(), authData.length(), encodedAuthData, false);
+        addCookie(SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE, encodedAuthData, 0, true);
+    }
+}
+
+void CEspHttpServer::readTempCookieToContext(IEspContext* ctx, bool setUserIDAsName)
+{
+    StringBuffer userID, authData;
+    readCookie(SESSION_ID_TEMP_COOKIE, userID);
+    readCookie(SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE, authData);
+    if (!userID.isEmpty())
+    {
+        ctx->setUserID(userID.str());
+        if (setUserIDAsName)
+        {
+            ISecUser* user = ctx->queryUser();
+            if (user)
+                user->setName(userID.str());
+        }
+    }
+    if (!authData.isEmpty())
+    {
+        StringBuffer decodedData;
+        ctx->querySecureContext()->setDomainAuthData(JBASE64_Decode(authData, decodedData));
+    }
+}
+
 EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
 {
     if (!isAuthRequiredForBinding(authReq))
@@ -1121,6 +1174,7 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
             {
                 clearCookie(authReq.authBinding->querySessionIDCookieName());
                 clearCookie(SESSION_ID_TEMP_COOKIE);
+                clearCookie(SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE);
                 clearCookie(SESSION_TIMEOUT_COOKIE);
                 clearCookie(USER_ACCT_ERROR_COOKIE);
             }
@@ -1183,24 +1237,13 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
             EspHttpBinding* thebinding = getBinding();
             if (thebinding)
                 thebinding->populateRequest(m_request.get());
-            StringBuffer userID;
-            readCookie(SESSION_ID_TEMP_COOKIE, userID);
-            if (!userID.isEmpty()) //For session auth, the cookie has the userID.
-            {
-                authReq.ctx->setUserID(userID.str());
-                ISecUser* user = authReq.ctx->queryUser();
-                if (user)
-                    user->setName(userID.str());
-            }
+            readTempCookieToContext(authReq.ctx, true);
             onUpdatePassword(m_request.get(), m_response.get());
             return authTaskDone;
         }
         if (strieq(authReq.httpMethod.str(), GET_METHOD) && strieq(authReq.methodName.str(), "updatepasswordinput"))//process before authentication check
         {
-            StringBuffer userID;
-            readCookie(SESSION_ID_TEMP_COOKIE, userID);
-            if (!userID.isEmpty()) //For session auth, the cookie has the userID.
-                authReq.ctx->setUserID(userID.str());
+            readTempCookieToContext(authReq.ctx, false);
             onUpdatePasswordInput(m_request.get(), m_response.get());
             return authTaskDone;
         }
@@ -1274,12 +1317,13 @@ void CEspHttpServer::verifyCookie(EspAuthRequest& authReq, CESPCookieVerificatio
         //a login process is started. At that time, any SESSION_START_URL_COOKIE should be invalid.
         cookie.verificationDetails.set("ESP cannot verify this cookie. This cookie is only valid within a login process.");
     }
-    else if (strieq(name, SESSION_ID_TEMP_COOKIE))
+    else if (strieq(name, SESSION_ID_TEMP_COOKIE) || strieq(name, SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE))
     {   
         //SESSION_ID_TEMP_COOKIE: used for remembering UserID when a user is in AS_PASSWORD_VALID_BUT_EXPIRED state and updating password.
         //It is created before the updatepasswordinput is started. After the update process, ESP should remove this cookie if possible.
         //This verify function is designed to verify cookies before a login process is started. At that time, any SESSION_ID_TEMP_COOKIE
         //should be invalid.
+        //SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE: similar to SESSION_ID_TEMP_COOKIE.
         cookie.verificationDetails.set("ESP cannot verify this cookie. This cookie is only valid when updating an expired password.");
     }
     else
@@ -1582,6 +1626,7 @@ EspAuthState CEspHttpServer::checkUserAuthPerRequest(EspAuthRequest& authReq)
     ESPLOG(LogMax, "checkUserAuthPerRequest");
 
     authReq.authBinding->populateRequest(m_request.get());
+    authReq.ctx->querySecureContextEx()->setDomainAuthType(AuthPerRequestOnly);
     if (authReq.authBinding->doAuth(authReq.ctx))
     {//We do pass the authentication per the request
         // authenticate optional groups. Do we still need?
@@ -1620,17 +1665,17 @@ EspAuthState CEspHttpServer::authNewSession(EspAuthRequest& authReq, const char*
     authReq.ctx->setUserID(_userName);
     authReq.ctx->setPassword(_password);
     authReq.authBinding->populateRequest(m_request.get());
+    authReq.ctx->querySecureContextEx()->setDomainAuthType(AuthPerSessionOnly);
     if (!authReq.authBinding->doAuth(authReq.ctx))
     {
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         ESPLOG(LogMin, "Authentication failed for %s@%s", _userName, peer.str());
         return handleAuthFailed(true, authReq, unlock, "User authentication failed.");
     }
-
     // authenticate optional groups
     authOptionalGroups(authReq);
 
-    unsigned sessionID = createHTTPSession(authReq.authBinding, _userName, sessionStartURL);
+    unsigned sessionID = createHTTPSession(authReq.ctx, authReq.authBinding, _userName, sessionStartURL);
     authReq.ctx->setSessionToken(sessionID);
 
     ESPLOG(LogMax, "Authenticated for %s@%s", _userName, peer.str());
@@ -2072,17 +2117,18 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
 
     //The UserID has to be set before the populateRequest() because the UserID is used to create the user object.
     //After the user object is created, we may call addSessionToken().
-    StringAttr userName = sessionTree->queryProp(PropSessionUserID);
-    authReq.ctx->setUserID(userName.str());
+    StringAttr userID = sessionTree->queryProp(PropSessionUserID);
+    authReq.ctx->setUserID(userID.str());
     authReq.authBinding->populateRequest(m_request.get());
     authReq.ctx->setSessionToken(sessionID);
     authReq.ctx->queryUser()->setAuthenticateStatus(AS_AUTHENTICATED);
     authReq.ctx->setAuthStatus(AUTH_STATUS_OK); //May be changed to AUTH_STATUS_NOACCESS if failed in feature level authorization.
+    setDomainAuthDataInSecureContext(authReq.ctx, sessionTree);
 
-    ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userName.str(), sessionTree->queryProp(PropSessionNetworkAddress));
+    ESPLOG(LogMax, "Authenticated for %s<%u> %s@%s", PropSessionID, sessionID, userID.str(), sessionTree->queryProp(PropSessionNetworkAddress));
     if (!authReq.serviceName.isEmpty() && !authReq.methodName.isEmpty() && strieq(authReq.serviceName.str(), "esp") && strieq(authReq.methodName.str(), "login"))
     {
-        VStringBuffer msg("User %s has logged into this session. If you want to login as a different user, please logout and login again.", userName.str());
+        VStringBuffer msg("User %s has logged into this session. If you want to login as a different user, please logout and login again.", userID.str());
         sendMessage(msg.str(), "text/html; charset=UTF-8");
         return authTaskDone;
     }
@@ -2189,7 +2235,7 @@ EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& 
         case AS_PASSWORD_VALID_BUT_EXPIRED :
             ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
             if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
-                addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
+                addTempCookie(authReq.ctx);
             m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
             return authSucceeded;
         case AS_PASSWORD_EXPIRED :
@@ -2269,7 +2315,7 @@ bool CEspHttpServer::changeRedirectURL(EspAuthRequest& authReq)
     return false;
 }
 
-unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const char* userID, const char* sessionStartURL)
+unsigned CEspHttpServer::createHTTPSession(IEspContext* ctx, EspHttpBinding* authBinding, const char* userID, const char* sessionStartURL)
 {
     CDateTime now;
     now.setNow();
@@ -2302,6 +2348,7 @@ unsigned CEspHttpServer::createHTTPSession(EspHttpBinding* authBinding, const ch
     ptree->setPropInt64(PropSessionLastAccessed, createTime);
     ptree->setPropInt64(PropSessionTimeoutAt, createTime + authBinding->getServerSessionTimeoutSeconds());
     ptree->setProp(PropSessionLoginURL, sessionStartURL);
+    readDomainAuthDataFromSecureContext(ctx, ptree);
     return sessionID;
 }
 
@@ -2376,6 +2423,7 @@ void CEspHttpServer::clearSessionCookies(EspAuthRequest& authReq)
 {
     clearCookie(authReq.authBinding->querySessionIDCookieName());
     clearCookie(SESSION_ID_TEMP_COOKIE);
+    clearCookie(SESSION_DOMAIN_AUTH_DATA_TEMP_COOKIE);
     clearCookie(SESSION_START_URL_COOKIE);
     clearCookie(SESSION_AUTH_OK_COOKIE);
     clearCookie(SESSION_AUTH_MSG_COOKIE);
