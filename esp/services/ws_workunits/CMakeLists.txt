@@ -43,6 +43,7 @@ set (    SRCS
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits_queryset_req_resp.ecm
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits.ecm
          ${HPCC_SOURCE_DIR}/esp/clients/roxiecontrol.cpp
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
          ws_workunitsPlugin.cpp
          ws_workunitsService.cpp
          ws_workunitsService.hpp
@@ -96,6 +97,7 @@ include_directories (
          ./../../smc/SMCLib
          ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/bindings/http/platform
+         ${HPCC_SOURCE_DIR}/esp/clients/ws_dfsclient
          ${HPCC_SOURCE_DIR}/dali/dfu
          ${HPCC_SOURCE_DIR}/dali/ft
          ${HPCC_SOURCE_DIR}/common/wuanalysis
@@ -132,6 +134,7 @@ target_link_libraries ( ws_workunits
          thorhelper
          pkgfiles
          wuanalysis
+         ws_dfsclient
          ${CPPUNIT_LIBRARIES}
          ${COMMON_ESP_SERVICE_LIBS}
     )

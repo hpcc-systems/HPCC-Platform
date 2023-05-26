@@ -106,6 +106,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_OVERWRITE_ENV NULL
 
 #define ECLOPT_DONT_COPY_FILES "--no-files"
+#define ECLOPT_REMOTE_STORAGE "--remote-storage"
 #define ECLOPT_DFU_COPY_FILES "--dfu-copy"
 #define ECLOPT_ONLY_COPY_FILES "--only-copy-files"
 #define ECLOPT_ALLOW_FOREIGN "--allow-foreign"
@@ -457,6 +458,7 @@ public:
     template<class TRequest>
     void updateRequest(TRequest *req)
     {
+        req->setRemoteStorage(optRemoteStorage);
         req->setDfuCopyFiles(optDfuCopyFiles);
         req->setDfuQueue(optDfuQueue);
         req->setDfuWait(optDfuWaitSec);
@@ -486,6 +488,8 @@ public:
 
     bool match(ArgvIterator &iter)
     {
+        if (iter.matchOption(optRemoteStorage, ECLOPT_REMOTE_STORAGE))
+            return true;
         if (iter.matchFlag(optDfuCopyFiles, ECLOPT_DFU_COPY_FILES))
             return true;
         if (iter.matchOption(optDfuQueue, ECLOPT_DFU_QUEUE))
@@ -505,6 +509,8 @@ public:
     void usage()
     {
         fputs(
+            " DFS Options:\n"
+            "   --remote-storage       Use the given remote storage configuration to locate remote files\n"
             " DFU Options:\n"
             "   --dfu-copy             Use DFU to copy files during deployment, not on roxie in the background\n"
             "   --dfu-queue            DFU Queue to use when doing a DFU copy\n"
@@ -520,6 +526,7 @@ public:
     }
 public:
     StringAttr optDfuPublisherWuid;
+    StringAttr optRemoteStorage;
     StringAttr optDfuQueue;
     unsigned optDfuWaitSec = 1800; //30 minutes
     bool optDfuCopyFiles = false;

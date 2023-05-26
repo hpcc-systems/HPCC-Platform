@@ -1297,6 +1297,7 @@ public:
             Owned<INode> foreigndalinode;
             StringAttr oldRoxiePrefix;
             bool foreigncopy = false;
+            bool remotecopy = false;
             // first check for 'specials' (e.g. multi-cluster keydiff etc)
             switch (cmd) {
             case DFUcmd_copy:
@@ -1311,6 +1312,7 @@ public:
                     CDfsLogicalFileName srclfn;
                     if (tmp.length())
                         srclfn.set(tmp.str());
+                    remotecopy = srclfn.isRemote();
                     destination->getLogicalName(tmp.clear());
                     CDfsLogicalFileName dstlfn;
                     if (tmp.length())
@@ -1666,7 +1668,7 @@ public:
                                 Audit("COPYDIFF",userdesc,srcName.get(),dstName.get());
                             }
                         }
-                        else if (foreigncopy||auxfdesc)
+                        else if (remotecopy||foreigncopy||auxfdesc)
                         {
                             IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : srcFdesc.get());
                             fsys.import(srcDesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
