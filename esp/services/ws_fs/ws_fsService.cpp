@@ -1904,49 +1904,57 @@ IPropertyTree *CFileSprayEx::getAndValidateDropZone(const char *path, const char
     return nullptr;
 }
 
-void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcPlane,
+void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, const char* srcIP, const char* srcPath, const char* srcPlane,
     StringBuffer& sourcePlaneReq, StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
 {
     StringBuffer sourcePath(srcPath);
-    sourcePath.trim();
-    if(srcxml.length() == 0)
-    {
-        if (sourcePath.isEmpty())
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source path not specified.");
-        if (containsRelPaths(sourcePath)) //Detect a path like: a/../../../f
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", sourcePath.str());
+    if (sourcePath.trim().isEmpty())
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Source path not specified.");
+    if (containsRelPaths(sourcePath)) //Detect a path like: a/../../../f
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", sourcePath.str());
+    getStandardPosixPath(sourcePathReq, sourcePath.str());
 
-        if (!isEmptyString(srcPlane))
+    sourcePlaneReq.set(srcPlane).trim();
+    sourceIPReq.set(srcIP).trim();
+    checkDropZoneInput(context, sourcePlaneReq, sourceIPReq, nullptr);
+    if (sourcePlaneReq.isEmpty())
+        return;
+
+    Owned<IPropertyTree> dropZone = getDropZonePlane(sourcePlaneReq);
+    const char* prefix = dropZone->queryProp("@prefix");
+    if (sourceIPReq.isEmpty())
+        getDropZoneHost(sourcePlaneReq, dropZone, sourceIPReq);
+
+    //Validated dropzone scope access for every files in sourcePathReq and correct relative path.
+    StringArray files;
+    files.appendList(sourcePathReq, ","); // handles comma separated files
+    ForEachItemIn(i, files)
+    {
+        const char* file = files.item(i);
+        if (isEmptyString(file))
+            continue;
+
+        StringBuffer s;
+        if (isAbsolutePath(file))
         {
-            Owned<IPropertyTree> dropZone = getDropZonePlane(srcPlane);
-            if (!dropZone)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", srcPlane);
-            const char * dropZonePlanePath = dropZone->queryProp("@prefix");
-            if (isAbsolutePath(sourcePath))
-            {
-                if (!startsWith(sourcePath, dropZonePlanePath))
-                    throw makeStringException(ECLWATCH_INVALID_INPUT, "Invalid source path");
-            }
-            else
-            {
-                StringBuffer s(sourcePath);
-                sourcePath.set(dropZonePlanePath);
-                addNonEmptyPathSepChar(sourcePath);
-                sourcePath.append(s);
-            }
-            getDropZoneHost(srcPlane, dropZone, sourceIPReq);
-            sourcePlaneReq.append(srcPlane);
+            //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
+            //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
+            if (!isPathInPlane(dropZone, file))
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", file, sourcePlaneReq.str());
         }
         else
         {
-            sourceIPReq.set(srcIP).trim();
-            if (sourceIPReq.isEmpty())
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            Owned<IPropertyTree> plane = getAndValidateDropZone(sourcePath, sourceIPReq);
-            sourcePlaneReq.append(plane->queryProp("@name"));
+            s.set(prefix);
+            addNonEmptyPathSepChar(s);
+            s.append(file);
+            file = s.str();
         }
+        checkDZFileScopePermissions(context, sourcePlaneReq, file, SecAccess_Read);
+        if (i == 0)
+            sourcePathReq.set(file);
+        else
+            sourcePathReq.append(",").append(file);
     }
-    getStandardPosixPath(sourcePathReq, sourcePath.str());
 }
 
 static void checkValidDfuQueue(const char * dfuQueue)
@@ -1990,9 +1998,10 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (isEmptyString(destNodeGroup))
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
-        MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
+        const MemoryBuffer& srcxml = req.getSrcxml();
         StringBuffer sourcePlaneReq, sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
+        if(srcxml.length() == 0)
+            readAndCheckSpraySourceReq(context, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(isEmptyString(destname))
@@ -2031,8 +2040,9 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
-        checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
+        setSpraySourceDFUFileSpec(context, sourceIPReq, srcfile, srcxml, source);
         source->setGroupName(sourcePlaneReq);
+
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         bool nosplit = req.getNosplit();
         int recordsize = req.getSourceRecordSize();
@@ -2157,9 +2167,10 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         else
             gName.append(destNodeGroup);
 
-        MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
+        const MemoryBuffer &srcxml = req.getSrcxml();
         StringBuffer sourcePlaneReq, sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
+        if(srcxml.length() == 0)
+            readAndCheckSpraySourceReq(context, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(isEmptyString(destname))
@@ -2192,7 +2203,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         IDFUoptions *options = wu->queryUpdateOptions();
 
-        checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
+        setSpraySourceDFUFileSpec(context, sourceIPReq, srcfile, srcxml, source);
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
         source->setGroupName(sourcePlaneReq);
@@ -2301,46 +2312,28 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
     return true;
 }
 
-void CFileSprayEx::checkDZScopeAccessAndSetSpraySourceDFUFileSpec(IEspContext &context, const char *srcPlane, const char *srcHost,
-    const char *srcFile, MemoryBuffer &srcXML, IDFUfileSpec *srcDFUfileSpec)
+void CFileSprayEx::setSpraySourceDFUFileSpec(IEspContext &context, const char *srcHost,
+    const char *srcFile, const MemoryBuffer &srcXML, IDFUfileSpec *srcDFUfileSpec)
 {
     if(srcXML.length() == 0)
     {
-        //Both srcPlane and srcHost are validated in readAndCheckSpraySourceReq().
-        StringBuffer fnamebuf(srcFile);
-        fnamebuf.trim();
-        StringArray files;
-        files.appendList(fnamebuf, ","); // handles comma separated files
-        ForEachItemIn(i, files)
-        {
-            const char *file = files.item(i);
-            if (isEmptyString(file))
-                continue;
-
-            //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
-            //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
-
-            SecAccessFlags permission = getDZFileScopePermissions(context, srcPlane, file, srcHost);
-            if (permission < SecAccess_Read)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
-                    srcPlane, file, context.queryUserId(), getSecAccessFlagName(permission));
-        }
-
+        //The srcHost is validated in readAndCheckSpraySourceReq().
         SocketEndpoint ep(srcHost);
         if (ep.isNull())
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Cannot resolve source network IP from %s.", srcHost);
 
         RemoteMultiFilename rmfn;
         rmfn.setEp(ep);
-        rmfn.append(fnamebuf.str());
+        rmfn.append(srcFile);
         srcDFUfileSpec->setMultiFilename(rmfn);
     }
     else
     {   //this block is copied from the code before PR https://github.com/hpcc-systems/HPCC-Platform/pull/17144.
         //Not sure there exists any use case for spraying a file using the srcXML. JIRA-29339 is created to check
         //whether this is completely legacy. If it is, it may be removed to make the code a lot clearer.
-        srcXML.append('\0');
-        srcDFUfileSpec->setFromXML((const char*)srcXML.toByteArray());
+        MemoryBuffer &xml = (MemoryBuffer&) srcXML;
+        xml.append('\0');
+        srcDFUfileSpec->setFromXML((const char*)xml.toByteArray());
     }
 }
 
@@ -2412,7 +2405,8 @@ void CFileSprayEx::getDropZoneInfoByDestPlane(double clientVersion, const char* 
     destFileOut.append(destFileIn).trim();
     dropZone->getProp("@umask", umask);
 
-    getDropZoneHost(destPlane, dropZone, hostip);
+    if (hostip.isEmpty())
+        getDropZoneHost(destPlane, dropZone, hostip);
 }
 
 static StringBuffer & expandLogicalAsPhysical(StringBuffer & target, const char * name, const char * separator)
@@ -2474,19 +2468,18 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         StringBuffer implicitDestFile;
         const char* destfile = getStandardPosixPath(destPath, destPathReq).str();
 
-        MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
+        const MemoryBuffer& dstxml = req.getDstxml();
         if (dstxml.length() == 0)
         {
             if (isEmptyString(destPlane))
                 destPlane = req.getDestGroup();  // allow eclwatch to continue providing storage plane as 'destgroup' field
-            if (isEmptyString(destPlane))
-            {
-                if (destip.isEmpty())
-                    throw makeStringException(ECLWATCH_INVALID_INPUT, "Neither destination storage plane or destination IP specified.");
-                Owned<IPropertyTree> plane = getAndValidateDropZone(destPath, destip);
-                if (plane)
-                    destPlane = plane->queryProp("@name");
-            }
+            if (isEmptyString(destPlane) && destip.isEmpty())
+                throw makeStringException(ECLWATCH_INVALID_INPUT,
+                    "Neither destination storage plane or destination IP specified. A destination plane name specified in the DestPlane is preferred.");
+
+            StringBuffer dzName(destPlane);
+            checkDropZoneInput(context, dzName, destip, !isEmptyString(destfile) && !isAbsolutePath(destfile) ? nullptr : destfile);
+            destPlane = dzName.str();
 
             //If the destination filename is not provided, calculate a relative filename from the logical filename
             if (isEmptyString(destfile))
@@ -2496,13 +2489,11 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
             }
 
             StringBuffer destfileWithPath, umask;
-            if (!isEmptyString(destPlane))
+            if (!isEmptyString(destPlane))  // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+            {
                 getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask, destip);
-
-            SecAccessFlags permission = getDZFileScopePermissions(context, destPlane, destfileWithPath, destip);
-            if (permission < SecAccess_Write)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Write Access Required.",
-                    isEmptyString(destPlane) ? destip : destPlane, destfileWithPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+                checkDZFileScopePermissions(context, destPlane, destfileWithPath, SecAccess_Write);
+            }
 
             RemoteFilename rfn;
             SocketEndpoint ep(destip.str());
@@ -2522,8 +2513,9 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         else
         {   //Not sure there exists any use case for despraying a file using the dstxml. JIRA-29339 is created to check
             //whether this is completely legacy. If it is, it may be removed to make the code a lot clearer.
-            dstxml.append('\0');
-            destination->setFromXML((const char*)dstxml.toByteArray());
+            MemoryBuffer &xml = (MemoryBuffer&) dstxml;
+            xml.append('\0');
+            destination->setFromXML((const char*)xml.toByteArray());
         }
         destination->setTitle(srcTitle.str());
 
@@ -2940,37 +2932,24 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         }
         else
         {
-            if (isEmptyString(dropZoneName))
-            {
-                //Call findDropZonePlane() to resolve plane by hostname. Shouldn't resolve plane
-                //by hostname in containerized but kept for backward compatibility for now.
-                Owned<IPropertyTree> plane = findDropZonePlane(sPath, netaddr, true, true);
-                dropZoneName = plane->queryProp("@name");
-            }
-            SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, sPath, nullptr);
-            if (permission < SecAccess_Read)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
-                    dropZoneName, sPath.str(), context.queryUserId(), getSecAccessFlagName(permission));
+            StringBuffer dzName(dropZoneName);
+            checkDropZoneInputAndAccess(context, dzName, netaddr, sPath, SecAccess_Read);
+            dropZoneName = dzName.str();
 
             StringArray hosts;
-            if (isEmptyString(netaddr))
+            if (!isEmptyString(netaddr))
             {
-                Owned<IPropertyTree> dropZone = getDropZonePlane(dropZoneName);
-                if (!dropZone)
-                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", dropZoneName);
-                getPlaneHosts(hosts, dropZone);
-                if (!hosts.ordinality())
-                    hosts.append("localhost");
+                hosts.append(netaddr);
             }
             else
-                hosts.append(netaddr);
+            {
+                // NB: if no netaddr, a dropZone must have been specified
+                Owned<IPropertyTree> dropZone = getDropZonePlane(dropZoneName);
+                getPlaneHosts(hosts, dropZone);
+            }
 
             ForEachItemIn(i, hosts)
-            {
-                const char* host = hosts.item(i);
-                if (validateDropZoneHostAndPath(dropZoneName, host, sPath))
-                    getPhysicalFiles(context, dropZoneName, host, sPath, fileNameMask, directoryOnly, files);
-            }
+                getPhysicalFiles(context, dropZoneName, hosts.item(i), sPath, fileNameMask, directoryOnly, files);
         }
 
         sPath.replace('\\', '/');//XSLT cannot handle backslashes
@@ -3057,7 +3036,7 @@ void CFileSprayEx::addPhysicalFile(IEspContext& context, IDirectoryIterator* di,
 bool CFileSprayEx::searchDropZoneFiles(IEspContext& context, const char* dropZoneName, const char* server,
     const char* dir, const char* relDir, const char* nameFilter, IArrayOf<IConstPhysicalFileStruct>& files, unsigned& filesFound)
 {
-    if (getDZPathScopePermissions(context, dropZoneName, dir, server) < SecAccess_Read)
+    if (getDZPathScopePermissions(context, dropZoneName, dir) < SecAccess_Read)
         return false;
 
     RemoteFilename rfn;
@@ -3280,7 +3259,7 @@ void CFileSprayEx::getPhysicalFiles(IEspContext &context, const char *dropZoneNa
         if (dropZoneName && di->isDir())
         {
             VStringBuffer fullPath("%s%s", path, fileName.str());
-            if (getDZPathScopePermissions(context, dropZoneName, fullPath, nullptr) < SecAccess_Read)
+            if (getDZPathScopePermissions(context, dropZoneName, fullPath) < SecAccess_Read)
                 continue;
         }
 
@@ -3390,12 +3369,10 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         }
         addPathSepChar(directoryStr);
 
+        StringBuffer planeName;
         if (isEmptyString(dzName))
-        {
-            Owned<IPropertyTree> plane = findDropZonePlane(directoryStr, netAddress, true, true);
-            dzName = plane->queryProp("@name");
-        }
-        if (getDZPathScopePermissions(context, dzName, directoryStr, nullptr) < SecAccess_Read)
+            dzName = findDropZonePlaneName(netAddress, directoryStr, planeName);
+        if (!isEmptyString(dzName) && getDZPathScopePermissions(context, dzName, directoryStr) < SecAccess_Read)
             return false;
 
         bool directoryOnly = req.getDirectoryOnly();
@@ -3469,8 +3446,8 @@ bool CFileSprayEx::onDeleteDropZoneFiles(IEspContext &context, IEspDeleteDropZon
         }
         addPathSepChar(path, getPathSepChar(path.str()));
 
-        if (!checkDropZoneIPAndPath(version, dzName, netAddress, path.str()))
-            throw MakeStringException(ECLWATCH_DROP_ZONE_NOT_FOUND, "Dropzone is not found in the environment settings.");
+        if (isEmptyString(netAddress) || path.isEmpty())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Network Address or Path not defined.");
 
         checkDropZoneFileScopeAccess(context, dzName, netAddress, path, files, SecAccess_Full);
 
@@ -3541,15 +3518,9 @@ void CFileSprayEx::checkDropZoneFileScopeAccess(IEspContext &context, const char
     const char *dropZonePath, const StringArray &dropZoneFiles, SecAccessFlags accessReq)
 {
     const char *accessReqName = getSecAccessFlagName(accessReq);
-    if (isEmptyString(dropZoneName))
-    {
-        Owned<IPropertyTree> plane = findDropZonePlane(dropZonePath, netAddress, true, true);
-        dropZoneName = plane->queryProp("@name");
-    }
-    SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, dropZonePath, nullptr);
-    if (permission < accessReq)
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Permission Required.",
-            dropZoneName, dropZonePath, accessReqName, context.queryUserId(), getSecAccessFlagName(permission));
+    StringBuffer dzName(dropZoneName);
+    checkDropZoneInputAndAccess(context, dzName, netAddress, dropZonePath, accessReq);
+    dropZoneName = dzName.str();
 
     RemoteFilename rfn;
     SocketEndpoint ep(netAddress);
@@ -3590,7 +3561,8 @@ void CFileSprayEx::checkDropZoneFileScopeAccess(IEspContext &context, const char
 
         StringBuffer fullPath(dropZonePath);
         addPathSepChar(fullPath).append(pathToCheck);
-        SecAccessFlags permission = getDZPathScopePermissions(context, dropZoneName, fullPath, nullptr);
+        //If the dropzone name is not found, the DZPathScopePermissions cannot be validated.
+        SecAccessFlags permission = isEmptyString(dropZoneName) ? accessReq : getDZPathScopePermissions(context, dropZoneName, fullPath);
         if (permission < accessReq)
         {
             uniquePath.setValue(pathToCheck.str(), false); //add a path denied

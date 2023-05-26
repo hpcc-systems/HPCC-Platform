@@ -118,7 +118,7 @@ extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool
         return streq(netAddressReg, tpMachine.getNetaddress());
     return streq(netAddressReg, tpMachine.getConfigNetaddress());
 }
-
+/*
 extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, const char* hostToCheck, const char* pathToCheck)
 {
     //Both hostToCheck and pathToCheck should not be empty. For backward compatibility, the dropZoneName may be empty.
@@ -142,6 +142,31 @@ extern TPWRAPPER_API bool validateDropZoneHostAndPath(const char* dropZoneName, 
     if (nullptr == plane)
         return false;
     return validateDropZone(plane, path, hostToCheck, isIPAddress(hostToCheck));
+}*/
+
+extern TPWRAPPER_API StringBuffer &findDropZonePlaneName(const char* host, const char* path, StringBuffer& planeName)
+{
+    //Call findDropZonePlane() to resolve plane by hostname. Shouldn't resolve plane
+    //by hostname in containerized but kept for backward compatibility for now.
+    Owned<IPropertyTree> plane = findDropZonePlane(path, host, true, false);
+    if (plane)
+        planeName.append(plane->queryProp("@name"));
+    else
+    {
+        Owned<IException> e = makeStringExceptionV(ECLWATCH_INVALID_INPUT, "DropZone not found for host '%s' path '%s'.", host, path);
+#ifndef _CONTAINERIZED
+        // In bare-metal, if environment.conf is configured with useDropZoneRestriction=false, issue warning only
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (!env->isDropZoneRestrictionEnabled())
+        {
+            WARNLOG(e);
+            return planeName; // NB: not filled
+        }
+#endif
+        throw e.getClear();
+    }
+    return planeName;
 }
 
 static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IPropertyTree* dropZone, const char* dropZonePath)
@@ -167,31 +192,40 @@ static SecAccessFlags getDropZoneScopePermissions(IEspContext& context, const IP
     return queryDistributedFileDirectory().getDropZoneScopePermissions(name, dropZonePath, userDesc);
 }
 
-extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, const char* dropZoneHost)
+extern TPWRAPPER_API SecAccessFlags getDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath)
 {
     if (isEmptyString(dropZonePath))
         throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "getDZPathScopePermissions(): DropZone path must be specified.");
 
-    Owned<IPropertyTree> dropZone;
-    if (isEmptyString(dropZoneName))
-        dropZone.setown(findDropZonePlane(dropZonePath, dropZoneHost, true, true));
-    else
-    {
-        dropZone.setown(getDropZonePlane(dropZoneName));
-        if (!dropZone)
-            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "getDZPathScopePermissions(): DropZone %s not found.", dropZoneName);
-    }
+    Owned<IPropertyTree> dropZone = getDropZonePlane(dropZoneName);
+    if (!dropZone)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "getDZPathScopePermissions(): DropZone %s not found.", dropZoneName);
 
     return getDropZoneScopePermissions(context, dropZone, dropZonePath);
 }
 
-extern TPWRAPPER_API SecAccessFlags getDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath,
-    const char* dropZoneHost)
+extern TPWRAPPER_API void checkDZPathScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZonePath, SecAccessFlags accessReq)
+{
+    SecAccessFlags access = getDZPathScopePermissions(context, dropZoneName, dropZonePath);
+    if (access < accessReq)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Access Required.",
+            dropZoneName, dropZonePath, context.queryUserId(), getSecAccessFlagName(access), getSecAccessFlagName(accessReq));
+}
+
+extern TPWRAPPER_API SecAccessFlags getDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZoneFilePath)
 {
     StringBuffer dir, fileName;
-    splitFilename(dropZonePath, &dir, &dir, nullptr, nullptr);
-    dropZonePath = dir.str();
-    return getDZPathScopePermissions(context, dropZoneName, dropZonePath, dropZoneHost);
+    splitFilename(dropZoneFilePath, &dir, &dir, nullptr, nullptr);
+    dropZoneFilePath = dir.str();
+    return getDZPathScopePermissions(context, dropZoneName, dropZoneFilePath);
+}
+
+extern TPWRAPPER_API void checkDZFileScopePermissions(IEspContext& context, const char* dropZoneName, const char* dropZoneFilePath, SecAccessFlags accessReq)
+{
+    SecAccessFlags access = getDZFileScopePermissions(context, dropZoneName, dropZoneFilePath);
+    if (access < accessReq)
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s for file %s not allowed for user %s (permission:%s). %s Access Required.",
+            dropZoneName, dropZoneFilePath, context.queryUserId(), getSecAccessFlagName(access), getSecAccessFlagName(accessReq));
 }
 
 extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const char* targetDZNameOrHost, const char* hostReq, SecAccessFlags permissionReq,
@@ -209,9 +243,35 @@ extern TPWRAPPER_API void validateDropZoneAccess(IEspContext& context, const cha
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host %s is not valid DropZone plane %s", hostReq, targetDZNameOrHost);
     }
     const char *dropZoneName = dropZone->queryProp("@name");
-    SecAccessFlags permission = getDZFileScopePermissions(context, dropZoneName, fileNameWithRelPath, hostReq);
+    SecAccessFlags permission = getDZFileScopePermissions(context, dropZoneName, fileNameWithRelPath);
     if (permission < permissionReq)
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). %s Access Required.",
             dropZoneName, fileNameWithRelPath, context.queryUserId(), getSecAccessFlagName(permission), getSecAccessFlagName(permissionReq));
     dlfn.setPlaneExternal(dropZoneName, fileNameWithRelPath);
 }
+
+extern TPWRAPPER_API void checkDropZoneInput(IEspContext& context, StringBuffer& dropZoneName, const char* host, const char* path)
+{
+    if (dropZoneName.isEmpty())
+        findDropZonePlaneName(host, path, dropZoneName);
+    if (!dropZoneName.isEmpty()) // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+    {
+        Owned<IPropertyTree> dropZone = getDropZonePlane(dropZoneName);
+        if (!dropZone)
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", dropZoneName.str());
+        if (isContainerized() && strsame("localhost", host)) //ECLWatch may send "localhost" for dropzones without hosts.
+            host = nullptr;
+        else if (!isEmptyString(host) && !isHostInPlane(dropZone, host, false))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host '%s' is not valid for dropzone '%s'", host, dropZoneName.str());
+        if (!isPathInPlane(dropZone, path))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", path, dropZoneName.str());
+    }
+}
+
+extern TPWRAPPER_API void checkDropZoneInputAndAccess(IEspContext& context, StringBuffer& dropZoneName, const char* host, const char* path, SecAccessFlags accessReq)
+{
+    checkDropZoneInput(context, dropZoneName, host, path);
+    if (!dropZoneName.isEmpty()) // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+        checkDZPathScopePermissions(context, dropZoneName, path, accessReq);
+}
+
