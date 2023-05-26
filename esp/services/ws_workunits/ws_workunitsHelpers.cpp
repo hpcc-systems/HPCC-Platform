@@ -22,6 +22,7 @@
 #include "daclient.hpp"
 #include "dalienv.hpp"
 #include "daaudit.hpp"
+#include "dautils.hpp"
 #include "portlist.h"
 #include "dadfs.hpp"
 #include "fileview.hpp"
@@ -4325,7 +4326,18 @@ void CWsWuFileHelper::zipAllZAPFiles(const char* zapWorkingFolder, StringArray& 
         else
         {
             StringBuffer dirPath, dirTail;
-            splitFilename(localFile, &dirPath, &dirPath, &dirTail, nullptr);
+            Owned<IPropertyTree> plane = findPlane(nullptr, localFile, nullptr, false);
+            if (plane)
+            {
+                const char *planePrefix = plane->queryProp("@prefix");
+                dirPath.set(planePrefix);
+                const char *tail = localFile + strlen(planePrefix);
+                if (PATHSEPCHAR == *tail)
+                    tail++;
+                dirTail.set(tail);
+            }
+            else // not sure if ever will be true..
+                splitFilename(localFile, &dirPath, &dirPath, &dirTail, nullptr);
             zipZAPFiles(dirPath, dirTail, passwordReq, zipFileNameWithFullPath);
         }
     }
