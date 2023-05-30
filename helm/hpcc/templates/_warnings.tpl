@@ -160,4 +160,17 @@ Pass in dict with root and warnings
   {{- $_ := set $warning "msg" (printf "tls disabled for esp services: %s" ($ctx.TLSdisabled|toStrings)) -}}
   {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
  {{- end -}}
+ {{- /* Warn if kubeApiCidr/kubeApiPort not provided */ -}}
+ {{- $egress := (.root.Values.global.egress | default dict) -}}
+ {{- if not (and (hasKey $egress "kubeApiCidr") (hasKey $egress "kubeApiPort")) -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "egress control to API not restricted (kubeApiCidr/kubeApiPort not provided)" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
+ {{- $egressRestricted := $egress.restricted | default false -}}
+ {{- if not $egressRestricted -}}
+  {{- $warning := dict "source" "helm" "severity" "warning" -}}
+  {{- $_ := set $warning "msg" "egress is not restricted to minimum required" -}}
+  {{- $_ := set $ctx "warnings" (append $ctx.warnings $warning) -}}
+ {{- end -}}
 {{- end -}}
