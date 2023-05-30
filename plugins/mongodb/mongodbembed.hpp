@@ -200,12 +200,13 @@ namespace mongodbembed
          * @param _connectionString Connection string for creating the mongocxx::uri.
          * @param _batchSize The number of documents MongoDB should return per batch.
          */
-        MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize) 
+        MongoDBQuery(const char *database, const char *collection, const char *_connectionString, std::int32_t _batchSize, std::int32_t _limit) 
         {
             databaseName = database;
             collectionName = collection;
             connectionString = _connectionString;
             batchSize = _batchSize;
+            limit = _limit;
         }
 
         /**
@@ -325,6 +326,16 @@ namespace mongodbembed
             return queryString.str();
         }
 
+        /**
+         * @brief Returns the maximum number of documents return by the cursor
+         * 
+         * @return std::int32_t argument for the mongocxx::cursor::limit() function.
+         */
+        std::int32_t queryLimit()
+        {
+            return limit;
+        }
+
     protected:
         std::string databaseName;                      //! Local copy of database name.
         std::string collectionName;                    //! Local copy of collection name.
@@ -334,6 +345,7 @@ namespace mongodbembed
         const char* cursor = nullptr;                  //! Pointer for keeping track of parsing the embedded script.
         StringArray result_rows;                       //! Local copy of result rows.
         std::int32_t batchSize;                        //! Batch Size for result rows.
+        std::int32_t limit;                            //! The maximum number of documents that the cursor can return.
         StringBuffer connectionString;                 //! Pointer to connection string for hashing and creating the uri.
         StringBuffer queryString;                      //! Pointer to query string for hashing.
     };
