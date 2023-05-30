@@ -694,28 +694,6 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
     return dft;
 }
 
-static constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
-{
-    return
-        (measure == SMeasureTimeNs) ? StatsMergeSum :
-        (measure == SMeasureTimestampUs) ? StatsMergeFirst : // NOTE - this is not 100% accurate for some "WhenLast" stats, which use StatsMergeLast
-        (measure == SMeasureCount) ? StatsMergeSum :
-        (measure == SMeasureSize) ? StatsMergeSum :
-        (measure == SMeasureLoad) ? StatsMergeMax :
-        (measure == SMeasureSkew) ? StatsMergeMax :
-        (measure == SMeasureNode) ? StatsMergeKeepNonZero :
-        (measure == SMeasurePercent) ? StatsMergeReplace :
-        (measure == SMeasureIPV4) ? StatsMergeKeepNonZero :
-        (measure == SMeasureCycle) ? StatsMergeSum :
-        (measure == SMeasureEnum) ? StatsMergeKeepNonZero :
-        (measure == SMeasureText) ? StatsMergeKeepNonZero :
-        (measure == SMeasureBool) ? StatsMergeKeepNonZero :
-        (measure == SMeasureId) ? StatsMergeKeepNonZero :
-        (measure == SMeasureFilename) ? StatsMergeKeepNonZero :
-        (measure == SMeasureCost) ? StatsMergeSum :
-        StatsMergeSum;
-}
-
 //--------------------------------------------------------------------------------------------------------------------
 
 #define BASE_NAMES(x, y) \
@@ -764,8 +742,8 @@ static constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
     "@TimeDelta" # y, \
     "@TimeStdDev" # y,
 
-#define CORESTAT(x, y, m)     St##x##y, m, queryMergeMode(m), St##x##y, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
-#define STAT(x, y, m)         CORESTAT(x, y, m)
+#define CORESTAT(x, y, m, mm)     St##x##y, m, mm, St##x##y, St##x##y, { NAMES(x, y) }, { TAGS(x, y) }
+#define STAT(x, y, m, mm)         CORESTAT(x, y, m, mm)
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -774,16 +752,16 @@ static constexpr StatsMergeAction queryMergeMode(StatisticMeasure measure)
 #define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
 #define WHENFIRSTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeFirst, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define WHENLASTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeLast, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
-#define NUMSTAT(y) STAT(Num, y, SMeasureCount)
-#define SIZESTAT(y) STAT(Size, y, SMeasureSize)
-#define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
-#define SKEWSTAT(y) STAT(Skew, y, SMeasureSkew)
-#define NODESTAT(y) STAT(Node, y, SMeasureNode)
-#define PERSTAT(y) STAT(Per, y, SMeasurePercent)
-#define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
+#define NUMSTAT(y) STAT(Num, y, SMeasureCount, StatsMergeSum)
+#define SIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeSum)
+#define LOADSTAT(y) STAT(Load, y, SMeasureLoad, StatsMergeMax)
+#define SKEWSTAT(y) STAT(Skew, y, SMeasureSkew, StatsMergeMax)
+#define NODESTAT(y) STAT(Node, y, SMeasureNode, StatsMergeKeepNonZero)
+#define PERSTAT(y) STAT(Per, y, SMeasurePercent, StatsMergeReplace)
+#define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4, StatsMergeKeepNonZero)
 #define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
-#define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum)
-#define COSTSTAT(y) STAT(Cost, y, SMeasureCost)
+#define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum, StatsMergeKeepNonZero)
+#define COSTSTAT(y) STAT(Cost, y, SMeasureCost, StatsMergeSum)
 //--------------------------------------------------------------------------------------------------------------------
 
 class StatisticMeta
@@ -1021,7 +999,18 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 {
     if (queryStatsVariant(kind) == 0)
         return queryBaseMergeMode(kind);
-    return queryMergeMode(queryMeasure(kind));
+    unsigned variant = queryStatsVariant(kind);
+    switch (variant)
+    {
+    case StSkew:
+    case StSkewMin:
+    case StSkewMax:
+        return StatsMergeMax;
+    case StNodeMin:
+    case StNodeMax:
+        return StatsMergeKeepNonZero;
+    }
+    return queryBaseMergeMode((StatisticKind)(kind & StKindMask));
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -1212,67 +1201,51 @@ extern jlib_decl StatisticScopeType queryScopeType(const char * sst, StatisticSc
 
 //--------------------------------------------------------------------------------------------------------------------
 
-inline void mergeUpdate(StatisticMeasure measure, unsigned __int64 & value, const unsigned __int64 otherValue)
-{
-    switch (measure)
-    {
-    case SMeasureTimeNs:
-    case SMeasureCount:
-    case SMeasureSize:
-    case SMeasureLoad:
-    case SMeasureSkew:
-    case SMeasureCycle:
-        value += otherValue;
-        break;
-    case SMeasureTimestampUs:
-        if (otherValue && otherValue < value)
-            value = otherValue;
-        break;
-    }
-}
-
-unsigned __int64 mergeStatistic(StatisticMeasure measure, unsigned __int64 value, unsigned __int64 otherValue)
-{
-    mergeUpdate(measure, value, otherValue);
-    return value;
-}
-
-unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction)
+inline void mergeUpdate(unsigned __int64 & value, const unsigned __int64 otherValue, StatsMergeAction mergeAction)
 {
     switch (mergeAction)
     {
     case StatsMergeKeepNonZero:
-        if (prevValue)
-            return prevValue;
-        return newValue;
+        if (otherValue && !value)
+            value = otherValue;
+        break;
     case StatsMergeAppend:
     case StatsMergeReplace:
-        return newValue;
+        value = otherValue;
+        break;
     case StatsMergeSum:
-        return prevValue + newValue;
+        value += otherValue;
+        break;
     case StatsMergeMin:
-        if (prevValue > newValue)
-            return newValue;
-        else
-            return prevValue;
+        if (otherValue < value)
+            value = otherValue;
+        break;
     case StatsMergeFirst:
-        if (newValue && ((prevValue > newValue) || !prevValue))
-            return newValue;
-        else
-            return prevValue;
+        if (otherValue && ((otherValue < value) || !value))
+            value = otherValue;
+        break;
     case StatsMergeMax:
     case StatsMergeLast:
-        if (prevValue < newValue)
-            return newValue;
-        else
-            return prevValue;
-    default:
+        if (otherValue > value)
+            value = otherValue;
+        break;
 #ifdef _DEBUG
+    default:
         throwUnexpected();
-#else
-        return newValue;
 #endif
     }
+}
+
+unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatsMergeAction mergeAction)
+{
+    unsigned __int64 value = prevValue;
+    mergeUpdate(value, newValue, mergeAction);
+    return value;
+}
+
+unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int64 newValue, StatisticKind kind)
+{
+    return mergeStatisticValue(prevValue, newValue, queryMergeMode(kind));
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -1396,7 +1369,8 @@ public:
 
     void merge(unsigned __int64 otherValue)
     {
-        mergeUpdate(queryMeasure(kind), value, otherValue);
+        StatsMergeAction mergeAction = queryMergeMode(kind);
+        mergeUpdate(value, otherValue, mergeAction);
     }
     void serialize(MemoryBuffer & out) const
     {
