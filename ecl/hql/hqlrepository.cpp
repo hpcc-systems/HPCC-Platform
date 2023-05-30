@@ -707,6 +707,16 @@ IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, con
 }
 
 
+static bool checkGitDirExists(const char * path)
+{
+    if (!checkDirExists(path))
+        return false;
+
+    StringBuffer gitPath;
+    addPathSepChar(gitPath.append(path)).append(".git");
+    return checkFileExists(gitPath);
+}
+
 IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * repoPath, const char * defaultUrl)
 {
     if (options.optVerbose)
@@ -718,7 +728,7 @@ IEclSourceCollection * EclRepositoryManager::resolveGitCollection(const char * r
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
 
     bool ok = false;
-    if (checkDirExists(repoPath))
+    if (checkGitDirExists(repoPath))
     {
         if (options.updateRepos)
         {
