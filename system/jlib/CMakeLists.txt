@@ -95,6 +95,7 @@ set (    SRCS
          jtime.cpp
          junicode.cpp
          jutil.cpp
+         jtrace.cpp
          ${HPCC_SOURCE_DIR}/system/globalid/lnuid.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/codesigner.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/gpgcodesigner.cpp
@@ -176,6 +177,7 @@ set (    INCLUDES
         jtime.ipp
         junicode.hpp
         jutil.hpp
+        jtrace.hpp
         ${HPCC_SOURCE_DIR}/system/httplib/httplib.h
         ${HPCC_SOURCE_DIR}/system/security/shared/opensslcommon.hpp
         ${HPCC_SOURCE_DIR}/system/security/cryptohelper/cryptocommon.cpp

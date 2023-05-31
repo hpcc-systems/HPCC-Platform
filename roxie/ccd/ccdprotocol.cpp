@@ -1683,7 +1683,7 @@ private:
 
     const char *queryRequestGlobalIdHeader(HttpHelper &httpHelper, IContextLogger &logctx, StringAttr &headerused)
     {
-        const char *id = queryRequestIdHeader(httpHelper, logctx.queryGlobalIdHttpHeader(), headerused);
+        const char *id = queryRequestIdHeader(httpHelper, logctx.queryGlobalIdHttpHeaderName(), headerused);
         if (!id || !*id)
         {
             id = queryRequestIdHeader(httpHelper, "Global-Id", headerused);
@@ -1695,7 +1695,7 @@ private:
 
     const char *queryRequestCallerIdHeader(HttpHelper &httpHelper, IContextLogger &logctx, StringAttr &headerused)
     {
-        const char *id = queryRequestIdHeader(httpHelper, logctx.queryCallerIdHttpHeader(), headerused);
+        const char *id = queryRequestIdHeader(httpHelper, logctx.queryCallerIdHttpHeaderName(), headerused);
         if (!id || !*id)
         {
             id = queryRequestIdHeader(httpHelper, "Caller-Id", headerused);
@@ -1801,7 +1801,7 @@ readAnother:
                 StringAttr globalIdHeader, callerIdHeader;
                 const char *globalId = queryRequestGlobalIdHeader(httpHelper, logctx, globalIdHeader);
                 const char *callerId = queryRequestCallerIdHeader(httpHelper, logctx, callerIdHeader);
-                logctx.setHttpIdHeaders(globalIdHeader, callerIdHeader);
+                logctx.setHttpIdHeaderNames(globalIdHeader, callerIdHeader);
                 if (globalId && *globalId)
                     msgctx->setTransactionId(globalId, callerId, true);  //logged and forwarded through SOAPCALL/HTTPCALL
                 else if (callerId && *callerId)

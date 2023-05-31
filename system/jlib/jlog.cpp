@@ -29,6 +29,7 @@
 #include "jprop.hpp"
 #include "lnuid.h"
 #include <sys/stat.h>
+#include "jtrace.hpp"
 
 using namespace ln_uid;
 
@@ -2823,11 +2824,7 @@ void IContextLogger::logOperatorException(IException *E, const char *file, unsig
 class DummyLogCtx : implements IContextLogger
 {
 private:
-    StringAttr globalId;
-    StringAttr callerId;
-    StringBuffer localId;
-    StringAttr globalIdHeader;
-    StringAttr callerIdHeader;
+    LogTrace logTrace;
 
 public:
     // It's a static object - we don't want to actually link-count it...
@@ -2867,39 +2864,35 @@ public:
     }
     virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) override
     {
-        globalId.set(id);
-        appendGloballyUniqueId(localId.clear());
+        logTrace.setGlobalId(id);
     }
     virtual void setCallerId(const char *id) override
     {
-        callerId.set(id);
+        logTrace.setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
-        return globalId.get();
+        return logTrace.queryGlobalId();
     }
     virtual const char *queryCallerId() const override
     {
-        return callerId.str();
+        return logTrace.queryCallerId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
-        return localId.str();
+        return logTrace.queryLocalId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
-        if (global && *global)
-            globalIdHeader.set(global);
-        if (caller && *caller)
-            callerIdHeader.set(caller);
+        logTrace.setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return globalIdHeader.str();
+        return logTrace.queryGlobalIdHTTPHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return callerIdHeader.str();
+        return logTrace.queryCallerIdHTTPHeaderName();
     }
 } dummyContextLogger;
 

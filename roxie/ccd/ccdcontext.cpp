@@ -1383,7 +1383,7 @@ public:
     {
         const_cast<IRoxieContextLogger&>(logctx).setCallerId(id);
     }
-    virtual const char *queryGlobalId() const
+    virtual const char *queryGlobalId() const override
     {
         return logctx.queryGlobalId();
     }
@@ -1391,21 +1391,21 @@ public:
     {
         return logctx.queryCallerId();
     }
-    virtual const char *queryLocalId() const
+    virtual const char *queryLocalId() const override
     {
         return logctx.queryLocalId();
     }
-    virtual void setHttpIdHeaders(const char *global, const char *caller)
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) override
     {
-        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaders(global, caller);
+        const_cast<IRoxieContextLogger&>(logctx).setHttpIdHeaderNames(global, caller);
     }
-    virtual const char *queryGlobalIdHttpHeader() const
+    virtual const char *queryGlobalIdHttpHeaderName() const override
     {
-        return logctx.queryGlobalIdHttpHeader();
+        return logctx.queryGlobalIdHttpHeaderName();
     }
-    virtual const char *queryCallerIdHttpHeader() const
+    virtual const char *queryCallerIdHttpHeaderName() const override
     {
-        return logctx.queryCallerIdHttpHeader();
+        return logctx.queryCallerIdHttpHeaderName();
     }
 
     virtual void noteLibrary(IQueryFactory *library)

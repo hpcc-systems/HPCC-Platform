@@ -35,6 +35,7 @@
 #include "jptree.hpp"
 #include "jsocket.hpp"
 #include "jtime.hpp"
+#include "jtrace.hpp"
 
 typedef enum
 {
@@ -1253,11 +1254,11 @@ interface jlib_decl IContextLogger : extends IInterface
     virtual unsigned queryTraceLevel() const = 0;
 
     virtual void setGlobalId(const char *id, SocketEndpoint &ep, unsigned pid) = 0;
-    virtual void setHttpIdHeaders(const char *global, const char *caller) = 0;
+    virtual void setHttpIdHeaderNames(const char *global, const char *caller) = 0;
     virtual const char *queryGlobalId() const = 0;
     virtual const char *queryLocalId() const = 0;
-    virtual const char *queryGlobalIdHttpHeader() const = 0;
-    virtual const char *queryCallerIdHttpHeader() const = 0;
+    virtual const char *queryGlobalIdHttpHeaderName() const = 0;
+    virtual const char *queryCallerIdHttpHeaderName() const = 0;
     virtual void setCallerId(const char *id) = 0;
     virtual const char *queryCallerId() const = 0;
 };
