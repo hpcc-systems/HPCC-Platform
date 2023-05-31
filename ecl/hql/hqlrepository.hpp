@@ -54,7 +54,7 @@ public:
     void kill();
 
     void processArchive(IPropertyTree * archiveTree);
-    IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl);
+    IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSources);
     void setOptions(const char * _eclRepoPath, const char * _gitUser, const char * _gitPasswordPath, const char * _defaultGitPrefix, bool _fetchRepos, bool _updateRepos, bool _verbose)
     {
         options.eclRepoPath.set(_eclRepoPath);
