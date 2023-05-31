@@ -63,7 +63,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
-            text: currentUser?.firstName + " " + currentUser?.lastName,
+            text: (currentUser?.firstName && currentUser?.lastName) ? currentUser.firstName + " " + currentUser.lastName : currentUser?.username,
             secondaryText: currentUser?.accountType,
             size: PersonaSize.size32
         };
@@ -189,7 +189,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             if (currentUser.passwordIsExpired) {
                 alert(nlsHPCC.PasswordExpired);
                 setShowMyAccount(true);
-            } else if (currentUser.passwordDaysRemaining <= currentUser.passwordExpirationWarningDays) {
+            } else if (currentUser.passwordDaysRemaining && currentUser.passwordDaysRemaining <= currentUser.passwordExpirationWarningDays) {
                 if (confirm(nlsHPCC.PasswordExpirePrefix + currentUser.passwordDaysRemaining + nlsHPCC.PasswordExpirePostfix)) {
                     setShowMyAccount(true);
                 }
