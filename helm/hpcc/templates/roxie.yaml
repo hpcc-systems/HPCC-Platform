@@ -168,7 +168,7 @@ spec:
 ---
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.servicePort)  0 }}
-{{ include "hpcc.addService" ( dict "root" $ "name" $service.name "service" $service "selector" $servername "defaultPort" $service.servicePort "appProtocolHTTP" true) }}
+{{ include "hpcc.addService" ( dict "root" $ "name" $service.name "service" $service "selector" $servername "defaultPort" $service.servicePort) }}
 ---
 {{- end }}
 {{- end }}
