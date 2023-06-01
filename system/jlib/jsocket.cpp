@@ -1179,6 +1179,7 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
         getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, *peerEp);
 
     CSocket *ret = new CSocket(newsock,sm_tcp,true);
+    ret->checkCfgKeepAlive();
     ret->set_inherit(false);
     return ret;
 
