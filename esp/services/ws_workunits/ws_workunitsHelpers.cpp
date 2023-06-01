@@ -4333,7 +4333,7 @@ void CWsWuFileHelper::zipAllZAPFiles(const char* zapWorkingFolder, StringArray& 
         else
         {
             StringBuffer dirPath, dirTail;
-            Owned<IPropertyTree> plane = findPlane(nullptr, localFile, nullptr, false);
+            Owned<IPropertyTree> plane = findPlane(nullptr, localFile, nullptr, false, false);
             if (plane)
             {
                 const char *planePrefix = plane->queryProp("@prefix");

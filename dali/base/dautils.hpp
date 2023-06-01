@@ -542,7 +542,7 @@ extern da_decl ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &
 
 extern da_decl IPropertyTreeIterator * getDropZonePlanesIterator(const char * name=nullptr);
 extern da_decl IPropertyTree * getDropZonePlane(const char * name);
-extern da_decl IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch);
+extern da_decl IPropertyTree * findPlane(const char *category, const char * path, const char * host, bool ipMatch, bool mustMatch);
 extern da_decl IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipMatch, bool mustMatch);
 extern da_decl bool isHostInPlane(IPropertyTree *plane, const char *host, bool ipMatch);
 extern da_decl bool getPlaneHost(StringBuffer &host, IPropertyTree *plane, unsigned which);
