@@ -206,6 +206,8 @@ EXPORT NameSearchIndex := indexPrefix + 'searchIndex';
 EXPORT NameSearchSource := indexPrefix + 'searchSource';
 EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
 EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);
+EXPORT getSearchIndexVariant(string variant) := INDEX(TS.textSearchIndex, NameSearchIndex + IF(variant != '', '_' + variant, ''));
+
 EXPORT getSearchSuperIndex() := INDEX(TS.textSearchIndex, '{' + NameSearchIndex + ',' + NameWordIndex() + '}');
 EXPORT getSearchSource() := DATASET(NameSearchSource, TS.textSourceRecord, THOR);
 
