@@ -29,6 +29,9 @@ MKDIR=1
 
 MANAGED_ELK_SUBPATH="managed/logging/elastic"
 MANAGED_PROM_SUBPATH="managed/metrics/prometheus"
+MANAGED_LOKI_SUBPATH="managed/logging/loki-stack"
+
+LOG_FORMAT_JSON_ARG=""
 
 ELASTIC_LOG_ACCESS_ARG="-f $scriptdir/../helm/${MANAGED_ELK_SUBPATH}/elastic4hpcclogs-hpcc-logaccess.yaml"
 
@@ -115,6 +118,7 @@ while [ "$#" -gt 0 ]; do
          echo "    -pv <yamlfile>     Override dataplane definitions for local persistent data"
          echo "    -e                 Suppress deployment of elastic4hpcclogs (deployed by default)"
          echo "    -m                 Deploy Prometheus Stack for component metrics processing"
+         echo "    -g                 Deploy Grafana Loki Stack for component logs processing"
          exit
          ;;
       t) CMD="template"
@@ -128,6 +132,9 @@ while [ "$#" -gt 0 ]; do
          ;;
       m) DEPLOY_PROM=1
          PROMETHEUS_METRICS_SINK_ARG="-f $scriptdir/../helm/examples/metrics/prometheus_metrics.yaml"
+         ;;
+      g) DEPLOY_LOKI=1
+         LOG_FORMAT_JSON_ARG="--set global.logging.format="json""
          ;;
       *) restArgs+=(${arg})
          ;;
@@ -165,10 +172,10 @@ if [[ -n ${PERSIST} ]] ; then
   fi
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG} ${LOG_FORMAT_JSON_ARG}
 else
-  echo helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG}
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG}
+  echo helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG} ${LOG_FORMAT_JSON_ARG}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG} ${ELASTIC_LOG_ACCESS_ARG} ${LOG_FORMAT_JSON_ARG}
 fi
 
 if [[ -n $ELASTIC_LOG_ACCESS_ARG ]] ; then
@@ -189,6 +196,21 @@ if [[ $DEPLOY_PROM == 1 ]] ; then
     dependency_check $MANAGED_PROM_SUBPATH
   fi
   helm ${CMD} myprometheus4hpccmetrics $scriptdir/../helm/$MANAGED_PROM_SUBPATH ${restArgs[@]} --set kube-prometheus-stack.prometheus.service.type=LoadBalancer --set kube-prometheus-stack.grafana.service.type=LoadBalancer
+fi
+
+if [[ $DEPLOY_LOKI == 1 ]] ; then
+  echo -e "\n\nDeploying "myloki4hpcclogs" - Grafana Loki Stack:"
+  echo -e "\n Access Grafana on: http://localhost:3000"
+  echo -e "\n user: admin"
+  echo -e "\n To obtain pass: 'kubectl get secret myloki4hpcclogs-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo' "
+  echo -e "\n Find logs on 'Explore' view, under 'loki' datasource\n"
+
+  if [[ $DEP_UPDATE == 1 ]]; then
+    dependency_update $MANAGED_PROM_SUBPATH
+  else
+    dependency_check $MANAGED_PROM_SUBPATH
+  fi
+  helm ${CMD} myloki4hpcclogs $scriptdir/../helm/$MANAGED_LOKI_SUBPATH ${restArgs[@]}
 fi
 
 if [ ${CMD} != "template" ] ; then

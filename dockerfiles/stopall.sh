@@ -34,11 +34,11 @@ while [ "$#" -gt 0 ]; do
          CLUSTERNAME=$1
          ;;
       -e) UNINSTALL_ELK=0
-	     echo "elastic4hpcclogs will not be stopped..."
+       echo "elastic4hpcclogs will not be stopped..."
          ;;
       *) echo "Usage: stoptall.sh [options]"
          echo "    -w  Wait for all pods to terminate"
-		 echo "    -e  Suppress deletion of elastic4hpcclogs"
+         echo "    -e  Suppress deletion of elastic4hpcclogs"
          exit
          ;;
     esac
@@ -48,6 +48,7 @@ done
 helm uninstall $CLUSTERNAME
 helm uninstall localfile
 helm uninstall myprometheus4hpccmetrics
+helm uninstall myloki4hpcclogs
 kubectl delete jobs --all
 kubectl delete networkpolicy --all
 
