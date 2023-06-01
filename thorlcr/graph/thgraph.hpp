@@ -408,6 +408,10 @@ public:
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name);
 
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) override { ctx->addWuExceptionEx(text, code, severity, audience, source); }
+    virtual unsigned getElapsedMs() const override
+    {
+        return ctx->getElapsedMs();
+    }
 };
 
 

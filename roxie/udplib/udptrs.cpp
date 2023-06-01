@@ -1063,8 +1063,19 @@ class CSendManager : implements ISendManager, public CInterface
                 {
                     if (!m.isSamePermit(msg))
                         return false;
-                    m.seen = msg.seen; // Update the queue entry with the most recent tracking information
-                    m.max_data = msg.max_data;
+
+                    //Check for a newer flowSeq, being careful about overflow (likely to only differ by 1)
+                    int flowDiff = (int)(msg.flowSeq - m.flowSeq);
+
+                    //An earlier flowSeq might be received if the udp packets are reordered - if so ignore it.
+                    if (flowDiff >= 0)
+                    {
+                        //Later flowSequences always take precedence - either no change, or update with later value
+                        m.flowSeq = msg.flowSeq;
+                        //Assume that later packets are more up to date.
+                        m.seen = msg.seen; // Update the queue entry with the most recent tracking information
+                        m.max_data = msg.max_data;
+                    }
                     wasDuplicate = true;
                     return true;
                 };

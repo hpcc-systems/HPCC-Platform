@@ -664,6 +664,11 @@ public:
     {
         ctx->addWuExceptionEx(text, code, severity, audience, source);
     }
+    virtual unsigned getElapsedMs() const override
+    {
+        return ctx->getElapsedMs();
+    }
+
 protected:
     ICodeContext * ctx;
 };
