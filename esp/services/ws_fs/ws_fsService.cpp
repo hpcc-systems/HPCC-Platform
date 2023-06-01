@@ -771,7 +771,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     context.getUserID(user);
 
     SocketEndpoint ep;
-    getSashaServiceEP(ep, "dfuwu-archiver", true);
+    getSashaServiceEP(ep, dfuwuArchiverType, true);
     Owned<INode> sashaserver = createINode(ep);
 
     __int64 count=req.getPageSize();
@@ -1392,7 +1392,7 @@ bool CFileSprayEx::getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &r
     if (wuid && *wuid)
     {
         StringBuffer serviceEndpoint;
-        getSashaService(serviceEndpoint, "sasha-dfuwu-archiver", true);
+        getSashaService(serviceEndpoint, dfuwuArchiverType, true);
         getInfoFromSasha(context, serviceEndpoint, wuid, &resp.updateResult());
         return true;
     }

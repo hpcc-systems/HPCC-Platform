@@ -130,6 +130,9 @@ using std::string;
 #define eqSparkThorProcess      "SparkThorProcess"
 #define eqRoxieServerProcess    "RoxieServerProcess"
 
+constexpr const char* wuArchiverType = "wu-archiver";
+constexpr const char* dfuwuArchiverType = "dfuwu-archiver";
+
 #define SDS_LOCK_TIMEOUT 30000
 
 class TPWRAPPER_API CTpWrapper : public CInterface

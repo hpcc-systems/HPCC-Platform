@@ -1299,6 +1299,11 @@ public:
         return (workUnit != nullptr) || (statsWu != nullptr);
     }
 
+    virtual unsigned getElapsedMs() const override
+    {
+        return msTick() - startTime;
+    }
+
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const override
     {
         logctx.noteStatistic(kind, value);

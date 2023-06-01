@@ -81,4 +81,12 @@ EXPORT getLocalId() := lib_logging.Logging.getLocalId();
 
 EXPORT generateGloballyUniqueId() := lib_logging.Logging.generateGloballyUniqueId();
 
+/*
+ * Gets the current elapsed time for a query.  eclagent and thor not yet implemented.
+ *
+ * Returns the elapsed time in ms.
+ */
+
+EXPORT getElapsedMs() := lib_logging.Logging.getElapsedMs();
+
 END;

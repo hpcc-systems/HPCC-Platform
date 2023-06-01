@@ -52,7 +52,7 @@ extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids
         sashaAddress.append(':').append(params->getPropInt("sashaServerPort", DEFAULT_SASHA_PORT));
     }
     else
-        getSashaService(sashaAddress, "sasha-wu-archiver", true);
+        getSashaService(sashaAddress, dfu ? dfuwuArchiverType : wuArchiverType, true);
 
     SocketEndpoint ep(sashaAddress);
     Owned<INode> node = createINode(ep);

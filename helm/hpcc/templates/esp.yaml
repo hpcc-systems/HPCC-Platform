@@ -191,7 +191,7 @@ kind: ConfigMap
  {{- $_ := set $service "labels" dict -}}
 {{- end -}}
 {{- $_ := set $service "labels" (merge $service.labels (dict "server" $application)) -}}
-{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 "appProtocolHTTP" true "remoteClients" .remoteClients) }}
+{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 8880 "remoteClients" .remoteClients) }}
 ---
 {{ include "hpcc.addEgress" $commonCtx }}
 {{- end }}

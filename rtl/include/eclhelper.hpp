@@ -778,6 +778,7 @@ interface ICodeContext : public IResourceContext
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, unsigned flags) const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, const char * source) = 0;
+    virtual unsigned getElapsedMs() const = 0;
 };
 
 

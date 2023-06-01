@@ -1292,11 +1292,13 @@ static void filterXmlBySchema(IPTree* in, IXmlType* type, const char* tag, Strin
             if (!fld && fldType && typeName)
             {
                 const char *fldTypeName = fldType->queryName();
-                if (strncmp("ArrayOf", fldTypeName, 7)==0)
-                    fldTypeName+=7;
-                if (streq(typeName, fldTypeName))
-                    continue;
-
+                if (fldTypeName)
+                {
+                    if (strncmp("ArrayOf", fldTypeName, 7)==0)
+                        fldTypeName+=7;
+                    if (streq(typeName, fldTypeName))
+                        continue;
+                }
             }
             filterXmlBySchema(fld,fldType,fldName,out);
         }
