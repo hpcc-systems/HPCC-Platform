@@ -533,6 +533,8 @@ public:
             usage();
             return false;
         }
+        if (!dfuOptions.finalizeOptions(*this, globals))
+            return false;
         StringBuffer err;
         if (optFileName.isEmpty())
             err.append("\n ... Missing package file name\n");
@@ -563,7 +565,12 @@ public:
         StringBuffer pkgInfo;
         pkgInfo.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... adding package map %s\n\n", optFileName.str());
+        if (dfuOptions.optOnlyCopyFiles)
+            fprintf(stdout, "\n ... copying files for package map %s\n\n", optFileName.str());
+        else if (dfuOptions.optStopIfFilesCopied)
+            fprintf(stdout, "\n ... copying files for, OR adding package map %s\n\n", optFileName.str());
+        else
+            fprintf(stdout, "\n ... adding package map %s\n\n", optFileName.str());
 
         Owned<IClientAddPackageRequest> request = packageProcessClient->createAddPackageRequest();
         setRpcOptions(request->rpc());
@@ -712,6 +719,8 @@ public:
             usage();
             return false;
         }
+        if (!dfuOptions.finalizeOptions(*this, globals))
+            return false;
         StringBuffer err;
         if (optSrcPath.isEmpty())
             err.append("\n ... Missing path to source packagemap\n");
@@ -730,7 +739,12 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = createCmdClient(WsPackageProcess, *this);
 
-        fprintf(stdout, "\n ... copy package map %s to %s\n\n", optSrcPath.str(), optTarget.str());
+        if (dfuOptions.optOnlyCopyFiles)
+            fprintf(stdout, "\n ... copying files, in preparation for copying package map %s to %s\n\n", optSrcPath.str(), optTarget.str());
+        else if (dfuOptions.optStopIfFilesCopied)
+            fprintf(stdout, "\n ... copying files for, OR copying package map %s to %s\n\n", optSrcPath.str(), optTarget.str());
+        else
+            fprintf(stdout, "\n ... copying package map %s to %s\n\n", optSrcPath.str(), optTarget.str());
 
         Owned<IClientCopyPackageMapRequest> request = packageProcessClient->createCopyPackageMapRequest();
         setRpcOptions(request->rpc());
@@ -1279,6 +1293,8 @@ public:
             usage();
             return false;
         }
+        if (!dfuOptions.finalizeOptions(*this, globals))
+            return false;
         StringBuffer err;
         if (optFileName.isEmpty())
             err.append("\n ... Missing package file name\n");
@@ -1308,7 +1324,12 @@ public:
         StringBuffer content;
         content.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... adding packagemap %s part %s from file %s\n\n", optPMID.get(), optPartName.get(), optFileName.get());
+        if (dfuOptions.optOnlyCopyFiles)
+            fprintf(stdout, "\n ... copying files for packagemap %s part %s from file %s\n\n", optPMID.get(), optPartName.get(), optFileName.get());
+        else if (dfuOptions.optStopIfFilesCopied)
+            fprintf(stdout, "\n ... copying files for, OR adding packagemap %s part %s from file %s\n\n", optPMID.get(), optPartName.get(), optFileName.get());
+        else
+            fprintf(stdout, "\n ... adding packagemap %s part %s from file %s\n\n", optPMID.get(), optPartName.get(), optFileName.get());
 
         Owned<IClientAddPartToPackageMapRequest> request = packageProcessClient->createAddPartToPackageMapRequest();
         setRpcOptions(request->rpc());

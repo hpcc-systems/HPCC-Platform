@@ -1517,6 +1517,29 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
     return true;
 }
 
+bool CFileSprayEx::onCreateDFUPublisherWorkunit(IEspContext &context, IEspCreateDFUPublisherWorkunit &req, IEspCreateDFUPublisherWorkunitResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Write, ECLWATCH_DFU_WU_ACCESS_DENIED, "Failed to create DFU Publisher workunit. Permission denied.");
+
+        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+        Owned<IDFUWorkUnit> wu = factory->createPublisherWorkUnit();
+        setDFUServerQueueReq(req.getDFUServerQueue(), wu);
+        setUserAuth(context, wu);
+        wu->commit();
+        const char * d = wu->queryId();
+        IEspDFUWorkunit &result = resp.updateResult();
+        DeepAssign(context, wu, result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+
+    return true;
+}
+
 bool CFileSprayEx::onUpdateDFUWorkunit(IEspContext &context, IEspUpdateDFUWorkunit &req, IEspUpdateDFUWorkunitResponse &resp)
 {
     try
