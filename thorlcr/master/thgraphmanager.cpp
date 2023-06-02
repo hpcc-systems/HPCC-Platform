@@ -1101,7 +1101,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         cost_type cost = money2cost_type(calculateThorCost(nanoToMilli(graphTimeNs), numberOfMachines));
         if (cost)
             wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-
+        updateSpillSize(wu, graphScope, SSTgraph);
         removeJob(*job);
     }
     catch (IException *e)
