@@ -5530,6 +5530,7 @@ void CWsWorkunitsEx::publishEclDefinition(IEspContext &context, const char *targ
     publishReq->setDfuCopyFiles(req.getDfuCopyFiles());
     publishReq->setDfuOverwrite(req.getDfuOverwrite());
     publishReq->setDfuQueue(req.getDfuQueue());
+    publishReq->setDfuPublisherWuid(req.getDfuPublisherWuid());
 
     publishReq->setAllowForeignFiles(req.getAllowForeign());
     publishReq->setUpdateDfs(req.getUpdateDfs());

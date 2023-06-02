@@ -53,7 +53,7 @@ jobs:
         
             print("%s %s %s" % (title, user, comments_url))
             status = ''
-            issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
+            issuem = re.search("(HPCC|HH|IDE|EPE|ML|JAPI)-[0-9]+", title)
             if issuem:
                 issue_name = issuem.group()
                 if user == 'dehilsterlexis':
@@ -68,7 +68,7 @@ jobs:
                     user = 'terrenceasselin'
                 if user == 'jeclrsg':
                     user = 'clemje01'
-                if user == 'jackdelv'
+                if user == 'jackdelv':
                     user = 'delvecja'
                 options = {
                   'server': jira_url

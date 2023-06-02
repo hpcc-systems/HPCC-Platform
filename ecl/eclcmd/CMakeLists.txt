@@ -38,6 +38,7 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_codesign_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_logaccess_esp.cpp
+         ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          eclcmd.hpp
          ecl.cpp
          eclcmd_common.hpp
@@ -72,9 +73,10 @@ include_directories (
          ./../../system/jlib
          ./../../system/xmllib
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${ESPSCM_GENERATED_DIR}
     )
 
-ADD_DEFINITIONS( -D_CONSOLE -DWSWU_API_LOCAL -Dws_codesign_API_LOCAL -Dws_logaccess_API_LOCAL )
+ADD_DEFINITIONS( -D_CONSOLE -DWSWU_API_LOCAL -Dws_codesign_API_LOCAL -Dws_logaccess_API_LOCAL -DFileSpray_API_LOCAL )
 
 
 HPCC_ADD_EXECUTABLE ( ecl ${SRCS} )

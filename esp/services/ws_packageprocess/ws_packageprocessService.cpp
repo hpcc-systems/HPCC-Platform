@@ -124,7 +124,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDesc
     return isFileKnownOnCluster(logicalname, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, const char *remotePrefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname=nullptr)
 {
     StringBuffer user;
     StringBuffer password;
@@ -135,7 +135,7 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
         userdesc->getPassword(password);
     }
 
-    Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles, false);
+    Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles, false, jobname);
     wufiles->addFilesFromPackageMap(packageMap);
 
     Owned<IDFUhelper> helper = createIDFUhelper();
@@ -170,13 +170,13 @@ void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, Stri
     }
 }
 
-void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles)
+void cloneFileInfoToDali(StringBuffer &publisherWuid, unsigned updateFlags, StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, const char *prefix, IUserDescriptor* userdesc, bool allowForeignFiles, const char *jobname=nullptr)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles);
+    cloneFileInfoToDali(publisherWuid, updateFlags, notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, prefix, userdesc, allowForeignFiles, jobname);
 }
 
 void makePackageActive(IPropertyTree *pkgSet, IPropertyTree *psEntryNew, const char *target, bool activate)
@@ -380,8 +380,11 @@ public:
     }
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt)
     {
+        const char *jobname = pmPart ? pmPart->queryProp("@id") : nullptr;
+        if (isEmptyString(jobname))
+            jobname = pmid.str();
         if (!streq(target.get(), "*"))
-            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+            cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname);
         else
         {
             CConstWUClusterInfoArray clusters;
@@ -390,7 +393,7 @@ public:
             {
                 IConstWUClusterInfo &cluster = clusters.item(i);
                 if (cluster.getPlatform() == RoxieCluster)
-                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+                    cloneFileInfoToDali(publisherWuid, updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN), jobname);
             }
         }
     }
@@ -398,18 +401,32 @@ public:
     {
         cloneDfsInfo(updateFlags, filesNotFound, pmPart);
     }
-    bool waitForDfuWorkunit()
+    bool updateDfuPublisherState(bool waitForCompletion)
     {
+        DFUstate state = DFUstate_unknown;
         if (!publisherWuid.isEmpty())
         {
             Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
             Owned<IConstDFUWorkUnit> dfuPublisherWu = factory->openWorkUnit(publisherWuid, false);
-            DFUstate state = dfuPublisherWu->pollForCompletion(dfuWait);
-            StringBuffer statemsg;
-            encodeDFUstate(state, publisherState);
-            if (state != DFUstate_finished)
-                return false;
+            if (dfuPublisherWu)
+            {
+                if (waitForCompletion)
+                    state = dfuPublisherWu->pollForCompletion(dfuWait);
+                else
+                {
+                    IConstDFUprogress *progress = dfuPublisherWu->queryProgress();
+                    if (progress)
+                        state = progress->getState();
+                }
+            }
         }
+        encodeDFUstate(state, publisherState);
+        return (state == DFUstate_finished);
+    }
+    bool waitForDfuWorkunit()
+    {
+        if (!publisherWuid.isEmpty())
+            return updateDfuPublisherState(true);
         return true;
     }
 
@@ -436,7 +453,10 @@ public:
         }
 
         if (copyonly || (stopifcopy && !publisherWuid.isEmpty()))
+        {
+            updateDfuPublisherState(false);
             return false;
+        }
         if (!waitForDfuWorkunit())
             return false;
         if (pmExisting)
@@ -526,7 +546,10 @@ public:
         cloneDfsInfo(updateFlags, filesNotFound);
 
         if (copyonly || (stopifcopy && !publisherWuid.isEmpty()))
+        {
+            updateDfuPublisherState(false);
             return false;
+        }
 
         if (existingPart)
             pmExisting->removeTree(existingPart);
@@ -838,6 +861,7 @@ static void setDfuOptions(PackageMapUpdater &updater, unsigned &updateFlags, TRe
         updateFlags |= DFU_UPDATEF_OVERWRITE;
     updater.dfuQueue.set(req.getDfuQueue());
     updater.dfuWait = req.getDfuWait();
+    updater.publisherWuid = req.getDfuPublisherWuid();
 }
 
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
