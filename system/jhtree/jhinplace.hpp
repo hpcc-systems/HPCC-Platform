@@ -131,13 +131,22 @@ public:
 
 public:
     ICompressHandler * compressionHandler = nullptr;
-    unsigned numKeyedDuplicates = 0;
+    Owned<ICompressor> compressor; // potentially shared
+    StringBuffer compressionOptions;
     MemoryBuffer uncompressed;
     MemoryAttr compressed;
-    double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
     const byte * nullRow = nullptr;
+
+    //Various stats gathered when building the index
+    unsigned numKeyedDuplicates = 0;
     offset_t totalKeyedSize = 0;
     offset_t totalDataSize = 0;
+    offset_t numLeafNodes = 0;
+    offset_t numBlockCompresses = 0;
+    struct {
+        double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
+        bool recompress = false;
+    } options;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -233,6 +242,7 @@ public:
 
 protected:
     unsigned getDataSize(bool includePayload);
+    bool recompressAll(unsigned maxSize);
 
 protected:
     InplaceKeyBuildContext & ctx;
@@ -247,6 +257,8 @@ protected:
     __uint64 firstSequence = 0;
     unsigned nodeSize;
     size32_t keyLen = 0;
+    size32_t firstUncompressed = 0;
+    size32_t sizeCompressedPayload = 0; // Set from closed compressor
     bool isVariable = false;
     bool rowCompression = false;
     bool useCompressedPayload = false;

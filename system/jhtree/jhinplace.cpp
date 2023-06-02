@@ -44,12 +44,11 @@ static constexpr size32_t maxQuotedCount = 31 + 256; // maximum number of charac
 static constexpr size32_t repeatDelta = (minRepeatCount - 1);
 static constexpr size32_t repeatXDelta = (minRepeatXCount - 1);
 
-static constexpr byte SFmanyDuplicates = 0x80;      // Flag to indicate > 287 duplicates - can occur in a key with a vast number of duplicate keyed entries
-
 //Flags for the node size byte which contains the number of bytes needed to store the fileposition differences
 //and some extra flags to allow the value to be scaled.
 static constexpr byte NSFsizemask           = 0x0F;     // Needs to support values of 0..8
 static constexpr byte NSFlinear             = 0x10;     // Filepositions for each subsequent row are 1 higher than previous row (e.g. branches, and TLKs)
+static constexpr byte NSFcompressTrailing   = 0x20;     // compressed payload has trailing uncompressed
 static constexpr byte NSFscaleN             = 0x40;     // filepositions are scaled by size N - useful for filepositions in fixed size files
 static constexpr byte NSFscaleFilepos       = 0x80;     // filepositions are scaled by nodesize
 
@@ -1111,19 +1110,6 @@ int InplaceNodeSearcher::compareValueAt(const char * search, unsigned int compar
             byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
             byte bytesPerOffset = (sizeInfo & 7);
 
-            //Duplicates can occur on the last byte of the key - if so we have a match
-            //MORE: I'm not sure this code can ever be reached - see HPCC-29108
-            if (bytesPerOffset == 0)
-            {
-#ifdef _DEBUG
-                unsigned options = numOptions;
-                if (sizeInfo & SFmanyDuplicates)
-                    options = readPacked32(finger) + maxRepeatCount;
-                assertex(resultNext == resultPrev+options);
-#endif
-                return 0;
-            }
-
             const byte * counts = finger + numOptions; // counts (if present) follow the data
             const byte nextSearch = search[0];
             for (unsigned i=0; i < numOptions; i++)
@@ -1541,7 +1527,7 @@ int InplaceNodeSearcher::compareValueAtFallback(const char *src, unsigned int in
 InplaceKeyBuildContext::~InplaceKeyBuildContext()
 {
 #ifdef TRACE_BUILDING_STATS
-    DBGLOG("NumDuplicates = %u  DataSize(%llu) KeyedSize(%llu)", numKeyedDuplicates, totalDataSize, totalKeyedSize);
+    DBGLOG("NumDuplicates = %u  DataSize(%llu) KeyedSize(%llu), NumLeaves(%llu), BlockCompress(%llu)", numKeyedDuplicates, totalDataSize, totalKeyedSize, numLeafNodes, numBlockCompresses);
 #endif
 
     delete [] nullRow;
@@ -1662,6 +1648,7 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     payloadOffsets.append(offset);
                 }
                 data += numKeys * bytesPerPayloadLength;
+                expandedSize += numKeys * sizeof(unsigned);
             }
 
             if (keyLen != keyCompareLen)
@@ -1672,12 +1659,13 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     compressedLen = numKeys * (keyLen - keyCompareLen);
                 else
                     compressedLen = readPacked32(data);
-                size32_t len = 0;
+
                 switch (payloadCompression)
                 {
                     case COMPRESS_METHOD_NONE:
                     {
                         payload = (byte *)data;
+                        data += compressedLen;
                         break;
                     }
                     case COMPRESS_METHOD_RANDROW:
@@ -1685,32 +1673,51 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                         payload = (byte *)data;
                         rowexp.setown(createRandRDiffExpander());
                         rowexp->init(data, false);
+                        data += compressedLen;
                         break;
                     }
                     default:
                     {
                         //Currently the uncompressed data is retained in memory after the node has been unpacked
-                        //(because the payload is stored before the keyed portion).
-                        //If it was stored after the keyed portion the cloned size could be reduced.
+                        //A reduced size could be cloned if the data is compressed
                         //
                         //However, retaining the compressed original provides the scope to dynamically throw away
-                        //the decompressed data and re-expand from nodes cached in memory
+                        //the decompressed data and re-expand from nodes cached in memory, and would also allow
+                        //the payload to be decompressed on demand (i.e. only if any keyed elements match)
                         ICompressHandler * handler = queryCompressHandler(payloadCompression);
                         assertex(handler);
                         const char * options = nullptr;
                         Owned<IExpander> exp = handler->getExpander(options);
-                        len = exp->init(data);
-                        if (len!=0)
+                        size32_t len = exp->init(data);
+                        data += compressedLen;
+
+                        size32_t uncompressedLen = 0;
+                        if (sizeMask & NSFcompressTrailing)
                         {
-                            payload = (byte *)malloc(len);
-                            exp->expand(payload);
+                            uncompressedLen = readPacked32(data);
+                        }
+
+                        if (len || uncompressedLen)
+                        {
+                            payload = (byte *)malloc(len+uncompressedLen);
+                            expandedSize += (len+uncompressedLen);
                             ownedPayload = true;
+                        }
+
+                        if (len)
+                        {
+                            exp->expand(payload);
+                        }
+
+                        if (uncompressedLen)
+                        {
+                            memcpy(payload+len, data, uncompressedLen);
+                            data += uncompressedLen;
                         }
                         break;
                     }
                 }
-                data += compressedLen;
-                expandedSize += len;
+
             }
         }
         assertex(data - (const byte *)keyBuf == len);
@@ -2018,6 +2025,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     if (0 == hdr.numKeys)
     {
         firstSequence = sequence;
+        ctx.numLeafNodes++;
     }
 
     __uint64 savedMinPosition = minPosition;
@@ -2065,19 +2073,19 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         // small index), the last leaf node in an index or the payload is not compressible - e.g. mapping to a unique
         // id.
 
-        // Minimum size used = Non-Payload size + compression-version byte + optional length (assume the worst)
+        // Minimum size used = Non-Payload size + compression-version byte + optional length (assume the worst) + packed (zero-length) uncompressed trailing
         size32_t maxSizePayloadLength = sizePacked(maxBytes);
-        size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0);
+        size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0) + (ctx.options.recompress ? 1 : 0);
         size32_t maxPayloadSize = maxBytes - maxUsedSpace;
         if (hasSpace)
         {
-            if (useCompressedPayload)
+            if (useCompressedPayload && !ctx.options.recompress)
             {
-                size32_t oldLzwSize = compressor.buflen();
+                size32_t oldCompressedSize = compressor.buflen();
                 if (!compressor.adjustLimit(maxPayloadSize) || !compressor.write(extraData, extraSize))
                 {
                     //Attempting to write data may have flushed some bytes into the lzw output buffer.
-                    oldSize += (compressor.buflen() - oldLzwSize);
+                    oldSize += (compressor.buflen() - oldCompressedSize);
                     hasSpace = false;
                 }
             }
@@ -2088,34 +2096,57 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         }
         else if (uncompressed.length())
         {
+            unsigned uncompressedSize = uncompressed.length();
             if (!useCompressedPayload)
             {
                 //Reached the threshold where uncompressed data does not fit.
                 //Either need to finish the node or switch to using a compressed payload.
-                unsigned uncompressedSize = uncompressed.length();
                 size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
-                compressor.open(compressed.mem(), nodeSize, ctx.compressionHandler, isVariable, fixedSize);
-                openedCompressor = true;
 
-                if (compressor.adjustLimit(maxPayloadSize) && compressor.write(uncompressed.bytes(), uncompressedSize))
+                bool success = false;
+                if (ctx.options.recompress)
+                {
+                    success = recompressAll(maxPayloadSize);
+                }
+                else
+                {
+                    compressor.open(compressed.mem(), maxPayloadSize, ctx.compressionHandler, ctx.compressionOptions, isVariable, fixedSize);
+                    openedCompressor = true;
+                    success = compressor.write(uncompressed.bytes(), uncompressedSize);
+                }
+
+                if (success)
                 {
                     unsigned compressedSize = compressor.buflen();
-                    if (compressedSize <= uncompressedSize * ctx.minCompressionThreshold)
+                    if (compressedSize <= uncompressedSize * ctx.options.minCompressionThreshold)
                     {
                         //compression reduces the size by a sufficient amount to be worth the decompression time/fragmentation.
                         hasSpace = true;
                         useCompressedPayload = true;
 
-                        //MORE: Some compressors do not support incremental compression.  For those we should continue to
-                        //gather uncompressed, but may also need to move the buffer to the context so it is reused (or
+                        //Some compressors do not support incremental compression.  For those we continue to gather uncompressed
+                        //In the future we may want to move the buffer to the context so it is reused (or
                         //maybe swap with the context).
-                        gatherUncompressed = false;
+                        if (!ctx.options.recompress)
+                            gatherUncompressed = false;
                     }
                 }
                 // else compressed does not fit either - better to remain uncompressed.
             }
             else
             {
+                if (ctx.options.recompress)
+                {
+                    //The data that is already compressed and the uncompressed data received since then no longer fit in
+                    //the node. Try recompressing all the payload data and see if there is enough room after that.
+                    //
+                    //In the worse case this could recompress every incoming record.  If this is ever an issue we
+                    //could consider limiting the number of times it is done in a row, or have a maximum compression
+                    //threshold.
+                    if (recompressAll(maxPayloadSize))
+                        hasSpace = true;
+                }
+
                 // no space for the keyed portion - adding compressed data will only make it bigger..
             }
         }
@@ -2147,6 +2178,26 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     return true;
 }
 
+
+bool CInplaceLeafWriteNode::recompressAll(unsigned maxPayloadSize)
+{
+    assertex(!openedCompressor);
+    ctx.numBlockCompresses++;
+    //MORE: Swap with member in the context to avoid reallocation
+    MemoryAttr tempCompressed(nodeSize);
+    size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
+
+    bool ok = compressor.compressBlock(maxPayloadSize, tempCompressed.mem(), uncompressed.length(), uncompressed.bytes(), ctx.compressionHandler, ctx.compressionOptions, isVariable, fixedSize);
+    if (ok)
+    {
+        compressed.swapWith(tempCompressed);
+        sizeCompressedPayload = compressor.buflen();
+        firstUncompressed = uncompressed.length();
+    }
+    return ok;
+}
+
+
 unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 {
     if (positions.ordinality() == 0)
@@ -2164,15 +2215,20 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 
     constexpr unsigned sizeOfCompressionMethodByte = 1;
     unsigned posSize = sizeOfCompressionMethodByte + sizePacked(minPosition) + bytesPerPosition * positions.ordinality() + sizePacked(firstSequence);
-    unsigned offsetSize = payloadLengths.ordinality() * 2;  // MORE: Could probably compress
+    unsigned offsetSize = payloadLengths.ordinality() * 2;  // MORE: Could probably compress, might fail if nodeSize > 64K
     unsigned payloadSize = 0;
     if ((keyLen != keyCompareLen) && includePayload)
     {
         payloadSize = 1; // compressionType;
         if (useCompressedPayload)
         {
-            unsigned compressedSize = compressor.buflen();
+            unsigned compressedSize = sizeCompressedPayload ? sizeCompressedPayload : compressor.buflen();
             payloadSize += sizePacked(compressedSize) + compressedSize;
+            if (ctx.options.recompress)
+            {
+                unsigned trailingSize = uncompressed.length() - firstUncompressed;
+                payloadSize += sizePacked(trailingSize) + trailingSize;
+            }
         }
         else
         {
@@ -2188,7 +2244,10 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 {
     if (openedCompressor)
+    {
         compressor.close();
+        sizeCompressedPayload = compressor.buflen();
+    }
 
     hdr.keyBytes = getDataSize(true);
 
@@ -2204,6 +2263,9 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
             bytesPerPosition = bytesRequired(maxPosition-minPosition);
 
         byte sizeMask = (byte)bytesPerPosition;
+        if (ctx.options.recompress)
+            sizeMask |= NSFcompressTrailing;
+
         data.append(sizeMask);
         serializePacked(data, minPosition);
         if (bytesPerPosition != 0)
@@ -2235,7 +2297,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
         {
             CompressionMethod payloadCompression;
             if (useCompressedPayload)
-                payloadCompression = compressor.getCompressionMethod();
+                payloadCompression = ctx.compressor->getCompressionMethod();
             else
                 payloadCompression = COMPRESS_METHOD_NONE;
 
@@ -2245,13 +2307,19 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
             case COMPRESS_METHOD_NONE:
                 if (isVariable)
                     serializePacked(data, uncompressed.length());
-                data.append(uncompressed.length(), uncompressed.bufferBase());
+                data.append(uncompressed.length(), uncompressed.bytes());
                 break;
             default:
                 {
-                    size32_t payloadLen = compressor.buflen();
+                    size32_t payloadLen = sizeCompressedPayload;
                     serializePacked(data, payloadLen);
                     data.append(payloadLen, compressed.get());
+                    if (ctx.options.recompress)
+                    {
+                        unsigned trailingSize = uncompressed.length() - firstUncompressed;
+                        serializePacked(data, trailingSize);
+                        data.append(trailingSize, uncompressed.bytes() + firstUncompressed);
+                    }
                     break;
                 }
             }
@@ -2291,79 +2359,54 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
     //Process any options.  Currently supports the compression mode
     const char * colon= strchr(compressionName, ':');
     bool useDefaultCompression = true;
+
+    ctx.compressionOptions.clear().append("hclevel=3"); // If using the lz4hc use the minimum compression level
     if (colon)
     {
-        const char * cur = colon+1;
-        StringBuffer option;
-        StringBuffer value;
-        while (true)
+        auto processOption = [this,&useDefaultCompression](const char * option, const char * value)
         {
-            const char * comma = strchr(cur, ',');
-            const char * eq = strchr(cur, '=');
-            if (comma && eq)
+            CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
+            if (method != COMPRESS_METHOD_NONE)
             {
-                if (comma < eq)
-                    eq = nullptr;
+                ctx.compressionHandler = queryCompressHandler(method);
+                useDefaultCompression = false;
             }
-            option.clear();
-            value.clear();
-            if (eq)
+            else if (strieq(option, "uncompressed"))
+                useDefaultCompression = false;
+            else if (strieq(option, "compressThresholdPercent")) // use uncompressed if compressed is > 95% uncompressed
+                ctx.options.minCompressionThreshold = strtod(value, nullptr) / 100.0;
+            else if (strieq(option, "compression"))
             {
-                option.append(eq-cur, cur);
-                if (comma)
-                    value.append(comma-(eq+1), eq+1);
-                else
-                    value.append(eq+1);
+                useDefaultCompression = false;
+                CompressionMethod method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
+                if (method != COMPRESS_METHOD_NONE)
+                    ctx.compressionHandler = queryCompressHandler(method);
+            }
+            else if (strieq(option, "recompress"))
+            {
+                ctx.options.recompress = true;
+            }
+            else if (strieq(option, "compressopt"))
+            {
+                ctx.compressionOptions.append(',').append(value);
             }
             else
             {
-                value.append("1");
-                if (comma)
-                    option.append(comma-cur, cur);
-                else
-                    option.append(cur);
+                //ignore any unrecognised options
             }
+        };
 
-            if (option.length())
-            {
-                CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
-                if (method != COMPRESS_METHOD_NONE)
-                {
-                    ctx.compressionHandler = queryCompressHandler(method);
-                    useDefaultCompression = false;
-                }
-                else if (strieq(option, "uncompressed"))
-                    useDefaultCompression = false;
-                else if (strieq(option, "compressThresholdPercent")) // use uncompressed if compressed is > 95% uncompressed
-                    ctx.minCompressionThreshold = strtod(value, nullptr) / 100.0;
-                else if (strieq(option, "compression"))
-                {
-                    useDefaultCompression = false;
-                    CompressionMethod method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
-                    if (method != COMPRESS_METHOD_NONE)
-                        ctx.compressionHandler = queryCompressHandler(method);
-                }
-                else
-                {
-                    //ignore any unrecognised options
-                }
-            }
-
-            if (!comma)
-                break;
-
-            cur = comma+1;
-        }
+        processOptionString(colon+1, processOption);
     }
 
     if (useDefaultCompression)
+        ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZ4);
+
+    if (ctx.compressionHandler)
     {
-        bool isVariable = keyHdr->isVariable();
-        bool rowCompression = (keyHdr->getKeyType()&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
-        if (rowCompression && !isVariable)
-            ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_RANDROW);
-        else
-            ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZW);
+        ctx.compressor.setown(ctx.compressionHandler->getCompressor(ctx.compressionOptions));
+        if (!ctx.compressor->supportsIncrementalCompression())
+            ctx.options.recompress = true;
     }
 }
 
