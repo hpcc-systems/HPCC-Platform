@@ -292,8 +292,8 @@ jobs:
 
     - name: Run error handling script
       run: |
-        chmod +x johnnytest4.sh
-        ./johnnytest4.sh
+      chmod +x ./.github/workflows/johnnytest4.sh
+      ./.github/workflows/johnnytest4.sh
 
 
     - name: build-logs-artifact
