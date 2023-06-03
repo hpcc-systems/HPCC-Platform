@@ -6,7 +6,7 @@ output_file="CMake_Error_Log.txt"
 echo "" > $output_file
 
 # specify the directory
-directory=""
+directory="./.github/workflows"
 
 # loop over each file in directory
 for input_file in $directory/*.log; do
@@ -20,6 +20,11 @@ for input_file in $directory/*.log; do
 
   # Load error message into a variable
   error_message=$(awk '/CMake Error/{flag=1}/^$/{flag=0}flag' $input_file)
+  
+  if [[ -z "$error_message" ]]; then
+    echo "No CMake errors detected." >> $output_file
+    continue
+  fi
 
   echo "" >> $output_file
   echo "Caused by:" >> $output_file
@@ -63,4 +68,3 @@ elif [[ $error_message == *"Failed to download"* ]]; then
 fi
 
 done
-
