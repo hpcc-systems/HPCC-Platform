@@ -51,7 +51,7 @@ on:
 # does not have permission to cancel actions.
 jobs:
   check-skip:
-    # continue-on-error: true # Uncomment once integration is finished
+    # continue-on-error: true # Uncomment once integration is finishedf
     runs-on: ubuntu-22.04
     # Map a step output to a job output
     outputs:
@@ -292,7 +292,8 @@ jobs:
 
     - name: Run error handling script
       run: |
-        chmod +x ./.github/workflows/johnnytest4.sh
+        cp -v ${{ github.workspace }}/.github/workflows/johnnytest4.sh .
+        chmod +x ./johnnytest4.sh
         ./.github/workflows/johnnytest4.sh
 
 
