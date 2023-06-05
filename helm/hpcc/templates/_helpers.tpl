@@ -2006,8 +2006,8 @@ A template to output a merged environment. Pass in a list with global then local
 {{- $_ := set $result .name .value -}}
 {{- end -}}
 {{- range $key,$value := $result -}}
-- name: {{ $key }}
-  value: {{ $value }}
+- name: {{ $key | quote }}
+  value: {{ $value | quote }}
 {{ end -}}
 {{- end -}}
 
