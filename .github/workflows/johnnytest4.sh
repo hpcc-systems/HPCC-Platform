@@ -1,12 +1,13 @@
 #!/bin/bash
 
-output_file="CMake_Error_Log.txt"
+# Add a timestamp to the output filename to prevent overwriting
+output_file="CMake_Error_Log_$(date '+%Y%m%d%H%M%S').log"
 
 # Clean the output file first
 echo "" > $output_file
 
 # specify the directory
-directory="./.github/workflows"
+directory="$GITHUB_WORKSPACE/.github/workflows"
 
 # loop over each file in directory
 for input_file in $directory/*.log; do
@@ -24,13 +25,14 @@ for input_file in $directory/*.log; do
   if [[ -z "$error_message" ]]; then
     echo "No CMake errors detected." >> $output_file
     continue
+  else
+    echo "$error_message" >> $output_file
   fi
 
   echo "" >> $output_file
   echo "Caused by:" >> $output_file
   echo "----------" >> $output_file
 
-# Check error message for known issues
 # Check error message for known issues
 if [[ $error_message == *"add_subdirectory"* ]]; then
   echo "  - Wrong source branch selected in HPCC-Platform local repo" >> $output_file
