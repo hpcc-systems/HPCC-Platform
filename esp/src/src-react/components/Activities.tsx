@@ -55,6 +55,8 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
+    const [, { isContainer }] = useBuildInfo();
+
     //  Grid ---
     const activity = useConst(ESPActivity.Get());
     const { Grid, selection, refreshTable, copyButtons } = useGrid({
@@ -96,8 +98,8 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 formatter: function (_name, row) {
                     const img = row.getStateImage();
                     if (activity.isInstanceOfQueue(row)) {
-                        if (row.ClusterType === 3) {
-                            return `<img src='${img}'/>&nbsp;<a href='#/clusters/${row.ClusterName}' class='dgrid-row-url'>${_name}</a>`;
+                        if (row.ClusterType === 3 && !isContainer) {
+                            return `<img src='${img}'/>&nbsp;<a href='#/operations/clusters/${row.ClusterName}' class='dgrid-row-url'>${_name}</a>`;
                         } else {
                             return `<img src='${img}'/>&nbsp;${_name}`;
                         }
@@ -176,10 +178,10 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.wuSelected && !uiState.thorClusterSelected, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/clusters/${selection[0].ClusterName}`;
+                    window.location.href = `#/operations/clusters/${selection[0].ClusterName}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/clusters/${selection[i].ClusterName}`, "_blank");
+                        window.open(`#/operations/clusters/${selection[i].ClusterName}`, "_blank");
                     }
                 }
             }
@@ -390,8 +392,6 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         });
         setUIState(state);
     }, [activity, selection]);
-
-    const [, { isContainer }] = useBuildInfo();
 
     if (isContainer) {
         return <HolyGrail key="activities"
