@@ -1691,16 +1691,16 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                         size32_t len = exp->init(data);
                         data += compressedLen;
 
-                        size32_t uncompressedLen = 0;
+                        size32_t trailingLen = 0;
                         if (sizeMask & NSFcompressTrailing)
                         {
-                            uncompressedLen = readPacked32(data);
+                            trailingLen = readPacked32(data);
                         }
 
-                        if (len || uncompressedLen)
+                        if (len || trailingLen)
                         {
-                            payload = (byte *)malloc(len+uncompressedLen);
-                            expandedSize += (len+uncompressedLen);
+                            payload = (byte *)malloc(len+trailingLen);
+                            expandedSize += (len+trailingLen);
                             ownedPayload = true;
                         }
 
@@ -1709,10 +1709,10 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                             exp->expand(payload);
                         }
 
-                        if (uncompressedLen)
+                        if (trailingLen)
                         {
-                            memcpy(payload+len, data, uncompressedLen);
-                            data += uncompressedLen;
+                            memcpy(payload+len, data, trailingLen);
+                            data += trailingLen;
                         }
                         break;
                     }
