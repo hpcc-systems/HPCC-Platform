@@ -294,7 +294,7 @@ jobs:
       run: |
         cp -v ${{ github.workspace }}/.github/workflows/johnnytest4.sh .
         chmod +x ./johnnytest4.sh
-        ./.github/workflows/johnnytest4.sh
+        ./johnnytest4.sh
 
 
     - name: build-logs-artifact
