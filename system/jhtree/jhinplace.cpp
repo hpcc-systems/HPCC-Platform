@@ -52,6 +52,9 @@ static constexpr byte NSFcompressTrailing   = 0x20;     // compressed payload ha
 static constexpr byte NSFscaleN             = 0x40;     // filepositions are scaled by size N - useful for filepositions in fixed size files
 static constexpr byte NSFscaleFilepos       = 0x80;     // filepositions are scaled by nodesize
 
+static constexpr byte OFsequential          = 0x40;     // Options are a sequential range of values e.g. '0','1','2','3','4','5'.  Only first value stored
+static constexpr byte OFfirstNull           = 0x80;     // First option in a list is a space (only in combination with OFsequential?)
+
 constexpr size32_t getMinRepeatCount(byte value)
 {
     return (value == 0x00 || value == 0x20) ? minRepeatCount : minRepeatXCount;
@@ -392,7 +395,7 @@ unsigned __int64 readBytesEntry64(const byte * address, unsigned index, unsigned
 class PartialMatchBuilder;
 //---------------------------------------------------------------------------------------------------------------------
 
-bool PartialMatch::allNextAreEnd()
+bool PartialMatch::allNextAreEnd() const
 {
     ForEachItemIn(i, next)
     {
@@ -426,6 +429,7 @@ void PartialMatch::cacheSizes()
         else
         {
             size32_t offset = 0;
+            byte sequentialFlags = getSequentialOptionFlags();
             maxCount = 0;
             for (unsigned i=0; i < numNext; i++)
             {
@@ -436,7 +440,11 @@ void PartialMatch::cacheSizes()
 
             size += sizeSerializedOp(numNext-1);  // count of options
             size += 1;                      // count and offset table information
-            size += numNext;                // bytes of data
+
+            if (sequentialFlags & OFsequential)
+                size += 1;                  // only the first number is stored, the rest are calculated
+            else
+                size += numNext;            // bytes of data
 
             //Space for the count table - if it is required
             if (maxCount != numNext)
@@ -541,6 +549,34 @@ bool PartialMatch::removeLast()
     return false;
 }
 
+
+byte PartialMatch::getSequentialOptionFlags() const
+{
+    if (allNextAreEnd())
+        return 0;
+
+    byte options = 0;
+    byte base = 0;
+    ForEachItemIn(i, next)
+    {
+        byte first = next.item(i).queryFirstByte();
+        if (i == 0)
+            base = first;
+        else if (first != base + i)
+        {
+            if ((i == 1) && (base == ' '))
+            {
+                options = OFfirstNull;
+                base = first - i;
+            }
+            else
+                return 0;
+        }
+    }
+
+    return options | OFsequential;
+}
+
 void PartialMatch::serialize(MemoryBuffer & out)
 {
     squash();
@@ -566,17 +602,28 @@ void PartialMatch::serialize(MemoryBuffer & out)
         {
             byte offsetBytes = bytesRequired(getMaxOffset());
             byte countBytes = bytesRequired(getCount()-1);
+            byte sequentialFlags = getSequentialOptionFlags();
 
-            byte sizeInfo = offsetBytes;
+            byte sizeInfo = sequentialFlags | offsetBytes;
             if (getCount() != numNext)
                 sizeInfo |= (countBytes << 3);
 
             serializeOp(out, SqOption, numNext-1);  // count of options
             out.append(sizeInfo);
 
-            for (unsigned iFirst = 0; iFirst < numNext; iFirst++)
+            if (sequentialFlags & OFsequential)
             {
-                next.item(iFirst).serializeFirst(out);
+                if (sequentialFlags & OFfirstNull)
+                    next.item(1).serializeFirst(out);
+                else
+                    next.item(0).serializeFirst(out);
+            }
+            else
+            {
+                for (unsigned iFirst = 0; iFirst < numNext; iFirst++)
+                {
+                    next.item(iFirst).serializeFirst(out);
+                }
             }
 
             //Space for the count table - if it is required
@@ -749,12 +796,26 @@ bool PartialMatch::squash()
     return dirty;
 }
 
-const byte * PartialMatch::queryNullRow()
+const byte * PartialMatch::queryNullRow() const
 {
     return builder->queryNullRow();
 }
 
-//MORE: Pass this in...
+byte PartialMatch::queryFirstByte() const
+{
+    if (data.length())
+        return data.bytes()[0];
+    else if (rowOffset < builder->queryKeyLen())
+    {
+        assertex(queryNullRow());
+        return queryNullRow()[rowOffset];
+    }
+    else
+    {
+        throwUnexpected();
+    }
+}
+
 void PartialMatch::serializeFirst(MemoryBuffer & out)
 {
     if (data.length())
@@ -940,7 +1001,7 @@ static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
             byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
             byte bytesPerOffset = (sizeInfo & 7);
             assertex(bytesPerOffset != 0);
-            const byte * counts = finger + numOptions; // counts (if present) follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
 
             const byte * offsets = counts + numOptions * bytesPerCount;
             const byte * next = offsets + (numOptions-1) * bytesPerOffset;
@@ -956,6 +1017,30 @@ static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
     return finger-nodeData;
 }
 
+
+//Inline function to calculate the compare value for an option.
+//The compare code could sometimes be optimized to directly compare against the range for OFsequential
+static inline byte getOptionValue(byte sizeInfo, const byte * finger, unsigned option) __attribute__((always_inline));
+static inline byte getOptionValue(byte sizeInfo, const byte * finger, unsigned option)
+{
+    byte nextFinger;
+    if (sizeInfo & OFsequential)
+    {
+        nextFinger = *finger;
+        if (sizeInfo & OFfirstNull)
+        {
+            if (option == 0)
+                nextFinger = ' ';
+            else
+                nextFinger += (option-1);
+        }
+        else
+            nextFinger += option;
+    }
+    else
+        nextFinger = finger[option];
+    return nextFinger;
+}
 
 InplaceNodeSearcher::InplaceNodeSearcher(unsigned _count, const byte * data, size32_t _keyLen, const byte * _nullRow)
 : nodeData(data), nullRow(_nullRow), count(_count), keyLen(_keyLen)
@@ -1110,11 +1195,11 @@ int InplaceNodeSearcher::compareValueAt(const char * search, unsigned int compar
             byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
             byte bytesPerOffset = (sizeInfo & 7);
 
-            const byte * counts = finger + numOptions; // counts (if present) follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
             const byte nextSearch = search[0];
             for (unsigned i=0; i < numOptions; i++)
             {
-                const byte nextFinger = finger[i];
+                const byte nextFinger = getOptionValue(sizeInfo, finger, i);
                 if (nextFinger > nextSearch)
                 {
                     //This entry is greater than search => item(i) is the correct entry
@@ -1321,21 +1406,11 @@ unsigned InplaceNodeSearcher::findGE(const unsigned len, const byte * search) co
             dbgassertex(bytesPerCount <= 2);
             dbgassertex(bytesPerOffset <= 2);
 
-            //MORE: Duplicates can occur on the last byte of the key - if so we have a match
-            //MORE: This is never executed - it should never be generated....
-            dbgassertex(bytesPerOffset != 0);
-            #if 0
-            if (bytesPerOffset == 0)
-            {
-                dbgassertex(resultNext == resultPrev+numOptions);
-                break;
-            }
-            #endif
-
-            const byte * counts = finger + numOptions; // counts follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
             for (unsigned i=0; i < numOptions; i++)
             {
-                const byte nextFinger = finger[i];
+                const byte nextFinger = getOptionValue(sizeInfo, finger, i);
+
                 if (likely(nextFinger < nextSearch))
                 {
                     //The entry is < search => keep looping
@@ -1472,7 +1547,7 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
             if (bytesPerOffset == 0)
                 break;
 
-            const byte * counts = finger + numOptions; // counts follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
             unsigned option = 0;
             unsigned countPrev = 0;
             unsigned countNext = 1;
@@ -1496,7 +1571,9 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
                     countPrev = countNext;
                 }
             }
-            key[offset++] = finger[option];
+
+            const byte nextFinger = getOptionValue(sizeInfo, finger, option);
+            key[offset++] = nextFinger;
 
             resultNext = resultPrev + countNext;
             resultPrev = resultPrev + countPrev;

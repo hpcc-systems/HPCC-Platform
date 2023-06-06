@@ -63,18 +63,20 @@ public:
     void serializeFirst(MemoryBuffer & out);
     bool squash();
     void trace(unsigned indent);
+    byte queryFirstByte() const;
 
     size32_t getSize();
     size32_t getCount();
-    const byte * queryNullRow();
+    const byte * queryNullRow() const;
     bool isEnd() const { return data.length() == 0; }
 
 protected:
-    bool allNextAreEnd();
+    bool allNextAreEnd() const;
     unsigned appendRepeat(size32_t offset, size32_t copyOffset, byte repeatByte, size32_t repeatCount);
     void cacheSizes();
     void describeSquashed(StringBuffer & out);
     size32_t getMaxOffset();
+    byte getSequentialOptionFlags() const;
 
 protected:
     PartialMatchBuilder * builder;
