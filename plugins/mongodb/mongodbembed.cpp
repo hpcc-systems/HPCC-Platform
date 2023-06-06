@@ -899,6 +899,7 @@ namespace mongodbembed
         const char *connectionOptions = "";
         unsigned port = 0;
         unsigned batchSize = 100;
+        std::int32_t limit = 0; // The maximum number of documents that the cursor can return. 0 is equivalent to no limit.
         StringBuffer connectionString;
 
         // Iterate over the options from the user
@@ -926,6 +927,8 @@ namespace mongodbembed
                     collectionName = val;
                 else if (stricmp(optName, "batchSize")==0)
                     batchSize = atoi(val);
+                else if (stricmp(optName, "limit")==0)
+                    limit = atoi(val);
                 else if (stricmp(optName, "connectionOptions") ==0)
                     connectionOptions = val;
                 else
@@ -964,7 +967,7 @@ namespace mongodbembed
         {
             failx("A Server or Port must be supplied in order to connect to MongoDB. Use the server() or port() option to specify the connection type. More information can be found in the README.md file on the plugin github page.");
         }
-        std::shared_ptr<MongoDBQuery> ptr(new MongoDBQuery(databaseName, collectionName, connectionString, batchSize));
+        std::shared_ptr<MongoDBQuery> ptr(new MongoDBQuery(databaseName, collectionName, connectionString, batchSize, limit));
         query = ptr;
 
         std::call_once(CONNECTION_CACHE_INIT_FLAG, configure); 
@@ -1477,6 +1480,8 @@ namespace mongodbembed
                 mongocxx::options::find opts{};
                 if (query->size() != 0)
                     opts.batch_size(query->size()); // Batch size default is 100 and is set by user in MongoDBEmbedFunctionContext constructor
+                opts.limit(query->queryLimit());
+                
                 while (*start && *start == ' ') 
                     start++; // Move past whitespace if there is any
                 // if there is a comma then we have a projection to build

@@ -53,11 +53,12 @@ To create the uri for the MongoDB connection instance the ECL user needs to pass
 | database | Name of the database to issue commands to. (Required) |
 | collection | Name of the collection to issue commands to. (Required) |
 | batchSize | Batch size of cursor to result records. The default batch size is 100 meaning the cursor fetches 100 documents at a time from MongoDB. |
+| limit| Limit the number of documents returned from the find command (To limit the documents returned from an aggregation use the [$limit stage](https://www.mongodb.com/docs/manual/reference/operator/aggregation/limit/)). The default is no limit. For more information on how limit works visit the [Manual](https://www.mongodb.com/docs/manual/reference/method/cursor.limit/#behavior).
 | connectionOptions | A string of connection options used to make the connection to the cluster. Currently only one set of connection options will be used per workunit. |
 
 #### Connection Options 
 
-To specify connection options to the MongoDB cluster use the connectionOptions option in the embed statement. The format for the connection options is ampersand separated options like so: <option>&<option>
+To specify connection options to the MongoDB cluster use the connectionOptions option in the embed statement. The format for the connection options is ampersand separated options like so: \<option0\>&\<option1\>
 
 **Important note:** when connecting to a MongoDB Cluster and not a local instance the retryWrites=true and w=majority options are already set according to MongoDB examples.
 
