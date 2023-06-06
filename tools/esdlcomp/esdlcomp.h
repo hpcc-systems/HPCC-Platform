@@ -105,7 +105,6 @@ typedef struct esp_xlate_info_
 
 esp_xlate_info *esp_xlat(const char *from, bool defaultToString=true);
 
-
 void out(const char*, size_t);
 void outs(const char*);
 void outf(const char*,...) __attribute__((format(printf, 1, 2)));
@@ -551,67 +550,7 @@ public:
         }
     }
 
-    void toString(StringBuffer & out)
-    {
-        const char *xsd_type = getMetaString("xsd_type", NULL);
-        if (xsd_type && *xsd_type=='\"')
-           xsd_type++;
-        unsigned pcl = strlen("tns:ArrayOf");
-        //purely for compatability with scapps ESDL processing... ESDL should never have relied on interpreting the xsd_type which is for external use
-        if (xsd_type && !strncmp("tns:ArrayOf", xsd_type, pcl))
-        {
-            out.appendf("\t\t<EsdlArray name='%s' ", name);
-            toStringXmlAttr(out);
-            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            {
-                mtag->toStringXmlAttr(out);
-            }
-        }
-        else if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
-        {
-            out.appendf("\t\t<EsdlArray name='%s' ", name);
-            toStringXmlAttr(out);
-            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            {
-                mtag->toStringXmlAttr(out);
-            }
-        }
-        else if (flags & PF_TEMPLATE && !strcmp(templ, "ESPlist"))
-        {
-            out.appendf("\t\t<EsdlList name='%s' ", name);
-            toStringXmlAttr(out);
-            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            {
-                mtag->toStringXmlAttr(out);
-            }
-        }
-        else if (kind==TK_ENUM)
-        {
-            out.appendf("\t\t<EsdlEnumItem name='%s'", name);
-            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            {
-                mtag->toStringXmlAttr(out);
-            }
-        }
-        else if (kind==TK_ESPENUM)
-        {
-            out.appendf("\t\t<EsdlEnum name='%s' enum_type='%s'", name, typname);
-            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            {
-                mtag->toStringXmlAttr(out);
-            }
-        }
-        else
-        {
-            out.appendf("\t\t<EsdlElement name='%s'", name);
-            toStringXmlAttr(out);
-            for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
-            {
-                mtag->toStringXmlAttr(out);
-            }
-        }
-        out.append("/>\n");
-    };
+    void toString(StringBuffer & out);
 
     bool checkDup(StringArray& ErrMsgs, ParamInfo* attrlist)
     {
@@ -1371,6 +1310,10 @@ public:
     {
         return packagename;
     }
+
+    const void setExtendedAttributes(bool mode);
+
+    const bool getExtendedAttributes();
 
     char* filename;
     StringBuffer name;

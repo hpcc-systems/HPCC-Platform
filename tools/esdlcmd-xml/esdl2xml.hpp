@@ -43,6 +43,9 @@ public:
     void setVerbose(bool verbose){optVerbose = verbose;};
     bool getVerbose(){return optVerbose;};
 
+    void setNoExtendedAttributes(bool mode){ optNoExtendedAttributes = mode;};
+    bool getNoExtendedAttributes(){return optNoExtendedAttributes;};
+
     void transform(const char * source, const char * outdir="", StringBuffer * out=NULL, bool outputIncludes=true, bool includedESDL=false)
     {
         if (!added.getValue(source))
@@ -58,6 +61,12 @@ public:
             added.setValue(source, true);
 
             ESDLcompiler hc(source, out==NULL, outdir, outputIncludes, includedESDL, includePath);
+
+            if (optNoExtendedAttributes)
+            {
+                hc.setExtendedAttributes(false);
+            }
+
             hc.Process();
 
             if (optRecursive && hc.includes)
@@ -92,6 +101,7 @@ public:
 protected:
     bool      optRecursive;
     bool      optVerbose;
+    bool      optNoExtendedAttributes = false;
 
     StringAttr includePath;
 
