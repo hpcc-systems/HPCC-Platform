@@ -1822,7 +1822,6 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       </sect2>
     </sect1>
 
-   
     <sect1 id="SA-ControlsANDTools">
       <title>System Tools and Controls</title>
 
@@ -1856,7 +1855,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
          - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
 
           <para>Which is found in the environment.xml's RoxieCluster setting
-          or in the helm values.yaml Roxie section for <emphasis
+          or in the Helm chart -- values.yaml Roxie section for <emphasis
           role="strong">totalMemoryLimit</emphasis>:</para>
 
           <programlisting>    totalMemoryLimit="5368709120"</programlisting>
@@ -2335,7 +2334,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         <sect3 id="SepClusterNodes">
           <title>Separate Worker Nodes</title>
 
-          <para>In a bare metal deployment, try as much as possible to keep
+          <para>In a bare-metal deployment, try as much as possible to keep
           system target cluster resources running on their own physical nodes
           or partitions. The idea being to avoid putting essential system
           components on the same partitions as resource intensive and

@@ -39,7 +39,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
@@ -1904,7 +1904,7 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
         <para>This script is intended to assist administrators to deploy HPCC
         Systems SSH keys across their cluster. SSH keys are used primarily for
         component startup such as Thor and certain plug-ins such as Spark. SSH
-        keys are more important in a physical bare metal environment and less
+        keys are more important in a physical bare-metal environment and less
         so in a cloud environment.</para>
 
         <para><emphasis role="bold">Examples:</emphasis></para>
