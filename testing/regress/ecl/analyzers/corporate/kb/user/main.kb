@@ -1,0 +1,6 @@
+take "kb/user/hier.kb"
+bind sys
+take "kb/user/word.kb"
+take "kb/user/phr.kb"
+take "kb/user/attr1.kb"
+quit

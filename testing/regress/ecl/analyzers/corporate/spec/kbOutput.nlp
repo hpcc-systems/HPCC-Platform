@@ -1,0 +1,15 @@
+###############################################
+# FILE: kbOutput.pat
+# SUBJ: comment here
+# AUTH: David de Hilster
+# CREATED: 11/Jul/02 15:35:55
+# MODIFIED: 11/Jul/02
+###############################################
+
+@CODE
+
+DisplayKB(G("parse"),1);
+DisplayKB(G("companies"),1);
+DisplayKB(G("corporate"),1);
+
+@@CODE

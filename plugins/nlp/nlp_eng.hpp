@@ -15,24 +15,23 @@
     limitations under the License.
 ############################################################################## */
 
-//#define NLP_DEBUG
+// #define NLP_DEBUG
 
 #ifdef NLP_DEBUG
 #include <iostream>
 #define NLP_DEBUG_FILE "/tmp/nlp_debug.txt"
 #endif
 
-#include<sstream>
-#include "jutil.hpp"
-#include "jmutex.hpp"
-using namespace std;
+#include <sstream>
 
 class NLPEng
 {
 private:
-    string workingFolder;
+    std::string manifestFolder;
+    std::string workingFolder;
+
 public:
-    NLPEng();
+    NLPEng(const char *workingFolder);
     ~NLPEng();
-    int nlpEngAnalyze(const char *analyzerName, const char *inputText, ostringstream &sso);
+    int nlpEngAnalyze(const char *analyzerName, const char *inputText, std::ostringstream &sso);
 };

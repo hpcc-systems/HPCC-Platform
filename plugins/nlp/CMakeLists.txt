@@ -35,13 +35,17 @@ IF(NLP)
             nlp.hpp
             nlp.cpp
             nlp_eng.hpp
-            nlp_eng.cpp)
+            nlp_eng.cpp
+            manifest.hpp
+            manifest.cpp
+        )
 
         include_directories(
             ./../../system/include
             ./../../rtl/eclrtl
             ./../../rtl/include
-            ./../../common/deftype
+            ./../../common/dllserver 
+            ./../../common/workunit 
             ./../../system/jlib
             ${NLP_ENGINE_INCLUDE_DIR}
             ${NLP_ENGINE_INCLUDE_DIR}/Api
@@ -64,9 +68,11 @@ IF(NLP)
             CALC_DEPS)
 
         target_link_libraries(nlp PRIVATE
+            dllserver
             eclrtl
             jlib
             nlp-engine
+            workunit
         )
 
         if(PLATFORM)
