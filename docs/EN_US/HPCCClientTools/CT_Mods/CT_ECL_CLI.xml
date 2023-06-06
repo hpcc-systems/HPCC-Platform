@@ -909,6 +909,14 @@ ecl publish roxie ArchiveQuery.xml --query-name=FindPersonService --no-activate
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -2738,6 +2746,14 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -3024,6 +3040,14 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
@@ -3583,6 +3607,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -3863,6 +3895,14 @@ ecl queries recreate roxie findpeople roxie2</programlisting>
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
@@ -4318,6 +4358,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
@@ -5353,6 +5401,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
+                </row>
+
+                <row>
                   <entry>--dfu-queue</entry>
 
                   <entry>The DFU Queue to use when doing a DFU copy</entry>
@@ -6189,6 +6245,14 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>Use DFU to copy files during deployment, not on Roxie
                   in the background</entry>
+                </row>
+
+                <row>
+                  <entry>--init-publisher-wuid</entry>
+
+                  <entry>Preallocates the publisher workunit at the beginning
+                  of the command and displays the WUID on the command
+                  line</entry>
                 </row>
 
                 <row>
