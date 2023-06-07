@@ -26,7 +26,18 @@ shift
 
 echo Go gold with $version
 
-for f in $all ; do cd "${gitroot}/$f" ; git fetch origin ; git checkout $version ; git su --force ; done
+for f in $all ; do
+   cd "${gitroot}/$f"
+   git fetch origin
+   git checkout $version
+   if [ $? -ne 0 ]; then
+      echo "Target branch $version failed to check out"
+      exit 1
+   fi
+
+   git submodule update --recursive --init --force
+done
+
 echo Press any key to go gold
 read -n 1 -s
 
