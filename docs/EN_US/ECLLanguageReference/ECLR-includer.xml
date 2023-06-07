@@ -1085,6 +1085,12 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-IF.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-IFDEFINED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ISDEFINED.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Templ-INMODULE.xml"
                 xpointer="element(/1)"
