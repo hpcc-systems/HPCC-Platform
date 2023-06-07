@@ -1651,7 +1651,8 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                 expandedSize += numKeys * sizeof(unsigned);
             }
 
-            if (keyLen != keyCompareLen)
+            // Some pathological indexes (ifblocks in the payload) could have (keyLen == keyCompareLen) and a variable size.
+            if ((keyLen != keyCompareLen) || isVariablePayload)
             {
                 CompressionMethod payloadCompression = (CompressionMethod)*data++;
                 size32_t compressedLen;
