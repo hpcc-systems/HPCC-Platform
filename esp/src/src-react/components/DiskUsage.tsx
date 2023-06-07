@@ -15,7 +15,7 @@ export const Summary: React.FunctionComponent<SummaryProps> = ({
         const retVal = new SummaryWidget(cluster)
             .refresh(false)
             .on("click", (widget, details) => {
-                pushUrl(`/clusters/${details.Name}/usage`);
+                pushUrl(`/operations/clusters/${details.Name}/usage`);
             })
             ;
         return retVal;
