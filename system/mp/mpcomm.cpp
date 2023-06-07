@@ -68,7 +68,8 @@
 // These should really be configurable
 #define CANCELTIMEOUT       1000             // 1 sec
 #define CONNECT_TIMEOUT          (5*60*1000) // 5 mins
-#define CONNECT_READ_TIMEOUT     (10*1000)   // 10 seconds. NB: used by connect readtms loop (see loopCnt)
+#define CONNECT_READ_TIMEOUT     (90*1000)   // 90 seconds. NB: used by connect readtms loop (see loopCnt)
+#define CONNECT_READEXC_TIMEOUT  (10*1000)   // 10 seconds. NB: to read exception info after confirm
 #define CONNECT_TIMEOUT_INTERVAL 1000        // 1 sec
 #define CONNECT_RETRYCOUNT       180         // Overall max connect time is = CONNECT_RETRYCOUNT * CONNECT_READ_TIMEOUT
 #define CONNECT_TIMEOUT_MINSLEEP 2000        // random range: CONNECT_TIMEOUT_MINSLEEP to CONNECT_TIMEOUT_MAXSLEEP milliseconds
@@ -700,33 +701,83 @@ void traceSlowReadTms(const char *msg, ISocket *sock, void *dst, size32_t minSiz
     dbgassertex(timeoutChkIntervalMs < timeoutMs);
     StringBuffer epStr;
     CCycleTimer readTmsTimer;
-    unsigned intervalTimeoutMs = timeoutChkIntervalMs;
+    unsigned intervalTimeoutMs = 500;
+    CCycleTimer intvlTimer;
+    MemoryBuffer dstBufMb;
+    byte *dstBuf = (byte *)dstBufMb.ensureCapacity(maxSize);
+
+    // legacy client sends minSize, recent client sends maxSize
+    // if read < maxSize, keep trying for maxSize, but if its exactly minSize
+    // somewhat quickly (without waiting full timeout) settle for minSize ...
+
+    if (intervalTimeoutMs > timeoutChkIntervalMs)
+        intervalTimeoutMs = timeoutChkIntervalMs;
+
+    int numIters = 0;
+    size32_t nRead = 0;
+    size32_t mRead = maxSize;
     for (;;)
     {
         try
         {
-            sock->readtms(dst, minSize, maxSize, sizeRead, intervalTimeoutMs);
-            break;
+            size32_t xRead = 0;
+            sock->readtms(&dstBuf[nRead], 0, mRead, xRead, intervalTimeoutMs);
+            nRead += xRead;
+            if (nRead == maxSize)
+            {
+                sizeRead = nRead;
+                memcpy(dst, dstBuf, sizeRead);
+                break;
+            }
+            mRead -= xRead;
         }
         catch (IJSOCK_Exception *e)
         {
             if (JSOCKERR_graceful_close == e->errorCode())
+            {
+                e->Release();
                 return;
+            }
             else if (JSOCKERR_timeout_expired != e->errorCode())
                 throw;
+            // interval read timed out ...
+            if (nRead == minSize)
+            {
+                if (numIters++ >= 10) // 10 * 500 = 5 sec addl wait
+                {
+                    sizeRead = nRead;
+                    memcpy(dst, dstBuf, sizeRead);
+                    e->Release();
+                    break;
+                }
+            }
             unsigned elapsedMs = readTmsTimer.elapsedMs();
             if (elapsedMs >= timeoutMs)
-                throw;
-            unsigned remainingMs = timeoutMs-elapsedMs;
-            if (remainingMs < timeoutChkIntervalMs)
-                intervalTimeoutMs = remainingMs;
-            if (0 == epStr.length())
             {
-                SocketEndpoint ep;
-                sock->getPeerEndpoint(ep);
-                ep.getUrlStr(epStr);
+                if (nRead == minSize)
+                {
+                    sizeRead = nRead;
+                    memcpy(dst, dstBuf, sizeRead);
+                    e->Release();
+                    break;
+                }
+                throw;
             }
-            WARNLOG("%s %s, stalled for %d ms so far", msg, epStr.str(), elapsedMs);
+            unsigned remainingMs = timeoutMs-elapsedMs;
+            if (remainingMs < intervalTimeoutMs)
+                intervalTimeoutMs = remainingMs;
+            if (intvlTimer.elapsedMs() >= timeoutChkIntervalMs)
+            {
+                intvlTimer.reset();
+                if (0 == epStr.length())
+                {
+                    SocketEndpoint ep;
+                    sock->getPeerEndpoint(ep);
+                    ep.getUrlStr(epStr);
+                }
+                WARNLOG("%s %s, stalled for %d ms so far", msg, epStr.str(), elapsedMs);
+            }
+            e->Release();
         }
     }
     if (readTmsTimer.elapsedMs() >= TRACESLOW_THRESHOLD)
@@ -909,6 +960,10 @@ protected: friend class CMPPacketReader;
 #ifdef _TRACE
                 PROGLOG("MP: loopCnt start = %u", loopCnt);
 #endif
+                rd = 0;
+                byte replyBuf[sizeof(rd)];
+                size32_t nRead = 0;
+                size32_t mRead = sizeof(rd);
                 while (loopCnt-- > 0)
                 {
                     {
@@ -929,13 +984,20 @@ protected: friend class CMPPacketReader;
                         }
                     }
 
-                    rd = 0;
-
-                    MemoryBuffer replyMb;
-                    void *replyMem = replyMb.ensureCapacity(0x1000); // 4K - max size to allow for serialized exception
                     try
                     {
-                        newsock->readtms(replyMem, sizeof(rd), replyMb.capacity(), rd, CONNECT_TIMEOUT_INTERVAL);
+                        // read 4 bytes, value should be sizeof(ConnectHdr.id) [12] or sizeof(connectHdr) [44] or larger (exception)
+                        // if its an exception or legacy and not in allowlist the other side closes its socket after sending this msg ...
+
+                        size32_t xRead = 0;
+                        newsock->readtms(&replyBuf[nRead], 0, mRead, xRead, CONNECT_TIMEOUT_INTERVAL);
+                        nRead += xRead;
+                        if (nRead == sizeof(rd))
+                        {
+                            rd = nRead;
+                            break;
+                        }
+                        mRead -= xRead;
                     }
                     catch (IException *e)
                     {
@@ -978,6 +1040,7 @@ protected: friend class CMPPacketReader;
                         }
                         else
                         {
+                            // interval read timed out ...
                             if (0 == epStr.length())
                             {
                                 SocketEndpoint ep;
@@ -988,30 +1051,44 @@ protected: friend class CMPPacketReader;
                             e->Release();
                         }
                     }
-#ifdef _FULLTRACE
-                    PROGLOG("MP: rd = %d", rd);
-#endif
-                    /* NB: legacy clients that don't handle the exception deserialization here
-                     * will see reply as success, so no clean error,
-                     * but will fail shortly afterwards since server connection is closed
-                     */
-                    if (rd > sizeof(rd)) // legacy clients will only ever send a reply of 0 or 4, if greater, then new client is replying with an exception
+                } // while loopcnt
+
+                /* NB: legacy clients that don't handle the exception deserialization here
+                 * will see reply as success, so no clean error,
+                 * but will fail shortly afterwards since server connection is closed
+                 */
+                if (rd == sizeof(rd))
+                {
+                    int replyVal;
+                    memcpy(&replyVal, (int *)replyBuf, sizeof(int));
+                    if (replyVal > sizeof(ConnectHdr))
                     {
-                        MemoryBuffer mb;
-                        mb.setBuffer(rd, replyMem, false);
-                        size32_t len;
-                        mb.read(len); // exception length
-                        if (len)
+                        // read exception message ...
+                        MemoryBuffer replyMb;
+                        void *replyMem = replyMb.ensureCapacity(replyVal+1);
+
+                        size32_t xRead = 0;
+                        try
                         {
-                            exitException.setown(deserializeException(mb));
+                            newsock->readtms(replyMem, replyVal, replyVal, xRead, CONNECT_READEXC_TIMEOUT);
+                        }
+                        catch (IException *e)
+                        {
+                            if (0 == epStr.length())
+                            {
+                                SocketEndpoint ep;
+                                newsock->getPeerEndpoint(ep);
+                                ep.getUrlStr(epStr);
+                            }
+                            StringBuffer allowExcStr;
+                            exitException.setown(makeStringExceptionV(-99, "Error '%s' reading Allowlist exception from: %s", e->errorMessage(allowExcStr).str(), epStr.str()));
+                            e->Release();
                             throw exitException.getLink();
                         }
-                        break;
-                    }
-                    else if (rd != 0)
-                    {
-                        assertex(rd == sizeof(rd));
-                        break;
+                        MemoryBuffer mb;
+                        mb.setBuffer(xRead, replyMem, false);
+                        exitException.setown(deserializeException(mb));
+                        throw exitException.getLink();
                     }
                 }
 
@@ -2188,6 +2265,10 @@ int CMPConnectThread::run()
                     if (rd == sizeof(connectHdr.id)) // legacy client
                     {
                         legacyClient = true;
+                        connectHdr.hdr.size = sizeof(PacketHeader);
+                        connectHdr.hdr.tag = TAG_SYS_BCAST;
+                        connectHdr.hdr.flags = 0;
+                        connectHdr.hdr.version = MP_PROTOCOL_VERSION;
                         connectHdr.setRole(0); // unknown
                     }
                     else if (rd < sizeof(connectHdr.id) || rd > sizeof(connectHdr))
@@ -2205,7 +2286,7 @@ int CMPConnectThread::run()
                 {
                     StringBuffer ipStr;
                     peerEp.getIpText(ipStr);
-                    StringBuffer responseText; // filled if denied
+                    StringBuffer responseText; // filled if denied, NB: *MUST* be > sizeof(ConnectHdr) to differentiate exception from success
                     if (!allowListCallback->isAllowListed(ipStr, connectHdr.getRole(), &responseText))
                     {
                         Owned<IException> e = makeStringException(-1, responseText);
