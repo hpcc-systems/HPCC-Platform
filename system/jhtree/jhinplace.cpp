@@ -367,7 +367,7 @@ unsigned readBytesEntry32(const byte * address, unsigned index, unsigned bytes)
 }
 
 //MORE: Inline would probably speed this up
-unsigned readBytesEntry16(const byte * address, unsigned index, unsigned bytes)
+inline unsigned readBytesEntry16(const byte * address, unsigned index, unsigned bytes)
 {
     dbgassertex(bytes != 0);
 
@@ -1045,7 +1045,7 @@ static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
     const byte * finger = nodeData;
     unsigned offset = 0;
 
-    while (offset < keyLen)
+    do
     {
         byte next = *finger++;
         SquashOp op = (SquashOp)(next >> 5);
@@ -1105,7 +1105,7 @@ static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
         }
         }
 
-    }
+    } while (offset < keyLen);
 
     return finger-nodeData;
 }
@@ -1155,7 +1155,7 @@ int InplaceNodeSearcher::compareValueAt(const char * search, unsigned int compar
     const byte * finger = nodeData;
     unsigned offset = 0;
 
-    while (offset < keyLen)
+    do
     {
         byte next = *finger++;
         SquashOp op = (SquashOp)(next >> 5);
@@ -1354,7 +1354,7 @@ int InplaceNodeSearcher::compareValueAt(const char * search, unsigned int compar
 
     nextTree:
         ;
-    }
+    } while (offset < keyLen);
 
     return 0;
 }
@@ -1367,7 +1367,7 @@ unsigned InplaceNodeSearcher::findGE(const unsigned len, const byte * search) co
     const byte * finger = nodeData;
     unsigned offset = 0;
 
-    while (offset < keyLen)
+    do
     {
         byte next = *finger++;
         SquashOp op = (SquashOp)(next >> 5);
@@ -1556,7 +1556,7 @@ unsigned InplaceNodeSearcher::findGE(const unsigned len, const byte * search) co
 
     nextTree:
         ;
-    }
+    } while (offset < keyLen);
 
     return resultPrev;
 }
@@ -1571,7 +1571,7 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
     const byte * finger = nodeData;
     unsigned offset = 0;
 
-    while (offset < keyLen)
+    do
     {
         byte next = *finger++;
         SquashOp op = (SquashOp)(next >> 5);
@@ -1671,7 +1671,7 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
             break;
         }
         }
-    }
+    } while (offset < keyLen);
 
     return offset;
 }
