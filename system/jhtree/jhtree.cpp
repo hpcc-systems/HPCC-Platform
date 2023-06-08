@@ -1496,7 +1496,7 @@ bool CKeyIndex::prewarmPage(offset_t offset, NodeType type)
     return false;
 }
 
-const CJHSearchNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
+const CJHSearchNode *CKeyIndex::locateFirstLeafNode(KeyStatsCollector &stats)
 {
     keySeeks++;
     stats.seeks++;
@@ -1527,10 +1527,14 @@ const CJHSearchNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
     return cur;
 }
 
-const CJHSearchNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
+const CJHSearchNode *CKeyIndex::locateLastLeafNode(KeyStatsCollector &stats)
 {
     keySeeks++;
     stats.seeks++;
+
+    //Unusual - an index with no elements
+    if (keyHdr->getNumRecords() == 0)
+        return nullptr;
 
     const CJHSearchNode * cur = LINK(rootNode);
     unsigned depth = 0;
@@ -1541,9 +1545,7 @@ const CJHSearchNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
         depth++;
         NodeType type = (depth < getBranchDepth()) ? NodeBranch : NodeLeaf;
         cur = getNode(cur->nextNodeFpos(), type, stats.ctx);
-        //Unusual - an index with no elements
-        if (!cur)
-            return prev;
+        assertex(cur);
         prev->Release();
     }
 
@@ -1636,7 +1638,7 @@ bool CKeyCursor::_next(KeyStatsCollector &stats)
     fullBufferValid = false;
     if (!node)
     {
-        node.setown(key.locateFirstNode(stats));
+        node.setown(key.locateFirstLeafNode(stats));
         nodeKey = 0;
         return node && node->isKeyAt(nodeKey);
     }
@@ -1711,7 +1713,7 @@ unsigned __int64 CKeyCursor::getSequence()
 bool CKeyCursor::_last(KeyStatsCollector &stats)
 {
     fullBufferValid = false;
-    node.setown(key.locateLastNode(stats));
+    node.setown(key.locateLastLeafNode(stats));
     if (node)
     {
         nodeKey = node->getNumKeys()-1;

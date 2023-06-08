@@ -76,8 +76,8 @@ enum request { LTE, GTE };
 interface INodeLoader
 {
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) = 0;
-    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) = 0;
-    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHSearchNode *locateFirstLeafNode(KeyStatsCollector &stats) = 0;
+    virtual const CJHSearchNode *locateLastLeafNode(KeyStatsCollector &stats) = 0;
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -153,8 +153,8 @@ public:
 
  // INodeLoader impl.
     virtual const CJHTreeNode *loadNode(cycle_t * fetchCycles, offset_t offset) override = 0;  // Must be implemented in derived classes
-    virtual const CJHSearchNode *locateFirstNode(KeyStatsCollector &stats) override;
-    virtual const CJHSearchNode *locateLastNode(KeyStatsCollector &stats) override;
+    virtual const CJHSearchNode *locateFirstLeafNode(KeyStatsCollector &stats) override;
+    virtual const CJHSearchNode *locateLastLeafNode(KeyStatsCollector &stats) override;
 
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
