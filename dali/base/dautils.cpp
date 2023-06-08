@@ -156,6 +156,11 @@ IPropertyTree * findDropZonePlane(const char * path, const char * host, bool ipM
     return findPlane("lz", path, host, ipMatch, mustMatch);
 }
 
+bool isPathInPlane(IPropertyTree *plane, const char *path)
+{
+    return isEmptyString(path) || startsWith(path, plane->queryProp("@prefix"));
+}
+
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
 {
     switch (kind) {
