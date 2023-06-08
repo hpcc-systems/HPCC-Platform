@@ -291,6 +291,8 @@ enum StatisticKind
     StSizeRowMemory,
     StSizePeakRowMemory,
     StSizeAgentSend,
+    StTimeIndexCacheBlocked,
+    StCycleIndexCacheBlockedCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.

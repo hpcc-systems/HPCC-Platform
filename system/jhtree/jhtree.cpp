@@ -75,10 +75,19 @@ bool linuxYield = false;
 bool traceSmartStepping = false;
 bool flushJHtreeCacheOnOOM = true;
 
+static cycle_t traceCacheLockingFrequency{0};
+static cycle_t traceNodeLoadFrequency{0};
+static cycle_t traceCacheLockingThreshold{0};
+static cycle_t traceNodeLoadThreshold{0};
+
 MODULE_INIT(INIT_PRIORITY_JHTREE_JHTREE)
 {
     initCrit = new CriticalSection;
     fetchThresholdCycles = nanosec_to_cycle(defaultFetchThresholdNs);
+    traceCacheLockingFrequency = millisec_to_cycle(60000);          // Report locking delays at most once per minute
+    traceNodeLoadFrequency = millisec_to_cycle(60000);              // Report slow loads at most once per minute
+    traceCacheLockingThreshold = millisec_to_cycle(50);             // Report locks that take > 50ms
+    traceNodeLoadThreshold = millisec_to_cycle(20);                 // Report node loads that take > 5ms
     return 1;
 }
 
@@ -2488,6 +2497,18 @@ void setNodeFetchThresholdNs(__uint64 thresholdNs)
     fetchThresholdCycles = nanosec_to_cycle(thresholdNs);
 }
 
+void setIndexWarningThresholds(IPropertyTree * options)
+{
+    if (options->hasProp("@traceCacheLockingFrequencyNs"))
+        traceCacheLockingFrequency = nanosec_to_cycle(options->getPropInt64("@traceCacheLockingFrequencyNs"));
+    if (options->hasProp("@traceNodeLoadFrequencyNs"))
+        traceNodeLoadFrequency = nanosec_to_cycle(options->getPropInt64("@traceNodeLoadFrequencyNs"));
+    if (options->hasProp("@traceCacheLockingThresholdNs"))
+        traceCacheLockingThreshold = nanosec_to_cycle(options->getPropInt64("@traceCacheLockingThresholdNs"));
+    if (options->hasProp("@traceNodeLoadThresholdNs"))
+        traceNodeLoadThreshold = nanosec_to_cycle(options->getPropInt64("@traceNodeLoadThresholdNs"));
+}
+
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo)
 {
     // MORE - consider reporting root nodes of open IKeyIndexes too?
@@ -2522,6 +2543,12 @@ constexpr RelaxedAtomic<unsigned> * dupMetric[CacheMax] = { &nodeCacheDups, &lea
 //of the key id/file position
 constexpr unsigned numLoadCritSects = 64;
 static CriticalSection loadCs[numLoadCritSects];
+static std::atomic<cycle_t> lastLockingReportCycles{0};
+static std::atomic<cycle_t> lastLoadReportCycles{0};
+static std::atomic<unsigned> countExcessiveLock_x1{0};
+static std::atomic<unsigned> countExcessiveLock_x10{0};
+static std::atomic<unsigned> countExcessiveLock_x100{0};
+
 
 const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
@@ -2598,11 +2625,13 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
 
         cycle_t startCycles = get_cycles_now();
         cycle_t fetchCycles = 0;
+        cycle_t startLoadCycles;
         //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
         //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
         //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
         {
             CriticalBlock loadBlock(loadCs[whichCs]);
+            startLoadCycles = get_cycles_now();
             if (!ownedCacheEntry->isReady())
             {
                 const CJHTreeNode *node = keyIndex->loadNode(&fetchCycles, pos);
@@ -2614,10 +2643,45 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
             else
                 (*dupMetric[cacheType])++;
         }
+        cycle_t endLoadCycles = get_cycles_now();
+        cycle_t lockingCycles = startLoadCycles - startCycles;
+        if (lockingCycles > traceCacheLockingThreshold)
+        {
+            if (lockingCycles >= traceCacheLockingThreshold*100)
+                countExcessiveLock_x100++;
+            else if (lockingCycles >= traceCacheLockingThreshold*10)
+                countExcessiveLock_x10++;
+            else
+                countExcessiveLock_x1++;
+
+            if ((endLoadCycles - lastLockingReportCycles) >= traceCacheLockingFrequency)
+            {
+                lastLockingReportCycles = endLoadCycles;
+                WARNLOG("CNodeCache::getNode lock(%s, %u) took %lluns  counts(>=%lluns, %u, %u, %u) (x1,x10,x100)", cacheTypeText[cacheType], whichCs, cycle_to_nanosec(lockingCycles),
+                         cycle_to_nanosec(traceCacheLockingThreshold),
+                         countExcessiveLock_x1.load() + countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
+                         countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
+                         countExcessiveLock_x100.load());
+                countExcessiveLock_x1 = 0;
+                countExcessiveLock_x10 = 0;
+                countExcessiveLock_x100 = 0;
+            }
+        }
+        cycle_t actualLoadCycles = endLoadCycles - startLoadCycles;
+        if (actualLoadCycles > traceNodeLoadThreshold)
+        {
+            if ((endLoadCycles - lastLoadReportCycles) >= traceNodeLoadFrequency)
+            {
+                lastLoadReportCycles = endLoadCycles;
+                WARNLOG("CNodeCache::getNode load(%s %x:%llu) took %lluus size(%u)", cacheTypeText[cacheType], iD, pos, cycle_to_microsec(actualLoadCycles), ownedCacheEntry->queryNode()->getMemSize());
+            }
+        }
+
         if (ctx)
         {
-            ctx->noteStatistic(loadStatId[cacheType], get_cycles_now() - startCycles);
+            ctx->noteStatistic(loadStatId[cacheType], endLoadCycles - startCycles);
             ctx->noteStatistic(readStatId[cacheType], fetchCycles);
+            ctx->noteStatistic(StCycleIndexCacheBlockedCycles, lockingCycles);
             if (fetchCycles >= fetchThresholdCycles)
             {
                 ctx->noteStatistic(fetchStatId[cacheType], 1);
