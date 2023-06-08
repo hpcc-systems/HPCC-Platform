@@ -44,14 +44,16 @@ static constexpr size32_t maxQuotedCount = 31 + 256; // maximum number of charac
 static constexpr size32_t repeatDelta = (minRepeatCount - 1);
 static constexpr size32_t repeatXDelta = (minRepeatXCount - 1);
 
-static constexpr byte SFmanyDuplicates = 0x80;      // Flag to indicate > 287 duplicates - can occur in a key with a vast number of duplicate keyed entries
-
 //Flags for the node size byte which contains the number of bytes needed to store the fileposition differences
 //and some extra flags to allow the value to be scaled.
 static constexpr byte NSFsizemask           = 0x0F;     // Needs to support values of 0..8
 static constexpr byte NSFlinear             = 0x10;     // Filepositions for each subsequent row are 1 higher than previous row (e.g. branches, and TLKs)
+static constexpr byte NSFcompressTrailing   = 0x20;     // compressed payload has trailing uncompressed
 static constexpr byte NSFscaleN             = 0x40;     // filepositions are scaled by size N - useful for filepositions in fixed size files
 static constexpr byte NSFscaleFilepos       = 0x80;     // filepositions are scaled by nodesize
+
+static constexpr byte OFsequential          = 0x40;     // Options are a sequential range of values e.g. '0','1','2','3','4','5'.  Only first non-space value stored
+static constexpr byte OFfirstNull           = 0x80;     // First option in a list is a space (currently only in combination with OFsequential)
 
 constexpr size32_t getMinRepeatCount(byte value)
 {
@@ -393,13 +395,73 @@ unsigned __int64 readBytesEntry64(const byte * address, unsigned index, unsigned
 class PartialMatchBuilder;
 //---------------------------------------------------------------------------------------------------------------------
 
-bool PartialMatch::allNextAreEnd()
+#ifdef _DEBUG
+static std::atomic<unsigned> globalSeq{0};
+#endif
+
+PartialMatch::PartialMatch(PartialMatchBuilder * _builder, size32_t _len, const void * _data, unsigned _rowOffset, bool _isRoot)
+: builder(_builder), data(_len, _data), rowOffset(_rowOffset), isRoot(_isRoot)
+{
+#ifdef _DEBUG
+    seq = ++globalSeq;
+#endif
+}
+
+bool PartialMatch::allNextAreEnd() const
 {
     ForEachItemIn(i, next)
     {
         if (!next.item(i).isEnd())
             return false;
     }
+    return true;
+}
+
+bool PartialMatch::allNextAreIdentical(bool allowCache) const
+{
+    unsigned max = next.ordinality();
+    for (unsigned i = 1; i < max; i++)
+    {
+        if (!next.item(i).matches(next.item(i-1), true, allowCache))
+            return false;
+    }
+    return true;
+}
+
+bool PartialMatch::matches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache)
+{
+#ifdef _DEBUG
+    //Always compare newer nodes with older nodes.
+    //This is because the cache of previous matches is invalidated when a new child node is added, and new items
+    //are always applied to the most recent entry at a given level.
+    assertex((int)(seq - other.seq) > 0);
+#endif
+    if (allowCache && prevMatch[ignoreLeadingByte] == &other)
+        return true;
+
+    if (next.ordinality() != other.next.ordinality())
+        return false;
+
+    size32_t dataLength = data.length();
+    if (dataLength != other.data.length())
+        return false;
+
+    if (dataLength != 0)
+    {
+        unsigned delta = ignoreLeadingByte ? 1 : 0;
+        if (memcmp(data.bytes()+delta, other.data.bytes()+delta, dataLength-delta) != 0)
+            return false;
+    }
+
+    //Check if all the next nodes are identical (including the leading byte).
+    //Walk in reverse since most recent is most likely to differ if it will eventually match
+    ForEachItemInRev(i, next)
+    {
+        if (!next.item(i).matches(other.next.item(i), false, allowCache))
+            return false;
+    }
+
+    prevMatch[ignoreLeadingByte] = &other;
     return true;
 }
 
@@ -427,24 +489,36 @@ void PartialMatch::cacheSizes()
         else
         {
             size32_t offset = 0;
+            byte sequentialFlags = getSequentialOptionFlags();
+            bool optimizeNext = allNextAreIdentical(true);
             maxCount = 0;
             for (unsigned i=0; i < numNext; i++)
             {
                 maxCount += next.item(i).getCount();
-                maxOffset = offset;
-                offset += next.item(i).getSize();
+                if (!optimizeNext)
+                {
+                    maxOffset = offset;
+                    offset += next.item(i).getSize();
+                }
             }
+            if (optimizeNext)
+                offset += next.item(0).getSize();
 
             size += sizeSerializedOp(numNext-1);  // count of options
             size += 1;                      // count and offset table information
-            size += numNext;                // bytes of data
+
+            if (sequentialFlags & OFsequential)
+                size += 1;                  // only the first number is stored, the rest are calculated
+            else
+                size += numNext;            // bytes of data
 
             //Space for the count table - if it is required
             if (maxCount != numNext)
                 size += (numNext * bytesRequired(maxCount-1));
 
             //offset table.
-            size += (numNext - 1) * bytesRequired(maxOffset);
+            if (maxOffset != 0)
+                size += (numNext - 1) * bytesRequired(maxOffset);
 
             size += offset;                       // embedded tree
         }
@@ -467,7 +541,7 @@ bool PartialMatch::combine(size32_t newLen, const byte * newData)
 
     if (matchLen || isRoot)
     {
-        dirty = true;
+        noteDirty();
         if (next.ordinality() == 0)
         {
             next.append(*new PartialMatch(builder, curLen - matchLen, curData + matchLen, rowOffset + matchLen, false));
@@ -516,9 +590,16 @@ size32_t PartialMatch::getMaxOffset()
     return maxOffset;
 }
 
-bool PartialMatch::removeLast()
+void PartialMatch::noteDirty()
 {
     dirty = true;
+    prevMatch[false] = nullptr;
+    prevMatch[true] = nullptr;
+}
+
+bool PartialMatch::removeLast()
+{
+    noteDirty();
     if (next.ordinality() == 0)
         return true; // merge with caller
     if (next.tos().removeLast())
@@ -540,6 +621,33 @@ bool PartialMatch::removeLast()
         }
     }
     return false;
+}
+
+byte PartialMatch::getSequentialOptionFlags() const
+{
+    if (allNextAreEnd())
+        return 0;
+
+    byte options = 0;
+    byte base = 0;
+    ForEachItemIn(i, next)
+    {
+        byte first = next.item(i).queryFirstByte();
+        if (i == 0)
+            base = first;
+        else if (first != base + i)
+        {
+            if ((i == 1) && (base == ' '))
+            {
+                options = OFfirstNull;
+                base = first - i;
+            }
+            else
+                return 0;
+        }
+    }
+
+    return options | OFsequential;
 }
 
 void PartialMatch::serialize(MemoryBuffer & out)
@@ -565,19 +673,35 @@ void PartialMatch::serialize(MemoryBuffer & out)
         }
         else
         {
-            byte offsetBytes = bytesRequired(getMaxOffset());
+            size32_t maxOffset = getMaxOffset();
+            byte offsetBytes = maxOffset ? bytesRequired(maxOffset) : 0;
             byte countBytes = bytesRequired(getCount()-1);
+            byte sequentialFlags = getSequentialOptionFlags();
+            bool optimizeNext = allNextAreIdentical(true);
 
-            byte sizeInfo = offsetBytes;
+            //Check that the next are identical has not been cached incorrectly
+            assertex(allNextAreIdentical(false) == optimizeNext);
+
+            byte sizeInfo = sequentialFlags | offsetBytes;
             if (getCount() != numNext)
                 sizeInfo |= (countBytes << 3);
 
             serializeOp(out, SqOption, numNext-1);  // count of options
             out.append(sizeInfo);
 
-            for (unsigned iFirst = 0; iFirst < numNext; iFirst++)
+            if (sequentialFlags & OFsequential)
             {
-                next.item(iFirst).serializeFirst(out);
+                if (sequentialFlags & OFfirstNull)
+                    next.item(1).serializeFirst(out);
+                else
+                    next.item(0).serializeFirst(out);
+            }
+            else
+            {
+                for (unsigned iFirst = 0; iFirst < numNext; iFirst++)
+                {
+                    next.item(iFirst).serializeFirst(out);
+                }
             }
 
             //Space for the count table - if it is required
@@ -592,15 +716,22 @@ void PartialMatch::serialize(MemoryBuffer & out)
                 assertex(getCount() == runningCount);
             }
 
-            unsigned offset = 0;
-            for (unsigned iOff=1; iOff < numNext; iOff++)
+            if (!optimizeNext)
             {
-                offset += next.item(iOff-1).getSize();
-                serializeBytes(out, offset, offsetBytes);
-            }
+                unsigned offset = 0;
+                for (unsigned iOff=1; iOff < numNext; iOff++)
+                {
+                    offset += next.item(iOff-1).getSize();
+                    serializeBytes(out, offset, offsetBytes);
+                }
 
-            for (unsigned iNext=0; iNext < numNext; iNext++)
-                next.item(iNext).serialize(out);
+                for (unsigned iNext=0; iNext < numNext; iNext++)
+                    next.item(iNext).serialize(out);
+            }
+            else
+            {
+                next.item(0).serialize(out);
+            }
         }
     }
 
@@ -750,12 +881,26 @@ bool PartialMatch::squash()
     return dirty;
 }
 
-const byte * PartialMatch::queryNullRow()
+const byte * PartialMatch::queryNullRow() const
 {
     return builder->queryNullRow();
 }
 
-//MORE: Pass this in...
+byte PartialMatch::queryFirstByte() const
+{
+    if (data.length())
+        return data.bytes()[0];
+    else if (rowOffset < builder->queryKeyLen())
+    {
+        assertex(queryNullRow());
+        return queryNullRow()[rowOffset];
+    }
+    else
+    {
+        throwUnexpected();
+    }
+}
+
 void PartialMatch::serializeFirst(MemoryBuffer & out)
 {
     if (data.length())
@@ -833,6 +978,14 @@ void PartialMatch::trace(unsigned indent)
     text.appendf("%*s(%s[%s] %u:%u[%u] [%s]", indent, "", clean.str(), dataHex.str(), data.length(), squashedData.length(), getSize(), squashedText.str());
     if (next.ordinality())
     {
+        if (allNextAreIdentical(true))
+        {
+            if (next.item(0).getCount() > 1)
+                text.append("!MDedup! ");
+            else
+                text.append("!Dedup! ");
+        }
+
         DBGLOG("%s, %u{", text.str(), next.ordinality());
         ForEachItemIn(i, next)
             next.item(i).trace(indent+1);
@@ -940,13 +1093,13 @@ static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
             byte sizeInfo = *finger++;
             byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
             byte bytesPerOffset = (sizeInfo & 7);
-            assertex(bytesPerOffset != 0);
-            const byte * counts = finger + numOptions; // counts (if present) follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
 
             const byte * offsets = counts + numOptions * bytesPerCount;
             const byte * next = offsets + (numOptions-1) * bytesPerOffset;
             finger = next;
-            finger += readBytesEntry16(offsets, (numOptions-1)-1, bytesPerOffset);
+            if (bytesPerOffset != 0)
+                finger += readBytesEntry16(offsets, (numOptions-1)-1, bytesPerOffset);
             offset++;
             break;
         }
@@ -957,6 +1110,30 @@ static size32_t getCompressedSize(const byte * nodeData, unsigned keyLen)
     return finger-nodeData;
 }
 
+
+//Inline function to calculate the compare value for an option.
+//The compare code could sometimes be optimized to directly compare against the range for OFsequential
+static inline byte getOptionValue(byte sizeInfo, const byte * finger, unsigned option) __attribute__((always_inline));
+static inline byte getOptionValue(byte sizeInfo, const byte * finger, unsigned option)
+{
+    byte nextFinger;
+    if (sizeInfo & OFsequential)
+    {
+        nextFinger = *finger;
+        if (sizeInfo & OFfirstNull)
+        {
+            if (option == 0)
+                nextFinger = ' ';
+            else
+                nextFinger += (option-1);
+        }
+        else
+            nextFinger += option;
+    }
+    else
+        nextFinger = finger[option];
+    return nextFinger;
+}
 
 InplaceNodeSearcher::InplaceNodeSearcher(unsigned _count, const byte * data, size32_t _keyLen, const byte * _nullRow)
 : nodeData(data), nullRow(_nullRow), count(_count), keyLen(_keyLen)
@@ -1111,24 +1288,11 @@ int InplaceNodeSearcher::compareValueAt(const char * search, unsigned int compar
             byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
             byte bytesPerOffset = (sizeInfo & 7);
 
-            //Duplicates can occur on the last byte of the key - if so we have a match
-            //MORE: I'm not sure this code can ever be reached - see HPCC-29108
-            if (bytesPerOffset == 0)
-            {
-#ifdef _DEBUG
-                unsigned options = numOptions;
-                if (sizeInfo & SFmanyDuplicates)
-                    options = readPacked32(finger) + maxRepeatCount;
-                assertex(resultNext == resultPrev+options);
-#endif
-                return 0;
-            }
-
-            const byte * counts = finger + numOptions; // counts (if present) follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
             const byte nextSearch = search[0];
             for (unsigned i=0; i < numOptions; i++)
             {
-                const byte nextFinger = finger[i];
+                const byte nextFinger = getOptionValue(sizeInfo, finger, i);
                 if (nextFinger > nextSearch)
                 {
                     //This entry is greater than search => item(i) is the correct entry
@@ -1174,7 +1338,7 @@ int InplaceNodeSearcher::compareValueAt(const char * search, unsigned int compar
                     const byte * offsets = counts + numOptions * bytesPerCount;
                     const byte * next = offsets + (numOptions-1) * bytesPerOffset;
                     finger = next;
-                    if (i > 0)
+                    if ((bytesPerOffset != 0) && (i > 0))
                         finger += readBytesEntry16(offsets, i-1, bytesPerOffset);
                     search++;
                     offset++;
@@ -1335,21 +1499,11 @@ unsigned InplaceNodeSearcher::findGE(const unsigned len, const byte * search) co
             dbgassertex(bytesPerCount <= 2);
             dbgassertex(bytesPerOffset <= 2);
 
-            //MORE: Duplicates can occur on the last byte of the key - if so we have a match
-            //MORE: This is never executed - it should never be generated....
-            dbgassertex(bytesPerOffset != 0);
-            #if 0
-            if (bytesPerOffset == 0)
-            {
-                dbgassertex(resultNext == resultPrev+numOptions);
-                break;
-            }
-            #endif
-
-            const byte * counts = finger + numOptions; // counts follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
             for (unsigned i=0; i < numOptions; i++)
             {
-                const byte nextFinger = finger[i];
+                const byte nextFinger = getOptionValue(sizeInfo, finger, i);
+
                 if (likely(nextFinger < nextSearch))
                 {
                     //The entry is < search => keep looping
@@ -1367,12 +1521,8 @@ unsigned InplaceNodeSearcher::findGE(const unsigned len, const byte * search) co
                 }
 
                 const byte * offsets = counts + numOptions * bytesPerCount;
-
-                //Avoid multiplications..  only works for 1-2 bytes per offset
-                //const byte * next = offsets + (numOptions-1) * bytesPerOffset;
-                const byte * next = offsets + ((numOptions-1) << (bytesPerOffset -1));
-
-                if (i > 0)
+                const byte * next = offsets + (numOptions-1) * bytesPerOffset;
+                if ((bytesPerOffset != 0) && (i > 0))
                 {
                     next += readBytesEntry16(offsets, i-1, bytesPerOffset);
                     __builtin_prefetch(next);
@@ -1482,11 +1632,7 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
             byte bytesPerCount = (sizeInfo >> 3) & 7; // could pack other information in....
             byte bytesPerOffset = (sizeInfo & 7);
 
-            //MORE: Duplicates can occur after the last byte of the key - bytesPerOffset is set to 0 if this occurs
-            if (bytesPerOffset == 0)
-                break;
-
-            const byte * counts = finger + numOptions; // counts follow the data
+            const byte * counts = finger + ((sizeInfo & OFsequential) ? 1 : numOptions); // counts (if present) follow the data
             unsigned option = 0;
             unsigned countPrev = 0;
             unsigned countNext = 1;
@@ -1510,7 +1656,9 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
                     countPrev = countNext;
                 }
             }
-            key[offset++] = finger[option];
+
+            const byte nextFinger = getOptionValue(sizeInfo, finger, option);
+            key[offset++] = nextFinger;
 
             resultNext = resultPrev + countNext;
             resultPrev = resultPrev + countPrev;
@@ -1518,7 +1666,7 @@ size32_t InplaceNodeSearcher::getValueAt(unsigned int searchIndex, char *key) co
             const byte * offsets = counts + numOptions * bytesPerCount;
             const byte * next = offsets + (numOptions-1) * bytesPerOffset;
             finger = next;
-            if (option > 0)
+            if ((bytesPerOffset != 0) && (option > 0))
                 finger += readBytesEntry16(offsets, option-1, bytesPerOffset);
             break;
         }
@@ -1541,7 +1689,7 @@ int InplaceNodeSearcher::compareValueAtFallback(const char *src, unsigned int in
 InplaceKeyBuildContext::~InplaceKeyBuildContext()
 {
 #ifdef TRACE_BUILDING_STATS
-    DBGLOG("NumDuplicates = %u  DataSize(%llu) KeyedSize(%llu)", numKeyedDuplicates, totalDataSize, totalKeyedSize);
+    DBGLOG("NumDuplicates = %u  DataSize(%llu) KeyedSize(%llu), NumLeaves(%llu), BlockCompress(%llu)", numKeyedDuplicates, totalDataSize, totalKeyedSize, numLeafNodes, numBlockCompresses);
 #endif
 
     delete [] nullRow;
@@ -1662,9 +1810,11 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     payloadOffsets.append(offset);
                 }
                 data += numKeys * bytesPerPayloadLength;
+                expandedSize += numKeys * sizeof(unsigned);
             }
 
-            if (keyLen != keyCompareLen)
+            // Some pathological indexes (ifblocks in the payload) could have (keyLen == keyCompareLen) and a variable size.
+            if ((keyLen != keyCompareLen) || isVariablePayload)
             {
                 CompressionMethod payloadCompression = (CompressionMethod)*data++;
                 size32_t compressedLen;
@@ -1672,12 +1822,13 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                     compressedLen = numKeys * (keyLen - keyCompareLen);
                 else
                     compressedLen = readPacked32(data);
-                size32_t len = 0;
+
                 switch (payloadCompression)
                 {
                     case COMPRESS_METHOD_NONE:
                     {
                         payload = (byte *)data;
+                        data += compressedLen;
                         break;
                     }
                     case COMPRESS_METHOD_RANDROW:
@@ -1685,32 +1836,51 @@ void CJHInplaceTreeNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _f
                         payload = (byte *)data;
                         rowexp.setown(createRandRDiffExpander());
                         rowexp->init(data, false);
+                        data += compressedLen;
                         break;
                     }
                     default:
                     {
                         //Currently the uncompressed data is retained in memory after the node has been unpacked
-                        //(because the payload is stored before the keyed portion).
-                        //If it was stored after the keyed portion the cloned size could be reduced.
+                        //A reduced size could be cloned if the data is compressed
                         //
                         //However, retaining the compressed original provides the scope to dynamically throw away
-                        //the decompressed data and re-expand from nodes cached in memory
+                        //the decompressed data and re-expand from nodes cached in memory, and would also allow
+                        //the payload to be decompressed on demand (i.e. only if any keyed elements match)
                         ICompressHandler * handler = queryCompressHandler(payloadCompression);
                         assertex(handler);
                         const char * options = nullptr;
                         Owned<IExpander> exp = handler->getExpander(options);
-                        len = exp->init(data);
-                        if (len!=0)
+                        size32_t len = exp->init(data);
+                        data += compressedLen;
+
+                        size32_t trailingLen = 0;
+                        if (sizeMask & NSFcompressTrailing)
                         {
-                            payload = (byte *)malloc(len);
-                            exp->expand(payload);
+                            trailingLen = readPacked32(data);
+                        }
+
+                        if (len || trailingLen)
+                        {
+                            payload = (byte *)malloc(len+trailingLen);
+                            expandedSize += (len+trailingLen);
                             ownedPayload = true;
+                        }
+
+                        if (len)
+                        {
+                            exp->expand(payload);
+                        }
+
+                        if (trailingLen)
+                        {
+                            memcpy(payload+len, data, trailingLen);
+                            data += trailingLen;
                         }
                         break;
                     }
                 }
-                data += compressedLen;
-                expandedSize += len;
+
             }
         }
         assertex(data - (const byte *)keyBuf == len);
@@ -1820,9 +1990,7 @@ bool CJHInplaceLeafNode::fetchPayload(unsigned int index, char *dst) const
         }
         if (keyHdr->hasSpecialFileposition())
         {
-            offset_t filePosition = minPosition;
-            if (bytesPerPosition > 0)
-                filePosition += readBytesEntry64(positionData, index, bytesPerPosition);
+            offset_t filePosition = getFPosAt(index);
             _cpyrev8(dst+len, &filePosition);
         }
     }
@@ -2018,25 +2186,38 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     if (0 == hdr.numKeys)
     {
         firstSequence = sequence;
+        ctx.numLeafNodes++;
     }
 
-    __uint64 savedMinPosition = minPosition;
-    __uint64 savedMaxPosition = maxPosition;
+    LeafFilepositionInfo savedPositionInfo = positionInfo;
     const byte * data = (const byte *)_data;
     unsigned oldSize = getDataSize(true);
     builder.add(keyCompareLen, data);
 
     if (positions.ordinality())
     {
-        if (pos < minPosition)
-            minPosition = pos;
-        if (pos > maxPosition)
-            maxPosition = pos;
+        if (positionInfo.linear)
+        {
+            if (pos != positions.tos() + 1)
+            {
+                positionInfo.linear = false;
+            }
+        }
+
+        if (pos < positionInfo.minPosition)
+            positionInfo.minPosition = pos;
+        if (pos > positionInfo.maxPosition)
+            positionInfo.maxPosition = pos;
+
+        if (!positionInfo.linear)
+        {
+            //MORE: could recalulate scaleFactor as a highest common factor which would help fixed size filepositions
+        }
     }
     else
     {
-        minPosition = pos;
-        maxPosition = pos;
+        positionInfo.minPosition = pos;
+        positionInfo.maxPosition = pos;
     }
     positions.append(pos);
 
@@ -2065,19 +2246,19 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         // small index), the last leaf node in an index or the payload is not compressible - e.g. mapping to a unique
         // id.
 
-        // Minimum size used = Non-Payload size + compression-version byte + optional length (assume the worst)
+        // Minimum size used = Non-Payload size + compression-version byte + optional length (assume the worst) + packed (zero-length) uncompressed trailing
         size32_t maxSizePayloadLength = sizePacked(maxBytes);
-        size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0);
+        size32_t maxUsedSpace = getDataSize(false) + 1 + (useCompressedPayload || isVariable ? maxSizePayloadLength : 0) + (ctx.options.recompress ? 1 : 0);
         size32_t maxPayloadSize = maxBytes - maxUsedSpace;
         if (hasSpace)
         {
-            if (useCompressedPayload)
+            if (useCompressedPayload && !ctx.options.recompress)
             {
-                size32_t oldLzwSize = compressor.buflen();
+                size32_t oldCompressedSize = compressor.buflen();
                 if (!compressor.adjustLimit(maxPayloadSize) || !compressor.write(extraData, extraSize))
                 {
                     //Attempting to write data may have flushed some bytes into the lzw output buffer.
-                    oldSize += (compressor.buflen() - oldLzwSize);
+                    oldSize += (compressor.buflen() - oldCompressedSize);
                     hasSpace = false;
                 }
             }
@@ -2088,34 +2269,57 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
         }
         else if (uncompressed.length())
         {
+            unsigned uncompressedSize = uncompressed.length();
             if (!useCompressedPayload)
             {
                 //Reached the threshold where uncompressed data does not fit.
                 //Either need to finish the node or switch to using a compressed payload.
-                unsigned uncompressedSize = uncompressed.length();
                 size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
-                compressor.open(compressed.mem(), nodeSize, ctx.compressionHandler, isVariable, fixedSize);
-                openedCompressor = true;
 
-                if (compressor.adjustLimit(maxPayloadSize) && compressor.write(uncompressed.bytes(), uncompressedSize))
+                bool success = false;
+                if (ctx.options.recompress)
+                {
+                    success = recompressAll(maxPayloadSize);
+                }
+                else
+                {
+                    compressor.open(compressed.mem(), maxPayloadSize, ctx.compressionHandler, ctx.compressionOptions, isVariable, fixedSize);
+                    openedCompressor = true;
+                    success = compressor.write(uncompressed.bytes(), uncompressedSize);
+                }
+
+                if (success)
                 {
                     unsigned compressedSize = compressor.buflen();
-                    if (compressedSize <= uncompressedSize * ctx.minCompressionThreshold)
+                    if (compressedSize <= uncompressedSize * ctx.options.minCompressionThreshold)
                     {
                         //compression reduces the size by a sufficient amount to be worth the decompression time/fragmentation.
                         hasSpace = true;
                         useCompressedPayload = true;
 
-                        //MORE: Some compressors do not support incremental compression.  For those we should continue to
-                        //gather uncompressed, but may also need to move the buffer to the context so it is reused (or
+                        //Some compressors do not support incremental compression.  For those we continue to gather uncompressed
+                        //In the future we may want to move the buffer to the context so it is reused (or
                         //maybe swap with the context).
-                        gatherUncompressed = false;
+                        if (!ctx.options.recompress)
+                            gatherUncompressed = false;
                     }
                 }
                 // else compressed does not fit either - better to remain uncompressed.
             }
             else
             {
+                if (ctx.options.recompress)
+                {
+                    //The data that is already compressed and the uncompressed data received since then no longer fit in
+                    //the node. Try recompressing all the payload data and see if there is enough room after that.
+                    //
+                    //In the worse case this could recompress every incoming record.  If this is ever an issue we
+                    //could consider limiting the number of times it is done in a row, or have a maximum compression
+                    //threshold.
+                    if (recompressAll(maxPayloadSize))
+                        hasSpace = true;
+                }
+
                 // no space for the keyed portion - adding compressed data will only make it bigger..
             }
         }
@@ -2131,8 +2335,7 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
 
         builder.removeLast();
         positions.pop();
-        minPosition = savedMinPosition;
-        maxPosition = savedMaxPosition;
+        positionInfo = savedPositionInfo;
         unsigned nowSize = getDataSize(true);
         assertex(oldSize == nowSize);
 #ifdef TRACE_BUILDING
@@ -2147,6 +2350,26 @@ bool CInplaceLeafWriteNode::add(offset_t pos, const void * _data, size32_t size,
     return true;
 }
 
+
+bool CInplaceLeafWriteNode::recompressAll(unsigned maxPayloadSize)
+{
+    assertex(!openedCompressor);
+    ctx.numBlockCompresses++;
+    //MORE: Swap with member in the context to avoid reallocation
+    MemoryAttr tempCompressed(nodeSize);
+    size32_t fixedSize = isVariable ? 0 : keyLen - keyCompareLen;
+
+    bool ok = compressor.compressBlock(maxPayloadSize, tempCompressed.mem(), uncompressed.length(), uncompressed.bytes(), ctx.compressionHandler, ctx.compressionOptions, isVariable, fixedSize);
+    if (ok)
+    {
+        compressed.swapWith(tempCompressed);
+        sizeCompressedPayload = compressor.buflen();
+        firstUncompressed = uncompressed.length();
+    }
+    return ok;
+}
+
+
 unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 {
     if (positions.ordinality() == 0)
@@ -2159,20 +2382,28 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
     //b) scaling by nodeSize if possible.
     //c) storing in the minimum number of bytes possible.
     unsigned bytesPerPosition = 0;
-    if (minPosition != maxPosition)
-        bytesPerPosition = bytesRequired(maxPosition-minPosition);
+    if (positionInfo.minPosition != positionInfo.maxPosition)
+    {
+        if (!positionInfo.linear)
+            bytesPerPosition = bytesRequired(positionInfo.maxPosition-positionInfo.minPosition);
+    }
 
     constexpr unsigned sizeOfCompressionMethodByte = 1;
-    unsigned posSize = sizeOfCompressionMethodByte + sizePacked(minPosition) + bytesPerPosition * positions.ordinality() + sizePacked(firstSequence);
-    unsigned offsetSize = payloadLengths.ordinality() * 2;  // MORE: Could probably compress
+    unsigned posSize = sizeOfCompressionMethodByte + sizePacked(positionInfo.minPosition) + bytesPerPosition * positions.ordinality() + sizePacked(firstSequence);
+    unsigned offsetSize = payloadLengths.ordinality() * 2;  // MORE: Could probably compress, might fail if nodeSize > 64K
     unsigned payloadSize = 0;
     if ((keyLen != keyCompareLen) && includePayload)
     {
         payloadSize = 1; // compressionType;
         if (useCompressedPayload)
         {
-            unsigned compressedSize = compressor.buflen();
+            unsigned compressedSize = sizeCompressedPayload ? sizeCompressedPayload : compressor.buflen();
             payloadSize += sizePacked(compressedSize) + compressedSize;
+            if (ctx.options.recompress)
+            {
+                unsigned trailingSize = uncompressed.length() - firstUncompressed;
+                payloadSize += sizePacked(trailingSize) + trailingSize;
+            }
         }
         else
         {
@@ -2188,7 +2419,10 @@ unsigned CInplaceLeafWriteNode::getDataSize(bool includePayload)
 void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
 {
     if (openedCompressor)
+    {
         compressor.close();
+        sizeCompressedPayload = compressor.buflen();
+    }
 
     hdr.keyBytes = getDataSize(true);
 
@@ -2200,17 +2434,25 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
     {
         //Pack these by scaling and reducing the number of bytes
         unsigned bytesPerPosition = 0;
-        if (minPosition != maxPosition)
-            bytesPerPosition = bytesRequired(maxPosition-minPosition);
+        if (positionInfo.minPosition != positionInfo.maxPosition)
+        {
+            if (!positionInfo.linear)
+                bytesPerPosition = bytesRequired(positionInfo.maxPosition-positionInfo.minPosition);
+        }
 
         byte sizeMask = (byte)bytesPerPosition;
+        if (ctx.options.recompress)
+            sizeMask |= NSFcompressTrailing;
+        if (positionInfo.linear)
+            sizeMask |= NSFlinear;
+
         data.append(sizeMask);
-        serializePacked(data, minPosition);
+        serializePacked(data, positionInfo.minPosition);
         if (bytesPerPosition != 0)
         {
             for (unsigned i=0; i < positions.ordinality(); i++)
             {
-                unsigned __int64 delta = positions.item(i) - minPosition;
+                unsigned __int64 delta = positions.item(i) - positionInfo.minPosition;
                 serializeBytes(data, delta, bytesPerPosition);
             }
         }
@@ -2235,7 +2477,7 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
         {
             CompressionMethod payloadCompression;
             if (useCompressedPayload)
-                payloadCompression = compressor.getCompressionMethod();
+                payloadCompression = ctx.compressor->getCompressionMethod();
             else
                 payloadCompression = COMPRESS_METHOD_NONE;
 
@@ -2245,13 +2487,19 @@ void CInplaceLeafWriteNode::write(IFileIOStream *out, CRC32 *crc)
             case COMPRESS_METHOD_NONE:
                 if (isVariable)
                     serializePacked(data, uncompressed.length());
-                data.append(uncompressed.length(), uncompressed.bufferBase());
+                data.append(uncompressed.length(), uncompressed.bytes());
                 break;
             default:
                 {
-                    size32_t payloadLen = compressor.buflen();
+                    size32_t payloadLen = sizeCompressedPayload;
                     serializePacked(data, payloadLen);
                     data.append(payloadLen, compressed.get());
+                    if (ctx.options.recompress)
+                    {
+                        unsigned trailingSize = uncompressed.length() - firstUncompressed;
+                        serializePacked(data, trailingSize);
+                        data.append(trailingSize, uncompressed.bytes() + firstUncompressed);
+                    }
                     break;
                 }
             }
@@ -2291,79 +2539,54 @@ InplaceIndexCompressor::InplaceIndexCompressor(size32_t keyedSize, const CKeyHdr
     //Process any options.  Currently supports the compression mode
     const char * colon= strchr(compressionName, ':');
     bool useDefaultCompression = true;
+
+    ctx.compressionOptions.clear().append("hclevel=3"); // If using the lz4hc use the minimum compression level
     if (colon)
     {
-        const char * cur = colon+1;
-        StringBuffer option;
-        StringBuffer value;
-        while (true)
+        auto processOption = [this,&useDefaultCompression](const char * option, const char * value)
         {
-            const char * comma = strchr(cur, ',');
-            const char * eq = strchr(cur, '=');
-            if (comma && eq)
+            CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
+            if (method != COMPRESS_METHOD_NONE)
             {
-                if (comma < eq)
-                    eq = nullptr;
+                ctx.compressionHandler = queryCompressHandler(method);
+                useDefaultCompression = false;
             }
-            option.clear();
-            value.clear();
-            if (eq)
+            else if (strieq(option, "uncompressed"))
+                useDefaultCompression = false;
+            else if (strieq(option, "compressThresholdPercent")) // use uncompressed if compressed is > 95% uncompressed
+                ctx.options.minCompressionThreshold = strtod(value, nullptr) / 100.0;
+            else if (strieq(option, "compression"))
             {
-                option.append(eq-cur, cur);
-                if (comma)
-                    value.append(comma-(eq+1), eq+1);
-                else
-                    value.append(eq+1);
+                useDefaultCompression = false;
+                CompressionMethod method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
+                if (method != COMPRESS_METHOD_NONE)
+                    ctx.compressionHandler = queryCompressHandler(method);
+            }
+            else if (strieq(option, "recompress"))
+            {
+                ctx.options.recompress = true;
+            }
+            else if (strieq(option, "compressopt"))
+            {
+                ctx.compressionOptions.append(',').append(value);
             }
             else
             {
-                value.append("1");
-                if (comma)
-                    option.append(comma-cur, cur);
-                else
-                    option.append(cur);
+                //ignore any unrecognised options
             }
+        };
 
-            if (option.length())
-            {
-                CompressionMethod method = translateToCompMethod(option, COMPRESS_METHOD_NONE);
-                if (method != COMPRESS_METHOD_NONE)
-                {
-                    ctx.compressionHandler = queryCompressHandler(method);
-                    useDefaultCompression = false;
-                }
-                else if (strieq(option, "uncompressed"))
-                    useDefaultCompression = false;
-                else if (strieq(option, "compressThresholdPercent")) // use uncompressed if compressed is > 95% uncompressed
-                    ctx.minCompressionThreshold = strtod(value, nullptr) / 100.0;
-                else if (strieq(option, "compression"))
-                {
-                    useDefaultCompression = false;
-                    CompressionMethod method = translateToCompMethod(value, COMPRESS_METHOD_NONE);
-                    if (method != COMPRESS_METHOD_NONE)
-                        ctx.compressionHandler = queryCompressHandler(method);
-                }
-                else
-                {
-                    //ignore any unrecognised options
-                }
-            }
-
-            if (!comma)
-                break;
-
-            cur = comma+1;
-        }
+        processOptionString(colon+1, processOption);
     }
 
     if (useDefaultCompression)
+        ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZ4);
+
+    if (ctx.compressionHandler)
     {
-        bool isVariable = keyHdr->isVariable();
-        bool rowCompression = (keyHdr->getKeyType()&HTREE_QUICK_COMPRESSED_KEY)==HTREE_QUICK_COMPRESSED_KEY;
-        if (rowCompression && !isVariable)
-            ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_RANDROW);
-        else
-            ctx.compressionHandler = queryCompressHandler(COMPRESS_METHOD_LZW);
+        ctx.compressor.setown(ctx.compressionHandler->getCompressor(ctx.compressionOptions));
+        if (!ctx.compressor->supportsIncrementalCompression())
+            ctx.options.recompress = true;
     }
 }
 

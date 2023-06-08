@@ -30,6 +30,7 @@ __int64 jlib_decl cycle_to_nanosec(cycle_t cycles);
 __int64 jlib_decl cycle_to_microsec(cycle_t cycles);
 __int64 jlib_decl cycle_to_millisec(cycle_t cycles);
 cycle_t jlib_decl nanosec_to_cycle(__int64 cycles);
+cycle_t jlib_decl millisec_to_cycle(unsigned ms);
 double jlib_decl getCycleToNanoScale();
 void jlib_decl display_time(const char * title, cycle_t diff);
 

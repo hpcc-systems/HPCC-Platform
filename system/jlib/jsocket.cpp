@@ -1192,6 +1192,7 @@ ISocket* CSocket::accept(bool allowcancel, SocketEndpoint *peerEp)
         getSockAddrEndpoint(peerSockAddr, peerSockAddrLen, *peerEp);
 
     CSocket *ret = new CSocket(newsock,sm_tcp,true);
+    ret->checkCfgKeepAlive();
     ret->set_inherit(false);
     return ret;
 
@@ -1210,6 +1211,9 @@ void CSocket::set_linger(int lingertime)
 
 void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
 {
+    if (connectionless())
+        return;
+
     int on=set?1:0;
     if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&on, sizeof(on)) != 0)
     {
@@ -1250,6 +1254,9 @@ void CSocket::setKeepAlive(bool set, int time, int intvl, int probes)
 
 void CSocket::checkCfgKeepAlive()
 {
+    if (connectionless())
+        return;
+
     int time, intvl, probes;
     if (queryKeepAlive(time, intvl, probes))
         setKeepAlive(true, time, intvl, probes);

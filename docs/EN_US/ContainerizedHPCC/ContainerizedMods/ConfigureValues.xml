@@ -139,8 +139,8 @@
     <sect2 id="YAMLHPCC_Components">
       <title>The HPCC Systems Components</title>
 
-      <para>One of the key differences between the bare metal and
-      container/cloud is that in bare metal storage is directly tied to the
+      <para>One of the key differences between the bare-metal and
+      container/cloud is that in bare-metal storage is directly tied to the
       Thor or the Thor worker nodes, and the Roxie worker nodes, or even in
       the case of the ECLCC Server the DLLs. In containers these are
       completely separate and anything having to do with files is defined in
@@ -385,7 +385,7 @@
         <emphasis>maxGraphs</emphasis> to be lower</para>
 
         <para>In Kubernetes, jobs run independently in their own pods. While
-        in bare metal we can have jobs that could effect other jobs because
+        in bare-metal we can have jobs that could affect other jobs because
         they are running in the same process space.</para>
       </sect3>
 
@@ -522,7 +522,7 @@
       <title>Storage</title>
 
       <para>Containerized Storage is another key concept that differs from
-      bare metal. There are a few differences between container and bare metal
+      bare-metal. There are a few differences between container and bare-metal
       storage. The Storage section is fairly well defined between the schema
       file, and the <emphasis>values.yaml</emphasis>. A good approach towards
       storage is to clearly understand your storage needs, and to outline
@@ -581,7 +581,7 @@
   #   pvc: &lt;name&gt;                           # The name of the persistant volume claim
   #   forcePermissions: false
   #   hosts: [ &lt;host-list&gt; ]                 # Inline list of hosts
-  #   hostGroup: &lt;name&gt;                     # Name of the host group for bare metal 
+  #   hostGroup: &lt;name&gt;                     # Name of the host group for bare-metal 
   #                                         # must match the name of the storage plane..
   #
   # Other options:
@@ -719,7 +719,7 @@
       <sect3 id="CYML_BareMEtalStorage">
         <title>Bare Metal Storage</title>
 
-        <para>There are two aspects to using bare metal storage in the
+        <para>There are two aspects to using bare-metal storage in the
         Kubernetes system. The first is the <emphasis>hostGroups</emphasis>
         entry in the storage section which provides named lists of hosts. The
         <emphasis>hostGroups</emphasis> entries can take one of two forms.
@@ -767,7 +767,7 @@
         <itemizedlist>
           <listitem>
             <para><emphasis role="bold">hostGroup: &lt;name&gt;</emphasis> The
-            name of the host group for bare metal. The name of the hostGroup
+            name of the host group for bare-metal. The name of the hostGroup
             must match the name of the storage plane.</para>
           </listitem>
 
@@ -1182,6 +1182,68 @@ thor:
         <para>To add environment values you can insert them into your
         customization configuration YAML file when you deploy your
         containerized HPCC Systems.</para>
+
+        <sect4>
+          <title>Environment Variables for Containerized Systems</title>
+
+          <para>There are several settings in environment.conf for bare-metal
+          systems. While many environment.conf settings are not valid for
+          containers, some can be useful. In a cloud deployment, these
+          settings are inherited from environment variables. These environment
+          variables are configurable using the values yaml either globally, or
+          at the component level.</para>
+
+          <para>Some of those variables are available for container and cloud
+          deployments and can be set using the Helm chart. The following
+          bare-metal environment.conf values have these equivalent values
+          which can be set for containerized instances.</para>
+
+          <para><informaltable>
+              <tgroup cols="2">
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold">Environment.conf
+                    Value</emphasis></entry>
+
+                    <entry><emphasis role="bold">Helm Environment
+                    Variable</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry>skipPythonCleanup</entry>
+
+                    <entry>SKIP_PYTHON_CLEANUP</entry>
+                  </row>
+
+                  <row>
+                    <entry>jvmlibpath</entry>
+
+                    <entry>JAVA_LIBRARY_PATH</entry>
+                  </row>
+
+                  <row>
+                    <entry>jvmoptions</entry>
+
+                    <entry>JVM_OPTIONS</entry>
+                  </row>
+
+                  <row>
+                    <entry>classpath</entry>
+
+                    <entry>CLASSPATH</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>The following example sets the environment variable to skip
+          Python cleanup on the Thor component: </para>
+
+          <para><programlisting>thor: 
+  env: 
+  - name: SKIP_PYTHON_CLEANUP 
+    value: true</programlisting></para>
+        </sect4>
       </sect3>
 
       <sect3 id="CNT_IndexBuildPlane">

@@ -52,10 +52,7 @@ class PartialMatchBuilder;
 class PartialMatch : public CInterface
 {
 public:
-    PartialMatch(PartialMatchBuilder * _builder, size32_t _len, const void * _data, unsigned _rowOffset, bool _isRoot)
-    : builder(_builder), data(_len, _data), rowOffset(_rowOffset), isRoot(_isRoot)
-    {
-    }
+    PartialMatch(PartialMatchBuilder * _builder, size32_t _len, const void * _data, unsigned _rowOffset, bool _isRoot);
 
     bool combine(size32_t newLen, const byte * newData);
     bool removeLast();
@@ -63,25 +60,34 @@ public:
     void serializeFirst(MemoryBuffer & out);
     bool squash();
     void trace(unsigned indent);
+    byte queryFirstByte() const;
 
     size32_t getSize();
     size32_t getCount();
-    const byte * queryNullRow();
+    const byte * queryNullRow() const;
     bool isEnd() const { return data.length() == 0; }
 
 protected:
-    bool allNextAreEnd();
+    bool allNextAreEnd() const;
+    bool allNextAreIdentical(bool allowCache) const;
     unsigned appendRepeat(size32_t offset, size32_t copyOffset, byte repeatByte, size32_t repeatCount);
     void cacheSizes();
     void describeSquashed(StringBuffer & out);
     size32_t getMaxOffset();
+    byte getSequentialOptionFlags() const;
+    bool matches(PartialMatch & other, bool ignoreLeadingByte, bool allowCache);
+    void noteDirty();
 
 protected:
     PartialMatchBuilder * builder;
     MemoryBuffer data;
     MemoryBuffer squashedData;
     CIArrayOf<PartialMatch> next;
+#ifdef _DEBUG
+    unsigned seq = 0;
+#endif
     unsigned rowOffset;
+    PartialMatch * prevMatch[2]{ nullptr, nullptr };
     size32_t maxOffset = 0;
     size32_t size = 0;
     size32_t maxCount = 0;
@@ -131,13 +137,22 @@ public:
 
 public:
     ICompressHandler * compressionHandler = nullptr;
-    unsigned numKeyedDuplicates = 0;
+    Owned<ICompressor> compressor; // potentially shared
+    StringBuffer compressionOptions;
     MemoryBuffer uncompressed;
     MemoryAttr compressed;
-    double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
     const byte * nullRow = nullptr;
+
+    //Various stats gathered when building the index
+    unsigned numKeyedDuplicates = 0;
     offset_t totalKeyedSize = 0;
     offset_t totalDataSize = 0;
+    offset_t numLeafNodes = 0;
+    offset_t numBlockCompresses = 0;
+    struct {
+        double minCompressionThreshold = 0.95; // use uncompressed if compressed is > 95% uncompressed
+        bool recompress = false;
+    } options;
 };
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -223,6 +238,15 @@ protected:
     bool scaleFposByNodeSize = true;
 };
 
+
+struct LeafFilepositionInfo
+{
+    __uint64 minPosition = 0;
+    __uint64 maxPosition = 0;
+    unsigned scaleFactor = 0;
+    bool linear = true;
+};
+
 class jhtree_decl CInplaceLeafWriteNode : public CInplaceWriteNode
 {
 public:
@@ -233,6 +257,7 @@ public:
 
 protected:
     unsigned getDataSize(bool includePayload);
+    bool recompressAll(unsigned maxSize);
 
 protected:
     InplaceKeyBuildContext & ctx;
@@ -242,11 +267,12 @@ protected:
     MemoryAttr compressed;
     UnsignedArray payloadLengths;
     Unsigned64Array positions;
-    __uint64 minPosition = 0;
-    __uint64 maxPosition = 0;
+    LeafFilepositionInfo positionInfo;
     __uint64 firstSequence = 0;
     unsigned nodeSize;
     size32_t keyLen = 0;
+    size32_t firstUncompressed = 0;
+    size32_t sizeCompressedPayload = 0; // Set from closed compressor
     bool isVariable = false;
     bool rowCompression = false;
     bool useCompressedPayload = false;

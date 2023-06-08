@@ -153,7 +153,7 @@ class CKeyedJoinMaster : public CMasterActivity
                         bool filePartExists = false;
                         if (activity.assumePrimary)
                         {
-                            /* If the index is big (e.g. large super-index), then it can be expensive
+                            /* If the index is big (e.g. large superkey), then it can be expensive
                              * to walk over all part copies, checking their existence.
                              * This option provides a workaround in those cases, to avoid that check,
                              * by assuming the primary copy will exist and be used.
@@ -321,9 +321,9 @@ public:
                     if (dataFile)
                     {
                         if (isFileKey(dataFile))
-                            throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read index as a flat file: %s", fetchFilename.get());
+                            throw MakeActivityException(this, TE_FileTypeMismatch, "Full-Keyed-Join: Attempting to read index as a flat file (fetch file): %s", fetchFilename.get());
                         if (superIndex)
-                            throw MakeActivityException(this, 0, "Superkeys and full keyed joins are not supported");
+                            throw MakeActivityException(this, 0, "Full-Keyed-Join: Superkeys with full keyed joins are not supported");
 
                         dataFileDesc.setown(getConfiguredFileDescriptor(*dataFile));
                         void *ekey;
@@ -336,12 +336,12 @@ public:
                             free(ekey);
                             if (!encrypted)
                             {
-                                Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", dataFile->queryLogicalName());
+                                Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Full-Keyed-Join: Ignoring encryption key provided as file '%s' was not published as encrypted", fetchFilename.get());
                                 queryJobChannel().fireException(e);
                             }
                         }
                         else if (encrypted)
-                            throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", dataFile->queryLogicalName());
+                            throw MakeActivityException(this, 0, "Full-Keyed-Join: File '%s' was published as encrypted but no encryption key provided", fetchFilename.get());
 
                         /* If fetch file is local to cluster, fetches are sent to the slave the parts are local to.
                          * If fetch file is off cluster, fetches are performed by requesting node directly on fetch part, therefore each nodes
@@ -396,11 +396,11 @@ public:
                         else
                         {
                             if (hasTlk != keyHasTlk)
-                                throw MakeActivityException(this, 0, "Local/Single part keys cannot be mixed with distributed(tlk) keys in keyedjoin");
+                                throw MakeActivityException(this, 0, "Unsupported: Superkey with a mixture of Local/Single and Distributed sub-indexes. (Superkey: '%s', sub-index: '%s')", indexFileName.get(), f.queryLogicalName());
                             if (keyHasTlk && superIndexWidth != f.numParts()-1)
-                                throw MakeActivityException(this, 0, "Super sub keys of different width cannot be mixed with distributed(tlk) keys in keyedjoin");
+                                throw MakeActivityException(this, 0, "Unsupported: sub-indexes of different widths cannot be mixed. (Superkey: '%s', sub-index: '%s')", indexFileName.get(), f.queryLogicalName());
                             if (localKey && superIndexWidth != queryClusterWidth())
-                                throw MakeActivityException(this, 0, "Super keys of local index must be same width as target cluster");
+                                throw MakeActivityException(this, 0, "Unsupported: Superkey of local indexes must be same width as target cluster. (Superkey: '%s', sub-index: '%s')", indexFileName.get(), f.queryLogicalName());
                         }
                     }
                     if (keyHasTlk)

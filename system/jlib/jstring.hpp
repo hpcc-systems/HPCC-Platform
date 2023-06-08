@@ -635,4 +635,8 @@ void processLines(const StringBuffer & content, LineProcessor process)
     }
 }
 
+//General purpose function for processing option strings in the form option[=value],option[=value],...
+using optionCallback = std::function<void(const char * name, const char * value)>;
+extern jlib_decl void processOptionString(const char * options, optionCallback callback);
+
 #endif

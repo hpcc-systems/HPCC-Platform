@@ -1177,10 +1177,16 @@
     <sect1 id="SysAdm_Env.conf">
       <title>Environment.conf</title>
 
-      <para>Another component of HPCC Systems configuration is the
+      <para>A component of HPCC Systems on bare-metal configuration is the
       environment.conf file. Environment.conf contains some global definitions
       that the configuration manager uses to configure the HPCC Systems. In
       most cases, the defaults are sufficient.</para>
+
+      <para>The environment.conf file only works for bare-metal deployments.
+      For container or cloud deployments the environment.conf is not valid,
+      instead there are environment settings which can be configured by
+      setting values in the Helm charts. See the Containerized HPCC Systems
+      documentation for containerized or cloud deployments.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="2">
@@ -1822,7 +1828,6 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
       </sect2>
     </sect1>
 
-   
     <sect1 id="SA-ControlsANDTools">
       <title>System Tools and Controls</title>
 
@@ -1856,7 +1861,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
          - <emphasis role="strong">memsize=5368709120</emphasis> base=0x7f904fe00000 alignment=262144 bitmapSize=640</programlisting></para>
 
           <para>Which is found in the environment.xml's RoxieCluster setting
-          or in the helm values.yaml Roxie section for <emphasis
+          or in the Helm chart -- values.yaml Roxie section for <emphasis
           role="strong">totalMemoryLimit</emphasis>:</para>
 
           <programlisting>    totalMemoryLimit="5368709120"</programlisting>
@@ -2335,7 +2340,7 @@ HPCCPrivateKeyFile=/keyfilepath/keyfile
         <sect3 id="SepClusterNodes">
           <title>Separate Worker Nodes</title>
 
-          <para>In a bare metal deployment, try as much as possible to keep
+          <para>In a bare-metal deployment, try as much as possible to keep
           system target cluster resources running on their own physical nodes
           or partitions. The idea being to avoid putting essential system
           components on the same partitions as resource intensive and

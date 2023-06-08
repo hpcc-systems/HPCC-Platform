@@ -2764,7 +2764,6 @@ StringBuffer& StringBuffer::operator=(StringBuffer&& value)
     return *this;
 }
 
-
 bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnError)
 {
     int fd = open(filename, O_RDONLY);
@@ -2792,4 +2791,54 @@ bool loadBinaryFile(StringBuffer & contents, const char *filename, bool throwOnE
         throw MakeStringException(errno, "File %s could not be opened", filename);
 
     return ok;
+}
+
+void processOptionString(const char * options, optionCallback callback)
+{
+    if (!options || !callback)
+        return;
+
+    StringBuffer option;
+    StringBuffer value;
+    while (true)
+    {
+        const char * comma = strchr(options, ',');
+        const char * eq = strchr(options, '=');
+        if (comma && eq)
+        {
+            if (comma < eq)
+                eq = nullptr;
+            else
+            {
+                //Could optionally see if the value is quoted, and if so scan for the terminator to allow quoted commas
+                //but then you may have problems with quoted quotes... so leave as-is for the moment
+            }
+        }
+        option.clear();
+        value.clear();
+        if (eq)
+        {
+            option.append(eq-options, options);
+            if (comma)
+                value.append(comma-(eq+1), eq+1);
+            else
+                value.append(eq+1);
+        }
+        else
+        {
+            value.append("1");
+            if (comma)
+                option.append(comma-options, options);
+            else
+                option.append(options);
+        }
+
+        if (option.length())
+            callback(option, value);
+
+        if (!comma)
+            break;
+
+        options = comma+1;
+    }
 }
