@@ -408,6 +408,7 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                     StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                     StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                    StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                     StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                     StNumDiskRejected, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
@@ -418,6 +419,7 @@ static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndex
                                                 StTimeBlobLoad, StCycleBlobLoadCycles, StTimeLeafLoad, StCycleLeafLoadCycles, StTimeNodeLoad, StCycleNodeLoadCycles,
                                                 StCycleBlobReadCycles, StCycleLeafReadCycles, StCycleNodeReadCycles, StTimeBlobRead, StTimeLeafRead, StTimeNodeRead,
                                                 StCycleBlobFetchCycles, StCycleLeafFetchCycles, StCycleNodeFetchCycles, StTimeBlobFetch, StTimeLeafFetch, StTimeNodeFetch,
+                                                StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                 StNumNodeDiskFetches, StNumLeafDiskFetches, StNumBlobDiskFetches,
                                                 StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait, StTimeAgentQueue, StTimeIBYTIDelay }, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
@@ -452,6 +454,7 @@ extern const StatisticsMapping accumulatedStatistics({StWhenFirstRow, StTimeLoca
                                                       StTimeAgentQueue, StTimeIBYTIDelay,
                                                       StNumSocketWrites, StSizeSocketWrite, StTimeSocketWriteIO,
                                                       StNumSocketReads, StSizeSocketRead, StTimeSocketReadIO,
+                                                      StCycleIndexCacheBlockedCycles, StTimeIndexCacheBlocked,
                                                       });
 
 //=================================================================================
