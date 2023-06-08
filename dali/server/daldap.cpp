@@ -156,8 +156,10 @@ public:
             else if (wuscope)
                 perm=ldapsecurity->authorizeWorkunitScope(*user, obj);
             if (perm == SecAccess_Unavailable)
+            {
+                OWARNLOG("LDAP: getPermissions(%s) Unable to get perms for scope=%s user=%s, setting 'SecAccess_None'", nullText(key), nullText(obj), username.str());
                 perm = SecAccess_None;
-
+            }
             unsigned taken = msTick()-start;
 #ifndef _DEBUG
             if (taken>100)
