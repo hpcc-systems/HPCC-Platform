@@ -1871,6 +1871,8 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
 
 static StringBuffer &getDropZoneHost(const char *planeName, IPropertyTree *plane, StringBuffer &host)
 {
+    if (isContainerized() && strsame("localhost", host.str())) //ECLWatch may send "localhost" for dropzones without hosts.
+        host.clear();
     if (!host.isEmpty())
     {
         if (!isHostInPlane(plane, host, true))
@@ -1904,7 +1906,49 @@ IPropertyTree *CFileSprayEx::getAndValidateDropZone(const char *path, const char
     return nullptr;
 }
 
-void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcPlane,
+static bool isHostInSprayPath(const char* sprayPath, const char* dropZoneName, IPropertyTree* dropZone,
+    const char* host, SocketEndpoint& hostEp, StringBuffer& localPath, StringBuffer& hostInPath)
+{
+    if (!isPathSepChar(sprayPath[0]) || (sprayPath[0] != sprayPath[1]))
+        return false;
+
+    splitUNCFilename(sprayPath, &hostInPath, &localPath, &localPath, &localPath);
+    hostInPath.remove(0, 2); //Skip the leading "//"
+    if (hostInPath.isEmpty())
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid SourcePath %s.", sprayPath);
+
+    if (!hostEp.isNull())
+    {
+        SocketEndpoint hostInPathEp(hostInPath);
+        if (!hostEp.ipequals(hostInPathEp))
+        {
+            VStringBuffer msg("The host %s defined in the SourcePath does not match with the host %s defined in SourceIP. ", hostInPath.str(), host);
+            msg.append("A dropzone name specified in the SourcePlane is preferred. The host/IP should not be contained in the SourcePath.");
+            throw makeStringException(ECLWATCH_INVALID_INPUT, msg.str());
+        }
+    }
+    else if (!isHostInPlane(dropZone, hostInPath, true))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host %s in %s is not defined within the dropzone %s.", hostInPath.str(), sprayPath, dropZoneName);
+    return true;
+}
+
+static void validateHostReqInSprayPathReq(const char* hostReq, const char* pathReq)
+{
+    SocketEndpoint hostReqEp(hostReq);
+    StringArray files;
+    files.appendList(pathReq, ","); // handles comma separated files
+    ForEachItemIn(i, files)
+    {
+        const char* file = files.item(i);
+        if (isEmptyString(file))
+            continue;
+
+        StringBuffer localPath, hostInPath;
+        isHostInSprayPath(file, nullptr, nullptr, hostReq, hostReqEp, localPath, hostInPath);
+    }
+}
+
+void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcPlane,
     StringBuffer& sourcePlaneReq, StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
 {
     StringBuffer sourcePath(srcPath);
@@ -1916,38 +1960,95 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
         if (containsRelPaths(sourcePath)) //Detect a path like: a/../../../f
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid path %s", sourcePath.str());
 
-        if (!isEmptyString(srcPlane))
+        getStandardPosixPath(sourcePathReq, sourcePath.str());
+        StringArray files;
+        files.appendList(sourcePathReq, ","); // handles comma separated files
+
+        Owned<IPropertyTree> dropZone;
+        sourceIPReq.set(srcIP).trim();
+        sourcePlaneReq.set(srcPlane).trim();
+        if (!sourcePlaneReq.isEmpty())
         {
-            Owned<IPropertyTree> dropZone = getDropZonePlane(srcPlane);
+            dropZone.setown(getDropZonePlane(sourcePlaneReq));
             if (!dropZone)
-                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", srcPlane);
-            const char * dropZonePlanePath = dropZone->queryProp("@prefix");
-            if (isAbsolutePath(sourcePath))
-            {
-                if (!startsWith(sourcePath, dropZonePlanePath))
-                    throw makeStringException(ECLWATCH_INVALID_INPUT, "Invalid source path");
-            }
-            else
-            {
-                StringBuffer s(sourcePath);
-                sourcePath.set(dropZonePlanePath);
-                addNonEmptyPathSepChar(sourcePath);
-                sourcePath.append(s);
-            }
-            getDropZoneHost(srcPlane, dropZone, sourceIPReq);
-            sourcePlaneReq.append(srcPlane);
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", sourcePlaneReq.str());
+            getDropZoneHost(sourcePlaneReq, dropZone, sourceIPReq);
         }
         else
         {
-            sourceIPReq.set(srcIP).trim();
             if (sourceIPReq.isEmpty())
                 throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
-            Owned<IPropertyTree> plane = getAndValidateDropZone(sourcePath, sourceIPReq);
-            if (plane)
-                sourcePlaneReq.append(plane->queryProp("@name"));
+            StringBuffer path;
+            ForEachItemIn(i, files)
+            {
+                const char* file = files.item(i);
+                if (!isEmptyString(file))
+                {
+                    path.set(file);
+                    break;
+                }
+            }
+            if (!path.isEmpty())
+            {
+                dropZone.setown(getAndValidateDropZone(path, sourceIPReq));
+                if (dropZone)
+                    sourcePlaneReq.append(dropZone->queryProp("@name"));
+            }
+        }
+        if (sourcePlaneReq.isEmpty()) // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+        {
+            validateHostReqInSprayPathReq(sourceIPReq, sourcePathReq); //The sourceIPReq is from the original request.
+            return;
+        }
+
+        SocketEndpoint sourceHostEp(sourceIPReq); //The sourceIPReq has been validated for the sourcePlaneReq.
+        const char* prefix = dropZone->queryProp("@prefix");
+
+        //Validate dropzone scope access for every files from the sourcePathReq.
+        //Correct relative path and save into the sourcePathReq.
+        sourcePathReq.clear();
+        ForEachItemIn(i, files)
+        {
+            const char* file = files.item(i);
+            if (isEmptyString(file))
+                continue;
+
+            //Parse the file to find/validate possible host/ip and local path.
+            StringBuffer hostInPath, localPath;
+            const char* path = nullptr;
+            if (isHostInSprayPath(file, sourcePlaneReq, dropZone, sourceIPReq, sourceHostEp, localPath, hostInPath))
+                path = localPath.str();
+            else
+                path = file;
+
+            //Validate file path.
+            StringBuffer s;
+            if (isAbsolutePath(path))
+            {
+                //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
+                //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
+                if (!isPathInPlane(dropZone, path))
+                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", path, sourcePlaneReq.str());
+            }
+            else
+            {
+                s.set(prefix);
+                addNonEmptyPathSepChar(s);
+                s.append(path);
+                path = s.str();
+            }
+            SecAccessFlags permission = getDZFileScopePermissions(context, sourcePlaneReq, path, nullptr);
+            if (permission < SecAccess_Read)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
+                    sourcePlaneReq.str(), path, context.queryUserId(), getSecAccessFlagName(permission));
+
+            if (!sourcePathReq.isEmpty())
+                sourcePathReq.append(",");
+            if (!hostInPath.isEmpty())
+                sourcePathReq.append("//").append(hostInPath);
+            sourcePathReq.append(path);
         }
     }
-    getStandardPosixPath(sourcePathReq, sourcePath.str());
 }
 
 static void checkValidDfuQueue(const char * dfuQueue)
@@ -1993,7 +2094,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
         StringBuffer sourcePlaneReq, sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
+        readAndCheckSpraySourceReq(context, srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(isEmptyString(destname))
@@ -2032,7 +2133,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         wu->setCommand(DFUcmd_import);
 
         IDFUfileSpec *source = wu->queryUpdateSource();
-        checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
+        setSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
 
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         bool nosplit = req.getNosplit();
@@ -2158,7 +2259,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
         StringBuffer sourcePlaneReq, sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
+        readAndCheckSpraySourceReq(context, srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourcePlaneReq, sourceIPReq, sourcePathReq);
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
         if(isEmptyString(destname))
@@ -2191,7 +2292,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         IDFUoptions *options = wu->queryUpdateOptions();
 
-        checkDZScopeAccessAndSetSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
+        setSpraySourceDFUFileSpec(context, sourcePlaneReq, sourceIPReq, srcfile, srcxml, source);
         source->setMaxRecordSize(req.getSourceMaxRecordSize());
         source->setFormat((DFUfileformat)req.getSourceFormat());
 
@@ -2298,43 +2399,19 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
     return true;
 }
 
-void CFileSprayEx::checkDZScopeAccessAndSetSpraySourceDFUFileSpec(IEspContext &context, const char *srcPlane, const char *srcHost,
+void CFileSprayEx::setSpraySourceDFUFileSpec(IEspContext &context, const char *srcPlane, const char *srcHost,
     const char *srcFile, MemoryBuffer &srcXML, IDFUfileSpec *srcDFUfileSpec)
 {
     if(srcXML.length() == 0)
     {
         //The srcHost is validated in readAndCheckSpraySourceReq().
-        //If the srcPlane is found by readAndCheckSpraySourceReq(), the DZFileScopePermissions
-        //should be validated for every files in srcFile.
-        StringBuffer fnamebuf(srcFile);
-        fnamebuf.trim();
-        if (!isEmptyString(srcPlane))  // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
-        {
-            StringArray files;
-            files.appendList(fnamebuf, ","); // handles comma separated files
-            ForEachItemIn(i, files)
-            {
-                const char *file = files.item(i);
-                if (isEmptyString(file))
-                    continue;
-
-                //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
-                //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
-
-                SecAccessFlags permission = getDZFileScopePermissions(context, srcPlane, file, srcHost);
-                if (permission < SecAccess_Read)
-                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
-                        srcPlane, file, context.queryUserId(), getSecAccessFlagName(permission));
-            }
-        }
-
         SocketEndpoint ep(srcHost);
         if (ep.isNull())
             throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Cannot resolve source network IP from %s.", srcHost);
 
         RemoteMultiFilename rmfn;
         rmfn.setEp(ep);
-        rmfn.append(fnamebuf.str());
+        rmfn.append(srcFile);
         srcDFUfileSpec->setMultiFilename(rmfn);
     }
     else
