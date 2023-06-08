@@ -1906,7 +1906,7 @@ IPropertyTree *CFileSprayEx::getAndValidateDropZone(const char *path, const char
     return nullptr;
 }
 
-static bool isHostInSprayPath(const char* sprayPath, const char* dropZoneName, IPropertyTree* dropZone,
+static bool isUNCPath(const char* sprayPath, const char* dropZoneName, IPropertyTree* dropZone,
     const char* host, SocketEndpoint& hostEp, StringBuffer& localPath, StringBuffer& hostInPath)
 {
     if (!isPathSepChar(sprayPath[0]) || (sprayPath[0] != sprayPath[1]))
@@ -1944,7 +1944,7 @@ static void validateHostReqInSprayPathReq(const char* hostReq, const char* pathR
             continue;
 
         StringBuffer localPath, hostInPath;
-        isHostInSprayPath(file, nullptr, nullptr, hostReq, hostReqEp, localPath, hostInPath);
+        isUNCPath(file, nullptr, nullptr, hostReq, hostReqEp, localPath, hostInPath);
     }
 }
 
@@ -1993,9 +1993,11 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                 dropZone.setown(getAndValidateDropZone(path, sourceIPReq));
                 if (dropZone)
                     sourcePlaneReq.append(dropZone->queryProp("@name"));
+                //After a dropzone is found based on a file path, all other paths must be in this dropzone.
+                //It will be validated using the isPathInPlane call below.
             }
         }
-        if (sourcePlaneReq.isEmpty()) // must be true, unless bare-metal and isDropZoneRestrictionEnabled()==false
+        if (sourcePlaneReq.isEmpty()) // can only be true if bare-metal and isDropZoneRestrictionEnabled()==false
         {
             validateHostReqInSprayPathReq(sourceIPReq, sourcePathReq); //The sourceIPReq is from the original request.
             return;
@@ -2014,17 +2016,12 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                 continue;
 
             //Parse the file to find/validate possible host/ip and local path.
-            StringBuffer hostInPath, localPath;
-            const char* path = nullptr;
-            if (isHostInSprayPath(file, sourcePlaneReq, dropZone, sourceIPReq, sourceHostEp, localPath, hostInPath))
-                path = localPath.str();
-            else
-                path = file;
-
             //Validate file path.
-            StringBuffer s;
-            if (isAbsolutePath(path))
+            StringBuffer hostInPath, localPath, absPath;
+            const char* path = nullptr;
+            if (isUNCPath(file, sourcePlaneReq, dropZone, sourceIPReq, sourceHostEp, localPath, hostInPath))
             {
+                path = localPath.str();
                 //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
                 //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
                 if (!isPathInPlane(dropZone, path))
@@ -2032,11 +2029,21 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
             }
             else
             {
-                s.set(prefix);
-                addNonEmptyPathSepChar(s);
-                s.append(path);
-                path = s.str();
+                path = file;
+                if (isAbsolutePath(path))
+                {
+                    if (!isPathInPlane(dropZone, path))
+                        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", path, sourcePlaneReq.str());
+                }
+                else
+                {
+                    absPath.set(prefix);
+                    addNonEmptyPathSepChar(absPath);
+                    absPath.append(path);
+                    path = absPath.str();
+                }
             }
+
             SecAccessFlags permission = getDZFileScopePermissions(context, sourcePlaneReq, path, nullptr);
             if (permission < SecAccess_Read)
                 throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Access DropZone Scope %s %s not allowed for user %s (permission:%s). Read Access Required.",
