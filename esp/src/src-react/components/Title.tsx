@@ -50,7 +50,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 
     const [showAbout, setShowAbout] = React.useState(false);
     const [showMyAccount, setShowMyAccount] = React.useState(false);
-    const { currentUser } = useMyAccount();
+    const { currentUser, isAdmin } = useMyAccount();
     const [showAppPanel, { setTrue: openAppPanel, setFalse: dismissAppPanel }] = useBoolean(false);
 
     const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
@@ -113,8 +113,8 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const advMenuProps = React.useMemo(() => {
         return {
             items: [
-                { key: "banner", text: nlsHPCC.SetBanner, onClick: () => setShowBannerConfig(true) },
-                { key: "toolbar", text: nlsHPCC.SetToolbar, onClick: () => setShowTitlebarConfig(true) },
+                { key: "banner", text: nlsHPCC.SetBanner, disabled: !isAdmin, onClick: () => setShowBannerConfig(true) },
+                { key: "toolbar", text: nlsHPCC.SetToolbar, disabled: !isAdmin, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
                 { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
@@ -169,7 +169,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             ],
             directionalHintFixed: true
         };
-    }, [currentUser?.username, deleteUserSession, onTechPreviewClick, setUserSession, userSession]);
+    }, [currentUser?.username, deleteUserSession, isAdmin, onTechPreviewClick, setUserSession, userSession]);
 
     const btnStyles = React.useMemo(() => mergeStyleSets({
         errorsWarnings: {
