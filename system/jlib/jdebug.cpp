@@ -431,6 +431,11 @@ double getCycleToNanoScale()
 
 #endif
 
+cycle_t millisec_to_cycle(unsigned ms)
+{
+    return nanosec_to_cycle((__int64)ms * 1000000);
+}
+
 
 void display_time(const char *title, cycle_t diff)
 {
