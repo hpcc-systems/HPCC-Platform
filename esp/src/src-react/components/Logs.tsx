@@ -17,20 +17,20 @@ const FilterFields: Fields = {
     containerName: { type: "cloud-containername", label: nlsHPCC.ContainerName },
     audience: {
         type: "dropdown", label: nlsHPCC.Audience, options: [
-            { key: TargetAudience.Audit, text: "Audit" },
             { key: TargetAudience.Operator, text: "Operator" },
+            { key: TargetAudience.User, text: "User" },
             { key: TargetAudience.Programmer, text: "Programmer" },
-            { key: TargetAudience.User, text: "User" }
+            { key: TargetAudience.Audit, text: "Audit" },
         ]
     },
     class: {
         type: "dropdown", label: nlsHPCC.Class, options: [
-            { key: LogType.Disaster, text: "Audit" },
+            { key: LogType.Disaster, text: "Disaster" },
             { key: LogType.Error, text: "Error" },
+            { key: LogType.Warning, text: "Warning" },
             { key: LogType.Information, text: "Information" },
-            { key: LogType.Metric, text: "Metric" },
             { key: LogType.Progress, text: "Progress" },
-            { key: LogType.Warning, text: "Warning" }
+            { key: LogType.Metric, text: "Metric" },
         ]
     },
     jobId: { type: "string", label: nlsHPCC.JobID },
