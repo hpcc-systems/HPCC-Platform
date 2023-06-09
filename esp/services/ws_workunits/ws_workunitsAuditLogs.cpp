@@ -1407,6 +1407,11 @@ void CWsWorkunitsSoapBindingEx::createAndDownloadWUZAPFile(IEspContext& context,
         if (zapInfoReq.esp.isEmpty())
             zapInfoReq.esp.set(espApplicationName.get());
         request->getParameter("ThorProcesses", zapInfoReq.thor);
+
+        if (version >= 1.97)
+        {
+            zapInfoReq.populateLogFilter(request);
+        }
     }
     else
     {

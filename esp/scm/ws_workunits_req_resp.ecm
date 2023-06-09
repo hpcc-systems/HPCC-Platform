@@ -20,6 +20,7 @@
 
 EspInclude(common);
 EspInclude(ws_workunits_struct);
+EspInclude(ws_logaccess);
 
 ESPrequest [nil_remove] WUCreateRequest
 {
@@ -927,6 +928,7 @@ ESPrequest [nil_remove] WUCreateZAPInfoRequest
     [min_ver("1.73")] string EmailFrom;
     [min_ver("1.73")] string EmailSubject;
     [min_ver("1.73")] string EmailBody;
+    [min_ver("1.97")] ESPStruct LogAccessFilter LogFilter;
 };
 
 ESPresponse [exceptions_inline] WUCreateZAPInfoResponse

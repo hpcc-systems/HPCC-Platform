@@ -711,7 +711,11 @@ void ElasticStackLogAccess::populateESQueryQueryString(std::string & queryString
         break;
     }
     case LOGACCESS_FILTER_wildcard:
-        throw makeStringExceptionV(-1, "%s: Wild Card filter detected within exact term filter!", COMPONENT_NAME);
+        if (queryValue.isEmpty())
+            throw makeStringExceptionV(-1, "%s: Wildcard filter cannot be empty!", COMPONENT_NAME);
+
+        DBGLOG("%s: Searching log entries by wildcard filter: '%s: %s'...", COMPONENT_NAME, queryField.c_str(), queryValue.str());
+        break;
     case LOGACCESS_FILTER_or:
     case LOGACCESS_FILTER_and:
         queryString += " ( ";
@@ -746,7 +750,7 @@ void ElasticStackLogAccess::populateQueryStringAndQueryIndex(std::string & query
         esSearchMetaData(queryString, options.getReturnColsMode(), options.getLogFieldNames(), options.getSortByConditions(), options.getLimit(), options.getStartFrom());
 
         queryString += "\"query\": { \"bool\": { \"filter\": [ ";
-        if (options.queryFilter()->filterType() == LOGACCESS_FILTER_wildcard) // No filter
+        if (options.queryFilter() == nullptr || options.queryFilter()->filterType() == LOGACCESS_FILTER_wildcard) // No filter
         {
             queryIndex = m_globalIndexSearchPattern.str();
         }
