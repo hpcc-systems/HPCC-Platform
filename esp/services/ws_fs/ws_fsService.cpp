@@ -1906,8 +1906,8 @@ IPropertyTree *CFileSprayEx::getAndValidateDropZone(const char *path, const char
     return nullptr;
 }
 
-static bool isUNCPath(const char* sprayPath, const char* dropZoneName, IPropertyTree* dropZone,
-    const char* host, SocketEndpoint& hostEp, StringBuffer& localPath, StringBuffer& hostInPath)
+static bool validateUNCPath(const char* sprayPath, IPropertyTree* dropZone,
+    const char* host, const SocketEndpoint& hostEp, StringBuffer& localPath, StringBuffer& hostInPath)
 {
     if (!isPathSepChar(sprayPath[0]) || (sprayPath[0] != sprayPath[1]))
         return false;
@@ -1917,18 +1917,18 @@ static bool isUNCPath(const char* sprayPath, const char* dropZoneName, IProperty
     if (hostInPath.isEmpty())
         throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid SourcePath %s.", sprayPath);
 
-    if (!hostEp.isNull())
+    SocketEndpoint hostInPathEp(hostInPath);
+    if (!hostEp.ipequals(hostInPathEp))
     {
-        SocketEndpoint hostInPathEp(hostInPath);
-        if (!hostEp.ipequals(hostInPathEp))
-        {
-            VStringBuffer msg("The host %s defined in the SourcePath does not match with the host %s defined in SourceIP. ", hostInPath.str(), host);
-            msg.append("A dropzone name specified in the SourcePlane is preferred. The host/IP should not be contained in the SourcePath.");
-            throw makeStringException(ECLWATCH_INVALID_INPUT, msg.str());
-        }
+        VStringBuffer msg("The host %s defined in the SourcePath does not match with the host %s defined in SourceIP. ", hostInPath.str(), host);
+        msg.append("A dropzone name specified in the SourcePlane is preferred. The host/IP should not be contained in the SourcePath.");
+        throw makeStringException(ECLWATCH_INVALID_INPUT, msg.str());
     }
-    else if (!isHostInPlane(dropZone, hostInPath, true))
-        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Host %s in %s is not defined within the dropzone %s.", hostInPath.str(), sprayPath, dropZoneName);
+
+    //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
+    //The isPathInPlane will return false if a wildcard inside the path breaks the path check with the prefix.
+    if (dropZone && !isPathInPlane(dropZone, localPath))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", localPath.str(), dropZone->queryProp("@name"));
     return true;
 }
 
@@ -1944,7 +1944,7 @@ static void validateHostReqInSprayPathReq(const char* hostReq, const char* pathR
             continue;
 
         StringBuffer localPath, hostInPath;
-        isUNCPath(file, nullptr, nullptr, hostReq, hostReqEp, localPath, hostInPath);
+        validateUNCPath(file, nullptr, hostReq, hostReqEp, localPath, hostInPath);
     }
 }
 
@@ -2019,13 +2019,9 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
             //Validate file path.
             StringBuffer hostInPath, localPath, absPath;
             const char* path = nullptr;
-            if (isUNCPath(file, sourcePlaneReq, dropZone, sourceIPReq, sourceHostEp, localPath, hostInPath))
+            if (validateUNCPath(file, dropZone, sourceIPReq, sourceHostEp, localPath, hostInPath))
             {
                 path = localPath.str();
-                //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
-                //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
-                if (!isPathInPlane(dropZone, path))
-                    throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Path '%s' is not valid for dropzone '%s'", path, sourcePlaneReq.str());
             }
             else
             {
@@ -2043,6 +2039,9 @@ void CFileSprayEx::readAndCheckSpraySourceReq(IEspContext& context, MemoryBuffer
                     path = absPath.str();
                 }
             }
+
+            //Based on the tests, the dfuserver only supports the wildcard inside the file name, like '/path/f*'.
+            //The dfuserver throws an error if the wildcard is inside the path, like /p*ath/file.
 
             SecAccessFlags permission = getDZFileScopePermissions(context, sourcePlaneReq, path, nullptr);
             if (permission < SecAccess_Read)
