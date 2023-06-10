@@ -29,7 +29,7 @@ IF(NLP)
     if(MAKE_NLP)
         find_package(nlp-engine CONFIG REQUIRED)
 
-        set(CMAKE_CXX_STANDARD 11)
+        set(CMAKE_CXX_STANDARD 17)
 
         set(SRCS
             nlp.hpp
