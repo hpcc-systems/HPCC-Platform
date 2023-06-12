@@ -37,6 +37,7 @@ include_directories (
      ${HPCC_SOURCE_DIR}/esp/esplib
      ${HPCC_SOURCE_DIR}/esp/clients
      ${HPCC_SOURCE_DIR}/esp/clients/LoggingClient
+     ${HPCC_SOURCE_DIR}/esp/espcommon 
      ${HPCC_SOURCE_DIR}/esp/logging/logginglib
      ${HPCC_SOURCE_DIR}/common/thorhelper
      ./..
