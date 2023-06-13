@@ -64,6 +64,10 @@
 #include "rtldynfield.hpp"
 #include "eclhelper_base.hpp"
 
+#ifdef _DEBUG
+#define TRACK_LOCK_CLASHES
+#endif
+
 constexpr __uint64 defaultFetchThresholdNs = 20000; // Assume anything < 20us comes from the page cache, everything above probably went to disk
 
 static std::atomic<CKeyStore *> keyStore(nullptr);
@@ -639,6 +643,7 @@ public:
     offset_t pos;
 
     CKeyIdAndPos(unsigned __int64 _keyId, offset_t _pos) { keyId = _keyId; pos = _pos; }
+    CKeyIdAndPos() : CKeyIdAndPos(0,0) {}
 
     bool operator==(const CKeyIdAndPos &other) { return keyId == other.keyId && pos == other.pos; }
 };
@@ -2571,7 +2576,9 @@ static std::atomic<cycle_t> lastLoadReportCycles{0};
 static std::atomic<unsigned> countExcessiveLock_x1{0};
 static std::atomic<unsigned> countExcessiveLock_x10{0};
 static std::atomic<unsigned> countExcessiveLock_x100{0};
-
+#ifdef TRACK_LOCK_CLASHES
+static CKeyIdAndPos prevId[numLoadCritSects];
+#endif
 
 const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t pos, NodeType type, IContextLogger *ctx, bool isTLK)
 {
@@ -2649,6 +2656,9 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
         cycle_t startCycles = get_cycles_now();
         cycle_t fetchCycles = 0;
         cycle_t startLoadCycles;
+#ifdef TRACK_LOCK_CLASHES
+        CKeyIdAndPos conflictId(0, 0);
+#endif
         //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
         //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
         //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
@@ -2665,6 +2675,10 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
             }
             else
                 (*dupMetric[cacheType])++;
+#ifdef TRACK_LOCK_CLASHES
+            conflictId = prevId[whichCs];
+            prevId[whichCs] = key;
+#endif
         }
         cycle_t endLoadCycles = get_cycles_now();
         cycle_t lockingCycles = startLoadCycles - startCycles;
@@ -2680,11 +2694,20 @@ const CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offse
             if ((endLoadCycles - lastLockingReportCycles) >= traceCacheLockingFrequency)
             {
                 lastLockingReportCycles = endLoadCycles;
+#ifdef TRACK_LOCK_CLASHES
+                WARNLOG("CNodeCache::getNode lock(%s, %u) took %lluns cur(%llx, %llu) prev(%llx, %llu) counts(>=%lluns, %u, %u, %u) (x1,x10,x100)", cacheTypeText[cacheType], whichCs, cycle_to_nanosec(lockingCycles),
+                         key.keyId, key.pos, conflictId.keyId, conflictId.pos,
+                         cycle_to_nanosec(traceCacheLockingThreshold),
+                         countExcessiveLock_x1.load() + countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
+                         countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
+                         countExcessiveLock_x100.load());
+#else
                 WARNLOG("CNodeCache::getNode lock(%s, %u) took %lluns  counts(>=%lluns, %u, %u, %u) (x1,x10,x100)", cacheTypeText[cacheType], whichCs, cycle_to_nanosec(lockingCycles),
                          cycle_to_nanosec(traceCacheLockingThreshold),
                          countExcessiveLock_x1.load() + countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
                          countExcessiveLock_x10.load() + countExcessiveLock_x100.load(),
                          countExcessiveLock_x100.load());
+#endif
                 countExcessiveLock_x1 = 0;
                 countExcessiveLock_x10 = 0;
                 countExcessiveLock_x100 = 0;
