@@ -762,6 +762,7 @@ StatisticMeasure queryMeasure(const char * measure, StatisticMeasure dft)
 #define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
 #define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum, StatsMergeKeepNonZero)
 #define COSTSTAT(y) STAT(Cost, y, SMeasureCost, StatsMergeSum)
+#define PEAKSIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeMax)
 //--------------------------------------------------------------------------------------------------------------------
 
 class StatisticMeta
@@ -929,7 +930,7 @@ static const constexpr StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(LeafFetch) },
     { TIMESTAT(BlobFetch) },
     { CYCLESTAT(BlobFetch) },
-    { SIZESTAT(PeakSpillFile) },
+    { PEAKSIZESTAT(GraphSpill) },
     { TIMESTAT(AgentQueue) },
     { CYCLESTAT(AgentQueue) },
     { TIMESTAT(IBYTIDelay) },

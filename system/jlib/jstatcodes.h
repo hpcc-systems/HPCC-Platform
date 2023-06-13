@@ -269,7 +269,7 @@ enum StatisticKind
     StCycleLeafFetchCycles,
     StTimeBlobFetch,
     StCycleBlobFetchCycles,
-    StSizePeakSpillFile,
+    StSizeGraphSpill,
     StTimeAgentQueue,
     StCycleAgentQueueCycles,
     StTimeIBYTIDelay,

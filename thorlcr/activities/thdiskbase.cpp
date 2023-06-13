@@ -441,12 +441,6 @@ void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
     }
 }
 
-void CWriteMasterBase::getActivityStats(IStatisticGatherer & stats)
-{
-    CMasterActivity::getActivityStats(stats);
-}
-
-
 /////////////////
 rowcount_t getCount(CActivityBase &activity, unsigned partialResults, rowcount_t limit, mptag_t mpTag)
 {

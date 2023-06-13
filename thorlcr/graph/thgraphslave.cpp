@@ -1270,6 +1270,9 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
     stats.setStatistic(StSizePeakMemory, processActiveInfo.getPeakResidentMemory());
     jobS->querySharedAllocator()->queryRowManager()->reportSummaryStatistics(stats);
 
+    IGraphTempHandler *tempHandler = owner ? queryTempHandler(false) : queryJob().queryTempHandler();
+    if (tempHandler)
+        stats.mergeStatistic(StSizeGraphSpill, tempHandler->getActiveUsageSize());
     stats.serialize(mb);
 
     unsigned cPos = mb.length();
@@ -1314,8 +1317,7 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 
 void CSlaveGraph::serializeDone(MemoryBuffer &mb)
 {
-    graph_id gid = queryGraphId();
-    mb.append(gid);
+    mb.append(queryGraphId());
     unsigned cPos = mb.length();
     unsigned count=0;
     mb.append(count);
@@ -1343,17 +1345,6 @@ void CSlaveGraph::serializeDone(MemoryBuffer &mb)
         }
     }
     mb.writeDirect(cPos, sizeof(count), &count);
-
-    if (!owner)
-        queryJob().queryTempHandler()->serializeUsageStats(mb, gid);
-    else
-    {
-        IGraphTempHandler *tempHandler = queryTempHandler(false);
-        if (tempHandler)
-            tempHandler->serializeUsageStats(mb, gid);
-        else
-            IGraphTempHandler::serializeNullUsageStats(mb);
-    }
 }
 
 void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)

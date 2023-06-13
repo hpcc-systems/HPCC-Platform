@@ -221,12 +221,7 @@ interface IGraphTempHandler : extends IInterface
     virtual void deregisterFile(const char *name, bool kept=false) = 0;
     virtual void clearTemps() = 0;
     virtual IFileUsageIterator *getIterator() = 0;
-    virtual void serializeUsageStats(MemoryBuffer &mb, graph_id gid) = 0;
-    static void serializeNullUsageStats(MemoryBuffer &mb)
-    {
-        mb.append((offset_t)0);
-        mb.append((offset_t)0);
-    }
+    virtual offset_t getActiveUsageSize() = 0;
 };
 
 class CGraphDependency : public CInterface
@@ -595,7 +590,7 @@ public:
         };
         return new CIterator(tmpFiles);
     }
-    virtual void serializeUsageStats(MemoryBuffer &mb, graph_id gid) override;
+    virtual offset_t getActiveUsageSize() override;
 };
 
 class graph_decl CGraphStub : public CInterface, implements IThorChildGraph
