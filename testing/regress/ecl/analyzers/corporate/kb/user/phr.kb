@@ -1,0 +1,21 @@
+ind phrase
+"concept" "gram" "words" "city"
+"concept" "sys" "dict" "a" "L" "Lo" "Los Angeles"
+end ind
+
+ind phrase
+"concept" "gram" "words" "company"
+"concept" "sys" "dict" "a" "M" "M" "MD Files"
+"concept" "sys" "dict" "a" "N" "Ne" "New Hampshire Medical"
+"concept" "sys" "dict" "a" "C" "Ca" "Carezani Med"
+end ind
+
+ind phrase
+"concept" "gram" "words" "state"
+"concept" "sys" "dict" "a" "C" "Ca" "California"
+"concept" "sys" "dict" "a" "M" "Ma" "Maryland"
+end ind
+
+
+quit
+

@@ -72,3 +72,10 @@ The following links describe the structure of the system and detail some of the 
 * [Outline of ecl-bundle](https://hpcc-systems.github.io/HPCC-Platform/ecl/ecl-bundle/DOCUMENTATION.html)
 * [The structure and some details of the cmake files](https://hpcc-systems.github.io/HPCC-Platform/cmake_modules/DOCUMENTATION.html)
 * [Building the documentation](https://hpcc-systems.github.io/HPCC-Platform/docs/DOCUMENTATION.html)
+
+## Regression test
+
+```sh
+cd /opt/HPCCSystems/testing/regress
+./ecl-test query --target thor nlppp.ecl
+```

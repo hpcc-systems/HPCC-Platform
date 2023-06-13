@@ -1,0 +1,3529 @@
+ind attr
+"concept"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_CONCEPT"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "x" "xu" "xwhite"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "c" "co" "constrain"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "c" "cl" "closed"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "l" "li" "lit"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "s" "sp" "split"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "g" "ge" "gen"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "l" "lo" "locked"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "d" "di" "dirty"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "q" "qu" "quicksem"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "c" "co" "counter"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram"
+0
+"concept" "sys" "dict" "a" "n" "no" "notrig"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram" "words"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"stub"
+end ind
+
+
+ind attr
+"concept" "gram" "words"
+0
+"concept" "sys" "dict" "a" "c" "co" "constrain"
+pst
+"false"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "city"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"rule"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "city"
+0
+"concept" "sys" "dict" "a" "l" "li" "lit"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "city"
+0
+"concept" "sys" "dict" "a" "p" "pa" "passnum"
+pnum
+9
+end ind
+
+
+ind attr
+"concept" "gram" "words" "city"
+1
+"concept" "sys" "dict" "a" "s" "st" "start"
+pnum
+0
+end ind
+
+
+ind attr
+"concept" "gram" "words" "city"
+1
+"concept" "sys" "dict" "a" "e" "en" "end"
+pnum
+10
+end ind
+
+
+ind attr
+"concept" "gram" "words" "city"
+1
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"input\\Samples\\cities.txt"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"rule"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+0
+"concept" "sys" "dict" "a" "l" "li" "lit"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+0
+"concept" "sys" "dict" "a" "p" "pa" "passnum"
+pnum
+10
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+1
+"concept" "sys" "dict" "a" "s" "st" "start"
+pnum
+0
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+1
+"concept" "sys" "dict" "a" "e" "en" "end"
+pnum
+7
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+1
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"input\\Samples\\companies.txt"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+2
+"concept" "sys" "dict" "a" "s" "st" "start"
+pnum
+9
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+2
+"concept" "sys" "dict" "a" "e" "en" "end"
+pnum
+29
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+2
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"input\\Samples\\companies.txt"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+3
+"concept" "sys" "dict" "a" "s" "st" "start"
+pnum
+31
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+3
+"concept" "sys" "dict" "a" "e" "en" "end"
+pnum
+42
+end ind
+
+
+ind attr
+"concept" "gram" "words" "company"
+3
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"input\\Samples\\companies.txt"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"rule"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+0
+"concept" "sys" "dict" "a" "l" "li" "lit"
+pst
+"true"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+0
+"concept" "sys" "dict" "a" "p" "pa" "passnum"
+pnum
+11
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+1
+"concept" "sys" "dict" "a" "s" "st" "start"
+pnum
+0
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+1
+"concept" "sys" "dict" "a" "e" "en" "end"
+pnum
+9
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+1
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"input\\Samples\\states.txt"
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+2
+"concept" "sys" "dict" "a" "s" "st" "start"
+pnum
+11
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+2
+"concept" "sys" "dict" "a" "e" "en" "end"
+pnum
+18
+end ind
+
+
+ind attr
+"concept" "gram" "words" "state"
+2
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"input\\Samples\\states.txt"
+end ind
+
+
+ind attr
+"concept" "sys"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"con_SYS"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"sys_ATTRS"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "proxy"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"attrs_PROXY"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "proxy" "atom"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_ATOM"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "pproxy"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"attrs_PPROXY"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "pproxy" "phrase"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_PHRASE"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "common"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"attrs_COMMON"
+end ind
+
+
+ind attr
+"concept" "sys" "attrs" "common" "var"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"cg_VAR"
+end ind
+
+
+ind attr
+"concept" "sys" "nlp"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"sys_NLP"
+end ind
+
+
+ind attr
+"concept" "sys" "nlp" "lex" "slot" "cases"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_CASES"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_mslot_CASE"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case" "cap"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_CAP"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case" "allcap"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_ALLCAP"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "case" "mixed"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_MIXED"
+end ind
+
+
+ind attr
+"concept" "sys" "mean" "slot" "mixed"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"id_mslot_MIXED"
+end ind
+
+
+ind attr
+"concept" "sys" "dict"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"sys_DICT"
+end ind
+
+
+ind attr
+"concept" "sys" "dict" "a"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"dict_ALPHA"
+end ind
+
+
+ind attr
+"concept" "sys" "dict" "unknown"
+0
+"concept" "sys" "attrs" "common" "var"
+psym
+"dict_UNKNOWN"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "tokenize"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"tokenize"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "tokenize"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"nil"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "tokenize"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Gen:   Convert input to token list."
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "tokenize"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "tokenize"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "tokenize"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lines"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"lines"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lines"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"nil"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lines"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Gen:   Build a list of text lines."
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lines"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lines"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lines"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "initKB"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "initKB"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"initKB"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "initKB"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "initKB"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "initKB"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "initKB"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+3
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "join"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "join"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"join"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "join"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of join"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "join"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "join"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "join"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "sentences"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "sentences"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"sentences"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "sentences"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment here"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "sentences"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "sentences"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "sentences"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+5
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "paragraphs"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "paragraphs"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"paragraphs"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "paragraphs"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment here"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "paragraphs"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "paragraphs"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "paragraphs"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+6
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "removeWhite"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "removeWhite"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"removeWhite"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "removeWhite"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment here"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "removeWhite"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "removeWhite"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "removeWhite"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+7
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "stub_words"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"stub"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "stub_words"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"words"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "stub_words"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "stub_words"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "stub_words"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+3
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "stub_words"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+8
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "city"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "city"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"city"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "city"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"RUG file!"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "city"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "city"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "city"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+9
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "company"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "company"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "company"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"RUG file!"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "company"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "company"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "company"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+10
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "state"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "state"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"state"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "state"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"RUG file!"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "state"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "state"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "state"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+11
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "end_words"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"end"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "end_words"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"words"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "end_words"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "end_words"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "end_words"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "end_words"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+12
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lookup"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lookup"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"lookup"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lookup"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lookup"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lookup"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "lookup"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+13
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "vocabulary"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "vocabulary"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"vocabulary"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "vocabulary"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "vocabulary"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "vocabulary"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "vocabulary"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+14
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "phrases"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "phrases"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"phrases"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "phrases"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of vocabulary"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "phrases"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "phrases"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "phrases"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+15
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "money"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "money"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"money"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "money"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment here"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "money"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "money"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "money"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+16
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "moneyAttributes"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "moneyAttributes"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"moneyAttributes"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "moneyAttributes"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of money"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "moneyAttributes"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "moneyAttributes"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "moneyAttributes"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+17
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjMoney"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjMoney"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"conjMoney"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjMoney"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of conjCompany"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjMoney"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjMoney"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjMoney"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+18
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companies"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companies"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"companies"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companies"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment here"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companies"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companies"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companies"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+19
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyAttributes"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyAttributes"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"companyAttributes"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyAttributes"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of companies"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyAttributes"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyAttributes"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyAttributes"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+20
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyDet"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyDet"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"companyDet"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyDet"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of companyAttributes"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyDet"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyDet"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "companyDet"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+21
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphora"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphora"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"anaphora"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphora"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment here"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphora"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphora"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphora"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+22
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraCompany"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraCompany"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"anaphoraCompany"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraCompany"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of anaphora"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraCompany"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraCompany"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraCompany"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+23
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjCompany"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjCompany"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"conjCompany"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjCompany"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjCompany"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjCompany"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "conjCompany"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+24
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"events"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of phrases"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+25
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "eventAttributes"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "eventAttributes"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"eventAttributes"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "eventAttributes"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of events"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "eventAttributes"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "eventAttributes"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "eventAttributes"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+26
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraEvent"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraEvent"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"anaphoraEvent"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraEvent"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of anaphoraCompany"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraEvent"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraEvent"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "anaphoraEvent"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+27
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events2"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events2"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"events2"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events2"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"Copy of events"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events2"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events2"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "events2"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+28
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "output"
+0
+"concept" "sys" "dict" "a" "a" "al" "algo"
+pst
+"pat"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "output"
+0
+"concept" "sys" "dict" "a" "d" "da" "data"
+pst
+"output"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "output"
+0
+"concept" "sys" "dict" "a" "c" "co" "comment"
+pst
+"comment"
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "output"
+0
+"concept" "sys" "dict" "a" "a" "ac" "active"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "output"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "spec" "output"
+0
+"concept" "sys" "dict" "a" "p" "pa" "pass"
+pnum
+29
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "google.htm"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+3
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana001.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana002.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana003.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana004.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana005.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana006.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana007.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana008.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana009.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana010.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana011.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana012.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana013.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana014.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana015.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana016.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana017.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana018.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana019.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana020.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana021.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana022.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana023.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana024.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana025.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana026.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana027.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana028.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "ana029.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "anaphora.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "anaphoraEvent.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "dbg.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "err.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "final.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "init.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "lookup.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "output.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Sold.txt" "tester.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana001.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana002.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana003.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana004.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana005.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana006.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana007.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana008.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana009.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana010.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana011.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana012.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana013.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana014.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana015.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana016.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana017.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana018.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana019.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana020.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana021.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana022.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana023.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana024.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana025.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana026.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana027.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana028.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "ana029.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "dbg.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "err.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "final.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "init.log"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+4
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "lookup.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Dev" "Test2.txt" "output.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "html"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "html" "sas.htm"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+3
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Samples"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+1
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Samples" "cities.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Samples" "companies.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "sys" "gui" "text" "Samples" "states.txt"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pnum
+2
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"LOS ANGELES (NWI) - The No. 1 text analysis company Text Analysis International Inc. (TAI) has bought the American Medical Records Processing (AMRP) for more than $130 million dollars"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "Text Analysis International"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "Text Analysis International"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"Text Analysis International"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "American Medical Records Processing"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "American Medical Records Processing"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"American Medical Records Processing"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "AMRP"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "AMRP"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"AMRP"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "buy"
+0
+"concept" "sys" "dict" "a" "a" "ac" "action"
+pst
+"buy"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "buy" "company1"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"Text Analysis International"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "buy" "company2"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"American Medical Records Processing"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence1" "buy" "amount"
+0
+"concept" "sys" "nlp" "punct" ">"
+pnum
+130000000
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"Avi Meyers, CEO and president of TAI, said on Friday that they bought the Los Angeles-based AMRP for $120 million in cash and $14.3 million in assumed debt"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "TAI" "officer"
+0
+"concept" "sys" "dict" "a" "t" "ti" "title"
+pst
+"CEO and president"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "TAI" "officer"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"Avi Meyers"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "AMRP"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "AMRP"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"AMRP"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "AMRP" "location"
+0
+"concept" "sys" "dict" "a" "c" "ci" "city"
+pst
+"Los Angeles"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy"
+0
+"concept" "sys" "dict" "a" "a" "ac" "action"
+pst
+"buy"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy" "company1"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy" "company2"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"AMRP"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy" "amount"
+0
+"concept" "sys" "dict" "a" "c" "ca" "cash"
+pnum
+120000000
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy" "amount"
+0
+"concept" "sys" "dict" "a" "a" "as" "assumed debt"
+pnum
+14300000
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy" "comment"
+0
+"concept" "sys" "dict" "a" "p" "po" "position"
+pst
+"above"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence2" "buy" "comment"
+0
+"concept" "sys" "dict" "a" "c" "co" "commentor"
+pst
+"analysts' predictions"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence3"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"Founded in 1972, AMRP is the largest text processing firm in the country for medical records and journals and has been using TAI's VisualText technology almost exclusively for 3 years"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence3" "AMRP"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence3" "AMRP"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"AMRP"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence3" "AMRP" "founded"
+0
+"concept" "sys" "dict" "a" "y" "ye" "year"
+pst
+"1972"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence3" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence3" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence4"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"The sale of the medical records processing company for more than $134.3 million is above analysts' predictions but is not surprising given TAI's strong position in the market place"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence4" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence4" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"In 2006 alone, TAI has acquired MD Files, New Hampshire Medical Inc., and Carezani Med Company of Maryland for a total of 160 million dollars"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "MD Files"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "MD Files"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"MD Files"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "New Hampshire Medical"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "New Hampshire Medical"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"New Hampshire Medical"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "Carezani Med"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "Carezani Med"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"Carezani Med"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "Carezani Med" "location"
+0
+"concept" "sys" "dict" "a" "s" "st" "state"
+pst
+"Maryland"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire"
+0
+"concept" "sys" "dict" "a" "a" "ac" "action"
+pst
+"buy"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "company1"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "company2"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"MD Files"
+end ind
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "company2"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"New Hampshire Medical"
+end ind
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "company2"
+0
+"concept" "sys" "dict" "a" "n" "na" "name"
+pst
+"Carezani Med"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "amount"
+0
+"concept" "sys" "dict" "a" "t" "to" "total"
+pnum
+160000000
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "date"
+0
+"concept" "sys" "dict" "a" "y" "ye" "year"
+pst
+"2006"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "comment"
+0
+"concept" "sys" "dict" "a" "p" "po" "position"
+pst
+"strengthened"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "comment"
+0
+"concept" "sys" "dict" "a" "d" "de" "degree"
+pst
+"substantially"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence5" "acquire" "comment"
+0
+"concept" "sys" "dict" "a" "f" "fi" "field"
+pst
+"medical text processing"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence6"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"With this last purchase, TAI has substantially strengthened its hold on the medical text processing field and hopes to centralize the processing of medical records nationally"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence6" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence6" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"With its latest purchase of the medical records processing company, TAI's stock is up 4% from $58.33 a share to $60.66"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7" "TAI" "stock"
+0
+"concept" "sys" "dict" "a" "a" "ac" "action"
+pst
+"up"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7" "TAI" "stock"
+0
+"concept" "sys" "dict" "a" "p" "pe" "percent"
+pst
+"4%"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7" "TAI" "stock"
+0
+"concept" "sys" "dict" "a" "f" "fr" "from"
+pnum
+58
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence7" "TAI" "stock"
+0
+"concept" "sys" "dict" "a" "t" "to" "to"
+pnum
+60
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence8"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"TAI's stock has recently remained steady due to its lawsuit with MiasmaCraft whose text processing IDE Miasma-Text bears a striking resemblance to TAI's VisualText"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence8" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence8" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence8" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence8" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence9"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"TAI is vigorously defending its patent on VisualText, NLP++, and the Conceptual Grammar"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence9" "TAI"
+0
+"concept" "sys" "dict" "a" "t" "ty" "type"
+pst
+"company"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence9" "TAI"
+0
+"concept" "sys" "dict" "a" "n" "no" "normal"
+pst
+"TAI"
+end ind
+
+
+ind attr
+"concept" "corporate" "parse" "sentence10"
+0
+"concept" "sys" "dict" "a" "t" "te" "text"
+pst
+"More than they know"
+end ind
+
+
+
+quit
+

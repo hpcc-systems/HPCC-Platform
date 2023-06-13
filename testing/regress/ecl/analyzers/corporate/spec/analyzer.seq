@@ -1,0 +1,30 @@
+tokenize	nil	# Gen:   Convert input to token list.
+nlp	KBFuncs	# comment
+nlp	initKB	# comment
+nlp	join	# Copy of join
+nlp	sentences	# comment here
+nlp	paragraphs	# comment here
+nlp	removeWhite	# comment here
+stub	words	# comment
+nlp	city	# RUG file!
+nlp	company	# RUG file!
+nlp	state	# RUG file!
+end	words	# comment
+nlp	lookup	# comment
+nlp	vocabulary	# comment
+nlp	phrases	# Copy of vocabulary
+nlp	money	# comment here
+nlp	moneyAttributes	# Copy of money
+nlp	conjMoney	# Copy of conjCompany
+nlp	companies	# comment here
+nlp	companyAttributes	# Copy of companies
+nlp	companyDet	# Copy of companyAttributes
+nlp	anaphora	# comment here
+nlp	anaphoraCompany	# Copy of anaphora
+nlp	conjCompany	# comment
+nlp	events	# Copy of phrases
+nlp	eventAttributes	# Copy of events
+nlp	anaphoraEvent	# Copy of anaphoraCompany
+nlp	events2	# Copy of events
+nlp	output	# comment
+nlp	kbOutput	# comment
