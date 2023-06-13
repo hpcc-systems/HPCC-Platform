@@ -60,7 +60,10 @@
         },
         {
             "name": "icu",
-            "platform": "@VCPKG_ICU@"
+            "platform": "@VCPKG_ICU@",
+            "features": [
+                "tools"
+            ]
         },
         {
             "name": "jsoncpp",
