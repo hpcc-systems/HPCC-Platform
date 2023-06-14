@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_IFDEFINED">
+  <title>#IFDEFINED</title>
+
+  <para><emphasis role="bold">#IFDEFINED<indexterm>
+      <primary>#IFDEFINED</primary>
+    </indexterm>( </emphasis><emphasis> definition, defaultValue
+  </emphasis><emphasis role="bold">)</emphasis><emphasis role="bold">
+  </emphasis><emphasis></emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="83.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>definition</emphasis></entry>
+
+            <entry>The name of an ECL definition.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>defaultValue</emphasis></entry>
+
+            <entry>The default value to use if the definition does not exist.
+            </entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">#IFDEFINED </emphasis>determines whether or not
+  the <emphasis>definition</emphasis> has been defined at the point it appears
+  in the code. If it has been defined, it generates the definition. If it has
+  not been defined, it generates the <emphasis>defaultValue.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>definitions := MODULE
+  EXPORT val1 := 'hi';
+END;
+root := MODULE
+  EXPORT val2 := 'defined';
+END;
+
+val1 := 'me';
+#IFDEFINED(val1, 'val1 undefined');  //me
+IF(#IFDEFINED(val1, 'val1 undefined') = 'me','FRED','JOEY'); //FRED
+IF(#IFDEFINED(val1, 'val1 undefined') = 'me too','FRED','JOEY'); //JOEY
+
+#IFDEFINED(val2, 'val2 undefined'); //val2 undefined
+
+#IFDEFINED(definitions.val1, 'definitions.val1 undefined'); //hi
+#IFDEFINED(root.val2, 'root.val2 undefined'); //defined
+</programlisting>
+
+  <para>See Also: <link linkend="_ISDEFINED">#ISDEFINED</link></para>
+</sect1>

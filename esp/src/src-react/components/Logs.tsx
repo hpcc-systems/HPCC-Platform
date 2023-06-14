@@ -24,7 +24,7 @@ const FilterFields: Fields = {
         ]
     },
     class: {
-        type: "dropdown", label: nlsHPCC.Class, options: [
+        type: "dropdown-multi", label: nlsHPCC.Class, options: [
             { key: LogType.Disaster, text: "Disaster" },
             { key: LogType.Error, text: "Error" },
             { key: LogType.Warning, text: "Warning" },
@@ -48,6 +48,9 @@ function formatQuery(_request: any): Partial<GetLogsExRequest> {
     }
     if (_request.EndDate) {
         request.EndDate = new Date(_request.EndDate);
+    }
+    if (_request.class) {
+        request.class = _request.class.split(",");
     }
     return request;
 }

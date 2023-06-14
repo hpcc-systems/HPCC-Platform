@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_ISDEFINED">
+  <title>#ISDEFINED</title>
+
+  <para><emphasis role="bold">#ISDEFINED<indexterm>
+      <primary>#ISDEFINED</primary>
+    </indexterm>( </emphasis><emphasis> definition </emphasis><emphasis
+  role="bold">)</emphasis><emphasis role="bold">
+  </emphasis><emphasis></emphasis></para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="83.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>definition</emphasis></entry>
+
+            <entry>The name of an ECL definition.</entry>
+          </row>
+
+          <row>
+            <entry>Returns</entry>
+
+            <entry>A BOOLEAN value</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">#ISDEFINED </emphasis>returns whether or not the
+  <emphasis>definition</emphasis> has been defined at the point it appears in
+  the code.</para>
+
+  <para>Example:</para>
+
+  <para><programlisting>getFlagsValue(defname) := MACRO
+  defname :=
+  #IF (#ISDEFINED(DoAlways))
+     1 +
+  #ELSEIF (#ISDEFINED(DoNever))
+     2 +
+  #END
+     3;
+ENDMACRO;
+
+#ISDEFINED(DoNever); //false
+
+getFlagsValue(x1);  //neither is defined yet = 3
+OUTPUT(x1); //3
+
+DoNever := 'fred';
+getFlagsValue(x2);  //only DoNever is defined = 5
+OUTPUT(x2); //5
+
+DoAlways := 42;
+getFlagsValue(x3);  //both are defined = 4 (so the #ELSEIF isn't evaluated)
+OUTPUT(x3); //4
+
+#ISDEFINED(DoNever); //true
+</programlisting></para>
+
+  <para>See Also: <link linkend="_IFDEFINED">#IFDEFINED</link></para>
+</sect1>

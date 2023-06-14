@@ -24,8 +24,8 @@
 
 IMPORT java;
 
-STRING cat(SET OF STRING s) := IMPORT(java, 'javaembed_library.cat:([Ljava/lang/String;)Ljava/lang/String;');
-INTEGER checkInitialized() := IMPORT(java, 'javaembed_library.queryInit:()I');
+STRING cat(SET OF STRING s) := IMPORT(java, 'javaembed_library.cat:([Ljava/lang/String;)Ljava/lang/String;' : time);
+INTEGER checkInitialized() := IMPORT(java, 'javaembed_library.queryInit:()I' : time);
 
 namesRecord := 
             RECORD
