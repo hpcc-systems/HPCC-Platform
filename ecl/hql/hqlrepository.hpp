@@ -55,7 +55,8 @@ public:
 
     void processArchive(IPropertyTree * archiveTree);
     IEclPackage * queryDependentRepository(IIdAtom * name, const char * defaultUrl, IEclSourceCollection * overrideSources);
-    void setOptions(const char * _eclRepoPath, const char * _gitUser, const char * _gitPasswordPath, const char * _defaultGitPrefix, bool _fetchRepos, bool _updateRepos, bool _verbose)
+    void setOptions(const char * _eclRepoPath, const char * _gitUser, const char * _gitPasswordPath, const char * _defaultGitPrefix,
+                    bool _fetchRepos, bool _updateRepos, bool _cleanRepos, bool _cleanInvalidRepos, bool _verbose)
     {
         options.eclRepoPath.set(_eclRepoPath);
         options.gitUser.set(_gitUser);
@@ -63,6 +64,8 @@ public:
         options.defaultGitPrefix.set(_defaultGitPrefix);
         options.fetchRepos = _fetchRepos;
         options.updateRepos = _updateRepos;
+        options.cleanRepos = _cleanRepos;
+        options.cleanInvalidRepos = _cleanInvalidRepos;
         options.optVerbose = _verbose;
     }
 
@@ -91,6 +94,8 @@ private:
         StringAttr defaultGitPrefix;
         bool fetchRepos = false;
         bool updateRepos = false;
+        bool cleanRepos = false;
+        bool cleanInvalidRepos = false;
         bool optVerbose = false;
     } options;
 };
