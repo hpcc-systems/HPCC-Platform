@@ -349,13 +349,13 @@ static StringBuffer & formatSize(StringBuffer & out, unsigned __int64 value)
     unsigned Kb = (unsigned)((value % oneMb) / oneKb);
     unsigned b = (unsigned)(value % oneKb);
     if (Gb)
-        return out.appendf("%u.%03uGb", Gb, toPermille(Mb));
+        return out.appendf("%u.%03uGB", Gb, toPermille(Mb));
     else if (Mb)
-        return out.appendf("%u.%03uMb", Mb, toPermille(Kb));
+        return out.appendf("%u.%03uMB", Mb, toPermille(Kb));
     else if (Kb)
-        return out.appendf("%u.%03uKb", Kb, toPermille(b));
+        return out.appendf("%u.%03uKB", Kb, toPermille(b));
     else
-        return out.appendf("%ub", b);
+        return out.appendf("%uB", b);
 }
 
 static StringBuffer & formatLoad(StringBuffer & out, unsigned __int64 value)
