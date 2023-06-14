@@ -2850,6 +2850,14 @@ static bool isWorthReportingMergedValue(StatisticKind kind)
         return false;
     }
 
+    switch (kind)
+    {
+    case StSizePeakMemory:
+    case StSizePeakRowMemory:
+        //These only make sense for individual nodes, the aggregated value is meaningless
+        return false;
+    }
+
     return true;
 }
 
