@@ -376,7 +376,10 @@ public:
     {
         ctx->noteLibrary(library);
     }
-
+    virtual const CRuntimeStatisticCollection & queryStats() const
+    {
+        return ctx->queryStats();
+    }
 protected:
     IRoxieAgentContext * ctx;
 };
@@ -1392,7 +1395,10 @@ public:
     {
         return ctx ? ctx->queryCallerIdHttpHeaderName() : "HPCC-Caller-Id";
     }
-
+    virtual const CRuntimeStatisticCollection & queryStats() const override
+    {
+        return stats;
+    }
     virtual bool isPassThrough()
     {
         return false;

@@ -2057,8 +2057,8 @@ protected:
     bool setupDist = true;
     bool isAll = false;
 public:
-    HashDistributeSlaveBase(CGraphElementBase *_container)
-        : CSlaveActivity(_container)
+    HashDistributeSlaveBase(CGraphElementBase *_container, const StatisticsMapping &statsMapping = basicActivityStatistics)
+        : CSlaveActivity(_container, statsMapping)
     {
         appendOutputLinked(this);
     }
@@ -2454,6 +2454,8 @@ public:
 class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
 {
     typedef HashDistributeSlaveBase PARENT;
+    CThorContextLogger contextLogger;
+    CStatsCtxLoggerDeltaUpdater statsUpdater;
 
     class CKeyLookup : implements IHash
     {
@@ -2466,11 +2468,12 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
         CKeyLookup(IndexDistributeSlaveActivity &_owner, IHThorKeyedDistributeArg *_helper, IKeyIndex *_tlk)
             : owner(_owner), helper(_helper), tlk(_tlk)
         {
-            tlkManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), tlk, nullptr, helper->hasNewSegmentMonitors(), false));
+            tlkManager.setown(createLocalKeyManager(helper->queryIndexRecordSize()->queryRecordAccessor(true), tlk, &owner.contextLogger, helper->hasNewSegmentMonitors(), false));
             numslaves = owner.queryContainer().queryJob().querySlaves();
         }
         unsigned hash(const void *data)
         {
+            CStatsScopedThresholdDeltaUpdater scoped(owner.statsUpdater);
             helper->createSegmentMonitors(tlkManager, data);
             tlkManager->finishSegmentMonitors();
             tlkManager->reset();
@@ -2484,7 +2487,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
     } *lookup;
 
 public:
-    IndexDistributeSlaveActivity(CGraphElementBase *container) : PARENT(container), lookup(NULL)
+    IndexDistributeSlaveActivity(CGraphElementBase *container) : PARENT(container, indexDistribActivityStatistics), lookup(NULL), statsUpdater(jhtreeCacheStatistics, *this, contextLogger)
     {
     }
     ~IndexDistributeSlaveActivity()
@@ -2507,6 +2510,11 @@ public:
         name.append(queryId()).append("_tlk");
         lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, (unsigned) -1, true)); // MORE - crc is not 0...
         ihash = lookup;
+    }
+    virtual void stop() override
+    {
+        CStatsScopedDeltaUpdater scoped(statsUpdater);
+        PARENT::stop();
     }
 };
 

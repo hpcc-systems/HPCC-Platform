@@ -1412,7 +1412,10 @@ public:
     {
         return logctx.queryCallerIdHttpHeaderName();
     }
-
+    virtual const CRuntimeStatisticCollection & queryStats() const override
+    {
+        return logctx.queryStats();
+    }
     virtual void noteLibrary(IQueryFactory *library)
     {
         loadedLibraries.appendUniq(*LINK(library));
